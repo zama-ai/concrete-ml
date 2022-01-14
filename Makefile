@@ -237,7 +237,7 @@ upgrade_py_deps:
 .PHONY: pytest_codeblocks # Test code blocks using pytest in the documentation
 pytest_codeblocks:
 	poetry run pytest --codeblocks -svv -n $$(./script/make_utils/ncpus.sh) \
-	--randomly-dont-reorganize docs/
+	--randomly-dont-reorganize .
 
 # From https://stackoverflow.com/a/63523300 for the find command
 .PHONY: shell_lint # Lint all bash scripts
