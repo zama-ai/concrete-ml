@@ -53,6 +53,7 @@ nbmake = "^1.1"
 sphinx-zama-theme = "2.0.8"
 nbsphinx = "0.8.7"
 pygments-style-tomorrow = "^1.0.0"
+pytest-repeat = "^0.9.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

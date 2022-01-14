@@ -105,6 +105,11 @@ pcc_internal: $(PCC_DEPS)
 
 # One can reproduce pytest thanks to the --randomly-seed which is given by
 # pytest-randomly
+# Replace --count=1 by a larger number to repeat _all_ tests
+# To repeat a single test, apply something like @pytest.mark.repeat(3) on the test function
+# --randomly-dont-reset-seed is used to make that, if we run the same test several times (with
+# @pytest.mark.repeat(3)), not the same seed is used, even if things are still deterministic of the
+# main seed
 .PHONY: pytest # Run pytest
 pytest:
 	poetry run pytest -svv \
@@ -112,7 +117,9 @@ pytest:
 	-n $$(./script/make_utils/ncpus.sh) \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \
-	--cov-report=term-missing:skip-covered tests/
+	--cov-report=term-missing:skip-covered tests/ \
+	--count=1 \
+	--randomly-dont-reset-seed
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
