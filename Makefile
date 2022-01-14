@@ -234,15 +234,6 @@ release_docker:
 upgrade_py_deps:
 	./script/make_utils/upgrade_deps.sh
 
-# Keeping this target as it proved useful before we had a proper package, allowed to run code that
-# pytest-codeblocks was failing to execute if not installed as a pip package.
-# This is done by hand as pytest-codeblocks was failing with our native extensions.
-# See refused PR on the project here: https://github.com/nschloe/pytest-codeblocks/pull/58
-# Test code blocks using a custom python script in the documentation
-.PHONY: test_codeblocks
-test_codeblocks:
-	poetry run python ./script/make_utils/test_md_python_code.py --md_dir docs/
-
 .PHONY: pytest_codeblocks # Test code blocks using pytest in the documentation
 pytest_codeblocks:
 	poetry run pytest --codeblocks -svv -n $$(./script/make_utils/ncpus.sh) \
