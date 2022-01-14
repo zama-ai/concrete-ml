@@ -1,0 +1,69 @@
+[tool.poetry]
+name = "concrete-ml"
+version = "0.1.0-rc1"
+description = "ConcreteML is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists."
+license = "BSD-3-Clause"
+authors = [
+    "Zama <hello@zama.ai>",
+]
+homepage = "https://zama.ai/concrete/"
+repository = "https://github.com/zama-ai/concrete-ml"
+documentation = "http://docs.zama.ai/concrete-ml/"
+keywords = ["FHE", "homomorphic encryption", "privacy", "security"]
+packages = [
+    { include = "concrete", from = "src" },
+]
+classifiers = [
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Security",
+    "Topic :: Security :: Cryptography",
+    "Topic :: Software Development :: Compilers",
+]
+readme = "pypi_readme.md"
+
+[tool.poetry.urls]
+"README" = "https://github.com/zama-ai/concrete-ml/blob/main/README.md"
+"Bug Tracker" = "https://github.com/zama-ai/concrete-ml/issues"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.10"
+numpy = "^1.22.0"
+concrete-numpy = {version = "^0.2.0", extras = ["full"]}
+setuptools = "*"
+
+[tool.poetry.dev-dependencies]
+isort = "^5.10.1"
+black = "^21.12b0"
+pylint = "2.11.1"
+pytest = "^6.2.5"
+pytest-cov = "^3.0.0"
+pytest-codeblocks = "^0.12.2"
+mypy = "0.931"
+pydocstyle = "^6.1.1"
+flake8 = "^4.0.1"
+flake8-bugbear = "^21.11.29"
+python-semantic-release = "7.23.0"
+semver = "^2.13.0"
+tomlkit = "^0.7.0"
+pytest-xdist = "^2.5.0"
+pytest-randomly = "^3.11.0"
+nbmake = "^1.1"
+sphinx-zama-theme = "2.0.8"
+nbsphinx = "0.8.7"
+pygments-style-tomorrow = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+]
+
+[tool.semantic_release]
+version_toml = "pyproject.toml:tool.poetry.version"
+version_variable = "docs/conf.py:release"
+upload_to_pypi = "False"

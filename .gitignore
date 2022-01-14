@@ -50,6 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+global-coverage-infos.json
 
 # Translations
 *.mo
@@ -69,6 +70,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
+docs/_apidoc/
 docs/_build/
 
 # PyBuilder
