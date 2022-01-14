@@ -89,7 +89,7 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses
+conformance: finalize_nb python_format licenses mdformat
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
@@ -97,7 +97,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_licenses
+PCC_DEPS += check_version_coherence check_licenses check_mdformat
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -347,3 +347,13 @@ clean_local_git:
 	@# Don't consider deleting `main` or current branches
 	@git branch | grep -v "^*" | grep -v main | xargs echo "git branch -D "
 	@echo
+
+.PHONY: mdformat # Apply markdown formatting
+# Remark we need to remove .md's in venv
+mdformat:
+	find . -name "*.md"  -not -path "./.venv/*" | xargs poetry run mdformat
+
+.PHONY: check_mdformat # Check markdown format
+# Remark we need to remove .md's in venv
+check_mdformat:
+	find . -name "*.md"  -not -path "./.venv/*" | xargs poetry run mdformat --check

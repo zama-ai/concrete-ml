@@ -767,6 +767,19 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "mdformat"
+version = "0.7.13"
+description = "CommonMark compliant Markdown formatter"
+category = "dev"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[package.dependencies]
+importlib-metadata = {version = ">=3.6.0", markers = "python_version < \"3.10\""}
+markdown-it-py = ">=1.0.0b2,<3.0.0"
+tomli = ">=1.1.0"
+
+[[package]]
 name = "mdit-py-plugins"
 version = "0.2.8"
 description = "Collection of plugins for markdown-it-py"
@@ -1860,7 +1873,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "7a1829ef218bb24c27c1cad7b615c3e72e2ca9899c009c65bf936f0094f5f3e5"
+content-hash = "5195f3a082d56fd108acd7a78e39875ba2755ccccfc8bcbec78da9b2a748420f"
 
 [metadata.files]
 alabaster = [
@@ -2381,6 +2394,10 @@ matplotlib-inline = [
 mccabe = [
     {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
     {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
+]
+mdformat = [
+    {file = "mdformat-0.7.13-py3-none-any.whl", hash = "sha256:accca5fb17da270b63d27ce05c86eba1e8dd2a0342e9c7bb4cff4e50040b65bb"},
+    {file = "mdformat-0.7.13.tar.gz", hash = "sha256:28ede5e435ba84154e332edced33ee24fa30453d8fcbfbf7e41cd126a0851112"},
 ]
 mdit-py-plugins = [
     {file = "mdit-py-plugins-0.2.8.tar.gz", hash = "sha256:5991cef645502e80a5388ec4fc20885d2313d4871e8b8e320ca2de14ac0c015f"},
