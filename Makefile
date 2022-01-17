@@ -204,10 +204,12 @@ docs: clean_docs
 clean_docs:
 	rm -rf docs/_apidoc docs/_build
 
-.PHONY: open_docs # Launch docs in a browser (macOS only)
+.PHONY: open_docs # Launch docs in a browser
 open_docs:
-	@# This is macOS only. On other systems, one would use `start` or `xdg-open`
-	open docs/_build/html/index.html
+	python3 -m webbrowser -t "file://${PWD}/docs/_build/html/index.html"
+
+.PHONY: docs_and_open # Make docs and open them in a browser
+docs_and_open: docs open_docs
 
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:
