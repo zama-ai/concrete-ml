@@ -55,6 +55,7 @@ nbsphinx = "0.8.7"
 pygments-style-tomorrow = "^1.0.0"
 pytest-repeat = "^0.9.1"
 mdformat = "^0.7.13"
+pip-audit = "^1.1.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
