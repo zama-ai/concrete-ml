@@ -6,3 +6,4 @@ Developer Guide
    :maxdepth: 2
 
    How To <howto/index>
+   Explanations <explanation/index>
