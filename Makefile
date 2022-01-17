@@ -233,7 +233,7 @@ pytest_nb:
 
 .PHONY: jupyter # Launch jupyter notebook
 jupyter:
-	poetry run jupyter notebook --allow-root --no-browser --ip=0.0.0.0
+	./script/make_utils/jupyter.sh
 
 .PHONY: release_docker # Build a docker release image
 release_docker:
