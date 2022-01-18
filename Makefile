@@ -58,7 +58,7 @@ check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
 	--dir $(SRC_DIR) --dir tests --dir script --check
 
-.PHONY: check_finalize_nb # Sanitize notebooks
+.PHONY: check_finalize_nb # Check sanitization of notebooks
 check_finalize_nb:
 	poetry run python ./script/nbmake_utils/notebook_finalize.py docs --check
 
