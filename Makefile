@@ -231,9 +231,19 @@ pytest_nb:
 		echo "No notebook found"; \
 	fi
 
-.PHONY: jupyter # Launch jupyter notebook
-jupyter:
-	./script/make_utils/jupyter.sh
+.PHONY: jupyter_open # Launch jupyter, to be able to choose notebook you want to run
+jupyter_open:
+	./script/make_utils/jupyter.sh --open
+
+.PHONY: jupyter_execute # Execute all jupyter notebooks and sanitize
+jupyter_execute:
+	./script/make_utils/jupyter.sh --run_all_notebooks
+	"$(MAKE)" finalize_nb
+
+.PHONY: jupyter_execute_one # Execute one jupyter notebook and sanitize
+jupyter_execute_one:
+	./script/make_utils/jupyter.sh --run_notebook "$${NOTEBOOK}"
+	"$(MAKE)" finalize_nb
 
 .PHONY: release_docker # Build a docker release image
 release_docker:
