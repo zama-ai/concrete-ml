@@ -24,7 +24,7 @@ class QuantizedArray:
         self.offset = 0
         if is_signed:
             self.offset = 2 ** (n_bits - 1)
-        self.values = values
+        self.values = deepcopy(values)
         self.n_bits = n_bits
         self.is_signed = is_signed
         self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
