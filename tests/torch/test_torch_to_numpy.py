@@ -5,6 +5,7 @@ import torch
 from torch import nn
 
 from concrete.ml.torch import NumpyModule
+from concrete.ml.torch.numpy_module import NewNumpyModule
 
 
 class CNN(nn.Module):
@@ -70,10 +71,17 @@ class FC(nn.Module):
     "activation_function",
     [
         pytest.param(nn.Sigmoid, id="sigmoid"),
-        pytest.param(nn.ReLU6, id="relu"),
+        pytest.param(nn.ReLU6, id="relu6"),
     ],
 )
-def test_torch_to_numpy(model, input_shape, activation_function, seed_torch):
+@pytest.mark.parametrize(
+    "numpy_module_type",
+    [
+        NumpyModule,
+        NewNumpyModule,
+    ],
+)
+def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_type, seed_torch):
     """Test the different model architecture from torch numpy."""
 
     # Seed torch
@@ -85,7 +93,11 @@ def test_torch_to_numpy(model, input_shape, activation_function, seed_torch):
     # Predict with torch model
     torch_predictions = torch_fc_model(torch_input_1).detach().numpy()
     # Create corresponding numpy model
-    numpy_fc_model = NumpyModule(torch_fc_model)
+    numpy_fc_model = (
+        numpy_module_type(torch_fc_model)
+        if numpy_module_type == NumpyModule
+        else numpy_module_type(torch_fc_model, torch_input_1)
+    )
     # Torch input to numpy
     numpy_input_1 = torch_input_1.detach().numpy()
     # Predict with numpy model
@@ -110,18 +122,119 @@ def test_torch_to_numpy(model, input_shape, activation_function, seed_torch):
 
 
 @pytest.mark.parametrize(
-    "model, incompatible_layer",
-    [pytest.param(CNN, "Conv2d")],
+    "model",
+    [pytest.param(CNN)],
 )
-def test_raises(model, incompatible_layer, seed_torch):
+@pytest.mark.parametrize(
+    "numpy_module_type,err_msg",
+    [
+        pytest.param(
+            NewNumpyModule,
+            "The following ONNX operators are required to convert the torch model to numpy but are"
+            " not currently implemented: AveragePool, Conv, Flatten, Pad\\..*",
+        ),
+        pytest.param(
+            NumpyModule,
+            "The following module is currently not implemented: Conv2d\\. "
+            "Please stick to the available torch modules: "
+            f"{', '.join(sorted(module.__name__ for module in NumpyModule.IMPLEMENTED_MODULES))}.",
+        ),
+    ],
+)
+def test_raises(model, numpy_module_type, err_msg, seed_torch):
     """Function to test incompatible layers."""
 
     seed_torch()
     torch_incompatible_model = model()
-    expected_errmsg = (
-        f"The following module is currently not implemented: {incompatible_layer}. "
-        f"Please stick to the available torch modules: "
-        f"{', '.join(sorted(module.__name__ for module in NumpyModule.IMPLEMENTED_MODULES))}."
-    )
-    with pytest.raises(ValueError, match=expected_errmsg):
-        NumpyModule(torch_incompatible_model)
+
+    with pytest.raises(
+        ValueError,
+        match=err_msg,
+    ):
+        if numpy_module_type == NumpyModule:
+            NumpyModule(torch_incompatible_model)
+        else:
+            # NCHW
+            dummy_input = torch.randn(1, 3, 32, 32)
+            NewNumpyModule(torch_incompatible_model, dummy_input)
+
+
+class AddTest(nn.Module):
+    """Simple torch module to test ONNX 'Add' operator."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.bias = 1.0
+
+    def forward(self, x):
+        """Forward pass."""
+        return x + self.bias
+
+
+class MatmulTest(nn.Module):
+    """Simple torch module to test ONNX 'Matmul' operator."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.matmul = nn.Linear(3, 10, bias=False)
+
+    def forward(self, x):
+        """Forward pass."""
+        return self.matmul(x)
+
+
+class ReluTest(nn.Module):
+    """Simple torch module to test ONNX 'Relu' operator."""
+
+    # Store a ReLU op to avoid pylint warnings
+    def __init__(self) -> None:
+        super().__init__()
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        """Forward pass."""
+        return self.relu(x)
+
+
+@pytest.mark.parametrize(
+    "model,input_shape",
+    [
+        pytest.param(AddTest, (10, 10)),
+        pytest.param(MatmulTest, (10, 3)),
+        pytest.param(ReluTest, (10, 10)),
+    ],
+)
+def test_torch_to_numpy_onnx_ops(model, input_shape, seed_torch):
+    """Test the different model architecture from torch numpy."""
+
+    # Seed torch
+    seed_torch()
+    # Define the torch model
+    torch_fc_model = model()
+    # Create random input
+    torch_input_1 = torch.randn(input_shape)
+    # Predict with torch model
+    torch_predictions = torch_fc_model(torch_input_1).detach().numpy()
+    # Create corresponding numpy model
+    numpy_fc_model = NewNumpyModule(torch_fc_model, torch_input_1)
+    # Torch input to numpy
+    numpy_input_1 = torch_input_1.detach().numpy()
+    # Predict with numpy model
+    numpy_predictions = numpy_fc_model(numpy_input_1)
+
+    # Test: the output of the numpy model is the same as the torch model.
+    assert numpy_predictions.shape == torch_predictions.shape
+    # Test: prediction from the numpy model are the same as the torh model.
+    assert numpy.isclose(torch_predictions, numpy_predictions, rtol=10 - 3).all()
+
+    # Test: dynamics between layers is working (quantized input and activations)
+    torch_input_2 = torch.randn(input_shape)
+    # Make sure both inputs are different
+    assert (torch_input_1 != torch_input_2).any()
+    # Predict with torch
+    torch_predictions = torch_fc_model(torch_input_2).detach().numpy()
+    # Torch input to numpy
+    numpy_input_2 = torch_input_2.detach().numpy()
+    # Numpy predictions using the previous model
+    numpy_predictions = numpy_fc_model(numpy_input_2)
+    assert numpy.isclose(torch_predictions, numpy_predictions, rtol=10 - 3).all()

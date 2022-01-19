@@ -32,6 +32,7 @@ python = ">=3.8,<3.10"
 numpy = "^1.22.0"
 concrete-numpy = {version = "^0.2.0", extras = ["full"]}
 setuptools = "*"
+onnx = "^1.10.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
@@ -70,6 +71,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 filterwarnings = [
     "error",
+    "ignore:`np\\.object` is a deprecated alias for the builtin `object`\\. To silence this warning, use `object` by itself\\. Doing this will not modify any behavior and is safe\\.:DeprecationWarning"
 ]
 
 [tool.semantic_release]
