@@ -147,7 +147,7 @@ mypy_script:
 	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
 .PHONY: mypy_benchmark # Run mypy on benchmark files
-mypy_benchmark: 
+mypy_benchmark:
 	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
 # The plus indicates that make will be called by the command and allows to share the context with
@@ -395,3 +395,19 @@ docker_publish_measurements: docker_rebuild
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
 	$(DEV_DOCKER_IMG) \
 	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
+
+.PHONY: nbqa_one # Call nbqa on a single notebook
+nbqa_one:
+	./script/make_utils/nbqa.sh --notebook "$${NOTEBOOK}"
+
+.PHONY: nbqa # Call nbqa on all notebooks
+nbqa:
+	./script/make_utils/nbqa.sh --all_notebooks
+
+.PHONY: check_nbqa_one # Check with nbqa a single notebook
+check_nbqa_one:
+	./script/make_utils/nbqa.sh --notebook "$${NOTEBOOK}" --check
+
+.PHONY: check_nbqa # Check with nbqa all notebooks
+check_nbqa:
+	./script/make_utils/nbqa.sh --all_notebooks --check
