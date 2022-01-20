@@ -51,12 +51,12 @@ reinstall_env:
 .PHONY: python_format # Apply python formatting
 python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir script
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script
 
 .PHONY: check_python_format # Check python format
 check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir script --check
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --check
 
 .PHONY: check_finalize_nb # Check sanitization of notebooks
 check_finalize_nb:
@@ -64,7 +64,7 @@ check_finalize_nb:
 
 .PHONY: pylint # Run pylint
 pylint:
-	"$(MAKE)" --keep-going pylint_src pylint_tests pylint_script
+	"$(MAKE)" --keep-going pylint_src pylint_tests pylint_script pylint_benchmarks
 
 .PHONY: pylint_src # Run pylint on sources
 pylint_src:
@@ -76,6 +76,12 @@ pylint_tests:
 	@# Disable unnecessary lambda (W0108) for tests
 	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801,W0108 --rcfile=pylintrc
 
+.PHONY: pylint_benchmarks # Run pylint on benchmarks
+pylint_benchmarks:
+	@# Disable duplicate code detection, docstring requirement, too many locals/statements
+	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \
+	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,C0302,W0108 --rcfile=pylintrc
+
 .PHONY: pylint_script # Run pylint on scripts
 pylint_script:
 	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
@@ -83,7 +89,7 @@ pylint_script:
 .PHONY: flake8 # Run flake8
 flake8:
 	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" \
-	$(SRC_DIR)/ tests/ script/
+	$(SRC_DIR)/ tests/ script/ benchmarks/
 
 .PHONY: python_linting # Run python linters
 python_linting: pylint flake8
@@ -140,12 +146,16 @@ mypy_test:
 mypy_script:
 	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
+.PHONY: mypy_benchmark # Run mypy on benchmark files
+mypy_benchmark: 
+	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
+
 # The plus indicates that make will be called by the command and allows to share the context with
 # the parent make execution. We serialize calls to these targets as they may overwrite each others
 # cache which can cause issues.
 .PHONY: mypy_ci # Run all mypy checks for CI
 mypy_ci:
-	"$(MAKE)" --keep-going mypy mypy_test mypy_script
+	"$(MAKE)" --keep-going mypy mypy_test mypy_script mypy_benchmark
 
 .PHONY: docker_build # Build dev docker
 docker_build:
@@ -370,3 +380,18 @@ mdformat:
 # Remark we need to remove .md's in venv
 check_mdformat:
 	find . -name "*.md"  -not -path "./.venv/*" | xargs poetry run mdformat --check
+
+.PHONY: benchmark # Perform benchmarks
+benchmark:
+	rm -rf progress.json && \
+	for script in benchmarks/*.py; do \
+	  poetry run python $$script; \
+	done
+
+.PHONY: docker_publish_measurements # Run benchmarks in docker and publish results
+docker_publish_measurements: docker_rebuild
+	docker run --rm --volume /"$$(pwd)":/src \
+	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
+	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
+	$(DEV_DOCKER_IMG) \
+	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
