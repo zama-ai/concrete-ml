@@ -4,31 +4,64 @@ from typing import Optional, Tuple
 
 import numpy
 
-STABILITY_CONST = 10 ** -6
+from ..common.debugging import assert_true
 
 
 class QuantizedArray:
-    """Abstraction of quantized array."""
+    """Abstraction of quantized array.
 
-    def __init__(self, n_bits: int, values: numpy.ndarray, is_signed=False):
-        """Quantize an array.
+    See https://arxiv.org/abs/1712.05877.
 
-        See https://arxiv.org/abs/1712.05877.
+    Args:
+        values (numpy.ndarray): Values to be quantized.
+        n_bits (int): The number of bits to use for quantization.
+        is_signed (bool): Whether the quantization can be on signed integers.
+        value_is_float (bool, optional): Whether the passed values are real (float) values or not.
+            If False, the values will be quantized according to the passed scale and zero_point.
+            Defaults to True.
+        scale (Optional[float], optional): Ignored if value_is_float is True, otherwise needs to be
+            provided.
+            Defaults to None.
+        zero_point (Optional[int], optional): Ignored if value_is_float is True, otherwise needs to
+            be provided.
+            Defaults to None.
+    """
 
-        Args:
-            values (numpy.ndarray): Values to be quantized.
-            n_bits (int): The number of bits to use for quantization.
-            is_signed (bool): Whether the quantization can be on signed integers.
-        """
+    STABILITY_CONST = 10 ** -6
 
+    def __init__(
+        self,
+        n_bits: int,
+        values: numpy.ndarray,
+        is_signed: bool = False,
+        value_is_float: bool = True,
+        scale: Optional[float] = None,
+        zero_point: Optional[int] = None,
+    ):
         self.offset = 0
         if is_signed:
             self.offset = 2 ** (n_bits - 1)
-        self.values = deepcopy(values)
         self.n_bits = n_bits
         self.is_signed = is_signed
-        self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
-        self.n_features = 1 if len(values.shape) <= 1 else values.shape[1]
+        if value_is_float:
+            self.values = deepcopy(values)
+            self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
+        else:
+            assert_true(
+                scale is not None and zero_point is not None,
+                f"When initializing {self.__class__.__name__} with values_need_to_be_quantized == "
+                "False, the scale and zero_point parameters are required.",
+            )
+
+            # For mypy
+            assert scale is not None
+            assert zero_point is not None
+
+            self.scale = scale
+            self.zero_point = zero_point
+            self.qvalues = deepcopy(values)
+            # Populate self.values
+            self.dequant()
 
     def __call__(self) -> Optional[numpy.ndarray]:
         return self.qvalues
@@ -45,7 +78,7 @@ class QuantizedArray:
         rmax = numpy.max(self.values)
         rmin = numpy.min(self.values)
 
-        if rmax - rmin < STABILITY_CONST:
+        if rmax - rmin < self.STABILITY_CONST:
             # In this case there is  a single unique value to quantize
 
             # is is_signed is True, we need to set the offset back to 0.
@@ -56,7 +89,7 @@ class QuantizedArray:
             # Since zero points need to be integers, if this value is a small float (ex: 0.01)
             # it will be quantized to 0 with a 0 zero-point, thus becoming useless in multiplication
 
-            if numpy.abs(rmax) < STABILITY_CONST:
+            if numpy.abs(rmax) < self.STABILITY_CONST:
                 # If the value is a 0 we cannot do it since the scale would become 0 as well
                 # resulting in division by 0
                 scale = 1
@@ -138,5 +171,7 @@ class QuantizedArray:
         Returns:
             numpy.ndarray: Dequantized values.
         """
-        self.values = self.scale * (self.qvalues - self.zero_point)
+        # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/721
+        # remove this + (-x) when the above issue is done
+        self.values = self.scale * (self.qvalues + -(self.zero_point))
         return self.values

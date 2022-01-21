@@ -75,7 +75,8 @@ class QuantizedLinear:
         # [WORKAROUND #995] numpy.sum can't be currently done in our framework
         # sum_input = self.q_weights.zero_point * numpy.sum(q_input.qvalues, axis=1, keepdims=True)
         # Hack because we can't do numpy.sum(axis...,keepdims...)
-        const_ones = numpy.ones(shape=(q_input.n_features, 1), dtype=int)
+        n_features = 1 if len(q_input.qvalues.shape) <= 1 else q_input.qvalues.shape[1]
+        const_ones = numpy.ones(shape=(n_features, 1), dtype=int)
         sum_input = self.q_weights.zero_point * (q_input.qvalues @ const_ones)
 
         # Last part that has to be done in FHE the rest must go in a PBS.
