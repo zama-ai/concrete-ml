@@ -103,7 +103,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_licenses check_mdformat
+PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal

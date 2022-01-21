@@ -16,14 +16,37 @@ function nbqa_ize()
         OPTIONS="$OPTIONS --check"
     fi
 
-    # TODO: add pylint, flake8, mypy, pydocstyle
-    # #141, #142, #143, #144
+    set -x
+
+    # Tools which may change or check the notebooks
     poetry run nbqa isort "${NB}" ${OPTIONS} -l 100 --profile black
     poetry run nbqa black "${NB}" ${OPTIONS} -l 100
 
-    # Ignore E402 module level import not at top of file, because it fails with %matplotlib inline
-    poetry run nbqa flake8 "${NB}" --max-line-length 100 --per-file-ignores="__init__.py:F401" --ignore=E402
+    # Tools which just checks the notebooks
+    if [ ${CHECK} -eq 1 ]
+    then
+        # Ignore E402 module level import not at top of file, because it fails with %matplotlib inline
+        poetry run nbqa flake8 "${NB}" --max-line-length 100 --per-file-ignores="__init__.py:F401" --ignore=E402
 
+        # With some ignored errors, since we don't care:
+        #       that the notebook filename is capitalized (invalid-name)
+        #       that there are no docstring for the file since we have '\# comments' in
+        #           the noteook (missing-module-docstring)
+        #       that imports are done in a certain order to be more readable, or in sync with
+        #           '\# comments' (wrong-import-position, ungrouped-imports, wrong-import-order)
+        #       that the functions are not docstringed (missing-function-docstring)
+        #       that the classes are not docstringed (missing-class-docstring)
+        #       that some variable names are reused (redefined-outer-name)
+        #
+        # Also, --extension-pkg-whitelist=numpy is because of https://github.com/PyCQA/pylint/issues/1975
+        poetry run nbqa pylint "${NB}" --rcfile=pylintrc --disable=invalid-name \
+                --disable=missing-module-docstring --disable=missing-class-docstring \
+                --disable=missing-function-docstring \
+                --disable=wrong-import-position --disable=ungrouped-imports --disable=wrong-import-order\
+                --extension-pkg-whitelist=numpy --disable=redefined-outer-name
+    fi
+
+    set +x
 }
 
 WHAT_TO_DO="all"
@@ -56,7 +79,7 @@ done
 
 if [ "$WHAT_TO_DO" == "all" ]
 then
-    LIST_OF_NOTEBOOKS=$(find docs -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_subtoolpoints")
+    LIST_OF_NOTEBOOKS=$(find docs -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_subtoolpoints" | grep -v "ipynb_checkpoints")
 
     for NOTEBOOK in ${LIST_OF_NOTEBOOKS}
     do
