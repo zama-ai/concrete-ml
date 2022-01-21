@@ -399,10 +399,12 @@ docker_publish_measurements: docker_rebuild
 .PHONY: nbqa_one # Call nbqa on a single notebook
 nbqa_one:
 	./script/make_utils/nbqa.sh --notebook "$${NOTEBOOK}"
+	"$(MAKE)" finalize_nb
 
 .PHONY: nbqa # Call nbqa on all notebooks
 nbqa:
 	./script/make_utils/nbqa.sh --all_notebooks
+	"$(MAKE)" finalize_nb
 
 .PHONY: check_nbqa_one # Check with nbqa a single notebook
 check_nbqa_one:
