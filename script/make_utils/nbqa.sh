@@ -21,6 +21,9 @@ function nbqa_ize()
     poetry run nbqa isort "${NB}" ${OPTIONS} -l 100 --profile black
     poetry run nbqa black "${NB}" ${OPTIONS} -l 100
 
+    # Ignore E402 module level import not at top of file, because it fails with %matplotlib inline
+    poetry run nbqa flake8 "${NB}" --max-line-length 100 --per-file-ignores="__init__.py:F401" --ignore=E402
+
 }
 
 WHAT_TO_DO="all"
