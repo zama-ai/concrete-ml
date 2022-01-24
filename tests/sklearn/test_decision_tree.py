@@ -10,7 +10,9 @@ from concrete.ml.sklearn import DecisionTreeClassifier
     "load_data",
     [load_breast_cancer],
 )
-def test_decision_tree_classifier(load_data, default_compilation_configuration):
+def test_decision_tree_classifier(
+    load_data, default_compilation_configuration, check_is_good_execution_for_quantized_models
+):
     """Tests the sklearn DecisionTreeClassifier."""
     # Get the sklearn model
     x, y = load_data(return_X_y=True)
@@ -32,8 +34,5 @@ def test_decision_tree_classifier(load_data, default_compilation_configuration):
     # Test compilation
     model.compile(x, default_compilation_configuration)
 
-    # Predict in FHE for the first 5 examples
-    y_pred_fhe = model.predict(x[:5], use_fhe=True)
-
-    # Check that the predictions are correct using FHE
-    assert numpy.array_equal(y_pred_fhe, y_pred[:5])
+    # Compare FHE vs non-FHE
+    check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)

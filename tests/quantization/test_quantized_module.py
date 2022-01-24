@@ -80,10 +80,7 @@ N_BITS_ATOL_TUPLE_LIST = [
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
 )
-@pytest.mark.parametrize(
-    "is_signed",
-    [pytest.param([False, True])],
-)
+@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
 def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torch):
     """Test the quantized module with a post-training static quantization.
 

@@ -168,6 +168,24 @@ def seed_torch():
     return function_to_seed_torch
 
 
+def check_is_good_execution_for_quantized_models_impl(
+    x: numpy.ndarray,
+    model_predict: Callable,
+):
+    """Run several times the check model.predict(x, use_fhe=True)==model.predict(x, use_fhe=False).
+    If always wrong, return an error."""
+    nb_tries = 10
+    y_pred = model_predict(x)
+    for _ in range(nb_tries):
+        y_pred_fhe = model_predict(x, use_fhe=True)
+        if numpy.array_equal(y_pred, y_pred_fhe):
+            return
+    raise AssertionError(
+        f"bad computation after {nb_tries} tries.\nLast engine result:\n{y_pred_fhe}\n"
+        f"Function result:\n{y_pred}"
+    )
+
+
 def check_is_good_execution_impl(
     fhe_circuit: FHECircuit,
     function: Callable,
@@ -234,8 +252,14 @@ def check_is_good_execution_impl(
 
 
 @pytest.fixture
+def check_is_good_execution_for_quantized_models():
+    """Fixture to check model FHE execution."""
+    return check_is_good_execution_for_quantized_models_impl
+
+
+@pytest.fixture
 def check_is_good_execution():
-    """Fixture to seed torch"""
+    """Fixture to check if good FHE execution."""
 
     return check_is_good_execution_impl
 
