@@ -343,6 +343,6 @@ def check_r2_score():
 
     def check_r2_score_impl(expected, actual):
         r_square = r2_score(expected.ravel(), actual.ravel())
-        assert r_square >= 0.99, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
+        assert r_square >= 0.98, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
 
     return check_r2_score_impl

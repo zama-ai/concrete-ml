@@ -573,3 +573,15 @@ class QuantizedLinear(QuantizedGemm):
     ) -> None:
         constant_inputs = {"b": q_weights} if q_bias is None else {"b": q_weights, "c": q_bias}
         super().__init__(n_bits, constant_inputs=constant_inputs)
+
+
+class QuantizedIdentity(QuantizedOp):
+    """Quantized Identity op."""
+
+    _impl_for_op_named: str = "Identity"
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        assert_true(len(q_inputs) == 1, "Identity does not work with multiple QuantizedArray")
+        self.output_scale = q_inputs[0].scale
+        self.output_zero_point = q_inputs[0].zero_point
+        return super().q_impl(*q_inputs, **attrs)

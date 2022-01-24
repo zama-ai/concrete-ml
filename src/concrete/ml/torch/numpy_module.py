@@ -3,10 +3,11 @@ from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy
+import onnx
 import torch
 from torch import nn
 
-from ..onnx.convert import get_equivalent_numpy_forward_and_onnx_model
+from ..onnx.convert import get_equivalent_numpy_forward, get_equivalent_numpy_forward_and_onnx_model
 
 
 class NumpyModule:
@@ -23,13 +24,28 @@ class NumpyModule:
 
     def __init__(
         self,
-        torch_model: nn.Module,
-        dummy_input: Union[torch.Tensor, Tuple[torch.Tensor, ...]],
+        model: Union[nn.Module, onnx.ModelProto],
+        dummy_input: Optional[Union[torch.Tensor, Tuple[torch.Tensor, ...]]] = None,
         debug_onnx_output_file_path: Optional[Union[Path, str]] = None,
     ):
-        self.numpy_forward, self.onnx_model = get_equivalent_numpy_forward_and_onnx_model(
-            torch_model, dummy_input, debug_onnx_output_file_path
-        )
+        if isinstance(model, nn.Module):
+
+            # mypy
+            assert (
+                dummy_input is not None
+            ), "dummy_input must be provided if model is a torch.nn.Module"
+
+            self.numpy_forward, self.onnx_model = get_equivalent_numpy_forward_and_onnx_model(
+                model, dummy_input, debug_onnx_output_file_path
+            )
+
+        elif isinstance(model, onnx.ModelProto):
+            self.onnx_model = model
+            self.numpy_forward = get_equivalent_numpy_forward(model)
+        else:
+            raise ValueError(
+                f"model must be a torch.nn.Module or an onnx.ModelProto, got {type(model).__name__}"
+            )
 
     def __call__(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         return self.forward(*args)

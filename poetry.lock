@@ -547,7 +547,7 @@ tests = ["flake8", "pytest", "coverage", "pre-commit"]
 type = "git"
 url = "https://github.com/zama-ai/hummingbird.git"
 reference = "dev"
-resolved_reference = "6504e989ef84bec0f8c0f74ca84892d77c42d23f"
+resolved_reference = "7a4cdd284786331935d6bf209ce071dc3a367496"
 
 [[package]]
 name = "idna"

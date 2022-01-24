@@ -18,6 +18,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedExp,
     QuantizedGemm,
     QuantizedHardSigmoid,
+    QuantizedIdentity,
     QuantizedLeakyRelu,
     QuantizedLinear,
     QuantizedLog,
@@ -371,6 +372,15 @@ def test_all_gemm_ops(
     check_array_equality(actual_mm_output, actual_gemm_output)
 
 
+@pytest.mark.parametrize("n_bits", [1, 2, 3, 4, 5, 6])
+@pytest.mark.parametrize("x", [numpy.random.randn(100)])
+def test_identity_op(x, n_bits):
+    """Tests for the identity op"""
+    q_x = QuantizedArray(n_bits=n_bits, values=x)
+    qx_bis = QuantizedIdentity(n_bits)(q_x)
+    assert numpy.array_equal(qx_bis.qvalues, q_x.qvalues)
+
+
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
@@ -393,6 +403,7 @@ def test_all_ops_were_tested():
         QuantizedLog: test_univariate_ops_no_attrs,
         QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
+        QuantizedIdentity: test_identity_op,
     }
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
         "Missing tests and manual acknowledgement for: "

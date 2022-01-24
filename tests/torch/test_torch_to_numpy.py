@@ -1,6 +1,7 @@
 """Tests for the torch to numpy module."""
 from functools import partial
 
+import numpy
 import pytest
 import torch
 from torch import nn
@@ -264,3 +265,16 @@ def test_torch_to_numpy_onnx_ops(model, input_shape, check_r2_score):
     # Numpy predictions using the previous model
     numpy_predictions = numpy_fc_model(numpy_input_2)
     check_r2_score(torch_predictions, numpy_predictions)
+
+
+@pytest.mark.parametrize(
+    "incompatible_model",
+    [pytest.param("STRING")],
+)
+def test_raises_incompatible_model_type(incompatible_model):
+    """Test an incompatible model type."""
+    with pytest.raises(
+        ValueError,
+        match=("model must be a torch.nn.Module or an onnx.ModelProto, got str"),
+    ):
+        _ = NumpyModule(incompatible_model, torch.from_numpy(numpy.array([1, 2, 3])))

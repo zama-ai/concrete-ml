@@ -1,4 +1,4 @@
-"""Implement the sklearn models."""
+"""Implement the sklearn tree models."""
 from __future__ import annotations
 
 import copy
