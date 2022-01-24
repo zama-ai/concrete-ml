@@ -86,10 +86,14 @@ pylint_benchmarks:
 pylint_script:
 	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
 
-.PHONY: flake8 # Run flake8
+.PHONY: flake8 # Run flake8 (including darglint)
 flake8:
 	poetry run flake8 --max-line-length 100 --per-file-ignores="__init__.py:F401" \
-	$(SRC_DIR)/ tests/ script/ benchmarks/
+	$(SRC_DIR)/
+
+	@# --extend-ignore=DAR is because we don't want to run darglint on tests/ script/ benchmarks/
+	poetry run flake8 --extend-ignore=DAR --max-line-length 100 --per-file-ignores="__init__.py:F401" \
+	tests/ script/ benchmarks/
 
 .PHONY: python_linting # Run python linters
 python_linting: pylint flake8

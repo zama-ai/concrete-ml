@@ -25,8 +25,11 @@ function nbqa_ize()
     # Tools which just checks the notebooks
     if [ ${CHECK} -eq 1 ]
     then
-        # Ignore E402 module level import not at top of file, because it fails with %matplotlib inline
-        poetry run nbqa flake8 "${NB}" --max-line-length 100 --per-file-ignores="__init__.py:F401" --ignore=E402
+        # Ignore E402 module level import not at top of file, because it fails with
+        #       %matplotlib inline
+        # --extend-ignore=DAR is because we don't want to run darglint
+        poetry run nbqa flake8 "${NB}" --max-line-length 100 --per-file-ignores="__init__.py:F401" \
+            --ignore=E402 --extend-ignore=DAR
 
         # With some ignored errors, since we don't care:
         #       that the notebook filename is capitalized (invalid-name)
@@ -38,11 +41,13 @@ function nbqa_ize()
         #       that the classes are not docstringed (missing-class-docstring)
         #       that some variable names are reused (redefined-outer-name)
         #
-        # Also, --extension-pkg-whitelist=numpy is because of https://github.com/PyCQA/pylint/issues/1975
+        # Also, --extension-pkg-whitelist=numpy is because of
+        #       https://github.com/PyCQA/pylint/issues/1975
         poetry run nbqa pylint "${NB}" --rcfile=pylintrc --disable=invalid-name \
                 --disable=missing-module-docstring --disable=missing-class-docstring \
                 --disable=missing-function-docstring \
-                --disable=wrong-import-position --disable=ungrouped-imports --disable=wrong-import-order\
+                --disable=wrong-import-position --disable=ungrouped-imports \
+                --disable=wrong-import-order\
                 --extension-pkg-whitelist=numpy --disable=redefined-outer-name
     fi
 
