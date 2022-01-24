@@ -47,6 +47,7 @@ class QuantizedLinear:
         Note: in standard quantization, floats are problematics as quantization
         targets a specific integer only hardware. However in FHE, we can create a table lookup
         to bypass this problem. Thus we leave the floats as is.
+
         Args:
             q_input (QuantizedArray): Quantized input.
 

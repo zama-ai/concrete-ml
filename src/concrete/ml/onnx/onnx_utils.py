@@ -85,6 +85,7 @@ def execute_onnx_with_numpy(
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
+        *inputs: The inputs of the graph.
 
     Returns:
         Tuple[numpy.ndarray]: The result of the graph's execution.

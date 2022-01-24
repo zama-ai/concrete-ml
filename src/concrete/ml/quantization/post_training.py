@@ -31,8 +31,6 @@ class PostTrainingAffineQuantization:
             is_signed:                      Whether the weights of the layers can be signed.
                                             Currently, only the weights can be signed.
 
-        Returns:
-            QuantizedModule: A quantized version of the numpy model.
         """
         self.quant_layers_dict = {}
         self.n_bits = n_bits
@@ -81,6 +79,13 @@ class PostTrainingAffineQuantization:
 
         Does a forward pass over a batch of data and compute all
         quantization parameters for activations and layers.
+
+        Args:
+            calibration_data (numpy.ndarray): FIXME
+
+        Raises:
+            ValueError: Raises an error if a layer is not implemented
+
         """
         for name, layer in self.numpy_model.torch_model.named_children():
 

@@ -34,7 +34,12 @@ class QuantizedArray:
         return self.qvalues
 
     def compute_quantization_parameters(self):
-        """Compute the quantization parameters."""
+        """Compute the quantization parameters.
+
+        Returns:
+            scale, zero_point, qvalues: FIXME
+
+        """
         # Small constant needed for stability
         rmax = numpy.max(self.values)
         rmin = numpy.min(self.values)

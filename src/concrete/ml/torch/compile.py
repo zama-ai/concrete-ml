@@ -48,8 +48,6 @@ def compile_torch_model(
         torch_model (torch.nn.Module): the model to quantize,
         torch_inputset (Union[TorchDataset, NPDataset]): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
-        function_parameters_encrypted_status (Dict[str, Union[str, EncryptedStatus]]): a dict with
-            the name of the parameter and its encrypted status
         compilation_configuration (CompilationConfiguration): Configuration object to use
             during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill

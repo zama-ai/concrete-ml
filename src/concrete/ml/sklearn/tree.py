@@ -41,7 +41,24 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         ccp_alpha=0.0,
         n_bits: int = 6,
     ):
-        """Initialize the DecisionTreeClassifier."""
+        """Initialize the DecisionTreeClassifier.
+
+        Args:
+            criterion: FIXME
+            splitter: FIXME
+            max_depth: FIXME
+            min_samples_split: FIXME
+            min_samples_leaf: FIXME
+            min_weight_fraction_leaf: FIXME
+            max_features: FIXME
+            random_state: FIXME
+            max_leaf_nodes: FIXME
+            min_impurity_decrease: FIXME
+            class_weight: FIXME
+            ccp_alpha: FIXME
+            n_bits: FIXME
+
+        """
         super().__init__(
             criterion=criterion,
             splitter=splitter,
@@ -69,6 +86,8 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         Args:
             X (numpy.ndarray): The input data.
             y (numpy.ndarray): The target data.
+            *args: args for super().fit
+            **kwargs: kwargs for super().fit
         """
         # Deepcopy X as we don't want to alterate original values.
         X = copy.deepcopy(X)
@@ -95,6 +114,8 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         Args:
             X (numpy.ndarray): The input data.
             y (numpy.ndarray): The target data.
+            *args: args for super().fit
+            **kwargs: kwargs for super().fit
 
         Returns:
             Tuple[DecisionTreeClassifier, tree.DecisionTreeClassifier]:
@@ -110,7 +131,17 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
     def predict(
         self, X: numpy.ndarray, check_input: bool = True, use_fhe: bool = False
     ) -> numpy.ndarray:
-        """Predict using with sklearn."""
+        """Predict using with sklearn.
+
+        Args:
+            X (numpy.ndarray): the input data
+            check_input(bool): whether to check the input
+            use_fhe(bool): FIXME
+
+        Returns:
+            the prediction
+
+        """
         # Quantize the input
         X = self.quantize_input(X)
 
@@ -154,7 +185,14 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         return y_pred
 
     def quantize_input(self, X: numpy.ndarray):
-        """Quantize the input."""
+        """Quantize the input.
+
+        Args:
+            X (numpy.ndarray): the input
+
+        Returns:
+            the quantized input
+        """
         # Deepcopy to not alter X
         X = copy.deepcopy(X)
 
@@ -170,7 +208,17 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
     ):
-        """Compile the model."""
+        """Compile the model.
+
+        Args:
+            X (numpy.ndarray): the unquantized dataset
+            compilation_configuration (Optional[CompilationConfiguration]): the options for
+                compilation
+            compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
+                during compilation
+            show_mlir (bool): whether or not to show MLIR during the compilation
+
+        """
         # Make sure that self.tree_predict is not None
         assert_true(
             self._tensor_tree_predict is not None, "You must fit the model before compiling it."

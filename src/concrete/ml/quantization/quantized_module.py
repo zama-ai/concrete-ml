@@ -104,7 +104,7 @@ class QuantizedModule:
                                                                             compilation
             compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
                                                                     compilation
-            show_mlir (bool, optional): if set, the MLIR produced by the converter and which is
+            show_mlir (bool): if set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
                 or demo. Defaults to False.
 

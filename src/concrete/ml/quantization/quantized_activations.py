@@ -19,14 +19,22 @@ class QuantizedActivation(ABC):
 
     @abstractmethod
     def __call__(self, q_input: QuantizedArray) -> QuantizedArray:
-        """Execute the forward pass."""
+        """Execute the forward pass.
+
+        Args:
+            q_input (QuantizedArray): The data on which to apply the forward
+
+        Returns:
+            QuantizedArray: Processed input.
+        """
 
     @abstractmethod
     def calibrate(self, x: numpy.ndarray) -> None:
         """Create corresponding QuantizedArray for the output of the activation function.
 
         Args:
-            x (numpy.ndarray): Inputs.
+            x (numpy.ndarray): Input.
+
         """
 
     @staticmethod
@@ -47,7 +55,7 @@ class QuantizedActivation(ABC):
         """Quantize the output of the activation function.
 
         Args:
-            q_out (numpy.ndarray): Output of the activation function.
+            qoutput_activation (numpy.ndarray): Output of the activation function.
 
         Returns:
             QuantizedArray: Quantized output.

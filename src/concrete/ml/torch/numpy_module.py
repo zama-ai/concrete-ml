@@ -31,7 +31,12 @@ class NumpyModule:
         self.convert_to_numpy()
 
     def check_compatibility(self):
-        """Check the compatibility of all layers in the torch model."""
+        """Check the compatibility of all layers in the torch model.
+
+        Raises:
+            ValueError: Raises an error if a layer is not implemented
+
+        """
 
         for _, layer in self.torch_model.named_children():
             if (layer_type := type(layer)) not in self.IMPLEMENTED_MODULES:
@@ -40,7 +45,6 @@ class NumpyModule:
                     f"Please stick to the available torch modules: "
                     f"{', '.join(sorted(module.__name__ for module in self.IMPLEMENTED_MODULES))}."
                 )
-        return True
 
     def convert_to_numpy(self):
         """Transform all parameters from torch tensor to numpy arrays."""
@@ -50,8 +54,15 @@ class NumpyModule:
             params = weights.detach().numpy()
             self.numpy_module_dict[name] = params.T if "weight" in name else params
 
-    def __call__(self, x: numpy.ndarray):
-        """Return the function to be compiled."""
+    def __call__(self, x: numpy.ndarray) -> numpy.ndarray:
+        """Apply the forward pass.
+
+        Args:
+            x (numpy.ndarray): The data on which to apply the forward
+
+        Returns:
+            numpy.array: Processed input.
+        """
         return self.forward(x)
 
     def forward(self, x: numpy.ndarray) -> numpy.ndarray:
@@ -106,6 +117,9 @@ class NewNumpyModule:
 
     def forward(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Apply a forward pass on args with the equivalent numpy function only.
+
+        Args:
+            *args: the inputs of the forward function
 
         Returns:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: result of the forward on the given

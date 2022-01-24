@@ -59,6 +59,9 @@ def numpy_constant(**kwargs):
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Constant-13
 
+    Args:
+        **kwargs: keyword arguments
+
     Returns:
         Any: The stored constant.
     """
@@ -91,18 +94,18 @@ def numpy_gemm(
             if transA is non-zero.
         b (numpy.ndarray): Input tensor B. The shape of B should be (K, N) if transB is 0, or (N, K)
             if transB is non-zero.
-        c (Optional[numpy.ndarray], optional): Optional input tensor C. If not specified, the
+        c (Optional[numpy.ndarray]): Optional input tensor C. If not specified, the
             computation is done as if C is a scalar 0. The shape of C should be unidirectional
             broadcastable to (M, N).
             Defaults to None.
-        alpha (float, optional): Scalar multiplier for the product of input tensors A * B.
+        alpha (float): Scalar multiplier for the product of input tensors A * B.
             Defaults to 1.0.
-        beta (float, optional): Scalar multiplier for input tensor C.
+        beta (float): Scalar multiplier for input tensor C.
             Defaults to 1.0.
-        transA (int, optional): Whether A should be transposed. The type is kept as int as it's the
+        transA (int): Whether A should be transposed. The type is kept as int as it's the
             type used by ONNX and it can easily be interpreted by python as a boolean.
             Defaults to 0.
-        transB (int, optional): Whether B should be transposed. The type is kept as int as it's the
+        transB (int): Whether B should be transposed. The type is kept as int as it's the
             type used by ONNX and it can easily be interpreted by python as a boolean.
             Defaults to 0.
 
