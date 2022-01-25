@@ -269,14 +269,16 @@ upgrade_py_deps:
 
 .PHONY: pytest_codeblocks # Test code blocks using pytest in the documentation
 pytest_codeblocks:
-	find . -type f -name "*.md" -not -path "./.venv/*" | \
+	@# grep -v "^\./\." is to avoid files in .hidden_directories
+	find . -type f -name "*.md" | grep -v "^\./\." | \
 	xargs poetry run pytest --codeblocks -svv -n $$(./script/make_utils/ncpus.sh) \
 	--randomly-dont-reorganize
 
 # From https://stackoverflow.com/a/63523300 for the find command
 .PHONY: shell_lint # Lint all bash scripts
 shell_lint:
-	find . -type f -name "*.sh" -not -path "./.venv/*" | \
+	@# grep -v "^\./\." is to avoid files in .hidden_directories
+	find . -type f -name "*.sh" | grep -v "^\./\." | \
 	xargs shellcheck
 
 .PHONY: set_version_no_commit # Dry run for set_version
@@ -378,12 +380,14 @@ clean_local_git:
 .PHONY: mdformat # Apply markdown formatting
 # Remark we need to remove .md's in venv
 mdformat:
-	find . -name "*.md"  -not -path "./.venv/*" | xargs poetry run mdformat
+	@# grep -v "^\./\." is to avoid files in .hidden_directories
+	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat
 
 .PHONY: check_mdformat # Check markdown format
 # Remark we need to remove .md's in venv
 check_mdformat:
-	find . -name "*.md"  -not -path "./.venv/*" | xargs poetry run mdformat --check
+	@# grep -v "^\./\." is to avoid files in .hidden_directories
+	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat --check
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:
