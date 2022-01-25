@@ -8,6 +8,7 @@ set -e
 function nbqa_ize()
 {
     NB="$1"
+    PYLINT_EXTRA_OPTIONS="$2"
 
     OPTIONS=""
 
@@ -15,8 +16,6 @@ function nbqa_ize()
     then
         OPTIONS="$OPTIONS --check"
     fi
-
-    set -x
 
     # Tools which may change or check the notebooks
     poetry run nbqa isort "${NB}" ${OPTIONS} -l 100 --profile black
@@ -48,10 +47,9 @@ function nbqa_ize()
                 --disable=missing-function-docstring \
                 --disable=wrong-import-position --disable=ungrouped-imports \
                 --disable=wrong-import-order\
-                --extension-pkg-whitelist=numpy --disable=redefined-outer-name
+                --extension-pkg-whitelist=numpy --disable=redefined-outer-name \
+                $PYLINT_EXTRA_OPTIONS
     fi
-
-    set +x
 }
 
 WHAT_TO_DO="all"
@@ -84,18 +82,18 @@ done
 
 if [ "$WHAT_TO_DO" == "all" ]
 then
-    LIST_OF_NOTEBOOKS=$(find docs -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_subtoolpoints" | grep -v "ipynb_checkpoints")
+    echo "Running nbqa on docs"
 
-    for NOTEBOOK in ${LIST_OF_NOTEBOOKS}
-    do
-        echo "Running ${NOTEBOOK}"
-        nbqa_ize "${NOTEBOOK}"
-    done
+    # We disable code-duplication check since we don't care that some tutorials share some code, we
+    # want them to be as self-contained as possible
+    PYLINT_EXTRA_OPTIONS="--disable duplicate-code"
+    nbqa_ize docs "${PYLINT_EXTRA_OPTIONS}"
 
 elif [ "$WHAT_TO_DO" == "one" ]
 then
-    echo "Running ${NOTEBOOK}"
-    nbqa_ize "${NOTEBOOK}"
+    echo "Running nbqa on ${NOTEBOOK}"
+    PYLINT_EXTRA_OPTIONS=""
+    nbqa_ize "${NOTEBOOK}" "${PYLINT_EXTRA_OPTIONS}"
 fi
 
 
