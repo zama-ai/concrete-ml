@@ -4,8 +4,6 @@ from typing import Any, Dict
 import numpy as np
 import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION
-from concrete.quantization import QuantizedArray, QuantizedLinear, QuantizedModule
-from concrete.quantization.quantized_activations import QuantizedActivation
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA
@@ -20,6 +18,9 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 from tqdm import tqdm
+
+from concrete.ml.quantization import QuantizedArray, QuantizedLinear, QuantizedModule
+from concrete.ml.quantization.quantized_activations import QuantizedActivation
 
 
 class QuantizedExp(QuantizedActivation):

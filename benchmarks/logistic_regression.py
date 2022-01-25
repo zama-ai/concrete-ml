@@ -4,12 +4,18 @@ from typing import Any, Dict
 import numpy as np
 import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION
-from concrete.quantization import QuantizedArray, QuantizedLinear, QuantizedModule, QuantizedSigmoid
 from numpy.random import RandomState
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+
+from concrete.ml.quantization import (
+    QuantizedArray,
+    QuantizedLinear,
+    QuantizedModule,
+    QuantizedSigmoid,
+)
 
 
 class QuantizedLogisticRegression(QuantizedModule):

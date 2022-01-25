@@ -4,12 +4,13 @@ from typing import Any, Dict
 import numpy as np
 import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION
-from concrete.quantization import QuantizedArray, QuantizedLinear, QuantizedModule
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
+
+from concrete.ml.quantization import QuantizedArray, QuantizedLinear, QuantizedModule
 
 
 class QuantizedLinearRegression(QuantizedModule):
