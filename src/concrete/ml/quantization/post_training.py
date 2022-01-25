@@ -81,7 +81,9 @@ class PostTrainingAffineQuantization:
         quantization parameters for activations and layers.
 
         Args:
-            calibration_data (numpy.ndarray): FIXME
+            calibration_data (numpy.ndarray):   Data that will be used to compute the bounds,
+                                                scales and zero point values for every quantized
+                                                object.
 
         Raises:
             ValueError: Raises an error if a layer is not implemented

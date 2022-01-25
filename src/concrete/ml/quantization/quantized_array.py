@@ -1,6 +1,6 @@
 """Quantization utilities for a numpy array/tensor."""
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy
 
@@ -33,12 +33,13 @@ class QuantizedArray:
     def __call__(self) -> Optional[numpy.ndarray]:
         return self.qvalues
 
-    def compute_quantization_parameters(self):
+    def compute_quantization_parameters(self) -> Tuple[float, int, numpy.ndarray]:
         """Compute the quantization parameters.
 
         Returns:
-            scale, zero_point, qvalues: FIXME
-
+            scale (float): The quantization scale.
+            zero_point (int): The quantization zero point.
+            qvalues (numpy.ndarray): The quantized values.
         """
         # Small constant needed for stability
         rmax = numpy.max(self.values)
