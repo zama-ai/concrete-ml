@@ -58,13 +58,14 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     jq \
     make \
     pandoc \
+    openssl \
     shellcheck && \
     ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry"
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
-    brew install curl git graphviz jq make pandoc shellcheck
+    brew install curl git graphviz jq make pandoc shellcheck openssl
     python3 -m pip install -U pip
     python3 -m pip install poetry
 
