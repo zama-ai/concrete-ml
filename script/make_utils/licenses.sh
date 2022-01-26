@@ -13,6 +13,7 @@ DO_USER_LICENSES=1
 DO_DEV_LICENSES=0
 
 OUTPUT_DIRECTORY="${LICENSE_DIRECTORY}"
+DO_FORCE_UPDATE=0
 
 while [ -n "$1" ]
 do
@@ -20,6 +21,10 @@ do
         "--check" )
             CHECK=1
             OUTPUT_DIRECTORY=$(mktemp -d)
+            ;;
+
+        "--force_update" )
+            DO_FORCE_UPDATE=1
             ;;
 
         *)
@@ -53,6 +58,19 @@ then
     LICENSES_FILENAME="${LICENSE_DIRECTORY}/${FILENAME}"
     NEW_LICENSES_FILENAME="${OUTPUT_DIRECTORY}/${FILENAME}"
 
+    # If the dependencies have not changed, don't do anything
+    MD5_OLD_DEPENDENCIES=$(cat ${LICENSES_FILENAME}.md5)
+    MD5_NEW_DEPENDENCIES=$(openssl md5 poetry.lock)
+
+    echo "MD5 of the poetry.lock for which dependencies have been listed: ${MD5_OLD_DEPENDENCIES}"
+    echo "MD5 of the current poetry.lock:                                 ${MD5_NEW_DEPENDENCIES}"
+
+    if [ "${MD5_OLD_DEPENDENCIES}" == "${MD5_NEW_DEPENDENCIES}" ] && [ ${DO_FORCE_UPDATE} -ne 1 ]
+    then
+        echo "The lock file hasn't changed, early exit"
+        exit 0
+    fi
+
     rm -rf $TMP_VENV_PATH/tmp_venv
     python3 -m venv $TMP_VENV_PATH/tmp_venv
 
@@ -81,6 +99,9 @@ then
         echo "$DIFF_TOOL $LICENSES_FILENAME ${NEW_LICENSES_FILENAME}"
         $DIFF_TOOL "$LICENSES_FILENAME" "${NEW_LICENSES_FILENAME}"
         echo "Success: no update in $LICENSES_FILENAME"
+    else
+        # Update the .md5 files
+        openssl md5 poetry.lock > ${LICENSES_FILENAME}.md5
     fi
 fi
 
@@ -88,6 +109,8 @@ if [ $DO_DEV_LICENSES -eq 1 ]
 then
     # Licenses for developer (install in a temporary venv)
     echo "Doing licenses for developper"
+    echo "Warning: contrarily to the user licences, there is currently no early abort if "
+    echo "poetry.lock hasn't changed (in the dev licences). Please update"
 
     FILENAME="${BASENAME}_${OS}_dev.txt"
     LICENSES_FILENAME="${LICENSE_DIRECTORY}/${FILENAME}"
