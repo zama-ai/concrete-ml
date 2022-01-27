@@ -119,3 +119,27 @@ class QuantizedReLU6(QuantizedActivation):
 
         q_out = self.quant_output(quant_relu6)
         return q_out
+
+
+class QuantizedTanh(QuantizedActivation):
+    """Quantized Tanh activation function."""
+
+    def calibrate(self, x: numpy.ndarray):
+
+        self.q_out = QuantizedArray(self.n_bits, numpy.tanh(x))
+
+    def __call__(self, q_input: QuantizedArray) -> QuantizedArray:
+        """Process the forward pass of the quantized Tanh.
+
+        Args:
+            q_input (QuantizedArray): Quantized input.
+
+        Returns:
+            q_out (QuantizedArray): Quantized output.
+        """
+
+        quant_tanh = self.dequant_input(q_input)
+        quant_tanh = numpy.tanh(quant_tanh)
+
+        q_out = self.quant_output(quant_tanh)
+        return q_out

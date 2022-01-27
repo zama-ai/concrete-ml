@@ -183,6 +183,13 @@ class QuantizedClip(QuantizedOp):
         super().__init__("Clip", n_bits, **attrs)
 
 
+class QuantizedTanh(QuantizedOp):
+    """Quantized Tanh op."""
+
+    def __init__(self, n_bits: int) -> None:
+        super().__init__("Tanh", n_bits)
+
+
 assert_true(
     ALL_QUANTIZED_OPS == OPS_W_ATTRIBUTES.union(OPS_WO_ATTRIBUTES),
     "Error while checking ops divided according to having attributes",

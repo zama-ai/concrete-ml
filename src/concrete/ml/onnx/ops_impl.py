@@ -171,3 +171,17 @@ def numpy_sigmoid(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
     return (1.0 / (1.0 + numpy.exp(-x)),)
+
+
+def numpy_tanh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute tanh in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#tanh-6
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.tanh(x),)

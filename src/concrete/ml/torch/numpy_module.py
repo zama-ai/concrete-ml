@@ -6,13 +6,14 @@ import numpy
 import torch
 from torch import nn
 
+from ..common.debugging import assert_not_reached
 from ..onnx.convert import get_equivalent_numpy_forward
 
 
 class NumpyModule:
     """General interface to transform a torch.nn.Module to numpy module."""
 
-    IMPLEMENTED_MODULES = {nn.Linear, nn.Sigmoid, nn.ReLU6}
+    IMPLEMENTED_MODULES = {nn.Linear, nn.Sigmoid, nn.ReLU6, nn.Tanh}
 
     def __init__(self, torch_model: nn.Module):
         """Initialize our numpy module.
@@ -87,6 +88,10 @@ class NumpyModule:
                 x = 1 / (1 + numpy.exp(-x))
             elif isinstance(layer, nn.ReLU6):
                 x = numpy.minimum(numpy.maximum(0, x), 6)
+            elif isinstance(layer, nn.Tanh):
+                x = numpy.tanh(x)
+            else:
+                assert_not_reached("missing activation")  # pragma: no cover
         return x
 
 

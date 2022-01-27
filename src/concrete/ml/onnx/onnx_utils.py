@@ -36,6 +36,7 @@ from .ops_impl import (
     numpy_matmul,
     numpy_relu,
     numpy_sigmoid,
+    numpy_tanh,
 )
 
 ATTR_TYPES = dict(onnx.AttributeProto.AttributeType.items())
@@ -61,6 +62,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Gemm": numpy_gemm,
     "Relu": numpy_relu,
     "Sigmoid": numpy_sigmoid,
+    "Tanh": numpy_tanh,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

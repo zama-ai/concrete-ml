@@ -34,6 +34,7 @@ class FC(nn.Module):
     [
         pytest.param(nn.Sigmoid, id="sigmoid"),
         pytest.param(nn.ReLU6, id="relu"),
+        pytest.param(nn.Tanh, id="tanh"),
     ],
 )
 @pytest.mark.parametrize(
