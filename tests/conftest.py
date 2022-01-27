@@ -172,12 +172,14 @@ def check_is_good_execution_for_quantized_models_impl(
     x: numpy.ndarray,
     model_predict: Callable,
 ):
-    """Run several times the check model.predict(x, use_fhe=True)==model.predict(x, use_fhe=False).
+    """Run several times the check
+    model.predict(x, execute_in_fhe=True)==model.predict(x, execute_in_fhe=False).
     If always wrong, return an error."""
+
     nb_tries = 10
     y_pred = model_predict(x)
     for _ in range(nb_tries):
-        y_pred_fhe = model_predict(x, use_fhe=True)
+        y_pred_fhe = model_predict(x, execute_in_fhe=True)
         if numpy.array_equal(y_pred, y_pred_fhe):
             return
     raise AssertionError(

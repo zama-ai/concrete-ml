@@ -6,10 +6,10 @@ from typing import Optional, Tuple
 
 import concrete.numpy as hnp
 import numpy
+import sklearn
 from concrete.common.compilation.artifacts import CompilationArtifacts
 from concrete.common.compilation.configuration import CompilationConfiguration
 from concrete.common.fhe_circuit import FHECircuit
-from sklearn import tree
 
 from ..common.debugging.custom_assert import assert_true
 from ..quantization.quantized_array import QuantizedArray
@@ -18,7 +18,7 @@ from ._tree_to_tensors import tree_to_numpy
 
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name
-class DecisionTreeClassifier(tree.DecisionTreeClassifier):
+class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
     """Implements the sklearn DecisionTreeClassifier."""
 
     q_x_byfeatures: list
@@ -193,6 +193,21 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         self._tensor_tree_predict = None
         self.fhe_tree = None
 
+        self.init_args = {
+            "criterion": criterion,
+            "splitter": splitter,
+            "max_depth": max_depth,
+            "min_samples_split": min_samples_split,
+            "min_samples_leaf": min_samples_leaf,
+            "min_weight_fraction_leaf": min_weight_fraction_leaf,
+            "max_features": max_features,
+            "max_leaf_nodes": max_leaf_nodes,
+            "class_weight": class_weight,
+            "random_state": random_state,
+            "min_impurity_decrease": min_impurity_decrease,
+            "ccp_alpha": ccp_alpha,
+        }
+
     # pylint: enable=too-many-arguments
 
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs):
@@ -207,7 +222,8 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
         # Deepcopy X as we don't want to alterate original values.
         X = copy.deepcopy(X)
         # Check that there are only 2 classes
-        assert_true(len(set(y)) == 2, "Only 2 classes are supported currently.")
+        all_classes = numpy.unique(numpy.asarray(y).flatten())
+        assert_true(len(all_classes) == 2, "Only 2 classes are supported currently.")
         self.q_x_byfeatures = []
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -223,7 +239,7 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
 
     def fit_benchmark(
         self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
-    ) -> Tuple[DecisionTreeClassifier, tree.DecisionTreeClassifier]:
+    ) -> Tuple[DecisionTreeClassifier, sklearn.tree.DecisionTreeClassifier]:
         """Fit the sklearn DecisionTreeClassifier and the FHE DecisionTreeClassifier.
 
         Args:
@@ -233,39 +249,45 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
             **kwargs: kwargs for super().fit
 
         Returns:
-            Tuple[DecisionTreeClassifier, tree.DecisionTreeClassifier]:
+            Tuple[DecisionTreeClassifier, sklearn.tree.DecisionTreeClassifier]:
                                                 The FHE and sklearn DecisionTreeClassifier.
         """
         # Train the sklearn model without X quantized
-        sklearn_model = super().fit(X, y, *args, **kwargs)
+
+        sklearn_model = sklearn.tree.DecisionTreeClassifier(**self.init_args)
+        sklearn_model.fit(X, y, *args, **kwargs)
+
         # Train the FHE model
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 
     # pylint: disable=arguments-differ
     def predict(
-        self, X: numpy.ndarray, check_input: bool = True, use_fhe: bool = False
+        self, X: numpy.ndarray, check_input: bool = True, execute_in_fhe: bool = False
     ) -> numpy.ndarray:
-        """Predict using with sklearn.
+        """Predict on user data.
+
+        Predict on user data using either the quantized clear model,
+        implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
 
         Args:
             X (numpy.ndarray): the input data
-            check_input (bool): whether to check the input
-            use_fhe (bool): whether to execute the inference in FHE
+            check_input (bool): check if the input conforms to shape and dtype constraints
+            execute_in_fhe (bool): whether to execute the inference in FHE
 
         Returns:
-            the prediction
-
+            the prediction as ordinals
         """
-        # Quantize the input
-        X = self.quantize_input(X)
 
-        if use_fhe:
+        if execute_in_fhe:
+            # Quantize the input
+            X = self.quantize_input(X)
+
             # Check that self.fhe_tree is not None
             assert_true(
                 self.fhe_tree is not None,
                 f"You must call {self.compile.__name__} "
-                f"before calling {self.predict.__name__} with use_fhe=True.",
+                f"before calling {self.predict.__name__} with execute_in_fhe=True.",
             )
             y_preds_ = []
             for i in range(X.shape[0]):
@@ -275,7 +297,9 @@ class DecisionTreeClassifier(tree.DecisionTreeClassifier):
             y_preds = numpy.array(y_preds_)
             y_preds = y_preds[:, 1]
             return y_preds
-        return super().predict(X, check_input)
+
+        X = self._validate_X_predict(X, check_input)
+        return self._predict_with_tensors(X)
 
     # pylint: enable=arguments-differ
 
