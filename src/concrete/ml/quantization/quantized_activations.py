@@ -97,6 +97,30 @@ class QuantizedSigmoid(QuantizedActivation):
         return q_out
 
 
+class QuantizedReLU(QuantizedActivation):
+    """Quantized ReLU activation function."""
+
+    def calibrate(self, x: numpy.ndarray):
+        x = numpy.maximum(0, x)
+        self.q_out = QuantizedArray(self.n_bits, x)
+
+    def __call__(self, q_input: QuantizedArray) -> QuantizedArray:
+        """Process the forward pass of the quantized ReLU.
+
+        Args:
+            q_input (QuantizedArray): Quantized input.
+
+        Returns:
+            q_out (QuantizedArray): Quantized output.
+        """
+
+        quant_relu = self.dequant_input(q_input)
+        quant_relu = numpy.maximum(0, quant_relu)
+
+        q_out = self.quant_output(quant_relu)
+        return q_out
+
+
 class QuantizedReLU6(QuantizedActivation):
     """Quantized ReLU6 activation function."""
 

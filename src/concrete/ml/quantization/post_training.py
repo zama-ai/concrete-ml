@@ -4,7 +4,7 @@ import numpy
 from torch import nn
 
 from ..torch import NumpyModule
-from .quantized_activations import QuantizedReLU6, QuantizedSigmoid, QuantizedTanh
+from .quantized_activations import QuantizedReLU, QuantizedReLU6, QuantizedSigmoid, QuantizedTanh
 from .quantized_array import QuantizedArray
 from .quantized_layers import QuantizedLinear
 from .quantized_module import QuantizedModule
@@ -116,10 +116,16 @@ class PostTrainingAffineQuantization:
                 calibration_data = self._calibrate_layers_activation(
                     name, q_sigmoid, calibration_data
                 )
+            elif isinstance(layer, nn.ReLU):
+                # Create a new quantized layer (based on type(layer))
+                q_relu = QuantizedReLU(n_bits=self.n_bits)
+                calibration_data = self._calibrate_layers_activation(name, q_relu, calibration_data)
             elif isinstance(layer, nn.ReLU6):
                 # Create a new quantized layer (based on type(layer))
-                q_relu = QuantizedReLU6(n_bits=self.n_bits)
-                calibration_data = self._calibrate_layers_activation(name, q_relu, calibration_data)
+                q_relu6 = QuantizedReLU6(n_bits=self.n_bits)
+                calibration_data = self._calibrate_layers_activation(
+                    name, q_relu6, calibration_data
+                )
             elif isinstance(layer, nn.Tanh):
                 # Create a new quantized layer (based on type(layer))
                 q_tanh = QuantizedTanh(n_bits=self.n_bits)

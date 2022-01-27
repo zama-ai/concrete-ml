@@ -33,7 +33,8 @@ class FC(nn.Module):
     "activation_function",
     [
         pytest.param(nn.Sigmoid, id="sigmoid"),
-        pytest.param(nn.ReLU6, id="relu"),
+        pytest.param(nn.ReLU, id="relu"),
+        pytest.param(nn.ReLU6, id="relu6"),
         pytest.param(nn.Tanh, id="tanh"),
     ],
 )
