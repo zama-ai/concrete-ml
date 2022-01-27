@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch import nn
 
-from concrete.ml.quantization import PostTrainingAffineQuantization, QuantizedArray
+from concrete.ml.quantization import PostTrainingAffineQuantization
 from concrete.ml.torch import NumpyModule
 
 
@@ -103,8 +103,15 @@ def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torc
     )
     quantized_model = post_training_quant.quantize_module(numpy_input)
     # Quantize input
-    q_input = QuantizedArray(n_bits, numpy_input)
-    # Forward and Dequantize to get back to real values
-    dequant_prediction = quantized_model.forward_and_dequant(q_input)
+    qinput = quantized_model.quantize_input(numpy_input)
+    prediction = quantized_model(qinput)
+    dequant_manually_prediction = quantized_model.dequantize_output(prediction)
 
+    # Forward and Dequantize to get back to real values
+    dequant_prediction = quantized_model.forward_and_dequant(qinput)
+
+    # Both dequant prediction should be equal
+    assert numpy.array_equal(dequant_manually_prediction, dequant_prediction)
+
+    # Check that the actual prediction are close to the expected predictions
     assert numpy.isclose(numpy_prediction, dequant_prediction, atol=atol).all()

@@ -104,6 +104,6 @@ class QuantizedLinear:
         # We should be able to reuse q_out quantization parameters
         # easily to get a new QuantizedArray
         q_out_ = copy.copy(self.q_out)
-        q_out_.update_qvalues(numpy_q_out)
+        q_out_.update_quantized_values(numpy_q_out)
 
         return q_out_

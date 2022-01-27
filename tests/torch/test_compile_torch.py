@@ -3,7 +3,6 @@ import numpy
 import pytest
 from torch import nn
 
-from concrete.ml.quantization import QuantizedArray
 from concrete.ml.torch.compile import compile_torch_model
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
@@ -67,9 +66,7 @@ def test_compile_torch(
     # Define the torch model
     torch_fc_model = model(input_output_feature, activation_function)
     # Create random input
-    inputset = [
-        numpy.random.uniform(-100, 100, size=input_output_feature) for _ in range(n_examples)
-    ]
+    inputset = numpy.random.uniform(-100, 100, size=(n_examples, input_output_feature))
 
     # Compile
     quantized_numpy_module = compile_torch_model(
@@ -79,19 +76,18 @@ def test_compile_torch(
         n_bits=n_bits,
     )
 
-    # Quantize inputs all at once to have meaningful scale and zero point
-    q_input = QuantizedArray(n_bits, numpy.array(inputset))
+    # Create test data from the same distribution and quantize using
+    # learned quantization parameters during compilation
+    x_test = numpy.random.uniform(-100, 100, size=(10, input_output_feature))
+    qtest = quantized_numpy_module.quantize_input(x_test)
 
     # Compare predictions between FHE and QuantizedModule
-    for x_q in q_input.qvalues:
+    for x_q in qtest:
         x_q = numpy.expand_dims(x_q, 0)
         check_is_good_execution(
             fhe_circuit=quantized_numpy_module.forward_fhe,
             function=quantized_numpy_module.forward,
             args=[x_q.astype(numpy.uint8)],
-            postprocess_output_func=lambda x: quantized_numpy_module.dequantize_output(
-                x.astype(numpy.float32)
-            ),
-            check_function=numpy.isclose,
+            check_function=numpy.array_equal,
             verbose=False,
         )

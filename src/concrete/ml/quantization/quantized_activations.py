@@ -69,7 +69,7 @@ class QuantizedActivation(ABC):
 
         # TODO find a better way to do the following (see issue #832)
         q_out = copy.copy(self.q_out)
-        q_out.update_qvalues(qoutput_activation)
+        q_out.update_quantized_values(qoutput_activation)
         return q_out
 
 

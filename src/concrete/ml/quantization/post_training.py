@@ -56,7 +56,10 @@ class PostTrainingAffineQuantization:
         # Quantize and calibrate each output layer/activation
         self._quantize_layers(calibration_data=calibration_data)
         # Create quantized module from self.quant_layers_dict
-        return QuantizedModule(self.quant_layers_dict)
+        quantized_module = QuantizedModule(self.quant_layers_dict)
+        q_input = QuantizedArray(self.n_bits, calibration_data)
+        quantized_module.q_input = q_input
+        return quantized_module
 
     def _quantize_params(self):
         """Transform all floating points parameters to integers."""

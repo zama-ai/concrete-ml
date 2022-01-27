@@ -68,7 +68,6 @@ def test_quantized_module_compilation(
     quantized_model = post_training_quant.quantize_module(numpy_input)
     # Quantize input
     q_input = QuantizedArray(n_bits, numpy_input)
-    quantized_model(q_input)
 
     # Compile
     quantized_model.compile(q_input, default_compilation_configuration)
@@ -79,9 +78,6 @@ def test_quantized_module_compilation(
             fhe_circuit=quantized_model.forward_fhe,
             function=quantized_model.forward,
             args=[x_q.astype(numpy.uint8)],
-            postprocess_output_func=lambda x: quantized_model.dequantize_output(
-                x.astype(numpy.float32)
-            ),
-            check_function=numpy.isclose,
+            check_function=numpy.array_equal,
             verbose=False,
         )

@@ -107,9 +107,9 @@ class QuantizedGLM(QuantizedModule):
         # Dequantize to have the value in clear and ready for next calibration
         return q_function(q_calibration_data).dequant()
 
-    def quantize_input(self, x):
+    def quantize_input(self, values):
         q_input_arr = deepcopy(self.q_calibration_data)
-        q_input_arr.update_values(x)
+        q_input_arr.update_values(values)
         return q_input_arr
 
 

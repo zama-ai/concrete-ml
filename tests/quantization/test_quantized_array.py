@@ -49,7 +49,7 @@ def test_quant_dequant_update(values, n_bits, is_signed, check_array_equality):
     assert new_qvalues_.shape != qvalues.shape
 
     new_qvalues = numpy.array([1, 4, 7, 29])
-    new_values_updated = quant_array.update_qvalues(new_qvalues)
+    new_values_updated = quant_array.update_quantized_values(new_qvalues)
 
     # Make sure that we can see at least one change.
     assert not numpy.array_equal(new_qvalues, new_qvalues_)

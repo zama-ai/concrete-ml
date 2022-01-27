@@ -125,7 +125,7 @@ class QuantizedArray:
 
         return scale, zero_point, qvalues
 
-    def update_values(self, values: numpy.ndarray) -> Optional[numpy.ndarray]:
+    def update_values(self, values: numpy.ndarray) -> numpy.ndarray:
         """Update values to get their corresponding qvalues using the related quantized parameters.
 
         Args:
@@ -138,7 +138,7 @@ class QuantizedArray:
         self.quant()
         return self.qvalues
 
-    def update_qvalues(self, qvalues: numpy.ndarray) -> Optional[numpy.ndarray]:
+    def update_quantized_values(self, qvalues: numpy.ndarray) -> numpy.ndarray:
         """Update qvalues to get their corresponding values using the related quantized parameters.
 
         Args:
