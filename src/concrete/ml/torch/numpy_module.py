@@ -7,7 +7,7 @@ import torch
 from torch import nn
 
 from ..common.debugging import assert_not_reached
-from ..onnx.convert import get_equivalent_numpy_forward
+from ..onnx.convert import get_equivalent_numpy_forward_and_onnx_model
 
 
 class NumpyModule:
@@ -115,7 +115,7 @@ class NewNumpyModule:
         dummy_input: Union[torch.Tensor, Tuple[torch.Tensor, ...]],
         debug_onnx_output_file_path: Optional[Union[Path, str]] = None,
     ):
-        self.numpy_forward = get_equivalent_numpy_forward(
+        self.numpy_forward, self.onnx_model = get_equivalent_numpy_forward_and_onnx_model(
             torch_model, dummy_input, debug_onnx_output_file_path
         )
 

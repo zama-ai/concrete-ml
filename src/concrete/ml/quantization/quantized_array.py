@@ -112,7 +112,7 @@ class QuantizedArray:
             zero_point = numpy.round(
                 (rmax * (-self.offset) - (rmin * (2 ** self.n_bits - 1 - self.offset)))
                 / (rmax - rmin)
-            ).astype(int)
+            ).astype(numpy.int64)
 
         # Compute quantized values and store
         qvalues = self.values / scale + zero_point
@@ -120,7 +120,7 @@ class QuantizedArray:
         qvalues = (
             numpy.rint(qvalues)
             .clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
-            .astype(int)  # Careful this can be very large with high number of bits
+            .astype(numpy.int64)  # Careful this can be very large with high number of bits
         )
 
         return scale, zero_point, qvalues
@@ -161,7 +161,7 @@ class QuantizedArray:
         self.qvalues = (
             numpy.rint(self.values / self.scale + self.zero_point)
             .clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
-            .astype(int)
+            .astype(numpy.int64)
         )
         return self.qvalues
 

@@ -12,11 +12,11 @@ from onnx import checker
 from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy
 
 
-def get_equivalent_numpy_forward(
+def get_equivalent_numpy_forward_and_onnx_model(
     torch_module: torch.nn.Module,
     dummy_input: Union[torch.Tensor, Tuple[torch.Tensor, ...]],
     output_onnx_file: Optional[Union[Path, str]] = None,
-) -> Callable[..., Tuple[numpy.ndarray, ...]]:
+) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.GraphProto]:
     """Get the numpy equivalent forward of the provided torch Module.
 
     Args:
@@ -32,8 +32,9 @@ def get_equivalent_numpy_forward(
             model to numpy.
 
     Returns:
-        Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute the equivalent
-            numpy code to the passed torch_module.
+        Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.GraphProto]: The function that will
+            execute the equivalent numpy code to the passed torch_module and the generated ONNX
+            model.
     """
 
     output_onnx_file_path = Path(
@@ -60,4 +61,7 @@ def get_equivalent_numpy_forward(
             f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
         )
 
-    return lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args)
+    return (
+        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args),
+        equivalent_onnx_model,
+    )

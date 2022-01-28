@@ -11,6 +11,7 @@ from concrete.numpy.np_fhe_compiler import NPFHECompiler
 from concrete.ml.common.debugging.custom_assert import assert_true
 
 from .quantized_array import QuantizedArray
+from .quantized_ops import QuantizedOp
 
 
 class QuantizedModule:
@@ -109,7 +110,17 @@ class QuantizedModule:
             numpy.ndarray: Dequantized values of the last layer.
         """
         last_layer = list(self.quant_layers_dict.values())[-1]
-        real_values = last_layer.q_out.update_quantized_values(qvalues)
+        real_values = (
+            QuantizedArray(
+                last_layer.n_bits,
+                qvalues,
+                value_is_float=False,
+                scale=last_layer.output_scale,
+                zero_point=last_layer.output_zero_point,
+            ).dequant()
+            if isinstance(last_layer, QuantizedOp)
+            else last_layer.q_out.update_quantized_values(qvalues)
+        )
         return real_values
 
     def compile(

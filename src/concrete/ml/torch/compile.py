@@ -60,9 +60,6 @@ def compile_torch_model(
         QuantizedModule: The resulting compiled QuantizedModule.
     """
 
-    # Create corresponding numpy model
-    numpy_model = NumpyModule(torch_model)
-
     # Torch input to numpy
     numpy_inputset_as_single_array = numpy.concatenate(
         tuple(
@@ -70,6 +67,9 @@ def compile_torch_model(
             for input_ in torch_inputset
         )
     )
+
+    # Create corresponding numpy model
+    numpy_model = NumpyModule(torch_model)
 
     # Quantize with post-training static method, to have a model with integer weights
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
