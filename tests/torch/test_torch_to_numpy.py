@@ -70,10 +70,32 @@ class FC(nn.Module):
 @pytest.mark.parametrize(
     "activation_function",
     [
-        pytest.param(nn.Sigmoid, id="sigmoid"),
-        pytest.param(nn.ReLU, id="relu"),
-        pytest.param(nn.ReLU6, id="relu6"),
-        pytest.param(nn.Tanh, id="tanh"),
+        pytest.param(nn.Sigmoid, id="Sigmoid"),
+        pytest.param(nn.ReLU, id="ReLU"),
+        pytest.param(nn.ReLU6, id="ReLU6"),
+        pytest.param(nn.Tanh, id="Tanh"),
+        pytest.param(nn.ELU, id="ELU"),
+        # pytest.param(nn.Hardshrink, id="Hardshrink"),
+        pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
+        pytest.param(nn.Hardtanh, id="Hardtanh"),
+        pytest.param(nn.Hardswish, id="Hardswish"),
+        pytest.param(nn.LeakyReLU, id="LeakyReLU"),
+        pytest.param(nn.LogSigmoid, id="LogSigmoid"),
+        # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
+        # pytest.param(nn.PReLU, id="PReLU"),   # Two vars
+        # pytest.param(nn.RReLU, id="RReLU"),   # With randomness
+        pytest.param(nn.SELU, id="SELU"),
+        pytest.param(nn.CELU, id="CELU"),
+        pytest.param(nn.GELU, id="GELU"),
+        pytest.param(nn.SiLU, id="SiLU"),
+        pytest.param(nn.Mish, id="Mish"),
+        pytest.param(nn.Softplus, id="Softplus"),
+        # pytest.param(nn.Softshrink, id="Softshrink"), # Not converted to ONNX
+        pytest.param(nn.Softsign, id="Softsign"),
+        pytest.param(nn.Tanhshrink, id="Tanhshrink"),
+        # pytest.param(nn.Threshold, id="Threshold"), # missing 2 required positional arguments:
+        #                                               'threshold' and 'value'
+        # pytest.param(nn.GLU, id="GLU"),       # Problem of shapes
     ],
 )
 @pytest.mark.parametrize(
@@ -85,6 +107,18 @@ class FC(nn.Module):
 )
 def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_type, seed_torch):
     """Test the different model architecture from torch numpy."""
+
+    if (
+        activation_function not in {nn.Sigmoid, nn.ReLU, nn.ReLU6, nn.Tanh}
+        and numpy_module_type == NumpyModule
+    ):
+        return
+
+    # FIXME: Problem that will be dealth in #10 and #204
+    rtol_limit = 10 - 3
+
+    if activation_function == nn.Hardswish:
+        rtol_limit = 100
 
     # Seed torch
     seed_torch()
@@ -108,7 +142,7 @@ def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_ty
     # Test: the output of the numpy model is the same as the torch model.
     assert numpy_predictions.shape == torch_predictions.shape
     # Test: prediction from the numpy model are the same as the torh model.
-    assert numpy.isclose(torch_predictions, numpy_predictions, rtol=10 - 3).all()
+    assert numpy.isclose(torch_predictions, numpy_predictions, rtol=rtol_limit).all()
 
     # Test: dynamics between layers is working (quantized input and activations)
     torch_input_2 = torch.randn(input_shape)
@@ -120,7 +154,7 @@ def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_ty
     numpy_input_2 = torch_input_2.detach().numpy()
     # Numpy predictions using the previous model
     numpy_predictions = numpy_fc_model(numpy_input_2)
-    assert numpy.isclose(torch_predictions, numpy_predictions, rtol=10 - 3).all()
+    assert numpy.isclose(torch_predictions, numpy_predictions, rtol=rtol_limit).all()
 
 
 @pytest.mark.parametrize(

@@ -3,6 +3,7 @@
 from typing import Optional, Tuple, Union
 
 import numpy
+from scipy import special
 
 from ..common.debugging import assert_true
 
@@ -173,10 +174,80 @@ def numpy_sigmoid(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
     return (1.0 / (1.0 + numpy.exp(-x)),)
 
 
+def numpy_cos(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute cos in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.cos(x),)  # pragma: no cover
+
+
+def numpy_cosh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute cosh in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.cosh(x),)  # pragma: no cover
+
+
+def numpy_sin(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute sin in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.sin(x),)  # pragma: no cover
+
+
+def numpy_sinh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute sinh in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.sinh(x),)  # pragma: no cover
+
+
+def numpy_tan(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute tan in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.tan(x),)  # pragma: no cover
+
+
 def numpy_tanh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
     """Compute tanh in numpy according to ONNX spec.
 
-    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#tanh-6
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
 
     Args:
         x (numpy.ndarray): Input tensor
@@ -185,3 +256,321 @@ def numpy_tanh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
     return (numpy.tanh(x),)
+
+
+def numpy_acos(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute acos in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.arccos(x),)  # pragma: no cover
+
+
+def numpy_acosh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute acosh in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.arccosh(x),)  # pragma: no cover
+
+
+def numpy_asin(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute asin in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.arcsin(x),)  # pragma: no cover
+
+
+def numpy_asinh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute sinh in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.arcsinh(x),)  # pragma: no cover
+
+
+def numpy_atan(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute atan in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.arctan(x),)  # pragma: no cover
+
+
+def numpy_atanh(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute atanh in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.arctanh(x),)  # pragma: no cover
+
+
+def numpy_elu(x: numpy.ndarray, alpha: float = 1) -> Tuple[numpy.ndarray]:
+    """Compute elu in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        alpha (float): Coefficient
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # FIXME: not compilable
+    return (numpy.where(x > 0, x, alpha * (numpy.exp(x) - 1)),)
+
+
+def numpy_selu(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute selu in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # FIXME: find alpha and gamma
+    alpha = 1.6732632423543772848170429916717
+    gamma = 1.0507009873554804934193349852946
+
+    # FIXME: not compilable
+    return (gamma * numpy.where(x > 0, x, alpha * (numpy.exp(x) - 1)),)
+
+
+def numpy_celu(x: numpy.ndarray, alpha: float = 1) -> Tuple[numpy.ndarray]:
+    """Compute celu in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        alpha (float): Coefficient
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.maximum(0, x) + numpy.minimum(0, alpha * (numpy.exp(x / alpha) - 1)),)
+
+
+def numpy_leakyrelu(x: numpy.ndarray, alpha: float = 0.01) -> Tuple[numpy.ndarray]:
+    """Compute leakyrelu in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        alpha (float): Coefficient
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # FIXME: not compilable
+    return (numpy.where(x > 0, x, alpha * x),)
+
+
+def numpy_thresholdedrelu(x: numpy.ndarray, alpha: float = 1) -> Tuple[numpy.ndarray]:
+    """Compute thresholdedrelu in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        alpha (float): Coefficient
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    if x > alpha:  # pragma: no cover
+        return (x,)  # pragma: no cover
+
+    return (numpy.zeros_like(x),)  # pragma: no cover
+
+
+def numpy_hardsigmoid(
+    x: numpy.ndarray, alpha: float = 0.2, beta: float = 0.5
+) -> Tuple[numpy.ndarray]:
+    """Compute hardsigmoid in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        alpha (float): Coefficient
+        beta (float): Coefficient
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)
+
+
+def numpy_hardswish(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute hardswish in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    alpha = 1 / 6
+    beta = 0.5
+
+    return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)
+
+
+def numpy_softplus(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute softplus in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.log(numpy.exp(x) + 1),)
+
+
+def numpy_abs(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute abs in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.abs(x),)
+
+
+def numpy_div(x: numpy.ndarray, y: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute div in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (x / y,)
+
+
+def numpy_mul(x: numpy.ndarray, y: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute mul in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (x * y,)
+
+
+def numpy_sub(x: numpy.ndarray, y: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute sub in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (x - y,)
+
+
+def numpy_log(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute log in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.log(x),)
+
+
+def numpy_erf(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute erf in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (special.erf(x),)  # pylint: disable=no-member

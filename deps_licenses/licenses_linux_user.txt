@@ -16,6 +16,7 @@
  pygraphviz         1.8       BSD License
  pyparsing          3.0.7     MIT License
  python-dateutil    2.8.2     Apache Software License; BSD License
+ scipy              1.7.3     BSD License
  setuptools-scm     6.4.2     MIT License
  six                1.16.0    MIT License
  tomli              1.2.3     MIT License

@@ -33,6 +33,7 @@ numpy = "^1.22.0"
 concrete-numpy = {version = "^0.2.0", extras = ["full"]}
 setuptools = "*"
 onnx = "^1.10.2"
+scipy = "^1.7.3"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
