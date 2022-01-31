@@ -8,8 +8,7 @@ from concrete.common.compilation.configuration import CompilationConfiguration
 from concrete.common.fhe_circuit import FHECircuit
 from concrete.numpy.np_fhe_compiler import NPFHECompiler
 
-from concrete.ml.common.debugging.custom_assert import assert_true
-
+from ..common.debugging import assert_true
 from .quantized_array import QuantizedArray
 from .quantized_ops import QuantizedOp
 
@@ -43,9 +42,11 @@ class QuantizedModule:
         # Make sure that the input is quantized
         assert_true(
             qvalues.dtype == numpy.uint8,
-            f"qvalues.dtype={qvalues.dtype} is not uint8. "
+            on_error_msg=f"qvalues.dtype={qvalues.dtype} is not uint8. "
             f"Make sure you quantize your input before calling forward.",
+            error_type=ValueError,
         )
+
         return self._forward(qvalues)
 
     def _forward(self, qvalues: numpy.ndarray) -> numpy.ndarray:

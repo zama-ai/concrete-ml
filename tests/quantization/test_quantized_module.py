@@ -115,3 +115,41 @@ def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torc
 
     # Check that the actual prediction are close to the expected predictions
     assert numpy.isclose(numpy_prediction, dequant_prediction, atol=atol).all()
+
+
+@pytest.mark.parametrize(
+    "model, input_shape",
+    [
+        pytest.param(FC, (100, 32 * 32 * 3)),
+    ],
+)
+@pytest.mark.parametrize(
+    "dtype, err_msg",
+    [
+        pytest.param(
+            numpy.float32,
+            "qvalues.dtype=float32 is not uint8. "
+            "Make sure you quantize your input before calling forward.",
+        ),
+    ],
+)
+def test_raises_on_float_inputs(model, input_shape, dtype, err_msg, seed_torch):
+    """Function to test incompatible inputs."""
+
+    # Seed torch
+    seed_torch()
+    # Define the torch model
+    torch_fc_model = model()
+    # Create random input
+    numpy_input = numpy.random.uniform(size=input_shape).astype(dtype)
+    # Create corresponding numpy model
+    numpy_fc_model = NumpyModule(torch_fc_model)
+    # Quantize with post-training static method
+    post_training_quant = PostTrainingAffineQuantization(8, numpy_fc_model)
+    quantized_model = post_training_quant.quantize_module(numpy_input)
+
+    with pytest.raises(
+        ValueError,
+        match=err_msg,
+    ):
+        quantized_model(numpy_input)
