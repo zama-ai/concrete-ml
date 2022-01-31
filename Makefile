@@ -99,7 +99,7 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses mdformat
+conformance: finalize_nb python_format licenses mdformat nbqa
 
 .PHONY: pcc # Run pre-commit checks
 pcc:

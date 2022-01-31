@@ -69,7 +69,7 @@ def compile_torch_model(
     )
 
     # Create corresponding numpy model
-    numpy_model = NumpyModule(torch_model)
+    numpy_model = NumpyModule(torch_model, torch.from_numpy(numpy_inputset_as_single_array).float())
 
     # Quantize with post-training static method, to have a model with integer weights
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)

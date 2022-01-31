@@ -45,6 +45,7 @@ from .ops_impl import (
     numpy_div,
     numpy_elu,
     numpy_erf,
+    numpy_exp,
     numpy_gemm,
     numpy_hardsigmoid,
     numpy_hardswish,
@@ -113,6 +114,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Mul": numpy_mul,
     "Sub": numpy_sub,
     "Log": numpy_log,
+    "Exp": numpy_exp,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

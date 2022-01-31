@@ -5,8 +5,8 @@ import torch
 from torch import nn
 
 from concrete.ml.quantization import QuantizedArray
-from concrete.ml.quantization.post_training import NewPostTrainingAffineQuantization
-from concrete.ml.torch.numpy_module import NewNumpyModule
+from concrete.ml.quantization.post_training import PostTrainingAffineQuantization
+from concrete.ml.torch.numpy_module import NumpyModule
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
@@ -66,9 +66,9 @@ def test_quantized_module_compilation(
     numpy_input = numpy.random.uniform(-100, 100, size=input_shape)
 
     # Create corresponding numpy model
-    numpy_fc_model = NewNumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
+    numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
     # Quantize with post-training static method
-    post_training_quant = NewPostTrainingAffineQuantization(n_bits, numpy_fc_model)
+    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
     # Quantize input
     q_input = QuantizedArray(n_bits, numpy_input)

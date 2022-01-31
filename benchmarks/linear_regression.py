@@ -46,12 +46,14 @@ class QuantizedLinearRegression(QuantizedModule):
                     bias: a numpy scalar
                     calibration_data: a numpy nd-array of data (Nxd)
         """
+
+        super().__init__({})
         self.n_bits = out_bits
 
         # We need to calibrate to a sufficiently low number of bits
         # so that the output of the Linear layer (w . x + b)
         # does not exceed 7 bits
-        self.q_calibration_data = QuantizedArray(q_bits, calibration_data)
+        self.q_input = QuantizedArray(q_bits, calibration_data)
 
         # Quantize the weights and create the quantized linear layer
         q_weights = QuantizedArray(w_bits, weights)
@@ -66,8 +68,7 @@ class QuantizedLinearRegression(QuantizedModule):
             "linear", q_layer, calibration_data, quant_layers_dict
         )
 
-        # Finally construct our Module using the quantized layers
-        super().__init__(quant_layers_dict)
+        self.quant_layers_dict = quant_layers_dict
 
     def _calibrate_and_store_layers_activation(
         self, name, q_function, calibration_data, quant_layers_dict
@@ -89,7 +90,7 @@ class QuantizedLinearRegression(QuantizedModule):
 
     def quantize_input(self, values):
         """Quantize an input set with the quantization parameters determined from calibration"""
-        q_input_arr = deepcopy(self.q_calibration_data)
+        q_input_arr = deepcopy(self.q_input)
         q_input_arr.update_values(values)
         return q_input_arr
 
@@ -139,13 +140,13 @@ def main():
     y_pred = linreg.predict(x_test)
 
     # Now that the model is quantized, predict on the test set
-    x_test_q = q_linreg.quantize_input(x_test)
+    x_test_q = q_linreg.quantize_input(x_test).qvalues
     q_y_pred = q_linreg.forward_and_dequant(x_test_q)
 
     # Now predict using the FHE quantized model on the testing set
     y_test_pred_fhe = np.zeros_like(x_test)
 
-    for i, x_i in enumerate(tqdm(x_test_q.qvalues)):
+    for i, x_i in enumerate(tqdm(x_test_q)):
         q_sample = np.expand_dims(x_i, 1).transpose([1, 0]).astype(np.uint8)
         with progress.measure(id="evaluation-time-ms", label="Evaluation Time (ms)"):
             q_pred_fhe = engine.run(q_sample)

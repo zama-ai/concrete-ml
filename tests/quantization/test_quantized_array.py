@@ -57,3 +57,30 @@ def test_quant_dequant_update(values, n_bits, is_signed, check_array_equality):
 
     # Check that the __call__ returns also the qvalues.
     check_array_equality(quant_array(), new_qvalues)
+
+
+@pytest.mark.parametrize(
+    "n_bits",
+    [32, 28, 20, 16, 8, 4],
+)
+@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
+@pytest.mark.parametrize("value_shape", [(10,), (1, 3, 224, 224)])
+def test_quantized_array_all_zeros(n_bits, is_signed, value_shape):
+    """Test case where all values are close to 0 in an interval smaller than STABILITY_CONST."""
+
+    values = numpy.random.uniform(0, QuantizedArray.STABILITY_CONST * 0.99, size=value_shape)
+
+    quant_array = QuantizedArray(
+        n_bits,
+        values,
+        is_signed,
+    )
+
+    assert quant_array.scale == 1
+    assert quant_array.zero_point == 0
+
+    qvalues = quant_array.quant()
+
+    # Quantized values must be contained between 0 and 2**n_bits
+    assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.offset
+    assert numpy.min(qvalues) >= -quant_array.offset

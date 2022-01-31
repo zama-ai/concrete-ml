@@ -105,7 +105,6 @@ class QuantizedOp(ABC):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         ALL_QUANTIZED_OPS.add(cls)
-        cls._has_attr = len(cls._authorized_attr_names) > 0
 
         if (op_name := cls._impl_for_op_named) is not None:
             ONNX_OPS_TO_QUANTIZED_IMPL[op_name] = cls
@@ -115,6 +114,7 @@ class QuantizedOp(ABC):
         assert_true(cls.impl is not None, f"Missing 'impl' for class {cls.__name__}")
 
         cls._populate_op_input_infos()
+        cls._has_attr = len(cls._authorized_attr_names) > 0
 
     def __call__(self, *q_inputs: QuantizedArray) -> QuantizedArray:
         """Process the forward pass of the quantized op according to the implementation.
@@ -274,7 +274,10 @@ class QuantizedOp(ABC):
         # self.impl will call impl with self as first parameter, so get the underlying __func__
         impl_func = self.impl.__func__  # type: ignore
         outputs = impl_func(*inputs) if not self._has_attr else impl_func(*inputs, **attrs)
-        assert_true(isinstance(outputs, tuple))
+        assert_true(
+            isinstance(outputs, tuple),
+            f"The output of {impl_func.__name__} needs to be a tuple. Got {outputs}",
+        )
         assert_true(
             (num_outputs := len(outputs)) == 1,
             f"Currently only single output ops are supported, got {num_outputs} outputs.",
@@ -331,7 +334,7 @@ class QuantizedGemm(QuantizedOp):
         )
 
     def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
-        """Create corresponding QuantizedArray for the output of QuantizedLinear.
+        """Create corresponding QuantizedArray for the output.
 
         Args:
             *inputs (numpy.ndarray): Inputs.
@@ -357,12 +360,19 @@ class QuantizedGemm(QuantizedOp):
     def q_impl(
         self,
         *q_inputs: QuantizedArray,
-        **_attrs,
+        **attrs,
     ) -> QuantizedArray:
         prepared_inputs = self._prepare_inputs_with_constants(*q_inputs)
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
         q_bias: Optional[QuantizedArray] = prepared_inputs[2] if len(prepared_inputs) == 3 else None
+
+        # Using snake case here to please the python format, the original attrs don't have the '_'
+        transpose_inputs = attrs["transA"]
+        transpose_w = attrs["transB"]
+
+        input_q_values = numpy.transpose(q_input.qvalues) if transpose_inputs else q_input.qvalues
+        weights_q_values = numpy.transpose(q_weights.qvalues) if transpose_w else q_weights.qvalues
 
         # For mypy
         assert self.output_scale is not None
@@ -376,25 +386,25 @@ class QuantizedGemm(QuantizedOp):
         # Here we follow Eq.7 in https://arxiv.org/abs/1712.05877 to split the core computation
         # from the zero points and scales.
 
-        p = q_weights.qvalues.shape[0]
+        p = weights_q_values.shape[0]
 
         # Core matmul operation in full intergers with a shape change (INTEGERS)
-        matmul = q_input.qvalues @ q_weights.qvalues
+        matmul = input_q_values @ weights_q_values
 
         # Sum operation in full integers resulting in large integers (INTEGERS)
         # [WORKAROUND #995] numpy.sum can't be currently done in our framework
-        # sum_input = q_weights.zero_point * numpy.sum(q_input.qvalues, axis=1, keepdims=True)
+        # sum_input = q_weights.zero_point * numpy.sum(input_q_values, axis=1, keepdims=True)
         # Hack because we can't do numpy.sum(axis...,keepdims...)
-        n_features = 1 if len(q_input.qvalues.shape) <= 1 else q_input.qvalues.shape[1]
+        n_features = 1 if len(input_q_values.shape) <= 1 else input_q_values.shape[1]
         const_ones = numpy.ones(shape=(n_features, 1), dtype=numpy.int64)
-        sum_input = q_weights.zero_point * (q_input.qvalues @ const_ones)
+        sum_input = q_weights.zero_point * (input_q_values @ const_ones)
 
         # Last part that has to be done in FHE the rest must go in a PBS.
         # Forced fusing using .astype(numpy.float32)
         numpy_q_out = (matmul + (numpy.negative(sum_input))).astype(numpy.float32)
 
         # sum_weights is a constant
-        sum_weights = q_input.zero_point * numpy.sum(q_weights.qvalues, axis=0, keepdims=True)
+        sum_weights = q_input.zero_point * numpy.sum(weights_q_values, axis=0, keepdims=True)
 
         # Quantization scales and zero points (FLOATS involved)
         # This is going to be compiled with a PBS (along with the following activation function)
@@ -425,3 +435,24 @@ class QuantizedTanh(QuantizedOp):
     """Quantized Tanh op."""
 
     _impl_for_op_named: str = "Tanh"
+
+
+class QuantizedExp(QuantizedOp):
+    """Quantized Exp op."""
+
+    _impl_for_op_named: str = "Exp"
+
+
+class QuantizedLinear(QuantizedGemm):
+    """Helper Class to have the equivalent layer to torch.nn.Linear."""
+
+    _impl_for_op_named: str = "Linear"
+
+    def __init__(
+        self,
+        n_bits: int,
+        q_weights: QuantizedArray,
+        q_bias: Optional[QuantizedArray] = None,
+    ) -> None:
+        constant_inputs = {"b": q_weights} if q_bias is None else {"b": q_weights, "c": q_bias}
+        super().__init__(n_bits, constant_inputs=constant_inputs)

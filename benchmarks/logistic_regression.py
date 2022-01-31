@@ -61,12 +61,14 @@ class QuantizedLogisticRegression(QuantizedModule):
                     bias: a numpy scalar
                     calibration_data: a numpy nd-array of data (Nxd)
         """
+        super().__init__({})
+
         self.n_bits = out_bits
 
         # We need to calibrate to a sufficiently low number of bits
         # so that the output of the Linear layer (w . x + b)
         # does not exceed 7 bits
-        self.q_calibration_data = QuantizedArray(q_bits, calibration_data)
+        self.q_input = QuantizedArray(q_bits, calibration_data)
 
         # Quantize the weights and create the quantized linear layer
         q_weights = QuantizedArray(w_bits, weights)
@@ -94,8 +96,7 @@ class QuantizedLogisticRegression(QuantizedModule):
             "invlink", q_logit, calibration_data, quant_layers_dict
         )
 
-        # Finally construct our Module using the quantized layers
-        super().__init__(quant_layers_dict)
+        self.quant_layers_dict = quant_layers_dict
 
     def _calibrate_and_store_layers_activation(
         self, name, q_function, calibration_data, quant_layers_dict
@@ -116,7 +117,7 @@ class QuantizedLogisticRegression(QuantizedModule):
         return q_function(q_calibration_data).dequant()
 
     def quantize_input(self, values):
-        q_input_arr = deepcopy(self.q_calibration_data)
+        q_input_arr = deepcopy(self.q_input)
         q_input_arr.update_values(values)
         return q_input_arr
 
@@ -165,7 +166,7 @@ def main():
     y_pred_test = np.asarray(logreg.predict(x_test))
 
     # Now that the model is quantized, predict on the test set
-    x_test_q = q_logreg.quantize_input(x_test)
+    x_test_q = q_logreg.quantize_input(x_test).qvalues
     q_y_score_test = q_logreg.forward_and_dequant(x_test_q)
     q_y_pred_test = (q_y_score_test > 0.5).astype(np.int32)
 
@@ -178,7 +179,7 @@ def main():
     # Predict the FHE quantized classifier probabilities on the test set.
     # Compute FHE quantized accuracy, clear-quantized accuracy and
     # keep track of samples wrongly classified due to quantization
-    for i, x_i in enumerate(tqdm(x_test_q.qvalues)):
+    for i, x_i in enumerate(tqdm(x_test_q)):
         y_i = y_test[i]
 
         fhe_in_sample = np.expand_dims(x_i, 1).transpose([1, 0]).astype(np.uint8)

@@ -5,7 +5,6 @@ import torch
 from torch import nn
 
 from concrete.ml.torch import NumpyModule
-from concrete.ml.torch.numpy_module import NewNumpyModule
 
 
 class CNN(nn.Module):
@@ -98,21 +97,8 @@ class FC(nn.Module):
         # pytest.param(nn.GLU, id="GLU"),       # Problem of shapes
     ],
 )
-@pytest.mark.parametrize(
-    "numpy_module_type",
-    [
-        NumpyModule,
-        NewNumpyModule,
-    ],
-)
-def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_type, seed_torch):
+def test_torch_to_numpy(model, input_shape, activation_function, seed_torch):
     """Test the different model architecture from torch numpy."""
-
-    if (
-        activation_function not in {nn.Sigmoid, nn.ReLU, nn.ReLU6, nn.Tanh}
-        and numpy_module_type == NumpyModule
-    ):
-        return
 
     # FIXME: Problem that will be dealth in #10 and #204
     rtol_limit = 10 - 3
@@ -129,11 +115,7 @@ def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_ty
     # Predict with torch model
     torch_predictions = torch_fc_model(torch_input_1).detach().numpy()
     # Create corresponding numpy model
-    numpy_fc_model = (
-        numpy_module_type(torch_fc_model)
-        if numpy_module_type == NumpyModule
-        else numpy_module_type(torch_fc_model, torch_input_1)
-    )
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input_1)
     # Torch input to numpy
     numpy_input_1 = torch_input_1.detach().numpy()
     # Predict with numpy model
@@ -161,23 +143,7 @@ def test_torch_to_numpy(model, input_shape, activation_function, numpy_module_ty
     "model",
     [pytest.param(CNN)],
 )
-@pytest.mark.parametrize(
-    "numpy_module_type,err_msg",
-    [
-        pytest.param(
-            NewNumpyModule,
-            "The following ONNX operators are required to convert the torch model to numpy but are"
-            " not currently implemented: AveragePool, Conv, Flatten, Pad\\..*",
-        ),
-        pytest.param(
-            NumpyModule,
-            "The following module is currently not implemented: Conv2d\\. "
-            "Please stick to the available torch modules: "
-            f"{', '.join(sorted(module.__name__ for module in NumpyModule.IMPLEMENTED_MODULES))}.",
-        ),
-    ],
-)
-def test_raises(model, numpy_module_type, err_msg, seed_torch):
+def test_raises(model, seed_torch):
     """Function to test incompatible layers."""
 
     seed_torch()
@@ -185,14 +151,13 @@ def test_raises(model, numpy_module_type, err_msg, seed_torch):
 
     with pytest.raises(
         ValueError,
-        match=err_msg,
+        match=(
+            "The following ONNX operators are required to convert the torch model to numpy but are"
+            " not currently implemented: AveragePool, Conv, Flatten, Pad\\..*"
+        ),
     ):
-        if numpy_module_type == NumpyModule:
-            NumpyModule(torch_incompatible_model)
-        else:
-            # NCHW
-            dummy_input = torch.randn(1, 3, 32, 32)
-            NewNumpyModule(torch_incompatible_model, dummy_input)
+        dummy_input = torch.randn(1, 3, 32, 32)
+        NumpyModule(torch_incompatible_model, dummy_input)
 
 
 class AddTest(nn.Module):
@@ -252,7 +217,7 @@ def test_torch_to_numpy_onnx_ops(model, input_shape, seed_torch):
     # Predict with torch model
     torch_predictions = torch_fc_model(torch_input_1).detach().numpy()
     # Create corresponding numpy model
-    numpy_fc_model = NewNumpyModule(torch_fc_model, torch_input_1)
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input_1)
     # Torch input to numpy
     numpy_input_1 = torch_input_1.detach().numpy()
     # Predict with numpy model

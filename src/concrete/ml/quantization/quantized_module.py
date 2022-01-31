@@ -1,6 +1,6 @@
 """QuantizedModule API."""
 import copy
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 import numpy
 from concrete.common.compilation.artifacts import CompilationArtifacts
@@ -16,7 +16,7 @@ from .quantized_ops import QuantizedOp
 class QuantizedModule:
     """Inference for a quantized model."""
 
-    quant_layers_dict: dict
+    quant_layers_dict: Dict[str, QuantizedOp]
     _mode: str
     q_input: Optional[QuantizedArray]
     forward_fhe: Union[None, FHECircuit]
@@ -41,8 +41,8 @@ class QuantizedModule:
         """
         # Make sure that the input is quantized
         assert_true(
-            qvalues.dtype == numpy.uint8,
-            on_error_msg=f"qvalues.dtype={qvalues.dtype} is not uint8. "
+            issubclass(qvalues.dtype.type, numpy.integer),
+            on_error_msg=f"qvalues.dtype={qvalues.dtype} is not an integer type. "
             f"Make sure you quantize your input before calling forward.",
             error_type=ValueError,
         )
@@ -75,11 +75,8 @@ class QuantizedModule:
         """Forward pass with numpy function only plus dequantization.
 
         Args:
-            q_x (Union[numpy.ndarray, QuantizedArray]): QuantizedArray containing the inputs
-                                                        or a numpy.array containing the q_values.
-                                                        In the latter, the stored input parameters
-                                                        are used:
-                                                        (q_input.scale, q_input.zero_point).
+            q_x (numpy.ndarray): numpy.ndarray containing the quantized input values. Requires the
+                input dtype to be uint8.
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
@@ -111,17 +108,13 @@ class QuantizedModule:
             numpy.ndarray: Dequantized values of the last layer.
         """
         last_layer = list(self.quant_layers_dict.values())[-1]
-        real_values = (
-            QuantizedArray(
-                last_layer.n_bits,
-                qvalues,
-                value_is_float=False,
-                scale=last_layer.output_scale,
-                zero_point=last_layer.output_zero_point,
-            ).dequant()
-            if isinstance(last_layer, QuantizedOp)
-            else last_layer.q_out.update_quantized_values(qvalues)
-        )
+        real_values = QuantizedArray(
+            last_layer.n_bits,
+            qvalues,
+            value_is_float=False,
+            scale=last_layer.output_scale,
+            zero_point=last_layer.output_zero_point,
+        ).dequant()
         return real_values
 
     def compile(

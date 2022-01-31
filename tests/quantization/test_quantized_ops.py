@@ -10,7 +10,9 @@ from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.quantized_ops import (
     ALL_QUANTIZED_OPS,
     QuantizedClip,
+    QuantizedExp,
     QuantizedGemm,
+    QuantizedLinear,
     QuantizedOp,
     QuantizedRelu,
     QuantizedSigmoid,
@@ -81,7 +83,48 @@ def test_univariate_ops_no_attrs(
     dequant_values = q_output.dequant()
 
     # Check that all values are close
-    assert numpy.isclose(dequant_values.ravel(), expected_output.ravel(), atol=atol).all()
+    assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
+
+
+# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/229
+# Manage ranges/improve tests for exponential
+@pytest.mark.parametrize(
+    "n_bits, atol",
+    [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
+)
+@pytest.mark.parametrize(
+    "input_range",
+    [pytest.param((-1, 1)), pytest.param((-2, 2))],
+)
+@pytest.mark.parametrize(
+    "input_shape",
+    [pytest.param((10, 40, 20)), pytest.param((100, 400))],
+)
+@pytest.mark.parametrize("is_signed", IS_SIGNED)
+def test_exp_op(
+    input_shape: Tuple[int, ...],
+    input_range: Tuple[int, int],
+    n_bits: int,
+    atol: float,
+    is_signed: bool,
+):
+    """Test activation functions."""
+    values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
+    q_inputs = QuantizedArray(n_bits, values, is_signed)
+    quantized_op = QuantizedExp(n_bits)
+    expected_output = quantized_op.calibrate(values)
+    q_output = quantized_op(q_inputs)
+    qvalues = q_output.qvalues
+
+    # Quantized values must be contained between 0 and 2**n_bits - 1.
+    assert numpy.max(qvalues) <= 2 ** n_bits - 1
+    assert numpy.min(qvalues) >= 0
+
+    # Dequantized values must be close to original values
+    dequant_values = q_output.dequant()
+
+    # Check that all values are close
+    assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
 
 
 @pytest.mark.parametrize(
@@ -128,7 +171,7 @@ def test_clip_op(
         dequant_values = q_output.dequant()
 
         # Check that all values are close
-        assert numpy.isclose(dequant_values.ravel(), expected_output.ravel(), atol=atol).all()
+        assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
 
 
 GEMM_N_BITS_LIST = [20, 16, 8]
@@ -146,7 +189,7 @@ GEMM_N_BITS_LIST = [20, 16, 8]
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
-def test_gemm_op(
+def test_gemm_and_linear_op(
     n_bits: int,
     is_signed: bool,
     n_examples: int,
@@ -165,24 +208,33 @@ def test_gemm_op(
     bias = numpy.random.uniform(size=(1, n_neurons))
     q_bias = QuantizedArray(n_bits, bias, is_signed)
 
-    # Define our QuantizedLinear layer
-    q_linear = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias})
+    # Define our QuantizedGemm layer
+    q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias})
+    q_linear = QuantizedLinear(n_bits, q_weights, q_bias)
 
     # Calibrate the Quantized layer
-    expected_outputs = q_linear.calibrate(inputs)
+    expected_gemm_outputs = q_gemm.calibrate(inputs)
+    expected_linear_outputs = q_linear.calibrate(inputs)
 
-    actual_output = q_linear(q_inputs).dequant()
+    actual_gemm_output = q_gemm(q_inputs).dequant()
+    actual_linear_output = q_linear(q_inputs).dequant()
 
-    assert numpy.isclose(expected_outputs, actual_output, atol=10 ** -0).all()
+    assert numpy.isclose(expected_gemm_outputs, actual_gemm_output, atol=10 ** -0).all()
+    assert numpy.isclose(expected_linear_outputs, actual_linear_output, atol=10 ** -0).all()
 
     # Same test without bias
-    q_linear = QuantizedGemm(n_bits, constant_inputs={"b": q_weights})
+    q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights})
+    q_linear = QuantizedLinear(n_bits, q_weights)
 
     # Calibrate the Quantized layer
-    expected_outputs = q_linear.calibrate(inputs)
-    actual_output = q_linear(q_inputs).dequant()
+    expected_gemm_outputs = q_gemm.calibrate(inputs)
+    expected_linear_outputs = q_linear.calibrate(inputs)
 
-    assert numpy.isclose(expected_outputs, actual_output, atol=10 ** -0).all()
+    actual_gemm_output = q_gemm(q_inputs).dequant()
+    actual_linear_output = q_linear(q_inputs).dequant()
+
+    assert numpy.isclose(expected_gemm_outputs, actual_gemm_output, atol=10 ** -0).all()
+    assert numpy.isclose(expected_linear_outputs, actual_linear_output, atol=10 ** -0).all()
 
 
 def test_all_ops_were_tested():
@@ -190,10 +242,12 @@ def test_all_ops_were_tested():
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
     # If you can think of a way to make this automatic, please provide a PR!
     currently_tested_ops = {
-        QuantizedGemm: test_gemm_op,
+        QuantizedGemm: test_gemm_and_linear_op,
+        QuantizedLinear: test_gemm_and_linear_op,
         QuantizedRelu: test_univariate_ops_no_attrs,
         QuantizedTanh: test_univariate_ops_no_attrs,
         QuantizedSigmoid: test_univariate_ops_no_attrs,
+        QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
     }
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

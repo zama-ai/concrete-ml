@@ -19,35 +19,7 @@ from sklearn.preprocessing import (
 )
 from tqdm import tqdm
 
-from concrete.ml.quantization import QuantizedArray, QuantizedLinear, QuantizedModule
-from concrete.ml.quantization.quantized_activations import QuantizedActivation
-
-
-class QuantizedExp(QuantizedActivation):
-    """
-    Quantized Exponential function
-
-    This class will build a quantized lookup table for the exp function
-    applied to input calibration data
-    """
-
-    def calibrate(self, x: np.ndarray):
-        self.q_out = QuantizedArray(self.n_bits, np.exp(x))
-
-    def __call__(self, q_input: QuantizedArray) -> QuantizedArray:
-        """Process the forward pass of the exponential.
-
-        Args:
-            q_input (QuantizedArray): Quantized input.
-
-        Returns:
-            q_out (QuantizedArray): Quantized output.
-        """
-
-        quant_exp = np.exp(self.dequant_input(q_input))
-
-        q_out = self.quant_output(quant_exp)
-        return q_out
+from concrete.ml.quantization import QuantizedArray, QuantizedExp, QuantizedLinear, QuantizedModule
 
 
 class QuantizedGLM(QuantizedModule):
@@ -59,12 +31,13 @@ class QuantizedGLM(QuantizedModule):
     """
 
     def __init__(self, n_bits, sklearn_model, calibration_data) -> None:
+        super().__init__({})
         self.n_bits = n_bits
 
         # We need to calibrate to a sufficiently low number of bits
         # so that the output of the Linear layer (w . x + b)
         # does not exceed 7 bits
-        self.q_calibration_data = QuantizedArray(self.n_bits, calibration_data)
+        self.q_input = QuantizedArray(self.n_bits, calibration_data)
 
         # Quantize the weights and create the quantized linear layer
         q_weights = QuantizedArray(self.n_bits, np.expand_dims(sklearn_model.coef_, 1))
@@ -92,8 +65,7 @@ class QuantizedGLM(QuantizedModule):
             "invlink", q_exp, calibration_data, quant_layers_dict
         )
 
-        # Finally construct out Module using the quantized layers
-        super().__init__(quant_layers_dict)
+        self.quant_layers_dict = quant_layers_dict
 
     def _calibrate_and_store_layers_activation(
         self, name, q_function, calibration_data, quant_layers_dict
@@ -108,7 +80,7 @@ class QuantizedGLM(QuantizedModule):
         return q_function(q_calibration_data).dequant()
 
     def quantize_input(self, values):
-        q_input_arr = deepcopy(self.q_calibration_data)
+        q_input_arr = deepcopy(self.q_input)
         q_input_arr.update_values(values)
         return q_input_arr
 
@@ -147,12 +119,12 @@ def score_sklearn_estimator(estimator, df_test):
     return score_estimator(estimator.predict(df_test), df_test["Frequency"], df_test["Exposure"])
 
 
-def score_concrete_glm_estimator(poisson_glm_pca, q_glm, df_test):
+def score_concrete_glm_estimator(poisson_glm_pca, q_glm: QuantizedGLM, df_test):
     """A wrapper to score QuantizedGLM on a dataframe, transforming the dataframe using
     a sklearn pipeline
     """
     test_data = poisson_glm_pca["pca"].transform(poisson_glm_pca["preprocessor"].transform(df_test))
-    q_test_data = q_glm.quantize_input(test_data)
+    q_test_data = q_glm.quantize_input(test_data).qvalues
     y_pred = q_glm.forward_and_dequant(q_test_data)
     return score_estimator(y_pred, df_test["Frequency"], df_test["Exposure"])
 

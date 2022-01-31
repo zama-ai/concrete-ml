@@ -64,8 +64,8 @@ class FC(nn.Module):
 N_BITS_ATOL_TUPLE_LIST = [
     (28, 10 ** -2),
     (20, 10 ** -2),
-    (16, 10 ** -1),
-    (8, 10 ** -0),
+    (16, 10 ** -2),
+    (8, 10 ** -2),
     (4, 10 ** -0),
 ]
 
@@ -94,7 +94,7 @@ def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torc
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape)
     # Create corresponding numpy model
-    numpy_fc_model = NumpyModule(torch_fc_model)
+    numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
     # Predict with real model
     numpy_prediction = numpy_fc_model(numpy_input)
     # Quantize with post-training static method
@@ -128,7 +128,7 @@ def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torc
     [
         pytest.param(
             numpy.float32,
-            "qvalues.dtype=float32 is not uint8. "
+            "qvalues.dtype=float32 is not an integer type. "
             "Make sure you quantize your input before calling forward.",
         ),
     ],
@@ -143,7 +143,7 @@ def test_raises_on_float_inputs(model, input_shape, dtype, err_msg, seed_torch):
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape).astype(dtype)
     # Create corresponding numpy model
-    numpy_fc_model = NumpyModule(torch_fc_model)
+    numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(8, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)

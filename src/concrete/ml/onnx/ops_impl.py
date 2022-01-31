@@ -578,3 +578,18 @@ def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """
 
     return (special.erf(x),)  # pylint: disable=no-member
+
+
+def numpy_exp(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute exponential in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Exp-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: The exponential of the input tensor computed element-wise
+    """
+
+    return (numpy.exp(x),)
