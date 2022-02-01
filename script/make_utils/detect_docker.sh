@@ -12,5 +12,5 @@ isDockerBuildkit(){
 }
 
 isDockerContainer(){
-    [[ -e ./dockerenv ]]
+    [[ -e /.dockerenv ]]
 }
