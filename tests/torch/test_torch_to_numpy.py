@@ -73,27 +73,27 @@ class FC(nn.Module):
         pytest.param(nn.ReLU6, id="ReLU6"),
         pytest.param(nn.Tanh, id="Tanh"),
         pytest.param(nn.ELU, id="ELU"),
-        # pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
         pytest.param(nn.Hardtanh, id="Hardtanh"),
-        # pytest.param(nn.Hardswish, id="Hardswish"), # FIXME: does not pass the test (see #224)
         pytest.param(nn.LeakyReLU, id="LeakyReLU"),
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
-        # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
-        # pytest.param(nn.PReLU, id="PReLU"),   # Two vars
-        # pytest.param(nn.RReLU, id="RReLU"),   # With randomness
         pytest.param(nn.SELU, id="SELU"),
         pytest.param(nn.CELU, id="CELU"),
         pytest.param(nn.GELU, id="GELU"),
         pytest.param(nn.SiLU, id="SiLU"),
         pytest.param(nn.Mish, id="Mish"),
         pytest.param(nn.Softplus, id="Softplus"),
-        # pytest.param(nn.Softshrink, id="Softshrink"), # Not converted to ONNX
         pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.Tanhshrink, id="Tanhshrink"),
-        # pytest.param(nn.Threshold, id="Threshold"), # missing 2 required positional arguments:
-        #                                               'threshold' and 'value'
-        # pytest.param(nn.GLU, id="GLU"),       # Problem of shapes
+        # Are currently not supported for various reasons:
+        # pytest.param(nn.Hardshrink, id="Hardshrink"),
+        # pytest.param(nn.Hardswish, id="Hardswish"),
+        # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
+        # pytest.param(nn.PReLU, id="PReLU"),
+        # pytest.param(nn.RReLU, id="RReLU"),
+        # pytest.param(nn.Softshrink, id="Softshrink"),
+        # pytest.param(nn.Threshold, id="Threshold"),
+        # pytest.param(nn.GLU, id="GLU"),
     ],
 )
 def test_torch_to_numpy(model, input_shape, activation_function, seed_torch, check_r2_score):

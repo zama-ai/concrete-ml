@@ -454,24 +454,6 @@ def numpy_hardsigmoid(
     return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)
 
 
-def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
-    """Compute hardswish in numpy according to ONNX spec.
-
-    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#HardSwish-14
-
-    Args:
-        x (numpy.ndarray): Input tensor
-
-    Returns:
-        Tuple[numpy.ndarray]: Output tensor
-    """
-    # FIXME: remove no cover when issue #224 is resolved
-    alpha = 1 / 6  # pragma: no cover
-    beta = 0.5  # pragma: no cover
-
-    return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)  # pragma: no cover
-
-
 def numpy_softplus(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute softplus in numpy according to ONNX spec.
 
