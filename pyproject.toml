@@ -34,6 +34,7 @@ concrete-numpy = {version = ">=0.2.0,<0.4.0", extras = ["full"]}
 setuptools = "*"
 onnx = "^1.10.2"
 scipy = "^1.7.3"
+hummingbird-ml = {git = "https://github.com/zama-ai/hummingbird.git", rev = "dev", extras = ["extra", "onnx"]}
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

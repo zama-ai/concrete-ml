@@ -117,6 +117,10 @@ def numpy_gemm(
     Returns:
         Tuple[numpy.ndarray]: The tuple containing the result tensor
     """
+    # If alpha and beta are integer, apply the int type for concrete-numpy
+    # to see they are integers (see issue #277)
+    processed_alpha = int(alpha) if round(alpha) == alpha else alpha
+    processed_beta = int(beta) if round(beta) == beta else beta
 
     # Done for the generic case (ie, any alpha and beta), which is sufficient since this function
     # is not traced. Actually, only q_impl of QuantizedGemm is traced
@@ -125,7 +129,7 @@ def numpy_gemm(
     b_prime = numpy.transpose(b) if transB else b
     c_prime: Union[numpy.ndarray, float] = c if c is not None else 0
 
-    y = alpha * numpy.matmul(a_prime, b_prime) + beta * c_prime
+    y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
 
     return (y,)
 
@@ -570,3 +574,65 @@ def numpy_exp(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """
 
     return (numpy.exp(x),)
+
+
+def numpy_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute equal in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.equal(x, y),)
+
+
+def numpy_not(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute not in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.logical_not(x),)
+
+
+def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute greater in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.greater(x, y),)
+
+
+def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute identity in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Identity-14
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (x,)

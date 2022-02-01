@@ -2,27 +2,42 @@
 from __future__ import annotations
 
 import copy
-from typing import Optional, Tuple
+import warnings
+from typing import Callable, Optional, Tuple
 
 import concrete.numpy as hnp
 import numpy
+import onnx
 import sklearn
 from concrete.common.compilation.artifacts import CompilationArtifacts
 from concrete.common.compilation.configuration import CompilationConfiguration
 from concrete.common.fhe_circuit import FHECircuit
+from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
+from ..onnx.convert import get_equivalent_numpy_forward
 from ..quantization.quantized_array import QuantizedArray
-from ._tree_to_tensors import tree_to_numpy
 
+# pylint: disable=wrong-import-position,wrong-import-order
+
+# Silence hummingbird warnings
+warnings.filterwarnings("ignore")
+from hummingbird.ml import convert as hb_convert  # noqa: E402
+
+# pylint: enable=wrong-import-position,wrong-import-order
+
+N_BITS_ALLOWED = 8
 
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name
+
+
 class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
     """Implements the sklearn DecisionTreeClassifier."""
 
     q_x_byfeatures: list
     fhe_tree: FHECircuit
+    _tensor_tree_predict: Optional[Callable]
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -189,6 +204,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             ccp_alpha=ccp_alpha,
         )
         self.q_x_byfeatures = []
+        assert_true(n_bits <= N_BITS_ALLOWED, f"n_bits should be <= {N_BITS_ALLOWED}")
         self.n_bits = n_bits
         self._tensor_tree_predict = None
         self.fhe_tree = None
@@ -222,20 +238,121 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         # Deepcopy X as we don't want to alterate original values.
         X = copy.deepcopy(X)
         # Check that there are only 2 classes
-        all_classes = numpy.unique(numpy.asarray(y).flatten())
-        assert_true(len(all_classes) == 2, "Only 2 classes are supported currently.")
+        assert_true(
+            len(numpy.unique(numpy.asarray(y).flatten())) == 2,
+            "Only 2 classes are supported currently.",
+        )
         self.q_x_byfeatures = []
         # Quantization of each feature in X
         for i in range(X.shape[1]):
             q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
             self.q_x_byfeatures.append(q_x_)
-            X[:, i] = q_x_.qvalues
+            X[:, i] = q_x_.qvalues.astype(numpy.uint8)
 
         # Fit the model
         super().fit(X, y, *args, **kwargs)
 
-        # Hummingbird part TODO: replace with a generic method (see issue #126)
-        self._tensor_tree_predict = tree_to_numpy(self, X.shape[1], classes=[0, 1])
+        # Tree inference to numpy
+        self._tensor_tree_predict = self.tree_to_numpy(X)
+
+    def tree_to_numpy(self, X) -> Callable:
+        """Convert the tree inference to a numpy functions using Hummingbird.
+
+        Args:
+            X (numpy.ndarray): The input data.
+
+        Raises:
+            ValueError: If onnx.graph.node input is not at the right position.
+
+        Returns:
+            Callable: A function that takes a numpy array and returns a numpy array.
+        """
+        # Silence hummingbird warnings
+        warnings.filterwarnings("ignore")
+        # TODO remove Transpose and Reshape from the list when (#292, #295) are done
+        op_type_to_remove = ["Transpose", "ArgMax", "Reshape", "ReduceSum", "Cast"]
+
+        # Convert model to onnx using hummingbird
+        onnx_model = hb_convert(
+            self, backend="onnx", test_input=X, extra_config={"tree_implementation": "gemm"}
+        ).model
+
+        op_type_inputs = {}
+        # Replace not needed ops by Identity
+        for node_index, node in enumerate(onnx_model.graph.node):
+            # Save op_type for each node
+            for output in node.output:
+                op_type_inputs[output] = node.op_type
+            if node.op_type in op_type_to_remove:
+                # Check that node.input[0] is not a constant
+                if node.input[0] != "input_0" and op_type_inputs[node.input[0]] == "Constant":
+                    raise ValueError(
+                        f"Trying to apply identity over a constant input." f"Node: {node.op_type}"
+                    )  # pragma: no cover
+                # Create a Identity node
+                new_node = onnx.helper.make_node(
+                    "Identity",
+                    inputs=[str(node.input[0])],
+                    outputs=node.output,
+                )
+                # Update current node with new_node
+                onnx_model.graph.node[node_index].CopyFrom(new_node)
+
+        # Modify onnx graph to fit in FHE
+        for i, initializer in enumerate(onnx_model.graph.initializer):
+            # Reshape initializer with shape (n_tree, hidden_size, n_features)
+            # to (hidden_size, n_features). Concrete Numpy only accepts 2d matmul
+            # TODO remove when 3d matmul is allowed (#293)
+            if "weight_" in initializer.name and len(initializer.dims) == 3:
+                onnx_model.graph.initializer[i].dims.pop(0)
+
+            # All constants in our tree should be integers.
+            # Tree thresholds can be rounded down (numpy.floor)
+            # while the final probabilities (i.e. .predict())
+            # has to take the value 1 for the class with highest probability.
+
+            init_tensor = numpy_helper.to_array(initializer)
+            if "weight_3" in initializer.name:
+                # init_tensor should have only one 1 on axis=1
+                # which correspond to max value on axis =1
+                # (i.e. the class with highest probability)
+                max_cols = numpy.argmax(init_tensor, axis=0)
+                one_hot_classes = numpy.zeros(init_tensor.shape)
+                for icol, m in enumerate(max_cols):
+                    one_hot_classes[:, icol][m] = 1
+                init_tensor = one_hot_classes
+            else:
+                init_tensor = numpy.floor(init_tensor)
+            new_initializer = numpy_helper.from_array(init_tensor.astype(int), initializer.name)
+            onnx_model.graph.initializer[i].CopyFrom(new_initializer)
+
+        # Since the transpose is currently not implemented in concrete numpy
+        # the input is transposed in clear. We need to update the Gemm
+        # where the input is transposed.
+        # FIXME remove this workaround once #292 is fixed
+
+        # Make sure Gemm is at the right place in the graph.
+        assert_true(
+            (onnx_model.graph.node[1].op_type == "Gemm")
+            & (onnx_model.graph.node[1].input[1] == "6"),
+            "Gemm is not at the right place in the graph",
+        )
+        # Gemm has transA and transB parameter. B is the input.
+        # If we transpose the input before, we don't have to do it afterward.
+        # In FHE we currently only send 1 example so the input looks has shape (1, n_features)
+        # We simply need to transpose it to (n_features, 1)
+        gemm_node = onnx_model.graph.node[1]
+        new_node = numpy_helper.helper.make_node(
+            name=gemm_node.name,
+            op_type=gemm_node.op_type,
+            inputs=gemm_node.input,
+            outputs=gemm_node.output,
+            alpha=1.0,
+            beta=0.0,
+        )
+        onnx_model.graph.node[1].CopyFrom(new_node)
+        _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
+        return _tensor_tree_predict
 
     def fit_benchmark(
         self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
@@ -278,11 +395,9 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         Returns:
             the prediction as ordinals
         """
-
         if execute_in_fhe:
             # Quantize the input
             X = self.quantize_input(X)
-
             # Check that self.fhe_tree is not None
             assert_true(
                 self.fhe_tree is not None,
@@ -291,8 +406,10 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             )
             y_preds_ = []
             for i in range(X.shape[0]):
-                fhe_pred = self.fhe_tree.run(X[i].astype(numpy.uint8))
-                y_preds_.append(fhe_pred)
+                fhe_pred = self.fhe_tree.run(X[i].astype(numpy.uint8).reshape(X[i].shape[0], 1))
+                # Output has the shape (n_classes, n_examples).
+                # Transpose to the predict sklearn like.
+                y_preds_.append(fhe_pred.transpose()[0])
             # Convert to numpy array
             y_preds = numpy.array(y_preds_)
             y_preds = y_preds[:, 1]
@@ -318,10 +435,22 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         assert self._tensor_tree_predict is not None, "You must fit the model before using it."
 
         X = self.quantize_input(X)
+        # _tensor_tree_predict needs X with shape (n_features, n_samples) but
+        # X from sklearn is (n_samples, n_features)
+        assert_true(
+            X.shape[1] == self.n_features_in_, "X should have shape (n_samples, n_features)"
+        )
+        X = X.T
+        y_pred = self._tensor_tree_predict(X)[0]
 
-        # Check that the predictions are correct using tensors
-        y_pred = self._tensor_tree_predict(X)[:, 1]
-        return y_pred
+        # Shape of y_pred is (classes, n_examples)
+        # Transpose and reshape should be applied in clear.
+        assert_true(
+            (y_pred.shape[0] == self.n_classes_) and (y_pred.shape[1] == X.shape[1]),
+            "y_pred should have shape (n_classes, n_examples)",
+        )
+        y_pred = y_pred.transpose()
+        return y_pred[:, 1]
 
     def quantize_input(self, X: numpy.ndarray):
         """Quantize the input.
@@ -370,4 +499,6 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             compilation_configuration,
             compilation_artifacts,
         )
-        self.fhe_tree = compiler.compile_on_inputset((sample for sample in X), show_mlir)
+        self.fhe_tree = compiler.compile_on_inputset(
+            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir
+        )
