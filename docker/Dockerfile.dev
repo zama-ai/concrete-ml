@@ -3,6 +3,10 @@ FROM ubuntu:20.04
 ENV TZ=Europe/Paris
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# Replace default archive.ubuntu.com with fr mirror
+# original archive showed performance issues and is farther away
+RUN sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+
 COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
 RUN ./setup_os_deps.sh --linux-install-python && rm ./setup_os_deps.sh
 
@@ -12,9 +16,9 @@ ENV SRC_DIR=/src
 ARG BUILD_GID=1000
 ARG BUILD_UID=1000
 
-# Get sudo for our future user
+# Get sudo and vim for our future user
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y sudo && \
+    apt-get install --no-install-recommends -y sudo vim && \
     rm -rf /var/lib/apt/lists/*
 
 # From https://dev.to/emmanuelnk/using-sudo-without-password-prompt-as-non-root-docker-user-52bg

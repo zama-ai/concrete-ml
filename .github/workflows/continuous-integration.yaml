@@ -159,12 +159,15 @@ jobs:
     env:
       IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
 
+    # Replace default archive.ubuntu.com from docker image with fr mirror
+    # original archive showed performance issues and is farther away
     steps:
       - name: Docker container related setup and git installation
         run: |
           TZ=Europe/Paris
           echo "TZ=${TZ}" >> "$GITHUB_ENV"
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
           apt update && apt install git -y
 
       - name: Checkout Code
