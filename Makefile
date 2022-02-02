@@ -17,6 +17,7 @@ setup_env:
 	else \
 		poetry install; \
 	fi
+	poetry run python -m pip install -U --pre "concrete-numpy[full]"
 
 .PHONY: sync_env # Synchronise the environment
 sync_env:
@@ -181,10 +182,14 @@ docker_rebuild: docker_clean_volumes
 
 .PHONY: docker_start # Launch docker
 docker_start:
-	@# the slash before pwd is for Windows
+	EV_FILE="$$(mktemp --suffix=.txt)" && \
+	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
+	export $$(cat "$${EV_FILE}" | xargs) && rm -f "$${EV_FILE}" && \
 	docker run --rm -it \
 	-p 8888:8888 \
 	--env DISPLAY=host.docker.internal:0 \
+	$${PIP_INDEX_URL:+--env "PIP_INDEX_URL=$${PIP_INDEX_URL}"} \
+	$${PIP_EXTRA_INDEX_URL:+--env "PIP_EXTRA_INDEX_URL=$${PIP_EXTRA_INDEX_URL}"} \
 	--volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \

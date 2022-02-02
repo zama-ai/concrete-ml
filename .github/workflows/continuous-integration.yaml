@@ -158,10 +158,17 @@ jobs:
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.start-runner-linux.outputs.matrix)) }}
     env:
       IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
 
     # Replace default archive.ubuntu.com from docker image with fr mirror
     # original archive showed performance issues and is farther away
     steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
       - name: Docker container related setup and git installation
         run: |
           TZ=Europe/Paris
@@ -402,7 +409,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(format('{{"include":{0}}}', needs.matrix-preparation.outputs.macos-matrix)) }}
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
     steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
       - name: Checkout Code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
 
@@ -577,8 +592,15 @@ jobs:
 
     env:
       RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-ml
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
 
     steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
       - uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
 
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
