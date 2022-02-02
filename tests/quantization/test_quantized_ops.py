@@ -1,7 +1,7 @@
 """Tests for the quantized ONNX ops."""
 
 from itertools import combinations
-from typing import Tuple, Union
+from typing import Callable, Tuple, Union
 
 import numpy
 import pytest
@@ -19,14 +19,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedTanh,
 )
 
-N_BITS_ATOL_TUPLE_LIST = [
-    (32, 10 ** -2),
-    (28, 10 ** -2),
-    (20, 10 ** -2),
-    (16, 10 ** -1),
-    (8, 10 ** -0),
-    (5, 10 ** -0),
-]
+N_BITS_LIST = [20, 16, 8]
 
 INPUT_RANGES = [
     pytest.param((-1, 1)),
@@ -39,8 +32,8 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
 
 
 @pytest.mark.parametrize(
-    "n_bits, atol",
-    [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
+    "n_bits",
+    [pytest.param(n_bits) for n_bits in N_BITS_LIST],
 )
 @pytest.mark.parametrize(
     "input_range",
@@ -64,8 +57,8 @@ def test_univariate_ops_no_attrs(
     input_shape: Tuple[int, ...],
     input_range: Tuple[int, int],
     n_bits: int,
-    atol: float,
     is_signed: bool,
+    check_r2_score: Callable,
 ):
     """Test activation functions."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
@@ -83,14 +76,14 @@ def test_univariate_ops_no_attrs(
     dequant_values = q_output.dequant()
 
     # Check that all values are close
-    assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
+    check_r2_score(dequant_values, expected_output)
 
 
 # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/229
 # Manage ranges/improve tests for exponential
 @pytest.mark.parametrize(
-    "n_bits, atol",
-    [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
+    "n_bits",
+    [pytest.param(n_bits) for n_bits in N_BITS_LIST],
 )
 @pytest.mark.parametrize(
     "input_range",
@@ -105,8 +98,8 @@ def test_exp_op(
     input_shape: Tuple[int, ...],
     input_range: Tuple[int, int],
     n_bits: int,
-    atol: float,
     is_signed: bool,
+    check_r2_score: Callable,
 ):
     """Test activation functions."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
@@ -124,12 +117,12 @@ def test_exp_op(
     dequant_values = q_output.dequant()
 
     # Check that all values are close
-    assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
+    check_r2_score(dequant_values, expected_output)
 
 
 @pytest.mark.parametrize(
-    "n_bits, atol",
-    [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
+    "n_bits",
+    [pytest.param(n_bits) for n_bits in N_BITS_LIST],
 )
 @pytest.mark.parametrize("input_range", INPUT_RANGES)
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -142,9 +135,9 @@ def test_clip_op(
     input_shape: Tuple[int, ...],
     input_range: Tuple[int, int],
     n_bits: int,
-    atol: float,
     is_signed: bool,
     cst_inputs: Tuple[Union[int, float], Union[int, float]],
+    check_r2_score: Callable,
 ):
     """Test for clip op."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
@@ -171,7 +164,7 @@ def test_clip_op(
         dequant_values = q_output.dequant()
 
         # Check that all values are close
-        assert numpy.isclose(dequant_values, expected_output, atol=atol).all()
+        check_r2_score(dequant_values, expected_output)
 
 
 GEMM_N_BITS_LIST = [20, 16, 8]
@@ -195,6 +188,7 @@ def test_gemm_and_linear_op(
     n_examples: int,
     n_features: int,
     n_neurons: int,
+    check_r2_score: Callable,
 ):
     """Test for gemm op."""
 
@@ -219,8 +213,8 @@ def test_gemm_and_linear_op(
     actual_gemm_output = q_gemm(q_inputs).dequant()
     actual_linear_output = q_linear(q_inputs).dequant()
 
-    assert numpy.isclose(expected_gemm_outputs, actual_gemm_output, atol=10 ** -0).all()
-    assert numpy.isclose(expected_linear_outputs, actual_linear_output, atol=10 ** -0).all()
+    check_r2_score(expected_gemm_outputs, actual_gemm_output)
+    check_r2_score(expected_linear_outputs, actual_linear_output)
 
     # Same test without bias
     q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights})
@@ -233,8 +227,8 @@ def test_gemm_and_linear_op(
     actual_gemm_output = q_gemm(q_inputs).dequant()
     actual_linear_output = q_linear(q_inputs).dequant()
 
-    assert numpy.isclose(expected_gemm_outputs, actual_gemm_output, atol=10 ** -0).all()
-    assert numpy.isclose(expected_linear_outputs, actual_linear_output, atol=10 ** -0).all()
+    check_r2_score(expected_gemm_outputs, actual_gemm_output)
+    check_r2_score(expected_linear_outputs, actual_linear_output)
 
 
 def test_all_ops_were_tested():

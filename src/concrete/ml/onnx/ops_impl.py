@@ -465,11 +465,11 @@ def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
+    # FIXME: remove no cover when issue #224 is resolved
+    alpha = 1 / 6  # pragma: no cover
+    beta = 0.5  # pragma: no cover
 
-    alpha = 1 / 6
-    beta = 0.5
-
-    return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)
+    return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)  # pragma: no cover
 
 
 def numpy_softplus(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:

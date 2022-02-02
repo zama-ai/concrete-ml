@@ -61,19 +61,10 @@ class FC(nn.Module):
         return out
 
 
-N_BITS_ATOL_TUPLE_LIST = [
-    (28, 10 ** -2),
-    (20, 10 ** -2),
-    (16, 10 ** -2),
-    (8, 10 ** -2),
-    (4, 10 ** -0),
-]
+N_BITS_LIST = [20, 16, 8]
 
 
-@pytest.mark.parametrize(
-    "n_bits, atol",
-    [pytest.param(n_bits, atol) for n_bits, atol in N_BITS_ATOL_TUPLE_LIST],
-)
+@pytest.mark.parametrize("n_bits", [pytest.param(n_bits) for n_bits in N_BITS_LIST])
 @pytest.mark.parametrize(
     "model, input_shape",
     [
@@ -81,7 +72,7 @@ N_BITS_ATOL_TUPLE_LIST = [
     ],
 )
 @pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
-def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torch):
+def test_quantized_linear(model, input_shape, n_bits, is_signed, seed_torch, check_r2_score):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
@@ -114,7 +105,7 @@ def test_quantized_linear(model, input_shape, n_bits, atol, is_signed, seed_torc
     assert numpy.array_equal(dequant_manually_prediction, dequant_prediction)
 
     # Check that the actual prediction are close to the expected predictions
-    assert numpy.isclose(numpy_prediction, dequant_prediction, atol=atol).all()
+    check_r2_score(numpy_prediction, dequant_prediction)
 
 
 @pytest.mark.parametrize(

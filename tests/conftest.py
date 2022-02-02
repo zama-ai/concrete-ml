@@ -16,6 +16,7 @@ from concrete.common.mlir.utils import (
     get_op_graph_max_bit_width_and_nodes_over_bit_width_limit,
 )
 from concrete.numpy import compile as compile_
+from sklearn.metrics import r2_score
 
 
 def pytest_addoption(parser):
@@ -295,3 +296,14 @@ def check_array_equality():
     """Fixture to check array equality"""
 
     return check_array_equality_impl
+
+
+@pytest.fixture
+def check_r2_score():
+    """Fixture to check r2 score"""
+
+    def check_r2_score_impl(expected, actual):
+        r_square = r2_score(expected.ravel(), actual.ravel())
+        assert r_square >= 0.99, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
+
+    return check_r2_score_impl

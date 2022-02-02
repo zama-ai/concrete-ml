@@ -96,7 +96,11 @@ class QuantizedModule:
         # satisfy mypy
         assert self.q_input is not None
         qvalues = self.q_input.update_values(values)
-        return qvalues.astype(numpy.uint8)
+        assert_true(
+            numpy.array_equal(qvalues.astype(numpy.uint32), qvalues),
+            on_error_msg="Input quantizer does not give values within uint32.",
+        )
+        return qvalues.astype(numpy.uint32)
 
     def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
         """Take the last layer q_out and use its dequant function.
