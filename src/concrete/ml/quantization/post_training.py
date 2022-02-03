@@ -1,6 +1,6 @@
 """Post Training Quantization methods."""
 
-from typing import Dict, Set
+from typing import Dict, Set, Tuple, Union, cast
 
 import numpy
 import onnx
@@ -32,7 +32,7 @@ class PostTrainingAffineQuantization:
 
     quant_ops_dict: Dict[str, QuantizedOp]
     n_bits: int
-    quant_params: Dict[str, numpy.ndarray]
+    quant_params: Dict[str, QuantizedArray]
     numpy_model: NumpyModule
     is_signed: bool
 
@@ -73,7 +73,7 @@ class PostTrainingAffineQuantization:
 
         graph = self.numpy_model.onnx_model.graph
 
-        node_results: Dict[str, numpy.ndarray] = dict(
+        node_results: Dict[str, Union[numpy.ndarray, QuantizedArray]] = dict(
             {
                 graph_input.name: input_value
                 for graph_input, input_value in zip(graph.input, input_calibration_data)
@@ -88,28 +88,61 @@ class PostTrainingAffineQuantization:
             attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
             # For now only single output nodes
             assert_true(len(node.output) == 1)
-            output = node.output[0]
+            output_name = node.output[0]
             if op_type == "Constant":
-                # Do not quantize network constants for now, ops manage that on their own if needed
-                node_results[output] = ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
-                constants.add(output)
+                node_results[output_name] = QuantizedArray(
+                    self.n_bits, ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0], self.is_signed
+                )
+                constants.add(output_name)
                 continue
 
-            quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
             curr_inputs = {input_name: node_results[input_name] for input_name in node.input}
             curr_cst_inputs = {
                 input_idx: value
                 for input_idx, (input_name, value) in enumerate(curr_inputs.items())
                 if input_name in constants
             }
-            curr_calibration_data = tuple(
-                val for input_name, val in curr_inputs.items() if input_name not in constants
-            )
-            quantized_op_instance = quantized_op_class(self.n_bits, curr_cst_inputs, **attributes)
-            output_calibreation_data = self._calibrate_layers_activation(
-                output, quantized_op_instance, *curr_calibration_data
-            )
-            node_results[output] = output_calibreation_data
+
+            has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
+
+            # If we depend on a variable input use the quantized version of the operator
+            if has_variable_inputs:
+                quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
+                curr_calibration_data = tuple(
+                    val for input_name, val in curr_inputs.items() if input_name not in constants
+                )
+                # For mypy
+                assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
+                curr_calibration_data = cast(Tuple[numpy.ndarray, ...], curr_calibration_data)
+                quantized_op_instance = quantized_op_class(
+                    self.n_bits, curr_cst_inputs, **attributes
+                )
+                output_calibration_data = self._calibrate_layers_activation(
+                    output_name, quantized_op_instance, *curr_calibration_data
+                )
+                node_results[output_name] = output_calibration_data
+            # Otherwise use the original operator to operate on float values to do constant folding
+            else:
+                # For mypy
+                assert_true(
+                    all(
+                        isinstance(key, int) and isinstance(val, QuantizedArray)
+                        for key, val in curr_cst_inputs.items()
+                    )
+                )
+                curr_q_cst_inputs = cast(Dict[int, QuantizedArray], curr_cst_inputs)
+                # Get the non quantized values
+                real_cst_inputs = (qarray.values for qarray in curr_q_cst_inputs.values())
+                node_output = ONNX_OPS_TO_NUMPY_IMPL[op_type](*real_cst_inputs, **attributes)
+                assert_true(
+                    (num_output := len(node_output)) == 1,
+                    f"Currently {self.__class__.__name__} can only manage single output operator, "
+                    f"got {num_output} for op {op_type}",
+                    RuntimeError,
+                )
+                q_node_output = QuantizedArray(self.n_bits, node_output[0], self.is_signed)
+                node_results[output_name] = q_node_output
+                constants.add(output_name)
 
     def _calibrate_layers_activation(
         self, name: str, quantized_op: QuantizedOp, *calibration_data: numpy.ndarray

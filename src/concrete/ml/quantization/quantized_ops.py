@@ -165,12 +165,13 @@ class QuantizedOp(ABC):
             QuantizedArray: The returned quantized value.
         """
         f_inputs = (q_input.dequant() for q_input in q_inputs)
-        prepared_inputs = self._prepare_inputs_with_constants(*f_inputs)
+        # Here we need the actual values of the constants
+        prepared_inputs = self._prepare_inputs_with_constants(*f_inputs, use_actual_values=True)
         f_outputs = self.call_impl(*prepared_inputs, **attrs)
 
         return self.quant_output(f_outputs)
 
-    def _prepare_inputs_with_constants(self, *inputs) -> List:
+    def _prepare_inputs_with_constants(self, *inputs, use_actual_values: bool) -> List:
         num_onnx_inputs = len(self._params_that_are_onnx_inputs)
         num_required_onnx_inputs = len(self._params_that_are_required_onnx_inputs)
         num_provided_constants = len(self.constant_inputs)
@@ -196,6 +197,11 @@ class QuantizedOp(ABC):
             prepared_inputs[curr_input_fill_idx] = input_
             curr_input_fill_idx += 1
 
+        if use_actual_values:
+            for i, input_i in enumerate(prepared_inputs):
+                if isinstance(input_i, QuantizedArray):
+                    prepared_inputs[i] = input_i.values
+
         return prepared_inputs
 
     def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
@@ -208,7 +214,8 @@ class QuantizedOp(ABC):
             numpy.ndarray: the output values for the provided calibration samples.
         """
 
-        prepared_inputs = self._prepare_inputs_with_constants(*inputs)
+        # Here we need the actual values of the constants
+        prepared_inputs = self._prepare_inputs_with_constants(*inputs, use_actual_values=True)
         quantized_samples = QuantizedArray(
             self.n_bits, self.call_impl(*prepared_inputs, **self.attrs)
         )
@@ -329,40 +336,16 @@ class QuantizedGemm(QuantizedOp):
 
         assert_true(
             1 in self.constant_inputs,
-            f"{self.__class__.__name__} currently only supports quantizing Gemm if weights are "
-            "provided as the 'b' constant input.",
+            f"{self.__class__.__name__} currently only supports quantizing "
+            f"{self._impl_for_op_named} if weights are provided as the 'b' constant input.",
         )
-
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
-        """Create corresponding QuantizedArray for the output.
-
-        Args:
-            *inputs (numpy.ndarray): Inputs.
-
-        Returns:
-            numpy.ndarray: the dequantized output of the operator.
-        """
-
-        prepared_inputs = self._prepare_inputs_with_constants(*inputs)
-        # Here we need the actual values of the weights and biases
-        for i in range(1, len(prepared_inputs)):
-            if isinstance(prepared_inputs[i], QuantizedArray):
-                prepared_inputs[i] = prepared_inputs[i].values
-
-        quantized_samples = QuantizedArray(
-            self.n_bits, self.call_impl(*prepared_inputs, **self.attrs)
-        )
-        self.output_scale = quantized_samples.scale
-        self.output_zero_point = quantized_samples.zero_point
-
-        return quantized_samples.values
 
     def q_impl(
         self,
         *q_inputs: QuantizedArray,
         **attrs,
     ) -> QuantizedArray:
-        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs)
+        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
         q_bias: Optional[QuantizedArray] = prepared_inputs[2] if len(prepared_inputs) == 3 else None

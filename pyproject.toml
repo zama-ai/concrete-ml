@@ -73,7 +73,8 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 filterwarnings = [
     "error",
-    "ignore:`np\\.object` is a deprecated alias for the builtin `object`\\. To silence this warning, use `object` by itself\\. Doing this will not modify any behavior and is safe\\.:DeprecationWarning"
+    "ignore:`np\\.object` is a deprecated alias for the builtin `object`\\. To silence this warning, use `object` by itself\\. Doing this will not modify any behavior and is safe\\.:DeprecationWarning",
+    "ignore:Using or importing the ABCs from 'collections' instead of from 'collections\\.abc' is deprecated.*:DeprecationWarning",
 ]
 
 [tool.semantic_release]
