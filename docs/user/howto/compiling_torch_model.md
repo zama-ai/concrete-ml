@@ -34,7 +34,7 @@ Once your model is trained you can simply call the `compile_torch_model` functio
 <!--pytest-codeblocks:cont-->
 
 ```python
-from concrete.torch.compile import compile_torch_model
+from concrete.ml.torch.compile import compile_torch_model
 import numpy
 torch_input = torch.randn(100, 14)
 quantized_numpy_module = compile_torch_model(

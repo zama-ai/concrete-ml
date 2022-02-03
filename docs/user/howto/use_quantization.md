@@ -4,7 +4,7 @@ In this section we detail some usage of [quantization](../explanation/quantizati
 
 ## Quantization Basics
 
-**Concrete Numpy** implements some basic concepts of quantization. The very basic purpose of it is to convert floating point values to integers. We can apply such conversion using `QuantizedArray` available in `concrete.quantization`.
+**Concrete Numpy** implements some basic concepts of quantization. The very basic purpose of it is to convert floating point values to integers. We can apply such conversion using `QuantizedArray` available in `concrete.ml.quantization`.
 
 `QuantizedArray` takes 2 arguments:
 
@@ -12,22 +12,23 @@ In this section we detail some usage of [quantization](../explanation/quantizati
 - `values` that will be converted to integers
 
 ```python
-from concrete.quantization import QuantizedArray
+from concrete.ml.quantization import QuantizedArray
 import numpy
 numpy.random.seed(0)
 A = numpy.random.uniform(-2, 2, 10)
+print("A = ", A)
 # array([ 0.19525402,  0.86075747,  0.4110535,  0.17953273, -0.3053808,
 #         0.58357645, -0.24965115,  1.567092 ,  1.85465104, -0.46623392])
 q_A = QuantizedArray(7, A)
-q_A.qvalues
-# array([ 37,          73,          48,         36,          9,  
+print("q_A.qvalues = ", q_A.qvalues)
+# array([ 37,          73,          48,         36,          9,
 #         58,          12,          112,        127,         0])
 # the quantized integers values from A.
-q_A.scale
+print("q_A.scale = ", q_A.scale)
 # 0.018274684777173276, the scale S.
-q_A.zero_point 
+print("q_A.zero_point = ", q_A.zero_point)
 # 26, the zero point Z.
-q_A.dequant()
+print("q_A.dequant() = ", q_A.dequant())
 # array([ 0.20102153,  0.85891018,  0.40204307,  0.18274685, -0.31066964,
 #         0.58478991, -0.25584559,  1.57162289,  1.84574316, -0.4751418 ])
 # Dequantized values.
@@ -39,7 +40,7 @@ Neural networks are implemented with a diverse set of operations, such as convol
 
 Re-scaling raw input values to the quantized domain implies that we need to make use of floating point operations. In the FHE setting where we only work with integers, this could be a problem, but luckily, the FHE implementation behind **Concrete Numpy** provides a workaround. We essentially make use of a [table lookup](https://docs.zama.ai/concrete-numpy/stable/user/tutorial/table_lookup.html) which is later translated into a [PBS](https://whitepaper.zama.ai).
 
-Of course, having a PBS for every quantized addition isn't recommended for computational cost reasons. Also, **Concrete Numpy** allows PBS only for univariate operations (i.e. matrix multiplication can't be done in a PBS). Therefore, our quantized modules split the computation of floating point values and unsigned integers as it is currently done in `concrete.quantization.QuantizedLinear`.
+Of course, having a PBS for every quantized addition isn't recommended for computational cost reasons. Also, **Concrete Numpy** allows PBS only for univariate operations (i.e. matrix multiplication can't be done in a PBS). Therefore, our quantized modules split the computation of floating point values and unsigned integers as it is currently done in `concrete.ml.quantization.QuantizedLinear`.
 
 The above operations are all implemented in **Concrete Numpy** and transparent to the user via our Quantized Modules.
 
@@ -67,6 +68,7 @@ class LogisticRegression(nn.Module):
         out = self.sigmoid1(out)
         return out
 
+
 torch_model = LogisticRegression()
 ```
 
@@ -75,8 +77,11 @@ We then convert this model to numpy only operations:
 <!--pytest-codeblocks:cont-->
 
 ```python
-from concrete.torch import NumpyModule
-numpy_model = NumpyModule(torch_model)
+from concrete.ml.torch import NumpyModule
+
+numpy_input = numpy.zeros(shape=(10, 14))
+dummy_input = torch.from_numpy(numpy_input).float()
+numpy_model = NumpyModule(torch_model, dummy_input)
 ```
 
 The `NumpyModule` allows us to runs inference as for a `nn.Module`. Here, the prediction of the numpy module should be exactly the same.
@@ -86,9 +91,12 @@ We can then quantize the numpy module with `PostTrainingAffineQuantization` as f
 <!--pytest-codeblocks:cont-->
 
 ```python
-from concrete.quantization import PostTrainingAffineQuantization
-numpy_input = numpy.random.uniform(-1, 1, size=(10,14)) # some input with 14 features to calibrate the quantization
-n_bits = 2 # number of bits of precision for the weights, activation, inputs and outputs.
+from concrete.ml.quantization import PostTrainingAffineQuantization
+
+numpy_input = numpy.random.uniform(
+    -1, 1, size=(10, 14)
+)  # some input with 14 features to calibrate the quantization
+n_bits = 2  # number of bits of precision for the weights, activation, inputs and outputs.
 post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model)
 quantized_numpy_module = post_training_quant.quantize_module(numpy_input)
 ```
@@ -100,39 +108,30 @@ We can then easily verify that all models give similar predictions. Obviously, t
 <!--pytest-codeblocks:cont-->
 
 ```python
-torch_model(torch.from_numpy(numpy_input).float())
-# tensor([[-0.0690],
-#         [-0.1108],
-#         [-0.0743],
-#         [-0.0464],
-#         [ 0.0261],
-#         [-0.1380],
-#         [-0.0941],
-#         [-0.1589],
-#         [ 0.0374],
-#         [-0.1088]])
-numpy_model(numpy_input)
-# array([[-0.06901879],
-#        [-0.11081327],
-#        [-0.07429631],
-#        [-0.04636377],
-#        [ 0.02613242],
-#        [-0.13795333],
-#        [-0.09408965],
-#        [-0.15885062],
-#        [ 0.03735061],
-#        [-0.10878125]])
-quantized_numpy_module.forward_and_dequant(QuantizedArray(2, numpy_input))
-# array([[-0.03792994],
-#        [-0.15551274],
-#        [-0.03792994],
-#        [ 0.08154936],
-#        [ 0.08154936],
-#        [-0.15551274],
-#        [-0.03792994],
-#        [-0.15551274],
-#        [ 0.08154936],
-#        [-0.15551274]])
+# Quantize input
+qinput = quantized_numpy_module.quantize_input(numpy_input)
+print("qinput = ", qinput.flatten())
+# qinput =  [2 1 1 2 0 0 0 2 2 2 2 2 1 2 0 1 0 2 1 1 0 2 1 1 0 1 1 1 2 2 1 1 2 0 2 2 0
+# 0 0 1 1 1 2 0 0 0 1 0 1 0 0 0 1 0 0 1 2 0 2 0 2 1 2 1 2 0 0 0 0 0 0 1 0 2
+# 1 0 1 0 1 2 0 2 0 2 0 0 1 0 2 0 2 0 2 2 0 1 1 1 0 2 1 2 2 0 2 1 2 1 2 2 2
+# 1 2 1 1 1 0 0 1 0 1 1 0 0 1 1 1 1 1 1 2 1 1 2 2 2 0 2 2 3]
+
+prediction = quantized_numpy_module(qinput)
+print("prediction = ", prediction.flatten())
+# prediction =  [2 2 0 2 3 2 3 2 2 2]
+
+dequant_manually_prediction = quantized_numpy_module.dequantize_output(prediction)
+print("dequant_manually_prediction = ", dequant_manually_prediction.flatten())
+# dequant_manually_prediction =  [0.50702845 0.50702845 0.38027134 0.50702845 0.570407   0.50702845
+# 0.570407   0.50702845 0.50702845 0.50702845]
+
+# Forward and Dequantize to get back to real values
+dequant_prediction = quantized_numpy_module.forward_and_dequant(qinput)
+print("dequant_prediction = ", dequant_prediction.flatten())
+# dequant_prediction =  [0.50702845 0.50702845 0.38027134 0.50702845 0.570407   0.50702845
+# 0.570407   0.50702845 0.50702845 0.50702845]
+
+# Both dequant prediction should be equal
 ```
 
 ```{warning}
