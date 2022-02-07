@@ -11,7 +11,7 @@ from concrete.ml.torch import NumpyModule
 class CNN(nn.Module):
     """Torch CNN model for the tests."""
 
-    def __init__(self):
+    def __init__(self, activation_function):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.AvgPool2d(2, 2)
@@ -19,14 +19,15 @@ class CNN(nn.Module):
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
+        self.act_f = activation_function()
 
     def forward(self, x):
         """Forward pass."""
         x = self.pool(torch.relu(self.conv1(x)))
         x = self.pool(torch.relu(self.conv2(x)))
         x = torch.flatten(x, 1)
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
+        x = self.act_f(self.fc1(x))
+        x = self.act_f(self.fc2(x))
         x = self.fc3(x)
         return x
 
@@ -34,28 +35,28 @@ class CNN(nn.Module):
 class FC(nn.Module):
     """Torch model for the tests"""
 
-    def __init__(self):
+    def __init__(self, activation_function):
         super().__init__()
         self.fc1 = nn.Linear(in_features=32 * 32 * 3, out_features=128)
-        self.sigmoid1 = nn.Sigmoid()
+        self.act_1 = activation_function()
         self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.sigmoid2 = nn.Sigmoid()
+        self.act_2 = activation_function()
         self.fc3 = nn.Linear(in_features=64, out_features=64)
-        self.sigmoid3 = nn.Sigmoid()
+        self.act_3 = activation_function()
         self.fc4 = nn.Linear(in_features=64, out_features=64)
-        self.sigmoid4 = nn.Sigmoid()
+        self.act_4 = activation_function()
         self.fc5 = nn.Linear(in_features=64, out_features=10)
 
     def forward(self, x):
         """Forward pass."""
         out = self.fc1(x)
-        out = self.sigmoid1(out)
+        out = self.act_1(out)
         out = self.fc2(out)
-        out = self.sigmoid2(out)
+        out = self.act_2(out)
         out = self.fc3(out)
-        out = self.sigmoid3(out)
+        out = self.act_3(out)
         out = self.fc4(out)
-        out = self.sigmoid4(out)
+        out = self.act_4(out)
         out = self.fc5(out)
 
         return out
@@ -71,8 +72,41 @@ N_BITS_LIST = [20, 16, 8]
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
 )
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.Sigmoid, id="Sigmoid"),
+        pytest.param(nn.ReLU, id="ReLU"),
+        pytest.param(nn.ReLU6, id="ReLU6"),
+        pytest.param(nn.Tanh, id="Tanh"),
+        pytest.param(nn.ELU, id="ELU"),
+        pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
+        pytest.param(nn.Hardtanh, id="Hardtanh"),
+        pytest.param(nn.LeakyReLU, id="LeakyReLU"),
+        pytest.param(nn.SELU, id="SELU"),
+        pytest.param(nn.CELU, id="CELU"),
+        pytest.param(nn.Softplus, id="Softplus"),
+        # Are currently not supported for various reasons:
+        # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
+        # pytest.param(nn.GELU, id="GELU"),
+        # pytest.param(nn.SiLU, id="SiLU"),
+        # pytest.param(nn.Mish, id="Mish"),
+        # pytest.param(nn.Softsign, id="Softsign"),
+        # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
+        # pytest.param(nn.Hardshrink, id="Hardshrink"),
+        # pytest.param(nn.Hardswish, id="Hardswish"),
+        # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
+        # pytest.param(nn.PReLU, id="PReLU"),
+        # pytest.param(nn.RReLU, id="RReLU"),
+        # pytest.param(nn.Softshrink, id="Softshrink"),
+        # pytest.param(nn.Threshold, id="Threshold"),
+        # pytest.param(nn.GLU, id="GLU"),
+    ],
+)
 @pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
-def test_quantized_linear(model, input_shape, n_bits, is_signed, seed_torch, check_r2_score):
+def test_quantized_linear(
+    model, input_shape, n_bits, activation_function, is_signed, seed_torch, check_r2_score
+):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
@@ -81,7 +115,7 @@ def test_quantized_linear(model, input_shape, n_bits, is_signed, seed_torch, che
     # Seed torch
     seed_torch()
     # Define the torch model
-    torch_fc_model = model()
+    torch_fc_model = model(activation_function)
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape)
     # Create corresponding numpy model
@@ -130,7 +164,7 @@ def test_raises_on_float_inputs(model, input_shape, dtype, err_msg, seed_torch):
     # Seed torch
     seed_torch()
     # Define the torch model
-    torch_fc_model = model()
+    torch_fc_model = model(nn.ReLU)
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape).astype(dtype)
     # Create corresponding numpy model

@@ -9,13 +9,19 @@ import pytest
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.quantized_ops import (
     ALL_QUANTIZED_OPS,
+    QuantizedCelu,
     QuantizedClip,
+    QuantizedElu,
     QuantizedExp,
     QuantizedGemm,
+    QuantizedHardSigmoid,
+    QuantizedLeakyRelu,
     QuantizedLinear,
     QuantizedOp,
     QuantizedRelu,
+    QuantizedSelu,
     QuantizedSigmoid,
+    QuantizedSoftplus,
     QuantizedTanh,
 )
 
@@ -49,6 +55,12 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
         QuantizedRelu,
         QuantizedTanh,
         QuantizedSigmoid,
+        QuantizedHardSigmoid,
+        QuantizedLeakyRelu,
+        QuantizedElu,
+        QuantizedSelu,
+        QuantizedCelu,
+        QuantizedSoftplus,
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -251,6 +263,12 @@ def test_all_ops_were_tested():
         QuantizedRelu: test_univariate_ops_no_attrs,
         QuantizedTanh: test_univariate_ops_no_attrs,
         QuantizedSigmoid: test_univariate_ops_no_attrs,
+        QuantizedHardSigmoid: test_univariate_ops_no_attrs,
+        QuantizedLeakyRelu: test_univariate_ops_no_attrs,
+        QuantizedElu: test_univariate_ops_no_attrs,
+        QuantizedSelu: test_univariate_ops_no_attrs,
+        QuantizedCelu: test_univariate_ops_no_attrs,
+        QuantizedSoftplus: test_univariate_ops_no_attrs,
         QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
     }

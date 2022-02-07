@@ -299,10 +299,40 @@ class QuantizedSigmoid(QuantizedOp):
     _impl_for_op_named: str = "Sigmoid"
 
 
+class QuantizedHardSigmoid(QuantizedOp):
+    """Quantized HardSigmoid op."""
+
+    _impl_for_op_named: str = "HardSigmoid"
+
+
 class QuantizedRelu(QuantizedOp):
     """Quantized Relu op."""
 
     _impl_for_op_named: str = "Relu"
+
+
+class QuantizedLeakyRelu(QuantizedOp):
+    """Quantized LeakyRelu op."""
+
+    _impl_for_op_named: str = "LeakyRelu"
+
+
+class QuantizedElu(QuantizedOp):
+    """Quantized Elu op."""
+
+    _impl_for_op_named: str = "Elu"
+
+
+class QuantizedSelu(QuantizedOp):
+    """Quantized Selu op."""
+
+    _impl_for_op_named: str = "Selu"
+
+
+class QuantizedCelu(QuantizedOp):
+    """Quantized Celu op."""
+
+    _impl_for_op_named: str = "Celu"
 
 
 class QuantizedClip(QuantizedOp):
@@ -428,6 +458,12 @@ class QuantizedTanh(QuantizedOp):
     """Quantized Tanh op."""
 
     _impl_for_op_named: str = "Tanh"
+
+
+class QuantizedSoftplus(QuantizedOp):
+    """Quantized Softplus op."""
+
+    _impl_for_op_named: str = "Softplus"
 
 
 class QuantizedExp(QuantizedOp):
