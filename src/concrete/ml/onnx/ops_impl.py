@@ -118,19 +118,14 @@ def numpy_gemm(
         Tuple[numpy.ndarray]: The tuple containing the result tensor
     """
 
+    # Done for the generic case (ie, any alpha and beta), which is sufficient since this function
+    # is not traced. Actually, only q_impl of QuantizedGemm is traced
+
     a_prime = numpy.transpose(a) if transA else a
     b_prime = numpy.transpose(b) if transB else b
     c_prime: Union[numpy.ndarray, float] = c if c is not None else 0
 
-    # y = alpha * numpy.matmul(a_prime, b_prime) + beta * c_prime, but in a way which does not
-    # require any optimization from the compiler
-
-    # For the moment, we have only seen (alpha, beta) == (1, 1). If we ever see other cases, we'll
-    # add them
-    assert_true((alpha, beta) == (1, 1))
-
-    y = numpy.matmul(a_prime, b_prime)
-    y = y + c_prime if len(numpy.argwhere(c_prime != 0)) > 0 else y
+    y = alpha * numpy.matmul(a_prime, b_prime) + beta * c_prime
 
     return (y,)
 

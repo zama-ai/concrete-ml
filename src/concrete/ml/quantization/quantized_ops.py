@@ -329,8 +329,8 @@ class QuantizedGemm(QuantizedOp):
         beta = self.attrs.get("beta", 1)
 
         assert_true(
-            (alpha, beta) == (1, 1),
-            f"{self.__class__.__name__} currently only supports alpha == 1 and beta == 1.\n"
+            alpha == 1 and beta in [0, 1],
+            f"{self.__class__.__name__} currently only supports alpha == 1 and beta in [0, 1].\n"
             f"Got alpha == {alpha} and beta == {beta}.",
         )
 
@@ -345,10 +345,20 @@ class QuantizedGemm(QuantizedOp):
         *q_inputs: QuantizedArray,
         **attrs,
     ) -> QuantizedArray:
+
+        alpha = self.attrs.get("alpha", 1)
+        beta = self.attrs.get("beta", 1)
+
+        # If alpha != 1 or beta not in [0, 1], this function must be modified
+        assert_true(alpha == 1)
+        assert_true(beta in [0, 1])
+
         prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[QuantizedArray] = prepared_inputs[2] if len(prepared_inputs) == 3 else None
+        q_bias: Optional[QuantizedArray] = (
+            None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
+        )
 
         # Using snake case here to please the python format, the original attrs don't have the '_'
         transpose_inputs = attrs["transA"]

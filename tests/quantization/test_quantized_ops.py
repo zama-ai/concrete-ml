@@ -202,7 +202,7 @@ def test_gemm_and_linear_op(
     bias = numpy.random.uniform(size=(1, n_neurons))
     q_bias = QuantizedArray(n_bits, bias, is_signed)
 
-    # Define our QuantizedGemm layer
+    # 1- Test our QuantizedGemm layer
     q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias})
     q_linear = QuantizedLinear(n_bits, q_weights, q_bias)
 
@@ -216,7 +216,7 @@ def test_gemm_and_linear_op(
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
     check_r2_score(expected_linear_outputs, actual_linear_output)
 
-    # Same test without bias
+    # 2- Same test without bias
     q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights})
     q_linear = QuantizedLinear(n_bits, q_weights)
 
@@ -229,6 +229,16 @@ def test_gemm_and_linear_op(
 
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
     check_r2_score(expected_linear_outputs, actual_linear_output)
+
+    # 3- Same test but with (alpha, beta) = (1, 0)
+    q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias}, alpha=1, beta=0)
+
+    # Calibrate the Quantized layer
+    expected_gemm_outputs = q_gemm.calibrate(inputs)
+
+    actual_gemm_output = q_gemm(q_inputs).dequant()
+
+    check_r2_score(expected_gemm_outputs, actual_gemm_output)
 
 
 def test_all_ops_were_tested():
