@@ -447,11 +447,13 @@ jobs:
       - name: Run pip-audit
         shell: bash
         run: |
+          set +e
           VULN_OUT="$(mktemp --suffix=.json)"
           REPORT_OUT="$(mktemp --suffix=.txt)"
           echo "REPORT_OUT=${REPORT_OUT}" >> "$GITHUB_ENV"
           poetry run pip-audit -f json > "${VULN_OUT}"
           cat "${VULN_OUT}"
+          set -e
           poetry run python ./script/actions_utils/parse_pip_audit_vulns.py \
           --vulns-json "${VULN_OUT}" \
           --vulns-report "${REPORT_OUT}"
