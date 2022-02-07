@@ -47,7 +47,7 @@ class QuantizedLinearRegression(QuantizedModule):
                     calibration_data: a numpy nd-array of data (Nxd)
         """
 
-        super().__init__({})
+        super().__init__(["module_input"], ["linear"], {})
         self.n_bits = out_bits
 
         # We need to calibrate to a sufficiently low number of bits
@@ -65,13 +65,13 @@ class QuantizedLinearRegression(QuantizedModule):
 
         # Calibrate the linear layer and obtain calibration_data for the next layers
         calibration_data = self._calibrate_and_store_layers_activation(
-            "linear", q_layer, calibration_data, quant_layers_dict
+            "module_input", "linear", q_layer, calibration_data, quant_layers_dict
         )
 
         self.quant_layers_dict = quant_layers_dict
 
     def _calibrate_and_store_layers_activation(
-        self, name, q_function, calibration_data, quant_layers_dict
+        self, layer_input, name, q_function, calibration_data, quant_layers_dict
     ):
         """
         This function calibrates a layer of a quantized module (e.g. linear, inverse-link,
@@ -82,7 +82,7 @@ class QuantizedLinearRegression(QuantizedModule):
         # Calibrate the output of the layer
         q_function.calibrate(calibration_data)
         # Store the learned quantized layer
-        quant_layers_dict[name] = q_function
+        quant_layers_dict[name] = ((layer_input,), q_function)
         # Create new calibration data (output of the previous layer)
         q_calibration_data = QuantizedArray(self.n_bits, calibration_data)
         # Dequantize to have the value in clear and ready for next calibration

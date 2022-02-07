@@ -1,6 +1,6 @@
 """Post Training Quantization methods."""
 
-from typing import Dict, Set, Tuple, Union, cast
+from typing import Dict, Iterable, Set, Tuple, Union, cast
 
 import numpy
 import onnx
@@ -30,7 +30,7 @@ class PostTrainingAffineQuantization:
         QuantizedModule: A quantized version of the numpy model.
     """
 
-    quant_ops_dict: Dict[str, QuantizedOp]
+    quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     n_bits: int
     quant_params: Dict[str, QuantizedArray]
     numpy_model: NumpyModule
@@ -108,8 +108,11 @@ class PostTrainingAffineQuantization:
             # If we depend on a variable input use the quantized version of the operator
             if has_variable_inputs:
                 quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
+                variable_input_names = [
+                    input_name for input_name in curr_inputs if input_name not in constants
+                ]
                 curr_calibration_data = tuple(
-                    val for input_name, val in curr_inputs.items() if input_name not in constants
+                    curr_inputs[input_name] for input_name in variable_input_names
                 )
                 # For mypy
                 assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
@@ -118,7 +121,7 @@ class PostTrainingAffineQuantization:
                     self.n_bits, curr_cst_inputs, **attributes
                 )
                 output_calibration_data = self._calibrate_layers_activation(
-                    output_name, quantized_op_instance, *curr_calibration_data
+                    variable_input_names, output_name, quantized_op_instance, *curr_calibration_data
                 )
                 node_results[output_name] = output_calibration_data
             # Otherwise use the original operator to operate on float values to do constant folding
@@ -145,11 +148,17 @@ class PostTrainingAffineQuantization:
                 constants.add(output_name)
 
     def _calibrate_layers_activation(
-        self, name: str, quantized_op: QuantizedOp, *calibration_data: numpy.ndarray
+        self,
+        variable_input_names: Iterable[str],
+        name: str,
+        quantized_op: QuantizedOp,
+        *calibration_data: numpy.ndarray,
     ) -> numpy.ndarray:
         """Calibrate the QuantizedOp linked to name with previous calibration data.
 
         Args:
+            variable_input_names (Iterable[str]): an iterable containing the ordered variable input
+                names to the layer being calibrated.
             name (str): the name of the output/layer coming from the ONNX model.
             quantized_op (QuantizedOp): the quantized operator for the current layer.
             *calibration_data: numpy.ndarray: the previous layer's calibration data.
@@ -160,7 +169,7 @@ class PostTrainingAffineQuantization:
         # Calibrate the output of the layer
         quantized_op.calibrate(*calibration_data)
         # Store the learned quantized layer
-        self.quant_ops_dict[name] = quantized_op
+        self.quant_ops_dict[name] = (tuple(variable_input_names), quantized_op)
         # Create new calibration data (output of the previous layer)
         q_calibration_data = (QuantizedArray(self.n_bits, data) for data in calibration_data)
         # Dequantize to have the value in clear and ready for next calibration
@@ -184,7 +193,11 @@ class PostTrainingAffineQuantization:
 
         self._quantize_layers(*calibration_data)
         # Create quantized module from self.quant_layers_dict
-        quantized_module = QuantizedModule(self.quant_ops_dict)
+        quantized_module = QuantizedModule(
+            (graph_input.name for graph_input in self.numpy_model.onnx_model.graph.input),
+            (graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output),
+            self.quant_ops_dict,
+        )
         assert_true(
             len(calibration_data) == 1,
             f"For now {QuantizedModule.__class__.__name__} does not support multiple inputs",

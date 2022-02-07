@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import py_progress_tracker as progress
@@ -31,7 +31,7 @@ class QuantizedGLM(QuantizedModule):
     """
 
     def __init__(self, n_bits, sklearn_model, calibration_data) -> None:
-        super().__init__({})
+        super().__init__(["module_input"], ["invlink"], {})
         self.n_bits = n_bits
 
         # We need to calibrate to a sufficiently low number of bits
@@ -45,11 +45,11 @@ class QuantizedGLM(QuantizedModule):
         q_layer = QuantizedLinear(self.n_bits, q_weights, q_bias)
 
         # Store quantized layers
-        quant_layers_dict: Dict[str, Any] = {}
+        quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], Any]] = {}
 
         # Calibrate the linear layer and obtain calibration_data for the next layers
         calibration_data = self._calibrate_and_store_layers_activation(
-            "linear", q_layer, calibration_data, quant_layers_dict
+            "module_input", "linear", q_layer, calibration_data, quant_layers_dict
         )
 
         # Add the inverse-link for inference.
@@ -62,18 +62,18 @@ class QuantizedGLM(QuantizedModule):
 
         # Now calibrate the inverse-link function with the linear layer's output data
         calibration_data = self._calibrate_and_store_layers_activation(
-            "invlink", q_exp, calibration_data, quant_layers_dict
+            "linear", "invlink", q_exp, calibration_data, quant_layers_dict
         )
 
         self.quant_layers_dict = quant_layers_dict
 
     def _calibrate_and_store_layers_activation(
-        self, name, q_function, calibration_data, quant_layers_dict
+        self, layer_input, name, q_function, calibration_data, quant_layers_dict
     ):
         # Calibrate the output of the layer
         q_function.calibrate(calibration_data)
         # Store the learned quantized layer
-        quant_layers_dict[name] = q_function
+        quant_layers_dict[name] = ((layer_input,), q_function)
         # Create new calibration data (output of the previous layer)
         q_calibration_data = QuantizedArray(self.n_bits, calibration_data)
         # Dequantize to have the value in clear and ready for next calibration

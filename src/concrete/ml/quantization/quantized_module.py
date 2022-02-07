@@ -1,6 +1,6 @@
 """QuantizedModule API."""
 import copy
-from typing import Dict, Optional, Union
+from typing import Dict, Iterable, Optional, Tuple, Union
 
 import numpy
 from concrete.common.compilation.artifacts import CompilationArtifacts
@@ -16,12 +16,33 @@ from .quantized_ops import QuantizedOp
 class QuantizedModule:
     """Inference for a quantized model."""
 
-    quant_layers_dict: Dict[str, QuantizedOp]
-    _mode: str
+    ordered_module_input_names: Tuple[str, ...]
+    ordered_module_output_names: Tuple[str, ...]
+    quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     q_input: Optional[QuantizedArray]
     forward_fhe: Union[None, FHECircuit]
 
-    def __init__(self, quant_layers_dict: dict):
+    def __init__(
+        self,
+        ordered_module_input_names: Iterable[str],
+        ordered_module_output_names: Iterable[str],
+        quant_layers_dict: dict,
+    ):
+        self.ordered_module_input_names = tuple(ordered_module_input_names)
+        self.ordered_module_output_names = tuple(ordered_module_output_names)
+
+        assert_true(
+            (num_inputs := len(self.ordered_module_input_names)) == 1,
+            f"{QuantizedModule.__class__.__name__} only supports a single input for now, "
+            f"got {num_inputs}",
+        )
+
+        assert_true(
+            (num_outputs := len(self.ordered_module_output_names)) == 1,
+            f"{QuantizedModule.__class__.__name__} only supports a single output for now, "
+            f"got {num_outputs}",
+        )
+
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self.compiled = False
         self.forward_fhe = None
@@ -61,15 +82,22 @@ class QuantizedModule:
         # satisfy mypy
         assert self.q_input is not None, "q_input is not set"
         self.q_input.update_quantized_values(qvalues)
-        q_array = self.q_input
 
-        for _, layer in self.quant_layers_dict.items():
-            q_array = layer(q_array)
+        # Init layer_results with the inputs
+        layer_results = dict(zip(self.ordered_module_input_names, (self.q_input,)))
 
-        # mypy compliance
-        assert isinstance(q_array, QuantizedArray)
+        for output_name, (input_names, layer) in self.quant_layers_dict.items():
+            inputs = (layer_results[input_name] for input_name in input_names)
+            output = layer(*inputs)
+            layer_results[output_name] = output
 
-        return q_array.qvalues
+        outputs = tuple(
+            layer_results[output_name] for output_name in self.ordered_module_output_names
+        )
+
+        assert_true(len(outputs) == 1)
+
+        return outputs[0].qvalues
 
     def forward_and_dequant(self, q_x: numpy.ndarray) -> numpy.ndarray:
         """Forward pass with numpy function only plus dequantization.
@@ -94,7 +122,7 @@ class QuantizedModule:
             numpy.ndarray: Quantized (numpy.uint8) values.
         """
         # satisfy mypy
-        assert self.q_input is not None
+        assert self.q_input is not None, "q_input is not set"
         qvalues = self.q_input.update_values(values)
         assert_true(
             numpy.array_equal(qvalues.astype(numpy.uint32), qvalues),
@@ -111,15 +139,24 @@ class QuantizedModule:
         Returns:
             numpy.ndarray: Dequantized values of the last layer.
         """
-        last_layer = list(self.quant_layers_dict.values())[-1]
-        real_values = QuantizedArray(
-            last_layer.n_bits,
-            qvalues,
-            value_is_float=False,
-            scale=last_layer.output_scale,
-            zero_point=last_layer.output_zero_point,
-        ).dequant()
-        return real_values
+        output_layers = (
+            self.quant_layers_dict[output_name][1]
+            for output_name in self.ordered_module_output_names
+        )
+        real_values = tuple(
+            QuantizedArray(
+                output_layer.n_bits,
+                qvalues,
+                value_is_float=False,
+                scale=output_layer.output_scale,
+                zero_point=output_layer.output_zero_point,
+            ).dequant()
+            for output_layer in output_layers
+        )
+
+        assert_true(len(real_values) == 1)
+
+        return real_values[0]
 
     def compile(
         self,
