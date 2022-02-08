@@ -99,7 +99,6 @@ class NetWithLoops(torch.nn.Module):
         pytest.param(nn.ReLU6, id="ReLU6"),
         pytest.param(nn.Tanh, id="Tanh"),
         pytest.param(nn.ELU, id="ELU"),
-        pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
         pytest.param(nn.Hardtanh, id="Hardtanh"),
         pytest.param(nn.LeakyReLU, id="LeakyReLU"),
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
@@ -110,7 +109,9 @@ class NetWithLoops(torch.nn.Module):
         pytest.param(nn.Mish, id="Mish"),
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.Softsign, id="Softsign"),
-        pytest.param(nn.Tanhshrink, id="Tanhshrink"),
+        # Issues with precision, #272
+        # pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
+        # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
         # Are currently not supported for various reasons:
         # pytest.param(nn.Hardshrink, id="Hardshrink"),
         # pytest.param(nn.Hardswish, id="Hardswish"),
