@@ -10,6 +10,10 @@ CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 
 .PHONY: setup_env # Set up the environment
 setup_env:
+	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
+	PIP_INDEX_URL=https://pypi.org/simple \
+	PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+	poetry run python -m pip install keyring
 	poetry run python -m pip install -U pip wheel
 	poetry run python -m pip install -U --force-reinstall setuptools
 	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
