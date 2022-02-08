@@ -1,4 +1,6 @@
 """Tests for the torch to numpy module."""
+from functools import partial
+
 import numpy
 import pytest
 from torch import nn
@@ -28,6 +30,25 @@ class FC(nn.Module):
         return out
 
 
+class NetWithLoops(nn.Module):
+    """Torch model, where we reuse some elements in a loop in the forward and don't expect the
+    user to define these elements in a particular order"""
+
+    def __init__(self, n_feat, activation_function, n_fc_layers):
+        super().__init__()
+        self.ifc = nn.Sequential()
+        for i in range(n_fc_layers):
+            self.ifc.add_module(f"fc{i+1}", nn.Linear(n_feat, n_feat))
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass."""
+        for m in self.ifc:
+            x = self.act(m(x))
+
+        return x
+
+
 @pytest.mark.parametrize(
     "activation_function",
     [
@@ -39,7 +60,7 @@ class FC(nn.Module):
 )
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC)],
+    [pytest.param(FC), pytest.param(partial(NetWithLoops, n_fc_layers=2))],
 )
 @pytest.mark.parametrize(
     "input_output_feature",
@@ -63,7 +84,8 @@ def test_compile_torch(
     n_examples = 50
 
     # Define the torch model
-    torch_fc_model = model(input_output_feature, activation_function)
+    torch_fc_model = model(input_output_feature, activation_function=activation_function)
+
     # Create random input
     inputset = numpy.random.uniform(-100, 100, size=(n_examples, input_output_feature))
 

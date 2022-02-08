@@ -1,4 +1,6 @@
 """Tests for the torch to numpy module."""
+from functools import partial
+
 import pytest
 import torch
 from torch import nn
@@ -59,10 +61,34 @@ class FC(nn.Module):
         return out
 
 
+class NetWithLoops(torch.nn.Module):
+    """Torch model, where we reuse some elements in a loop in the forward and don't expect the
+    user to define these elements in a particular order"""
+
+    def __init__(self, activation_function, n_feat, n_fc_layers):
+        super().__init__()
+        self.fc1 = nn.Linear(n_feat, 3)
+        self.ifc = nn.Sequential()
+        for i in range(n_fc_layers):
+            self.ifc.add_module(f"fc{i+1}", nn.Linear(3, 3))
+        self.out = nn.Linear(3, 1)
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass."""
+        x = self.act(self.fc1(x))
+        for m in self.ifc:
+            x = self.act(m(x))
+        x = self.act(self.out(x))
+
+        return x
+
+
 @pytest.mark.parametrize(
     "model, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
+        pytest.param(partial(NetWithLoops, n_feat=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)),
     ],
 )
 @pytest.mark.parametrize(
@@ -101,32 +127,43 @@ def test_torch_to_numpy(model, input_shape, activation_function, seed_torch, che
 
     # Seed torch
     seed_torch()
+
     # Define the torch model
-    torch_fc_model = model(activation_function)
+    torch_fc_model = model(activation_function=activation_function)
+
     # Create random input
     torch_input_1 = torch.randn(input_shape)
+
     # Predict with torch model
     torch_predictions = torch_fc_model(torch_input_1).detach().numpy()
+
     # Create corresponding numpy model
     numpy_fc_model = NumpyModule(torch_fc_model, torch_input_1)
+
     # Torch input to numpy
     numpy_input_1 = torch_input_1.detach().numpy()
+
     # Predict with numpy model
     numpy_predictions = numpy_fc_model(numpy_input_1)
 
     # Test: the output of the numpy model is the same as the torch model.
     assert numpy_predictions.shape == torch_predictions.shape
+
     # Test: prediction from the numpy model are the same as the torh model.
     check_r2_score(torch_predictions, numpy_predictions)
 
     # Test: dynamics between layers is working (quantized input and activations)
     torch_input_2 = torch.randn(input_shape)
+
     # Make sure both inputs are different
     assert (torch_input_1 != torch_input_2).any()
+
     # Predict with torch
     torch_predictions = torch_fc_model(torch_input_2).detach().numpy()
+
     # Torch input to numpy
     numpy_input_2 = torch_input_2.detach().numpy()
+
     # Numpy predictions using the previous model
     numpy_predictions = numpy_fc_model(numpy_input_2)
     check_r2_score(torch_predictions, numpy_predictions)
