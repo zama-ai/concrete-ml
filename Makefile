@@ -7,6 +7,7 @@ DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-internal-cache
 DOCKER_VENV_PATH:="$${HOME}"/dev_venv/
 SRC_DIR:=src
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
+COUNT?=1
 
 .PHONY: setup_env # Set up the environment
 setup_env:
@@ -133,8 +134,17 @@ pytest:
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/ \
-	--count=1 \
+	--count=$(COUNT) \
 	--randomly-dont-reset-seed
+
+.PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
+pytest_one:
+	poetry run pytest -svv \
+	-n $$(./script/make_utils/ncpus.sh) \
+	--randomly-dont-reorganize \
+	--count=$(COUNT) \
+	--randomly-dont-reset-seed \
+	"$${TEST}"
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
