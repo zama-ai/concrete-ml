@@ -204,5 +204,5 @@ class PostTrainingAffineQuantization:
         )
         calibration_data_unique_input = calibration_data[0]
         q_input = QuantizedArray(self.n_bits, calibration_data_unique_input)
-        quantized_module.q_input = q_input
+        quantized_module.set_inputs_quantization_parameters(q_input)
         return quantized_module

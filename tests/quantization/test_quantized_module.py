@@ -1,4 +1,6 @@
 """Tests for the quantized module."""
+import re
+
 import numpy
 import pytest
 import torch
@@ -153,8 +155,10 @@ def test_quantized_linear(
     [
         pytest.param(
             numpy.float32,
-            "qvalues.dtype=float32 is not an integer type. "
-            "Make sure you quantize your input before calling forward.",
+            re.escape(
+                "Inputs: #0 (float32) are not integer types. "
+                "Make sure you quantize your input before calling forward."
+            ),
         ),
     ],
 )

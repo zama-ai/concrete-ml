@@ -1,6 +1,6 @@
 """QuantizedModule API."""
 import copy
-from typing import Dict, Iterable, Optional, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 from concrete.common.compilation.artifacts import CompilationArtifacts
@@ -9,6 +9,7 @@ from concrete.common.fhe_circuit import FHECircuit
 from concrete.numpy.np_fhe_compiler import NPFHECompiler
 
 from ..common.debugging import assert_true
+from ..common.utils import generate_proxy_function
 from .quantized_array import QuantizedArray
 from .quantized_ops import QuantizedOp
 
@@ -19,7 +20,7 @@ class QuantizedModule:
     ordered_module_input_names: Tuple[str, ...]
     ordered_module_output_names: Tuple[str, ...]
     quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
-    q_input: Optional[QuantizedArray]
+    q_inputs: List[QuantizedArray]
     forward_fhe: Union[None, FHECircuit]
 
     def __init__(
@@ -46,45 +47,57 @@ class QuantizedModule:
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self.compiled = False
         self.forward_fhe = None
-        self.q_input = None
+        self.q_inputs = []
 
-    def __call__(self, x: numpy.ndarray):
-        return self.forward(x)
+    def __call__(self, *x: numpy.ndarray):
+        return self.forward(*x)
 
-    def forward(self, qvalues: numpy.ndarray) -> numpy.ndarray:
+    def forward(self, *qvalues: numpy.ndarray) -> numpy.ndarray:
         """Forward pass with numpy function only.
 
         Args:
-            qvalues (numpy.ndarray): numpy.array containing the quantized values.
+            *qvalues (numpy.ndarray): numpy.array containing the quantized values.
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
         """
         # Make sure that the input is quantized
         assert_true(
-            issubclass(qvalues.dtype.type, numpy.integer),
-            on_error_msg=f"qvalues.dtype={qvalues.dtype} is not an integer type. "
-            f"Make sure you quantize your input before calling forward.",
-            error_type=ValueError,
+            len(
+                invalid_inputs := tuple(
+                    (idx, qvalue)
+                    for idx, qvalue in enumerate(qvalues)
+                    if not issubclass(qvalue.dtype.type, numpy.integer)
+                )
+            )
+            == 0,
+            f"Inputs: {', '.join(f'#{val[0]} ({val[1].dtype})' for val in invalid_inputs)} are not "
+            "integer types. Make sure you quantize your input before calling forward.",
+            ValueError,
         )
 
-        return self._forward(qvalues)
+        return self._forward(*qvalues)
 
-    def _forward(self, qvalues: numpy.ndarray) -> numpy.ndarray:
+    def _forward(self, *qvalues: numpy.ndarray) -> numpy.ndarray:
         """Forward function for the FHE circuit.
 
         Args:
-            qvalues (numpy.ndarray): numpy.array containing the quantized values.
+            *qvalues (numpy.ndarray): numpy.array containing the quantized values.
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
         """
-        # satisfy mypy
-        assert self.q_input is not None, "q_input is not set"
-        self.q_input.update_quantized_values(qvalues)
+
+        assert_true(
+            (n_qvalues := len(qvalues)) == (n_qinputs := len(self.q_inputs)),
+            f"Got {n_qvalues} inputs, expected {n_qinputs}",
+            TypeError,
+        )
+        for idx, qvalue in enumerate(qvalues):
+            self.q_inputs[idx].update_quantized_values(qvalue)
 
         # Init layer_results with the inputs
-        layer_results = dict(zip(self.ordered_module_input_names, (self.q_input,)))
+        layer_results = dict(zip(self.ordered_module_input_names, self.q_inputs))
 
         for output_name, (input_names, layer) in self.quant_layers_dict.items():
             inputs = (layer_results[input_name] for input_name in input_names)
@@ -99,36 +112,49 @@ class QuantizedModule:
 
         return outputs[0].qvalues
 
-    def forward_and_dequant(self, q_x: numpy.ndarray) -> numpy.ndarray:
+    def forward_and_dequant(self, *q_x: numpy.ndarray) -> numpy.ndarray:
         """Forward pass with numpy function only plus dequantization.
 
         Args:
-            q_x (numpy.ndarray): numpy.ndarray containing the quantized input values. Requires the
+            *q_x (numpy.ndarray): numpy.ndarray containing the quantized input values. Requires the
                 input dtype to be uint8.
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
         """
-        q_out = self.forward(q_x)
+        q_out = self.forward(*q_x)
         return self.dequantize_output(q_out)
 
-    def quantize_input(self, values: numpy.ndarray) -> numpy.ndarray:
+    def quantize_input(
+        self, *values: numpy.ndarray
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
-            values (numpy.ndarray): Floating point values.
+            *values (numpy.ndarray): Floating point values.
 
         Returns:
-            numpy.ndarray: Quantized (numpy.uint8) values.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.uint32) values.
         """
-        # satisfy mypy
-        assert self.q_input is not None, "q_input is not set"
-        qvalues = self.q_input.update_values(values)
+
         assert_true(
-            numpy.array_equal(qvalues.astype(numpy.uint32), qvalues),
+            (n_values := len(values)) == (n_qinputs := len(self.q_inputs)),
+            f"Got {n_values} inputs, expected {n_qinputs}",
+            TypeError,
+        )
+        for idx, qvalue in enumerate(values):
+            self.q_inputs[idx].update_values(qvalue)
+
+        qvalues = tuple(q_input.qvalues for q_input in self.q_inputs)
+        qvalues_as_uint32 = tuple(qvalue.astype(numpy.uint32) for qvalue in qvalues)
+        assert_true(
+            all(
+                numpy.array_equal(qval_uint32, qval)
+                for qval_uint32, qval in zip(qvalues_as_uint32, qvalues)
+            ),
             on_error_msg="Input quantizer does not give values within uint32.",
         )
-        return qvalues.astype(numpy.uint32)
+        return qvalues_as_uint32[0] if len(qvalues_as_uint32) == 1 else qvalues_as_uint32
 
     def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
         """Take the last layer q_out and use its dequant function.
@@ -158,6 +184,22 @@ class QuantizedModule:
 
         return real_values[0]
 
+    def set_inputs_quantization_parameters(self, *input_q_params: QuantizedArray):
+        """Set the quantization parameters for the module's inputs.
+
+        Args:
+            *input_q_params (QuantizedArray): The quantization parameters for the module in the form
+                of QuantizedArrays.
+        """
+        assert_true(
+            (n_values := len(input_q_params)) == (n_inputs := len(self.ordered_module_input_names)),
+            f"Got {n_values} inputs, expected {n_inputs}",
+            TypeError,
+        )
+
+        self.q_inputs.clear()
+        self.q_inputs.extend(copy.deepcopy(q_params) for q_params in input_q_params)
+
     def compile(
         self,
         q_input: QuantizedArray,
@@ -182,17 +224,22 @@ class QuantizedModule:
             FHECircuit: the compiled FHECircuit.
         """
 
-        self.q_input = copy.deepcopy(q_input)
+        self.q_inputs[0] = copy.deepcopy(q_input)
+
+        # concrete-numpy does not support variable *args-syle functions, so compile a proxy function
+        # dynamically with a suitable number of arguments
+        foward_proxy, orig_args_to_proxy_func_args = generate_proxy_function(
+            self._forward, self.ordered_module_input_names
+        )
+
         compiler = NPFHECompiler(
-            self._forward,
-            {
-                "qvalues": "encrypted",
-            },
+            foward_proxy,
+            {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
             compilation_configuration,
             compilation_artifacts,
         )
         self.forward_fhe = compiler.compile_on_inputset(
-            (numpy.expand_dims(arr, 0) for arr in self.q_input.qvalues), show_mlir
+            (numpy.expand_dims(arr, 0) for arr in self.q_inputs[0].qvalues), show_mlir
         )
 
         return self.forward_fhe

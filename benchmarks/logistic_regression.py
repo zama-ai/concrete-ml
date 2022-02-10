@@ -68,7 +68,7 @@ class QuantizedLogisticRegression(QuantizedModule):
         # We need to calibrate to a sufficiently low number of bits
         # so that the output of the Linear layer (w . x + b)
         # does not exceed 7 bits
-        self.q_input = QuantizedArray(q_bits, calibration_data)
+        self.q_inputs = [QuantizedArray(q_bits, calibration_data)]
 
         # Quantize the weights and create the quantized linear layer
         q_weights = QuantizedArray(w_bits, weights)
@@ -116,9 +116,10 @@ class QuantizedLogisticRegression(QuantizedModule):
         # Dequantize to have the value in clear and ready for next calibration
         return q_function(q_calibration_data).dequant()
 
-    def quantize_input(self, values):
-        q_input_arr = deepcopy(self.q_input)
-        q_input_arr.update_values(values)
+    def quantize_input(self, *values):
+        value = values[0]
+        q_input_arr = deepcopy(self.q_inputs[0])
+        q_input_arr.update_values(value)
         return q_input_arr
 
 
