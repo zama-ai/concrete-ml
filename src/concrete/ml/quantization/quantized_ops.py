@@ -391,8 +391,9 @@ class QuantizedGemm(QuantizedOp):
         )
 
         # Using snake case here to please the python format, the original attrs don't have the '_'
-        transpose_inputs = attrs["transA"]
-        transpose_w = attrs["transB"]
+        # Use default false so we also support MatMul impl, MatMul does not have these flags
+        transpose_inputs = attrs.get("transA", False)
+        transpose_w = attrs.get("transB", False)
 
         input_q_values = numpy.transpose(q_input.qvalues) if transpose_inputs else q_input.qvalues
         weights_q_values = numpy.transpose(q_weights.qvalues) if transpose_w else q_weights.qvalues
@@ -448,6 +449,81 @@ class QuantizedGemm(QuantizedOp):
         return QuantizedArray(
             self.n_bits,
             numpy_q_out,
+            value_is_float=False,
+            scale=self.output_scale,
+            zero_point=self.output_zero_point,
+        )
+
+
+class QuantizedMatMul(QuantizedGemm):
+    """Quantized MatMul op."""
+
+    _impl_for_op_named: str = "MatMul"
+
+
+class QuantizedAdd(QuantizedOp):
+    """Quantized Addition operator.
+
+    Can add either two variables (both encrypted) or a variable and a constant
+    """
+
+    _impl_for_op_named: str = "Add"
+
+    def q_impl(
+        self,
+        *q_inputs: QuantizedArray,
+        **attrs,
+    ) -> QuantizedArray:
+
+        # For mypy
+        assert self.output_scale is not None
+        assert self.output_zero_point is not None
+
+        # De-quantize with input params and re-quantize with output parameters
+        # This will use TLUs over each element of the two inputs
+        # We do the dequantization directly, instead of q_inputs[0].dequant(),
+        # So that we do not lose precision in the computation
+
+        rescale_q0 = numpy.rint(
+            q_inputs[0].scale
+            / self.output_scale
+            * (q_inputs[0].qvalues + (-q_inputs[0].zero_point))
+            + self.output_zero_point
+        ).astype(numpy.int64)
+
+        # Now we need to handle the second operator (perform re-quantization)
+        if len(self.constant_inputs) == 0:
+            # Handle the Variable + Variable case
+            second = q_inputs[1]
+        elif len(self.constant_inputs) == 1:
+            # Handle the Variable + Constant case
+            second = self.constant_inputs[list(self.constant_inputs.keys())[0]]
+
+        rescale_q1 = numpy.rint(
+            second.scale / self.output_scale * (second.qvalues + (-second.zero_point))
+            + self.output_zero_point
+        ).astype(numpy.int64)
+
+        # The sum of quantized encrypted integer values
+        # This sum has << max(in_bits0, in_bits1) + 1 >> bits
+        # Moreover, the zeropoint will be sum of input zeropoints
+        sum_q = rescale_q0 + rescale_q1
+
+        # But we would like the output to have n_bits, so we de-quantize
+        dequant_sum = self.output_scale * (sum_q + (-2 * self.output_zero_point))
+
+        # And then we re-quantize again with the output parameters
+        # The de-quantization and re-quantization should be fused to a single TLU
+        # Giving 3 * N TLU complexity for the whole operation for the variable + variable case
+        qvalues = (
+            numpy.rint(dequant_sum / self.output_scale + self.output_zero_point)
+            .clip(0, 2 ** self.n_bits - 1)
+            .astype(numpy.int64)
+        )
+
+        return QuantizedArray(
+            self.n_bits,
+            qvalues,
             value_is_float=False,
             scale=self.output_scale,
             zero_point=self.output_zero_point,

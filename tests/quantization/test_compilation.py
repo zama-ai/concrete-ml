@@ -34,9 +34,75 @@ class FC(nn.Module):
         return out
 
 
+class FCSeq(nn.Module):
+    """Torch model that should generate MatMul->Add ONNX patterns
+
+    This network generates additions with a constant scalar
+    """
+
+    def __init__(self, input_output, act):
+        super().__init__()
+        self.feat = nn.Sequential()
+        in_features = input_output
+        self.n_layers = 2
+        self.biases = [torch.Tensor(size=(1,)) for _ in range(self.n_layers)]
+        for b in self.biases:
+            nn.init.uniform_(b)
+
+        for idx in range(self.n_layers):
+            out_features = in_features if idx == self.n_layers - 1 else in_features
+            layer_name = f"fc{idx}"
+            layer = nn.Linear(in_features=in_features, out_features=out_features, bias=False)
+            self.feat.add_module(layer_name, layer)
+            in_features = out_features
+
+        self.act = act()
+
+    def forward(self, x):
+        """Forward pass."""
+        for idx, l in enumerate(self.feat):
+            x = self.act(l(x) + self.biases[idx])
+        return x
+
+
+class FCSeqAddBiasVec(nn.Module):
+    """Torch model that should generate MatMul->Add ONNX patterns
+
+    This network tests the addition with a constant vector
+    """
+
+    def __init__(self, input_output, act):
+        super().__init__()
+        self.feat = nn.Sequential()
+        in_features = input_output
+        self.n_layers = 2
+        self.biases = [torch.Tensor(size=(input_output,)) for _ in range(self.n_layers)]
+        for b in self.biases:
+            nn.init.uniform_(b)
+
+        for idx in range(self.n_layers):
+            out_features = in_features if idx == self.n_layers - 1 else in_features
+            layer_name = f"fc{idx}"
+            layer = nn.Linear(in_features=in_features, out_features=out_features, bias=False)
+            self.feat.add_module(layer_name, layer)
+            in_features = out_features
+
+        self.act = act()
+
+    def forward(self, x):
+        """Forward pass."""
+        for idx, l in enumerate(self.feat):
+            x = self.act(l(x) + self.biases[idx])
+        return x
+
+
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC)],
+    [
+        pytest.param(FC),
+        pytest.param(FCSeq),
+        pytest.param(FCSeqAddBiasVec),
+    ],
 )
 @pytest.mark.parametrize(
     "input_output_feature",
@@ -64,7 +130,7 @@ def test_quantized_module_compilation(
     n_bits = 2
 
     # Define an input shape (n_examples, n_features)
-    input_shape = (50, input_output_feature)
+    input_shape = (5, input_output_feature)
 
     # Build a random Quantized Fully Connected Neural Network
 

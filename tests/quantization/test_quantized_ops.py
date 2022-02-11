@@ -1,5 +1,6 @@
 """Tests for the quantized ONNX ops."""
 
+from functools import partial
 from itertools import combinations
 from typing import Callable, Tuple, Union
 
@@ -9,6 +10,7 @@ import pytest
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.quantized_ops import (
     ALL_QUANTIZED_OPS,
+    QuantizedAdd,
     QuantizedCelu,
     QuantizedClip,
     QuantizedElu,
@@ -17,6 +19,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedHardSigmoid,
     QuantizedLeakyRelu,
     QuantizedLinear,
+    QuantizedMatMul,
     QuantizedOp,
     QuantizedRelu,
     QuantizedSelu,
@@ -179,6 +182,99 @@ def test_clip_op(
         check_r2_score(dequant_values, expected_output)
 
 
+ARITH_N_BITS_LIST = [20, 16, 8]
+
+
+@pytest.mark.parametrize("operator", [QuantizedAdd])
+@pytest.mark.parametrize("n_bits", ARITH_N_BITS_LIST)
+@pytest.mark.parametrize(
+    "params_a, params_b, n_dims",
+    [
+        pytest.param((-10, 1), (5, 100), 100),
+        pytest.param((20, 100), (0, 0.2), 200),
+        pytest.param((40, 20), (-10, 500), 300),
+        pytest.param((-100, 1), (200, 1), 100),
+        pytest.param((0, 0.1), (0, 0.1), 20),
+    ],
+)
+@pytest.mark.parametrize(
+    "generator",
+    [
+        partial(numpy.random.uniform, 0, 1),
+        partial(numpy.random.normal, 0, 1),
+        partial(numpy.random.gamma, 1, 2),
+    ],
+)
+@pytest.mark.parametrize("is_signed", IS_SIGNED)
+def test_all_arith_ops(
+    operator: QuantizedOp,
+    n_bits: int,
+    is_signed: bool,
+    params_a: Tuple[float, float],
+    params_b: Tuple[float, float],
+    n_dims: int,
+    generator: Callable,
+    check_r2_score: Callable,
+    check_float_arrays_equal: Callable,
+):
+    """Test all quantized arithmetic ops"""
+
+    # Generate inputs with specific distribution
+    # But vary the dynamic range and the support of the distributions
+    input_0 = generator(size=(n_dims, n_dims)) * params_a[1] + params_a[0]
+    input_1 = generator(size=(n_dims, n_dims)) * params_b[1] + params_b[0]
+
+    # Quantize the inputs with n_bits
+    q_inputs_0 = QuantizedArray(n_bits, input_0, is_signed=is_signed)
+    q_inputs_1 = QuantizedArray(n_bits, input_1, is_signed=is_signed)
+
+    # Create the op with the same n_bits as output
+    # Using n_bits is not always desirable in practice as the output could feed into another TLU
+    # So using n_bits would waste precision, but we test the worst case scenario here
+
+    # Variable+Variable (V+V) test
+    q_op = operator(n_bits)
+
+    # Calibrate the layer
+    raw_output_vv = q_op.calibrate(input_0, input_1)
+
+    # Compute the quantized operator result
+    quantized_output_vv = q_op(q_inputs_0, q_inputs_1).dequant()
+
+    # Check the R2 of raw output and quantized output
+    check_r2_score(raw_output_vv, quantized_output_vv)
+
+    # Variable + Constant test (V+C)
+    q_op = operator(n_bits, constant_inputs={"b": q_inputs_1})
+
+    # Calibrate the layer
+    raw_output_vc = q_op.calibrate(input_0)
+
+    # Compute the quantized operator result
+    quantized_output_vc = q_op(q_inputs_0).dequant()
+
+    # Check the R2 of raw output and quantized output (V+C)
+    check_r2_score(raw_output_vc, quantized_output_vc)
+
+    # Constant + Variable test (C+V)
+    q_op = operator(n_bits, constant_inputs={"a": q_inputs_0})
+
+    # Calibrate the layer
+    raw_output_cv = q_op.calibrate(input_1)
+
+    # Compute the quantized operator result
+    quantized_output_cv = q_op(q_inputs_1).dequant()
+
+    # Check the R2 of raw output and quantized output (C+V)
+    check_r2_score(raw_output_cv, quantized_output_cv)
+
+    # Check that we get the same results in V+V, V+C and C+V modes
+    check_float_arrays_equal(raw_output_vv, raw_output_vc)
+    check_float_arrays_equal(raw_output_cv, raw_output_vc)
+    check_float_arrays_equal(quantized_output_vc, quantized_output_vv)
+    check_float_arrays_equal(quantized_output_cv, quantized_output_vc)
+
+
 GEMM_N_BITS_LIST = [20, 16, 8]
 
 
@@ -193,25 +289,37 @@ GEMM_N_BITS_LIST = [20, 16, 8]
         pytest.param(10, 20, 1),
     ],
 )
+@pytest.mark.parametrize(
+    "generator",
+    [
+        partial(numpy.random.uniform, 0, 1),
+        partial(numpy.random.normal, 0, 1),
+        partial(numpy.random.gamma, 1, 2),
+    ],
+)
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
-def test_gemm_and_linear_op(
+def test_all_gemm_ops(
     n_bits: int,
     is_signed: bool,
     n_examples: int,
     n_features: int,
     n_neurons: int,
+    generator: Callable,
     check_r2_score: Callable,
+    check_array_equality: Callable,
 ):
-    """Test for gemm op."""
+    """Test for gemm style ops."""
 
-    inputs = numpy.random.uniform(size=(n_examples, n_features))
-    q_inputs = QuantizedArray(n_bits, inputs)
+    # Multiply input x weights of sizes (N, K) and (K, M)
+    inputs = generator(size=(n_examples, n_features))
+    weights = generator(size=(n_features, n_neurons))
 
-    # shape of weights: (n_features, n_neurons)
-    weights = numpy.random.uniform(size=(n_features, n_neurons))
-    q_weights = QuantizedArray(n_bits, weights, is_signed)
-
+    # We can assume uniform distribution for the bias without loss of generality
     bias = numpy.random.uniform(size=(1, n_neurons))
+
+    # Quantize the inputs and weights
+    q_inputs = QuantizedArray(n_bits, inputs)
+    q_weights = QuantizedArray(n_bits, weights, is_signed)
     q_bias = QuantizedArray(n_bits, bias, is_signed)
 
     # 1- Test our QuantizedGemm layer
@@ -231,16 +339,21 @@ def test_gemm_and_linear_op(
     # 2- Same test without bias
     q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights})
     q_linear = QuantizedLinear(n_bits, q_weights)
+    q_mm = QuantizedMatMul(n_bits, constant_inputs={"b": q_weights})
 
-    # Calibrate the Quantized layer
+    # Calibrate the quantized layers
     expected_gemm_outputs = q_gemm.calibrate(inputs)
     expected_linear_outputs = q_linear.calibrate(inputs)
+    expected_mm_outputs = q_mm.calibrate(inputs)
 
     actual_gemm_output = q_gemm(q_inputs).dequant()
     actual_linear_output = q_linear(q_inputs).dequant()
+    actual_mm_output = q_mm(q_inputs).dequant()
 
+    # Now check that the quantized results are close to non quantized
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
     check_r2_score(expected_linear_outputs, actual_linear_output)
+    check_r2_score(expected_mm_outputs, actual_mm_output)
 
     # 3- Same test but with (alpha, beta) = (1, 0)
     q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias}, alpha=1, beta=0)
@@ -252,14 +365,19 @@ def test_gemm_and_linear_op(
 
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
 
+    # Without a bias, MatMul and Gemm should give the same output
+    check_array_equality(actual_mm_output, actual_gemm_output)
+
 
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
     # If you can think of a way to make this automatic, please provide a PR!
     currently_tested_ops = {
-        QuantizedGemm: test_gemm_and_linear_op,
-        QuantizedLinear: test_gemm_and_linear_op,
+        QuantizedGemm: test_all_gemm_ops,
+        QuantizedLinear: test_all_gemm_ops,
+        QuantizedMatMul: test_all_gemm_ops,
+        QuantizedAdd: test_all_arith_ops,
         QuantizedRelu: test_univariate_ops_no_attrs,
         QuantizedTanh: test_univariate_ops_no_attrs,
         QuantizedSigmoid: test_univariate_ops_no_attrs,

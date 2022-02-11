@@ -1,4 +1,5 @@
 """Quantization utilities for a numpy array/tensor."""
+
 from copy import deepcopy
 from typing import Optional, Tuple
 

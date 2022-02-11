@@ -299,6 +299,16 @@ def check_array_equality():
 
 
 @pytest.fixture
+def check_float_arrays_equal():
+    """Fixture to check if two float arrays are equal with epsilon precision tolerance"""
+
+    def check_float_arrays_equal_impl(a, b):
+        assert numpy.all(numpy.isclose(a, b, rtol=0, atol=0.001))
+
+    return check_float_arrays_equal_impl
+
+
+@pytest.fixture
 def check_r2_score():
     """Fixture to check r2 score"""
 
