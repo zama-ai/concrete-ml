@@ -359,7 +359,8 @@ show_type:show_scope
 todo:
 	@NOTES_ARGS=$$(poetry run python ./script/make_utils/get_pylintrc_notes.py \
 	--pylintrc-path pylintrc) && \
-	grep -rInH --exclude-dir='.[^.]*' --exclude=pylintrc --exclude='*.ipynb' "$${NOTES_ARGS}" .
+	grep -rInH --exclude-dir={'.[^.]*',_build} \
+	--exclude={pylintrc,'*.ipynb'} "$${NOTES_ARGS}" .
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:

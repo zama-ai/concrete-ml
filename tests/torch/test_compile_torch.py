@@ -49,6 +49,19 @@ class NetWithLoops(nn.Module):
         return x
 
 
+class BranchingModule(nn.Module):
+    """Torch model with some branching and skip connections."""
+
+    def __init__(self, _n_feat, activation_function):
+        super().__init__()
+
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass."""
+        return x + self.act(x + 1.0)
+
+
 @pytest.mark.parametrize(
     "activation_function",
     [
@@ -60,7 +73,11 @@ class NetWithLoops(nn.Module):
 )
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC), pytest.param(partial(NetWithLoops, n_fc_layers=2))],
+    [
+        pytest.param(FC),
+        pytest.param(partial(NetWithLoops, n_fc_layers=2)),
+        pytest.param(BranchingModule),
+    ],
 )
 @pytest.mark.parametrize(
     "input_output_feature",

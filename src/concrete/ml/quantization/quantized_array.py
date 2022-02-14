@@ -45,7 +45,9 @@ class QuantizedArray:
         self.n_bits = n_bits
         self.is_signed = is_signed
         if value_is_float:
-            self.values = deepcopy(values)
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
+            # To be seen what should be done in the long run (refactor of this class or Tracers)
+            self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
             self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
         else:
             assert_true(
@@ -60,7 +62,9 @@ class QuantizedArray:
 
             self.scale = scale
             self.zero_point = zero_point
-            self.qvalues = deepcopy(values)
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
+            # To be seen what should be done in the long run (refactor of this class or Tracers)
+            self.qvalues = deepcopy(values) if isinstance(values, numpy.ndarray) else values
             # Populate self.values
             self.dequant()
 
@@ -135,7 +139,9 @@ class QuantizedArray:
         Returns:
             qvalues (numpy.ndarray): Corresponding qvalues
         """
-        self.values = deepcopy(values)
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
+        # To be seen what should be done in the long run (refactor of this class or Tracers)
+        self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
         self.quant()
         return self.qvalues
 
@@ -148,7 +154,9 @@ class QuantizedArray:
         Returns:
             values (numpy.ndarray): Corresponding values
         """
-        self.qvalues = deepcopy(qvalues)
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
+        # To be seen what should be done in the long run (refactor of this class or Tracers)
+        self.qvalues = deepcopy(qvalues) if isinstance(qvalues, numpy.ndarray) else qvalues
         self.dequant()
         return self.values
 
