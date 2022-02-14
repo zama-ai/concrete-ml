@@ -8,7 +8,8 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
 
 COPY ./script/make_utils/setup_os_deps.sh ./setup_os_deps.sh
-RUN ./setup_os_deps.sh --linux-install-python && rm ./setup_os_deps.sh
+COPY ./script/make_utils/detect_docker.sh ./detect_docker.sh
+RUN ./setup_os_deps.sh --linux-install-python && rm ./setup_os_deps.sh && rm ./detect_docker.sh
 
 ENV SRC_DIR=/src
 

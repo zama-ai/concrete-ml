@@ -1,0 +1,118 @@
+name: Benchmarks
+on:
+  workflow_dispatch:
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  run-benchmarks:
+    name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - instance-id: ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }}
+            machine-name: 'AWS (c5.2xlarge)'
+            machine-vcpu: '8'
+            machine-os: 'Ubuntu 20.04'
+            benchmark-samples: '5'
+            artifact-name: 'intel'
+          # - instance-id: ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID}}
+          #   machine-name: 'AWS (c5a.2xlarge)'
+          #   machine-vcpu: '8'
+          #   machine-os: 'Ubuntu 20.04'
+          #   benchmark-samples: '5'
+          #   artifact-name: 'amd'
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.BENCHMARKS_REGION }}
+
+      - name: Write SSH Key To A File
+        env:
+          SSH_KEY: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+        run: |
+          touch ~/ssh-key
+          chmod 0600 ~/ssh-key
+          echo "${SSH_KEY}" > ~/ssh-key && chmod 0400 ~/ssh-key
+
+      - name: Start EC2 Instance
+        run: |
+          aws ec2 start-instances --instance-ids ${{ matrix.instance-id }}
+
+      - name: Wait For The EC2 Instance To Get An IP Address
+        run: timeout 180 bash -c "until [[ $(aws ec2 describe-instances --instance-ids ${{ matrix.instance-id }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != '' ]]; do sleep 1; done"
+
+      - name: Get Public IP Address of EC2 Instance
+        id: public-ip
+        run: |
+          PUBLIC_IP="$(aws ec2 describe-instances --region eu-west-3 --instance-ids ${{ matrix.instance-id }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)"
+          echo "::add-mask::${PUBLIC_IP}"
+          echo "::set-output name=value::${PUBLIC_IP}"
+
+      - name: Wait For The EC2 Instance To Accept SSH Connections
+        run: timeout 180 bash -c 'until nc -z ${{ steps.public-ip.outputs.value }} 22; do sleep 1; done'
+
+      - name: Connect To EC2 Instance, Perform Benchmarks, Publish Results
+        uses: appleboy/ssh-action@1d1b21ca96111b1eb4c03c21c14ebb971d2200f6
+        env:
+          PROGRESS_SAMPLES: ${{ matrix.benchmark-samples }}
+          PROGRESS_MACHINE_NAME: ${{ matrix.machine-name }}
+          PROGRESS_MACHINE_VCPU: ${{ matrix.machine-vcpu }}
+          PROGRESS_MACHINE_OS: ${{ matrix.machine-os }}
+          ML_PROGRESS_TRACKER_URL: ${{ secrets.ML_PROGRESS_TRACKER_URL }}
+          ML_PROGRESS_TRACKER_TOKEN: ${{ secrets.ML_PROGRESS_TRACKER_TOKEN }}
+        with:
+          host: ${{ steps.public-ip.outputs.value }}
+          username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
+          key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+          command_timeout: 720m
+          envs: PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PROGRESS_SAMPLES,PROGRESS_MACHINE_NAME,PROGRESS_MACHINE_VCPU,PROGRESS_MACHINE_OS,ML_PROGRESS_TRACKER_URL,ML_PROGRESS_TRACKER_TOKEN
+          script: |
+            cd ~/project
+            git clean -dfx
+            git remote update
+            git reset --hard "${GITHUB_SHA}"
+            make docker_publish_measurements
+            docker system prune -f
+
+      - name: Copy EC2 Instance ML Logs
+        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.public-ip.outputs.value }}:project/logs/latest.ml.log latest.ml.log
+
+      - name: Stop EC2 Instance
+        if: ${{ always() }}
+        run: |
+          aws ec2 stop-instances --instance-ids ${{ matrix.instance-id }}
+
+      - name: Upload Logs of EC2 Instance
+        uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: latest.*.log
+
+      - name: Send Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Publishing benchmarks finished with status ${{ job.status }} \
+            (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
