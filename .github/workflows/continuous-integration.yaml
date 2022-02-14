@@ -473,13 +473,19 @@ jobs:
           --vulns-json "${VULN_OUT}" \
           --vulns-report "${REPORT_OUT}"
 
-      # We load the report in a new step if we exited with an error code above to let the workflow fail
+      # We store the report in a new step if we exited with an error code above to let the workflow fail
+      # We escape the newlines so that it can be loaded properly by the runner
+      # See https://github.community/t/set-output-truncates-multiline-strings/16852/3
       - name: Load report in env
+        id: report
         if: ${{ always() }}
         run: |
           cat "${REPORT_OUT}"
           REPORT="$(cat "${REPORT_OUT}")"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+          REPORT="${REPORT//'%'/'%25'}"
+          REPORT="${REPORT//$'\n'/'%0A'}"
+          REPORT="${REPORT//$'\r'/'%0D'}"
+          echo "::set-output name=report::${REPORT}"
 
       - name: Slack Notification
         if: ${{ always() && !success() }}
@@ -489,7 +495,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ env.REPORT || 'Error during pip-audit' }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_MESSAGE: "${{ steps.report.outputs.report || 'Error during pip-audit' }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
