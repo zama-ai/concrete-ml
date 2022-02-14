@@ -88,16 +88,35 @@ then
     pip-licenses --format=csv | tr -d "\"" | grep -v "pkg\-resources\|concrete-ml" | \
         tee "${NEW_LICENSES_FILENAME}"
 
-    # Remove trailing whitespaces
+    # Remove trailing whitespaces and replace "," by ", "
     if [ "$UNAME" == "Darwin" ]
     then
         sed -i "" 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
+        sed -i "" 's/,/, /g' "${NEW_LICENSES_FILENAME}"
+
     else
         sed -i 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
+        sed -i 's/,/, /g' "${NEW_LICENSES_FILENAME}"
     fi
 
-    # Replace "," by ", "
-    sed -i "" 's/,/, /g' "${NEW_LICENSES_FILENAME}"
+    # Reject GPL-like stuff
+    LICENSES_BLACKLIST="GNU Lesser General Public License v3 (LGPLv3)"
+    LICENSES_BLACKLIST="${LICENSES_BLACKLIST};GNU Lesser General Public License v2 (LGPLv2)"
+    LICENSES_BLACKLIST="${LICENSES_BLACKLIST};GNU General Public License (GPL)"
+    LICENSES_BLACKLIST="${LICENSES_BLACKLIST};GNU General Public License v2 (GPLv2)"
+    LICENSES_BLACKLIST="${LICENSES_BLACKLIST};GNU General Public License v3 (GPLv3)"
+    LICENSES_BLACKLIST="${LICENSES_BLACKLIST};GNU Library or Lesser General Public License (LGPL)"
+
+    pip-licenses --fail-on="${LICENSES_BLACKLIST}"
+
+    # Check even more GPL things
+    IS_THERE_GPL_LICENSES=$(grep GPL "${NEW_LICENSES_FILENAME}" > /dev/null; echo $?)
+    if [ "$IS_THERE_GPL_LICENSES" -eq 0 ]
+    then
+        echo "Problems, there are GPL licences"
+        grep GPL "${NEW_LICENSES_FILENAME}"
+        exit 255
+    fi
 
     deactivate
 
