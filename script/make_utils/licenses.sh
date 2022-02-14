@@ -82,7 +82,11 @@ then
     python -m pip install -U --force-reinstall setuptools
     poetry install --no-dev
     python -m pip install pip-licenses
-    pip-licenses | grep -v "pkg\-resources\|concrete-ml" | tee "${NEW_LICENSES_FILENAME}"
+
+    # In --format=csv such that the column length (and so, the diff) do not change with longer
+    # names
+    pip-licenses --format=csv | tr -d "\"" | grep -v "pkg\-resources\|concrete-ml" | \
+        tee "${NEW_LICENSES_FILENAME}"
 
     # Remove trailing whitespaces
     if [ "$UNAME" == "Darwin" ]
@@ -91,6 +95,9 @@ then
     else
         sed -i 's/[t ]*$//g' "${NEW_LICENSES_FILENAME}"
     fi
+
+    # Replace "," by ", "
+    sed -i "" 's/,/, /g' "${NEW_LICENSES_FILENAME}"
 
     deactivate
 
