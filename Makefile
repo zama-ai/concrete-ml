@@ -421,8 +421,6 @@ docker_publish_measurements: docker_rebuild
 	docker run --rm --volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
-	--env PIP_INDEX_URL="$${PIP_INDEX_URL}" \
-	--env PIP_EXTRA_INDEX_URL="$${PIP_EXTRA_INDEX_URL}" \
 	$(DEV_DOCKER_IMG) \
 	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
 

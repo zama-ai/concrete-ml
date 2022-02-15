@@ -2,29 +2,36 @@ name: Benchmarks
 on:
   workflow_dispatch:
 
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # At 22:00 every day
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    - cron: '0 22 * * *'
+
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
   run-benchmarks:
+    if: ${{ secrets.BENCHMARKS_ENABLED == 'BENCHMARKS_PREFIX_ENABLED' }}
     name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - instance-id: ${{ secrets.BENCHMARKS_EC2_INTEL_INSTANCE_ID }}
+          - instance-id: 'BENCHMARKS_EC2_INTEL_INSTANCE_ID'
             machine-name: 'AWS (c5.2xlarge)'
             machine-vcpu: '8'
             machine-os: 'Ubuntu 20.04'
             benchmark-samples: '5'
-            artifact-name: 'intel'
-          # - instance-id: ${{ secrets.BENCHMARKS_EC2_AMD_INSTANCE_ID}}
-          #   machine-name: 'AWS (c5a.2xlarge)'
-          #   machine-vcpu: '8'
-          #   machine-os: 'Ubuntu 20.04'
-          #   benchmark-samples: '5'
-          #   artifact-name: 'amd'
+            artifact-name: 'c5.2xlarge'
+          - instance-id: 'BENCHMARKS_EC2_AMD_INSTANCE_ID'
+            machine-name: 'AWS (c5a.2xlarge)'
+            machine-vcpu: '8'
+            machine-os: 'Ubuntu 20.04'
+            benchmark-samples: '5'
+            artifact-name: 'c5a.2xlarge'
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
@@ -40,7 +47,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.BENCHMARKS_REGION }}
+          aws-region: ${{ secrets.BENCHMARKS_AWS_REGION }}
 
       - name: Write SSH Key To A File
         env:
@@ -50,17 +57,27 @@ jobs:
           chmod 0600 ~/ssh-key
           echo "${SSH_KEY}" > ~/ssh-key && chmod 0400 ~/ssh-key
 
+      - name: Set Instance ID in env
+        env:
+          INSTANCE_ID: ${{ secrets[matrix.instance-id] }}
+        run: |
+          echo "INSTANCE_ID=${INSTANCE_ID}" >> "$GITHUB_ENV"
+
       - name: Start EC2 Instance
         run: |
-          aws ec2 start-instances --instance-ids ${{ matrix.instance-id }}
+          aws ec2 start-instances --instance-ids "${INSTANCE_ID}"
 
+      # Export INSTANCE_ID so that's it's available in bash -c sub shell
       - name: Wait For The EC2 Instance To Get An IP Address
-        run: timeout 180 bash -c "until [[ $(aws ec2 describe-instances --instance-ids ${{ matrix.instance-id }} --query 'Reservations[].Instances[].PublicIpAddress' --output text) != '' ]]; do sleep 1; done"
+        run: |
+          export INSTANCE_ID="${INSTANCE_ID}"
+          # shellcheck disable=SC2016,2026
+          timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids "${INSTANCE_ID}" --query "Reservations[].Instances[].PublicIpAddress" --output text) != "" ]]; do sleep 1; done'
 
       - name: Get Public IP Address of EC2 Instance
         id: public-ip
         run: |
-          PUBLIC_IP="$(aws ec2 describe-instances --region eu-west-3 --instance-ids ${{ matrix.instance-id }} --query 'Reservations[].Instances[].PublicIpAddress' --output text)"
+          PUBLIC_IP="$(aws ec2 describe-instances --region eu-west-3 --instance-ids "${INSTANCE_ID}" --query "Reservations[].Instances[].PublicIpAddress" --output text)"
           echo "::add-mask::${PUBLIC_IP}"
           echo "::set-output name=value::${PUBLIC_IP}"
 
@@ -69,25 +86,34 @@ jobs:
 
       - name: Connect To EC2 Instance, Perform Benchmarks, Publish Results
         uses: appleboy/ssh-action@1d1b21ca96111b1eb4c03c21c14ebb971d2200f6
-        env:
-          PROGRESS_SAMPLES: ${{ matrix.benchmark-samples }}
-          PROGRESS_MACHINE_NAME: ${{ matrix.machine-name }}
-          PROGRESS_MACHINE_VCPU: ${{ matrix.machine-vcpu }}
-          PROGRESS_MACHINE_OS: ${{ matrix.machine-os }}
-          ML_PROGRESS_TRACKER_URL: ${{ secrets.ML_PROGRESS_TRACKER_URL }}
-          ML_PROGRESS_TRACKER_TOKEN: ${{ secrets.ML_PROGRESS_TRACKER_TOKEN }}
         with:
           host: ${{ steps.public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
           command_timeout: 720m
-          envs: PIP_INDEX_URL,PIP_EXTRA_INDEX_URL,PROGRESS_SAMPLES,PROGRESS_MACHINE_NAME,PROGRESS_MACHINE_VCPU,PROGRESS_MACHINE_OS,ML_PROGRESS_TRACKER_URL,ML_PROGRESS_TRACKER_TOKEN
           script: |
             cd ~/project
             git clean -dfx
             git remote update
-            git reset --hard "${GITHUB_SHA}"
+            echo "Resetting to ${{ github.sha }}"
+            git reset --hard ${{ github.sha }}
+            echo "Current rev:"
+            git rev-parse HEAD
+
+            rm -rf .env
+            touch .env
+            chmod 0600 .env
+            echo 'export PIP_INDEX_URL="${{ env.PIP_INDEX_URL }}"' >> .env
+            echo 'export PIP_EXTRA_INDEX_URL="${{ env.PIP_EXTRA_INDEX_URL }}"' >> .env
+            echo 'export PROGRESS_SAMPLES="${{ matrix.benchmark-samples }}"' >> .env
+            echo 'export PROGRESS_MACHINE_NAME="${{ matrix.machine-name }}"' >> .env
+            echo 'export PROGRESS_MACHINE_VCPU="${{ matrix.machine-vcpu }}"' >> .env
+            echo 'export PROGRESS_MACHINE_OS="${{ matrix.machine-os }}"' >> .env
+            echo 'export ML_PROGRESS_TRACKER_URL="${{ secrets.ML_PROGRESS_TRACKER_URL }}"' >> .env
+            echo 'export ML_PROGRESS_TRACKER_TOKEN="${{ secrets.ML_PROGRESS_TRACKER_TOKEN }}"' >> .env
+
             make docker_publish_measurements
+            rm -rf .env
             docker system prune -f
 
       - name: Copy EC2 Instance ML Logs
@@ -96,7 +122,7 @@ jobs:
       - name: Stop EC2 Instance
         if: ${{ always() }}
         run: |
-          aws ec2 stop-instances --instance-ids ${{ matrix.instance-id }}
+          aws ec2 stop-instances --instance-ids "${INSTANCE_ID}"
 
       - name: Upload Logs of EC2 Instance
         uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2

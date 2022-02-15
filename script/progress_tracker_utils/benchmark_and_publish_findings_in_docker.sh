@@ -7,6 +7,13 @@ set -e
 
 DEV_VENV_PATH="/home/dev_user/dev_venv"
 
+# Create the file if it does not exist to avoid crashing
+touch .env
+# shellcheck disable=SC1090,SC1091
+source .env
+# Don't keep the file, once it's sourced it served its purpose
+rm -rf .env
+
 # shellcheck disable=SC1090,SC1091
 if ! source "${DEV_VENV_PATH}/bin/activate"; then
     python3 -m venv "${DEV_VENV_PATH}"
