@@ -122,14 +122,27 @@ def numpy_gemm(
     processed_alpha = int(alpha) if round(alpha) == alpha else alpha
     processed_beta = int(beta) if round(beta) == beta else beta
 
-    # Done for the generic case (ie, any alpha and beta), which is sufficient since this function
-    # is not traced. Actually, only q_impl of QuantizedGemm is traced
-
     a_prime = numpy.transpose(a) if transA else a
     b_prime = numpy.transpose(b) if transB else b
     c_prime: Union[numpy.ndarray, float] = c if c is not None else 0
 
-    y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
+    # Do
+    #
+    #       y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
+    #
+    # in an efficient way, ie to make tracing directly optimized, without expecting any opt from the
+    # compiler here
+
+    y = numpy.matmul(a_prime, b_prime)
+
+    if processed_alpha != 1:
+        y = y * processed_alpha
+
+    if numpy.any(c_prime != 0):
+        if processed_beta == 1:
+            y = y + c_prime
+        else:
+            y = y + processed_beta * c_prime
 
     return (y,)
 
