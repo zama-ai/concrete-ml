@@ -196,7 +196,7 @@ docker_rebuild: docker_clean_volumes
 
 .PHONY: docker_start # Launch docker
 docker_start:
-	EV_FILE="$$(mktemp --suffix=.txt)" && \
+	EV_FILE="$$(mktemp tmp.docker.XXXX)" && \
 	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
 	export $$(cat "$${EV_FILE}" | xargs) && rm -f "$${EV_FILE}" && \
 	docker run --rm -it \
