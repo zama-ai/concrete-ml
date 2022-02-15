@@ -16,7 +16,11 @@ setup_env:
 	PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
 	poetry run python -m pip install keyring
 	poetry run python -m pip install -U pip wheel
-	poetry run python -m pip install -U --force-reinstall setuptools
+
+	@# Only for linux and docker, reinstall setuptools. On macOS, it creates warnings, see 169
+	if [[ $$(uname) != "Darwin" ]]; then \
+		poetry run python -m pip install -U --force-reinstall setuptools; \
+	fi
 	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
 		poetry install --only dev; \
 	else \

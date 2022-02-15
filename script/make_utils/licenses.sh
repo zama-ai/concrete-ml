@@ -79,7 +79,13 @@ then
     source $TMP_VENV_PATH/tmp_venv/bin/activate
 
     python -m pip install -U pip wheel
-    python -m pip install -U --force-reinstall setuptools
+
+    # Only for linux and docker, reinstall setuptools. On macOS, it creates warnings, see 169
+    if [[ "$UNAME" != "Darwin" ]]
+    then
+        python -m pip install -U --force-reinstall setuptools
+    fi
+
     poetry install --no-dev
     python -m pip install -U --pre "concrete-numpy[full]"
     python -m pip install pip-licenses
