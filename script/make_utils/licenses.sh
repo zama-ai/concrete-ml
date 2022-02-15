@@ -81,6 +81,7 @@ then
     python -m pip install -U pip wheel
     python -m pip install -U --force-reinstall setuptools
     poetry install --no-dev
+    python -m pip install -U --pre "concrete-numpy[full]"
     python -m pip install pip-licenses
 
     # In --format=csv such that the column length (and so, the diff) do not change with longer
