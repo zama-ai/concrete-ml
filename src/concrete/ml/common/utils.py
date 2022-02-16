@@ -54,7 +54,7 @@ def generate_proxy_function(
         for arg_name in desired_functions_arg_names
     }
     proxy_func_arg_string = ", ".join(orig_args_to_proxy_func_args.values())
-    proxy_func_name = f"{function_to_proxy.__name__}_proxy"
+    proxy_func_name = replace_invalid_arg_name_chars(f"{function_to_proxy.__name__}_proxy")
     # compile is the built-in python compile to generate code at runtime.
     function_proxy_code = compile(
         f"def {proxy_func_name}({proxy_func_arg_string}): "

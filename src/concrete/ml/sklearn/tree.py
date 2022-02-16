@@ -15,6 +15,7 @@ from concrete.common.fhe_circuit import FHECircuit
 from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
+from ..common.utils import generate_proxy_function
 from ..onnx.convert import get_equivalent_numpy_forward
 from ..quantization.quantized_array import QuantizedArray
 
@@ -492,10 +493,16 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             self._tensor_tree_predict is not None, "You must fit the model before compiling it."
         )
 
+        # mypy bug fix
+        assert self._tensor_tree_predict is not None
+        _tensor_tree_predict_proxy, parameters_mapping = generate_proxy_function(
+            self._tensor_tree_predict, ["inputs"]
+        )
+
         X = self.quantize_input(X)
         compiler = hnp.NPFHECompiler(
-            self._tensor_tree_predict,
-            {"inputs": "encrypted"},
+            _tensor_tree_predict_proxy,
+            {parameters_mapping["inputs"]: "encrypted"},
             compilation_configuration,
             compilation_artifacts,
         )

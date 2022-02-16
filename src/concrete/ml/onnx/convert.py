@@ -27,10 +27,6 @@ def get_equivalent_numpy_forward_and_onnx_model(
             use a temp file if not provided.
             Defaults to None.
 
-    Raises:
-        ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
-            model to numpy.
-
     Returns:
         Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.GraphProto]: The function that will
             execute the equivalent numpy code to the passed torch_module and the generated ONNX
@@ -51,30 +47,27 @@ def get_equivalent_numpy_forward_and_onnx_model(
     if use_tempfile:
         output_onnx_file_path.unlink(missing_ok=True)
 
-    required_onnx_operators = set(node.op_type for node in equivalent_onnx_model.graph.node)
-    unsupported_operators = required_onnx_operators - IMPLEMENTED_ONNX_OPS
-
-    if len(unsupported_operators) > 0:
-        raise ValueError(
-            "The following ONNX operators are required to convert the torch model to numpy but are "
-            f"not currently implemented: {', '.join(sorted(unsupported_operators))}.\n"
-            f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
-        )
+    # The model was checked just above
+    equivalent_numpy_forward = get_equivalent_numpy_forward(
+        equivalent_onnx_model, check_model=False
+    )
 
     return (
-        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args),
+        equivalent_numpy_forward,
         equivalent_onnx_model,
     )
 
 
 def get_equivalent_numpy_forward(
-    onnx_model: onnx.GraphProto,
+    onnx_model: onnx.ModelProto, check_model: bool = True
 ) -> Callable[..., Tuple[numpy.ndarray, ...]]:
     """Get the numpy equivalent forward of the provided ONNX model.
 
     Args:
-        onnx_model (onnx.GraphProto): the ONNX model for which to get the equivalent numpy
+        onnx_model (onnx.ModelProto): the ONNX model for which to get the equivalent numpy
             forward.
+        check_model (bool): set to True to run the onnx checker on the model.
+            Defaults to True.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
@@ -84,17 +77,16 @@ def get_equivalent_numpy_forward(
         Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
             the equivalent numpy function.
     """
-    # TODO merge this function with the one above (#285)
-    checker.check_model(onnx_model)
+    if check_model:
+        checker.check_model(onnx_model)
     required_onnx_operators = set(node.op_type for node in onnx_model.graph.node)
     unsupported_operators = required_onnx_operators - IMPLEMENTED_ONNX_OPS
 
-    # No cover has this function is going to be merged
-    if len(unsupported_operators) > 0:  # pragma: no cover
+    if len(unsupported_operators) > 0:
         raise ValueError(
             "The following ONNX operators are required to convert the torch model to numpy but are "
             f"not currently implemented: {', '.join(sorted(unsupported_operators))}.\n"
             f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
-        )  # pragma: no cover
+        )
 
-    return lambda inputs: execute_onnx_with_numpy(onnx_model.graph, inputs)
+    return lambda *args: execute_onnx_with_numpy(onnx_model.graph, *args)
