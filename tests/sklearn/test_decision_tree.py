@@ -1,21 +1,27 @@
 """Tests for the sklearn decision trees."""
 import numpy
 import pytest
-from sklearn.datasets import load_breast_cancer
+from sklearn.datasets import load_breast_cancer, make_classification
 
 from concrete.ml.sklearn import DecisionTreeClassifier
 
 
 @pytest.mark.parametrize(
     "load_data",
-    [load_breast_cancer],
+    [
+        pytest.param(lambda: load_breast_cancer(return_X_y=True), id="breast_cancer"),
+        pytest.param(
+            lambda: make_classification(n_samples=100, n_features=10, n_classes=2),
+            id="make_classification",
+        ),
+    ],
 )
 def test_decision_tree_classifier(
     load_data, default_compilation_configuration, check_is_good_execution_for_quantized_models
 ):
     """Tests the sklearn DecisionTreeClassifier."""
     # Get the sklearn model
-    x, y = load_data(return_X_y=True)
+    x, y = load_data()
 
     model = DecisionTreeClassifier(n_bits=6, max_depth=7)
     model, sklearn_model = model.fit_benchmark(x, y)

@@ -243,6 +243,11 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             len(numpy.unique(numpy.asarray(y).flatten())) == 2,
             "Only 2 classes are supported currently.",
         )
+        # Check that the classes are 0 and 1
+        assert_true(
+            bool(numpy.all(numpy.unique(y.ravel()) == [0, 1])),
+            "y must be in [0, 1]",
+        )
         self.q_x_byfeatures = []
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -332,17 +337,17 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         # where the input is transposed.
         # FIXME remove this workaround once #292 is fixed
 
-        # Make sure Gemm is at the right place in the graph.
-        assert_true(
-            (onnx_model.graph.node[1].op_type == "Gemm")
-            & (onnx_model.graph.node[1].input[1] == "6"),
-            "Gemm is not at the right place in the graph",
-        )
+        # Find the Gemm node
+        for node_index, node in enumerate(onnx_model.graph.node):
+            if node.op_type == "Gemm":
+                gemm_node_index = node_index
+                break
+
         # Gemm has transA and transB parameter. B is the input.
         # If we transpose the input before, we don't have to do it afterward.
         # In FHE we currently only send 1 example so the input looks has shape (1, n_features)
         # We simply need to transpose it to (n_features, 1)
-        gemm_node = onnx_model.graph.node[1]
+        gemm_node = onnx_model.graph.node[gemm_node_index]
         new_node = numpy_helper.helper.make_node(
             name=gemm_node.name,
             op_type=gemm_node.op_type,
@@ -351,7 +356,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             alpha=1.0,
             beta=0.0,
         )
-        onnx_model.graph.node[1].CopyFrom(new_node)
+        onnx_model.graph.node[gemm_node_index].CopyFrom(new_node)
         _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
         return _tensor_tree_predict
 
