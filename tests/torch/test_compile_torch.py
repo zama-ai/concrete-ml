@@ -118,6 +118,7 @@ def test_compile_torch(
     # learned quantization parameters during compilation
     x_test = numpy.random.uniform(-100, 100, size=(1, input_output_feature))
     qtest = quantized_numpy_module.quantize_input(x_test)
+    assert quantized_numpy_module.is_compiled
     quantized_numpy_module.forward_fhe.run(qtest)
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)

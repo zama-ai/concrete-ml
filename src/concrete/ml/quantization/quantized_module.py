@@ -45,9 +45,18 @@ class QuantizedModule:
         )
 
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
-        self.compiled = False
+        self._is_compiled = False
         self.forward_fhe = None
         self.q_inputs = []
+
+    @property
+    def is_compiled(self) -> bool:
+        """Return the compiled status of the module.
+
+        Returns:
+            bool: the compiled status of the module.
+        """
+        return self._is_compiled
 
     def __call__(self, *x: numpy.ndarray):
         return self.forward(*x)
@@ -241,5 +250,7 @@ class QuantizedModule:
         self.forward_fhe = compiler.compile_on_inputset(
             (numpy.expand_dims(arr, 0) for arr in self.q_inputs[0].qvalues), show_mlir
         )
+
+        self._is_compiled = True
 
         return self.forward_fhe
