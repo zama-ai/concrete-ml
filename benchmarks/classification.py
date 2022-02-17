@@ -8,8 +8,9 @@ from common import BENCHMARK_CONFIGURATION
 from sklearn.datasets import fetch_openml
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 
+from concrete.ml.sklearn.qnn import NeuralNetClassifier
 from concrete.ml.sklearn.tree import DecisionTreeClassifier
 
 # Set the number of benchmark samples to 1 to improve benchmark runtimes
@@ -35,9 +36,20 @@ datasets = [
 
 dataset_versions = {"wilt": 2}
 
-classifiers = [DecisionTreeClassifier]
+classifiers = [DecisionTreeClassifier, NeuralNetClassifier]
 
-benchmark_params = {DecisionTreeClassifier: {"max_depth": 3}}
+benchmark_params = {
+    DecisionTreeClassifier: {"max_depth": 3},
+    NeuralNetClassifier: {
+        "module__n_layers": 3,
+        "module__n_w_bits": 2,
+        "module__n_a_bits": 2,
+        "module__n_accum_bits": 7,
+        "module__n_hidden_neurons_multiplier": 1,
+        "max_epochs": 200,
+        "verbose": 0,
+    },
+}
 
 
 def train_and_test_on_dataset(classifier, dataset):
@@ -61,7 +73,13 @@ def train_and_test_on_dataset(classifier, dataset):
         enc = OrdinalEncoder()
         classes = [[x] for x in classes]
         enc.fit(classes)
-        classes = enc.transform(classes)
+        classes = enc.transform(classes).astype(np.int64)
+        classes = np.squeeze(classes)
+
+    normalizer = StandardScaler()
+
+    # Cast to a type that works for both sklearn and Torch
+    features = features.astype(np.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, y_test = train_test_split(
@@ -71,8 +89,24 @@ def train_and_test_on_dataset(classifier, dataset):
         random_state=42,
     )
 
+    progress.measure(
+        id="majority-class-percentage",
+        label="Majority Class Percentage",
+        value=np.max(np.bincount(y_test)) / y_test.size,
+    )
+
+    # Compute mean/stdev on training set and normalize both train and test sets with them
+    x_train = normalizer.fit_transform(x_train)
+    x_test = normalizer.transform(x_test)
+
     # Now instantiate the classifier, provide it with a custom configuration if we specify one
+    # FIXME: these parameters could be infered from the data given to .fit
+    # see https://github.com/zama-ai/concrete-ml-internal/issues/325
     config = benchmark_params.get(classifier, {})
+    if classifier is NeuralNetClassifier:
+        config["module__input_dim"] = x_train.shape[1]
+        config["module__n_classes"] = len(np.unique(classes))
+
     concrete_classifier = classifier(**config)
 
     # Concrete ML classifiers follow the sklearn Estimator API but train differently than those
@@ -103,7 +137,9 @@ def train_and_test_on_dataset(classifier, dataset):
     )
 
     # Use only a subset of vectors for the bitwidth check
-    N_max_compile_fhe = 1000
+    # FIXME: once the HNP frontend is improved, increase this number to 1000
+    # see: https://github.com/zama-ai/concrete-numpy-internal/issues/1374
+    N_max_compile_fhe = 10
     if x_test.shape[0] > N_max_compile_fhe:
         x_test = x_test[0:N_max_compile_fhe, :]
         y_test = y_test[0:N_max_compile_fhe]
@@ -126,6 +162,8 @@ def train_and_test_on_dataset(classifier, dataset):
     y_pred_c = concrete_classifier.predict(x_test, execute_in_fhe=True)
     duration = time.time() - t_start
 
+    # FIXME: accuracy is not informative for unbalanced data sets
+    # see: https://github.com/zama-ai/concrete-ml-internal/issues/322
     acc = accuracy_score(y_test, y_pred_c)
     progress.measure(
         id="fhe-acc",

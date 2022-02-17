@@ -391,6 +391,6 @@ def test_all_ops_were_tested():
         QuantizedClip: test_clip_op,
     }
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
-        "Missing tests and manual aknowledgement for: "
+        "Missing tests and manual acknowledgement for: "
         f"{', '.join(sorted(cls.__name__ for cls in ALL_QUANTIZED_OPS))}"
     )

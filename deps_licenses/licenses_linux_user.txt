@@ -21,7 +21,7 @@ onnxruntime, 1.10.0, MIT License
 packaging, 21.3, Apache Software License; BSD License
 protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.0, BSD License
-pygraphviz, 1.8, BSD License
+pygraphviz, 1.9, BSD License
 pyparsing, 3.0.7, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.0.2, new BSD
@@ -29,8 +29,11 @@ scipy, 1.8.0, BSD License
 setuptools-scm, 6.4.2, MIT License
 six, 1.16.0, MIT License
 skl2onnx, 1.10.4, Apache Software License
+skorch, 0.11.0, new BSD 3-Clause
+tabulate, 0.8.9, MIT License
 threadpoolctl, 3.1.0, BSD License
 tomli, 1.2.3, MIT License
 torch, 1.10.2, BSD License
-typing-extensions, 4.0.1, Python Software Foundation License
+tqdm, 4.62.3, MIT License; Mozilla Public License 2.0 (MPL 2.0)
+typing-extensions, 4.1.1, Python Software Foundation License
 xgboost, 1.5.2, Apache Software License
