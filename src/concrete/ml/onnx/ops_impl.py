@@ -392,21 +392,25 @@ def numpy_elu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
     return (y,)
 
 
-def numpy_selu(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_selu(
+    x: numpy.ndarray,
+    /,
+    *,
+    alpha: float = 1.6732632423543772848170429916717,
+    gamma: float = 1.0507009873554804934193349852946,
+) -> Tuple[numpy.ndarray]:
     """Compute selu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Selu-6
 
     Args:
         x (numpy.ndarray): Input tensor
+        alpha (float): Coefficient
+        gamma (float): Coefficient
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-
-    # FIXME: find alpha and gamma
-    alpha = 1.6732632423543772848170429916717
-    gamma = 1.0507009873554804934193349852946
 
     y = fake_numpy_where(x > 0, gamma * x, (gamma * alpha) * (numpy.exp(x) - 1))
     return (y,)
