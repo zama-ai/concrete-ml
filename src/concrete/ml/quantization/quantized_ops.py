@@ -548,6 +548,18 @@ class QuantizedExp(QuantizedOp):
     _impl_for_op_named: str = "Exp"
 
 
+class QuantizedLog(QuantizedOp):
+    """Quantized Log op."""
+
+    _impl_for_op_named: str = "Log"
+
+
+class QuantizedAbs(QuantizedOp):
+    """Quantized Abs op."""
+
+    _impl_for_op_named: str = "Abs"
+
+
 class QuantizedLinear(QuantizedGemm):
     """Helper Class to have the equivalent layer to torch.nn.Linear."""
 

@@ -107,6 +107,12 @@ class PostTrainingAffineQuantization:
 
             # If we depend on a variable input use the quantized version of the operator
             if has_variable_inputs:
+
+                assert_true(
+                    op_type in ONNX_OPS_TO_QUANTIZED_IMPL,
+                    f"{op_type} can't be found in {ONNX_OPS_TO_QUANTIZED_IMPL}",
+                )
+
                 quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
                 variable_input_names = [
                     input_name for input_name in curr_inputs if input_name not in constants

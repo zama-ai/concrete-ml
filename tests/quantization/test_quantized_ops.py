@@ -10,6 +10,7 @@ import pytest
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.quantized_ops import (
     ALL_QUANTIZED_OPS,
+    QuantizedAbs,
     QuantizedAdd,
     QuantizedCelu,
     QuantizedClip,
@@ -19,6 +20,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedHardSigmoid,
     QuantizedLeakyRelu,
     QuantizedLinear,
+    QuantizedLog,
     QuantizedMatMul,
     QuantizedOp,
     QuantizedRelu,
@@ -387,6 +389,8 @@ def test_all_ops_were_tested():
         QuantizedSelu: test_univariate_ops_no_attrs,
         QuantizedCelu: test_univariate_ops_no_attrs,
         QuantizedSoftplus: test_univariate_ops_no_attrs,
+        QuantizedAbs: test_univariate_ops_no_attrs,
+        QuantizedLog: test_univariate_ops_no_attrs,
         QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
     }

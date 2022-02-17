@@ -8,6 +8,23 @@ from scipy import special
 from ..common.debugging import assert_true
 
 
+def fake_numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray) -> numpy.ndarray:
+    """Compute the equivalent of numpy.where.
+
+    Args:
+        c (numpy.ndarray): Condition operand.
+        t (numpy.ndarray): True operand.
+        f (numpy.ndarray): False operand.
+
+    Returns:
+        numpy.ndarray: numpy.where(c, t, f)
+
+    # FIXME: can it be improved with a native numpy.where in Concrete Numpy?
+    # https://github.com/zama-ai/concrete-numpy-internal/issues/1429
+    """
+    return c * t + (1 - c) * f
+
+
 def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute add in numpy according to ONNX spec.
 
@@ -371,8 +388,8 @@ def numpy_elu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # FIXME: not compilable
-    return (numpy.where(x > 0, x, alpha * (numpy.exp(x) - 1)),)
+    y = fake_numpy_where(x > 0, x, alpha * (numpy.exp(x) - 1))
+    return (y,)
 
 
 def numpy_selu(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -391,8 +408,8 @@ def numpy_selu(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     alpha = 1.6732632423543772848170429916717
     gamma = 1.0507009873554804934193349852946
 
-    # FIXME: not compilable
-    return (gamma * numpy.where(x > 0, x, alpha * (numpy.exp(x) - 1)),)
+    y = fake_numpy_where(x > 0, gamma * x, (gamma * alpha) * (numpy.exp(x) - 1))
+    return (y,)
 
 
 def numpy_celu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
@@ -424,8 +441,8 @@ def numpy_leakyrelu(x: numpy.ndarray, /, *, alpha: float = 0.01) -> Tuple[numpy.
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # FIXME: not compilable
-    return (numpy.where(x > 0, x, alpha * x),)
+    y = fake_numpy_where(x > 0, x, alpha * x)
+    return (y,)
 
 
 def numpy_thresholdedrelu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
