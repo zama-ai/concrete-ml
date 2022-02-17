@@ -12,8 +12,23 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
+  should-run-benchmarks:
+    runs-on: ubuntu-20.04
+    outputs:
+      should-run: ${{ steps.should-run.outputs.value || 'false' }}
+    steps:
+      - name: Check Benchmarks should run
+        id: should-run
+        run: |
+          if [[ "${{ secrets.BENCHMARKS_ENABLED }}" == "BENCHMARKS_PREFIX_ENABLED" ]]; then
+            echo "::set-output name=value::true"
+          else
+            echo "::set-output name=value::false"
+          fi
+
   run-benchmarks:
-    if: ${{ secrets.BENCHMARKS_ENABLED == 'BENCHMARKS_PREFIX_ENABLED' }}
+    needs: [should-run-benchmarks]
+    if: ${{ needs.should-run-benchmarks.outputs.should-run == 'true' }}
     name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
     runs-on: ubuntu-20.04
     strategy:
