@@ -11,19 +11,28 @@ from concrete.ml.sklearn import DecisionTreeClassifier
     [
         pytest.param(lambda: load_breast_cancer(return_X_y=True), id="breast_cancer"),
         pytest.param(
-            lambda: make_classification(n_samples=100, n_features=10, n_classes=2),
+            lambda: make_classification(n_samples=100, n_features=10, n_classes=2, random_state=42),
             id="make_classification",
         ),
     ],
 )
 def test_decision_tree_classifier(
-    load_data, default_compilation_configuration, check_is_good_execution_for_quantized_models
+    load_data,
+    default_compilation_configuration,
+    seed_torch,
+    check_is_good_execution_for_quantized_models,
 ):
     """Tests the sklearn DecisionTreeClassifier."""
-    # Get the sklearn model
+
+    # Seed torch
+    seed_torch()
+
+    # Get the dataset
     x, y = load_data()
 
-    model = DecisionTreeClassifier(n_bits=6, max_depth=7)
+    model = DecisionTreeClassifier(
+        n_bits=6, max_depth=7, random_state=numpy.random.randint(0, 2 ** 15)
+    )
     model, sklearn_model = model.fit_benchmark(x, y)
 
     # Check correlation coefficient between the two models
