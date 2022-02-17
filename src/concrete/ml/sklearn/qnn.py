@@ -396,14 +396,12 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
         """
 
         if execute_in_fhe:
-            # FIXME : use the appropriate flag once
-            # see https://github.com/zama-ai/concrete-ml-internal/issues/330
             if self.quantized_module is None:
                 raise ValueError(
                     "The classifier needs to be calibrated before compilation,"
                     " please call .fit() first!"
                 )
-            if self.quantized_module.forward_fhe is None:
+            if not self.quantized_module.is_compiled:
                 raise ValueError(
                     "The classifier is not yet compiled to FHE, please call .compile() first"
                 )
