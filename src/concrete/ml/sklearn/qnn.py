@@ -124,7 +124,7 @@ class SparseQuantNNClassifier(nn.Module):
 
         return int(
             np.floor(
-                (2 ** self.n_accum_bits - 1) / (2 ** self.n_w_bits - 1) / (2 ** self.n_a_bits - 1)
+                (2**self.n_accum_bits - 1) / (2**self.n_w_bits - 1) / (2**self.n_a_bits - 1)
             )
         )
 

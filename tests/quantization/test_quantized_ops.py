@@ -86,7 +86,7 @@ def test_univariate_ops_no_attrs(
     qvalues = q_output.qvalues
 
     # Quantized values must be contained between 0 and 2**n_bits - 1.
-    assert numpy.max(qvalues) <= 2 ** n_bits - 1
+    assert numpy.max(qvalues) <= 2**n_bits - 1
     assert numpy.min(qvalues) >= 0
 
     # Dequantized values must be close to original values
@@ -127,7 +127,7 @@ def test_exp_op(
     qvalues = q_output.qvalues
 
     # Quantized values must be contained between 0 and 2**n_bits - 1.
-    assert numpy.max(qvalues) <= 2 ** n_bits - 1
+    assert numpy.max(qvalues) <= 2**n_bits - 1
     assert numpy.min(qvalues) >= 0
 
     # Dequantized values must be close to original values
@@ -174,7 +174,7 @@ def test_clip_op(
         qvalues = q_output.qvalues
 
         # Quantized values must be contained between 0 and 2**n_bits - 1.
-        assert numpy.max(qvalues) <= 2 ** n_bits - 1
+        assert numpy.max(qvalues) <= 2**n_bits - 1
         assert numpy.min(qvalues) >= 0
 
         # Dequantized values must be close to original values

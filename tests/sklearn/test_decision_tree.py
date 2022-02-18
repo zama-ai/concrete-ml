@@ -31,7 +31,7 @@ def test_decision_tree_classifier(
     x, y = load_data()
 
     model = DecisionTreeClassifier(
-        n_bits=6, max_depth=7, random_state=numpy.random.randint(0, 2 ** 15)
+        n_bits=6, max_depth=7, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 

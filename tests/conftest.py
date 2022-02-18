@@ -158,7 +158,7 @@ def function_to_seed_torch():
     """Function to seed torch"""
 
     # Seed torch with something which is seed by pytest-randomly
-    torch.manual_seed(random.randint(0, 2 ** 64 - 1))
+    torch.manual_seed(random.randint(0, 2**64 - 1))
     torch.use_deterministic_algorithms(True)
 
 

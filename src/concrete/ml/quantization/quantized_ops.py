@@ -253,7 +253,7 @@ class QuantizedOp(ABC):
 
         qoutput_activation = qoutput_activation / self.output_scale + self.output_zero_point
         qoutput_activation = (
-            numpy.rint(qoutput_activation).clip(0, 2 ** self.n_bits - 1).astype(numpy.int64)
+            numpy.rint(qoutput_activation).clip(0, 2**self.n_bits - 1).astype(numpy.int64)
         )
 
         return QuantizedArray(
@@ -444,7 +444,7 @@ class QuantizedGemm(QuantizedOp):
             bias_part = q_bias.scale / self.output_scale * (q_bias.qvalues - q_bias.zero_point)
             numpy_q_out = numpy_q_out + bias_part
 
-        numpy_q_out = numpy.rint(numpy_q_out).clip(0, 2 ** self.n_bits - 1).astype(numpy.int64)
+        numpy_q_out = numpy.rint(numpy_q_out).clip(0, 2**self.n_bits - 1).astype(numpy.int64)
 
         return QuantizedArray(
             self.n_bits,
@@ -517,7 +517,7 @@ class QuantizedAdd(QuantizedOp):
         # Giving 3 * N TLU complexity for the whole operation for the variable + variable case
         qvalues = (
             numpy.rint(dequant_sum / self.output_scale + self.output_zero_point)
-            .clip(0, 2 ** self.n_bits - 1)
+            .clip(0, 2**self.n_bits - 1)
             .astype(numpy.int64)
         )
 

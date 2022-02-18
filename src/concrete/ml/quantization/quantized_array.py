@@ -28,7 +28,7 @@ class QuantizedArray:
             Defaults to None.
     """
 
-    STABILITY_CONST = 10 ** -6
+    STABILITY_CONST = 10**-6
 
     def __init__(
         self,
@@ -109,13 +109,13 @@ class QuantizedArray:
 
                 # TODO: should we quantize it to the value of 1 what ever the number of bits
                 # in order to save some precision bits ?
-                scale = rmax / (2 ** self.n_bits - 1)
+                scale = rmax / (2**self.n_bits - 1)
                 zero_point = 0
         else:
-            scale = (rmax - rmin) / (2 ** self.n_bits - 1) if rmax != rmin else 1.0
+            scale = (rmax - rmin) / (2**self.n_bits - 1) if rmax != rmin else 1.0
 
             zero_point = numpy.round(
-                (rmax * (-self.offset) - (rmin * (2 ** self.n_bits - 1 - self.offset)))
+                (rmax * (-self.offset) - (rmin * (2**self.n_bits - 1 - self.offset)))
                 / (rmax - rmin)
             ).astype(numpy.int64)
 
