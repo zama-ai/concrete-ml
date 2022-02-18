@@ -119,13 +119,10 @@ def test_quantized_module_compilation(
     input_output_feature,
     model,
     activation,
-    seed_torch,
     default_compilation_configuration,
     check_is_good_execution,
 ):
     """Test a neural network compilation for FHE inference."""
-    # Seed torch
-    seed_torch()
 
     n_bits = 2
 

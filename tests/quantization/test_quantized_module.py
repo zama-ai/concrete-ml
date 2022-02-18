@@ -107,15 +107,13 @@ N_BITS_LIST = [20, 16, 8]
 )
 @pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
 def test_quantized_linear(
-    model, input_shape, n_bits, activation_function, is_signed, seed_torch, check_r2_score
+    model, input_shape, n_bits, activation_function, is_signed, check_r2_score
 ):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
     to be the same as the standard module.
     """
-    # Seed torch
-    seed_torch()
     # Define the torch model
     torch_fc_model = model(activation_function)
     # Create random input
@@ -162,11 +160,9 @@ def test_quantized_linear(
         ),
     ],
 )
-def test_raises_on_float_inputs(model, input_shape, dtype, err_msg, seed_torch):
+def test_raises_on_float_inputs(model, input_shape, dtype, err_msg):
     """Function to test incompatible inputs."""
 
-    # Seed torch
-    seed_torch()
     # Define the torch model
     torch_fc_model = model(nn.ReLU)
     # Create random input

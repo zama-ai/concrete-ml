@@ -19,13 +19,9 @@ from concrete.ml.sklearn import DecisionTreeClassifier
 def test_decision_tree_classifier(
     load_data,
     default_compilation_configuration,
-    seed_torch,
     check_is_good_execution_for_quantized_models,
 ):
     """Tests the sklearn DecisionTreeClassifier."""
-
-    # Seed torch
-    seed_torch()
 
     # Get the dataset
     x, y = load_data()

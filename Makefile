@@ -130,6 +130,8 @@ pcc_internal: $(PCC_DEPS)
 # --randomly-dont-reset-seed is used to make that, if we run the same test several times (with
 # @pytest.mark.repeat(3)), not the same seed is used, even if things are still deterministic of the
 # main seed
+# --showlocals --full-trace is to make that, in case of crash, we can search for "main seed" to try
+# to reproduce
 .PHONY: pytest # Run pytest
 pytest:
 	poetry run pytest -svv \
@@ -139,7 +141,8 @@ pytest:
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/ \
 	--count=$(COUNT) \
-	--randomly-dont-reset-seed
+	--randomly-dont-reset-seed \
+	--showlocals --full-trace
 
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
 pytest_one:

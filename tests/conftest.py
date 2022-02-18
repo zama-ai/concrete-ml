@@ -154,19 +154,36 @@ def remove_color_codes():
     return lambda x: REMOVE_COLOR_CODES_RE.sub("", x)
 
 
-def function_to_seed_torch():
+def function_to_seed_torch(seed):
     """Function to seed torch"""
 
     # Seed torch with something which is seed by pytest-randomly
-    torch.manual_seed(random.randint(0, 2**64 - 1))
+    torch.manual_seed(seed)
     torch.use_deterministic_algorithms(True)
 
 
-@pytest.fixture
-def seed_torch():
-    """Fixture to seed torch"""
+@pytest.fixture(autouse=True)
+def autoseeding_of_everything(record_property):
+    """Function to seed everything we can"""
 
-    return function_to_seed_torch
+    main_seed = random.randint(0, 2**64 - 1)
+    seed = main_seed
+    record_property("main seed", main_seed)
+
+    # Python
+    random.seed(seed)
+    print("\nForcing seed to random.seed to ", seed)
+
+    # Numpy
+    seed += 1
+    numpy.random.seed(seed % 2**32)
+    print("Forcing seed to numpy.random.seed to ", seed)
+
+    # Seed torch
+    seed += 1
+    function_to_seed_torch(seed)
+    print("Forcing seed to function_to_seed_torch to ", seed)
+    return {"main seed": main_seed}
 
 
 def check_is_good_execution_for_quantized_models_impl(

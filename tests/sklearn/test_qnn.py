@@ -37,14 +37,10 @@ def test_nn_classifiers_quant(
     activation_function,
     n_classes,
     input_dim,
-    seed_torch,
     check_r2_score,
 ):
     """Test the correctness of the results of quantized NN classifiers through the sklearn
     wrapper."""
-
-    # Seed torch
-    seed_torch()
 
     x, y = make_classification(
         1000,
@@ -92,11 +88,8 @@ def test_nn_classifiers_quant(
     check_r2_score(y_pred_sk, y_pred)
 
 
-def test_parameter_validation(seed_torch):
+def test_parameter_validation():
     """Test that the sklearn quantized NN wrappers validate their parameters"""
-
-    # Seed torch
-    seed_torch()
 
     valid_params = {
         "module__n_layers": 3,
@@ -142,12 +135,9 @@ def test_parameter_validation(seed_torch):
             concrete_classifier.fit(x, y)
 
 
-def test_pipeline_and_cv(seed_torch):
+def test_pipeline_and_cv():
     """Test whether we can use the quantized NN sklearn wrappers in pipelines and in
     cross-validation"""
-
-    # Seed torch
-    seed_torch()
 
     n_features = 10
 
@@ -215,12 +205,9 @@ def test_pipeline_and_cv(seed_torch):
 
 # FIXME: once the HNP frontend compilation speed is improved, test with several activation funcs.
 # see: https://github.com/zama-ai/concrete-numpy-internal/issues/1374
-def test_compile_and_calib(seed_torch, default_compilation_configuration):
+def test_compile_and_calib(default_compilation_configuration):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
-
-    # Seed torch
-    seed_torch()
 
     n_features = 10
 

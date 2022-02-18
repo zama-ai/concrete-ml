@@ -123,11 +123,8 @@ class NetWithLoops(torch.nn.Module):
         # pytest.param(nn.GLU, id="GLU"),
     ],
 )
-def test_torch_to_numpy(model, input_shape, activation_function, seed_torch, check_r2_score):
+def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score):
     """Test the different model architecture from torch numpy."""
-
-    # Seed torch
-    seed_torch()
 
     # Define the torch model
     torch_fc_model = model(activation_function=activation_function)
@@ -174,10 +171,9 @@ def test_torch_to_numpy(model, input_shape, activation_function, seed_torch, che
     "model",
     [pytest.param(CNN)],
 )
-def test_raises(model, seed_torch):
+def test_raises(model):
     """Function to test incompatible layers."""
 
-    seed_torch()
     torch_incompatible_model = model()
 
     with pytest.raises(
@@ -236,11 +232,9 @@ class ReluTest(nn.Module):
         pytest.param(ReluTest, (10, 10)),
     ],
 )
-def test_torch_to_numpy_onnx_ops(model, input_shape, seed_torch, check_r2_score):
+def test_torch_to_numpy_onnx_ops(model, input_shape, check_r2_score):
     """Test the different model architecture from torch numpy."""
 
-    # Seed torch
-    seed_torch()
     # Define the torch model
     torch_fc_model = model()
     # Create random input

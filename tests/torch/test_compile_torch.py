@@ -101,13 +101,9 @@ def test_compile_torch(
     input_output_feature,
     model,
     activation_function,
-    seed_torch,
     default_compilation_configuration,
 ):
     """Test the different model architecture from torch numpy."""
-
-    # Seed torch
-    seed_torch()
 
     n_bits = 2
 
