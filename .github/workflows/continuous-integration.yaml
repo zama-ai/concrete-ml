@@ -240,6 +240,13 @@ jobs:
         run: |
           make pcc
 
+      - name: Determinism
+        id: de
+        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        # pcc launches an internal target with proper flags
+        run: |
+          make determinism
+
       - name: Build docs
         id: cbd
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}

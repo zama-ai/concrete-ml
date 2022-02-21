@@ -38,6 +38,15 @@ def pytest_addoption(parser):
         help="Specify the dir to use to store key cache",
     )
 
+    parser.addoption(
+        "--forcing_random_seed",
+        action="store",
+        default=None,
+        type=int,
+        help="To force the seed of each and every unit test, to be able to "
+        "reproduce a particular issue.",
+    )
+
 
 DEFAULT_KEYRING_PATH = Path.home().resolve() / ".cache/concrete-ml_pytest"
 
@@ -163,10 +172,13 @@ def function_to_seed_torch(seed):
 
 
 @pytest.fixture(autouse=True)
-def autoseeding_of_everything(record_property):
+def autoseeding_of_everything(record_property, request):
     """Function to seed everything we can"""
+    main_seed = request.config.getoption("--forcing_random_seed", default=None)
 
-    main_seed = random.randint(0, 2**64 - 1)
+    if main_seed is None:
+        main_seed = random.randint(0, 2**64 - 1)
+
     seed = main_seed
     record_property("main seed", main_seed)
 

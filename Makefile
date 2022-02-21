@@ -8,6 +8,7 @@ DOCKER_VENV_PATH:="$${HOME}"/dev_venv/
 SRC_DIR:=src
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
+RANDOMLY_SEED?=$$RANDOM
 
 .PHONY: setup_env # Set up the environment
 setup_env:
@@ -152,6 +153,13 @@ pytest_one:
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
 	"$${TEST}"
+
+.PHONY: pytest_one_single_cpu # Run pytest on a single file or directory (TEST) with a single CPU with RANDOMLY_SEED seed
+pytest_one_single_cpu:
+	poetry run pytest -svv \
+	--randomly-dont-reorganize \
+	--randomly-dont-reset-seed \
+	"$${TEST}" --randomly-seed=${RANDOMLY_SEED}
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
@@ -448,3 +456,7 @@ check_nbqa_one:
 .PHONY: check_nbqa # Check with nbqa all notebooks
 check_nbqa:
 	./script/make_utils/nbqa.sh --all_notebooks --check
+
+.PHONY: determinism # Check pytest determinism
+determinism:
+	./script/make_utils/check_pytest_determinism.sh
