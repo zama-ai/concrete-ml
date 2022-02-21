@@ -10,6 +10,7 @@ from concrete.numpy.np_fhe_compiler import NPFHECompiler
 
 from ..common.debugging import assert_true
 from ..common.utils import generate_proxy_function
+from ..virtual_lib import VirtualNPFHECompiler
 from .quantized_array import QuantizedArray
 from .quantized_ops import QuantizedOp
 
@@ -215,6 +216,7 @@ class QuantizedModule:
         compilation_configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
+        use_virtual_lib: bool = False,
     ) -> FHECircuit:
         """Compile the forward function of the module.
 
@@ -228,6 +230,8 @@ class QuantizedModule:
             show_mlir (bool): if set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
                 or demo. Defaults to False.
+            use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
+                Defaults to False.
 
         Returns:
             FHECircuit: the compiled FHECircuit.
@@ -241,7 +245,9 @@ class QuantizedModule:
             self._forward, self.ordered_module_input_names
         )
 
-        compiler = NPFHECompiler(
+        compiler_class = VirtualNPFHECompiler if use_virtual_lib else NPFHECompiler
+
+        compiler = compiler_class(
             forward_proxy,
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
             compilation_configuration,

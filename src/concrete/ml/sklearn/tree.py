@@ -474,6 +474,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             X[:, i] = q_x_.update_values(X[:, i])
         return X.astype(numpy.uint8)
 
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/365
+    # add use_virtual_lib once the issue linked above is done
     def compile(
         self,
         X: numpy.ndarray,

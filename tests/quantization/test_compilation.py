@@ -115,12 +115,14 @@ class FCSeqAddBiasVec(nn.Module):
         nn.Sigmoid,
     ],
 )
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_quantized_module_compilation(
     input_output_feature,
     model,
     activation,
     default_compilation_configuration,
     check_is_good_execution,
+    use_virtual_lib,
 ):
     """Test a neural network compilation for FHE inference."""
 
@@ -145,7 +147,9 @@ def test_quantized_module_compilation(
     q_input = QuantizedArray(n_bits, numpy_input)
 
     # Compile
-    quantized_model.compile(q_input, default_compilation_configuration)
+    quantized_model.compile(
+        q_input, default_compilation_configuration, use_virtual_lib=use_virtual_lib
+    )
 
     for x_q in q_input.qvalues:
         x_q = numpy.expand_dims(x_q, 0)

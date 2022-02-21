@@ -39,6 +39,7 @@ def compile_torch_model(
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
     n_bits=7,
+    use_virtual_lib: bool = False,
 ) -> QuantizedModule:
     """Take a model in torch, turn it to numpy, transform weights to integer.
 
@@ -55,6 +56,9 @@ def compile_torch_model(
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         n_bits: the number of bits for the quantization
+        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
+            Defaults to False.
+
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -83,6 +87,7 @@ def compile_torch_model(
         compilation_configuration,
         compilation_artifacts,
         show_mlir,
+        use_virtual_lib,
     )
 
     return quantized_module

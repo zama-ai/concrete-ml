@@ -205,7 +205,8 @@ def test_pipeline_and_cv():
 
 # FIXME: once the HNP frontend compilation speed is improved, test with several activation funcs.
 # see: https://github.com/zama-ai/concrete-numpy-internal/issues/1374
-def test_compile_and_calib(default_compilation_configuration):
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
+def test_compile_and_calib(default_compilation_configuration, use_virtual_lib):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
 
@@ -258,7 +259,11 @@ def test_compile_and_calib(default_compilation_configuration):
 
     # Compiling a model that is not trained should fail
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
-        clf.compile(x_train, compilation_configuration=default_compilation_configuration)
+        clf.compile(
+            x_train,
+            compilation_configuration=default_compilation_configuration,
+            use_virtual_lib=use_virtual_lib,
+        )
 
     # Predicting in FHE with a model that is not trained and calibrated should fail
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
@@ -274,7 +279,11 @@ def test_compile_and_calib(default_compilation_configuration):
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Compile the model
-    clf.compile(x_train, compilation_configuration=default_compilation_configuration)
+    clf.compile(
+        x_train,
+        compilation_configuration=default_compilation_configuration,
+        use_virtual_lib=use_virtual_lib,
+    )
 
     # Execute in FHE, but don't check the value.
     # Since FHE execution introduces some stochastic errors,

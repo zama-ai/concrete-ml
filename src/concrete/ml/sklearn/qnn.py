@@ -233,6 +233,7 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
         compilation_configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
+        use_virtual_lib: bool = False,
     ):
         """Compile the model.
 
@@ -243,6 +244,8 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
             compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
                 during compilation
             show_mlir (bool): whether or not to show MLIR during the compilation
+            use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
+                Defaults to False.
 
         Raises:
             ValueError: if called before the model is trained
@@ -263,6 +266,7 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
             compilation_configuration=compilation_configuration,
             compilation_artifacts=compilation_artifacts,
             show_mlir=show_mlir,
+            use_virtual_lib=use_virtual_lib,
         )
 
     def infer(self, x, **fit_params):
