@@ -69,7 +69,6 @@ py-progress-tracker = "^0.4.0"
 nbqa = "^1.2.3"
 darglint = "^1.8.1"
 keyring = "*"
-skorch = "^0.11.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
