@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 RANDOMLY_SEED=$RANDOM
 echo "Testing determinism with seed $RANDOMLY_SEED"

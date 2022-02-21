@@ -41,7 +41,7 @@ def test_seed_2():
 
 @pytest.mark.parametrize("n_classes", [2])
 @pytest.mark.parametrize("input_dim", [100])
-def test_seed_sklearn(n_classes, input_dim):
+def test_seed_sklearn(n_classes, input_dim, default_compilation_configuration):
     """Test seeding of sklearn function"""
     # Get the dataset
     x, y = make_classification(
@@ -62,6 +62,14 @@ def test_seed_sklearn(n_classes, input_dim):
 
     print("model", tree.plot_tree(model), sklearn_model)
 
+    # Test the determinism of our package (even if the bitwidth may be too large)
+    try:
+        model.compile(
+            x, show_mlir=True, compilation_configuration=default_compilation_configuration
+        )
+    except RuntimeError as err:
+        print(err)
+
 
 @pytest.mark.parametrize(
     "n_layers",
@@ -72,7 +80,15 @@ def test_seed_sklearn(n_classes, input_dim):
 @pytest.mark.parametrize("n_accum_bits", [32])
 @pytest.mark.parametrize("activation_function", [pytest.param(nn.ReLU)])
 @pytest.mark.parametrize("input_dim", [10])
-def test_seed_torch(n_layers, n_bits_w_a, n_accum_bits, activation_function, n_classes, input_dim):
+def test_seed_torch(
+    n_layers,
+    n_bits_w_a,
+    n_accum_bits,
+    activation_function,
+    n_classes,
+    input_dim,
+    default_compilation_configuration,
+):
     """Test seeding of torch function"""
     x, y = make_classification(
         1000,
@@ -90,7 +106,7 @@ def test_seed_torch(n_layers, n_bits_w_a, n_accum_bits, activation_function, n_c
     x_train, x_test, y_train, _ = train_test_split(
         x,
         y,
-        test_size=0.25,
+        test_size=0.95,
         random_state=42,
     )
 
@@ -117,3 +133,11 @@ def test_seed_torch(n_layers, n_bits_w_a, n_accum_bits, activation_function, n_c
 
     for name, param in sklearn_classifier.module.named_parameters():
         print(name, param.detach().numpy())
+
+    # Test the determinism of our package (even if the bitwidth may be too large)
+    try:
+        concrete_classifier.compile(
+            x_train, show_mlir=True, compilation_configuration=default_compilation_configuration
+        )
+    except RuntimeError as err:
+        print(err)
