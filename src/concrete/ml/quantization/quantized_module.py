@@ -237,12 +237,12 @@ class QuantizedModule:
 
         # concrete-numpy does not support variable *args-syle functions, so compile a proxy function
         # dynamically with a suitable number of arguments
-        foward_proxy, orig_args_to_proxy_func_args = generate_proxy_function(
+        forward_proxy, orig_args_to_proxy_func_args = generate_proxy_function(
             self._forward, self.ordered_module_input_names
         )
 
         compiler = NPFHECompiler(
-            foward_proxy,
+            forward_proxy,
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
             compilation_configuration,
             compilation_artifacts,
