@@ -198,11 +198,34 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
 
     # FIXME: make this class accept a generic NN and not impose our SparseQuantNNClassifier
     # see https://github.com/zama-ai/concrete-ml-internal/issues/327
-    def __init__(self, *args, criterion=torch.nn.CrossEntropyLoss, classes=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        criterion=torch.nn.CrossEntropyLoss,
+        classes=None,
+        optimizer=torch.optim.Adam,
+        **kwargs,
+    ):
+        # A helper for users so they don't need to import torch directly
+        args_to_convert_to_tensor = ["criterion__weight"]
+        for arg_name in args_to_convert_to_tensor:
+            if arg_name in kwargs and isinstance(kwargs[arg_name], np.ndarray):
+                kwargs[arg_name] = torch.from_numpy(kwargs[arg_name]).float()
+
+        # Note that our default optimizer is Adam which was found to be more stable when pruning
         super().__init__(
-            SparseQuantNNClassifier, *args, criterion=criterion, classes=classes, **kwargs
+            SparseQuantNNClassifier,
+            *args,
+            criterion=criterion,
+            classes=classes,
+            optimizer=optimizer,
+            **kwargs,
         )
-        self.quantized_module = None
+
+        # The quantized module variable appends "_" so that it is not registered as a sklearn
+        # parameter. Only training parameters should register, to enable easy cloning of un-trained
+        # estimator
+        self.quantized_module_ = None
 
     def compile(
         self,
@@ -224,18 +247,18 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
         Raises:
             ValueError: if called before the model is trained
         """
-        if self.quantized_module is None:
+        if self.quantized_module_ is None:
             raise ValueError(
                 "The classifier needs to be calibrated before compilation,"
                 " please call .fit() first!"
             )
 
         # Quantize the compilation input set using the quantization parameters computed in .fit()
-        quantized_numpy_inputset = deepcopy(self.quantized_module.q_inputs[0])
+        quantized_numpy_inputset = deepcopy(self.quantized_module_.q_inputs[0])
         quantized_numpy_inputset.update_values(X)
 
         # Call the compilation backend to produce the FHE inference circuit
-        self.quantized_module.compile(
+        self.quantized_module_.compile(
             quantized_numpy_inputset,
             compilation_configuration=compilation_configuration,
             compilation_artifacts=compilation_artifacts,
@@ -256,18 +279,18 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
 
         # During training we infer the same as in the base class
         # Note that this supports more data types for x than we support in quantized mode
-        if self.quantized_module is None:
+        if self.quantized_module_ is None:
             return super().infer(x, **fit_params)
 
         # Get a numpy array from the tensor to do quantization
         x = x.detach().cpu().numpy()
 
         # Once we finished the data type checks, quantize the input and perform quantized inference
-        q_x = self.quantized_module.quantize_input(x)
-        q_out = self.quantized_module(q_x)
+        q_x = self.quantized_module_.quantize_input(x)
+        q_out = self.quantized_module_(q_x)
 
         # Cast back to a tensor to keep a consistent API (tensor in, tensor out)
-        return torch.tensor(self.quantized_module.dequantize_output(q_out))
+        return torch.tensor(self.quantized_module_.dequantize_output(q_out))
 
     def get_params(self, deep=True, **kwargs):
         """Get parameters for this estimator.
@@ -317,13 +340,39 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
         """
 
         self.fit(X, y)
-        fp32_model = SKNeuralNetClassifier(
-            self.module_,
-            criterion=self.criterion_,
-            train_split=self.train_split,
-            classes=self.classes_,
-        )
+
+        # Create a skorch estimator with the same training parameters as this one
+        # Follow sklearn.base.clone: deepcopy parameters obtained with get_params()
+        # and pass them to the constructor
+
+        # We must remove all parameters related to the module. Skorch takes either a class or a
+        # class instance for the `module` parameter. We want to pass our trained model, a class
+        # instance. But for this to work, we need to remove all module related constructor params.
+        # If not, skorch will instantiate a new class instance of the same type as the passed module
+        # see skorch net.py NeuralNet::initialize_instance
+
+        # sklearn docs: "Clone does a deep copy of the model in an estimator without actually
+        # copying  attached data. It returns a new estimator with the same parameters
+        # that has not been fitted on any data."
+        # see: https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html
+        new_object_params = self.get_params(deep=False)
+        module_params = [name for name in new_object_params.keys() if "module__" in name]
+        for name in module_params:
+            new_object_params.pop(name)
+
+        for name, param in new_object_params.items():
+            new_object_params[name] = deepcopy(param)
+
+        module_copy = deepcopy(self.module_)
+
+        # Construct with the fp32 network already trained for this quantized estimator
+        # The module is removed as a parameter in this class' get_params()
+        fp32_model = SKNeuralNetClassifier(module_copy, **new_object_params)
+
+        # Don't fit the new estimator, it is already trained. We just need to call initialize() to
+        # signal to the skorch estimator that it is already trained
         fp32_model.initialize()
+
         return self, fp32_model
 
     def fit(self, X, y, **fit_params):
@@ -356,7 +405,7 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
         # Reset the quantized module since quantization is lost during refit
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
-        self.quantized_module = None
+        self.quantized_module_ = None
 
         # Call skorch fit that will train the network
         super().fit(X, y, **fit_params)
@@ -373,7 +422,7 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
 
         # Quantize with post-training static method, to have a model with integer weights
         post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
-        self.quantized_module = post_training_quant.quantize_module(X)
+        self.quantized_module_ = post_training_quant.quantize_module(X)
         return self
 
     # Disable pylint here because we add an additional argument to .predict,
@@ -396,12 +445,12 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
         """
 
         if execute_in_fhe:
-            if self.quantized_module is None:
+            if self.quantized_module_ is None:
                 raise ValueError(
                     "The classifier needs to be calibrated before compilation,"
                     " please call .fit() first!"
                 )
-            if not self.quantized_module.is_compiled:
+            if not self.quantized_module_.is_compiled:
                 raise ValueError(
                     "The classifier is not yet compiled to FHE, please call .compile() first"
                 )
@@ -411,8 +460,8 @@ class NeuralNetClassifier(SKNeuralNetClassifier):
                 X = X.reshape((1, -1))
             y_pred = np.zeros((X.shape[0],), np.int32)
             for idx, x in enumerate(X):
-                q_x = self.quantized_module.quantize_input(x).reshape(1, -1)
-                y_pred[idx] = self.quantized_module.forward_fhe.run(q_x).argmax(axis=1)
+                q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)
+                y_pred[idx] = self.quantized_module_.forward_fhe.run(q_x).argmax(axis=1)
             return y_pred
 
         # For prediction in the clear we call the super class which, in turn,

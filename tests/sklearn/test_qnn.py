@@ -250,6 +250,9 @@ def test_compile_and_calib(seed_torch, default_compilation_configuration):
     x_train = normalizer.fit_transform(x_train)
     x_test = normalizer.transform(x_test)
 
+    # Setup dummy class weights that will be converted to a tensor
+    class_weights = np.asarray([1, 1]).reshape((-1,))
+
     # Configure a minimal neural network and train it quickly
     params = {
         "module__n_layers": 1,
@@ -259,6 +262,7 @@ def test_compile_and_calib(seed_torch, default_compilation_configuration):
         "module__n_classes": 2,
         "module__input_dim": n_features,
         "module__activation_function": nn.Sigmoid,
+        "criterion__weight": class_weights,
         "max_epochs": 10,
         "verbose": 0,
     }

@@ -410,14 +410,13 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
                 f"You must call {self.compile.__name__} "
                 f"before calling {self.predict.__name__} with execute_in_fhe=True.",
             )
-            y_preds_ = []
+            y_preds = numpy.zeros((X.shape[0], 2), dtype=numpy.int32)
             for i in range(X.shape[0]):
                 fhe_pred = self.fhe_tree.run(X[i].astype(numpy.uint8).reshape(X[i].shape[0], 1))
                 # Output has the shape (n_classes, n_examples).
                 # Transpose to the predict sklearn like.
-                y_preds_.append(fhe_pred.transpose()[0])
+                y_preds[i, :] = fhe_pred.transpose()[0]
             # Convert to numpy array
-            y_preds = numpy.array(y_preds_)
             y_preds = y_preds[:, 1]
             return y_preds
 
