@@ -17,7 +17,12 @@ from onnx import numpy_helper
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..onnx.convert import get_equivalent_numpy_forward
+from ..onnx.onnx_model_manipulations import (
+    keep_following_outputs_discard_others,
+    remove_unused_constant_nodes,
+)
 from ..quantization.quantized_array import QuantizedArray
+from ..virtual_lib import VirtualNPFHECompiler
 
 # pylint: disable=wrong-import-position,wrong-import-order
 
@@ -283,6 +288,22 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             self, backend="onnx", test_input=X, extra_config={"tree_implementation": "gemm"}
         ).model
 
+        # The tree returned by hummingbird has two outputs which is not supported currently by the
+        # compiler (as it only returns one output). Here we explicitely only keep the output named
+        # "variable", which after inspecting the hummingbird code is considered the canonical
+        # output. This was causing issues as the virtual lib (correctly) returned both outputs which
+        # the predict method did not expect as it was only getting one output from the compiler
+        # engine.
+        # The output we keep is the output giving the actual classes out, the other one is the
+        # one-hot encoded vectors to indicate which class is predicted.
+        # This is fine for now as we remove the argmax operator.
+
+        # Check we do have two outputs first
+        assert_true(len(onnx_model.graph.output) == 2)
+
+        # Then keep the one of interest
+        keep_following_outputs_discard_others(onnx_model, ("variable",))
+
         op_type_inputs = {}
         # Replace not needed ops by Identity
         for node_index, node in enumerate(onnx_model.graph.node):
@@ -357,6 +378,9 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             beta=0.0,
         )
         onnx_model.graph.node[gemm_node_index].CopyFrom(new_node)
+
+        remove_unused_constant_nodes(onnx_model)
+
         _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
         return _tensor_tree_predict
 
@@ -482,6 +506,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         compilation_configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
+        use_virtual_lib: bool = False,
     ):
         """Compile the model.
 
@@ -492,6 +517,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
                 during compilation
             show_mlir (bool): whether or not to show MLIR during the compilation
+            use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
+                Defaults to False.
 
         """
         # Make sure that self.tree_predict is not None
@@ -505,8 +532,10 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             self._tensor_tree_predict, ["inputs"]
         )
 
+        compiler_class = VirtualNPFHECompiler if use_virtual_lib else hnp.NPFHECompiler
+
         X = self.quantize_input(X)
-        compiler = hnp.NPFHECompiler(
+        compiler = compiler_class(
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
             compilation_configuration,
