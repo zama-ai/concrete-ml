@@ -208,12 +208,12 @@ def train_and_test_on_dataset(classifier, dataset, config):
     # after training the underlying sklearn classifier.
     # We call fit_benchmark to both fit our Concrete ML classifiers but also to return the sklearn
     # one that we would use if we were not using FHE. This classifier will be our baseline
-    concrete_classifier, sklearn_classifer = concrete_classifier.fit_benchmark(x_train, y_train)
+    concrete_classifier, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
 
     # Predict with the sklearn classifier and compute accuracy. Although some datasets might be
     # imbalanced, we are not interested in the best metric for the case, but we want to measure
     # the difference in accuracy between the sklearn classifier and ours
-    y_pred_sklearn = sklearn_classifer.predict(x_test)
+    y_pred_sklearn = sklearn_classifier.predict(x_test)
     run_and_report_all_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
 
     # Now predict with our classifier and report its accuracy
