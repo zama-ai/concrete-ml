@@ -84,5 +84,5 @@ filterwarnings = [
 
 [tool.semantic_release]
 version_toml = "pyproject.toml:tool.poetry.version"
-version_variable = "docs/conf.py:release"
+version_variable = "docs/conf.py:release,src/concrete/ml/version.py:__version__"
 upload_to_pypi = "False"
