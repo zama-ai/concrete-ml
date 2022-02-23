@@ -49,7 +49,7 @@ fi
 
 mkdir -p "${LICENSE_DIRECTORY}"
 
-if [ $DO_USER_LICENSES -eq 1 ]
+if [ ${DO_USER_LICENSES} -eq 1 ]
 then
     #Licenses for user (install in a temporary venv)
     echo "Doing licenses for user"
@@ -65,9 +65,18 @@ then
     echo "MD5 of the poetry.lock for which dependencies have been listed: ${MD5_OLD_DEPENDENCIES}"
     echo "MD5 of the current poetry.lock:                                 ${MD5_NEW_DEPENDENCIES}"
 
+    if [ $CHECK -eq 1 ]
+    then
+        if [ "${MD5_OLD_DEPENDENCIES}" != "${MD5_NEW_DEPENDENCIES}" ]
+        then
+            echo "Error, the md5 is not correct"
+            exit 255
+        fi
+    fi
+
     if [ "${MD5_OLD_DEPENDENCIES}" == "${MD5_NEW_DEPENDENCIES}" ] && [ ${DO_FORCE_UPDATE} -ne 1 ]
     then
-        echo "The lock file hasn't changed, early exit"
+        echo "The lock file hasn't changed, early exit (we assume the md5 is correct)"
         exit 0
     fi
 
