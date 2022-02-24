@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
+from concrete.ml.sklearn.linear_model import LogisticRegression
 from concrete.ml.sklearn.qnn import NeuralNetClassifier
 from concrete.ml.sklearn.tree import DecisionTreeClassifier
 
@@ -34,11 +35,12 @@ datasets = [
 
 dataset_versions = {"wilt": 2}
 
-classifiers = [DecisionTreeClassifier, NeuralNetClassifier]
+classifiers = [DecisionTreeClassifier, NeuralNetClassifier, LogisticRegression]
 
 benchmark_params = {
     # Benchmark different depths of the quantized decision tree
     DecisionTreeClassifier: [{"max_depth": 3}, {"max_depth": None}],
+    LogisticRegression: [{"n_bits": 2}],
     NeuralNetClassifier: [
         # An FHE compatible config
         {
@@ -96,7 +98,7 @@ benchmark_params = {
 }
 
 
-def should_test_config_in_fhe(classifier, params):
+def should_test_config_in_fhe(classifier, params, n_features):
     """Determine whether a benchmark config for a classifier should be tested in FHE"""
 
     # System override to disable FHE benchmarks (useful for debugging)
@@ -114,6 +116,13 @@ def should_test_config_in_fhe(classifier, params):
             params["module__n_accum_bits"] <= 7
             and params["module__n_hidden_neurons_multiplier"] == 1
         )
+    if classifier is LogisticRegression:
+        if params["n_bits"] <= 2 and n_features <= 14:
+            return True
+
+        if params["n_bits"] == 3 and n_features <= 2:
+            return True
+
     raise ValueError(f"Classifier {str(classifier)} configurations not yet setup for FHE")
 
 
@@ -220,7 +229,9 @@ def train_and_test_on_dataset(classifier, dataset, config):
     y_pred_q = concrete_classifier.predict(x_test, execute_in_fhe=False)
     run_and_report_all_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
-    if should_test_config_in_fhe(classifier, config):
+    n_features = x_train.shape[1] if x_train.ndim == 2 else 1
+
+    if should_test_config_in_fhe(classifier, config, n_features):
         x_test_comp = x_test[0:N_MAX_COMPILE_FHE, :]
 
         # Compile and report compilation time
@@ -267,7 +278,8 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
             config_str = ""
     elif classifier is NeuralNetClassifier:
         config_str = f"_{config['module__n_w_bits']}_{config['module__n_accum_bits']}"
-
+    elif classifier is LogisticRegression:
+        config_str = f"_{config['n_bits']}"
     return classifier.__name__ + config_str + joiner + dataset
 
 

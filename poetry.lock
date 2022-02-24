@@ -517,7 +517,7 @@ lxml = ["lxml"]
 
 [[package]]
 name = "hummingbird-ml"
-version = "0.4.2"
+version = "0.4.2.1"
 description = "Convert trained traditional machine learning models into tensor computations"
 category = "main"
 optional = false
@@ -547,7 +547,7 @@ tests = ["flake8", "pytest", "coverage", "pre-commit"]
 type = "git"
 url = "https://github.com/zama-ai/hummingbird.git"
 reference = "dev"
-resolved_reference = "7a4cdd284786331935d6bf209ce071dc3a367496"
+resolved_reference = "793d18cb5af2ec383c4d70d24fb3eaf91c2ece70"
 
 [[package]]
 name = "idna"
@@ -2408,14 +2408,14 @@ test = ["pytest"]
 
 [[package]]
 name = "testpath"
-version = "0.5.0"
+version = "0.6.0"
 description = "Test utilities for code working with files and commands"
 category = "dev"
 optional = false
 python-versions = ">= 3.5"
 
 [package.extras]
-test = ["pytest", "pathlib2"]
+test = ["pytest"]
 
 [[package]]
 name = "threadpoolctl"
@@ -4124,8 +4124,8 @@ terminado = [
     {file = "terminado-0.13.1.tar.gz", hash = "sha256:5b82b5c6e991f0705a76f961f43262a7fb1e55b093c16dca83f16384a7f39b7b"},
 ]
 testpath = [
-    {file = "testpath-0.5.0-py3-none-any.whl", hash = "sha256:8044f9a0bab6567fc644a3593164e872543bb44225b0e24846e2c89237937589"},
-    {file = "testpath-0.5.0.tar.gz", hash = "sha256:1acf7a0bcd3004ae8357409fc33751e16d37ccc650921da1094a86581ad1e417"},
+    {file = "testpath-0.6.0-py3-none-any.whl", hash = "sha256:8ada9f80a2ac6fb0391aa7cdb1a7d11cfa8429f693eda83f74dde570fe6fa639"},
+    {file = "testpath-0.6.0.tar.gz", hash = "sha256:2f1b97e6442c02681ebe01bd84f531028a7caea1af3825000f52345c30285e0f"},
 ]
 threadpoolctl = [
     {file = "threadpoolctl-3.1.0-py3-none-any.whl", hash = "sha256:8b99adda265feb6773280df41eece7b2e6561b772d21ffd52e372f999024907b"},

@@ -11,6 +11,10 @@ import sklearn.linear_model
 from concrete.common.compilation import CompilationArtifacts, CompilationConfiguration
 
 from ..common.debugging.custom_assert import assert_true
+from ..onnx.onnx_model_manipulations import (
+    keep_following_outputs_discard_others,
+    remove_unused_constant_nodes,
+)
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
 
@@ -72,8 +76,12 @@ class SklearnLinearModelMixin:
         # Calibrate and create quantize module
         self.quantized_module = post_training.quantize_module(X)
 
-    @staticmethod
-    def clean_graph(onnx_model: onnx.ModelProto):
+    # clean_graph is used by inheritance and the calling self is needed.
+    # pylint does not see it and complains that clean_graph should use @staticmethod
+    # thus we need to ignore the warning.
+    # pylint: disable=no-self-use
+
+    def clean_graph(self, onnx_model: onnx.ModelProto):
         """Clean the graph of the onnx model.
 
         This will remove the Cast node in the onnx.graph since they
@@ -85,14 +93,17 @@ class SklearnLinearModelMixin:
         Returns:
             onnx.ModelProto: the cleaned onnx model
         """
+        op_type_to_remove = {"Cast", "Softmax", "ArgMax"}
+
         # Remove the input and output nodes
         for node_index, node in enumerate(onnx_model.graph.node):
-            if node.op_type == "Cast":
-                assert_true(len(node.attribute) == 1, "Cast node has more than one attribute")
-                node_attribute = node.attribute[0]
-                assert_true(
-                    (node_attribute.name == "to") & (node_attribute.i == onnx.TensorProto.FLOAT)
-                )
+            if node.op_type in op_type_to_remove:
+                if node.op_type == "Cast":
+                    assert_true(len(node.attribute) == 1, "Cast node has more than one attribute")
+                    node_attribute = node.attribute[0]
+                    assert_true(
+                        (node_attribute.name == "to") & (node_attribute.i == onnx.TensorProto.FLOAT)
+                    )
                 new_node = onnx.helper.make_node(
                     "Identity",
                     inputs=[str(node.input[0])],
@@ -100,7 +111,11 @@ class SklearnLinearModelMixin:
                 )
                 # Update current node with new_node
                 onnx_model.graph.node[node_index].CopyFrom(new_node)
+
+        remove_unused_constant_nodes(onnx_model)
         return onnx_model
+
+    # pylint: enable=no-self-use
 
     def fit_benchmark(
         self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
@@ -167,8 +182,9 @@ class SklearnLinearModelMixin:
                 y_preds[i, :] = fhe_pred[0]
             # Convert to numpy array
             y_preds = self.quantized_module.dequantize_output(y_preds)
-            return y_preds
-        return self.quantized_module.forward_and_dequant(qX)
+        else:
+            y_preds = self.quantized_module.forward_and_dequant(qX)
+        return y_preds
 
     def compile(
         self,
@@ -202,6 +218,8 @@ class SklearnLinearModelMixin:
 class LinearRegression(SklearnLinearModelMixin, sklearn.linear_model.LinearRegression):
     """A linear regression model with FHE."""
 
+    sklearn_alg = sklearn.linear_model.LinearRegression
+
     def __init__(
         self,
         n_bits=2,
@@ -219,4 +237,98 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.linear_model.LinearRegre
             positive=positive,
         )
         self.n_bits = n_bits
-        self.sklearn_alg = sklearn.linear_model.LinearRegression
+
+
+class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticRegression):
+    """A logistic regression model with FHE."""
+
+    sklearn_alg = sklearn.linear_model.LogisticRegression
+    # pylint: disable=too-many-arguments
+
+    def __init__(
+        self,
+        n_bits=2,
+        penalty="l2",
+        dual=False,
+        tol=1e-4,
+        C=1.0,
+        fit_intercept=True,
+        intercept_scaling=1,
+        class_weight=None,
+        random_state=None,
+        solver="lbfgs",
+        max_iter=100,
+        multi_class="auto",
+        verbose=0,
+        warm_start=False,
+        n_jobs=None,
+        l1_ratio=None,
+    ):
+        super().__init__(
+            penalty=penalty,
+            dual=dual,
+            tol=tol,
+            C=C,
+            fit_intercept=fit_intercept,
+            intercept_scaling=intercept_scaling,
+            class_weight=class_weight,
+            random_state=random_state,
+            solver=solver,
+            max_iter=max_iter,
+            multi_class=multi_class,
+            verbose=verbose,
+            warm_start=warm_start,
+            n_jobs=n_jobs,
+            l1_ratio=l1_ratio,
+        )
+        self.n_bits = n_bits
+
+    # pylint: enable=too-many-arguments
+
+    def clean_graph(self, onnx_model: onnx.ModelProto):
+        nodes_to_remove = []
+        output_to_follow = "variable"
+        # Find nodes to remove (after the sigmoid)
+        sigmoid_reached = False
+        for node in onnx_model.graph.node:
+            if sigmoid_reached:
+                nodes_to_remove.append(node)
+            if node.op_type == "Sigmoid":
+                sigmoid_reached = True
+                # Create output node
+
+                onnx_model.graph.output[0].CopyFrom(
+                    onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
+                )
+                output_to_follow = node.output[0]
+
+        if sigmoid_reached:
+            # Remove nodes
+            for node in nodes_to_remove:
+                onnx_model.graph.node.remove(node)
+
+        keep_following_outputs_discard_others(onnx_model, [output_to_follow])
+        return super().clean_graph(onnx_model)
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        y_preds = super().predict(X, execute_in_fhe)
+        if y_preds.shape[1] == 1:
+            # Sigmoid already applied in the graph
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        y_preds = numpy.argmax(y_preds, axis=1)
+        return y_preds
+
+    # pylint think this is the predict_proba from sklearn.linear_model.LogisticRegression
+    # pylint: disable=arguments-differ
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        y_preds = super().predict(X, execute_in_fhe)
+        if y_preds.shape[1] == 1:
+            # Sigmoid already applied in the graph
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        else:
+            # Apply softmax as it's not an FHE friendly opetator
+            y_preds = numpy.exp(y_preds)
+            y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
+        return y_preds
+
+    # pylint: enable=arguments-differ
