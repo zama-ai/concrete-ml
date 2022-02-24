@@ -30,6 +30,7 @@ jobs:
   start-self-hosted-runner:
     runs-on: ubuntu-20.04
     needs: [should-run-benchmarks]
+    timeout-minutes: 900
     if: ${{ needs.should-run-benchmarks.outputs.should-run == 'true' }}
     outputs:
       label-intel: ${{ steps.start-ec2-runner-intel.outputs.label }}
