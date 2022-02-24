@@ -52,7 +52,7 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-image-id: ${{ secrets.BENCHMARKS_EC2_AMI }}
           ec2-instance-type: ${{ secrets.BENCHMARKS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.BENCHMARKS_EC2_SECURITY_GROUP_ID }}
@@ -64,7 +64,7 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-image-id: ${{ secrets.BENCHMARKS_EC2_AMI }}
           ec2-instance-type: ${{ secrets.BENCHMARKS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.BENCHMARKS_EC2_SECURITY_GROUP_ID }}
