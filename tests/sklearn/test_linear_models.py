@@ -8,31 +8,94 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-from concrete.ml.sklearn import LinearRegression, LogisticRegression
+from concrete.ml.sklearn import LinearRegression, LinearSVR, LogisticRegression
 
-datasets = [
-    pytest.param(
-        LinearRegression,
-        lambda: make_regression(n_samples=200, n_features=10, random_state=42),
-        id="make_regression_10_features",
-    ),
-    pytest.param(
-        LinearRegression,
-        lambda: make_regression(n_samples=200, n_features=10, noise=2, random_state=42),
-        id="make_regression_features_10_noise_2",
-    ),
-    pytest.param(
-        LinearRegression,
-        lambda: make_regression(n_samples=200, n_features=14, n_informative=14, random_state=42),
-        id="make_regression_features_14_informative_14",
-    ),
-    pytest.param(
-        LinearRegression,
-        lambda: make_regression(
-            n_samples=200, n_features=14, n_targets=2, n_informative=14, random_state=42
+
+def get_datasets_regression(reg_model_orig):
+    """Return tests to apply to a regression model."""
+    reg_model_string = reg_model_orig.__name__
+
+    reg_model = reg_model_orig
+
+    ans = [
+        pytest.param(
+            reg_model,
+            lambda: make_regression(n_samples=200, n_features=10, random_state=42),
+            id=f"make_regression_10_features_{reg_model_string}",
         ),
-        id="make_regression_features_14_informative_14_targets_2",
-    ),
+        pytest.param(
+            reg_model,
+            lambda: make_regression(n_samples=200, n_features=10, noise=2, random_state=42),
+            id=f"make_regression_features_10_noise_2_{reg_model_string}",
+        ),
+        pytest.param(
+            reg_model,
+            lambda: make_regression(
+                n_samples=200, n_features=14, n_informative=14, random_state=42
+            ),
+            id=f"make_regression_features_14_informative_14_{reg_model_string}",
+        ),
+    ]
+
+    # LinearSVR does not support multi targets
+    if reg_model_orig != LinearSVR:
+        ans += [
+            pytest.param(
+                reg_model,
+                lambda: make_regression(
+                    n_samples=200, n_features=14, n_targets=2, n_informative=14, random_state=42
+                ),
+                id=f"make_regression_features_14_informative_14_targets_2_{reg_model_string}",
+            ),
+        ]
+
+    # if reg_model_orig == LinearSVR:
+    #     reg_model = partial(reg_model, dual=False, loss="squared_epsilon_insensitive")
+    #
+    #     ans += [
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/420
+    # pytest.param(
+    #     partial(
+    #         reg_model,
+    #         fit_intercept=False,
+    #     ),
+    #     lambda: make_regression(n_samples=200, n_features=10, random_state=42),
+    #     id=f"make_regression_fit_intercept_false_{reg_model_string}",
+    # ),
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
+    # pytest.param(
+    #     partial(
+    #         reg_model,
+    #         fit_intercept=True,
+    #     ),
+    #     lambda: make_regression(n_samples=200, n_features=10, random_state=42),
+    #     id=f"make_regression_fit_intercept_true_{reg_model_string}",
+    # ),
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
+    # pytest.param(
+    #     partial(
+    #         reg_model,
+    #         fit_intercept=True,
+    #         intercept_scaling=1000,
+    #     ),
+    #     lambda: make_regression(
+    #         n_samples=200,
+    #         n_features=10,
+    #         random_state=42,
+    #     ),
+    #     id=f"make_regression_fit_intercept_true_intercept_scaling_1000_{reg_model_string}",
+    # ),
+    # ]
+
+    return ans
+
+
+datasets_regression = []
+
+for one_reg_model in [LinearRegression, LinearSVR]:
+    datasets_regression += get_datasets_regression(one_reg_model)
+
+datasets_classification = [
     pytest.param(
         LogisticRegression,
         lambda: make_classification(n_samples=200, class_sep=2, n_features=10, random_state=42),
@@ -60,10 +123,10 @@ datasets = [
 
 @pytest.mark.parametrize(
     "alg, load_data",
-    datasets,
+    datasets_regression + datasets_classification,
 )
 def test_linear_model_compile_run_fhe(load_data, alg, default_compilation_configuration):
-    """Tests the sklearn LinearRegression."""
+    """Tests the sklearn regressions."""
 
     # Get the dataset
     x, y = load_data()
@@ -87,7 +150,7 @@ def test_linear_model_compile_run_fhe(load_data, alg, default_compilation_config
 
 @pytest.mark.parametrize(
     "alg, load_data",
-    datasets,
+    datasets_regression + datasets_classification,
 )
 @pytest.mark.parametrize(
     "n_bits",
@@ -143,6 +206,7 @@ def test_double_fit():
     [
         pytest.param(LinearRegression),
         pytest.param(LogisticRegression),
+        pytest.param(LinearSVR),
     ],
 )
 def test_pipeline_sklearn(alg):

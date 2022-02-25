@@ -8,6 +8,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
 from concrete.ml.sklearn import LinearRegression as ConcreteLinearRegression
+from concrete.ml.sklearn import LinearSVR as ConcreteLinearSVR
 
 N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
 N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
@@ -61,13 +62,15 @@ datasets = {
 }
 
 # Will contain all the regressors we can support
-regressors = [ConcreteLinearRegression]
+regressors = [ConcreteLinearRegression, ConcreteLinearSVR]
 
 benchmark_params = {
     ConcreteLinearRegression: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    ConcreteLinearSVR: [{"n_bits": n_bits} for n_bits in range(2, 11)],
 }
 
 
+# pylint: disable=too-many-return-statements
 def should_test_config_in_fhe(regressor, config, n_features):
     """Determine whether a benchmark config for a regressor should be tested in FHE"""
 
@@ -86,9 +89,20 @@ def should_test_config_in_fhe(regressor, config, n_features):
             return True
 
         return False
+
+    if regressor is ConcreteLinearSVR:
+
+        if config["n_bits"] == 2 and n_features <= 14:
+            return True
+
+        if config["n_bits"] == 3 and n_features <= 2:
+            return True
+
+        return False
     raise ValueError(f"Regressor {str(regressor)} configurations not yet setup for FHE")
 
 
+# pylint: enable=too-many-return-statements
 def run_and_report_metric(y_gt, y_pred, metric, metric_id, metric_label):
     """Run a single metric and report results to progress tracker"""
     value = metric(y_gt, y_pred) if y_gt.size > 0 else 0
@@ -122,6 +136,8 @@ def benchmark_generator():
 
 def benchmark_name_generator(dataset_str, regressor, config, joiner):
     if regressor is ConcreteLinearRegression:
+        config_str = f"_{config['n_bits']}"
+    elif regressor is ConcreteLinearSVR:
         config_str = f"_{config['n_bits']}"
     else:
         raise ValueError
