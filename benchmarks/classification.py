@@ -15,6 +15,7 @@ from concrete.ml.sklearn import (
     LinearSVC,
     LogisticRegression,
     NeuralNetClassifier,
+    XGBClassifier,
 )
 
 N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
@@ -38,10 +39,22 @@ datasets = [
 
 dataset_versions = {"wilt": 2}
 
-classifiers = [DecisionTreeClassifier, NeuralNetClassifier, LogisticRegression, LinearSVC]
+classifiers = [
+    XGBClassifier,
+    DecisionTreeClassifier,
+    NeuralNetClassifier,
+    LogisticRegression,
+    LinearSVC,
+]
 
 benchmark_params = {
     # Benchmark different depths of the quantized decision tree
+    XGBClassifier: [
+        {"max_depth": max_detph, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_detph in [7]
+        for n_estimators in [50]
+        for n_bits in [7, 16]
+    ],
     DecisionTreeClassifier: [{"max_depth": 3}, {"max_depth": None}],
     LinearSVC: [{"n_bits": 2}],
     LogisticRegression: [{"n_bits": 2}],
@@ -135,6 +148,10 @@ def should_test_config_in_fhe(classifier, params, n_features):
 
         if params["n_bits"] == 3 and n_features <= 2:
             return True
+
+    if classifier is XGBClassifier:
+        # FIXME XGBoost is not yet supported in FHE (see #436)
+        return False
 
     raise ValueError(f"Classifier {str(classifier)} configurations not yet setup for FHE")
     # pylint: enable=too-many-return-statements
@@ -296,6 +313,11 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
         config_str = f"_{config['n_bits']}"
     elif classifier is LinearSVC:
         config_str = f"_{config['n_bits']}"
+    elif classifier is XGBClassifier:
+        if config["max_depth"] is not None:
+            config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
+        else:
+            config_str = f"_{config['n_estimators']}_{config['n_bits']}"
     return classifier.__name__ + config_str + joiner + dataset
 
 

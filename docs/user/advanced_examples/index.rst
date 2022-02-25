@@ -18,9 +18,9 @@ Scikit-learn
    GeneralizedLinearModel.md
    PoissonRegression.ipynb
    DecisionTreeClassifier.ipynb
+   XGBClassifier.ipynb
    RandomForest.md
    SVM.md
-   XGBoost.md
 
 Torch
 **********************

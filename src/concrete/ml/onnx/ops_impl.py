@@ -670,3 +670,33 @@ def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """
 
     return (x,)
+
+
+def numpy_reshape(x: numpy.ndarray, newshape: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute reshqpe in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Reshape-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        newshape (numpy.ndarray): New shape
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.reshape(x, newshape),)
+
+
+def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute less in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.less(x, y),)

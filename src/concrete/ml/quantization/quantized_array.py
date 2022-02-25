@@ -41,10 +41,14 @@ class QuantizedArray:
         is_symmetric: bool = False,
     ):
         self.offset = 0
-        if is_symmetric:
-            assert_true(is_signed, "symmetric quantization is only supported for signed values")
         self.is_symmetric = is_symmetric
-        if is_signed:
+        if is_symmetric and not is_signed:
+            assert_true(
+                values.min() >= 0,
+                "Values should be positive for unsigned symmetric quantization "
+                "(is_signed=False, is_symmetric=True)",
+            )
+        if is_signed and is_symmetric:
             self.offset = 2 ** (n_bits - 1)
         self.n_bits = n_bits
         self.is_signed = is_signed

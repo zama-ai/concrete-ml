@@ -52,11 +52,13 @@ from .ops_impl import (
     numpy_hardsigmoid,
     numpy_identity,
     numpy_leakyrelu,
+    numpy_less,
     numpy_log,
     numpy_matmul,
     numpy_mul,
     numpy_not,
     numpy_relu,
+    numpy_reshape,
     numpy_selu,
     numpy_sigmoid,
     numpy_sin,
@@ -121,6 +123,8 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Not": numpy_not,
     "Greater": numpy_greater,
     "Identity": numpy_identity,
+    "Reshape": numpy_reshape,
+    "Less": numpy_less,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

@@ -108,3 +108,93 @@ def keep_following_outputs_discard_others(
         graph_outputs.pop(n_outputs_to_keep)
 
     assert_true(set(output.name for output in graph_outputs) == outputs_to_keep_set)
+
+
+def replace_uncessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_to_replace: list):
+    """Replace unecessary nodes by Identity nodes.
+
+    Args:
+        onnx_model (onnx.ModelProto): the ONNX model to modify.
+        op_type_to_replace (list): the op_type of the nodes to be replaced by Identity nodes.
+
+    Raises:
+        ValueError: Wrong replacement by an Identity node.
+    """
+
+    op_type_inputs = {}
+    # Replace not needed ops by Identity
+    for node_index, node in enumerate(onnx_model.graph.node):
+        # Save op_type for each node
+        for output in node.output:
+            op_type_inputs[output] = node.op_type
+        if node.op_type in op_type_to_replace:
+            # Check that node.input[0] is not a constant
+            if node.input[0] != "input_0" and op_type_inputs[node.input[0]] == "Constant":
+                raise ValueError(
+                    f"Trying to apply identity over a constant input." f"Node: {node.op_type}"
+                )  # pragma: no cover
+            # Create a Identity node
+            new_node = onnx.helper.make_node(
+                "Identity",
+                inputs=[str(node.input[0])],
+                outputs=node.output,
+            )
+            # Update current node with new_node
+            onnx_model.graph.node[node_index].CopyFrom(new_node)
+
+
+def cut_onnx_graph_after_node_name(onnx_model: onnx.ModelProto, node_name: str) -> str:
+    """Cut the graph after the node with the given name.
+
+    Args:
+        onnx_model (onnx.ModelProto): the ONNX model to modify.
+        node_name (str): the name of the node after which the graph will be cut.
+            (node_name is included in the new graph)
+
+    Returns:
+        str: the name of the output to keep
+    """
+    nodes_to_remove = []
+    cut_node_reached = False
+    for node in onnx_model.graph.node:
+        if cut_node_reached:
+            nodes_to_remove.append(node)
+        if node.name == node_name:
+            cut_node_reached = True
+            # Create output node
+            onnx_model.graph.output[0].CopyFrom(
+                onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
+            )
+            output_to_follow = onnx_model.graph.output[0].name
+
+    # Remove nodes
+    for node in nodes_to_remove:
+        onnx_model.graph.node.remove(node)
+
+    return output_to_follow
+
+
+def remove_transpose_in_first_gemm_node(onnx_model):
+    """Find the first Gemm node and remove the transpose option.
+
+    FIXME remove this function once #292 is fixed
+
+    Args:
+        onnx_model (onnx.ModelProto): the ONNX model to modify.
+    """
+    # Find the Gemm node
+    for node_index, node in enumerate(onnx_model.graph.node):
+        if node.op_type == "Gemm":
+            gemm_node_index = node_index
+            break
+
+    gemm_node = onnx_model.graph.node[gemm_node_index]
+    new_node = onnx.numpy_helper.helper.make_node(
+        name=gemm_node.name,
+        op_type=gemm_node.op_type,
+        inputs=gemm_node.input,
+        outputs=gemm_node.output,
+        alpha=1.0,
+        beta=0.0,
+    )
+    onnx_model.graph.node[gemm_node_index].CopyFrom(new_node)
