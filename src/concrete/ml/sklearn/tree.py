@@ -19,7 +19,7 @@ from ..common.utils import generate_proxy_function
 from ..onnx.convert import get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import (
     keep_following_outputs_discard_others,
-    remove_unused_constant_nodes,
+    simplify_onnx_model,
 )
 from ..quantization.quantized_array import QuantizedArray
 from ..virtual_lib import VirtualNPFHECompiler
@@ -379,7 +379,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         )
         onnx_model.graph.node[gemm_node_index].CopyFrom(new_node)
 
-        remove_unused_constant_nodes(onnx_model)
+        simplify_onnx_model(onnx_model)
 
         _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
         return _tensor_tree_predict

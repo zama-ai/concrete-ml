@@ -13,7 +13,7 @@ from concrete.common.compilation import CompilationArtifacts, CompilationConfigu
 from ..common.debugging.custom_assert import assert_true
 from ..onnx.onnx_model_manipulations import (
     keep_following_outputs_discard_others,
-    remove_unused_constant_nodes,
+    simplify_onnx_model,
 )
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
@@ -112,7 +112,7 @@ class SklearnLinearModelMixin:
                 # Update current node with new_node
                 onnx_model.graph.node[node_index].CopyFrom(new_node)
 
-        remove_unused_constant_nodes(onnx_model)
+        simplify_onnx_model(onnx_model)
         return onnx_model
 
     # pylint: enable=no-self-use

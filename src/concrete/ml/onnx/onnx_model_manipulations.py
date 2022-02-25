@@ -8,6 +8,16 @@ import onnx
 from ..common.debugging import assert_true
 
 
+def simplify_onnx_model(onnx_model: onnx.ModelProto):
+    """Simplify an ONNX model, removes unused Constant nodes and Identity nodes.
+
+    Args:
+        onnx_model (onnx.ModelProto): the model to simplify.
+    """
+    remove_unused_constant_nodes(onnx_model)
+    remove_identity_nodes(onnx_model)
+
+
 def remove_unused_constant_nodes(onnx_model: onnx.ModelProto):
     """Remove unused Constant nodes in the provided onnx model.
 
@@ -35,6 +45,38 @@ def remove_unused_constant_nodes(onnx_model: onnx.ModelProto):
 
     for node in constants_to_remove.values():
         onnx_model.graph.node.remove(node)
+
+
+# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/410
+# Improve that algorithm which is O(N^2) for now
+def remove_identity_nodes(onnx_model: onnx.ModelProto):
+    """Remove identity nodes from a model.
+
+    Args:
+        onnx_model (onnx.ModelProto): the model for which we want to remove Identity nodes.
+    """
+
+    # This is avery sub-optimal O(N^2) implementation that needs to be improved
+    node_idx = 0
+    while node_idx < len(onnx_model.graph.node):
+        node = onnx_model.graph.node[node_idx]
+        if node.op_type == "Identity":
+            identity_input = node.input[0]
+            identity_output = node.output[0]
+            # We can only look at the end of the graph as nodes are in topological order
+            # flake8 has this unresolved issue: https://github.com/PyCQA/pycodestyle/issues/373
+            for next_nodes in onnx_model.graph.node[node_idx + 1 :]:  # noqa: E203
+                for input_idx, input_ in enumerate(next_nodes.input):
+                    if input_ == identity_output:
+                        next_nodes.input[input_idx] = identity_input
+
+            for output in onnx_model.graph.output:
+                if output.name == identity_output:
+                    output.name = identity_input
+
+            onnx_model.graph.node.pop(node_idx)
+        else:
+            node_idx += 1
 
 
 def keep_following_outputs_discard_others(
