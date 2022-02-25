@@ -29,15 +29,16 @@ def test_r2(
     """Test our modified r2 test on various data distributions"""
 
     # Generate a uniform distribution and add a normal residual on top
-    gt_values = (np.random.uniform(size=(num_values,)) * gt_range) + np.random.normal(
-        0, gt_stdev, size=(num_values,)
-    )
+    gt_values = np.random.uniform(size=(num_values,)) * gt_range
+    gt_normal_residuals = np.random.normal(0, gt_stdev, size=(num_values,))
+    gt_values += gt_normal_residuals
 
     predicted_stdev, predicted_offset = predicted_params
 
     if predicted_stdev is not None:
         # Correlated predicted value
-        predicted = gt_values + np.random.normal(0, predicted_stdev)
+        pred_normal_residuals = np.random.normal(0, predicted_stdev, size=(num_values,))
+        predicted = gt_values + pred_normal_residuals
     else:
         # No correlation between gt and predicted
         predicted = np.random.uniform(size=(num_values,))

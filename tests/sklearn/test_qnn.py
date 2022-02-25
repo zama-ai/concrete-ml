@@ -3,14 +3,19 @@ from copy import deepcopy
 
 import numpy as np
 import pytest
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
 from torch import nn
 
-from concrete.ml.sklearn.qnn import NeuralNetClassifier
+from concrete.ml.sklearn.qnn import (
+    NeuralNetClassifier,
+    NeuralNetRegressor,
+    QuantizedSkorchEstimatorMixin,
+)
 
 
 @pytest.mark.parametrize(
@@ -28,30 +33,49 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier
         pytest.param(nn.SELU),
     ],
 )
-@pytest.mark.parametrize("n_classes", [2])
+@pytest.mark.parametrize("n_outputs", [1, 2, 5])
 @pytest.mark.parametrize("input_dim", [10, 100])
-def test_nn_classifiers_quant(
+@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+def test_nn_models_quant(
     n_layers,
     n_bits_w_a,
     n_accum_bits,
     activation_function,
-    n_classes,
+    n_outputs,
     input_dim,
+    model,
     check_r2_score,
 ):
     """Test the correctness of the results of quantized NN classifiers through the sklearn
     wrapper."""
 
-    x, y = make_classification(
-        1000,
-        n_features=input_dim,
-        n_redundant=0,
-        n_repeated=0,
-        n_informative=input_dim,
-        n_classes=n_classes,
-        class_sep=2,
-        random_state=42,
-    )
+    if model is NeuralNetClassifier:
+        x, y = make_classification(
+            1000,
+            n_features=input_dim,
+            n_redundant=0,
+            n_repeated=0,
+            n_informative=input_dim,
+            n_classes=n_outputs,
+            class_sep=2,
+            random_state=42,
+        )
+    elif model is NeuralNetRegressor:
+        x, y, _ = make_regression(
+            1000,
+            n_features=input_dim,
+            n_informative=input_dim,
+            n_targets=n_outputs,
+            noise=2,
+            random_state=42,
+            coef=True,
+        )
+        if y.ndim == 1:
+            y = np.expand_dims(y, 1)
+        y = y.astype(np.float32)
+    else:
+        raise ValueError(f"Data generator not implemented for {str(model)}")
+
     x = x.astype(np.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
@@ -67,14 +91,22 @@ def test_nn_classifiers_quant(
         "module__n_w_bits": n_bits_w_a,
         "module__n_a_bits": n_bits_w_a,
         "module__n_accum_bits": n_accum_bits,
-        "module__n_classes": n_classes,
+        "module__n_outputs": n_outputs,
         "module__input_dim": x_train.shape[1],
         "module__activation_function": activation_function,
         "max_epochs": 10,
         "verbose": 0,
     }
 
-    concrete_classifier = NeuralNetClassifier(**params)
+    if n_outputs == 1 and model is NeuralNetClassifier:
+        with pytest.raises(
+            ValueError,
+            match=".* number of classes.*",
+        ):
+            concrete_classifier = model(**params)
+        return
+
+    concrete_classifier = model(**params)
 
     # Compute mean/stdev on training set and normalize both train and test sets with them
     normalizer = StandardScaler()
@@ -82,13 +114,15 @@ def test_nn_classifiers_quant(
     x_test = normalizer.transform(x_test)
 
     _, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
+
     y_pred_sk = sklearn_classifier.predict(x_test)
     y_pred = concrete_classifier.predict(x_test)
 
     check_r2_score(y_pred_sk, y_pred)
 
 
-def test_parameter_validation():
+@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+def test_parameter_validation(model):
     """Test that the sklearn quantized NN wrappers validate their parameters"""
 
     valid_params = {
@@ -96,23 +130,31 @@ def test_parameter_validation():
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
         "module__n_accum_bits": 7,
-        "module__n_classes": 2,
+        "module__n_outputs": 2,
         "module__input_dim": 10,
         "module__activation_function": nn.ReLU,
         "max_epochs": 10,
         "verbose": 0,
     }
 
-    x, y = make_classification(
-        1000,
-        n_features=10,
-        n_redundant=0,
-        n_repeated=0,
-        n_informative=10,
-        n_classes=2,
-        class_sep=2,
-        random_state=42,
-    )
+    if model is NeuralNetClassifier:
+        x, y = make_classification(
+            1000,
+            n_features=10,
+            n_redundant=0,
+            n_repeated=0,
+            n_informative=10,
+            n_classes=2,
+            class_sep=2,
+            random_state=42,
+        )
+    elif model is NeuralNetRegressor:
+        x, y, _ = make_regression(
+            1000, n_features=10, n_informative=10, noise=2, random_state=42, coef=True
+        )
+    else:
+        raise ValueError(f"Data generator not implemented for {str(model)}")
+
     x = x.astype(np.float32)
 
     invalid_params_and_exception_pattern = {
@@ -120,7 +162,7 @@ def test_parameter_validation():
         ("module__n_w_bits", 0, ".* quantization bitwidth.*"),
         ("module__n_a_bits", 0, ".* quantization bitwidth.*"),
         ("module__n_accum_bits", 0, ".* accumulator bitwidth.*"),
-        ("module__n_classes", 1, ".* number of classes.*"),
+        ("module__n_outputs", 0, ".* number of (outputs|classes).*"),
         ("module__input_dim", 0, ".* number of input dimensions.*"),
     }
     for inv_param in invalid_params_and_exception_pattern:
@@ -131,7 +173,14 @@ def test_parameter_validation():
             ValueError,
             match=inv_param[2],
         ):
-            concrete_classifier = NeuralNetClassifier(**params)
+            concrete_classifier = model(**params)
+
+            with pytest.raises(
+                ValueError,
+                match=".* must be trained.*",
+            ):
+                _ = concrete_classifier.n_bits_quant
+
             concrete_classifier.fit(x, y)
 
 
@@ -165,7 +214,7 @@ def test_pipeline_and_cv():
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
         "module__n_accum_bits": 7,
-        "module__n_classes": 2,
+        "module__n_outputs": 2,
         "module__input_dim": 2,
         "module__activation_function": nn.SELU,
         "max_epochs": 10,
@@ -203,25 +252,52 @@ def test_pipeline_and_cv():
     clf.fit(x_train, y_train)
 
 
-# FIXME: once the HNP frontend compilation speed is improved, test with several activation funcs.
-# see: https://github.com/zama-ai/concrete-numpy-internal/issues/1374
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-def test_compile_and_calib(default_compilation_configuration, use_virtual_lib):
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.ReLU),
+        pytest.param(nn.Sigmoid),
+        pytest.param(nn.SELU),
+        pytest.param(nn.CELU),
+    ],
+)
+@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+def test_compile_and_calib(
+    activation_function, model, default_compilation_configuration, use_virtual_lib
+):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
 
     n_features = 10
 
-    x, y = make_classification(
-        1000,
-        n_features=n_features,
-        n_redundant=0,
-        n_repeated=0,
-        n_informative=5,
-        n_classes=2,
-        class_sep=2,
-        random_state=42,
-    )
+    if model is NeuralNetClassifier:
+        x, y = make_classification(
+            1000,
+            n_features=n_features,
+            n_redundant=0,
+            n_repeated=0,
+            n_informative=n_features,
+            n_classes=2,
+            class_sep=2,
+            random_state=42,
+        )
+    elif model is NeuralNetRegressor:
+        x, y, _ = make_regression(
+            1000,
+            n_features=n_features,
+            n_informative=n_features,
+            n_targets=2,
+            noise=2,
+            random_state=42,
+            coef=True,
+        )
+        if y.ndim == 1:
+            y = np.expand_dims(y, 1)
+        y = y.astype(np.float32)
+    else:
+        raise ValueError(f"Data generator not implemented for {str(model)}")
+
     x = x.astype(np.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
@@ -247,15 +323,17 @@ def test_compile_and_calib(default_compilation_configuration, use_virtual_lib):
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
         "module__n_accum_bits": 5,
-        "module__n_classes": 2,
+        "module__n_outputs": 2,
         "module__input_dim": n_features,
-        "module__activation_function": nn.Sigmoid,
-        "criterion__weight": class_weights,
+        "module__activation_function": activation_function,
         "max_epochs": 10,
         "verbose": 0,
     }
 
-    clf = NeuralNetClassifier(**params)
+    if model is NeuralNetClassifier:
+        params["criterion__weight"] = class_weights
+
+    clf = model(**params)
 
     # Compiling a model that is not trained should fail
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
@@ -289,3 +367,92 @@ def test_compile_and_calib(default_compilation_configuration, use_virtual_lib):
     # Since FHE execution introduces some stochastic errors,
     # accuracy of FHE compiled classifiers is measured in the benchmarks
     clf.predict(x_test[0, :], execute_in_fhe=True)
+
+
+def test_custom_net_classifier():
+    """Tests a wrapped custom network.
+
+    Gives an example how to use our API to train a custom Torch network through the quantized
+    sklearn wrapper.
+    """
+
+    class MiniNet(nn.Module):
+        """Sparse Quantized Neural Network classifier."""
+
+        def __init__(
+            self,
+        ):
+            """Construct mini net"""
+            super().__init__()
+            self.features = nn.Sequential(nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2))
+
+        def forward(self, x):
+            """Forward pass."""
+            return self.features(x)
+
+    params = {
+        "max_epochs": 10,
+        "verbose": 0,
+    }
+
+    class MiniCustomNeuralNetClassifier(QuantizedSkorchEstimatorMixin, SKNeuralNetClassifier):
+        """Sklearn API wrapper class for a custom network that will be quantized.
+
+        Minimal work is needed to implement training of a custom class."""
+
+        @property
+        def base_estimator_type(self):
+            return SKNeuralNetClassifier
+
+        @property
+        def n_bits_quant(self):
+            """Return the number of quantization bits"""
+            return 2
+
+    clf = MiniCustomNeuralNetClassifier(MiniNet, **params)
+
+    x, y = make_classification(
+        1000,
+        n_features=2,
+        n_redundant=0,
+        n_repeated=0,
+        n_informative=2,
+        n_classes=2,
+        class_sep=2,
+        random_state=42,
+    )
+
+    x = x.astype(np.float32)
+
+    # Perform a classic test-train split (deterministic by fixing the seed)
+    x_train, x_test, y_train, _ = train_test_split(
+        x,
+        y,
+        test_size=0.25,
+        random_state=42,
+    )
+
+    # Compute mean/stdev on training set and normalize both train and test sets with them
+    # Optimization algorithms for Neural networks work well on 0-centered inputs
+    normalizer = StandardScaler()
+    x_train = normalizer.fit_transform(x_train)
+    x_test = normalizer.transform(x_test)
+
+    # Train the model
+    clf.fit_benchmark(x_train, y_train)
+
+    # Test the custom network wrapper in a pipeline with grid CV
+    # This will clone the skorch estimator
+    pipe_cv = Pipeline(
+        [
+            ("pca", PCA(n_components=2)),
+            ("scaler", StandardScaler()),
+            ("net", MiniCustomNeuralNetClassifier(MiniNet, **params)),
+        ]
+    )
+
+    clf = GridSearchCV(
+        pipe_cv,
+        {"net__lr": [0.01, 0.1]},
+    )
+    clf.fit(x_train, y_train)

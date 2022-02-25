@@ -198,7 +198,7 @@ def train_and_test_on_dataset(classifier, dataset, config):
     if classifier is NeuralNetClassifier:
         classes = np.unique(y_all)
         config["module__input_dim"] = x_train.shape[1]
-        config["module__n_classes"] = len(classes)
+        config["module__n_outputs"] = len(classes)
         config["criterion__weight"] = compute_class_weight("balanced", classes=classes, y=y_train)
 
     concrete_classifier = classifier(**config)

@@ -99,7 +99,7 @@ def test_seed_torch(n_layers, n_bits_w_a, n_accum_bits, activation_function, n_c
         "module__n_w_bits": n_bits_w_a,
         "module__n_a_bits": n_bits_w_a,
         "module__n_accum_bits": n_accum_bits,
-        "module__n_classes": n_classes,
+        "module__n_outputs": n_classes,
         "module__input_dim": x_train.shape[1],
         "module__activation_function": activation_function,
         "max_epochs": 10,
