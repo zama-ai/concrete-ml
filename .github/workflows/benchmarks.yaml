@@ -30,7 +30,6 @@ jobs:
   start-self-hosted-runner:
     runs-on: ubuntu-20.04
     needs: [should-run-benchmarks]
-    timeout-minutes: 900
     if: ${{ needs.should-run-benchmarks.outputs.should-run == 'true' }}
     outputs:
       label-intel: ${{ steps.start-ec2-runner-intel.outputs.label }}
@@ -72,6 +71,7 @@ jobs:
 
   run-benchmarks:
     needs: [start-self-hosted-runner]
+    timeout-minutes: 900
     name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
     runs-on: ${{ matrix.runs-on }}
     strategy:
