@@ -12,6 +12,8 @@ The `NumpyModule` stores the ONNX model that it interprets. The interpreter work
 
 The post training quantization process uses the ONNX model stored in the `NumpyModule` and interprets it in a very similar way to the forward function of the `NumpyModule` itself. First initializers (ONNX's parameters) are quantized according to `n_bits` passed to the post training quantization process. During the interpretation/execution for post training quantization, the quantized version of the operators are used, constant inputs (parameters or otherwise) are passed to the quantized operators which then decide on how to use the constants.
 
+Quantized operators are used to create a `QuantizedModule` that, similarly to the `NumpyModule`, run through the operators in a topological order allowing the specific quantized inference with integers-only operations.
+
 ## How to use `QuantizedOp`
 
 `QuantizedOp` is the base class for all ONNX quantized operators. It abstracts away a lot of things to allow to easily implement new quantized ops.
