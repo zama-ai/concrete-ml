@@ -16,7 +16,6 @@ from concrete.common.mlir.utils import (
     get_op_graph_max_bit_width_and_nodes_over_bit_width_limit,
 )
 from concrete.numpy import compile as compile_
-from sklearn.metrics import r2_score
 
 
 def pytest_addoption(parser):
@@ -342,7 +341,24 @@ def check_r2_score():
     """Fixture to check r2 score"""
 
     def check_r2_score_impl(expected, actual):
-        r_square = r2_score(expected.ravel(), actual.ravel())
-        assert r_square >= 0.98, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
+        expected = expected.ravel()
+        actual = actual.ravel()
+        mean_expected = numpy.mean(expected)
+        deltas_expected = expected - mean_expected
+        deltas_actual = actual - expected
+        r2_den = numpy.sum(deltas_expected**2)
+        r2_num = numpy.sum(deltas_actual**2)
+
+        # If the values are really close, we consider the test passes
+        is_close = numpy.allclose(expected, actual, atol=1e-4, rtol=0)
+        if is_close:
+            return
+
+        # If the variance of the target values is very low, fix the max allowed for residuals
+        # to a known value
+        r2_den = max(r2_den, 1e-5)
+
+        r_square = 1 - r2_num / r2_den
+        assert r_square >= 0.99, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
 
     return check_r2_score_impl
