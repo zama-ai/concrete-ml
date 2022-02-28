@@ -71,7 +71,7 @@ jobs:
 
   run-benchmarks:
     needs: [start-self-hosted-runner]
-    timeout-minutes: 900
+    timeout-minutes: 1380
     name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
     runs-on: ${{ matrix.runs-on }}
     strategy:
@@ -150,7 +150,7 @@ jobs:
           host: ${{ steps.public-ip.outputs.value }}
           username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
           key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 900m
+          command_timeout: 1380m
           script: |
             cd ~/project
             git clean -dfx
