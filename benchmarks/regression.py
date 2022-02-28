@@ -7,8 +7,7 @@ from sklearn.datasets import make_regression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 
-from concrete.ml.sklearn import LinearRegression as ConcreteLinearRegression
-from concrete.ml.sklearn import LinearSVR as ConcreteLinearSVR
+from concrete.ml.sklearn import LinearRegression, LinearSVR
 
 N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
 N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
@@ -62,11 +61,11 @@ datasets = {
 }
 
 # Will contain all the regressors we can support
-regressors = [ConcreteLinearRegression, ConcreteLinearSVR]
+regressors = [LinearRegression, LinearSVR]
 
 benchmark_params = {
-    ConcreteLinearRegression: [{"n_bits": n_bits} for n_bits in range(2, 11)],
-    ConcreteLinearSVR: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    LinearRegression: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    LinearSVR: [{"n_bits": n_bits} for n_bits in range(2, 11)],
 }
 
 
@@ -80,7 +79,7 @@ def should_test_config_in_fhe(regressor, config, n_features):
     if os.environ.get("BENCHMARK_NO_FHE", "0") == "1":
         return False
 
-    if regressor is ConcreteLinearRegression:
+    if regressor is LinearRegression:
 
         if config["n_bits"] == 2 and n_features <= 14:
             return True
@@ -90,7 +89,7 @@ def should_test_config_in_fhe(regressor, config, n_features):
 
         return False
 
-    if regressor is ConcreteLinearSVR:
+    if regressor is LinearSVR:
 
         if config["n_bits"] == 2 and n_features <= 14:
             return True
@@ -135,9 +134,9 @@ def benchmark_generator():
 
 
 def benchmark_name_generator(dataset_str, regressor, config, joiner):
-    if regressor is ConcreteLinearRegression:
+    if regressor is LinearRegression:
         config_str = f"_{config['n_bits']}"
-    elif regressor is ConcreteLinearSVR:
+    elif regressor is LinearSVR:
         config_str = f"_{config['n_bits']}"
     else:
         raise ValueError

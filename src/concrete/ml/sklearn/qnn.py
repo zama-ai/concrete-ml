@@ -5,7 +5,7 @@
 
 from abc import abstractmethod
 
-import numpy as np
+import numpy
 import torch
 import torch.nn.utils.prune as pruning
 from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
@@ -120,7 +120,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
         """
 
         return int(
-            np.floor(
+            numpy.floor(
                 (2**self.n_accum_bits - 1) / (2**self.n_w_bits - 1) / (2**self.n_a_bits - 1)
             )
         )
@@ -340,7 +340,7 @@ class NeuralNetClassifier(
         # A helper for users so they don't need to import torch directly
         args_to_convert_to_tensor = ["criterion__weight"]
         for arg_name in args_to_convert_to_tensor:
-            if arg_name in kwargs and isinstance(kwargs[arg_name], np.ndarray):
+            if arg_name in kwargs and isinstance(kwargs[arg_name], numpy.ndarray):
                 kwargs[arg_name] = torch.from_numpy(kwargs[arg_name]).float()
 
         n_classes = kwargs["module__n_outputs"]

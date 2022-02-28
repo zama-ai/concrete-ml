@@ -79,7 +79,8 @@ pylint:
 
 .PHONY: pylint_src # Run pylint on sources
 pylint_src:
-	poetry run pylint --rcfile=pylintrc $(SRC_DIR)
+	@# FIXME: #425 Disable duplicate code detection (R0801) in tests
+	poetry run pylint --rcfile=pylintrc $(SRC_DIR) --disable=R0801
 
 .PHONY: pylint_tests # Run pylint on tests
 pylint_tests:

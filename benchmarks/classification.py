@@ -10,9 +10,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
-from concrete.ml.sklearn.linear_model import LogisticRegression
-from concrete.ml.sklearn.qnn import NeuralNetClassifier
-from concrete.ml.sklearn.tree import DecisionTreeClassifier
+from concrete.ml.sklearn import (
+    DecisionTreeClassifier,
+    LinearSVC,
+    LogisticRegression,
+    NeuralNetClassifier,
+)
 
 N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
 N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
@@ -35,11 +38,12 @@ datasets = [
 
 dataset_versions = {"wilt": 2}
 
-classifiers = [DecisionTreeClassifier, NeuralNetClassifier, LogisticRegression]
+classifiers = [DecisionTreeClassifier, NeuralNetClassifier, LogisticRegression, LinearSVC]
 
 benchmark_params = {
     # Benchmark different depths of the quantized decision tree
     DecisionTreeClassifier: [{"max_depth": 3}, {"max_depth": None}],
+    LinearSVC: [{"n_bits": 2}],
     LogisticRegression: [{"n_bits": 2}],
     NeuralNetClassifier: [
         # An FHE compatible config
@@ -101,6 +105,8 @@ benchmark_params = {
 def should_test_config_in_fhe(classifier, params, n_features):
     """Determine whether a benchmark config for a classifier should be tested in FHE"""
 
+    # pylint: disable=too-many-return-statements
+
     # System override to disable FHE benchmarks (useful for debugging)
     if os.environ.get("BENCHMARK_NO_FHE", "0") == "1":
         return False
@@ -123,7 +129,15 @@ def should_test_config_in_fhe(classifier, params, n_features):
         if params["n_bits"] == 3 and n_features <= 2:
             return True
 
+    if classifier is LinearSVC:
+        if params["n_bits"] <= 2 and n_features <= 14:
+            return True
+
+        if params["n_bits"] == 3 and n_features <= 2:
+            return True
+
     raise ValueError(f"Classifier {str(classifier)} configurations not yet setup for FHE")
+    # pylint: enable=too-many-return-statements
 
 
 def run_and_report_metric(y_gt, y_pred, metric, metric_id, metric_label):
@@ -279,6 +293,8 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
     elif classifier is NeuralNetClassifier:
         config_str = f"_{config['module__n_w_bits']}_{config['module__n_accum_bits']}"
     elif classifier is LogisticRegression:
+        config_str = f"_{config['n_bits']}"
+    elif classifier is LinearSVC:
         config_str = f"_{config['n_bits']}"
     return classifier.__name__ + config_str + joiner + dataset
 

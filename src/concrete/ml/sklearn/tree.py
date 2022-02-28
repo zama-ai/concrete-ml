@@ -177,7 +177,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
 
                 The "balanced" mode uses the values of y to automatically adjust
                 weights inversely proportional to class frequencies in the input data
-                as ``n_samples / (n_classes * np.bincount(y))``
+                as ``n_samples / (n_classes * numpy.bincount(y))``
 
                 For multi-output, the weights of each column of y will be multiplied.
 

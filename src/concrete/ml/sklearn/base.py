@@ -7,7 +7,7 @@ from abc import abstractmethod
 from copy import deepcopy
 from typing import Optional
 
-import numpy as np
+import numpy
 import torch
 from concrete.common.compilation.artifacts import CompilationArtifacts
 from concrete.common.compilation.configuration import CompilationConfiguration
@@ -59,7 +59,7 @@ class QuantizedTorchEstimatorMixin:
 
     def compile(
         self,
-        X: np.ndarray,
+        X: numpy.ndarray,
         compilation_configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
@@ -177,7 +177,7 @@ class QuantizedTorchEstimatorMixin:
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:
                 X = X.reshape((1, -1))
-            y_pred = np.zeros((X.shape[0],), np.int32)
+            y_pred = numpy.zeros((X.shape[0],), numpy.int32)
             for idx, x in enumerate(X):
                 q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)
                 y_pred[idx] = self.quantized_module_.forward_fhe.run(q_x).argmax(axis=1)

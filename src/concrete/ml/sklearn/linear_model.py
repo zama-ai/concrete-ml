@@ -283,8 +283,13 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
         )
         self.n_bits = n_bits
 
-    # pylint: enable=too-many-arguments
-
+    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
+    # use clean_graph and predict from BaseLinearClassifierMixin
+    # but difficulties because we need to make python understand that
+    # LogisticRegression.clean_graph must be BaseLinearClassifierMixin.clean_graph
+    # and not SklearnLinearModelMixin.clean_graph
+    # pylint: disable=duplicate-code
+    # pylint: disable=R0801
     def clean_graph(self, onnx_model: onnx.ModelProto):
         nodes_to_remove = []
         output_to_follow = "variable"
@@ -310,6 +315,11 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
         keep_following_outputs_discard_others(onnx_model, [output_to_follow])
         return super().clean_graph(onnx_model)
 
+    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
+    # use clean_graph and predict from BaseLinearClassifierMixin
+    # but difficulties because we need to make python understand that
+    # LogisticRegression.clean_graph must be BaseLinearClassifierMixin.clean_graph
+    # and not SklearnLinearModelMixin.clean_graph
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         y_preds = super().predict(X, execute_in_fhe)
         if y_preds.shape[1] == 1:
@@ -318,17 +328,5 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
         y_preds = numpy.argmax(y_preds, axis=1)
         return y_preds
 
-    # pylint think this is the predict_proba from sklearn.linear_model.LogisticRegression
-    # pylint: disable=arguments-differ
-    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        y_preds = super().predict(X, execute_in_fhe)
-        if y_preds.shape[1] == 1:
-            # Sigmoid already applied in the graph
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-        else:
-            # Apply softmax as it's not an FHE friendly opetator
-            y_preds = numpy.exp(y_preds)
-            y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
-        return y_preds
-
-    # pylint: enable=arguments-differ
+    # pylint: enable=duplicate-code
+    # pylint: enable=R0801

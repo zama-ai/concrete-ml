@@ -1,4 +1,7 @@
 """Tests for the sklearn linear models."""
+from functools import partial
+from typing import Any, List
+
 import numpy
 import pytest
 from sklearn.datasets import make_classification, make_regression
@@ -8,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-from concrete.ml.sklearn import LinearRegression, LinearSVR, LogisticRegression
+from concrete.ml.sklearn import LinearRegression, LinearSVC, LinearSVR, LogisticRegression
 
 
 def get_datasets_regression(reg_model_orig):
@@ -90,35 +93,49 @@ def get_datasets_regression(reg_model_orig):
     return ans
 
 
-datasets_regression = []
+def get_datasets_classification(class_model_orig):
+    """Return tests to apply to a classification model."""
+    class_model_string = class_model_orig.__name__
 
-for one_reg_model in [LinearRegression, LinearSVR]:
-    datasets_regression += get_datasets_regression(one_reg_model)
+    class_model = class_model_orig
 
-datasets_classification = [
-    pytest.param(
-        LogisticRegression,
-        lambda: make_classification(n_samples=200, class_sep=2, n_features=10, random_state=42),
-        id="make_classification_10_features",
-    ),
-    pytest.param(
-        LogisticRegression,
-        lambda: make_classification(n_samples=200, class_sep=2, n_features=14, random_state=42),
-        id="make_classification_features_14_informative_14",
-    ),
-    pytest.param(
-        LogisticRegression,
-        lambda: make_classification(
-            n_samples=200,
-            n_features=14,
-            n_clusters_per_class=1,
-            class_sep=2,
-            n_classes=4,
-            random_state=42,
+    ans = [
+        pytest.param(
+            class_model,
+            lambda: make_classification(n_samples=200, class_sep=2, n_features=10, random_state=42),
+            id=f"make_classification_10_features_{class_model_string}",
         ),
-        id="make_classification_features_14_informative_14_classes_4",
-    ),
-]
+        pytest.param(
+            class_model,
+            lambda: make_classification(n_samples=200, class_sep=2, n_features=14, random_state=42),
+            id=f"make_classification_features_14_informative_14_{class_model_string}",
+        ),
+        pytest.param(
+            class_model,
+            lambda: make_classification(
+                n_samples=200,
+                n_features=14,
+                n_clusters_per_class=1,
+                class_sep=2,
+                n_classes=4,
+                random_state=42,
+            ),
+            id=f"make_classification_features_14_informative_14_classes_4_{class_model_string}",
+        ),
+    ]
+
+    return ans
+
+
+datasets_regression: List[Any] = []
+
+for one_regression_model in [LinearRegression, LinearSVR]:
+    datasets_regression += get_datasets_regression(one_regression_model)
+
+datasets_classification: List[Any] = []
+
+for one_classifier_model in [LogisticRegression, LinearSVC]:
+    datasets_regression += get_datasets_classification(one_classifier_model)
 
 
 @pytest.mark.parametrize(
@@ -179,7 +196,7 @@ def test_linear_model_quantization(
     check_r2_score(y_pred_sklearn, y_pred_quantized)
 
     if isinstance(model, LogisticRegression):
-        # Check that probabilties are similar
+        # Check that probabilities are similar
         y_pred_quantized = model.predict_proba(x)
         y_pred_sklearn = sklearn_model.predict_proba(x)
         check_r2_score(y_pred_sklearn, y_pred_quantized)
@@ -206,7 +223,8 @@ def test_double_fit():
     [
         pytest.param(LinearRegression),
         pytest.param(LogisticRegression),
-        pytest.param(LinearSVR),
+        pytest.param(partial(LinearSVR, max_iter=10000), id="LinearSVR"),
+        pytest.param(LinearSVC),
     ],
 )
 def test_pipeline_sklearn(alg):
