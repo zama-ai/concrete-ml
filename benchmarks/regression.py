@@ -1,16 +1,49 @@
 import os
 import time
+from functools import partial
 
+import numpy as np
 import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION
-from sklearn.datasets import make_regression
+from sklearn.datasets import fetch_openml, make_regression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
 
-from concrete.ml.sklearn import LinearRegression, LinearSVR
+from concrete.ml.sklearn import LinearRegression, LinearSVR, NeuralNetRegressor
 
 N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
 N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
+
+
+openml_dataset_names = [
+    "pol",
+    "house_16H",
+    "tecator",
+    "boston",
+    "socmob",
+    "wine_quality",
+    "abalone",
+    "us_crime",
+    "Brazilian_houses",
+    "Moneyball",
+    "SAT11-HAND-runtime-regression",
+    "Santander_transaction_value",
+    "house_prices_nominal",
+    "Yolanda",
+    "house_sales",
+    "Buzzinsocialmedia_Twitter",
+]
+
+dataset_versions = {
+    "abalone": 5,
+    "us_crime": 2,
+    "Brazilian_houses": 4,
+    "Moneyball": 2,
+    "Yolanda": 2,
+    "quake": 2,
+    "house_sales": 3,
+}
 
 
 def return_one_bias(i):
@@ -33,39 +66,109 @@ def return_one_n_features(i):
     return n_features_list[i % len(n_features_list)]
 
 
-# Make the bias and noise not synchronised, ie not always the same bias with the same noise
+# Make the bias and noise not synchronized, ie not always the same bias with the same noise
 # 3, 7 and 11 are prime with 5, which is the length of bias_list and noise_list
 # Not all couples will be done, however
-list_params = [
+synthetic_dataset_params = [
     (
         42 + i,
-        return_one_bias(i),
-        return_one_noise((i + 1) * 3),
-        return_one_n_targets((i + 2) * 7),
-        return_one_n_features((i + 3) * 11),
+        {
+            "bias": return_one_bias(i),
+            "noise": return_one_noise((i + 1) * 3),
+            "n_targets": return_one_n_targets((i + 2) * 7),
+            "n_features": return_one_n_features((i + 3) * 11),
+        },
     )
     for i in range(10)
 ]
 
-datasets = {
-    f"SyntheticReg_{i}_{bias}_{noise}_{n_targets}_{n_features}": make_regression(
-        n_samples=200,
-        n_features=n_features,
-        n_targets=n_targets,
-        bias=bias,
-        noise=noise,
-        random_state=random_state,
-        coef=True,
+
+def make_synthetic_name(i, bias, noise, n_targets, n_features):
+    return f"SyntheticReg_{i}_{bias}_{noise}_{n_targets}_{n_features}"
+
+
+def prepare_openml_dataset(dataset_name):
+    # Sometimes we want a specific version of a dataset, otherwise just get the 'active' one
+    version = dataset_versions.get(dataset_name, "active")
+    x_all, y_all = fetch_openml(
+        name=dataset_name, version=version, as_frame=False, cache=True, return_X_y=True
     )
-    for i, (random_state, bias, noise, n_targets, n_features) in enumerate(list_params)
+    if y_all.ndim == 1:
+        y_all = np.expand_dims(y_all, 1)
+    return x_all, y_all, None
+
+
+synthetic_dataset_names = [make_synthetic_name(i, **p) for i, p in synthetic_dataset_params]
+
+synthetic_datasets = {
+    name: partial(make_regression, n_samples=200, coef=True, random_state=seed, **params)
+    for name, (seed, params) in zip(synthetic_dataset_names, synthetic_dataset_params)
 }
 
+openml_datasets = {name: partial(prepare_openml_dataset, name) for name in openml_dataset_names}
+
+datasets = {**openml_datasets, **synthetic_datasets}
+
 # Will contain all the regressors we can support
-regressors = [LinearRegression, LinearSVR]
+regressors = [NeuralNetRegressor, LinearRegression, LinearSVR]
 
 benchmark_params = {
     LinearRegression: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     LinearSVR: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    NeuralNetRegressor: [
+        # An FHE compatible config
+        {
+            "module__n_layers": 3,
+            "module__n_w_bits": 2,
+            "module__n_a_bits": 2,
+            "module__n_accum_bits": 32,
+            "module__n_hidden_neurons_multiplier": 1,
+            "max_epochs": 200,
+            "verbose": 0,
+            "lr": 0.001,
+        }
+    ]
+    + [
+        # Pruned configurations that have approx. the same number of active neurons as the
+        # FHE compatible config. This evaluates the accuracy that can be attained
+        # for different accumulator bitwidths
+        {
+            "module__n_layers": 3,
+            "module__n_w_bits": n_b,
+            "module__n_a_bits": n_b,
+            "module__n_accum_bits": n_b_acc,
+            "module__n_hidden_neurons_multiplier": 4,
+            "max_epochs": 200,
+            "verbose": 0,
+            "lr": 0.001,
+        }
+        for (n_b, n_b_acc) in [
+            (2, 7),
+            (3, 11),
+            (4, 12),
+            (5, 14),
+            (6, 16),
+            (7, 18),
+            (8, 20),
+            (9, 22),
+            (10, 24),
+        ]
+    ]
+    + [
+        # Configs with all neurons active, to evaluate the accuracy of quantization of weights
+        # and biases only
+        {
+            "module__n_layers": 3,
+            "module__n_w_bits": n_b,
+            "module__n_a_bits": n_b,
+            "module__n_accum_bits": 32,
+            "module__n_hidden_neurons_multiplier": 4,
+            "max_epochs": 200,
+            "verbose": 0,
+            "lr": 0.001,
+        }
+        for n_b in range(2, 10)
+    ],
 }
 
 
@@ -98,6 +201,12 @@ def should_test_config_in_fhe(regressor, config, n_features):
             return True
 
         return False
+    if regressor is NeuralNetRegressor:
+        # For NNs only 7 bit accumulators with few neurons should be compiled to FHE
+        return (
+            config["module__n_accum_bits"] <= 7
+            and config["module__n_hidden_neurons_multiplier"] == 1
+        )
     raise ValueError(f"Regressor {str(regressor)} configurations not yet setup for FHE")
 
 
@@ -127,6 +236,7 @@ def run_and_report_all_metrics(y_gt, y_pred, metric_id_prefix, metric_label_pref
 
 
 def benchmark_generator():
+    # Iterate over the dataset names and the dataset generator functions
     for dataset_str, dataset_fun in datasets.items():
         for regressor in regressors:
             for config in benchmark_params[regressor]:
@@ -138,13 +248,15 @@ def benchmark_name_generator(dataset_str, regressor, config, joiner):
         config_str = f"_{config['n_bits']}"
     elif regressor is LinearSVR:
         config_str = f"_{config['n_bits']}"
+    elif regressor is NeuralNetRegressor:
+        config_str = f"_{config['module__n_a_bits']}_{config['module__n_accum_bits']}"
     else:
         raise ValueError
 
     return regressor.__name__ + config_str + joiner + dataset_str
 
 
-# We run all the regressorthat we want to benchmark over all datasets listed
+# We run all the regressor that we want to benchmark over all datasets listed
 @progress.track(
     [
         {
@@ -168,10 +280,24 @@ def main(regressor, dataset_str, dataset_fun, config):
     We compute the training loss for the quantized and FHE models and compare them. We also
     predict on a test set and compare FHE results to predictions from the quantized model
     """
-    X, y, _ = dataset_fun
+    X, y, _ = dataset_fun()
+
+    if regressor is NeuralNetRegressor:
+        # Cast to a type that works for both sklearn and Torch
+        X = X.astype(np.float32)
+        y = y.astype(np.float32)
 
     # Split it into train/test and sort the sets for nicer visualization
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+
+    if regressor is NeuralNetRegressor:
+        normalizer = StandardScaler()
+        # Compute mean/stdev on training set and normalize both train and test sets with them
+        x_train = normalizer.fit_transform(x_train)
+        x_test = normalizer.transform(x_test)
+
+        config["module__input_dim"] = x_train.shape[1]
+        config["module__n_outputs"] = y_train.shape[1] if y_train.ndim == 2 else 1
 
     print("Dataset:", dataset_str)
     print("Config:", config)
