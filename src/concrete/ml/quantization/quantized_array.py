@@ -38,8 +38,12 @@ class QuantizedArray:
         value_is_float: bool = True,
         scale: Optional[float] = None,
         zero_point: Optional[int] = None,
+        is_symmetric: bool = False,
     ):
         self.offset = 0
+        if is_symmetric:
+            assert_true(is_signed, "symmetric quantization is only supported for signed values")
+        self.is_symmetric = is_symmetric
         if is_signed:
             self.offset = 2 ** (n_bits - 1)
         self.n_bits = n_bits
@@ -112,12 +116,18 @@ class QuantizedArray:
                 scale = rmax / (2**self.n_bits - 1)
                 zero_point = 0
         else:
-            scale = (rmax - rmin) / (2**self.n_bits - 1) if rmax != rmin else 1.0
+            if self.is_symmetric:
+                zero_point = 0
+                scale = numpy.maximum(numpy.abs(rmax), numpy.abs(rmin)) / (
+                    (2**self.n_bits - 1 - self.offset)
+                )
+            else:
+                scale = (rmax - rmin) / (2**self.n_bits - 1) if rmax != rmin else 1.0
 
-            zero_point = numpy.round(
-                (rmax * (-self.offset) - (rmin * (2**self.n_bits - 1 - self.offset)))
-                / (rmax - rmin)
-            ).astype(numpy.int64)
+                zero_point = numpy.round(
+                    (rmax * (-self.offset) - (rmin * (2**self.n_bits - 1 - self.offset)))
+                    / (rmax - rmin)
+                ).astype(numpy.int64)
 
         # Compute quantized values and store
         qvalues = self.values / scale + zero_point

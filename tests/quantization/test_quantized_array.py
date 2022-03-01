@@ -9,12 +9,15 @@ from concrete.ml.quantization import QuantizedArray
     "n_bits",
     [32, 28, 20, 16, 8, 4],
 )
-@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
+@pytest.mark.parametrize(
+    "is_signed, is_symmetric",
+    [pytest.param(True, True), pytest.param(True, False), pytest.param(False, False)],
+)
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
-def test_quant_dequant_update(values, n_bits, is_signed, check_array_equality):
+def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_array_equality):
     """Test the quant and dequant function."""
 
-    quant_array = QuantizedArray(n_bits, values, is_signed)
+    quant_array = QuantizedArray(n_bits, values, is_signed, is_symmetric=is_symmetric)
     qvalues = quant_array.quant()
 
     # Quantized values must be contained between 0 and 2**n_bits
