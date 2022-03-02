@@ -1,10 +1,10 @@
-# Using Quantization in **Concrete Numpy**
+# Quantization
 
-In this section we detail some usage of [quantization](../explanation/quantization.md) as implemented in **Concrete**.
+In this section we detail some usage of [quantization](../../user/explanation/quantization.md) as implemented in **Concrete**.
 
 ## Quantization Basics
 
-**Concrete Numpy** implements some basic concepts of quantization. The very basic purpose of it is to convert floating point values to integers. We can apply such conversion using `QuantizedArray` available in `concrete.ml.quantization`.
+**Concrete ML** implements some basic concepts of quantization. The very basic purpose of it is to convert floating point values to integers. We can apply such conversion using `QuantizedArray` available in `concrete.ml.quantization`.
 
 `QuantizedArray` takes 2 arguments:
 
@@ -38,13 +38,13 @@ print("q_A.dequant() = ", q_A.dequant())
 
 Neural networks are implemented with a diverse set of operations, such as convolution, linear transformations, activation functions and element-wise operations. When working with quantized values, these operations can not be carried out the same way as for floating point values. With quantization it is necessary to re-scale the input and output values of each operation to fit in the quantization domain.
 
-Re-scaling raw input values to the quantized domain implies that we need to make use of floating point operations. In the FHE setting where we only work with integers, this could be a problem, but luckily, the FHE implementation behind **Concrete Numpy** provides a workaround. We essentially make use of a [table lookup](https://docs.zama.ai/concrete-numpy/stable/user/tutorial/table_lookup.html) which is later translated into a [PBS](https://whitepaper.zama.ai).
+Re-scaling raw input values to the quantized domain implies that we need to make use of floating point operations. In the FHE setting where we only work with integers, this could be a problem, but luckily, the FHE implementation behind **Concrete ML** provides a workaround. We essentially make use of a [table lookup](https://docs.zama.ai/concrete-numpy/stable/user/tutorial/table_lookup.html) which is later translated into a [PBS](https://whitepaper.zama.ai).
 
-Of course, having a PBS for every quantized addition isn't recommended for computational cost reasons. Also, **Concrete Numpy** allows PBS only for univariate operations (i.e. matrix multiplication can't be done in a PBS). Therefore, our quantized modules split the computation of floating point values and unsigned integers as it is currently done in `concrete.ml.quantization.QuantizedLinear`.
+Of course, having a PBS for every quantized addition isn't recommended for computational cost reasons. Also, **Concrete ML** allows PBS only for univariate operations (i.e. matrix multiplication can't be done in a PBS). Therefore, our quantized modules split the computation of floating point values and unsigned integers as it is currently done in `concrete.ml.quantization.QuantizedLinear`.
 
-The above operations are all implemented in **Concrete Numpy** and transparent to the user via our Quantized Modules.
+The above operations are all implemented in **Concrete ML** and transparent to the user via our Quantized Modules.
 
-**Concrete Numpy** allows you to convert numpy operations to their FHE counterparts. This essentially opens the door to any python computing framework such as [PyTorch](https://pytorch.org/). **Concrete Numpy** implements a Torch to Numpy converter that makes it easy for the user to use a torch model.
+**Concrete ML** allows you to convert numpy operations to their FHE counterparts. This essentially opens the door to any python computing framework such as [PyTorch](https://pytorch.org/). **Concrete ML** implements a Torch to Numpy converter that makes it easy for the user to use a torch model.
 
 First we define a model:
 
@@ -142,17 +142,17 @@ The current implementation of the framework parses the layers in the order of th
 Do not reuse a layer or an activation multiple times in the forward (i.e. self.sigmoid for each layer activation) and always place them at the correct position (the order of appearance in the forward function) in the init function.
 ```
 
-It is now possible to compile the `quantized_numpy_module`. Details on how to compile the model are available in the [torch compilation documentation](compiling_torch_model.md).
+It is now possible to compile the `quantized_numpy_module`. Details on how to compile the model are available in the [torch compilation documentation](../../user/howto/simple_example_torch.md).
 
 ## Building your own QuantizedModule
 
-**Concrete Numpy** also offers the possibility to build your own models and use them in the FHE settings. The `QuantizedModule` is a very simple abstraction that allows to create any model using the available operators:
+**Concrete ML** also offers the possibility to build your own models and use them in the FHE settings. The `QuantizedModule` is a very simple abstraction that allows to create any model using the available operators:
 
 - QuantizedSigmoid, the quantized version of `nn.Sigmoid`
 - QuantizedLinear, the quantized version of `nn.Linear`
 - QuantizedReLU6, the quantized version of `nn.ReLU6`
 
-A well detailed example is available for a [Linear Regression](../advanced_examples/LinearRegression.ipynb).
+A well detailed example is available for a [Linear Regression](../../user/advanced_examples/LinearRegression.ipynb).
 
 ## Future releases
 

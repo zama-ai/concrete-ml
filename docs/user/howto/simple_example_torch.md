@@ -1,8 +1,8 @@
-# Compiling a Torch Model
+# Using Concrete ML with Torch
 
-**Concrete Numpy** allows you to compile a torch model to its FHE counterpart.
+**Concrete ML** allows you to compile a torch model to its FHE counterpart.
 
-A simple command can compile a torch model to its FHE counterpart. This process executes most of the concepts described in the documentation on [how to use quantization](use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
+A simple command can compile a torch model to its FHE counterpart. This process executes most of the concepts described in the documentation on [how to use quantization](../../dev/explanation/use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
 
 ```python
 from torch import nn
@@ -66,3 +66,7 @@ clear_output = quantized_numpy_module.dequantize_output(
 ```
 
 If you want to see more compilation examples, you can check out the [Fully Connected Neural Network](../advanced_examples/FullyConnectedNeuralNetwork.ipynb)
+
+## List of Layers Which Are Supported
+
+## List of Activations Which Are Supported

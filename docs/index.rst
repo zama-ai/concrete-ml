@@ -1,4 +1,4 @@
-ConcreteML's documentation
+Concrete ML's documentation
 ==================================
 
 

@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+
 # import sys
 
 # sys.path.insert(0, os.path.abspath("."))
@@ -18,10 +19,10 @@ import os
 
 # -- Project information -----------------------------------------------------
 
-project = "ConcreteML"
+project = "Concrete ML"
 copyright = "2022, Zama"
 author = "Zama"
-description = "Zama ConcreteML"
+description = "Zama Concrete ML"
 root_url = os.environ.get("DOC_ROOT_URL", "/concrete-ml")
 root_url = root_url if root_url.endswith("/") else root_url + "/"
 
