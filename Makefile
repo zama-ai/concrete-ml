@@ -134,9 +134,10 @@ pcc_internal: $(PCC_DEPS)
 # main seed
 # --capture=tee-sys is to make that, in case of crash, we can search for "Forcing seed to" in stdout
 # to try to reproduce
+# --durations=10 is to show the 10 slowest tests
 .PHONY: pytest # Run pytest
 pytest:
-	poetry run pytest -svv \
+	poetry run pytest --durations=10 -svv \
 	--capture=tee-sys \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	-n $$(./script/make_utils/ncpus.sh) \
@@ -148,7 +149,7 @@ pytest:
 
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
 pytest_one:
-	poetry run pytest -svv \
+	poetry run pytest --durations=10 -svv \
 	-n $$(./script/make_utils/ncpus.sh) \
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
@@ -156,6 +157,8 @@ pytest_one:
 	"$${TEST}"
 
 .PHONY: pytest_one_single_cpu # Run pytest on a single file or directory (TEST) with a single CPU with RANDOMLY_SEED seed
+# Don't set --durations=10, because it is not reproducible and we use this target for determinism
+# checks
 pytest_one_single_cpu:
 	poetry run pytest -svv \
 	--randomly-dont-reorganize \
