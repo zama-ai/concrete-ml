@@ -243,7 +243,6 @@ jobs:
       - name: Determinism
         id: de
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
-        # pcc launches an internal target with proper flags
         run: |
           make determinism
 
@@ -265,11 +264,12 @@ jobs:
           --to-ref-must-have-tag \
           --ancestor-must-have-tag > "${CHANGELOG_FILE}"
 
-      - name: Conformance status
+      - name: Stop if previous steps failed
         id: conformance
         if: ${{ always() && !cancelled() }}
         env:
-          CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' }}
+          # Add anything here you want to stop the build, before pytest
+          CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' && steps.de.outcome == 'success' }}
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
             echo "Conformance failed, check logs"
