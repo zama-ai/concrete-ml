@@ -31,3 +31,12 @@ Torch
    FullyConnectedNeuralNetwork.ipynb
    ConvolutionalNeuralNetwork.md
    NeuralNetworkRegressor.md
+
+Comparison of Classifiers
+**************************
+
+.. toctree::
+   :maxdepth: 1
+
+   ClassifierComparison.ipynb
+

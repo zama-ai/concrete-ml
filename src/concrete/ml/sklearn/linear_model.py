@@ -315,16 +315,35 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
         keep_following_outputs_discard_others(onnx_model, [output_to_follow])
         return super().clean_graph(onnx_model)
 
+    # pylint: disable=arguments-differ
+    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
+    def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        y_preds = super().predict(X, execute_in_fhe)
+        return y_preds
+
+    # pylint: enable=arguments-differ
+
     # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
     # use clean_graph and predict from BaseLinearClassifierMixin
     # but difficulties because we need to make python understand that
     # LogisticRegression.clean_graph must be BaseLinearClassifierMixin.clean_graph
     # and not SklearnLinearModelMixin.clean_graph
+    # pylint: disable=arguments-differ
+    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        y_preds = self.decision_function(X, execute_in_fhe)
+        return y_preds
+
+    # pylint: enable=arguments-differ
+
+    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
+    # use clean_graph and predict from BaseLinearClassifierMixin
+    # but difficulties because we need to make python understand that
+    # LogisticRegression.clean_graph must be BaseLinearClassifierMixin.clean_graph
+    # and not SklearnLinearModelMixin.clean_graph
+    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        y_preds = super().predict(X, execute_in_fhe)
-        if y_preds.shape[1] == 1:
-            # Sigmoid already applied in the graph
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        y_preds = self.predict_proba(X, execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
         return y_preds
 
