@@ -69,6 +69,8 @@ def test_seed_sklearn(n_classes, input_dim, default_compilation_configuration):
         )
     except RuntimeError as err:
         print(err)
+    except AssertionError as err:
+        print(err)
 
 
 @pytest.mark.parametrize(
@@ -140,4 +142,6 @@ def test_seed_torch(
             x_train, show_mlir=True, compilation_configuration=default_compilation_configuration
         )
     except RuntimeError as err:
+        print(err)
+    except AssertionError as err:
         print(err)
