@@ -4,4 +4,8 @@ How To
 .. toctree::
    :maxdepth: 1
 
-   howto.md
+   project_setup.md
+   docker.md
+   documenting.md
+   releasing.md
+   contributing.md

@@ -8,3 +8,4 @@ How To
    simple_example_torch.md
    scikit-learn-pipeline.md
    reduce_needed_precision.md
+   debug_support_submit_issues.md
