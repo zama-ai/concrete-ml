@@ -278,7 +278,12 @@ finalize_nb:
 pytest_nb:
 	NOTEBOOKS=$$(find docs -name "*.ipynb" | grep -v _build | grep -v .ipynb_checkpoints || true) && \
 	if [[ "$${NOTEBOOKS}" != "" ]]; then \
-		echo "$${NOTEBOOKS}" | xargs poetry run pytest -Wignore --nbmake; \
+		echo "$${NOTEBOOKS}" | xargs poetry run pytest -svv \
+		--capture=tee-sys \
+		-n $$(./script/make_utils/ncpus.sh) \
+		--randomly-dont-reorganize \
+		--count=$(COUNT) \
+		--randomly-dont-reset-seed -Wignore --nbmake; \
 	else \
 		echo "No notebook found"; \
 	fi
@@ -309,8 +314,12 @@ upgrade_py_deps:
 pytest_codeblocks:
 	@# grep -v "^\./\." is to avoid files in .hidden_directories
 	find . -type f -name "*.md" | grep -v "^\./\." | \
-	xargs poetry run pytest --codeblocks -svv -n $$(./script/make_utils/ncpus.sh) \
-	--randomly-dont-reorganize
+	xargs poetry run pytest --codeblocks -svv \
+	--capture=tee-sys \
+	-n $$(./script/make_utils/ncpus.sh) \
+	--randomly-dont-reorganize \
+	--count=$(COUNT) \
+	--randomly-dont-reset-seed
 
 # From https://stackoverflow.com/a/63523300 for the find command
 .PHONY: shell_lint # Lint all bash scripts
