@@ -46,8 +46,10 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier):
             verbosity (int): Verbosity level. Defaults to 0.
             **kwargs: args for super().__init__
         """
+        # base_score != 0.5 or None seems to not pass our tests (see #474)
         assert_true(
-            base_score == 0.5, "base_score != 0.5 is not yet supported. Please use base_score=0.5"
+            base_score in [0.5, None],
+            f"Currently, only 0.5 or None are supported for base_score. Got {base_score}",
         )
         super().__init__(
             max_depth=max_depth,
@@ -56,6 +58,7 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier):
             objective=objective,
             use_label_encoder=use_label_encoder,
             verbosity=verbosity,
+            base_score=base_score,
             **kwargs,
         )
         self.init_args = {
@@ -65,6 +68,7 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier):
             "objective": objective,
             "use_label_encoder": use_label_encoder,
             "verbosity": verbosity,
+            "base_score": base_score,
             **kwargs,
         }
         self.n_bits = n_bits

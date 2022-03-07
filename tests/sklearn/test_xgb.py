@@ -22,6 +22,7 @@ PARAMS_XGB = {
     "reg_lambda": [0, 0.1, 0.5],
     "scale_pos_weight": [0.5, 0.9, 1.0],
     "importance_type": ["weight", "gain"],
+    "base_score": [0.5, None],
 }
 
 
