@@ -204,11 +204,6 @@ class PostTrainingAffineQuantization:
             (graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output),
             self.quant_ops_dict,
         )
-        assert_true(
-            len(calibration_data) == 1,
-            f"For now {QuantizedModule.__class__.__name__} does not support multiple inputs",
-        )
-        calibration_data_unique_input = calibration_data[0]
-        q_input = QuantizedArray(self.n_bits, calibration_data_unique_input)
-        quantized_module.set_inputs_quantization_parameters(q_input)
+        q_input = (QuantizedArray(self.n_bits, val) for val in calibration_data)
+        quantized_module.set_inputs_quantization_parameters(*q_input)
         return quantized_module

@@ -34,12 +34,6 @@ class QuantizedModule:
         self.ordered_module_output_names = tuple(ordered_module_output_names)
 
         assert_true(
-            (num_inputs := len(self.ordered_module_input_names)) == 1,
-            f"{QuantizedModule.__class__.__name__} only supports a single input for now, "
-            f"got {num_inputs}",
-        )
-
-        assert_true(
             (num_outputs := len(self.ordered_module_output_names)) == 1,
             f"{QuantizedModule.__class__.__name__} only supports a single output for now, "
             f"got {num_outputs}",
@@ -212,7 +206,7 @@ class QuantizedModule:
 
     def compile(
         self,
-        q_input: QuantizedArray,
+        q_inputs: Union[Tuple[QuantizedArray, ...], QuantizedArray],
         compilation_configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
@@ -221,7 +215,8 @@ class QuantizedModule:
         """Compile the forward function of the module.
 
         Args:
-            q_input (QuantizedArray): Needed for tracing and building the boundaries.
+            q_inputs (Union[Tuple[QuantizedArray, ...], QuantizedArray]): Needed for tracing and
+                building the boundaries.
             compilation_configuration (Optional[CompilationConfiguration]): Configuration object
                                                                             to use during
                                                                             compilation
@@ -237,7 +232,14 @@ class QuantizedModule:
             FHECircuit: the compiled FHECircuit.
         """
 
-        self.q_inputs[0] = copy.deepcopy(q_input)
+        if not isinstance(q_inputs, tuple):
+            q_inputs = (q_inputs,)
+        else:
+            ref_len = q_inputs[0].values.shape[0]
+            assert_true(
+                all(q_input.values.shape[0] == ref_len for q_input in q_inputs),
+                "Mismatched dataset lengths",
+            )
 
         # concrete-numpy does not support variable *args-syle functions, so compile a proxy function
         # dynamically with a suitable number of arguments
@@ -253,8 +255,20 @@ class QuantizedModule:
             compilation_configuration,
             compilation_artifacts,
         )
+
+        def get_inputset_iterable():
+            if len(self.q_inputs) > 1:
+                return (
+                    tuple(numpy.expand_dims(q_input.qvalues[idx], 0) for q_input in q_inputs)
+                    for idx in range(ref_len)
+                )
+            return (numpy.expand_dims(arr, 0) for arr in q_inputs[0].qvalues)
+
+        inputset = get_inputset_iterable()
+
         self.forward_fhe = compiler.compile_on_inputset(
-            (numpy.expand_dims(arr, 0) for arr in self.q_inputs[0].qvalues), show_mlir
+            inputset,
+            show_mlir,
         )
 
         self._is_compiled = True

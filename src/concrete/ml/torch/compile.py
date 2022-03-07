@@ -1,6 +1,6 @@
 """torch compilation function."""
 
-from typing import Iterable, Optional, Union
+from typing import Optional, Tuple, Union
 
 import numpy
 import torch
@@ -9,17 +9,17 @@ from concrete.common.compilation import CompilationArtifacts, CompilationConfigu
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray, QuantizedModule
 from . import NumpyModule
 
-TorchDataset = Iterable[torch.Tensor]
-NPDataset = Iterable[numpy.ndarray]
+Tensor = Union[torch.Tensor, numpy.ndarray]
+Dataset = Union[Tensor, Tuple[Tensor, ...]]
 
 
 def convert_torch_tensor_or_numpy_array_to_numpy_array(
-    torch_tensor_or_numpy_array: Union[torch.Tensor, numpy.ndarray]
+    torch_tensor_or_numpy_array: Tensor,
 ) -> numpy.ndarray:
     """Convert a torch tensor or a numpy array to a numpy array.
 
     Args:
-        torch_tensor_or_numpy_array (Union[torch.Tensor, numpy.ndarray]): the value that is either
+        torch_tensor_or_numpy_array (Tensor): the value that is either
             a torch tensor or a numpy array.
 
     Returns:
@@ -34,7 +34,7 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
 
 def compile_torch_model(
     torch_model: torch.nn.Module,
-    torch_inputset: Union[TorchDataset, NPDataset],
+    torch_inputset: Dataset,
     compilation_configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
@@ -47,7 +47,7 @@ def compile_torch_model(
 
     Args:
         torch_model (torch.nn.Module): the model to quantize,
-        torch_inputset (Union[TorchDataset, NPDataset]): the inputset, can contain either torch
+        torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
         compilation_configuration (CompilationConfiguration): Configuration object to use
             during compilation
@@ -64,23 +64,25 @@ def compile_torch_model(
         QuantizedModule: The resulting compiled QuantizedModule.
     """
 
-    # Torch input to numpy
-    numpy_inputset_as_single_array = numpy.concatenate(
-        tuple(
-            numpy.expand_dims(convert_torch_tensor_or_numpy_array_to_numpy_array(input_), 0)
-            for input_ in torch_inputset
-        )
+    inputset_as_numpy_tuple = (
+        tuple(convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in torch_inputset)
+        if isinstance(torch_inputset, tuple)
+        else (convert_torch_tensor_or_numpy_array_to_numpy_array(torch_inputset),)
+    )
+
+    dummy_input_for_tracing = tuple(
+        torch.from_numpy(val).float() for val in inputset_as_numpy_tuple
     )
 
     # Create corresponding numpy model
-    numpy_model = NumpyModule(torch_model, torch.from_numpy(numpy_inputset_as_single_array).float())
+    numpy_model = NumpyModule(torch_model, dummy_input_for_tracing)
 
     # Quantize with post-training static method, to have a model with integer weights
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
-    quantized_module = post_training_quant.quantize_module(numpy_inputset_as_single_array)
+    quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
     # Quantize input
-    quantized_numpy_inputset = QuantizedArray(n_bits, numpy_inputset_as_single_array)
+    quantized_numpy_inputset = tuple(QuantizedArray(n_bits, val) for val in inputset_as_numpy_tuple)
 
     quantized_module.compile(
         quantized_numpy_inputset,

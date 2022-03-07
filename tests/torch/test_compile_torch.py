@@ -1,5 +1,6 @@
 """Tests for the torch to numpy module."""
 from functools import partial
+from inspect import signature
 
 import numpy
 import pytest
@@ -35,6 +36,18 @@ class FC(nn.Module):
         out = self.fc2(out)
 
         return out
+
+
+class MultiInputNN(nn.Module):
+    """Torch model to test multiple inputs forward."""
+
+    def __init__(self, input_output, activation_function):  # pylint: disable=unused-argument
+        super().__init__()
+        self.act = activation_function()
+
+    def forward(self, x, y):
+        """Forward pass."""
+        return self.act(x + y)
 
 
 class NetWithLoops(nn.Module):
@@ -98,6 +111,7 @@ class BranchingModule(nn.Module):
         pytest.param(FC),
         pytest.param(partial(NetWithLoops, n_fc_layers=2)),
         pytest.param(BranchingModule),
+        pytest.param(MultiInputNN),
     ],
 )
 @pytest.mark.parametrize(
@@ -122,8 +136,17 @@ def test_compile_torch(
     # Define the torch model
     torch_fc_model = model(input_output_feature, activation_function=activation_function)
 
+    num_inputs = len(signature(torch_fc_model.forward).parameters)
+
     # Create random input
-    inputset = numpy.random.uniform(-100, 100, size=(n_examples, input_output_feature))
+    inputset = (
+        tuple(
+            numpy.random.uniform(-100, 100, size=(n_examples, input_output_feature))
+            for _ in range(num_inputs)
+        )
+        if num_inputs > 1
+        else numpy.random.uniform(-100, 100, size=(n_examples, input_output_feature))
+    )
 
     # Compile
     quantized_numpy_module = compile_torch_model(
@@ -150,10 +173,14 @@ def test_compile_torch(
 
     # Create test data from the same distribution and quantize using
     # learned quantization parameters during compilation
-    x_test = numpy.random.uniform(-100, 100, size=(1, input_output_feature))
-    qtest = quantized_numpy_module.quantize_input(x_test)
+    x_test = tuple(
+        numpy.random.uniform(-100, 100, size=(1, input_output_feature)) for _ in range(num_inputs)
+    )
+    qtest = quantized_numpy_module.quantize_input(*x_test)
+    if not isinstance(qtest, tuple):
+        qtest = (qtest,)
     assert quantized_numpy_module.is_compiled
-    quantized_numpy_module.forward_fhe.run(qtest)
+    quantized_numpy_module.forward_fhe.run(*qtest)
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
 
@@ -191,6 +218,8 @@ def test_compile_torch(
     assert max_bit_width > ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
 
     # Check the forward works with the high bitwidth
-    qtest = quantized_numpy_module.quantize_input(x_test)
+    qtest = quantized_numpy_module.quantize_input(*x_test)
+    if not isinstance(qtest, tuple):
+        qtest = (qtest,)
     assert quantized_numpy_module.is_compiled
-    quantized_numpy_module.forward_fhe.run(qtest)
+    quantized_numpy_module.forward_fhe.run(*qtest)
