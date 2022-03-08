@@ -29,7 +29,11 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 
 
 def tree_to_numpy(
-    model: onnx.ModelProto, x: numpy.ndarray, framework: str, output_n_bits: Optional[int] = 7
+    model: onnx.ModelProto,
+    x: numpy.ndarray,
+    framework: str,
+    output_n_bits: Optional[int] = 7,
+    use_workaround_for_3d_matmul: bool = False,
 ) -> Tuple[Callable, QuantizedArray]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
@@ -39,6 +43,7 @@ def tree_to_numpy(
         framework (str): The framework from which the onnx_model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output.
+        use_workaround_for_3d_matmul (bool): Whether to use the workaround for 3D matmul.
 
     Returns:
         Union[Callable, QuantizedArray]: A tuple with a function that takes a numpy array and
@@ -101,7 +106,7 @@ def tree_to_numpy(
     # TODO remove Transpose and Reshape from the list when (#292, #295) are done
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast"]
     # Remove with previous TODO.
-    if framework == "sklearn":
+    if framework == "sklearn" and use_workaround_for_3d_matmul:
         op_type_to_remove.append("Reshape")
     replace_uncessary_nodes_by_identity(onnx_model, op_type_to_remove)
 
@@ -110,7 +115,7 @@ def tree_to_numpy(
         # Reshape initializer with shape (n_tree, hidden_size, n_features)
         # to (hidden_size, n_features). Concrete Numpy only accepts 2d matmul
         # TODO remove when 3d matmul is allowed (#293)
-        if framework == "sklearn":
+        if framework == "sklearn" and use_workaround_for_3d_matmul:
             if "weight_" in initializer.name and len(initializer.dims) == 3:
                 onnx_model.graph.initializer[i].dims.pop(0)
 
@@ -145,7 +150,7 @@ def tree_to_numpy(
         new_initializer = numpy_helper.from_array(init_tensor.astype(int), initializer.name)
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
 
-    if framework == "sklearn":
+    if framework == "sklearn" and use_workaround_for_3d_matmul:
         # Since the transpose is currently not implemented in concrete numpy
         # the input is transposed in clear. We need to update the Gemm
         # where the input is transposed.

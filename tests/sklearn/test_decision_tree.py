@@ -11,7 +11,12 @@ from concrete.ml.sklearn import DecisionTreeClassifier
     [
         pytest.param(lambda: load_breast_cancer(return_X_y=True), id="breast_cancer"),
         pytest.param(
-            lambda: make_classification(n_samples=100, n_features=10, n_classes=2, random_state=42),
+            lambda: make_classification(
+                n_samples=100,
+                n_features=10,
+                n_classes=2,
+                random_state=numpy.random.randint(0, 2**15),
+            ),
             id="make_classification",
         ),
     ],

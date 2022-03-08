@@ -249,17 +249,24 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
 
         # Tree inference to numpy
         self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self, qX, "sklearn", output_n_bits=self.n_bits
+            self, qX, "sklearn", output_n_bits=self.n_bits, use_workaround_for_3d_matmul=True
         )
 
     def fit_benchmark(
-        self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
+        self,
+        X: numpy.ndarray,
+        y: numpy.ndarray,
+        *args,
+        random_state: Optional[int] = None,
+        **kwargs,
     ) -> Tuple[DecisionTreeClassifier, sklearn.tree.DecisionTreeClassifier]:
         """Fit the sklearn DecisionTreeClassifier and the FHE DecisionTreeClassifier.
 
         Args:
             X (numpy.ndarray): The input data.
             y (numpy.ndarray): The target data.
+            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
+                The random state. Defaults to None.
             *args: args for super().fit
             **kwargs: kwargs for super().fit
 
@@ -267,11 +274,21 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             Tuple[DecisionTreeClassifier, sklearn.tree.DecisionTreeClassifier]:
                                                 The FHE and sklearn DecisionTreeClassifier.
         """
+        # Make sure the random_state is set or both algorithms will diverge
+        # due to randomness in the training.
+        if random_state is not None:
+            self.init_args["random_state"] = random_state
+        elif self.random_state is not None:
+            self.init_args["random_state"] = self.random_state
+        else:
+            self.init_args["random_state"] = numpy.random.randint(0, 2**15)
+
         # Train the sklearn model without X quantized
         sklearn_model = sklearn.tree.DecisionTreeClassifier(**self.init_args)
         sklearn_model.fit(X, y, *args, **kwargs)
 
         # Train the FHE model
+        super().__init__(**self.init_args)
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 

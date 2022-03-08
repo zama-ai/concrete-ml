@@ -15,6 +15,7 @@ from concrete.ml.sklearn import (
     LinearSVC,
     LogisticRegression,
     NeuralNetClassifier,
+    RandomForestClassifier,
     XGBClassifier,
 )
 
@@ -40,6 +41,7 @@ datasets = [
 dataset_versions = {"wilt": 2}
 
 classifiers = [
+    RandomForestClassifier,
     XGBClassifier,
     DecisionTreeClassifier,
     NeuralNetClassifier,
@@ -48,13 +50,19 @@ classifiers = [
 ]
 
 benchmark_params = {
-    # Benchmark different depths of the quantized decision tree
+    RandomForestClassifier: [
+        {"max_depth": max_detph, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_detph in [15]
+        for n_estimators in [100]
+        for n_bits in [7, 16]
+    ],
     XGBClassifier: [
         {"max_depth": max_detph, "n_estimators": n_estimators, "n_bits": n_bits}
         for max_detph in [7]
         for n_estimators in [50]
         for n_bits in [7, 16]
     ],
+    # Benchmark different depths of the quantized decision tree
     DecisionTreeClassifier: [{"max_depth": 3}, {"max_depth": None}],
     LinearSVC: [{"n_bits": 2}],
     LogisticRegression: [{"n_bits": 2}],
@@ -149,8 +157,8 @@ def should_test_config_in_fhe(classifier, params, n_features):
         if params["n_bits"] == 3 and n_features <= 2:
             return True
 
-    if classifier is XGBClassifier:
-        # FIXME XGBoost is not yet supported in FHE (see #436)
+    if classifier is XGBClassifier or classifier is RandomForestClassifier:
+        # FIXME XGBoost and RandomForestClassifier are not yet supported in FHE (see #436)
         return False
 
     raise ValueError(f"Classifier {str(classifier)} configurations not yet setup for FHE")
@@ -314,6 +322,11 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
     elif classifier is LinearSVC:
         config_str = f"_{config['n_bits']}"
     elif classifier is XGBClassifier:
+        if config["max_depth"] is not None:
+            config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
+        else:
+            config_str = f"_{config['n_estimators']}_{config['n_bits']}"
+    elif classifier is RandomForestClassifier:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
         else:

@@ -4,25 +4,11 @@ import numpy
 import pytest
 from sklearn.datasets import load_breast_cancer, make_classification
 
-from concrete.ml.sklearn import XGBClassifier
+from concrete.ml.sklearn import RandomForestClassifier
 
-PARAMS_XGB = {
-    "max_depth": [3, 4, 5, 10],
-    "learning_rate": [1, 0.5, 0.1],
-    "n_estimators": [50, 100, 1000],
-    "tree_method": ["auto", "exact", "approx"],
-    "gamma": [0, 0.1, 0.5],
-    "min_child_weight": [1, 5, 10],
-    "max_delta_step": [0, 0.5, 0.7],
-    "subsample": [0.5, 0.9, 1.0],
-    "colsample_bytree": [0.5, 0.9, 1.0],
-    "colsample_bylevel": [0.5, 0.9, 1.0],
-    "colsample_bynode": [0.5, 0.9, 1.0],
-    "reg_alpha": [0, 0.1, 0.5],
-    "reg_lambda": [0, 0.1, 0.5],
-    "scale_pos_weight": [0.5, 0.9, 1.0],
-    "importance_type": ["weight", "gain"],
-    "base_score": [0.5, None],
+PARAMS_RF = {
+    "max_depth": [15, 20, 30],
+    "n_estimators": [50, 100, 200],
 }
 
 
@@ -30,11 +16,11 @@ PARAMS_XGB = {
     "hyperparameters",
     [
         pytest.param({key: value}, id=f"{key}={value}")
-        for key, values in PARAMS_XGB.items()
+        for key, values in PARAMS_RF.items()
         for value in values  # type: ignore
     ],
 )
-def test_xgb_hyperparameters(hyperparameters, check_r2_score):
+def test_rf_hyperparameters(hyperparameters, check_r2_score):
     """Test that the hyperparameters are valid."""
     x, y = make_classification(
         n_samples=100,
@@ -43,7 +29,7 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score):
         n_classes=2,
         random_state=numpy.random.randint(0, 2**15),
     )
-    model = XGBClassifier(
+    model = RandomForestClassifier(
         **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
@@ -67,14 +53,14 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score):
         ),
     ],
 )
-def test_xgb_classifier(load_data, check_r2_score):
-    """Tests the xgboost."""
+def test_rf_classifier(load_data, check_r2_score):
+    """Tests the random forest."""
 
     # Get the dataset
     x, y = load_data()
 
-    model = XGBClassifier(
-        max_depth=7,
+    model = RandomForestClassifier(
+        max_depth=15,
         n_estimators=100,
         n_bits=7,
         random_state=numpy.random.randint(0, 2**15),
@@ -85,7 +71,7 @@ def test_xgb_classifier(load_data, check_r2_score):
     # Check that the two models are similar.
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
-    # FIXME No FHE yet with XGBoost (see #436)
+    # FIXME No FHE yet with RandomForest (see #436)
     # # Test compilation
     # model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
 

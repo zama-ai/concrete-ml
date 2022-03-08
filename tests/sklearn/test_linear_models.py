@@ -23,18 +23,25 @@ def get_datasets_regression(reg_model_orig):
     ans = [
         pytest.param(
             reg_model,
-            lambda: make_regression(n_samples=200, n_features=10, random_state=42),
+            lambda: make_regression(
+                n_samples=200, n_features=10, random_state=numpy.random.randint(0, 2**15)
+            ),
             id=f"make_regression_10_features_{reg_model_string}",
         ),
         pytest.param(
             reg_model,
-            lambda: make_regression(n_samples=200, n_features=10, noise=2, random_state=42),
+            lambda: make_regression(
+                n_samples=200, n_features=10, noise=2, random_state=numpy.random.randint(0, 2**15)
+            ),
             id=f"make_regression_features_10_noise_2_{reg_model_string}",
         ),
         pytest.param(
             reg_model,
             lambda: make_regression(
-                n_samples=200, n_features=14, n_informative=14, random_state=42
+                n_samples=200,
+                n_features=14,
+                n_informative=14,
+                random_state=numpy.random.randint(0, 2**15),
             ),
             id=f"make_regression_features_14_informative_14_{reg_model_string}",
         ),
@@ -46,7 +53,11 @@ def get_datasets_regression(reg_model_orig):
             pytest.param(
                 reg_model,
                 lambda: make_regression(
-                    n_samples=200, n_features=14, n_targets=2, n_informative=14, random_state=42
+                    n_samples=200,
+                    n_features=14,
+                    n_targets=2,
+                    n_informative=14,
+                    random_state=numpy.random.randint(0, 2**15),
                 ),
                 id=f"make_regression_features_14_informative_14_targets_2_{reg_model_string}",
             ),
@@ -62,7 +73,8 @@ def get_datasets_regression(reg_model_orig):
     #         reg_model,
     #         fit_intercept=False,
     #     ),
-    #     lambda: make_regression(n_samples=200, n_features=10, random_state=42),
+    #     lambda: make_regression(n_samples=200, n_features=10,
+    #       random_state=numpy.random.randint(0, 2**15)),
     #     id=f"make_regression_fit_intercept_false_{reg_model_string}",
     # ),
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
@@ -71,7 +83,8 @@ def get_datasets_regression(reg_model_orig):
     #         reg_model,
     #         fit_intercept=True,
     #     ),
-    #     lambda: make_regression(n_samples=200, n_features=10, random_state=42),
+    #     lambda: make_regression(n_samples=200, n_features=10,
+    #       random_state=numpy.random.randint(0, 2**15)),
     #     id=f"make_regression_fit_intercept_true_{reg_model_string}",
     # ),
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
@@ -84,7 +97,7 @@ def get_datasets_regression(reg_model_orig):
     #     lambda: make_regression(
     #         n_samples=200,
     #         n_features=10,
-    #         random_state=42,
+    #         random_state=numpy.random.randint(0, 2**15),
     #     ),
     #     id=f"make_regression_fit_intercept_true_intercept_scaling_1000_{reg_model_string}",
     # ),
