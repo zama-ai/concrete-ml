@@ -184,16 +184,15 @@ def autoseeding_of_everything(record_property, request):
     # Python
     random.seed(seed)
     print("\nForcing seed to random.seed to ", seed)
+    print(f"\nRelaunch the tests with --forcing_random_seed {seed} to reproduce")
 
     # Numpy
     seed += 1
     numpy.random.seed(seed % 2**32)
-    print("Forcing seed to numpy.random.seed to ", seed)
 
     # Seed torch
     seed += 1
     function_to_seed_torch(seed)
-    print("Forcing seed to function_to_seed_torch to ", seed)
     return {"main seed": main_seed}
 
 
