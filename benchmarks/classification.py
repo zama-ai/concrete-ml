@@ -3,9 +3,8 @@ import time
 
 import numpy as np
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION
+from common import BENCHMARK_CONFIGURATION, run_and_report_classification_metrics
 from sklearn.datasets import fetch_openml
-from sklearn.metrics import accuracy_score, average_precision_score, f1_score, matthews_corrcoef
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
@@ -165,35 +164,6 @@ def should_test_config_in_fhe(classifier, params, n_features):
     # pylint: enable=too-many-return-statements
 
 
-def run_and_report_metric(y_gt, y_pred, metric, metric_id, metric_label):
-    """Run a single metric and report results to progress tracker"""
-    value = metric(y_gt, y_pred) if y_gt.size > 0 else 0
-    progress.measure(
-        id=metric_id,
-        label=metric_label,
-        value=value,
-    )
-
-
-def run_and_report_all_metrics(y_gt, y_pred, metric_id_prefix, metric_label_prefix):
-    """Run several metrics and report results to progress tracker with computed name and id"""
-
-    metric_info = [
-        (accuracy_score, "acc", "Accuracy"),
-        (f1_score, "f1", "F1Score"),
-        (matthews_corrcoef, "mcc", "MCC"),
-        (average_precision_score, "ap", "AP"),
-    ]
-    for (metric, metric_id, metric_label) in metric_info:
-        run_and_report_metric(
-            y_gt,
-            y_pred,
-            metric,
-            "_".join((metric_id_prefix, metric_id)),
-            " ".join((metric_label_prefix, metric_label)),
-        )
-
-
 def train_and_test_on_dataset(classifier, dataset, config):
     """
     Train and test a classifier on a dataset
@@ -262,11 +232,11 @@ def train_and_test_on_dataset(classifier, dataset, config):
     # imbalanced, we are not interested in the best metric for the case, but we want to measure
     # the difference in accuracy between the sklearn classifier and ours
     y_pred_sklearn = sklearn_classifier.predict(x_test)
-    run_and_report_all_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
+    run_and_report_classification_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
 
     # Now predict with our classifier and report its accuracy
     y_pred_q = concrete_classifier.predict(x_test, execute_in_fhe=False)
-    run_and_report_all_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
+    run_and_report_classification_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
     n_features = x_train.shape[1] if x_train.ndim == 2 else 1
 
@@ -289,9 +259,9 @@ def train_and_test_on_dataset(classifier, dataset, config):
         y_pred_c = concrete_classifier.predict(x_test, execute_in_fhe=True)
         duration = time.time() - t_start
 
-        run_and_report_all_metrics(y_test, y_pred_c, "fhe", "FHE")
+        run_and_report_classification_metrics(y_test, y_pred_c, "fhe", "FHE")
 
-        run_and_report_all_metrics(
+        run_and_report_classification_metrics(
             y_test, y_pred_q[0:N_MAX_RUN_FHE], "quant-clear-fhe-set", "Quantized Clear on FHE set"
         )
 

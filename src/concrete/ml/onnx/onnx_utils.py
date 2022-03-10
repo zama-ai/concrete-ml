@@ -68,6 +68,7 @@ from .ops_impl import (
     numpy_tan,
     numpy_tanh,
     numpy_thresholdedrelu,
+    torch_conv,
 )
 
 ATTR_TYPES = dict(onnx.AttributeProto.AttributeType.items())
@@ -77,7 +78,7 @@ ATTR_GETTERS = {
     ATTR_TYPES["STRING"]: lambda attr: attr.s,
     ATTR_TYPES["TENSOR"]: lambda attr: numpy_helper.to_array(attr.t),
     ATTR_TYPES["FLOATS"]: lambda attr: attr.floats,
-    ATTR_TYPES["INTS"]: lambda attr: attr.ints,
+    ATTR_TYPES["INTS"]: lambda attr: tuple(attr.ints),
     ATTR_TYPES["STRINGS"]: lambda attr: attr.strings,
     ATTR_TYPES["TENSORS"]: lambda attr: tuple(numpy_helper.to_array(val) for val in attr.tensors),
 }
@@ -125,6 +126,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Less": numpy_less,
+    "Conv": torch_conv,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

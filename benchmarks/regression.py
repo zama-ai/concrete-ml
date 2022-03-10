@@ -4,9 +4,8 @@ from functools import partial
 
 import numpy as np
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION
+from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics
 from sklearn.datasets import fetch_openml, make_regression
-from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
@@ -210,31 +209,6 @@ def should_test_config_in_fhe(regressor, config, n_features):
     raise ValueError(f"Regressor {str(regressor)} configurations not yet setup for FHE")
 
 
-# pylint: enable=too-many-return-statements
-def run_and_report_metric(y_gt, y_pred, metric, metric_id, metric_label):
-    """Run a single metric and report results to progress tracker"""
-    value = metric(y_gt, y_pred) if y_gt.size > 0 else 0
-    progress.measure(
-        id=metric_id,
-        label=metric_label,
-        value=value,
-    )
-
-
-def run_and_report_all_metrics(y_gt, y_pred, metric_id_prefix, metric_label_prefix):
-    """Run several metrics and report results to progress tracker with computed name and id"""
-
-    metric_info = [(r2_score, "r2_score", "R2Score"), (mean_squared_error, "MSE", "MSE")]
-    for (metric, metric_id, metric_label) in metric_info:
-        run_and_report_metric(
-            y_gt,
-            y_pred,
-            metric,
-            "_".join((metric_id_prefix, metric_id)),
-            " ".join((metric_label_prefix, metric_label)),
-        )
-
-
 def benchmark_generator():
     # Iterate over the dataset names and the dataset generator functions
     for dataset_str, dataset_fun in datasets.items():
@@ -310,11 +284,11 @@ def main(regressor, dataset_str, dataset_fun, config):
 
     # Predict with the sklearn regressor and compute goodness of fit
     y_pred_sklearn = sklearn_regressor.predict(x_test)
-    run_and_report_all_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
+    run_and_report_regression_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
 
     # Now predict with our regressor and report its goodness of fit
     y_pred_q = concrete_regressor.predict(x_test, execute_in_fhe=False)
-    run_and_report_all_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
+    run_and_report_regression_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
     n_features = X.shape[1] if X.ndim == 2 else 1
 
@@ -337,9 +311,9 @@ def main(regressor, dataset_str, dataset_fun, config):
         y_pred_c = concrete_regressor.predict(x_test, execute_in_fhe=True)
         duration = time.time() - t_start
 
-        run_and_report_all_metrics(y_test, y_pred_c, "fhe", "FHE")
+        run_and_report_regression_metrics(y_test, y_pred_c, "fhe", "FHE")
 
-        run_and_report_all_metrics(
+        run_and_report_regression_metrics(
             y_test, y_pred_q[0:N_MAX_RUN_FHE], "quant-clear-fhe-set", "Quantized Clear on FHE set"
         )
 

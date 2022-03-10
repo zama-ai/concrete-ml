@@ -3,6 +3,7 @@
 from typing import Optional, Tuple, Union
 
 import numpy
+import torch
 from scipy import special
 
 from ..common.debugging import assert_true
@@ -672,18 +673,23 @@ def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (x,)
 
 
-def numpy_reshape(x: numpy.ndarray, newshape: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
-    """Compute reshqpe in numpy according to ONNX spec.
+def numpy_reshape(
+    x: numpy.ndarray, newshape: numpy.ndarray, /, *, allowzero=0
+) -> Tuple[numpy.ndarray]:
+    """Compute reshape in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Reshape-13
 
     Args:
         x (numpy.ndarray): Input tensor
         newshape (numpy.ndarray): New shape
+        allowzero (int): ONNX legacy parameter, by default 0 -> behave like numpy reshape
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
+    assert_true(allowzero == 0, "Concrete ML currently only accepts numpy style reshape in ONNX")
+
     return (numpy.reshape(x, newshape),)
 
 
@@ -700,3 +706,66 @@ def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
     return (numpy.less(x, y),)
+
+
+def torch_conv(
+    x: numpy.ndarray,
+    w: numpy.ndarray,
+    b: numpy.ndarray,
+    /,
+    *,
+    dilations: Tuple[int, ...],
+    group: int = 1,
+    kernel_shape: Tuple[int, ...],
+    pads: Tuple[int, ...],
+    strides: Tuple[int, ...],
+):
+    """Compute N-D convolution using Torch.
+
+    Currently supports 2d convolution with torch semantics. This function is also ONNX compatible.
+
+    Args:
+        x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
+        w (numpy.ndarray): weights tensor. Shape is (O x I x Kh x Kw) for 2d
+        b (numpy.ndarray, Optional): bias tensor, Shape is (O,)
+        dilations (Tuple[int]): dilation of the kernel, default 1 on all dimensions.
+        group (int): number of convolution groups, default 1
+        kernel_shape (Tuple[int]): shape of the kernel. Should have 2 elements for 2d conv
+        pads (Tuple[int]): padding in ONNX format (begin, end) on each axis
+        strides (Tuple[int]): stride of the convolution on each axis
+
+    Returns:
+        res (numpy.ndarray): a tensor of size (N x OutChannels x OutHeight x OutWidth).
+           See https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+
+    Raises:
+        AssertionError: if the convolution arguments are wrong
+    """
+
+    # Convert the inputs to tensors to compute conv using torch
+    tx = torch.Tensor(x)
+    tw = torch.Tensor(w)
+    tb = torch.Tensor(b.squeeze()) if b is not None else None
+
+    assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
+    assert_true(
+        bool(numpy.all(numpy.asarray(dilations) == 1)),
+        "The convolution operator in Concrete Numpy does not suppport dilation",
+    )
+
+    # For mypy
+    assert len(pads) == 4
+
+    assert_true(group == 1, "The convolution operator in Concrete Numpy does not support groups")
+    assert_true(
+        pads[0] == pads[1] and pads[2] == pads[3],
+        "The convolution operator in Concrete ML only supports symmetric padding",
+    )
+
+    # Extract the 'begin' pads for all dimensions. Begin padding should be the same as the end pad
+    torch_pads = (pads[0], pads[1])
+
+    # Compute the torch convolution
+    res = torch.conv2d(tx, tw, tb, strides, torch_pads, dilations, group).numpy()
+
+    return (res,)

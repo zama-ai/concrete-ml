@@ -6,6 +6,7 @@ from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 import numpy
+from concrete.common.extensions import convolution as hconv
 
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
@@ -421,11 +422,11 @@ class QuantizedGemm(QuantizedOp):
         # Hack because we can't do numpy.sum(axis...,keepdims...)
         n_features = 1 if len(input_q_values.shape) <= 1 else input_q_values.shape[1]
         const_ones = numpy.ones(shape=(n_features, 1), dtype=numpy.int64)
-        sum_input = q_weights.zero_point * (input_q_values @ const_ones)
+        sum_input = -q_weights.zero_point * (input_q_values @ const_ones)
 
         # Last part that has to be done in FHE the rest must go in a PBS.
         # Forced fusing using .astype(numpy.float32)
-        numpy_q_out = (matmul + (numpy.negative(sum_input))).astype(numpy.float32)
+        numpy_q_out = (matmul + sum_input).astype(numpy.float32)
 
         # sum_weights is a constant
         sum_weights = q_input.zero_point * numpy.sum(weights_q_values, axis=0, keepdims=True)
@@ -585,3 +586,202 @@ class QuantizedIdentity(QuantizedOp):
         self.output_scale = q_inputs[0].scale
         self.output_zero_point = q_inputs[0].zero_point
         return super().q_impl(*q_inputs, **attrs)
+
+
+class QuantizedReshape(QuantizedOp):
+    """Quantized Reshape op."""
+
+    _impl_for_op_named: str = "Reshape"
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
+        newshape = prepared_inputs[1].values
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            prepared_inputs[0].n_bits,
+            numpy.reshape(prepared_inputs[0].qvalues, newshape),
+            value_is_float=False,
+            scale=prepared_inputs[0].scale,
+            zero_point=prepared_inputs[0].zero_point,
+        )
+
+
+class QuantizedConv(QuantizedOp):
+    """Quantized Conv op."""
+
+    _impl_for_op_named: str = "Conv"
+
+    def __init__(
+        self,
+        n_bits: int,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        **attrs,
+    ) -> None:
+        """Construct the quantized convolution operator and retrieve parameters.
+
+        Args:
+            n_bits: number of bits for output quantization
+            constant_inputs: the weights and activations
+            attrs: convolution options
+                dilations (Tuple[int]): dilation of the kernel, default 1 on all dimensions.
+                group (int): number of convolution groups, default 1
+                kernel_shape (Tuple[int]): shape of the kernel. Should have 2 elements for 2d conv
+                pads (Tuple[int]): padding in ONNX format (begin, end) on each axis
+                strides (Tuple[int]): stride of the convolution on each axis
+        """
+
+        super().__init__(n_bits, constant_inputs, **attrs)
+
+        # Get the ONNX parameters
+        self.dilations = attrs.get("dilations", (1, 1))
+        self.group = attrs.get("group", 1)
+        self.kernel_shape = attrs.get("kernel_shape", None)
+        self.pads = attrs.get("pads", (0, 0, 0, 0))
+        self.strides = attrs.get("strides", (1, 1))
+
+        # Validate the parameters
+        assert_true(
+            len(self.kernel_shape) == 2, "The convolution operator currently supports only 2d"
+        )
+        assert_true(
+            len(self.kernel_shape) == len(self.strides),
+            "The convolution operator requires the number of strides to "
+            "be the same as the number of kernel dimensions",
+        )
+        assert_true(
+            bool(numpy.all(numpy.asarray(self.dilations) == 1)),
+            "The convolution operator in Concrete Numpy does not suppport dilation",
+        )
+        assert_true(
+            self.group == 1, "The convolution operator in Concrete Numpy does not support groups"
+        )
+        assert_true(
+            len(self.pads) == 2 * len(self.kernel_shape),
+            "The convolution operator in Concrete ML requires padding to be specified as "
+            " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
+            " standard",
+        )
+        assert_true(
+            self.pads[0] == self.pads[len(self.kernel_shape)]
+            and self.pads[1] == self.pads[1 + len(self.kernel_shape)],
+            "The convolution operator in Concrete ML only supports symmetric padding",
+        )
+        assert_true(
+            self.pads[0] == 0 and self.pads[1] == 0,
+            "Quantized convolution only supports 0-padding convolution for now",
+        )
+
+    def q_impl(
+        self,
+        *q_inputs: QuantizedArray,
+        **attrs,
+    ) -> QuantizedArray:
+        """Compute the quantized convolution between two quantized tensors.
+
+        Allows an optional quantized bias.
+
+        Args:
+            q_inputs: input tuple, contains
+                x (numpy.ndarray): input data. Shape is N x C x H x W for 2d
+                w (numpy.ndarray): weights tensor. Shape is (O x I x Kh x Kw) for 2d
+                b (numpy.ndarray, Optional): bias tensor, Shape is (O,)
+            attrs: convolution options handled in constructor
+
+        Returns:
+            res (QuantizedArray): result of the quantized integer convolution
+        """
+
+        # For mypy
+        assert self.output_scale is not None
+        assert self.output_zero_point is not None
+
+        # Retrieve the quantized inputs
+        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
+        q_input: QuantizedArray = prepared_inputs[0]
+        q_weights: QuantizedArray = prepared_inputs[1]
+        q_bias: Optional[QuantizedArray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
+
+        # Prepare a constant tensor to compute the sum of the inputs
+        q_weights_1 = numpy.ones_like(q_weights.qvalues)
+
+        # We follow the Quantized Gemm implementation
+        # which in turn follows Eq.7 in https://arxiv.org/abs/1712.05877
+        # to split the core computation from the zero points and scales.
+
+        # Compute the first encrypted term that convolves weights and inputs
+        conv_wx = hconv.conv2d(
+            q_input.qvalues,
+            q_weights.qvalues,
+            None,
+            self.pads,
+            self.strides,
+            self.dilations,
+        )
+
+        # Compute the sum of the inputs (second encrypted term)
+        zw_conv_1x = -q_weights.zero_point * hconv.conv2d(
+            q_input.qvalues,
+            q_weights_1,
+            None,
+            self.pads,
+            self.strides,
+            self.dilations,
+        )
+
+        # The total number of elements that are convolved by the application of a single kernel
+        n_weights = numpy.prod(q_weights.qvalues.shape[1:])
+
+        # Last part that has to be done in FHE the rest must go in a PBS.
+        # Forced fusing using .astype(numpy.float32)
+        numpy_q_out = (conv_wx + zw_conv_1x).astype(numpy.float32)
+
+        # Compute the third term, the sum of the weights which is a constant
+        sum_weights = q_input.zero_point * numpy.sum(
+            q_weights.qvalues, axis=(1, 2, 3), keepdims=True
+        ).transpose(1, 0, 2, 3)
+
+        # Compute the forth term which is a constant
+        final_term = n_weights * q_input.zero_point * q_weights.zero_point
+
+        # Now compute the whole sum (sum of the four terms)
+        numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
+
+        # Compute the rescaling factor that converts between the scale of the output of the conv
+        # and the calibrated output scale
+        # This is going to be compiled with a PBS (along with the following activation function)
+        m_matmul = (q_input.scale * q_weights.scale) / (self.output_scale)
+
+        # Rescale from scale=scale_inputs x scale_outputs to output scale
+        numpy_q_out = m_matmul * numpy_q_out
+
+        # Now that the values are rescaled, add the output zero point
+        numpy_q_out = self.output_zero_point + numpy_q_out
+
+        if q_bias is not None:
+            # Rescale the bias to the output scale
+            # The output scale is similar to the input scale so there should be no overflow issues
+
+            # Bias needs to be reshaped in order to be broadcasted into the conv. output channels
+            bias_part = (
+                q_bias.scale
+                / self.output_scale
+                * (q_bias.qvalues.reshape((1, -1, 1, 1)) - q_bias.zero_point)
+            )
+
+            # Broadcast the rescaled biases to each channel
+            numpy_q_out = numpy_q_out + bias_part
+
+        # Finally apply the quantization rounding
+        numpy_q_out = numpy.rint(numpy_q_out).clip(0, 2**self.n_bits - 1).astype(numpy.int64)
+
+        bias_is_signed = q_bias.is_signed if q_bias is not None else False
+        # And return as a QuantizedArray initialized from quantized data
+        return QuantizedArray(
+            self.n_bits,
+            numpy_q_out,
+            is_signed=q_input.is_signed or q_weights.is_signed or bias_is_signed,
+            value_is_float=False,
+            scale=self.output_scale,
+            zero_point=self.output_zero_point,
+        )

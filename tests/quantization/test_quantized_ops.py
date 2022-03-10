@@ -14,6 +14,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedAdd,
     QuantizedCelu,
     QuantizedClip,
+    QuantizedConv,
     QuantizedElu,
     QuantizedExp,
     QuantizedGemm,
@@ -25,6 +26,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedMatMul,
     QuantizedOp,
     QuantizedRelu,
+    QuantizedReshape,
     QuantizedSelu,
     QuantizedSigmoid,
     QuantizedSoftplus,
@@ -381,6 +383,126 @@ def test_identity_op(x, n_bits):
     assert numpy.array_equal(qx_bis.qvalues, q_x.qvalues)
 
 
+@pytest.mark.parametrize("n_bits", [16])
+@pytest.mark.parametrize(
+    # Convolution parameters: inputs, weights, biases, strides, padding
+    # Inputs has size: N (batch) x C (input channels) x H x W
+    # Weights has size: O (output channels) x I (input channels) x Kh x Kw
+    # Biases has size: O (output channels)
+    # Strides and padding have size 2 (padding/stride on y and x)
+    "params",
+    [
+        (
+            numpy.random.uniform(size=(1, 3, 32, 32)) * 4,
+            numpy.random.randn(3, 3, 3, 3) * 3,
+            numpy.random.uniform(size=(3,)) * 0.01 + 5,
+            (2, 2),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2,
+            numpy.random.randn(16, 1, 3, 3) * 0.25,
+            numpy.random.uniform(size=(16,)) * 5,
+            (1, 1),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(size=(2, 32, 4, 4)),
+            numpy.random.randn(3, 32, 2, 2),
+            numpy.random.uniform(size=(3,)),
+            (1, 1),
+            (0, 0, 0, 0),
+        ),
+    ],
+)
+def test_quantized_conv(params, n_bits, check_r2_score):
+    """Test the quantized convolution operator."""
+
+    # Retrieve arguments
+    net_input, weights, biases, strides, pads = params
+
+    # Create quantized data
+    q_input = QuantizedArray(n_bits, net_input, is_signed=False)
+    q_weights = QuantizedArray(n_bits, weights, is_signed=True)
+    q_bias = QuantizedArray(n_bits, biases, is_signed=True)
+
+    # Create the operator, specifying weights & biases as constants
+    q_op = QuantizedConv(
+        n_bits,
+        constant_inputs={1: q_weights, 2: q_bias},
+        strides=strides,
+        pads=pads,
+        kernel_shape=(weights.shape[2], weights.shape[3]),
+        dilations=(1, 1),
+    )
+
+    # Compute the result in floating point
+    expected_result = q_op.calibrate(net_input)
+
+    # Compute the quantized result
+    result = q_op(q_input).dequant()
+
+    # The fp32 and quantized results should be very similar when quantization precision is high
+    check_r2_score(expected_result, result)
+
+
+def test_quantized_conv_args():
+    """Check that conv arguments are validated"""
+    n_bits = 2
+
+    weights = numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2
+    biases = numpy.random.uniform(size=(16,)) * 5
+    q_weights = QuantizedArray(n_bits, weights, is_signed=True)
+    q_bias = QuantizedArray(n_bits, biases, is_signed=True)
+
+    args_ok = {
+        "strides": (1, 1),
+        "pads": (0, 0, 0, 0),
+        "kernel_shape": (3, 3),
+        "dilations": (1, 1),
+    }
+    args_and_errors = {
+        ("strides", (2, 2, 1)): ".*strides.*",
+        ("pads", (0, 0)): ".*(pads|padding).*",
+        ("pads", (0, 1, 1, 2)): ".*(pads|padding).*",
+        ("kernel_shape", (3, 1, 2)): ".*2d.*",
+        ("dilations", (3, 3, 3)): ".dilation.*",
+    }
+    for (name, value), error in args_and_errors.items():
+        kwargs_op = {**args_ok, **{name: value}}
+        print(kwargs_op)
+        with pytest.raises(AssertionError, match=error):
+            QuantizedConv(n_bits, constant_inputs={1: q_weights, 2: q_bias}, **kwargs_op)
+
+
+@pytest.mark.parametrize("shape", [(1,), (10, 5), (10, 5, 2)])
+def test_quantized_reshape(shape):
+    """Test quantized reshape."""
+
+    num_values = numpy.prod(numpy.asarray(shape))
+    data = numpy.arange(num_values).astype(numpy.float32)
+    data = data.reshape(shape)
+
+    new_shape = (num_values,)
+    new_shape_qarr = QuantizedArray(1, numpy.asarray(new_shape))
+    reshape = QuantizedReshape(16, constant_inputs={1: new_shape_qarr})
+
+    q_arr0 = QuantizedArray(16, data)
+    q_reshaped = reshape(q_arr0)
+
+    assert q_reshaped.zero_point == q_arr0.zero_point
+    assert q_reshaped.scale == q_arr0.scale
+    assert numpy.all(numpy.reshape(q_arr0.qvalues, new_shape) == q_reshaped.qvalues)
+
+    shape_qarr = QuantizedArray(1, numpy.asarray(shape))
+    reshape_back = QuantizedReshape(16, constant_inputs={1: shape_qarr})
+
+    q_arr1 = reshape_back(q_reshaped)
+    assert q_arr1.zero_point == q_arr0.zero_point
+    assert q_arr1.scale == q_arr0.scale
+    assert numpy.all(q_arr0.qvalues == q_arr1.qvalues)
+
+
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
@@ -404,6 +526,8 @@ def test_all_ops_were_tested():
         QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
         QuantizedIdentity: test_identity_op,
+        QuantizedConv: test_quantized_conv,
+        QuantizedReshape: test_quantized_reshape,
     }
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
         "Missing tests and manual acknowledgement for: "

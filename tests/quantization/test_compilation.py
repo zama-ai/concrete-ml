@@ -96,13 +96,28 @@ class FCSeqAddBiasVec(nn.Module):
         return x
 
 
+class TinyCNN(nn.Module):
+    """A very small CNN."""
+
+    def __init__(self, n_classes, act) -> None:
+        """Create the tiny CNN with two conv layers."""
+        super().__init__()
+
+        self.conv1 = nn.Conv2d(1, 2, 2, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(2, n_classes, 2, stride=1, padding=0)
+        self.act = act()
+        self.n_classes = n_classes
+
+    def forward(self, x):
+        """Forward the two layers with the chosen activation function"""
+        x = self.act(self.conv1(x))
+        x = self.act(self.conv2(x))
+        return x
+
+
 @pytest.mark.parametrize(
     "model",
-    [
-        pytest.param(FC),
-        pytest.param(FCSeq),
-        pytest.param(FCSeqAddBiasVec),
-    ],
+    [pytest.param(FC), pytest.param(FCSeq), pytest.param(FCSeqAddBiasVec)],
 )
 @pytest.mark.parametrize(
     "input_output_feature",
@@ -149,6 +164,68 @@ def test_quantized_module_compilation(
     # Compile
     quantized_model.compile(
         q_input, default_compilation_configuration, use_virtual_lib=use_virtual_lib
+    )
+
+    for x_q in q_input.qvalues:
+        x_q = numpy.expand_dims(x_q, 0)
+        check_is_good_execution(
+            fhe_circuit=quantized_model.forward_fhe,
+            function=quantized_model.forward,
+            args=[x_q.astype(numpy.uint8)],
+            check_function=numpy.array_equal,
+            verbose=False,
+        )
+
+
+@pytest.mark.parametrize(
+    "model",
+    [pytest.param(TinyCNN)],
+)
+@pytest.mark.parametrize(
+    "input_output_feature",
+    [pytest.param(input_output_feature) for input_output_feature in [((8, 8), 2)]],
+)
+@pytest.mark.parametrize(
+    "activation",
+    [
+        nn.ReLU6,
+    ],
+)
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
+def test_quantized_cnn_compilation(
+    input_output_feature,
+    model,
+    activation,
+    default_compilation_configuration,
+    check_is_good_execution,
+    use_virtual_lib,
+):
+    """Test a convolutional neural network compilation for FHE inference."""
+
+    n_bits = 2
+
+    # Define an input shape (n_examples, n_features)
+    input_shape, n_classes = input_output_feature
+
+    # Build a randomly initialized Quantized CNN Network
+
+    # Define the torch model
+    torch_cnn_model = model(n_classes, activation)
+    # Create random inputs with 1 channel each
+    numpy_input = numpy.random.uniform(-1, 1, size=(1, 1, *input_shape))
+    tensor_input = torch.from_numpy(numpy_input).float()
+
+    # Create corresponding numpy model
+    torch_cnn_model = NumpyModule(torch_cnn_model, tensor_input)
+    # Quantize with post-training static method
+    post_training_quant = PostTrainingAffineQuantization(n_bits, torch_cnn_model)
+    quantized_model = post_training_quant.quantize_module(numpy_input)
+    # Quantize input
+    q_input = QuantizedArray(n_bits, numpy_input)
+
+    # Compile
+    quantized_model.compile(
+        q_input, default_compilation_configuration, use_virtual_lib=use_virtual_lib, show_mlir=True
     )
 
     for x_q in q_input.qvalues:

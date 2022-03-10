@@ -31,6 +31,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Celu
 - Clip
 - Constant
+- Conv
 - Cos
 - Cosh
 - Div
@@ -72,6 +73,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Add: QuantizedAdd
 - Celu: QuantizedCelu
 - Clip: QuantizedClip
+- Conv: QuantizedConv
 - Elu: QuantizedElu
 - Exp: QuantizedExp
 - Gemm: QuantizedGemm
@@ -82,6 +84,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Log: QuantizedLog
 - MatMul: QuantizedMatMul
 - Relu: QuantizedRelu
+- Reshape: QuantizedReshape
 - Selu: QuantizedSelu
 - Sigmoid: QuantizedSigmoid
 - Softplus: QuantizedSoftplus
