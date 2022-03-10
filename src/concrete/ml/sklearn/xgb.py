@@ -1,6 +1,8 @@
 """Implements XGBoost models."""
 from __future__ import annotations
 
+import platform
+import warnings
 from typing import Callable, List, Optional, Union
 
 import numpy
@@ -88,6 +90,16 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
             base_score in [0.5, None],
             f"Currently, only 0.5 or None are supported for base_score. Got {base_score}",
         )
+
+        # FIXME: see https://github.com/zama-ai/concrete-ml-internal/issues/503, there is currently
+        # an issue with n_jobs != 1 on macOS
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/506, remove this workaround
+        # once https://github.com/zama-ai/concrete-ml-internal/issues/503 is fixed
+        if platform.system() == "Darwin":
+            if n_jobs != 1:  # pragma: no cover
+                warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
+                n_jobs = 1  # pragma: no cover
+
         super().__init__(
             max_depth=max_depth,
             learning_rate=learning_rate,
