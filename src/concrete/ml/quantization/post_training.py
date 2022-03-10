@@ -52,12 +52,22 @@ class PostTrainingAffineQuantization:
         inits = graph.initializer
         self.quant_params.update(
             (
-                (
-                    onnx_init.name,
-                    QuantizedArray(self.n_bits, numpy_helper.to_array(onnx_init), self.is_signed),
-                )
-                for onnx_init in inits
+                onnx_init.name,
+                QuantizedArray(
+                    self.n_bits, numpy_helper.to_array(onnx_init), is_signed=True, is_symmetric=True
+                ),
             )
+            if numpy_helper.to_array(onnx_init).min() < 0
+            else (
+                onnx_init.name,
+                QuantizedArray(
+                    self.n_bits,
+                    numpy_helper.to_array(onnx_init),
+                    is_signed=False,
+                    is_symmetric=True,
+                ),
+            )
+            for onnx_init in inits
         )
 
     def _quantize_layers(self, *input_calibration_data: numpy.ndarray):
