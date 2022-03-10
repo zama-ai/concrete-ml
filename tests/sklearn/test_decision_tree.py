@@ -28,6 +28,7 @@ def test_decision_tree_classifier(
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
     check_r2_score,
+    check_accuracy,
 ):
     """Tests the sklearn DecisionTreeClassifier."""
 
@@ -39,8 +40,9 @@ def test_decision_tree_classifier(
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 
-    # Check correlation coefficient between the two models
-    check_r2_score(model.predict(x), sklearn_model.predict(x))
+    # Check accuracy and r2 score between the two models predictions
+    check_accuracy(model.predict(x), sklearn_model.predict(x))
+    check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
     # Test compilation
     model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)

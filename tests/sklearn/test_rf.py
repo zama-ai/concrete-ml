@@ -20,7 +20,7 @@ PARAMS_RF = {
         for value in values  # type: ignore
     ],
 )
-def test_rf_hyperparameters(hyperparameters, check_r2_score):
+def test_rf_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
     """Test that the hyperparameters are valid."""
     x, y = make_classification(
         n_samples=100,
@@ -33,8 +33,8 @@ def test_rf_hyperparameters(hyperparameters, check_r2_score):
         **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
-    # Make sure that model.predict is the same as sklearn_model.predict
-    check_r2_score(model.predict(x), sklearn_model.predict(x))
+    # Check accuracy and r2 score between the two models predictions
+    check_accuracy(model.predict(x), sklearn_model.predict(x))
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
 
@@ -53,7 +53,7 @@ def test_rf_hyperparameters(hyperparameters, check_r2_score):
         ),
     ],
 )
-def test_rf_classifier(load_data, check_r2_score):
+def test_rf_classifier(load_data, check_r2_score, check_accuracy):
     """Tests the random forest."""
 
     # Get the dataset
@@ -68,7 +68,8 @@ def test_rf_classifier(load_data, check_r2_score):
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 
-    # Check that the two models are similar.
+    # Check accuracy and r2 score between the two models predictions
+    check_accuracy(model.predict(x), sklearn_model.predict(x))
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
     # FIXME No FHE yet with RandomForest (see #436)

@@ -361,3 +361,14 @@ def check_r2_score():
         assert r_square >= 0.99, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
 
     return check_r2_score_impl
+
+
+@pytest.fixture
+def check_accuracy():
+    """Fixture to check the accuracy"""
+
+    def check_accuracy_impl(expected, actual, threshold=0.9):
+        accuracy = numpy.mean(expected == actual)
+        assert accuracy >= threshold, f"Accuracy of {accuracy} is not high enough ({threshold})."
+
+    return check_accuracy_impl

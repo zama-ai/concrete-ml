@@ -45,6 +45,7 @@ def test_nn_models_quant(
     input_dim,
     model,
     check_r2_score,
+    check_accuracy,
 ):
     """Test the correctness of the results of quantized NN classifiers through the sklearn
     wrapper."""
@@ -115,8 +116,19 @@ def test_nn_models_quant(
 
     _, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
 
-    y_pred_sk = sklearn_classifier.predict(x_test)
-    y_pred = concrete_classifier.predict(x_test)
+    if model._estimator_type == "classifier":  # pylint: disable=protected-access
+        # Classification models
+
+        y_pred_sk = sklearn_classifier.predict(x_test)
+        y_pred = concrete_classifier.predict(x_test)
+        check_accuracy(y_pred_sk, y_pred)
+
+        y_pred_sk = sklearn_classifier.predict_proba(x_test)
+        y_pred = concrete_classifier.predict_proba(x_test)
+    else:
+        # Regression models
+        y_pred_sk = sklearn_classifier.predict(x_test)
+        y_pred = concrete_classifier.predict(x_test)
 
     check_r2_score(y_pred_sk, y_pred)
 
