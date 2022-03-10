@@ -5,14 +5,14 @@
 
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy
 import torch
 from concrete.common.compilation.artifacts import CompilationArtifacts
 from concrete.common.compilation.configuration import CompilationConfiguration
 
-from ..quantization import PostTrainingAffineQuantization
+from ..quantization import PostTrainingAffineQuantization, QuantizedArray
 from ..torch import NumpyModule
 
 
@@ -244,3 +244,90 @@ class QuantizedTorchEstimatorMixin:
         fp32_model.initialize()
 
         return self, fp32_model
+
+
+class BaseTreeEstimatorMixin:
+    """Mixin class for tree-based estimators.
+
+    This class is used to add functionality to tree-based estimators, such as
+    the tree-based classifier.
+    """
+
+    q_x_byfeatures: List[QuantizedArray]
+    n_bits: int
+    q_y: QuantizedArray
+    init_args: Dict[str, Any]
+    random_state: Optional[Union[numpy.random.RandomState, int]]  # pylint: disable=no-member
+    sklearn_alg: Any
+
+    def __init__(self, n_bits: int):
+        """Initialize the TreeBasedEstimatorMixin.
+
+        Args:
+            n_bits (int): number of bits used for quantization
+        """
+        self.n_bits = n_bits
+
+    def quantize_input(self, X: numpy.ndarray):
+        """Quantize the input.
+
+        Args:
+            X (numpy.ndarray): the input
+
+        Returns:
+            the quantized input
+        """
+        qX = numpy.zeros_like(X)
+        # Quantize using the learned quantization parameters for each feature
+        for i, q_x_ in enumerate(self.q_x_byfeatures):
+            qX[:, i] = q_x_.update_values(X[:, i])
+        return qX.astype(numpy.int32)
+
+    @abstractmethod
+    def fit(self, X, y):
+        """Fit the tree-based estimator.
+
+        Args:
+            X (numpy.ndarray): the input
+            y (numpy.ndarray): the labels
+        """
+
+    def fit_benchmark(
+        self,
+        X: numpy.ndarray,
+        y: numpy.ndarray,
+        *args,
+        random_state: Optional[int] = None,
+        **kwargs,
+    ) -> Tuple[Any, Any]:
+        """Fit the sklearn tree-based model and the FHE tree-based model.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            y (numpy.ndarray): The target data.
+            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
+                The random state. Defaults to None.
+            *args: args for super().fit
+            **kwargs: kwargs for super().fit
+
+        Returns:
+            Tuple[ConcreteEstimators, SklearnEstimators]:
+                                                The FHE and sklearn tree-based models.
+        """
+        # Make sure the random_state is set or both algorithms will diverge
+        # due to randomness in the training.
+        if random_state is not None:
+            self.init_args["random_state"] = random_state
+        elif self.random_state is not None:
+            self.init_args["random_state"] = self.random_state
+        else:
+            self.init_args["random_state"] = numpy.random.randint(0, 2**15)
+
+        # Train the sklearn model without X quantized
+        sklearn_model = self.sklearn_alg(**self.init_args)
+        sklearn_model.fit(X, y, *args, **kwargs)
+
+        # Train the FHE model
+        self.__init__(n_bits=self.n_bits, **self.init_args)  # type: ignore
+        self.fit(X, y, *args, **kwargs)
+        return self, sklearn_model

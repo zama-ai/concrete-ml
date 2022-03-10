@@ -1,7 +1,7 @@
 """Implement the sklearn tree models."""
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 
 import concrete.numpy as hnp
 import numpy
@@ -14,21 +14,21 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..quantization.quantized_array import QuantizedArray
 from ..virtual_lib import VirtualNPFHECompiler
+from .base import BaseTreeEstimatorMixin
 from .tree_to_numpy import tree_to_numpy
-
-N_BITS_ALLOWED = 8
 
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name
 
 
-class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
+class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstimatorMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
+    sklearn_alg = sklearn.tree.DecisionTreeClassifier
     q_x_byfeatures: list
     fhe_tree: FHECircuit
     _tensor_tree_predict: Optional[Callable]
-    q_y: Optional[QuantizedArray]
+    q_y: QuantizedArray
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -180,7 +180,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             n_bits : int, default=6
                 Number of bits used to quantize the input data.
         """
-        super().__init__(
+        sklearn.tree.DecisionTreeClassifier.__init__(
+            self,
             criterion=criterion,
             splitter=splitter,
             max_depth=max_depth,
@@ -194,8 +195,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
             min_impurity_decrease=min_impurity_decrease,
             ccp_alpha=ccp_alpha,
         )
+        BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.q_x_byfeatures = []
-        assert_true(n_bits <= N_BITS_ALLOWED, f"n_bits should be <= {N_BITS_ALLOWED}")
         self.n_bits = n_bits
         self._tensor_tree_predict = None
         self.fhe_tree = None
@@ -242,7 +243,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         for i in range(X.shape[1]):
             q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
             self.q_x_byfeatures.append(q_x_)
-            qX[:, i] = q_x_.qvalues.astype(numpy.uint8)
+            qX[:, i] = q_x_.qvalues.astype(numpy.int32)
 
         # Fit the model
         super().fit(qX, y, *args, **kwargs)
@@ -251,46 +252,6 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         self._tensor_tree_predict, self.q_y = tree_to_numpy(
             self, qX, "sklearn", output_n_bits=self.n_bits, use_workaround_for_3d_matmul=True
         )
-
-    def fit_benchmark(
-        self,
-        X: numpy.ndarray,
-        y: numpy.ndarray,
-        *args,
-        random_state: Optional[int] = None,
-        **kwargs,
-    ) -> Tuple[DecisionTreeClassifier, sklearn.tree.DecisionTreeClassifier]:
-        """Fit the sklearn DecisionTreeClassifier and the FHE DecisionTreeClassifier.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
-                The random state. Defaults to None.
-            *args: args for super().fit
-            **kwargs: kwargs for super().fit
-
-        Returns:
-            Tuple[DecisionTreeClassifier, sklearn.tree.DecisionTreeClassifier]:
-                                                The FHE and sklearn DecisionTreeClassifier.
-        """
-        # Make sure the random_state is set or both algorithms will diverge
-        # due to randomness in the training.
-        if random_state is not None:
-            self.init_args["random_state"] = random_state
-        elif self.random_state is not None:
-            self.init_args["random_state"] = self.random_state
-        else:
-            self.init_args["random_state"] = numpy.random.randint(0, 2**15)
-
-        # Train the sklearn model without X quantized
-        sklearn_model = sklearn.tree.DecisionTreeClassifier(**self.init_args)
-        sklearn_model.fit(X, y, *args, **kwargs)
-
-        # Train the FHE model
-        super().__init__(**self.init_args)
-        self.fit(X, y, *args, **kwargs)
-        return self, sklearn_model
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the predictions.
@@ -419,21 +380,6 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier):
         )
         y_pred = y_pred.transpose()
         return y_pred
-
-    def quantize_input(self, X: numpy.ndarray):
-        """Quantize the input.
-
-        Args:
-            X (numpy.ndarray): the input
-
-        Returns:
-            the quantized input
-        """
-        qX = numpy.zeros_like(X)
-        # Quantize using the learned quantization parameters for each feature
-        for i, q_x_ in enumerate(self.q_x_byfeatures):
-            qX[:, i] = q_x_.update_values(X[:, i])
-        return qX.astype(numpy.int32)
 
     # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/365
     # add use_virtual_lib once the issue linked above is done

@@ -8,6 +8,7 @@ import sklearn.ensemble
 
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import QuantizedArray
+from .base import BaseTreeEstimatorMixin
 from .tree_to_numpy import tree_to_numpy
 
 
@@ -15,17 +16,20 @@ from .tree_to_numpy import tree_to_numpy
 # pylint: disable=invalid-name,too-many-ancestors
 # Hummingbird needs to see the protected _forest class
 # pylint: disable=protected-access
-class RandomForestClassifier(sklearn.ensemble._forest.RandomForestClassifier):
+class RandomForestClassifier(
+    sklearn.ensemble._forest.RandomForestClassifier, BaseTreeEstimatorMixin
+):
     """Implements the RandomForest classifier."""
 
+    sklearn_alg = sklearn.ensemble.RandomForestClassifier
     q_x_byfeatures: List[QuantizedArray]
-    n_bits: Optional[int]
+    n_bits: int
     q_y: QuantizedArray
     _tensor_tree_predict: Callable
 
     def __init__(
         self,
-        n_bits: Optional[int] = 7,
+        n_bits: int = 7,
         max_depth: Optional[int] = 15,
         n_estimators: Optional[int] = 100,
         **kwargs: Any,
@@ -33,22 +37,23 @@ class RandomForestClassifier(sklearn.ensemble._forest.RandomForestClassifier):
         """Initialize the RandomForestClassifier.
 
         Args:
-            n_bits (Optional[int]): The number of bits to use. Defaults to 7.
+            n_bits (int): The number of bits to use. Defaults to 7.
             max_depth (Optional[int]): The maximum depth of the tree. Defaults to 15.
             n_estimators (Optional[int]): The number of estimators. Defaults to 100.
             **kwargs: args for super().__init__
         """
-        super().__init__(
+        sklearn.ensemble.RandomForestClassifier.__init__(
+            self,
             max_depth=max_depth,
             n_estimators=n_estimators,
             **kwargs,
         )
+        BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.init_args = {
             "max_depth": max_depth,
             "n_estimators": n_estimators,
             **kwargs,
         }
-        self.n_bits = n_bits
 
     #  pylint: disable=arguments-differ
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, **kwargs) -> "RandomForestClassifier":
