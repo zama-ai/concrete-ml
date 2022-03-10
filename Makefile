@@ -109,7 +109,7 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses mdformat nbqa
+conformance: finalize_nb python_format licenses mdformat nbqa supported_ops
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
@@ -117,7 +117,7 @@ pcc:
 	--no-print-directory pcc_internal
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa
+PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa check_supported_ops
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -471,3 +471,11 @@ check_nbqa:
 .PHONY: determinism # Check pytest determinism
 determinism:
 	./script/make_utils/check_pytest_determinism.sh
+
+.PHONY: supported_ops # Update docs with supported ops
+supported_ops:
+	poetry run python script/doc_utils/gen_supported_ops.py docs/user/howto/onnx_supported_ops.md
+
+.PHONY: check_supported_ops # Check supported ops (for the doc)
+check_supported_ops:
+	poetry run python script/doc_utils/gen_supported_ops.py docs/user/howto/onnx_supported_ops.md --check
