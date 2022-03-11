@@ -270,8 +270,9 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         # Check if values are already probabilities
         if any(numpy.abs(numpy.sum(y_preds, axis=1) - 1) > 1e-4):
             # Apply softmax
-            y_preds = numpy.exp(y_preds)
-            y_preds = y_preds / y_preds.sum(axis=1, keepdims=True)
+            # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/518, remove no-cover's
+            y_preds = numpy.exp(y_preds)  # pragma: no cover
+            y_preds = y_preds / y_preds.sum(axis=1, keepdims=True)  # pragma: no cover
         return y_preds
 
     # pylint: disable=arguments-differ
