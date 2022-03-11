@@ -296,7 +296,6 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         X = self._validate_X_predict(X, check_input)
         if execute_in_fhe:
             y_preds = self._execute_in_fhe(X)
-            y_preds = self.post_processing(y_preds)
         else:
             y_preds = self._predict_with_tensors(X)
         y_preds = self.post_processing(y_preds)
