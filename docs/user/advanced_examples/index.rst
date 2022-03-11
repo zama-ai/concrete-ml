@@ -15,7 +15,6 @@ Scikit-learn
 
    LinearRegression.ipynb
    LogisticRegression.ipynb
-   GeneralizedLinearModel.md
    PoissonRegression.ipynb
    DecisionTreeClassifier.ipynb
    XGBClassifier.ipynb
