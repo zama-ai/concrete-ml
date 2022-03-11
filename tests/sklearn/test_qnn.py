@@ -20,7 +20,7 @@ from concrete.ml.sklearn.qnn import (
 
 @pytest.mark.parametrize(
     "n_layers",
-    [3, 5],
+    [3],
 )
 @pytest.mark.parametrize("n_bits_w_a", [16])
 @pytest.mark.parametrize("n_accum_bits", [32])
@@ -33,8 +33,8 @@ from concrete.ml.sklearn.qnn import (
         pytest.param(nn.SELU),
     ],
 )
-@pytest.mark.parametrize("n_outputs", [1, 2, 5])
-@pytest.mark.parametrize("input_dim", [10, 100])
+@pytest.mark.parametrize("n_outputs", [1, 5])
+@pytest.mark.parametrize("input_dim", [100])
 @pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
 def test_nn_models_quant(
     n_layers,
