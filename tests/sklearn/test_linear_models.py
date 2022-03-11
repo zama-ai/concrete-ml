@@ -155,7 +155,10 @@ for one_classifier_model in [LogisticRegression, LinearSVC]:
     "alg, load_data",
     datasets_regression + datasets_classification,
 )
-def test_linear_model_compile_run_fhe(load_data, alg, default_compilation_configuration):
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
+def test_linear_model_compile_run_fhe(
+    load_data, alg, use_virtual_lib, default_compilation_configuration
+):
     """Tests the sklearn regressions."""
 
     # Get the dataset
@@ -169,7 +172,7 @@ def test_linear_model_compile_run_fhe(load_data, alg, default_compilation_config
     y_pred = model.predict(x[:1])
 
     # Test compilation
-    model.compile(x, default_compilation_configuration)
+    model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
 
     # Make sure we can predict over a single example in FHE.
     y_pred_fhe = model.predict(x[:1], execute_in_fhe=True)
