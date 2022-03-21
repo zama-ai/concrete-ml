@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import cast
 
 import numpy as np
 import py_progress_tracker as progress
@@ -15,6 +16,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from concrete.ml.torch.compile import compile_torch_model
+from concrete.ml.virtual_lib.virtual_fhe_circuit import VirtualFHECircuit
 
 N_EPOCHS = 30
 TINYCNN_CHECKPOINT_FILE = "tiny_mnist.pth"
@@ -269,6 +271,13 @@ def main(n_bits):
         use_virtual_lib=True,
         compilation_configuration=BENCHMARK_CONFIGURATION,
     )
+
+    assert isinstance(q_module_vl.forward_fhe, VirtualFHECircuit)
+    vfhe_circuit = cast(VirtualFHECircuit, q_module_vl.forward_fhe)
+    # Despite casting and the assert, pylint still does not consider this a VirtualFHECircuit
+    # pylint: disable=no-member
+    print(f"Max n_bits during inference: {vfhe_circuit.get_max_bit_width()}")
+    # pylint: enable=no-member
 
     test_concrete(
         q_module_vl,

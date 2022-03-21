@@ -20,13 +20,13 @@ class PostTrainingAffineQuantization:
     Create the quantized version of the passed numpy module.
 
     Args:
-        n_bits (int, Dict):             Number of bits to quantize the model. If int this
-                                        n_bits will be used for all activation/inputs/weights. If
-                                        dict, then should contain "inputs", "outputs" and "weights"
-                                        keys with corresponding number of quantization bits.
-                                        inputs : any input data to any layers
-                                        outputs: final model output
-                                        weights: all learned parameters or constants in the network
+        n_bits (int, Dict):             Number of bits to quantize the model. If an int is passed
+                                        for n_bits, the value will be used for activation,
+                                        inputs and weights. If a dict is passed, then it should
+                                        contain "inputs" and "weights" keys with corresponding
+                                        number of quantization bits for:
+                                        - inputs : any input data to any layers
+                                        - weights: learned parameters or constants in the network
         numpy_model (NumpyModule):   Model in numpy.
         is_signed:                      Whether the weights of the layers can be signed.
                                         Currently, only the weights can be signed.
@@ -45,9 +45,9 @@ class PostTrainingAffineQuantization:
         self.quant_ops_dict = {}
         assert_true(
             isinstance(n_bits, int)
-            or (isinstance(n_bits, Dict) and n_bits.keys() == {"inputs", "weights", "outputs"}),
+            or (isinstance(n_bits, Dict) and n_bits.keys() == {"inputs", "weights"}),
             "Invalid n_bits, either pass an integer or a dictionary containing integer values for"
-            " `inputs`, `weights` and `outputs` keys",
+            " the `inputs` and `weights` keys",
         )
         self.n_bits = n_bits
         self.quant_params = {}
@@ -63,19 +63,6 @@ class PostTrainingAffineQuantization:
         """
         if isinstance(self.n_bits, Dict):
             return self.n_bits["inputs"]
-        return self.n_bits
-
-    # FIXME: When switching to float graphs with operations that quantize inputs:
-    # Remove this ! The output bits will become irrelevant
-    @property
-    def n_bits_outputs(self):
-        """Get the number of bits to use for the quantization of the last layer's output.
-
-        Returns:
-            n_bits (int): number of bits for output quantization
-        """
-        if isinstance(self.n_bits, Dict):
-            return self.n_bits["outputs"]
         return self.n_bits
 
     @property
@@ -132,13 +119,6 @@ class PostTrainingAffineQuantization:
 
         constants: Set[str] = set(self.quant_params.keys())
 
-        # FIXME: once #29 is implemented and ops don't quantize their outputs anymore
-        # this can be removed, as outputs will have the maximum precision allowed
-        last_node = None
-        for node in graph.node:
-            if node.op_type in ["MatMul", "Gemm", "Conv"]:
-                last_node = node
-
         for node in graph.node:
             op_type = node.op_type
             attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
@@ -184,10 +164,9 @@ class PostTrainingAffineQuantization:
                 assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
                 curr_calibration_data = cast(Tuple[numpy.ndarray, ...], curr_calibration_data)
 
-                # FIXME: When switching to float graphs with operations that quantize inputs
-                # Change this to always use n_bits_inputs. The output bits will become irrelevant
-                n_bits_op = self.n_bits_outputs if node == last_node else self.n_bits_inputs
-                quantized_op_instance = quantized_op_class(n_bits_op, curr_cst_inputs, **attributes)
+                quantized_op_instance = quantized_op_class(
+                    self.n_bits_inputs, curr_cst_inputs, **attributes
+                )
                 output_calibration_data = self._calibrate_layers_activation(
                     variable_input_names, output_name, quantized_op_instance, *curr_calibration_data
                 )

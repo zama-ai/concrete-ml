@@ -3,7 +3,7 @@
 from abc import ABC
 from copy import deepcopy
 from inspect import Parameter, _empty, signature
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import numpy
 from concrete.common.extensions import convolution as hconv
@@ -165,21 +165,64 @@ class QuantizedOp(ABC):
         Returns:
             QuantizedArray: The returned quantized value.
         """
-        f_inputs = (q_input.dequant() for q_input in q_inputs)
-        # Here we need the actual values of the constants
-        prepared_inputs = self._prepare_inputs_with_constants(*f_inputs, use_actual_values=True)
+        # Here we need the float32 values from the QuantizedArrays. By default, when possible,
+        # we want QuantizedOps to convert to TLUs. Ops that need to do quantized computation
+        # will call _prepare_inputs_with_constants with quantize_actual_values=True
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=False
+        )
         f_outputs = self.call_impl(*prepared_inputs, **attrs)
+        return self.prepare_output(f_outputs)
 
-        return self.quant_output(f_outputs)
+    def _prepare_inputs_with_constants(
+        self,
+        *inputs: Union[QuantizedArray, numpy.ndarray],
+        calibrate: bool,
+        quantize_actual_values: bool,
+    ) -> List:
+        """Retrieve all the inputs of an operator in the computational graph.
 
-    def _prepare_inputs_with_constants(self, *inputs, use_actual_values: bool) -> List:
+        This helper method will prepare a list of inputs to an operator. Inputs can be variables,
+        i.e. encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
+        the slots of a list, as the order of inputs is important.
+
+        Usually the input list is populated with QuantizedArrays. Operators that require the
+        original float (operators that only produce or contribute to TLUs) values will just read
+        out the .values of  these quantized arrays. Operators that do matrix multiplication will
+        read out the quantized integer values of the arrays.  The method can be called during
+        calibration, in which case the variable inputs are just float numpy tensors.
+
+        Args:
+             *inputs (Union[QuantizedArray, numpy.ndarray]): A list of all variable inputs
+            calibrate (bool): A flag specifying if the method is called during calibration
+            quantize_actual_values (bool): If called by a quantized operator that does matrix
+                multiplication between encrypted and clear values, this method will apply
+                the quantization computation to the input, which will be fused in a (potentially
+                larger) TLU, with preceding floating point computations
+
+        Returns:
+            result (List): a list of inputs which are either QuantizedArray or numpy.arrays. If
+                quantize_actual_values==True then the quantization code is applied
+        """
         num_onnx_inputs = len(self._params_that_are_onnx_inputs)
         num_required_onnx_inputs = len(self._params_that_are_required_onnx_inputs)
         num_provided_constants = len(self.constant_inputs)
-        prepared_inputs = [None] * num_onnx_inputs
+        prepared_inputs: List[Optional[Union[QuantizedArray, numpy.ndarray]]] = [
+            None
+        ] * num_onnx_inputs
 
+        # If calibrating (calibrate=True): inputs are numpy.ndarrays of float32
+        # If used in the computation graph (calibrate=False): inputs are QuantizedArrays, of which
+        # we use the float32 .values and optionally we quantized them to int
+
+        # Constants are quantized during graph creation. If calibrating, pass through
+        # the original float values. If running in the computation graph, if the quantized values
+        # are requested, use the QuantizedArray object. Finally, if running the graph and
+        # the original float values are requested, then return the QuantizedArray.values
         for input_idx, constant_val in self.constant_inputs.items():
-            prepared_inputs[input_idx] = constant_val
+            prepared_inputs[input_idx] = (
+                constant_val if not calibrate and quantize_actual_values else constant_val.values
+            )
 
         assert_true(
             num_onnx_inputs
@@ -191,17 +234,28 @@ class QuantizedOp(ABC):
             f"{num_required_onnx_inputs} and {num_onnx_inputs} inputs and constants.",
         )
 
+        # If calibrating, the function is called with numpy.ndarrays
+        # If not calibrating, the function is called with QuantizedArray inputs
+        # If quantized values are requested, we quantized the float32 values contained in the
+        # QuantizedArrays, else we return the float32 values directly.
+
         curr_input_fill_idx = 0
         for input_ in inputs:
             while prepared_inputs[curr_input_fill_idx] is not None:
                 curr_input_fill_idx += 1
-            prepared_inputs[curr_input_fill_idx] = input_
-            curr_input_fill_idx += 1
 
-        if use_actual_values:
-            for i, input_i in enumerate(prepared_inputs):
-                if isinstance(input_i, QuantizedArray):
-                    prepared_inputs[i] = input_i.values
+            if calibrate:
+                prepared_inputs[curr_input_fill_idx] = input_
+            elif quantize_actual_values:
+                # Here we want to trace the code that does quantization, to produce a TLU
+                input_ = cast(QuantizedArray, input_)
+                input_.quant()
+                prepared_inputs[curr_input_fill_idx] = input_
+            else:
+                input_ = cast(QuantizedArray, input_)
+                prepared_inputs[curr_input_fill_idx] = input_.values
+
+            curr_input_fill_idx += 1
 
         return prepared_inputs
 
@@ -215,8 +269,11 @@ class QuantizedOp(ABC):
             numpy.ndarray: the output values for the provided calibration samples.
         """
 
-        # Here we need the actual values of the constants
-        prepared_inputs = self._prepare_inputs_with_constants(*inputs, use_actual_values=True)
+        # Here we need the actual values of the constants, we need to pass through
+        # the numpy.ndarrays in the computation graph
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *inputs, calibrate=True, quantize_actual_values=False
+        )
         quantized_samples = QuantizedArray(
             self.n_bits, self.call_impl(*prepared_inputs, **self.attrs)
         )
@@ -226,7 +283,7 @@ class QuantizedOp(ABC):
         return quantized_samples.values
 
     # TODO: manage multiple inputs if it becomes necessary
-    def quant_output(self, qoutput_activation: numpy.ndarray) -> QuantizedArray:
+    def prepare_output(self, qoutput_activation: numpy.ndarray) -> QuantizedArray:
         """Quantize the output of the activation function.
 
         The calibrate method needs to be called with sample data before using this function.
@@ -250,17 +307,10 @@ class QuantizedOp(ABC):
         )
 
         # for mypy
-        assert self.output_scale is not None and self.output_zero_point is not None
-
-        qoutput_activation = qoutput_activation / self.output_scale + self.output_zero_point
-        qoutput_activation = (
-            numpy.rint(qoutput_activation).clip(0, 2**self.n_bits - 1).astype(numpy.int64)
-        )
-
         return QuantizedArray(
             self.n_bits,
             qoutput_activation,
-            value_is_float=False,
+            value_is_float=True,
             scale=self.output_scale,
             zero_point=self.output_zero_point,
         )
@@ -384,7 +434,10 @@ class QuantizedGemm(QuantizedOp):
         assert_true(alpha == 1)
         assert_true(beta in [0, 1])
 
-        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
         q_bias: Optional[QuantizedArray] = (
@@ -404,9 +457,8 @@ class QuantizedGemm(QuantizedOp):
         assert self.output_zero_point is not None
 
         # The following MatMul is done with integers, and thus, does not use of any PBS.
-        # Only the final conversion to float is done with a PBS, which can actually
-        # be merged with the PBS of following activation.
-        # State of the art quantization method assumes the following results in a int32 accumulator.
+        # Rescaling the output of the integer MatMul to handle scale changes is done
+        # in float32 and will thus be fused with any float32 processing that follows this layer.
 
         # Here we follow Eq.7 in https://arxiv.org/abs/1712.05877 to split the core computation
         # from the zero points and scales.
@@ -424,33 +476,37 @@ class QuantizedGemm(QuantizedOp):
         const_ones = numpy.ones(shape=(n_features, 1), dtype=numpy.int64)
         sum_input = -q_weights.zero_point * (input_q_values @ const_ones)
 
-        # Last part that has to be done in FHE the rest must go in a PBS.
+        # Last part that has to be done in integer, the rest must go in a PBS.
         # Forced fusing using .astype(numpy.float32)
         numpy_q_out = (matmul + sum_input).astype(numpy.float32)
 
         # sum_weights is a constant
         sum_weights = q_input.zero_point * numpy.sum(weights_q_values, axis=0, keepdims=True)
 
-        # Quantization scales and zero points (FLOATS involved)
-        # This is going to be compiled with a PBS (along with the following activation function)
-        m_matmul = (q_input.scale * q_weights.scale) / (self.output_scale)
-
         final_term = p * q_input.zero_point * q_weights.zero_point
 
         numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
+
+        # Quantization scales and zero points (FLOATS involved)
+        # This is going to be compiled with a PBS (along with the following activation function)
+
+        # Note that here we do not rescale to the output_scale and we do not add a zero-point
+        # Any following Gemm/MatMul/Conv layers will do the rescaling (during requantization)
+        # by calling _prepare_inputs_with_constants(...quantize_real_values=True)
+        m_matmul = q_input.scale * q_weights.scale
         numpy_q_out = m_matmul * numpy_q_out
-        numpy_q_out = self.output_zero_point + numpy_q_out
 
         if q_bias is not None:
-            bias_part = q_bias.scale / self.output_scale * (q_bias.qvalues - q_bias.zero_point)
-            numpy_q_out = numpy_q_out + bias_part
+            # The bias is handled as a float32 and will be fused
+            numpy_q_out = numpy_q_out + q_bias.values
 
-        numpy_q_out = numpy.rint(numpy_q_out).clip(0, 2**self.n_bits - 1).astype(numpy.int64)
-
+        # Return the float32 values, so that CN can fuse any following float32 operations
+        # We also keep track of the scaling factor and zero-point, since these will be
+        # applied by the following layers.
         return QuantizedArray(
             self.n_bits,
             numpy_q_out,
-            value_is_float=False,
+            value_is_float=True,
             scale=self.output_scale,
             zero_point=self.output_zero_point,
         )
@@ -480,28 +536,25 @@ class QuantizedAdd(QuantizedOp):
         assert self.output_scale is not None
         assert self.output_zero_point is not None
 
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        q_input_0: QuantizedArray = prepared_inputs[0]
+        q_input_1: QuantizedArray = prepared_inputs[1]
+
         # De-quantize with input params and re-quantize with output parameters
         # This will use TLUs over each element of the two inputs
         # We do the dequantization directly, instead of q_inputs[0].dequant(),
         # So that we do not lose precision in the computation
 
         rescale_q0 = numpy.rint(
-            q_inputs[0].scale
-            / self.output_scale
-            * (q_inputs[0].qvalues + (-q_inputs[0].zero_point))
+            q_input_0.scale / self.output_scale * (q_input_0.qvalues + (-q_input_0.zero_point))
             + self.output_zero_point
         ).astype(numpy.int64)
 
-        # Now we need to handle the second operator (perform re-quantization)
-        if len(self.constant_inputs) == 0:
-            # Handle the Variable + Variable case
-            second = q_inputs[1]
-        elif len(self.constant_inputs) == 1:
-            # Handle the Variable + Constant case
-            second = self.constant_inputs[list(self.constant_inputs.keys())[0]]
-
         rescale_q1 = numpy.rint(
-            second.scale / self.output_scale * (second.qvalues + (-second.zero_point))
+            q_input_1.scale / self.output_scale * (q_input_1.qvalues + (-q_input_1.zero_point))
             + self.output_zero_point
         ).astype(numpy.int64)
 
@@ -513,19 +566,12 @@ class QuantizedAdd(QuantizedOp):
         # But we would like the output to have n_bits, so we de-quantize
         dequant_sum = self.output_scale * (sum_q + (-2 * self.output_zero_point))
 
-        # And then we re-quantize again with the output parameters
-        # The de-quantization and re-quantization should be fused to a single TLU
-        # Giving 3 * N TLU complexity for the whole operation for the variable + variable case
-        qvalues = (
-            numpy.rint(dequant_sum / self.output_scale + self.output_zero_point)
-            .clip(0, 2**self.n_bits - 1)
-            .astype(numpy.int64)
-        )
-
+        # Return the raw float32 values without requantizing them to the new scale, as any
+        # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
         return QuantizedArray(
             self.n_bits,
-            qvalues,
-            value_is_float=False,
+            dequant_sum,
+            value_is_float=True,
             scale=self.output_scale,
             zero_point=self.output_zero_point,
         )
@@ -594,12 +640,28 @@ class QuantizedReshape(QuantizedOp):
     _impl_for_op_named: str = "Reshape"
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
-        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
+        """Reshape the input integer encrypted tensor.
+
+        Args:
+            q_inputs: an encrypted integer tensor at index 0 and one constant shape at index 1
+            attrs: additional optional reshape options
+
+        Returns:
+            result (QuantizedArray): reshaped encrypted integer tensor
+        """
+
+        # FIXME: Currently reshape quantizes the inputs, but this is unnecessary if the reshape
+        # operation could be fused into a Gemm/Add/Conv that follows it. We should reshape
+        # here only if the reshaped result is returned directly from the FHE program.
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
         newshape = prepared_inputs[1].values
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
-            prepared_inputs[0].n_bits,
+            q_inputs[0].n_bits,
             numpy.reshape(prepared_inputs[0].qvalues, newshape),
             value_is_float=False,
             scale=prepared_inputs[0].scale,
@@ -697,7 +759,9 @@ class QuantizedConv(QuantizedOp):
         assert self.output_zero_point is not None
 
         # Retrieve the quantized inputs
-        prepared_inputs = self._prepare_inputs_with_constants(*q_inputs, use_actual_values=False)
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
         q_bias: Optional[QuantizedArray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
@@ -747,41 +811,28 @@ class QuantizedConv(QuantizedOp):
         # Now compute the whole sum (sum of the four terms)
         numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
 
-        # Compute the rescaling factor that converts between the scale of the output of the conv
-        # and the calibrated output scale
+        # Compute the rescaling factor that dequantizes the input
         # This is going to be compiled with a PBS (along with the following activation function)
-        m_matmul = (q_input.scale * q_weights.scale) / (self.output_scale)
+        # Note that we don't requantize the output of the conv, this will be done by
+        # any Gemm/Add/Conv layers that follow
+        m_matmul = q_input.scale * q_weights.scale
 
         # Rescale from scale=scale_inputs x scale_outputs to output scale
         numpy_q_out = m_matmul * numpy_q_out
 
-        # Now that the values are rescaled, add the output zero point
-        numpy_q_out = self.output_zero_point + numpy_q_out
-
         if q_bias is not None:
-            # Rescale the bias to the output scale
-            # The output scale is similar to the input scale so there should be no overflow issues
-
-            # Bias needs to be reshaped in order to be broadcasted into the conv. output channels
-            bias_part = (
-                q_bias.scale
-                / self.output_scale
-                * (q_bias.qvalues.reshape((1, -1, 1, 1)) - q_bias.zero_point)
-            )
-
+            # The bias addition is handled in float and will be fused into a TLU
             # Broadcast the rescaled biases to each channel
-            numpy_q_out = numpy_q_out + bias_part
-
-        # Finally apply the quantization rounding
-        numpy_q_out = numpy.rint(numpy_q_out).clip(0, 2**self.n_bits - 1).astype(numpy.int64)
+            numpy_q_out = numpy_q_out + q_bias.values.reshape((1, -1, 1, 1))  # bias_part
 
         bias_is_signed = q_bias.is_signed if q_bias is not None else False
-        # And return as a QuantizedArray initialized from quantized data
+        # And return as a QuantizedArray initialized from the float32 data, keeping
+        # track of the quantization parameters
         return QuantizedArray(
             self.n_bits,
             numpy_q_out,
             is_signed=q_input.is_signed or q_weights.is_signed or bias_is_signed,
-            value_is_float=False,
+            value_is_float=True,
             scale=self.output_scale,
             zero_point=self.output_zero_point,
         )

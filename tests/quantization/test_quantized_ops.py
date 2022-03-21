@@ -171,7 +171,10 @@ def test_clip_op(
     )
 
     for combination in input_combinations:
-        quantized_op = QuantizedClip(n_bits, constant_inputs=dict(zip(combination, cst_inputs)))
+        q_cst_inputs = (
+            QuantizedArray(n_bits, numpy.asarray([inp_value])) for inp_value in cst_inputs
+        )
+        quantized_op = QuantizedClip(n_bits, constant_inputs=dict(zip(combination, q_cst_inputs)))
         expected_output = quantized_op.calibrate(values)
         q_output = quantized_op(q_inputs)
         qvalues = q_output.qvalues
@@ -479,15 +482,17 @@ def test_quantized_conv_args():
 def test_quantized_reshape(shape):
     """Test quantized reshape."""
 
+    n_bits_reshape = 7
+
     num_values = numpy.prod(numpy.asarray(shape))
     data = numpy.arange(num_values).astype(numpy.float32)
     data = data.reshape(shape)
 
     new_shape = (num_values,)
     new_shape_qarr = QuantizedArray(1, numpy.asarray(new_shape))
-    reshape = QuantizedReshape(16, constant_inputs={1: new_shape_qarr})
+    reshape = QuantizedReshape(n_bits_reshape, constant_inputs={1: new_shape_qarr})
 
-    q_arr0 = QuantizedArray(16, data)
+    q_arr0 = QuantizedArray(n_bits_reshape, data)
     q_reshaped = reshape(q_arr0)
 
     assert q_reshaped.zero_point == q_arr0.zero_point
@@ -495,7 +500,7 @@ def test_quantized_reshape(shape):
     assert numpy.all(numpy.reshape(q_arr0.qvalues, new_shape) == q_reshaped.qvalues)
 
     shape_qarr = QuantizedArray(1, numpy.asarray(shape))
-    reshape_back = QuantizedReshape(16, constant_inputs={1: shape_qarr})
+    reshape_back = QuantizedReshape(n_bits_reshape, constant_inputs={1: shape_qarr})
 
     q_arr1 = reshape_back(q_reshaped)
     assert q_arr1.zero_point == q_arr0.zero_point

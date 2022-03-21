@@ -163,7 +163,9 @@ def test_quantized_module_compilation(
 
     # Compile
     quantized_model.compile(
-        q_input, default_compilation_configuration, use_virtual_lib=use_virtual_lib
+        q_input,
+        default_compilation_configuration,
+        use_virtual_lib=use_virtual_lib,
     )
 
     for x_q in q_input.qvalues:
@@ -225,7 +227,9 @@ def test_quantized_cnn_compilation(
 
     # Compile
     quantized_model.compile(
-        q_input, default_compilation_configuration, use_virtual_lib=use_virtual_lib, show_mlir=True
+        q_input,
+        default_compilation_configuration,
+        use_virtual_lib=use_virtual_lib,
     )
 
     for x_q in q_input.qvalues:

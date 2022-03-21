@@ -56,7 +56,12 @@ class QuantizedArray:
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
             # To be seen what should be done in the long run (refactor of this class or Tracers)
             self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
-            self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
+            if scale is None or zero_point is None:
+                self.scale, self.zero_point, self.qvalues = self.compute_quantization_parameters()
+            else:
+                self.scale = scale
+                self.zero_point = zero_point
+                self.quant()
         else:
             assert_true(
                 scale is not None and zero_point is not None,
