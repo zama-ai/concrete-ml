@@ -3,6 +3,8 @@
 import numpy
 import pytest
 from sklearn.datasets import load_breast_cancer, make_classification
+from sklearn.metrics import make_scorer, matthews_corrcoef
+from sklearn.model_selection import GridSearchCV
 
 from concrete.ml.sklearn import XGBClassifier
 
@@ -44,7 +46,10 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
         random_state=numpy.random.randint(0, 2**15),
     )
     model = XGBClassifier(
-        **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
+        **hyperparameters,
+        n_bits=20,
+        n_jobs=1,
+        random_state=numpy.random.randint(0, 2**15),
     )
     model, sklearn_model = model.fit_benchmark(x, y)
     # Check accuracy and r2 score between the two models predictions
@@ -92,3 +97,27 @@ def test_xgb_classifier(load_data, check_r2_score, check_accuracy):
 
     # # Compare FHE vs non-FHE
     # check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
+
+
+def test_grid_search():
+    """Tests xgboost with the gridsearchCV from sklearn."""
+    x, y = make_classification(
+        n_samples=1000,
+        n_features=100,
+        n_classes=2,
+        random_state=numpy.random.randint(0, 2**15),
+    )
+
+    param_grid = {
+        "n_bits": [20],
+        "max_depth": [2],
+        "n_estimators": [5, 10, 50, 100],
+        "n_jobs": [1],
+    }
+
+    grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
+
+    concrete_clf = XGBClassifier()
+    _ = GridSearchCV(concrete_clf, param_grid, cv=5, scoring=grid_scorer, verbose=1, n_jobs=1).fit(
+        x, y
+    )

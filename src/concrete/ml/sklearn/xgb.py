@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import platform
 import warnings
-from typing import Callable, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy
 import xgboost.sklearn
@@ -25,66 +25,47 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
     q_y: QuantizedArray
     _tensor_tree_predict: Callable
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,missing-docstring,too-many-locals
     def __init__(
         self,
         n_bits: int = 7,
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = 0.1,
         n_estimators: Optional[int] = 20,
+        objective: Optional[str] = "binary:logistic",
         booster: Optional[str] = None,
         tree_method: Optional[str] = None,
         n_jobs: Optional[int] = None,
         gamma: Optional[float] = None,
         min_child_weight: Optional[float] = None,
         max_delta_step: Optional[float] = None,
-        importance_type: Optional[str] = None,
+        subsample: Optional[float] = None,
         colsample_bytree: Optional[float] = None,
         colsample_bylevel: Optional[float] = None,
         colsample_bynode: Optional[float] = None,
-        scale_pos_weight: Optional[float] = None,
-        subsample: Optional[float] = None,
         reg_alpha: Optional[float] = None,
         reg_lambda: Optional[float] = None,
-        objective: Optional[str] = "binary:logistic",
-        use_label_encoder: Optional[bool] = False,
+        scale_pos_weight: Optional[float] = None,
         base_score: Optional[float] = None,
+        missing: float = numpy.nan,
+        num_parallel_tree: Optional[int] = None,
+        monotone_constraints: Optional[Union[Dict[str, int], str]] = None,
+        interaction_constraints: Optional[Union[str, List[Tuple[str]]]] = None,
+        importance_type: Optional[str] = None,
+        gpu_id: Optional[int] = None,
+        validate_parameters: Optional[bool] = None,
+        predictor: Optional[str] = None,
+        enable_categorical: bool = False,
+        use_label_encoder: bool = False,
         random_state: Optional[
             Union[numpy.random.RandomState, int]  # pylint: disable=no-member
         ] = None,
         verbosity: Optional[int] = None,
+        **kwargs: Any,
     ):
-        """Initialize the XGBoostClassifier.
+        # See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
+        # for more information about the parameters used.
 
-        Args:
-            n_bits (int): The number of bits to use. Defaults to 7.
-            max_depth (Optional[int]): The maximum depth of the tree. Defaults to 3.
-            learning_rate (Optional[float]): The learning rate. Defaults to 0.1.
-            n_estimators (Optional[int]): The number of estimators. Defaults to 20.
-            booster (Optional[str]): The booster type to use. Defaults to None.
-            tree_method (Optional[str]): The tree method to use. Defaults to None.
-            n_jobs (Optional[int]): The number of jobs to use. Defaults to None.
-            gamma (Optional[float]): The gamma parameter. Defaults to None.
-            min_child_weight (Optional[float]): The minimum child weight. Defaults to None.
-            max_delta_step (Optional[float]): The maximum delta step. Defaults to None.
-            importance_type (Optional[str]): The importance type. Defaults to None.
-            colsample_bytree (Optional[float]): The colsample by tree parameter. Defaults to None.
-            colsample_bylevel (Optional[float]): The colsample by level parameter.
-                Defaults to None.
-            colsample_bynode (Optional[float]): The colsample by node parameter. Defaults to None.
-            scale_pos_weight (Optional[float]): The scale pos weight parameter. Defaults to None.
-            subsample (Optional[float]): The subsample parameter. Defaults to None.
-            reg_alpha (Optional[float]): The regularization alpha parameter. Defaults to None.
-            reg_lambda (Optional[float]): The regularization lambda parameter. Defaults to None.
-            objective (Optional[str]): The objective function to use.
-                Defaults to "binary:logistic".
-            use_label_encoder (Optional[bool]): Whether to use the label encoder.
-                Defaults to False.
-            base_score (Optional[float]): The base score. Defaults to 0.5.
-            random_state (Optional[Union[numpy.random.RandomState, int]]): The random state.
-                Defaults to None.
-            verbosity (Optional[int]): Verbosity level. Defaults to 0.
-        """
         # base_score != 0.5 or None seems to not pass our tests (see #474)
         assert_true(
             base_score in [0.5, None],
@@ -104,52 +85,71 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
             max_depth=max_depth,
             learning_rate=learning_rate,
             n_estimators=n_estimators,
+            objective=objective,
             booster=booster,
             tree_method=tree_method,
             n_jobs=n_jobs,
             gamma=gamma,
             min_child_weight=min_child_weight,
             max_delta_step=max_delta_step,
-            importance_type=importance_type,
+            subsample=subsample,
             colsample_bytree=colsample_bytree,
             colsample_bylevel=colsample_bylevel,
             colsample_bynode=colsample_bynode,
-            scale_pos_weight=scale_pos_weight,
-            subsample=subsample,
             reg_alpha=reg_alpha,
             reg_lambda=reg_lambda,
-            objective=objective,
+            scale_pos_weight=scale_pos_weight,
+            base_score=base_score,
+            missing=missing,
+            num_parallel_tree=num_parallel_tree,
+            monotone_constraints=monotone_constraints,
+            interaction_constraints=interaction_constraints,
+            importance_type=importance_type,
+            gpu_id=gpu_id,
+            validate_parameters=validate_parameters,
+            predictor=predictor,
+            enable_categorical=enable_categorical,
             use_label_encoder=use_label_encoder,
             random_state=random_state,
             verbosity=verbosity,
-            base_score=base_score,
+            **kwargs,
         )
         BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.init_args = {
             "max_depth": max_depth,
             "learning_rate": learning_rate,
             "n_estimators": n_estimators,
+            "objective": objective,
             "booster": booster,
             "tree_method": tree_method,
             "n_jobs": n_jobs,
             "gamma": gamma,
             "min_child_weight": min_child_weight,
             "max_delta_step": max_delta_step,
+            "subsample": subsample,
             "colsample_bytree": colsample_bytree,
             "colsample_bylevel": colsample_bylevel,
             "colsample_bynode": colsample_bynode,
-            "scale_pos_weight": scale_pos_weight,
-            "subsample": subsample,
             "reg_alpha": reg_alpha,
             "reg_lambda": reg_lambda,
-            "objective": objective,
+            "scale_pos_weight": scale_pos_weight,
+            "base_score": base_score,
+            "missing": missing,
+            "num_parallel_tree": num_parallel_tree,
+            "monotone_constraints": monotone_constraints,
+            "interaction_constraints": interaction_constraints,
+            "importance_type": importance_type,
+            "gpu_id": gpu_id,
+            "validate_parameters": validate_parameters,
+            "predictor": predictor,
+            "enable_categorical": enable_categorical,
             "use_label_encoder": use_label_encoder,
             "random_state": random_state,
             "verbosity": verbosity,
-            "base_score": base_score,
+            **kwargs,
         }
 
-    # pylint: enable=too-many-arguments
+    # pylint: enable=too-many-arguments,missing-docstring,too-many-locals
 
     #  pylint: disable=arguments-differ
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, **kwargs) -> "XGBClassifier":
