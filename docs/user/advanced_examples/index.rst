@@ -18,8 +18,6 @@ Scikit-learn
    PoissonRegression.ipynb
    DecisionTreeClassifier.ipynb
    XGBClassifier.ipynb
-   RandomForest.md
-   SVM.md
 
 Torch
 **********************
