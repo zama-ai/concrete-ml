@@ -543,6 +543,22 @@ class QuantizedAdd(QuantizedOp):
         q_input_0: QuantizedArray = prepared_inputs[0]
         q_input_1: QuantizedArray = prepared_inputs[1]
 
+        # Optimize computation when adding constants, using a TLU and no quantization
+        # Both inputs can not be constant since constant folding would eliminate the Add node
+        if len(self.constant_inputs) > 0:
+            assert_true(len(self.constant_inputs) == 1)
+            const_idx = list(self.constant_inputs.keys())[0]
+            encrypted_idx = 1 - const_idx
+
+            return QuantizedArray(
+                self.n_bits,
+                prepared_inputs[0].values + prepared_inputs[1].values,
+                is_signed=prepared_inputs[encrypted_idx].is_signed,
+                value_is_float=True,
+                scale=self.output_scale,
+                zero_point=self.output_zero_point,
+            )
+
         # De-quantize with input params and re-quantize with output parameters
         # This will use TLUs over each element of the two inputs
         # We do the dequantization directly, instead of q_inputs[0].dequant(),

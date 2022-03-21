@@ -276,11 +276,16 @@ def test_all_arith_ops(
     # Check the R2 of raw output and quantized output (C+V)
     check_r2_score(raw_output_cv, quantized_output_cv)
 
-    # Check that we get the same results in V+V, V+C and C+V modes
+    # Check that we get the same fp32 results in V+V, V+C and C+V modes
     check_float_arrays_equal(raw_output_vv, raw_output_vc)
     check_float_arrays_equal(raw_output_cv, raw_output_vc)
-    check_float_arrays_equal(quantized_output_vc, quantized_output_vv)
+
+    # Check that V+C and C+V is symmetric (int+float mode)
     check_float_arrays_equal(quantized_output_cv, quantized_output_vc)
+
+    # As V+C and C+V work on float values they will not be exactly equal to
+    # the V+V case which works in quantized, we only check R2 for a high bitwidth in this case
+    check_r2_score(quantized_output_vc, quantized_output_vv)
 
 
 GEMM_N_BITS_LIST = [20, 16, 8]
