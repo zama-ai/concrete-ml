@@ -20,8 +20,13 @@ class PostTrainingAffineQuantization:
     Create the quantized version of the passed numpy module.
 
     Args:
-        n_bits (int):                   Number of bits to quantize the model. Currently this
-                                        n_bits will be used for all activation/inputs/weights.
+        n_bits (int, Dict):             Number of bits to quantize the model. If int this
+                                        n_bits will be used for all activation/inputs/weights. If
+                                        dict, then should contain "inputs", "outputs" and "weights"
+                                        keys with corresponding number of quantization bits.
+                                        inputs : any input data to any layers
+                                        outputs: final model output
+                                        weights: all learned parameters or constants in the network
         numpy_model (NumpyModule):   Model in numpy.
         is_signed:                      Whether the weights of the layers can be signed.
                                         Currently, only the weights can be signed.
@@ -31,17 +36,58 @@ class PostTrainingAffineQuantization:
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
-    n_bits: int
+    n_bits: Union[int, Dict]
     quant_params: Dict[str, QuantizedArray]
     numpy_model: NumpyModule
     is_signed: bool
 
-    def __init__(self, n_bits: int, numpy_model: NumpyModule, is_signed: bool = False):
+    def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule, is_signed: bool = False):
         self.quant_ops_dict = {}
+        assert_true(
+            isinstance(n_bits, int)
+            or (isinstance(n_bits, Dict) and n_bits.keys() == {"inputs", "weights", "outputs"}),
+            "Invalid n_bits, either pass an integer or a dictionary containing integer values for"
+            " `inputs`, `weights` and `outputs` keys",
+        )
         self.n_bits = n_bits
         self.quant_params = {}
         self.numpy_model = numpy_model
         self.is_signed = is_signed
+
+    @property
+    def n_bits_inputs(self):
+        """Get the number of bits to use for the quantization of all layers' input.
+
+        Returns:
+            n_bits (int): number of bits for input quantization
+        """
+        if isinstance(self.n_bits, Dict):
+            return self.n_bits["inputs"]
+        return self.n_bits
+
+    # FIXME: When switching to float graphs with operations that quantize inputs:
+    # Remove this ! The output bits will become irrelevant
+    @property
+    def n_bits_outputs(self):
+        """Get the number of bits to use for the quantization of the last layer's output.
+
+        Returns:
+            n_bits (int): number of bits for output quantization
+        """
+        if isinstance(self.n_bits, Dict):
+            return self.n_bits["outputs"]
+        return self.n_bits
+
+    @property
+    def n_bits_weights(self):
+        """Get the number of bits to use for the quantization of any constant (usually weights).
+
+        Returns:
+            n_bits (int): number of bits for constants quantization
+        """
+        if isinstance(self.n_bits, Dict):
+            return self.n_bits["weights"]
+        return self.n_bits
 
     # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/195
     # probably could work by calling layer.quantize_params on each layer just before quantizing them
@@ -54,16 +100,9 @@ class PostTrainingAffineQuantization:
             (
                 onnx_init.name,
                 QuantizedArray(
-                    self.n_bits, numpy_helper.to_array(onnx_init), is_signed=True, is_symmetric=True
-                ),
-            )
-            if numpy_helper.to_array(onnx_init).min() < 0
-            else (
-                onnx_init.name,
-                QuantizedArray(
-                    self.n_bits,
+                    self.n_bits_weights,
                     numpy_helper.to_array(onnx_init),
-                    is_signed=False,
+                    is_signed=numpy_helper.to_array(onnx_init).min() < 0,
                     is_symmetric=True,
                 ),
             )
@@ -93,6 +132,13 @@ class PostTrainingAffineQuantization:
 
         constants: Set[str] = set(self.quant_params.keys())
 
+        # FIXME: once #29 is implemented and ops don't quantize their outputs anymore
+        # this can be removed, as outputs will have the maximum precision allowed
+        last_node = None
+        for node in graph.node:
+            if node.op_type in ["MatMul", "Gemm", "Conv"]:
+                last_node = node
+
         for node in graph.node:
             op_type = node.op_type
             attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
@@ -100,8 +146,12 @@ class PostTrainingAffineQuantization:
             assert_true(len(node.output) == 1)
             output_name = node.output[0]
             if op_type == "Constant":
+                # FIXME: Do not handle constants with QuantizedArray, use numpy.ndarray
+                # let the ops quantize their own inputs
                 node_results[output_name] = QuantizedArray(
-                    self.n_bits, ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0], self.is_signed
+                    self.n_bits_weights,
+                    ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0],
+                    self.is_signed,
                 )
                 constants.add(output_name)
                 continue
@@ -133,9 +183,11 @@ class PostTrainingAffineQuantization:
                 # For mypy
                 assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
                 curr_calibration_data = cast(Tuple[numpy.ndarray, ...], curr_calibration_data)
-                quantized_op_instance = quantized_op_class(
-                    self.n_bits, curr_cst_inputs, **attributes
-                )
+
+                # FIXME: When switching to float graphs with operations that quantize inputs
+                # Change this to always use n_bits_inputs. The output bits will become irrelevant
+                n_bits_op = self.n_bits_outputs if node == last_node else self.n_bits_inputs
+                quantized_op_instance = quantized_op_class(n_bits_op, curr_cst_inputs, **attributes)
                 output_calibration_data = self._calibrate_layers_activation(
                     variable_input_names, output_name, quantized_op_instance, *curr_calibration_data
                 )
@@ -159,7 +211,7 @@ class PostTrainingAffineQuantization:
                     f"got {num_output} for op {op_type}",
                     RuntimeError,
                 )
-                q_node_output = QuantizedArray(self.n_bits, node_output[0], self.is_signed)
+                q_node_output = QuantizedArray(self.n_bits_weights, node_output[0], self.is_signed)
                 node_results[output_name] = q_node_output
                 constants.add(output_name)
 
@@ -187,7 +239,7 @@ class PostTrainingAffineQuantization:
         # Store the learned quantized layer
         self.quant_ops_dict[name] = (tuple(variable_input_names), quantized_op)
         # Create new calibration data (output of the previous layer)
-        q_calibration_data = (QuantizedArray(self.n_bits, data) for data in calibration_data)
+        q_calibration_data = (QuantizedArray(self.n_bits_inputs, data) for data in calibration_data)
         # Dequantize to have the value in clear and ready for next calibration
         return quantized_op(*q_calibration_data).dequant()
 
@@ -214,6 +266,6 @@ class PostTrainingAffineQuantization:
             (graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output),
             self.quant_ops_dict,
         )
-        q_input = (QuantizedArray(self.n_bits, val) for val in calibration_data)
+        q_input = (QuantizedArray(self.n_bits_inputs, val) for val in calibration_data)
         quantized_module.set_inputs_quantization_parameters(*q_input)
         return quantized_module

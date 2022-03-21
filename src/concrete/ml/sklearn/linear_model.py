@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import copy
 import warnings
-from typing import Callable, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -31,7 +31,7 @@ class SklearnLinearModelMixin:
 
     sklearn_alg: Callable
 
-    def __init__(self, *args, n_bits: int = 2, **kwargs):
+    def __init__(self, *args, n_bits: Union[int, Dict] = 2, **kwargs):
         """Initialize the FHE linear model.
 
         Args:

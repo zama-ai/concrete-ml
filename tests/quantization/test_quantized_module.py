@@ -64,7 +64,7 @@ class FC(nn.Module):
         return out
 
 
-N_BITS_LIST = [20, 16, 8]
+N_BITS_LIST = [20, 16, 8, {"inputs": 8, "weights": 8, "outputs": 16}]
 
 
 @pytest.mark.parametrize("n_bits", [pytest.param(n_bits) for n_bits in N_BITS_LIST])

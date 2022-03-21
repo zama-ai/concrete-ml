@@ -113,11 +113,8 @@ class QuantizedArray:
                 zero_point = numpy.round(-rmin)
             else:
                 # If the value is not a 0 we can tweak the scale factor so that
-                # the value quantizes to 2^b - 1, the highest possible quantized value
-
-                # TODO: should we quantize it to the value of 1 what ever the number of bits
-                # in order to save some precision bits ?
-                scale = rmax / (2**self.n_bits - 1)
+                # the value quantizes to 1
+                scale = rmax
                 zero_point = 0
         else:
             if self.is_symmetric:
