@@ -740,6 +740,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Create secrets file for Docker build
+        if: ${{ success() && !cancelled() }}
+        run: |
+          SECRETS_FILE="$(mktemp)"
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            {
+              echo "PRERELEASE=true";
+              echo "PIP_INDEX_URL=${PIP_INDEX_URL}";
+              echo "PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL}";
+            } >> "${SECRETS_FILE}"
+          fi
+          echo "" >> "${SECRETS_FILE}"
+          echo "SECRETS_FILE=${SECRETS_FILE}" >> "$GITHUB_ENV"
+
       - name: Build concrete-ml Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
@@ -750,6 +764,13 @@ jobs:
           push: false
           tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
           no-cache: true
+          secret-files: |
+            "build-env=${{ env.SECRETS_FILE }}"
+
+      - name: Remove secrets file
+        if: ${{ always() }}
+        run: |
+          rm -rf "${SECRETS_FILE}"
 
       - name: Release image sanity check
         if: ${{ success() && !cancelled() }}

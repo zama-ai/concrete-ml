@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM ubuntu:20.04
 
 ENV TZ=Europe/Paris
@@ -8,7 +9,9 @@ WORKDIR /pkg
 COPY docker/release_resources/release_requirements.txt .
 COPY ./pkg/*.whl .
 
-RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
+RUN --mount=type=secret,id=build-env \
+    . /run/secrets/build-env && \
+    apt-get update && apt-get upgrade --no-install-recommends -y && \
     apt-get install --no-install-recommends -y \
     build-essential \
     python3-pip \
@@ -22,6 +25,9 @@ RUN apt-get update && apt-get upgrade --no-install-recommends -y && \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
     python3 -m pip install --no-cache-dir "$(ls ./*.whl)" && \
+    if [ "${PRERELEASE}" = "true" ]; then \
+    PIP_INDEX_URL="${PIP_INDEX_URL}" PIP_EXTRA_INDEX_URL="${PIP_EXTRA_INDEX_URL}" \
+    python3 -m pip install --no-cache-dir -U --pre "concrete-numpy[full]"; fi && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 WORKDIR /app

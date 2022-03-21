@@ -215,6 +215,7 @@ docker_rebuild: docker_clean_volumes
 docker_start:
 	EV_FILE="$$(mktemp tmp.docker.XXXX)" && \
 	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
+	echo "" >> "$${EV_FILE}" && \
 	export $$(cat "$${EV_FILE}" | xargs) && rm -f "$${EV_FILE}" && \
 	docker run --rm -it \
 	-p 8888:8888 \
@@ -224,7 +225,7 @@ docker_start:
 	--volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
-	$(DEV_DOCKER_IMG)
+	$(DEV_DOCKER_IMG) || rm -f "$${EV_FILE}"
 
 .PHONY: docker_build_and_start # Docker build and start
 docker_build_and_start: docker_build docker_start
@@ -302,7 +303,17 @@ jupyter_execute_one:
 
 .PHONY: release_docker # Build a docker release image
 release_docker:
-	./docker/build_release_image.sh
+	EV_FILE="$$(mktemp tmp.docker.XXXX)" && \
+	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
+	PROJECT_VERSION="$$(poetry version)" && \
+	PROJECT_VERSION="$$(echo "$${PROJECT_VERSION}" | cut -d ' ' -f 2)" && \
+	IS_PRERELEASE="$$(poetry run python script/make_utils/version_utils.py \
+	islatest \
+	--new-version "$${PROJECT_VERSION}" \
+	--existing-versions "$${PROJECT_VERSION}" | jq -rc '.is_prerelease')" && \
+	echo "PRERELEASE=$${IS_PRERELEASE}" >> "$${EV_FILE}" && \
+	echo "" >> "$${EV_FILE}" && \
+	./docker/build_release_image.sh "$${EV_FILE}" && rm -f "$${EV_FILE}" || rm -f "$${EV_FILE}"
 
 .PHONY: upgrade_py_deps # Upgrade python dependencies
 upgrade_py_deps:
