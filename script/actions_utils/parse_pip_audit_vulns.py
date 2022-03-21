@@ -31,22 +31,33 @@ def main(args):
         json_content.extend(f.readlines())
 
     report_path = Path(args.vulns_report).resolve()
+    has_vulns = False
+    potential_vulnerabilities_report = []
+
+    if json_content:
+        potential_vulnerabilities_report.append("Found the following vulnerabilities:\n")
+        assert len(json_content) == 1
+        json_data = json.loads(json_content[0])["dependencies"]
+        # print(json.dumps(json_data, indent=4))
+        for entry in json_data:
+            vuln_entries = entry.get("vulns", [])
+            if vuln_entries:
+                has_vulns = True
+                formatted_vulns = format_vulnerability(
+                    entry["name"], entry["version"], vuln_entries
+                )
+                potential_vulnerabilities_report.append(
+                    f"- {f'{NEW_LINE}- '.join(formatted_vulns)}\n"
+                )
+
     with open(report_path, "w", encoding="utf-8") as report:
-        if json_content:
-            report.write("Found the following vulnerabilities:\n")
-            assert len(json_content) == 1
-            json_data = json.loads(json_content[0])
-            # print(json.dumps(json_data, indent=4))
-            for entry in json_data:
-                vuln_entries = entry.get("vulns", [])
-                if vuln_entries:
-                    formatted_vulns = format_vulnerability(
-                        entry["name"], entry["version"], vuln_entries
-                    )
-                    report.write(f"- {f'{NEW_LINE}- '.join(formatted_vulns)}\n")
-            sys.exit(1)
+        if has_vulns:
+            report.writelines(potential_vulnerabilities_report)
         else:
             report.write("No vulnerabilities found.\n")
+
+    if has_vulns:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
