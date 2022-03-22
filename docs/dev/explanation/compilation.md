@@ -1,3 +1,7 @@
+```{note}
+FIXME: Arthur to do
+```
+
 # Compilation Pipeline In Depth
 
 ## Overview of the torch compilation process

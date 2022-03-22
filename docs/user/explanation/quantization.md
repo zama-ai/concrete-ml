@@ -1,3 +1,7 @@
+```{note}
+FIXME: Andrei to do
+```
+
 # Quantization
 
 ```{note}

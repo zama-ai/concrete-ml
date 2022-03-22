@@ -1,3 +1,7 @@
+```{note}
+FIXME: Arthur to do
+```
+
 # ONNX usage
 
 It was decided to use ONNX as the format to convert torch nn.Modules to numpy. The reason being that converting/interpreting torchscript would require a lot of effort while ONNX has tools readily available to easily manipulate the model's representation in numpy. In addition JAX had an example of a lightweight interpreter to run ONNX models as numpy code.

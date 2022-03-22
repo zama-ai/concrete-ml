@@ -3,8 +3,8 @@ Advanced examples
 
 Here is a summary of our results.
 
-```{warning}
-FIXME: do a table with our results
+```{note}
+FIXME: Benoit to do a table with our results
 ```
 
 Scikit-learn
@@ -27,7 +27,6 @@ Torch
 
    FullyConnectedNeuralNetwork.ipynb
    ConvolutionalNeuralNetwork.md
-   NeuralNetworkRegressor.md
 
 Comparison of Classifiers
 **************************

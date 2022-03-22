@@ -1,4 +1,8 @@
-# Contributing
+```{note}
+FIXME: Arthur to do
+```
+
+# Contribute
 
 ```{important}
 There are two ways to contribute to **Concrete ML** or to **Concrete** tools in general:

@@ -1,3 +1,7 @@
+```{note}
+FIXME: Andrei to do
+```
+
 # Quantization
 
 In this section we detail some usage of [quantization](../../user/explanation/quantization.md) as implemented in **Concrete**.

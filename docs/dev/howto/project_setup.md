@@ -1,4 +1,12 @@
-# Setting Up the Project
+```{note}
+FIXME: Arthur to do
+```
+
+# Set Up the Project
+
+```{note}
+FIXME: Arthur, is it still strongly recommended to use docker?
+```
 
 ```{note}
 It is strongly recommended to use the development docker (see the [docker](./docker.md) guide). However you can setup the project on bare macOS and Linux provided you install the required dependencies, launching the script in ./script/make_utils/setup_os_deps.sh should install everything you need (you can first check the content of the file to check what it will do) except for python unless you are on Linux and specify a flag to install python3.8 as well.

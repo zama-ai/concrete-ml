@@ -1,4 +1,8 @@
-# Documenting
+```{note}
+FIXME: Benoit to do
+```
+
+# Document
 
 ## Using Sphinx
 

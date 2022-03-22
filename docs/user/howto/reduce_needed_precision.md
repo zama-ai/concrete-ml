@@ -1,4 +1,8 @@
-# Computing With Quantized Functions
+```{note}
+FIXME: Andrei to do
+```
+
+# Compute With Quantized Functions
 
 With our current technology, we cannot represent integers with more than 7 bits.
 We are actively working on supporting larger integers, so it should get better in the future.

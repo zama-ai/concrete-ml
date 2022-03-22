@@ -1,4 +1,8 @@
-# Setting Docker
+```{note}
+FIXME: Arthur to do
+```
+
+# Set Docker
 
 ## Setting up docker and X forwarding
 

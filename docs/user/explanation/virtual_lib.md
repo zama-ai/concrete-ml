@@ -1,3 +1,7 @@
+```{note}
+FIXME: Arthur to do
+```
+
 # Virtual Lib
 
 prototype of what is coming next quarter
