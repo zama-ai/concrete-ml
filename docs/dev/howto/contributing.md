@@ -1,7 +1,3 @@
-```{note}
-FIXME: Arthur to do
-```
-
 # Contribute
 
 ```{important}
@@ -31,7 +27,15 @@ git checkout -b fix/tracing_indexing_42
 
 ### Conformance
 
-Each commit to **Concrete ML**  should conform to the standards decided by the team. Conformance can be checked using the following command.
+Each commit to **Concrete ML**  should conform to the standards decided by the team.
+
+You can let the development tools fix some issues automatically with the following command.
+
+```shell
+make conformance
+```
+
+Conformance can be checked using the following command.
 
 ```shell
 make pcc
