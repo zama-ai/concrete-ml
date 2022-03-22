@@ -1,7 +1,3 @@
-```{note}
-FIXME: Arthur to do
-```
-
 # Create A Release On GitHub
 
 ## Release Candidate cycle
