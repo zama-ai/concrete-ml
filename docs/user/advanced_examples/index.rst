@@ -26,7 +26,7 @@ Torch
    :maxdepth: 1
 
    FullyConnectedNeuralNetwork.ipynb
-   ConvolutionalNeuralNetwork.md
+   ConvolutionalNeuralNetwork.ipynb
 
 Comparison of Classifiers
 **************************
