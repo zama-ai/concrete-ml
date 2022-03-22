@@ -1,12 +1,10 @@
-```{note}
-FIXME: Arthur to do
-```
-
-# Set Docker
+# Set up Docker
 
 ## Setting up docker and X forwarding
 
 Before you start this section, go ahead and install docker. You can follow [this](https://docs.docker.com/engine/install/) official guide for that.
+
+X forwarding means redirecting display to your host machine screen so that the docker container can display things on your screen (otherwise you would only get CLI/terminal interface to your container).
 
 ### Linux
 
@@ -30,7 +28,7 @@ and now, the X server should be all set in docker (in the regular terminal).
 
 ### Windows
 
-Install Xming and use Xlaunch:
+Install [Xming](https://sourceforge.net/projects/xming/) and use Xlaunch:
 
 - Multiple Windows, Display number: 0
 - `Start no client`
