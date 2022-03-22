@@ -1,11 +1,12 @@
 """Tests for the sklearn linear models."""
-from functools import partial
+import warnings
 from typing import Any, List
 
 import numpy
 import pytest
 from sklearn.datasets import make_classification, make_regression
 from sklearn.decomposition import PCA
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -167,7 +168,11 @@ def test_linear_model_compile_run_fhe(
     # Here we fix n_bits = 2 to make sure the quantized model does not overflow
     # during the compilation.
     model = alg(n_bits=2)
-    model, _ = model.fit_benchmark(x, y)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model, _ = model.fit_benchmark(x, y)
 
     y_pred = model.predict(x[:1])
 
@@ -205,7 +210,11 @@ def test_linear_model_quantization(
     x, y = load_data()
 
     model = alg(n_bits=n_bits)
-    model, sklearn_model = model.fit_benchmark(x, y)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model, sklearn_model = model.fit_benchmark(x, y)
 
     if model._estimator_type == "classifier":  # pylint: disable=protected-access
         # Classification models
@@ -257,7 +266,7 @@ def test_double_fit():
     [
         pytest.param(LinearRegression),
         pytest.param(LogisticRegression),
-        pytest.param(partial(LinearSVR, max_iter=10000), id="LinearSVR"),
+        pytest.param(LinearSVR),
         pytest.param(LinearSVC),
     ],
 )
