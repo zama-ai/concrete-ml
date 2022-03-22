@@ -27,7 +27,6 @@ def test_decision_tree_classifier(
     default_compilation_configuration,
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
-    check_accuracy,
 ):
     """Tests the sklearn DecisionTreeClassifier."""
 
@@ -37,18 +36,7 @@ def test_decision_tree_classifier(
     model = DecisionTreeClassifier(
         n_bits=6, max_depth=7, random_state=numpy.random.randint(0, 2**15)
     )
-    model, sklearn_model = model.fit_benchmark(x, y)
-
-    # Check accuracy and r2 score between the two models predictions
-    check_accuracy(model.predict(x), sklearn_model.predict(x))
-
-    # FIXME: to be restored once we see what happens with predict_proba,
-    # https://github.com/zama-ai/concrete-ml-internal/issues/518
-    # check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
-
-    # FIXME: remove once we see what happens with predict_proba,
-    # https://github.com/zama-ai/concrete-ml-internal/issues/518
-    print("for covering", numpy.max(model.predict_proba(x)))
+    model.fit(x, y)
 
     # Test compilation
     model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
@@ -75,7 +63,7 @@ PARAMS_TREE = {
         for value in values  # type: ignore
     ],
 )
-def test_decision_tree_hyperparameters(hyperparameters, check_accuracy):
+def test_decision_tree_hyperparameters(hyperparameters, check_accuracy, check_r2_score):
     """Test that the hyperparameters are valid."""
     x, y = make_classification(
         n_samples=1000,
@@ -88,13 +76,7 @@ def test_decision_tree_hyperparameters(hyperparameters, check_accuracy):
         **hyperparameters, n_bits=20, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
+
     # Make sure that model.predict is the same as sklearn_model.predict
     check_accuracy(model.predict(x), sklearn_model.predict(x))
-
-    # FIXME: to be restored once we see what happens with predict_proba,
-    # https://github.com/zama-ai/concrete-ml-internal/issues/518
-    # check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
-
-    # FIXME: remove once we see what happens with predict_proba,
-    # https://github.com/zama-ai/concrete-ml-internal/issues/518
-    print("for covering", numpy.max(model.predict_proba(x)))
+    check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
