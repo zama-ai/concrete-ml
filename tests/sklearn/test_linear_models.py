@@ -285,4 +285,8 @@ def test_pipeline_sklearn(alg):
         "alg__n_bits": [2, 3],
     }
     grid_search = GridSearchCV(pipe_cv, param_grid, cv=3)
-    grid_search.fit(x, y)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        grid_search.fit(x, y)
