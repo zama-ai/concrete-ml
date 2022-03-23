@@ -421,6 +421,10 @@ def test_custom_net_classifier():
             """Return the number of quantization bits"""
             return 2
 
+        def predict(self, X, execute_in_fhe=False):
+            # We just need to do argmax on the predicted probabilities
+            return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
+
     clf = MiniCustomNeuralNetClassifier(MiniNet, **params)
 
     x, y = make_classification(

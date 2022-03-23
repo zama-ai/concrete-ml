@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import platform
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
 
 import numpy
 import xgboost.sklearn
@@ -25,6 +25,8 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
     q_y: QuantizedArray
     _tensor_tree_predict: Optional[Callable]
     output_is_signed: bool
+
+    CONCRETE_SPECIFIC_PARAMS: Set[str] = {"n_bits"}
 
     # pylint: disable=too-many-arguments,missing-docstring,too-many-locals
     def __init__(
@@ -82,6 +84,9 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
                 warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
                 n_jobs = 1  # pragma: no cover
 
+        super_args = {**kwargs}
+        eval_metric = super_args.pop("eval_metric", "logloss")
+
         super().__init__(
             max_depth=max_depth,
             learning_rate=learning_rate,
@@ -113,7 +118,8 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
             use_label_encoder=use_label_encoder,
             random_state=random_state,
             verbosity=verbosity,
-            **kwargs,
+            eval_metric=eval_metric,
+            **super_args,
         )
         BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.init_args = {
@@ -252,3 +258,45 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         y_preds = 1.0 / (1.0 + numpy.exp(-y_preds))
         y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
         return y_preds
+
+    def get_xgb_params(self) -> Dict[str, Any]:
+        """Get xgboost specific parameters, removing concrete ml specific parameters.
+
+        Returns:
+            params (Dict): filtered parameters, eliminating parameters not used by XGB backend
+        """
+        params = super().get_xgb_params()
+        # Parameters that should not go into native learner.
+        filtered = {}
+        for k, v in params.items():
+            if k not in self.CONCRETE_SPECIFIC_PARAMS and not callable(v):
+                filtered[k] = v
+        return filtered
+
+    def fit_benchmark(
+        self,
+        X: numpy.ndarray,
+        y: numpy.ndarray,
+        *args,
+        random_state: Optional[int] = None,
+        **kwargs,
+    ) -> Tuple[Any, Any]:
+        """Fit the sklearn tree-based model and the FHE tree-based model.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            y (numpy.ndarray): The target data.
+            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
+                The random state. Defaults to None.
+            *args: args for super().fit
+            **kwargs: kwargs for super().fit
+
+        Returns:
+            Tuple[ConcreteEstimators, SklearnEstimators]:
+                                                The FHE and sklearn tree-based models.
+        """
+        # Impose the evaluation metric unless the user requests an explicit one
+        # This is passed to the original sklearn XGB classifier that is fitted by fit_benchmark
+        kwargs["eval_metric"] = kwargs.get("eval_metric", "logloss")
+
+        return super().fit_benchmark(X, y, *args, random_state=random_state, **kwargs)

@@ -164,6 +164,25 @@ class QuantizedTorchEstimatorMixin:
         Returns:
             y_pred : numpy ndarray with predictions
 
+        """
+
+        # By default, just return the result of predict_proba
+        # which for linear models with no non-linearity applied simply returns
+        # the decision function value
+        return self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+
+    def predict_proba(self, X, execute_in_fhe=False):
+        """Predict on user provided data, returning probabilities.
+
+        Predicts using the quantized clear or FHE classifier
+
+        Args:
+            X : input data, a numpy array of raw values (non quantized)
+            execute_in_fhe : whether to execute the inference in FHE or in the clear
+
+        Returns:
+            y_pred : numpy ndarray with probabilities (if applicable)
+
         Raises:
             ValueError: if the estimator was not yet trained or compiled
         """
@@ -182,15 +201,24 @@ class QuantizedTorchEstimatorMixin:
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:
                 X = X.reshape((1, -1))
-            y_pred = numpy.zeros((X.shape[0],), numpy.int32)
+            y_pred = None
             for idx, x in enumerate(X):
                 q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)
-                y_pred[idx] = self.quantized_module_.forward_fhe.run(q_x).argmax(axis=1)
+                q_pred = self.quantized_module_.forward_fhe.run(q_x)
+                if y_pred is None:
+                    y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
+                y_pred[idx, :] = self.quantized_module_.dequantize_output(q_pred)
+
+            nonlin = self._get_predict_nonlinearity()
+            y_pred = nonlin(torch.from_numpy(y_pred)).numpy()
+
             return y_pred
 
         # For prediction in the clear we call the super class which, in turn,
         # will end up calling .infer of this class
-        return super().predict(X)
+        return super().predict_proba(X)
+
+    # pylint: enable=arguments-differ
 
     def fit_benchmark(self, X, y):
         """Fit the quantized estimator and return reference estimator.

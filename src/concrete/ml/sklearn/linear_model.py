@@ -205,8 +205,8 @@ class SklearnLinearModelMixin:
             show_mlir (bool): if set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
                 or demo. Defaults to False.
-            use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-                Defaults to False.
+            use_virtual_lib (bool): whether to compile using the virtual library that allows higher
+                bitwidths with simulated FHE computation. Defaults to False
         """
         # Quantize the input
         quantized_numpy_inputset = copy.deepcopy(self.quantized_module.q_inputs[0])

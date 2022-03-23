@@ -364,6 +364,26 @@ class NeuralNetClassifier(
     def base_estimator_type(self):
         return SKNeuralNetClassifier
 
+    # Disable pylint here because we add an additional argument to .predict,
+    # with respect to the base class .predict method.
+    # pylint: disable=arguments-differ
+    def predict(self, X, execute_in_fhe=False):
+        """Predict on user provided data.
+
+        Predicts using the quantized clear or FHE classifier
+
+        Args:
+            X : input data, a numpy array of raw values (non quantized)
+            execute_in_fhe : whether to execute the inference in FHE or in the clear
+
+        Returns:
+            y_pred : numpy ndarray with predictions
+
+        """
+
+        # We just need to do argmax on the predicted probabilities
+        return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
+
 
 class NeuralNetRegressor(
     FixedTypeSkorchNeuralNet, QuantizedSkorchEstimatorMixin, SKNeuralNetRegressor
