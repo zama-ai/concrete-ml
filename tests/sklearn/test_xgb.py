@@ -11,7 +11,7 @@ from concrete.ml.sklearn import XGBClassifier
 PARAMS_XGB = {
     "max_depth": [3, 4, 5, 10],
     "learning_rate": [1, 0.5, 0.1],
-    "n_estimators": [50, 100, 1000],
+    "n_estimators": [1, 50, 100, 1000],
     "tree_method": ["auto", "exact", "approx"],
     "gamma": [0, 0.1, 0.5],
     "min_child_weight": [1, 5, 10],
@@ -82,6 +82,7 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
 @pytest.mark.parametrize(
     "max_depth, n_estimators",
     [
+        pytest.param(2, 1, id="max_depth_2_n_estimators_1"),
         pytest.param(2, 5, id="max_depth_2_n_estimators_5"),
         pytest.param(2, 10, id="max_depth_2_n_estimators_10"),
         # FIXME add more tree when https://github.com/zama-ai/concrete-ml-internal/issues/572

@@ -252,6 +252,9 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         assert self.q_y is not None
         y_preds = self.q_y.update_quantized_values(y_preds)
         y_preds = numpy.squeeze(y_preds)
+        if (y_preds.ndim == 1) and (self.n_estimators == 1):
+            # Prediction with only one tree thus adding the first dimension back in.
+            y_preds = y_preds[numpy.newaxis]
         assert_true(y_preds.ndim > 1, "y_preds should be a 2D array")
         y_preds = numpy.transpose(y_preds)
         y_preds = numpy.sum(y_preds, axis=1, keepdims=True)
