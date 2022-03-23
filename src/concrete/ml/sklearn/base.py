@@ -5,15 +5,20 @@
 
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import concrete.numpy as hnp
 import numpy
 import torch
 from concrete.common.compilation.artifacts import CompilationArtifacts
 from concrete.common.compilation.configuration import CompilationConfiguration
+from concrete.common.data_types import Integer
 
+from ..common.debugging.custom_assert import assert_true
+from ..common.utils import generate_proxy_function
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray
 from ..torch import NumpyModule
+from ..virtual_lib import VirtualNPFHECompiler
 
 
 class QuantizedTorchEstimatorMixin:
@@ -259,6 +264,8 @@ class BaseTreeEstimatorMixin:
     init_args: Dict[str, Any]
     random_state: Optional[Union[numpy.random.RandomState, int]]  # pylint: disable=no-member
     sklearn_alg: Any
+    output_is_signed: bool
+    _tensor_tree_predict: Optional[Callable]
 
     def __init__(self, n_bits: int):
         """Initialize the TreeBasedEstimatorMixin.
@@ -290,6 +297,22 @@ class BaseTreeEstimatorMixin:
         Args:
             X (numpy.ndarray): the input
             y (numpy.ndarray): the labels
+        """
+
+    @abstractmethod
+    def predict(
+        self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
+    ) -> numpy.ndarray:
+        """Predict the target values.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            args: args for super().predict
+            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
+            kwargs: kwargs for super().predict
+
+        Returns:
+            numpy.ndarray: The predicted target values.
         """
 
     def fit_benchmark(
@@ -331,3 +354,95 @@ class BaseTreeEstimatorMixin:
         self.__init__(n_bits=self.n_bits, **self.init_args)  # type: ignore
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
+
+    def _execute_in_fhe(self, X: numpy.ndarray) -> numpy.ndarray:
+        """Execute the FHE inference on the input data.
+
+        Args:
+            X (numpy.ndarray): the input data
+
+        Returns:
+            numpy.ndarray: the prediction as ordinals
+        """
+        qX = self.quantize_input(X)
+        # Check that self.fhe_tree is not None
+        assert_true(
+            self.fhe_tree is not None,
+            f"You must call {self.compile.__name__} "
+            f"before calling {self.predict.__name__} with execute_in_fhe=True.",
+        )
+        y_preds = []
+        for qX_i in qX:
+            # FIXME transpose workaround see #292
+            # expected x shape is (n_features, n_samples)
+            fhe_pred = self.fhe_tree.run(qX_i.astype(numpy.uint8).reshape(qX_i.shape[0], 1))
+            y_preds.append(fhe_pred)
+        y_preds_array = numpy.concatenate(y_preds, axis=-1)
+        if self.output_is_signed:
+            # FIXME work around for signed integers
+            # see https://github.com/zama-ai/concrete-ml-internal/issues/556
+            negative_idx = y_preds_array >= 2 ** (self.output_compiled_bitwidth)
+            y_preds_array = numpy.where(
+                negative_idx,
+                y_preds_array - 2 ** (self.output_compiled_bitwidth + 1),
+                y_preds_array,
+            )
+        return y_preds_array
+
+    def compile(
+        self,
+        X: numpy.ndarray,
+        compilation_configuration: Optional[CompilationConfiguration] = None,
+        compilation_artifacts: Optional[CompilationArtifacts] = None,
+        show_mlir: bool = False,
+        use_virtual_lib: bool = False,
+    ):
+        """Compile the model.
+
+        Args:
+            X (numpy.ndarray): the unquantized dataset
+            compilation_configuration (Optional[CompilationConfiguration]): the options for
+                compilation
+            compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
+                during compilation
+            show_mlir (bool): whether or not to show MLIR during the compilation
+            use_virtual_lib (bool): set to True to use the so called virtual lib
+                simulating FHE computation. Defaults to False.
+        """
+        # Make sure that self.tree_predict is not None
+        assert_true(
+            self._tensor_tree_predict is not None, "You must fit the model before compiling it."
+        )
+
+        # mypy bug fix
+        assert self._tensor_tree_predict is not None
+        _tensor_tree_predict_proxy, parameters_mapping = generate_proxy_function(
+            self._tensor_tree_predict, ["inputs"]
+        )
+
+        compiler_class = VirtualNPFHECompiler if use_virtual_lib else hnp.NPFHECompiler
+
+        X = self.quantize_input(X)
+        compiler = compiler_class(
+            _tensor_tree_predict_proxy,
+            {parameters_mapping["inputs"]: "encrypted"},
+            compilation_configuration,
+            compilation_artifacts,
+        )
+        self.fhe_tree = compiler.compile_on_inputset(
+            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir
+        )
+
+        # FIXME work around for signed integers
+        # see https://github.com/zama-ai/concrete-ml-internal/issues/556
+        output_op_graph = self.fhe_tree.op_graph.get_ordered_outputs()
+        assert_true(
+            (len(output_op_graph) == 1) and (len(output_op_graph[0].outputs) == 1),
+            "op_graph has too many outputs",
+        )
+        assert_true(
+            isinstance(dtype_output := output_op_graph[0].outputs[0].dtype, Integer),
+            f"output is {dtype_output} but an Integer is expected.",
+        )
+        self.output_compiled_bitwidth = dtype_output.bit_width
+        self.output_is_signed = dtype_output.is_signed

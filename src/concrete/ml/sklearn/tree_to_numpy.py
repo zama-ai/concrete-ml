@@ -33,7 +33,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     output_n_bits: Optional[int] = 7,
-    use_workaround_for_3d_matmul: bool = False,
+    use_workaround_for_transpose: bool = False,
 ) -> Tuple[Callable, QuantizedArray]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
@@ -43,11 +43,11 @@ def tree_to_numpy(
         framework (str): The framework from which the onnx_model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output.
-        use_workaround_for_3d_matmul (bool): Whether to use the workaround for 3D matmul.
+        use_workaround_for_transpose (bool): Whether to use the workaround for transpose.
 
     Returns:
         Union[Callable, QuantizedArray]: A tuple with a function that takes a numpy array and
-            returns a numpy array and QuantizedArray object to quantize and dequantize
+            returns a numpy array, QuantizedArray object to quantize and dequantize
             the output of the tree.
     """
     # mypy
@@ -106,7 +106,7 @@ def tree_to_numpy(
     # TODO remove Transpose and Reshape from the list when (#292, #295) are done
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast"]
     # Remove with previous TODO.
-    if framework == "sklearn" and use_workaround_for_3d_matmul:
+    if framework == "sklearn" and use_workaround_for_transpose:
         op_type_to_remove.append("Reshape")
     replace_uncessary_nodes_by_identity(onnx_model, op_type_to_remove)
 
@@ -115,7 +115,7 @@ def tree_to_numpy(
         # Reshape initializer with shape (n_tree, hidden_size, n_features)
         # to (hidden_size, n_features). Concrete Numpy only accepts 2d matmul
         # TODO remove when 3d matmul is allowed (#293)
-        if framework == "sklearn" and use_workaround_for_3d_matmul:
+        if framework == "sklearn" and use_workaround_for_transpose:
             if "weight_" in initializer.name and len(initializer.dims) == 3:
                 onnx_model.graph.initializer[i].dims.pop(0)
 
@@ -128,11 +128,14 @@ def tree_to_numpy(
             # Quantize probabilities and store QuantizedArray
             # IMPORTANT: we must use symmetric signed quantization such that
             # 0 in clear == 0 in quantized.
-            is_signed = False
+            output_is_signed = False
             if init_tensor.min() < 0:
-                is_signed = True
+                output_is_signed = True
             q_y = QuantizedArray(
-                n_bits=output_n_bits, values=init_tensor, is_signed=is_signed, is_symmetric=True
+                n_bits=output_n_bits,
+                values=init_tensor,
+                is_signed=output_is_signed,
+                is_symmetric=True,
             )
             # Make sure the zero_point is 0
             assert_true(
@@ -150,7 +153,7 @@ def tree_to_numpy(
         new_initializer = numpy_helper.from_array(init_tensor.astype(int), initializer.name)
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
 
-    if framework == "sklearn" and use_workaround_for_3d_matmul:
+    if use_workaround_for_transpose:
         # Since the transpose is currently not implemented in concrete numpy
         # the input is transposed in clear. We need to update the Gemm
         # where the input is transposed.

@@ -23,7 +23,8 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
     q_x_byfeatures: List[QuantizedArray]
     n_bits: int
     q_y: QuantizedArray
-    _tensor_tree_predict: Callable
+    _tensor_tree_predict: Optional[Callable]
+    output_is_signed: bool
 
     # pylint: disable=too-many-arguments,missing-docstring,too-many-locals
     def __init__(
@@ -178,9 +179,12 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         super().fit(qX, y, **kwargs)
 
         # Tree ensemble inference to numpy
-        # Have to ignore mypy (Can't assign to a method)
-        self._tensor_tree_predict, self.q_y = tree_to_numpy(  # type: ignore
-            self, qX, framework="xgboost", output_n_bits=self.n_bits
+        self._tensor_tree_predict, self.q_y = tree_to_numpy(
+            self,
+            qX,
+            framework="xgboost",
+            output_n_bits=self.n_bits,
+            use_workaround_for_transpose=True,
         )
         return self
 
@@ -218,10 +222,28 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         """
         assert_true(len(args) == 0, f"Unsupported **args parameters {args}")
         assert_true(len(kwargs) == 0, f"Unsupported **kwargs parameters {kwargs}")
-        assert_true(execute_in_fhe is False, "execute_in_fhe is not supported")
-
+        # mypy
+        assert self._tensor_tree_predict is not None
         qX = self.quantize_input(X)
-        y_preds = self._tensor_tree_predict(qX)[0]
+        if execute_in_fhe:
+            y_preds = self._execute_in_fhe(X)
+        else:
+            qX = qX.transpose()
+            y_preds = self._tensor_tree_predict(qX)[0]
+        y_preds = self.post_processing(y_preds)
+        return y_preds
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Apply post-processing to the predictions.
+
+        Args:
+            y_preds (numpy.ndarray): The predictions.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
+        """
+        # mypy
+        assert self.q_y is not None
         y_preds = self.q_y.update_quantized_values(y_preds)
         y_preds = numpy.squeeze(y_preds)
         assert_true(y_preds.ndim > 1, "y_preds should be a 2D array")

@@ -198,7 +198,6 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.q_x_byfeatures = []
         self.n_bits = n_bits
-        self._tensor_tree_predict = None
         self.fhe_tree = None
 
         self.init_args = {
@@ -250,7 +249,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
 
         # Tree inference to numpy
         self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self, qX, "sklearn", output_n_bits=self.n_bits, use_workaround_for_3d_matmul=True
+            self, qX, "sklearn", output_n_bits=self.n_bits, use_workaround_for_transpose=True
         )
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -302,7 +301,9 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         y_preds = self.post_processing(y_preds)
         return y_preds
 
-    def predict(
+    # DecisionTreeClassifier needs a check_input arg which differs from the superclass.
+    # Disabling mypy warning for this.
+    def predict(  # type: ignore
         self, X: numpy.ndarray, check_input: bool = True, execute_in_fhe: bool = False
     ) -> numpy.ndarray:
         """Predict on user data.
@@ -343,6 +344,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         )
         y_preds = numpy.zeros((qX.shape[0], self.n_classes_), dtype=numpy.int32)
         for i in range(qX.shape[0]):
+            # FIXME transpose workaround see #292
+            # expected x shape is (n_features, n_samples)
             fhe_pred = self.fhe_tree.run(qX[i].astype(numpy.uint8).reshape(qX[i].shape[0], 1))
             # Output has the shape (n_classes, n_examples).
             # Transpose to have a shape like the sklearn prediction tensor (n_examples, n_classes).

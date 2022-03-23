@@ -72,31 +72,61 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
         ),
     ],
 )
-def test_xgb_classifier(load_data, check_r2_score, check_accuracy):
-    """Tests the xgboost."""
+@pytest.mark.parametrize(
+    "use_virtual_lib",
+    [
+        pytest.param(False, id="no_virtual_lib"),
+        pytest.param(True, id="use_virtual_lib"),
+    ],
+)
+@pytest.mark.parametrize(
+    "max_depth, n_estimators",
+    [
+        pytest.param(2, 5, id="max_depth_2_n_estimators_5"),
+        pytest.param(2, 10, id="max_depth_2_n_estimators_10"),
+        # FIXME add more tree when https://github.com/zama-ai/concrete-ml-internal/issues/572
+        # is fixed.
+    ],
+)
+@pytest.mark.parametrize(
+    "n_bits",
+    [
+        pytest.param(6, id="n_bits_6"),
+        pytest.param(2, id="n_bits_2"),
+    ],
+)
+def test_xgb_classifier(
+    load_data,
+    max_depth,
+    n_estimators,
+    n_bits,
+    default_compilation_configuration,
+    check_is_good_execution_for_quantized_models,
+    use_virtual_lib,
+):
+    """Tests the xgboost.
+
+    WARNING: Increasing the number of trees will increase the compilation / inference
+        time and risk of out-of-memory errors.
+    """
 
     # Get the dataset
     x, y = load_data()
 
     model = XGBClassifier(
-        max_depth=7,
-        n_estimators=100,
-        n_bits=7,
+        max_depth=max_depth,
+        n_estimators=n_estimators,
+        n_bits=n_bits,
         random_state=numpy.random.randint(0, 2**15),
         n_jobs=1,
     )
-    model, sklearn_model = model.fit_benchmark(x, y)
+    model.fit(x, y)
 
-    # Check accuracy and r2 score between the two models predictions
-    check_accuracy(model.predict(x), sklearn_model.predict(x))
-    check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
+    # Test compilation
+    model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
 
-    # FIXME No FHE yet with XGBoost (see #436)
-    # # Test compilation
-    # model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
-
-    # # Compare FHE vs non-FHE
-    # check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
+    # Compare FHE vs non-FHE
+    check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
 
 
 def test_grid_search():

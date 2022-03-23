@@ -25,7 +25,7 @@ class RandomForestClassifier(
     q_x_byfeatures: List[QuantizedArray]
     n_bits: int
     q_y: QuantizedArray
-    _tensor_tree_predict: Callable
+    _tensor_tree_predict: Optional[Callable]
 
     def __init__(
         self,
@@ -82,8 +82,7 @@ class RandomForestClassifier(
         super().fit(qX, y, **kwargs)
 
         # Tree ensemble inference to numpy
-        # Have to ignore mypy (Can't assign to a method)
-        self._tensor_tree_predict, self.q_y = tree_to_numpy(  # type: ignore
+        self._tensor_tree_predict, self.q_y = tree_to_numpy(
             self, qX, framework="sklearn", output_n_bits=self.n_bits
         )
         return self
@@ -141,7 +140,8 @@ class RandomForestClassifier(
         assert_true(len(args) == 0, f"Unsupported **args parameters {args}")
         assert_true(len(kwargs) == 0, f"Unsupported **kwargs parameters {kwargs}")
         assert_true(execute_in_fhe is False, "execute_in_fhe is not supported")
-
+        # mypy
+        assert self._tensor_tree_predict is not None
         qX = self.quantize_input(X)
         y_preds = self._tensor_tree_predict(qX)[0]
         y_preds = self.q_y.update_quantized_values(y_preds)
