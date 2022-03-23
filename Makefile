@@ -440,11 +440,17 @@ mdformat:
 	@# grep -v "^\./\." is to avoid files in .hidden_directories
 	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat
 
+	@#Do ToC in the README
+	poetry run mdformat README.md
+
 .PHONY: check_mdformat # Check markdown format
 # Remark we need to remove .md's in venv
 check_mdformat:
 	@# grep -v "^\./\." is to avoid files in .hidden_directories
 	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat --check
+
+	@#Check ToC in the README
+	poetry run mdformat README.md --check
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:
