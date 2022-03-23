@@ -40,9 +40,8 @@ extensions = [
     "sphinx_copybutton",
     "nbsphinx",
     "sphinx.ext.napoleon",
-    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/95
-    # Restore for release
-    # "sphinx.ext.viewcode",
+    # Comment this extension when not at release time
+    "sphinx.ext.viewcode",
 ]
 
 myst_enable_extensions = [
