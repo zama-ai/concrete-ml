@@ -129,6 +129,7 @@ def main(args):
     log_msg(f"Project version {to_version} taken from tag: {to_tag is not None}")
 
     from_commit = None
+    from_commit_is_initial_commit = False
     if args.from_ref is None:
         tags_by_name = {strip_leading_v(tag.name): tag for tag in repo.tags}
         all_release_version_infos = {
@@ -152,6 +153,7 @@ def main(args):
             # from https://stackoverflow.com/a/48232574
             last_element_extractor = deque(repo.iter_commits(to_commit), 1)
             from_commit = last_element_extractor.pop()
+            from_commit_is_initial_commit = True
     else:
         from_commit = repo.commit(args.from_ref)
 
@@ -172,7 +174,9 @@ def main(args):
         )
 
     ancestor_tag = sha1_to_tags.get(ancestor_commit.hexsha, None)
-    if ancestor_tag is None:
+    # The initial repo commit is allowed to not have a tag when generating changelogs
+    # If the ancestor has no tag and it's not the repo initial commit
+    if ancestor_tag is None and not from_commit_is_initial_commit:
         raise_exception_or_print_warning(
             is_error=args.ancestor_must_have_tag,
             message_body=(
@@ -229,7 +233,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ancestor-must-have-tag",
         action="store_true",
-        help="Set if the used ancestor must have a tag associated to it.",
+        help="Set if the used ancestor must have a tag associated to it. If the ancestor commit is"
+        " the initial commit from the repo then no error will be raised.",
     )
     parser.add_argument(
         "--to-ref-must-have-tag",
