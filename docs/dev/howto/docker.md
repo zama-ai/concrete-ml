@@ -37,7 +37,7 @@ Install [Xming](https://sourceforge.net/projects/xming/) and use Xlaunch:
 
 ## Building the image
 
-Once you have access to this repository you should be able to launch the commands to build the dev docker image with `make docker_build`.
+Once you have access to this repository and the dev environment is installed on your host OS (via `make setup_env` once [you followed the steps here](../../dev/howto/project_setup.md)), you should be able to launch the commands to build the dev docker image with `make docker_build`.
 
 Once you do that, you can get inside the docker environment using the following command:
 

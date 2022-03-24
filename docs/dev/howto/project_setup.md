@@ -1,22 +1,35 @@
-```{note}
-FIXME: Arthur to do
-```
-
 # Set Up the Project
 
 ```{note}
-FIXME: Arthur, is it still strongly recommended to use docker?
-```
+You will need to first [install python](#installing-python), this can be done automatically for Linux with the rest of the dependencies running the script indicated below with the `--linux-install-python` flag. If you want to install some of the dependencies manually, we detail the installations of [poetry](#installing-poetry) and [make](#installing-make).
 
-```{note}
-It is strongly recommended to use the development docker (see the [docker](./docker.md) guide). However you can setup the project on bare macOS and Linux provided you install the required dependencies, launching the script in ./script/make_utils/setup_os_deps.sh should install everything you need (you can first check the content of the file to check what it will do) except for python unless you are on Linux and specify a flag to install python3.8 as well.
+On Linux and macOS you will have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for docker and bare OS development (you can first check the content of the file to check what it will do).
+
+It is strongly recommended to use the development docker (see the [docker](../../dev/howto/docker.md) guide). However our helper script should bring all the tools you need to develop directly on Linux and macOS.
+
+For Windows see the Warning admonition below.
 
 The project targets Python 3.8 through 3.9 inclusive.
+```
+
+```{warning}
+For Windows users the `setup_os_deps.sh` script does not install dependencies, because of how many different installation methods there are/lack of a single package manager.
+
+The first step is to [install python](#installing-python) (as some of our dev tools depend on it), then [poetry](#installing-poetry). In addition to installing python, you are still going to need the following software available on path on Windows, as some of our basic dev tools depend on them:
+- git [https://gitforwindows.org/](https://gitforwindows.org/)
+- jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
+- make [https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make)
+
+Development on Windows only works with the docker environment, follow [this link to setup the docker environment](../../dev/howto/docker.md).
 ```
 
 ## Installing Python
 
 **Concrete ML** is a `Python` library, so `Python` should be installed to develop **Concrete ML**. `v3.8` and `v3.9` are the only supported versions.
+
+```{note}
+As stated [at the start of this document](#set-up-the-project) you can install python3.8 for Linux automatically if it's available in your distribution's apt repository using the ./script/make_utils/setup_os_deps.sh script.
+```
 
 You can follow [this](https://realpython.com/installing-python/) guide to install it (alternatively you can google `how to install python 3.8 (or 3.9)`).
 
@@ -24,17 +37,25 @@ You can follow [this](https://realpython.com/installing-python/) guide to instal
 
 `Poetry` is our package manager. It drastically simplifies dependency and environment management.
 
+```{note}
+As stated [at the start of this document](#set-up-the-project) you can install Poetry for macOS and Linux automatically using the ./script/make_utils/setup_os_deps.sh script.
+```
+
 You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
 ```{WARNING}
 As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires poetry >= 1.2.
 
-At the time of writing (January 2022), there is only an alpha version of poetry 1.2 that you can install. In the meantime we recommend following [this link to setup the docker environment](./docker.md) on Windows.
+At the time of writing (March 2022), there is only an alpha version of poetry 1.2 that you can install, use the official installer to install preview versions.
 ```
 
 ## Installing make
 
 The dev tools use `make` to launch the various commands.
+
+```{note}
+As stated [at the start of this document](#set-up-the-project) you can install `make` for macOS and Linux automatically if it's available in your distribution's apt repository using the ./script/make_utils/setup_os_deps.sh script.
+```
 
 On Linux you can install `make` from your distribution's preferred package manager.
 
@@ -68,7 +89,7 @@ Clone the code repository using the link for your favourite communication protoc
 We are going to make use of virtual environments. This helps to keep the project isolated from other `Python` projects in the system. The following commands will create a new virtual environment under the project directory and install dependencies to it.
 
 ```{DANGER}
-The following command will not work on Windows if you don't have poetry >= 1.2. As poetry 1.2 is still in alpha we recommend following [this link to setup the docker environment](./docker.md) instead.
+The following command will not work on Windows if you don't have poetry >= 1.2.
 ```
 
 ```shell
