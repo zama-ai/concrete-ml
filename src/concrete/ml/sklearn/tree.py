@@ -275,7 +275,9 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         return y_preds
 
     # pylint: disable=arguments-differ
-    def predict_proba(
+    # DecisionTreeClassifier needs a check_input arg which differs from the superclass.
+    # Disabling mypy warning for this.
+    def predict_proba(  # type: ignore
         self,
         X: numpy.ndarray,
         check_input: Optional[bool] = True,

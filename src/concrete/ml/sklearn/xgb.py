@@ -208,9 +208,9 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         Returns:
             numpy.ndarray: The predicted target values.
         """
-        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe, *args, **kwargs)
-        y_preds = numpy.argmax(y_preds, axis=1)
-        return y_preds
+        return BaseTreeEstimatorMixin.predict(
+            self, X, *args, execute_in_fhe=execute_in_fhe, **kwargs
+        )
 
     def predict_proba(
         self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
@@ -226,18 +226,9 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
-        assert_true(len(args) == 0, f"Unsupported **args parameters {args}")
-        assert_true(len(kwargs) == 0, f"Unsupported **kwargs parameters {kwargs}")
-        # mypy
-        assert self._tensor_tree_predict is not None
-        qX = self.quantize_input(X)
-        if execute_in_fhe:
-            y_preds = self._execute_in_fhe(X)
-        else:
-            qX = qX.transpose()
-            y_preds = self._tensor_tree_predict(qX)[0]
-        y_preds = self.post_processing(y_preds)
-        return y_preds
+        return BaseTreeEstimatorMixin.predict_proba(
+            self, X, *args, execute_in_fhe=execute_in_fhe, **kwargs
+        )
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the predictions.
@@ -248,16 +239,7 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
-        # mypy
-        assert self.q_y is not None
-        y_preds = self.q_y.update_quantized_values(y_preds)
-        y_preds = numpy.squeeze(y_preds)
-        if (y_preds.ndim == 1) and (self.n_estimators == 1):
-            # Prediction with only one tree thus adding the first dimension back in.
-            y_preds = y_preds[numpy.newaxis]
-        assert_true(y_preds.ndim > 1, "y_preds should be a 2D array")
-        y_preds = numpy.transpose(y_preds)
-        y_preds = numpy.sum(y_preds, axis=1, keepdims=True)
+        y_preds = super().post_processing(y_preds)
         y_preds = 1.0 / (1.0 + numpy.exp(-y_preds))
         y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
         return y_preds

@@ -327,7 +327,6 @@ class BaseTreeEstimatorMixin:
             y (numpy.ndarray): the labels
         """
 
-    @abstractmethod
     def predict(
         self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
     ) -> numpy.ndarray:
@@ -342,6 +341,54 @@ class BaseTreeEstimatorMixin:
         Returns:
             numpy.ndarray: The predicted target values.
         """
+        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe, *args, **kwargs)
+        y_preds = numpy.argmax(y_preds, axis=1)
+        return y_preds
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Apply post-processing to the predictions.
+
+        Args:
+            y_preds (numpy.ndarray): The predictions.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
+        """
+        # mypy
+        assert self.q_y is not None
+        y_preds = self.q_y.update_quantized_values(y_preds)
+        # Sum all tree outputs.
+        y_preds = numpy.sum(y_preds, axis=0)
+        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+        y_preds = numpy.transpose(y_preds)
+        return y_preds
+
+    def predict_proba(
+        self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
+    ) -> numpy.ndarray:
+        """Predict the probabilities.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            args: args for super().predict
+            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
+            kwargs: kwargs for super().predict
+
+        Returns:
+            numpy.ndarray: The predicted probabilities.
+        """
+        assert_true(len(args) == 0, f"Unsupported *args parameters {args}")
+        assert_true(len(kwargs) == 0, f"Unsupported **kwargs parameters {kwargs}")
+        # mypy
+        assert self._tensor_tree_predict is not None
+        qX = self.quantize_input(X)
+        if execute_in_fhe:
+            y_preds = self._execute_in_fhe(X)
+        else:
+            qX = qX.transpose()
+            y_preds = self._tensor_tree_predict(qX)[0]
+        y_preds = self.post_processing(y_preds)
+        return y_preds
 
     def fit_benchmark(
         self,
