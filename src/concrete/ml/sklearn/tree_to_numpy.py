@@ -103,22 +103,12 @@ def tree_to_numpy(
         output_to_follow = cut_onnx_graph_after_node_name(onnx_model, cut_node_name)
     keep_following_outputs_discard_others(onnx_model, (output_to_follow,))
 
-    # TODO remove Transpose and Reshape from the list when (#292, #295) are done
+    # TODO remove Transpose from the list when #292 is done
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast"]
-    # Remove with previous TODO.
-    if framework == "sklearn" and use_workaround_for_transpose:
-        op_type_to_remove.append("Reshape")
     replace_uncessary_nodes_by_identity(onnx_model, op_type_to_remove)
 
     # Modify onnx graph to fit in FHE
     for i, initializer in enumerate(onnx_model.graph.initializer):
-        # Reshape initializer with shape (n_tree, hidden_size, n_features)
-        # to (hidden_size, n_features). Concrete Numpy only accepts 2d matmul
-        # TODO remove when 3d matmul is allowed (#293)
-        if framework == "sklearn" and use_workaround_for_transpose:
-            if "weight_" in initializer.name and len(initializer.dims) == 3:
-                onnx_model.graph.initializer[i].dims.pop(0)
-
         # All constants in our tree should be integers.
         # Tree thresholds can be rounded up or down (depending on the tree implementation)
         # while the final probabilities/regression values must be quantized.

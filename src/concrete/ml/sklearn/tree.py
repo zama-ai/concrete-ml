@@ -347,9 +347,11 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             # FIXME transpose workaround see #292
             # expected x shape is (n_features, n_samples)
             fhe_pred = self.fhe_tree.run(qX[i].astype(numpy.uint8).reshape(qX[i].shape[0], 1))
-            # Output has the shape (n_classes, n_examples).
-            # Transpose to have a shape like the sklearn prediction tensor (n_examples, n_classes).
-            y_preds[i, :] = fhe_pred.transpose()[0]
+            # Shape of y_pred is (n_trees, classes, n_examples)
+            # For a single decision tree we can squeeze the first dimension
+            # and get a shape of (classes, n_examples)
+            fhe_pred = numpy.squeeze(fhe_pred, axis=0)
+            y_preds[i, :] = fhe_pred.transpose()
         return y_preds
 
     def _predict_with_tensors(self, X: numpy.ndarray) -> numpy.ndarray:
@@ -375,7 +377,11 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         qX = qX.T
         y_pred = self._tensor_tree_predict(qX)[0]
 
-        # Shape of y_pred is (classes, n_examples)
+        # Shape of y_pred is (n_trees, classes, n_examples)
+        # For a single decision tree we can squeeze the first dimension
+        # and get a shape of (classes, n_examples)
+        y_pred = numpy.squeeze(y_pred, axis=0)
+
         # Transpose and reshape should be applied in clear.
         assert_true(
             (y_pred.shape[0] == self.n_classes_) and (y_pred.shape[1] == qX.shape[1]),
