@@ -73,7 +73,7 @@ def test_decision_tree_hyperparameters(hyperparameters, check_accuracy, check_r2
         random_state=numpy.random.randint(0, 2**15),
     )
     model = DecisionTreeClassifier(
-        **hyperparameters, n_bits=20, random_state=numpy.random.randint(0, 2**15)
+        **hyperparameters, n_bits=24, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 
