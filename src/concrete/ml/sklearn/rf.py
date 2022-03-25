@@ -28,7 +28,7 @@ class RandomForestClassifier(
 
     def __init__(
         self,
-        n_bits: int = 7,
+        n_bits: int = 6,
         max_depth: Optional[int] = 15,
         n_estimators: Optional[int] = 100,
         **kwargs: Any,

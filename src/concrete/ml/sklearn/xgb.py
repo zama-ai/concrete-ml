@@ -31,7 +31,7 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
     # pylint: disable=too-many-arguments,missing-docstring,too-many-locals
     def __init__(
         self,
-        n_bits: int = 7,
+        n_bits: int = 6,
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = 0.1,
         n_estimators: Optional[int] = 20,
