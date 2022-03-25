@@ -1,10 +1,6 @@
-```{note}
-FIXME: Arthur to change the title to be in "Do something" as other titles, to follow the "How to"
-```
+# Use **Concrete ML** ONNX Operator Support For FHE Model Conversion
 
-# ONNX Ops Support
-
-Internally **Concrete ML** uses ONNX ops as Intermediate Representation (or IR) for manipulating Machine Learning models produced through export for torch and Hummingbird and skorch for other models. As ONNX is becoming the standard exchange format for Neural Networks, this allows **Concrete ML** to be flexible while also making model representation manipulation quite easy in addition to allowing a fairly straight-forward mapping to Numpy operators supported by **Concrete Numpy**.
+Internally **Concrete ML** uses [ONNX](https://github.com/onnx/onnx) operators as Intermediate Representation (or IR) for manipulating Machine Learning models produced through export for [torch](https://github.com/pytorch/pytorch), [Hummingbird](https://github.com/microsoft/hummingbird) and [skorch](https://github.com/skorch-dev/skorch). As ONNX is becoming the standard exchange format for Neural Networks, this allows **Concrete ML** to be flexible while also making model representation manipulation quite easy. In addition, it allows for a fairly straight-forward mapping to Numpy operators supported by **Concrete Numpy** to use the **Concrete** stack FHE conversion capabilities.
 
 Here we list the operators that are supported as well as the operators that have a Quantized version which should allow you to perform automatic Post Training Quantization (PTQ) of your models.
 

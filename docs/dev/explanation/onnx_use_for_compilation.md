@@ -1,22 +1,30 @@
-```{note}
-FIXME: Arthur to do
-```
+# Using ONNX As IR For FHE Compilation
 
-# ONNX usage
-
-It was decided to use ONNX as the format to convert torch nn.Modules to numpy. The reason being that converting/interpreting torchscript would require a lot of effort while ONNX has tools readily available to easily manipulate the model's representation in numpy. In addition JAX had an example of a lightweight interpreter to run ONNX models as numpy code.
+It was decided to use ONNX as the intermediate format to convert various ML models (including torch nn.Module and various sklearn models among others) to numpy. The reason being that converting/interpreting torchscript/other representations would require a lot of effort while ONNX has tools readily available to easily manipulate the model's representation in python. In addition JAX had an example of a lightweight interpreter to run ONNX models as numpy code.
 
 ## Steps of the conversion and compilation of a torch model to numpy via ONNX
 
-![Torch compilation flow wit ONNX](../../_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
+![Torch compilation flow with ONNX](../../_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
 
 In the diagram above it is perfectly possible to stop at the `NumpyModule` level if you just want to run the torch model as numpy code without doing quantization.
 
+```{note}
+Note that if you keep the obtained `NumpyModule` without quantizing it with Post Training Quantization (PTQ), it is very likely that it won't be convertible to FHE as the **Concrete** stack requires operators to use integers for computations.
+```
+
 The `NumpyModule` stores the ONNX model that it interprets. The interpreter works by going through the ONNX graph (which by specification is sorted in [topological order](https://en.wikipedia.org/wiki/Topological_sorting) allowing to just run through the graph without having to care for evaluation order) and storing the intermediate results as it goes. To execute a node the interpreter feeds the required inputs (taken either from the model inputs or the intermediate results) to the numpy implementation of each ONNX node.
 
-The post training quantization process uses the ONNX model stored in the `NumpyModule` and interprets it in a very similar way to the forward function of the `NumpyModule` itself. First initializers (ONNX's parameters) are quantized according to `n_bits` passed to the post training quantization process. During the interpretation/execution for post training quantization, the quantized version of the operators are used, constant inputs (parameters or otherwise) are passed to the quantized operators which then decide on how to use the constants.
+```{note}
+Do note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../../user/howto/onnx_supported_ops.md#ops-supported-for-evaluation-numpy-conversion).
+```
 
-Quantized operators are used to create a `QuantizedModule` that, similarly to the `NumpyModule`, run through the operators in a topological order allowing the specific quantized inference with integers-only operations.
+Initializers (ONNX's parameters) are quantized according to `n_bits` and passed to the Post Training Quantization (PTQ) process.
+
+During the PTQ process, the ONNX model stored in the `NumpyModule` is interpreted and calibrated using [the supported ONNX operators for PTQ](../../user/howto/onnx_supported_ops.md#ops-supported-for-post-training-quantization).
+
+Quantized operators are then used to create a `QuantizedModule` that, similarly to the `NumpyModule`, run through the operators to perform the quantized inference with integers-only operations.
+
+That `QuantizedModule` is then compilable to FHE if the intermediate values conform to the 7 bits precision limit of the **Concrete** stack.
 
 ## How to use `QuantizedOp`
 

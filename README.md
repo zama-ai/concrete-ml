@@ -67,7 +67,7 @@ Some information about how to build the documentation of Concrete ML are [availa
 
 ### Developing
 
-Some information about the infrastructure of Concrete ML and some of the core elements we use are available [here](docs/dev/explanation/). Notably, an in-depth look at what is done in Concrete ML is available in [compilation.md](docs/dev/explanation/compilation.md).
+Some information about the infrastructure of Concrete ML and some of the core elements we use are available [here](docs/dev/explanation/). Notably, an in-depth look at what is done in Concrete ML is available in [onnx_use_for_compilation.md](docs/dev/explanation/onnx_use_for_compilation.md).
 
 ### Contributing
 
