@@ -14,6 +14,7 @@ DO_DEV_LICENSES=0
 
 OUTPUT_DIRECTORY="${LICENSE_DIRECTORY}"
 DO_FORCE_UPDATE=0
+CN_VERSION="concrete-numpy[full]"
 
 while [ -n "$1" ]
 do
@@ -25,6 +26,11 @@ do
 
         "--force_update" )
             DO_FORCE_UPDATE=1
+            ;;
+
+        "--cn_version" )
+            shift
+            CN_VERSION="${1}"
             ;;
 
         *)
@@ -96,7 +102,7 @@ then
     fi
 
     poetry install --no-dev
-    python -m pip install -U --pre "concrete-numpy[full]"
+    python -m pip install -U --pre "${CN_VERSION}"
     python -m pip install pip-licenses
 
     # In --format=csv such that the column length (and so, the diff) do not change with longer

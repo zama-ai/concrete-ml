@@ -743,12 +743,18 @@ jobs:
       - name: Create secrets file for Docker build
         if: ${{ success() && !cancelled() }}
         run: |
+          CN_VERSION_SPEC_FOR_RC="$(poetry run python \
+          ./script/make_utils/pyproject_version_parser_helper.py \
+          --pyproject-toml-file pyproject.toml \
+          --get-pip-install-spec-for-dependency concrete-numpy)"
+
           SECRETS_FILE="$(mktemp)"
           if [[ "${IS_PRERELEASE}" == "true" ]]; then
             {
               echo "PRERELEASE=true";
               echo "PIP_INDEX_URL=${PIP_INDEX_URL}";
               echo "PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL}";
+              echo "CN_VERSION='${CN_VERSION_SPEC_FOR_RC}'";
             } >> "${SECRETS_FILE}"
           fi
           echo "" >> "${SECRETS_FILE}"
