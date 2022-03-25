@@ -1,7 +1,3 @@
-```{note}
-FIXME: Benoit to do
-```
-
 # Debug / Get Support / Submit Issues
 
 This version of **Concrete ML** is a first version of the product, meaning that it is not completely finished, contains several bugs (would they be known or unknown at this time), and will improve over time with feedback from early users.

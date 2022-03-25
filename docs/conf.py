@@ -78,7 +78,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "Discourse",
-            "url": "https://community.zama.ai/c/concrete-ml/8",
+            "url": "https://community.zama.ai/c/concrete-ml",
             "icon": "fab fa-discourse",
         }
     ],
