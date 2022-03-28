@@ -48,7 +48,7 @@ Of course, having a PBS for every quantized addition isn't recommended for compu
 
 The above operations are all implemented in **Concrete ML** and transparent to the user via our Quantized Modules.
 
-**Concrete ML** allows you to convert numpy operations to their FHE counterparts. This essentially opens the door to any python computing framework such as [PyTorch](https://pytorch.org/). **Concrete ML** implements a Torch to Numpy converter that makes it easy for the user to use a torch model.
+**Concrete ML** allows you to convert numpy operations to their FHE counterparts. This essentially opens the door to any python computing framework such as [PyTorch](https://pytorch.org/). **Concrete ML** implements a torch to numpy converter that makes it easy for the user to use a torch model.
 
 First we define a model:
 

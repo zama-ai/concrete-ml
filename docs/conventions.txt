@@ -6,5 +6,6 @@ Let's use following conventions for the docs. If a new convention needs to be de
 - Main titles (with a single #) are `Capitalized at Each Letter`
 - Sub titles (with two or more #s) are `Capitalized only for first letter`
 - Use links from doc root (ie, ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move
+- torch (and not Torch or PyTorch)
 
 
