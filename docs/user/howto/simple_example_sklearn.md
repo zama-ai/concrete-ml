@@ -2,7 +2,7 @@
 FIXME: Jordan to do
 ```
 
-# Use Concrete ML with Scikit-Learn
+# Use **Concrete ML** with Scikit-Learn
 
 ## Explanation
 
