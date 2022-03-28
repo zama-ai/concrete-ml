@@ -22,6 +22,34 @@ do
    shift
 done
 
+
+linux_install_gitleaks () {
+    GITLEAKS_VERSION=8.5.2
+    GITLEAKS_LINUX_X64_SHA256=d83e4721c58638d5a2128ca70341c87fe78b6275483e7dc769a9ca6fe4d25dfd
+
+    GITLEAKS_ARCHIVE_LINK="https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+
+    TMP_WORKDIR="$(mktemp -d)"
+    DOWNLOADED_FILE="${TMP_WORKDIR}/gitleaks.tar.gz"
+    wget --https-only --output-document="${DOWNLOADED_FILE}" "${GITLEAKS_ARCHIVE_LINK}"
+    SHA256_DOWNLOADED_FILE="$(sha256sum "${DOWNLOADED_FILE}" | cut -d ' ' -f 1)"
+    STATUS=0
+    if [[ "${SHA256_DOWNLOADED_FILE}" == "${GITLEAKS_LINUX_X64_SHA256}" ]]; then
+        tar -xvf "${DOWNLOADED_FILE}" -C "${TMP_WORKDIR}"
+        GITLEAKS_BIN="${TMP_WORKDIR}/gitleaks"
+        chmod +x "${GITLEAKS_BIN}"
+        cp "${GITLEAKS_BIN}" /usr/local/bin/
+    else
+        echo "Hash mismatch"
+        echo "Got sha256:           ${SHA256_DOWNLOADED_FILE}"
+        echo "Expected sha256:      ${GITLEAKS_LINUX_X64_SHA256}"
+        STATUS=1
+    fi
+    rm -rf "${TMP_WORKDIR}"
+    return "${STATUS}"
+}
+
+
 OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
@@ -59,13 +87,15 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     make \
     pandoc \
     openssl \
-    shellcheck && \
+    shellcheck \
+    wget && \
     ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
     pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir poetry"
+    pip install --no-cache-dir poetry && \
+    linux_install_gitleaks"
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
-    brew install curl git graphviz jq make pandoc shellcheck openssl libomp
+    brew install curl git gitleaks graphviz jq make pandoc shellcheck openssl libomp
     python3 -m pip install -U pip
     python3 -m pip install poetry
 
