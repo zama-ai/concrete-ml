@@ -7,8 +7,7 @@ Concrete ML is an open-source set of tools which aims to simplify the use of ful
 - [Links](#links)
 - [For end users](#for-end-users)
   - [Installation](#installation)
-  - [A simple ML example with a scikit-learn comparison](#a-simple-ml-example-with-a-scikit-learn-comparison)
-  - [A simple DL example with a torch comparison](#a-simple-dl-example-with-a-torch-comparison)
+  - [Simple ML examples with scikit-learn and torch comparison](#simple-ml-examples-with-scikit-learn-and-torch-comparison)
 - [For developers](#for-developers)
   - [Project setup](#project-setup)
   - [Documenting](#documenting)
@@ -38,21 +37,47 @@ To install Concrete ML from PyPi, run the following:
 
 You can find more detailed installation instructions in [installing.md](docs/user/basics/installing.md)
 
-### A simple ML example with a scikit-learn comparison
+### Simple ML examples with scikit-learn and torch comparison
 
-Let's show by example how simple it is to mimic the use of scikit-learn models with Concrete ML.
-
-```python
-print("FIXME (Benoit): to be added from https://docs.preprod.zama.ai/concrete-ml/main/user/howto/simple_example_sklearn.html")
-```
-
-### A simple DL example with a torch comparison
-
-Let's show by example how simple it is to mimic the use of torch models with Concrete ML.
+A simple example which is very close to scikit-learn is as follows, for a linear regression:
 
 ```python
-print("FIXME (Benoit): to be added from https://docs.preprod.zama.ai/concrete-ml/main/user/howto/simple_example_torch.html")
+from sklearn.datasets import make_classification
+from concrete.ml.sklearn import LinearRegression
+
+# Create a synthetic dataset
+x, y = make_classification(n_samples=200, class_sep=2, n_features=4, random_state=42)
+
+# Fix the quantization to 2 bits
+model = LinearRegression(n_bits=2)
+
+# Fit the model
+model, _ = model.fit_benchmark(x, y)
+
+nb_inputs = 10
+
+# We run prediction on non-encrypted data as a reference
+y_pred = model.predict(x[:nb_inputs], execute_in_fhe=False)
+
+# We compile into an FHE model
+model.compile(x)
+
+# We then run the inference in FHE
+y_pred_fhe = model.predict(x[:nb_inputs], execute_in_fhe=True)
+
+print("In clear  :", y_pred.flatten())
+print("In FHE    :", y_pred_fhe.flatten())
+print("Comparison:", (y_pred_fhe == y_pred).flatten())
+
+# Will print
+# In clear  : [1.17241192 1.17241192 0.         1.17241192 0.58620596 1.17241192
+#  1.17241192 0.58620596 0.         0.58620596]
+# In FHE    : [1.17241192 1.17241192 0.         1.17241192 0.58620596 1.17241192
+#  1.17241192 0.58620596 0.         0.58620596]
+# Comparison: [ True  True  True  True  True  True  True  True  True  True]
 ```
+
+We explain this into more details in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete ML** in [this page dedicated to scikit-learn](docs/howto/simple_example_sklearn.md) and in [this page dedicated to torch](docs/howto/simple_example_torch.md).
 
 ## For developers
 
