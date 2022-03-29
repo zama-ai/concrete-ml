@@ -9,7 +9,7 @@ flatbuffers, 2.0, Apache Software License
 fonttools, 4.31.2, MIT License
 hummingbird-ml, 0.4.2.2, MIT License
 joblib, 1.1.0, BSD License
-kiwisolver, 1.4.1, BSD License
+kiwisolver, 1.4.2, BSD License
 loguru, 0.5.3, MIT License
 matplotlib, 3.5.1, Python Software Foundation License
 networkx, 2.7.1, BSD License
