@@ -1,12 +1,8 @@
-```{note}
-FIXME: Andrei to do
-```
-
 # Use Concrete ML with Torch
 
 **Concrete ML** allows you to compile a torch model to its FHE counterpart.
 
-A simple command can compile a torch model to its FHE counterpart. This process executes most of the concepts described in the documentation on [how to use quantization](../../dev/explanation/use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
+This process executes most of the concepts described in the documentation on [how to use quantization](../../dev/explanation/use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
 
 ```python
 from torch import nn
@@ -55,7 +51,9 @@ Now your model is ready to infer in FHE settings.
 <!--pytest-codeblocks:cont-->
 
 ```python
-enc_x = numpy.array([numpy.random.randn(14)]).astype(numpy.uint8) # An example that is going to be encrypted, and used for homomorphic inference.
+enc_x = numpy.array([numpy.random.randn(14)])
+# An example that is going to be encrypted, and used for homomorphic inference.
+enc_x_q = quantized_numpy_module.quantize_input(enc_x)
 fhe_prediction = quantized_numpy_module.forward_fhe.run(enc_x)
 ```
 
@@ -71,6 +69,45 @@ clear_output = quantized_numpy_module.dequantize_output(
 
 If you want to see more compilation examples, you can check out the [Fully Connected Neural Network](../advanced_examples/FullyConnectedNeuralNetwork.ipynb)
 
-## List of Layers Which Are Supported
+## List of supported torch operators
 
-## List of Activations Which Are Supported
+Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete ML ONNX operator reference](../../user/howto/onnx_supported_ops.md) for more information.
+
+```{note}
+FIXME(Andrei): check that torch.abs, torch.exp, torch.log, torch.reshape, torch.Tensor.view, HardSigmoid are really tested
+```
+
+```{note}
+FIXME(Andrei): add missing Relu6, Hardtanh
+```
+
+The following operators in torch will be exported as **Concrete ML** compatible ONNX operators:
+
+- [`torch.abs`](https://pytorch.org/docs/stable/generated/torch.abs.html)
+- [`torch.clip`](https://pytorch.org/docs/stable/generated/torch.clip.html)
+- [`torch.exp`](https://pytorch.org/docs/stable/generated/torch.exp.html)
+- [`torch.nn.identity`](https://pytorch.org/docs/stable/generated/torch.nn.Identity.html)
+- [`torch.log`](https://pytorch.org/docs/stable/generated/torch.log.html)
+- [`torch.reshape`](https://pytorch.org/docs/stable/generated/torch.reshape.html)
+- [`torch.Tensor.view`](https://pytorch.org/docs/stable/generated/torch.Tensor.view.html#torch.Tensor.view)
+
+Operators that take an encrypted input and un-encrypted constants:
+
+- [`torch.add`, torch.Tensor operator +](https://pytorch.org/docs/stable/generated/torch.Tensor.add.html)
+- [`torch.conv2d`, `torch.nn.Conv2D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html)
+- [`torch.matmul`](https://pytorch.org/docs/stable/generated/torch.matmul.html)
+- [`torch.nn.Linear`](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
+
+## List of supported activations
+
+Note that the equivalent functional version from `torch.functional` are also supported.
+
+- [`torch.nn.Celu`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
+- [`torch.nn.Elu`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
+- [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
+- [`torch.nn.LeakyRelu`](https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html)
+- [`torch.nn.Relu`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
+- [`torch.nn.Selu`](https://pytorch.org/docs/stable/generated/torch.nn.SELU.html)
+- [`torch.nn.Sigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html)
+- [`torch.nn.Softplus`](https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html)
+- [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
