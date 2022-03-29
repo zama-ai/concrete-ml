@@ -15,6 +15,10 @@ from ..common.debugging import assert_true
 class VirtualFHECircuit(FHECircuit):
     """Class simulating FHECircuit behavior in the clear, without any actual FHE computations."""
 
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/640
+    # remove this once 640 is done
+    _has_warned: bool = False
+
     def __init__(self, op_graph: OPGraph):
         super().__init__(op_graph, None)
 
@@ -82,7 +86,15 @@ class VirtualFHECircuit(FHECircuit):
 
         Returns:
             Union[int, numpy.ndarray]: evaluation result on clear computations
-
         """
+
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/640
+        # warnings are not currently well handled in our package, use warnings when 640 is done
+        if not self._has_warned:
+            print(
+                f"/!\\ WARNING /!\\: You are using a {self.__class__.__name__} "
+                "meaning the execution is not done in FHE but in clear.",
+            )
+            self._has_warned = True
 
         return self.op_graph(*args)
