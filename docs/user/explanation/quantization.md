@@ -1,7 +1,3 @@
-```{note}
-FIXME: Andrei to do
-```
-
 # Quantization
 
 ```{note}
@@ -12,34 +8,36 @@ from [Wikipedia](https://en.wikipedia.org/wiki/Quantization):
 
 ## Why is it needed?
 
-Modern computing has long been using data types that use 32 or 64 bits (be that integers or floating point numbers), or even bigger data types. However due to the costly nature of FHE computations (see [the limits of FHE](https://docs.zama.ai/concrete-numpy/stable/user/explanation/fhe_and_framework_limits.html)), using such types with FHE is impractical (or plain impossible) to have computations executing in a reasonable amount of time.
+Modern computing has been using data types that are 32 or 64 bits wide for many years, for both integers and floating point values. Even bigger data types are available or can be constructed easily. However, due to the costly nature of FHE computations (see [limits of FHE](https://docs.zama.ai/concrete-numpy/stable/user/explanation/fhe_and_framework_limits.html)), using such types with FHE is impractical (or plain impossible) if we are to execute computations in a reasonable amount of time.
 
 ## The gist of quantization
 
-The basic idea of quantization is to take a range of values represented by a _large_ data type and represent it by a _smaller_ data type. This means some accuracy in the number's representation is lost, but in a lot of cases it is possible to adapt computations to still give meaningful results while using significantly less bits to sent the data used during those computations.
+The basic idea of quantization is to take a **range of values** that are represented by a _large_ datatype and represent them using a single value of a _smaller_ datatype. This means that some accuracy in the representation is lost (e.g. a simple approach is to eliminate least-significant bits), but, in many cases in machine learning, it is possible to adapt the models to give meaningful results while using these smaller datatypes. This significantly reduces the number of bits necessary for intermediary results during the execution of these machine learning models.
 
 ## Quantization in practice
 
 Let's first define some notations. Let $ [\alpha, \beta ] $ be the range of our value to quantize where $ \alpha $ is the minimum and $ \beta $ is the maximum.
 
-To quantize a range with floating point values (in $ \mathbb{R} $) to unsigned integer values (in $ \mathbb{N} $), we first need to choose the data type that is going to be used. **Concrete Library**, the library used in the **Concrete ML**, is currently limited to 7 bits unsigned integers, so we'll use that for the example. Knowing that, for a value in the range $ [\alpha, \beta ] $, we can compute the `scale` $ S $ of the quantization:
+To quantize a range with floating point values (in $ \mathbb{R} $) to integer values (in $ \mathbb{Z} $), we first need to choose the data type that is going to be used. **Concrete Library**, the backend library used by **Concrete ML**, is currently limited to 7 bits  integers, so we'll use this value for the example. Knowing the number of bits that can be used, for a value in the range $ [\alpha, \beta ] $, we can compute the `scale` $ S $ of the quantization:
 
 $$ S =  \frac{\beta - \alpha}{2^n - 1} $$
 
-where $ n $ is the number of bits (here 7). In practice the quantization scale is then $ S = \frac{\beta - \alpha}{127} $. This means the gap between consecutive representible values cannot be smaller than that $ S $ value which means there can be a substantial loss of precision. Every interval of length $ S $ will be represented by a value within the range $ [0..127] $.
+where $ n $ is the number of bits (here 7). In practice the quantization scale is then $ S = \frac{\beta - \alpha}{127} $. This means the gap between consecutive representable values cannot be smaller than $ S $,  which means there can be a substantial loss of precision. Every interval of length $ S $ will be represented by a value within the range $ [0..127] $.
 
-The other important parameter from this quantization schema is the `zero point` $ Z $ value. This essentially brings the 0 floating point value to a specific integer. Doing this allows us to have an asymetric quantization where the resulting integer is in the unsigned integer realm, $ \mathbb{N} $.
+The other important parameter from this quantization schema is the `zero point` $ Z $ value. This essentially brings the 0 floating point value to a specific integer. If the quantization scheme is asymmetric (quantized values are not centered in 0) the resulting integer will be in $ \mathbb{Z} $.
 
 $$ Z = \mathtt{round} \left(- \frac{\alpha}{S} \right) $$
 
-There is more mathematics involved in how computations change when replacing floating point values by integers for a fully connected or a convolution layer. The IntelLabs distiller quantization documentation goes into a [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) about the maths to quantize values and how to keep computations consistent.
+When using quantized values in a matrix multiplication or convolution, the equations for computing the result are more involved. The IntelLabs distiller quantization documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) about the maths to quantize values and how to keep computations consistent.
 
-Regarding quantization and FHE compilation, it is important to understand the difference between two modes:
+Regarding quantization in **Concrete ML** and FHE compilation, it is important to understand the difference between two approaches:
 
-1. the quantization is done before the compilation; notably, the quantization is completely controlled by the user, and can be done by any means, including by using third party frameworks
-1. the quantization is done during the compilation (inside our framework), with much less control by the user.
+1. the quantization is done automatically during the model compilation stage (inside our framework). This approach requires little work by the user, but may not be a one-size fits all solution for all types of models that user may want to implement
+1. the quantization is done by the user, before compilation to FHE; notably, the quantization is completely controlled by the user, and can be done by any means, including by using third party frameworks. In this approach the user is responsible for implementing their models directly with numpy.
 
-For the moment, only the second method is available in **Concrete ML**, but we plan to have the first method available in a further release, since it should give more freedom and better results to the user.
+For the moment, the first method is applicable through the tools provided by in **Concrete ML**, and the models implemented in our framework make use of this approach. When quantization is only performed in the compilation stage, the model training stage does not
+take into account that the model will be quantized. This setting is called Post-Training Quantization (PTQ), and this is the approach
+currently taken in **Concrete ML**. PTQ is effective for moderate bitwidths, such as 7-8 bits per weight and activation, but, for a model to be compatible with FHE constraints, we must quantize these values to as few as 2-3 bits. Thus, for models with more than a few neurons per layer, PTQ is not the optimal solution and we plan to implement a more performant approach called Quantization Aware Training in the near future.
 
 We detail the use of quantization within **Concrete ML** in [here](../../dev/explanation/use_quantization.md).
 
