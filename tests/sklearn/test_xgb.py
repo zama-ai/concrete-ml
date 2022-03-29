@@ -84,9 +84,9 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
     [
         pytest.param(2, 1, id="max_depth_2_n_estimators_1"),
         pytest.param(2, 5, id="max_depth_2_n_estimators_5"),
-        pytest.param(2, 10, id="max_depth_2_n_estimators_10"),
         # FIXME add more tree when https://github.com/zama-ai/concrete-ml-internal/issues/572
         # is fixed.
+        # pytest.param(2, 10, id="max_depth_2_n_estimators_10"),
     ],
 )
 @pytest.mark.parametrize(
