@@ -100,14 +100,16 @@ Operators that take an encrypted input and un-encrypted constants:
 
 ## List of supported activations
 
-Note that the equivalent functional version from `torch.functional` are also supported.
+Note that the equivalent versions from `torch.functional` are also supported.
 
 - [`torch.nn.Celu`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
 - [`torch.nn.Elu`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
 - [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
 - [`torch.nn.LeakyRelu`](https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html)
-- [`torch.nn.Relu`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
+- [`torch.nn.ReLU`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
+- [`torch.nn.ReLU6`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU6.html)
 - [`torch.nn.Selu`](https://pytorch.org/docs/stable/generated/torch.nn.SELU.html)
 - [`torch.nn.Sigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html)
 - [`torch.nn.Softplus`](https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html)
 - [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
+- [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)

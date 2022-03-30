@@ -4,6 +4,7 @@ from inspect import signature
 
 import numpy
 import pytest
+import torch
 from concrete.common.mlir.utils import ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
 from torch import nn
 
@@ -82,6 +83,22 @@ class BranchingModule(nn.Module):
         return x + self.act(x + 1.0)
 
 
+class UnivariateModule(nn.Module):
+    """Torch model that calls univariate and shape functions of torch."""
+
+    def __init__(self, _n_feat, activation_function):
+        super().__init__()
+
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass."""
+        x = x.view(-1, 1)
+        x = torch.reshape(x, (-1, 1))
+        x = self.act(torch.abs(torch.exp(torch.log(1.0 + torch.sigmoid(x)))))
+        return x
+
+
 @pytest.mark.parametrize(
     "activation_function",
     [
@@ -94,7 +111,7 @@ class BranchingModule(nn.Module):
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.ELU, id="ELU"),
         pytest.param(nn.LeakyReLU, id="LeakyReLU"),
-        pytest.param(nn.SELU, id="SELU"),
+        pytest.param(nn.SELU, id="SELU")
         # FIXME: to be done, https://github.com/zama-ai/concrete-ml-internal/issues/335
         #   FIXME: because of missing quantized Mul / Div
         # pytest.param(nn.Mish, id="Mish"),
@@ -112,6 +129,7 @@ class BranchingModule(nn.Module):
         pytest.param(partial(NetWithLoops, n_fc_layers=2)),
         pytest.param(BranchingModule),
         pytest.param(MultiInputNN),
+        pytest.param(UnivariateModule),
     ],
 )
 @pytest.mark.parametrize(
