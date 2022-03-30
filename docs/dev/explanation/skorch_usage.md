@@ -27,11 +27,11 @@ The constructor of this class takes some parameters that influence the FHE-compa
 
 A linear or convolutional layer of a NN will compute a linear combination of weights and inputs (we also call this a  _'multi-sum'_). For example a linear layer will compute:
 
-$output^k = \sum_i^Nw_{i}^kx_i$
+$$\mathtt{output}^k = \sum_i^Nw_{i}^kx_i$$
 
 where $k$ is the k-th neuron in the layer. In this case the sum is taken on a single dimension. A convolutional layer will compute
 
-$output_{xy}^{k} = \sum_c^{N}\sum_j^{K_h}\sum_i^{K_w}w_{cji}^kx_{c,y+j,x+i}^k$
+$$\mathtt{output}_{xy}^{k} = \sum_c^{N}\sum_j^{K_h}\sum_i^{K_w}w_{cji}^kx_{c,y+j,x+i}^k$$
 
 where $k$ is the k-th filter of the convolutional layer, $N$, $K_h$, $K_w$ are the number of input channels, the kernel height and width respectively.
 

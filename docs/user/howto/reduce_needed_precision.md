@@ -37,7 +37,7 @@ to the `compile_on_inputset` function. In this case, the error is caused by the 
 ```{note}
 You can determine the number of bits necessary to represent an integer value with the formula:
 
-$n_{bits}(x) = floor(log_2(x)) + 1$
+$n_{\mathsf{bits}}(x) = \mathsf{floor}(\mathsf{log}_2(x)) + 1$
 ```
 
 ## Can floating point computations be replaced by integer computations ?
