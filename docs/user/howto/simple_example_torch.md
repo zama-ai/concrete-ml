@@ -1,4 +1,4 @@
-# Use Concrete ML with Torch
+# Use **Concrete ML** with Torch
 
 **Concrete ML** allows you to compile a torch model to its FHE counterpart.
 
