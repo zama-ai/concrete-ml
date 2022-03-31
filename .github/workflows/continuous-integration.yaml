@@ -164,14 +164,14 @@ jobs:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
 
-    # Replace default archive.ubuntu.com from docker image with fr mirror
-    # original archive showed performance issues and is farther away
     steps:
       - name: Add masks
         run: |
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
       - name: Docker container related setup and git installation
         run: |
           TZ=Europe/Paris
