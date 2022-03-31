@@ -1,11 +1,38 @@
 
 Let's use following conventions for the docs. If a new convention needs to be decided, let's agree and then add it here.
 
-- numpy (ie, not Numpy or NumPy)
-- **Concrete ML** (with space and bold)
-- Main titles (with a single #) are `Capitalized at Each Letter`
-- Sub titles (with two or more #s) are `Capitalized only for first letter`
-- Use links from doc root (ie, ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move
-- torch (and not Torch or PyTorch)
+terms:
 
+    bit width
+    inputset
+    codebase
+    Machine Learning or machine learning, depends on the context
+    google is a verb ("you can google" but not "you can Google")
 
+Programs:
+
+    Jupyter
+    NumPy but "Concrete Numpy"
+    Concrete-ML in text but Concrete ML in titles, same Concrete-anything; concrete-ml when in command line
+    **Concrete[- ]Something** with **
+    pytest except when title where it is capitalized
+    Python
+    torch (for the code) and PyTorch (for the product)
+    scikit, sklearn and scikit-learn are acceptable
+    Hummingbird
+    Docker (for the product) or docker (for the binary)
+    Poetry (for the product) or poetry (for the binary)
+    Make (for the product) or make (for the command line)
+    PoissonRegression or Poisson Regression (depends on the context, we'll fix it in Zama)
+    macOS
+    bare OS
+
+Titles:
+
+    - Main titles (with a single #) are `Capitalized at Each Letter`
+    - Sub titles (with two or more #s) are `Capitalized only for first letter`
+    - ### titles: must have a . at the end
+
+Links:
+
+    - Use links from doc root (ie, ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move
