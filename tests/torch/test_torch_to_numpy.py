@@ -110,10 +110,10 @@ class NetWithLoops(torch.nn.Module):
         pytest.param(nn.Mish, id="Mish"),
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.Softsign, id="Softsign"),
-        # Issues with precision, #272
-        # pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
-        # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
-        # Are currently not supported for various reasons:
+        pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
+        pytest.param(nn.Tanhshrink, id="Tanhshrink"),
+        # FIXME: Are currently not supported for various reasons:
+        # to be done, https://github.com/zama-ai/concrete-ml-internal/issues/335
         # pytest.param(nn.Hardshrink, id="Hardshrink"),
         # pytest.param(nn.Hardswish, id="Hardswish"),
         # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),

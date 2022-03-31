@@ -73,14 +73,6 @@ If you want to see more compilation examples, you can check out the [Fully Conne
 
 Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete ML ONNX operator reference](../../user/howto/onnx_supported_ops.md) for more information.
 
-```{note}
-FIXME(Andrei): check that torch.abs, torch.exp, torch.log, torch.reshape, torch.Tensor.view, HardSigmoid are really tested
-```
-
-```{note}
-FIXME(Andrei): add missing Relu6, Hardtanh
-```
-
 The following operators in torch will be exported as **Concrete ML** compatible ONNX operators:
 
 - [`torch.abs`](https://pytorch.org/docs/stable/generated/torch.abs.html)

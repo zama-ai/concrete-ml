@@ -111,9 +111,11 @@ class UnivariateModule(nn.Module):
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.ELU, id="ELU"),
         pytest.param(nn.LeakyReLU, id="LeakyReLU"),
-        pytest.param(nn.SELU, id="SELU")
+        pytest.param(nn.SELU, id="SELU"),
+        pytest.param(nn.Hardsigmoid, id="Hardsigmoid")
         # FIXME: to be done, https://github.com/zama-ai/concrete-ml-internal/issues/335
-        #   FIXME: because of missing quantized Mul / Div
+        #   FIXME: because of missing quantized Mul / Div / Sub
+        # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
         # pytest.param(nn.Mish, id="Mish"),
         # pytest.param(nn.SiLU, id="SiLU"),
         # pytest.param(nn.GELU, id="GELU"),
