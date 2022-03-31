@@ -37,6 +37,11 @@ def main():
 
                 timeout = execution["timeout"]
                 assert timeout == 10800  # 3 hours
+
+                for cell in content["cells"]:
+                    if "metadata" in cell:
+                        assert len(cell["metadata"]) == 0
+
             except Exception:
                 print("Notebooks are not sanitized. Please run `make conformance`.")
                 raise
@@ -46,6 +51,11 @@ def main():
                     "timeout": 10800,  # 3 hours
                 }
             }
+
+            for cell in content["cells"]:
+                if "metadata" in cell:
+                    cell["metadata"] = {}
+
             with open(notebook, "w", newline="\n", encoding="utf-8") as f:
                 json.dump(content, f, indent=1, ensure_ascii=False)
                 f.write("\n")
