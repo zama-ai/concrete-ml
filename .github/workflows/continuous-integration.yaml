@@ -791,11 +791,15 @@ jobs:
       - name: Prepare docs push
         id: docs-push-infos
         run: |
-          if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
-             [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]] && \
-             [[ "${IS_PRERELEASE}" == "true" ]]; then
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
+              [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
+              echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
+              echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
+            else
+              echo "No preprod buckets for prerelease!"
+              exit 1
+            fi
           else
             echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}"
             echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}"
