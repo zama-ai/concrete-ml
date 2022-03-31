@@ -299,13 +299,18 @@ jupyter_open:
 
 .PHONY: jupyter_execute # Execute all jupyter notebooks and sanitize
 jupyter_execute:
-	./script/make_utils/jupyter.sh --run_all_notebooks
+	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks
 	"$(MAKE)" finalize_nb
 
 .PHONY: jupyter_execute_one # Execute one jupyter notebook and sanitize
 jupyter_execute_one:
-	./script/make_utils/jupyter.sh --run_notebook "$${NOTEBOOK}"
+	poetry run env ./script/make_utils/jupyter.sh --run_notebook "$${NOTEBOOK}"
 	"$(MAKE)" finalize_nb
+
+.PHONY: jupyter_execute_parallel # Execute all jupyter notebooks in parallel and sanitize
+jupyter_execute_parallel:
+	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks_parallel
+	"$(MAKE) finalize_nb"
 
 .PHONY: release_docker # Build a docker release image
 release_docker:

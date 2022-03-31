@@ -15,6 +15,10 @@ do
             WHAT_TO_DO="run_all_notebooks"
             ;;
 
+        "--run_all_notebooks_parallel" )
+            WHAT_TO_DO="run_all_notebooks_parallel"
+            ;;
+
         "--run_notebook" )
             WHAT_TO_DO="run_notebook"
             shift
@@ -51,6 +55,35 @@ then
     done
 
     # Then, one needs to sanitize the notebooks
+elif [ "$WHAT_TO_DO" == "run_all_notebooks_parallel" ]
+then
+    echo "Refreshing notebooks"
+
+    # shellcheck disable=SC2207
+    NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    PIDS_TO_WATCH=""
+
+    # Run notebooks in sub processes
+    # shellcheck disable=SC2068
+    for NOTEBOOK in ${NOTEBOOKS[@]}; do
+        ( jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" ) &
+        # store PID of process
+        NOTEBOOK_PID="$!"
+        PIDS_TO_WATCH+=" ${NOTEBOOK_PID}"
+        echo "Notebook ${NOTEBOOK} running with PID: ${NOTEBOOK_PID}"
+    done
+
+    STATUS=0
+    for p in ${PIDS_TO_WATCH}; do
+        if wait "${p}"; then
+            echo "Process ${p} success"
+        else
+            echo "Process ${p} fail"
+            STATUS=1
+        fi
+    done
+
+    exit "${STATUS}"
 elif [ "$WHAT_TO_DO" == "run_notebook" ]
 then
     echo "Running ${NOTEBOOK}"
