@@ -2,7 +2,7 @@
 
 ## Python package
 
-To install **Concrete ML** from PyPi, run the following:
+To install **Concrete-ML** from PyPi, run the following:
 
 ```shell
 pip install concrete-ml
@@ -43,9 +43,9 @@ docker run --rm -it -p 8888:8888 zamafhe/concrete-ml:v0.1.0
 docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concrete-ml:v0.1.0
 ```
 
-This will launch a **Concrete ML** enabled jupyter server in the docker, that you can access from your browser.
+This will launch a **Concrete-ML** enabled Jupyter server in Docker, that you can access from your browser.
 
-Alternatively, you can just open a shell in the docker with or without volumes:
+Alternatively, you can just open a shell in Docker with or without volumes:
 
 ```shell
 docker run --rm -it zamafhe/concrete-ml:v0.2.0 /bin/bash
