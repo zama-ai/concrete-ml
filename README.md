@@ -1,19 +1,19 @@
 # Concrete ML
 
-Concrete ML is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our python package, in order to make it usable by any data scientist, without any prior cryptography knowledge. Notably, our APIs are as close as possible from scikit-learn and torch APIs, to simplify adoption by our users.
+**Concrete-ML** is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
 
 <!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=2 -->
 
 - [Links](#links)
 - [For end users](#for-end-users)
-  - [Installation](#installation)
-  - [Supported models](#supported-models)
-  - [Simple ML examples with scikit-learn](#simple-ml-examples-with-scikit-learn)
+  - [Installation.](#installation)
+  - [Supported models.](#supported-models)
+  - [Simple ML examples with scikit-learn.](#simple-ml-examples-with-scikit-learn)
 - [For developers](#for-developers)
-  - [Project setup](#project-setup)
-  - [Documenting](#documenting)
-  - [Developing](#developing)
-  - [Contributing](#contributing)
+  - [Project setup.](#project-setup)
+  - [Documenting.](#documenting)
+  - [Developing.](#developing)
+  - [Contributing.](#contributing)
 - [License](#license)
 
 <!-- mdformat-toc end -->
@@ -26,19 +26,19 @@ Concrete ML is an open-source set of tools which aims to simplify the use of ful
 
 ## For end users
 
-### Installation
+### Installation.
 
-The preferred way to use Concrete ML is through docker. You can get our docker image by pulling the latest docker image:
+The preferred way to use **Concrete-ML** is through Docker. You can get our Docker image by pulling the latest Docker image:
 
 `docker pull zamafhe/concrete-ml:latest`
 
-To install Concrete ML from PyPi, run the following:
+To install **Concrete-ML** from PyPi, run the following:
 
 `pip install concrete-ml`
 
 You can find more detailed installation instructions in [installing.md](docs/user/basics/installing.md)
 
-### Supported models
+### Supported models.
 
 Here is a list of ML algorithms currently supported in this library:
 
@@ -52,7 +52,7 @@ Here is a list of ML algorithms currently supported in this library:
 
 Torch also has its own integration for custom models.
 
-### Simple ML examples with scikit-learn
+### Simple ML examples with scikit-learn.
 
 A simple example which is very close to scikit-learn is as follows, for a logistic regression :
 
@@ -96,26 +96,26 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   True  True  True  True  True  True  True  True]
 ```
 
-We explain this into more details in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete ML** in [this page dedicated to scikit-learn](docs/howto/simple_example_sklearn.md) and in [this page dedicated to torch](docs/howto/simple_example_torch.md).
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML** in [this page dedicated to scikit-learn](docs/howto/simple_example_sklearn.md) and in [this page dedicated to torch](docs/howto/simple_example_torch.md).
 
 ## For developers
 
-### Project setup
+### Project setup.
 
 Installation steps are described in [project_setup.md](docs/dev/howto/project_setup.md).
 Information about how to use Docker for development are available in [docker.md](docs/dev/howto/docker.md).
 
-### Documenting
+### Documenting.
 
-Some information about how to build the documentation of Concrete ML are [available](docs/dev/howto/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
+Some information about how to build the documentation of **Concrete-ML** are [available](docs/dev/howto/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
 
-### Developing
+### Developing.
 
-Some information about the infrastructure of Concrete ML and some of the core elements we use are available [here](docs/dev/explanation/). Notably, an in-depth look at what is done in Concrete ML is available in [onnx_use_for_compilation.md](docs/dev/explanation/onnx_use_for_compilation.md).
+Some information about the infrastructure of **Concrete-ML** and some of the core elements we use are available [here](docs/dev/explanation/). Notably, an in-depth look at what is done in **Concrete-ML** is available in [onnx_use_for_compilation.md](docs/dev/explanation/onnx_use_for_compilation.md).
 
-### Contributing
+### Contributing.
 
-Information about how to contribute are available in [contributing.md](docs/dev/howto/contributing.md).
+Information about how to contribute is available in [contributing.md](docs/dev/howto/contributing.md).
 
 ## License
 
