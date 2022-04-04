@@ -34,11 +34,11 @@ numpy = "^1.22.3"
 setuptools = "*"
 onnx = "^1.11.0"
 scipy = "^1.8.0"
-hummingbird-ml = {git = "https://github.com/zama-ai/hummingbird.git", rev = "dev", extras = ["onnx"]}
 xgboost = "^1.5.2"
 skorch = "^0.11.0"
 scikit-learn = "^1.0.2"
 torch = "^1.11.0"
+concrete-ml-extensions-hb = {extras = ["onnx"], version = "^0.4.2"}
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

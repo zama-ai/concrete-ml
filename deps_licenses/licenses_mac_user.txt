@@ -7,7 +7,6 @@ cycler, 0.11.0, BSD License
 dill, 0.3.4, BSD License
 flatbuffers, 2.0, Apache Software License
 fonttools, 4.31.2, MIT License
-hummingbird-ml, 0.4.2.2, MIT License
 joblib, 1.1.0, BSD License
 kiwisolver, 1.4.2, BSD License
 loguru, 0.5.3, MIT License
@@ -28,7 +27,7 @@ scikit-learn, 1.0.2, new BSD
 scipy, 1.8.0, BSD License
 setuptools-scm, 6.4.2, MIT License
 six, 1.16.0, MIT License
-skl2onnx, 1.11, Apache Software License
+skl2onnx, 1.11.1, Apache Software License
 skorch, 0.11.0, new BSD 3-Clause
 tabulate, 0.8.9, MIT License
 threadpoolctl, 3.1.0, BSD License
