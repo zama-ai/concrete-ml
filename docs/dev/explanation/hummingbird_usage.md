@@ -1,14 +1,14 @@
-# HummingBird Usage
+# Hummingbird Usage
 
 ## Why Hummingbird?
 
-Hummingbird contains an interesting feature for **Concrete ML**: it converts many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) to tensor computations using a specific backend (torch, TorchScript, ONNX and TVM).
+Hummingbird contains an interesting feature for **Concrete-ML**: it converts many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) to tensor computations using a specific backend (torch, torchscript, ONNX and TVM).
 
-**Concrete ML** allows to convert an ONNX inference to numpy inference (note that numpy is always our entry point to run models in FHE).
+**Concrete-ML** allows the conversion of an ONNX inference to NumPy inference (note that NumPy is always our entry point to run models in FHE).
 
 ## Usage
 
-We use a simple functionnality of Hummingbird which is the `convert` function that can be imported as follows from the `hummingbird.ml` package:
+We use a simple functionnality of Hummingbird, which is the `convert` function that can be imported as follows from the `hummingbird.ml` package:
 
 ```python
 # Disable Hummingbird warnings for pytest.
@@ -40,9 +40,9 @@ lr.fit(X, y)
 onnx_model = convert(lr, backend="onnx", test_input=X).model
 ```
 
-In theory, we can directly use this `onnx_model` within our `get_equivalent_numpy_forward` (as long as all operators present in the ONNX are implemented in numpy) and get the numpy inference.
+In theory, we can directly use this `onnx_model` within our `get_equivalent_numpy_forward` (as long as all operators present in the ONNX model are implemented in NumPy) and get the NumPy inference.
 
 In practice, we have some steps to clean the ONNX and make the graph compatible with our framework such as:
 
 - applying quantization where needed
-- deleting non FHE friendly ONNX operators such as *Softmax* and *ArgMax*.
+- deleting non-FHE friendly ONNX operators, such as *Softmax* and *ArgMax*
