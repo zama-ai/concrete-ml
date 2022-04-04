@@ -1,8 +1,8 @@
-# Create A Release On GitHub
+# Create a Release on GitHub
 
-## Release Candidate cycle
+## Release candidate cycle
 
-Before settling for a final release, we go through a Release Candidate (RC) cycle. The idea is that once the code base and documentations look ready for a release you create an RC Release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=&labels=&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
+Before settling for a final release, we go through a release candidate (RC) cycle. The idea is that once the codebase and documentations look ready for a release, you create an RC release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=&labels=&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
 
 ## Proper release
 

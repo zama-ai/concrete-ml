@@ -1,10 +1,10 @@
-# Set up Docker
+# Set Up Docker
 
-## Setting up docker and X forwarding
+## Setting up Docker and X forwarding
 
-Before you start this section, go ahead and install docker. You can follow [this](https://docs.docker.com/engine/install/) official guide for that.
+Before you start this section, go ahead and install Docker. You can follow [this](https://docs.docker.com/engine/install/) official guide if you require assistance.
 
-X forwarding means redirecting display to your host machine screen so that the docker container can display things on your screen (otherwise you would only get CLI/terminal interface to your container).
+X forwarding means redirecting the display to your host machine screen so that the Docker container can display things on your screen (otherwise you would only get CLI/terminal interface to your container).
 
 ### Linux
 
@@ -12,19 +12,19 @@ X forwarding means redirecting display to your host machine screen so that the d
 xhost +localhost
 ```
 
-### Mac OS
+### MacOS.
 
-To be able to use X forwarding on Mac OS:
+To be able to use X forwarding on macOS:
 
 - Install XQuartz
-- Open XQuartz.app application, make sure in the application parameters that `authorize network connections` are set (currently in the Security settings)
+- Open XQuartz.app and make sure that `authorize network connections` is set in the application parameters (currently in the Security settings)
 - Open a new terminal within XQuartz.app and type:
 
 ```shell
 xhost +127.0.0.1
 ```
 
-and now, the X server should be all set in docker (in the regular terminal).
+Now, the X server should be all set in Docker (in the regular terminal).
 
 ### Windows
 
@@ -33,13 +33,13 @@ Install [Xming](https://sourceforge.net/projects/xming/) and use Xlaunch:
 - Multiple Windows, Display number: 0
 - `Start no client`
 - **IMPORTANT**: Check `No Access Control`
-- You can save this configuration to re-launch easily, then click finish.
+- You can save this configuration to relaunch easily, then click finish.
 
 ## Building the image
 
-Once you have access to this repository and the dev environment is installed on your host OS (via `make setup_env` once [you followed the steps here](../../dev/howto/project_setup.md)), you should be able to launch the commands to build the dev docker image with `make docker_build`.
+Once you have access to this repository and the dev environment is installed on your host OS (via `make setup_env` once [you followed the steps here](../../dev/howto/project_setup.md)), you should be able to launch the commands to build the dev Docker image with `make docker_build`.
 
-Once you do that, you can get inside the docker environment using the following command:
+Once you do that, you can get inside the Docker environment using the following command:
 
 ```shell
 make docker_start
@@ -50,4 +50,4 @@ make docker_build_and_start
 make docker_bas
 ```
 
-After you finish your work, you can leave the docker by using the `exit` command or by pressing `CTRL + D`.
+After you finish your work, you can leave Docker by using the `exit` command or by pressing `CTRL + D`.

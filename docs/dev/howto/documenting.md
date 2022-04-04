@@ -24,4 +24,4 @@ Remark that a
 make docs_and_open_docs
 ```
 
-conveniently builds and open the doc at the end.
+conveniently builds and opens the doc at the end.
