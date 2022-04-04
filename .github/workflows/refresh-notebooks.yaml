@@ -90,12 +90,12 @@ jobs:
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: refresh notebooks"
-          branch: "chore/refresh-notebooks-for-${{ github.ref_name }}"
+          branch: "refresh-notebooks-for-${{ github.ref_name }}"
           base: "${{ github.ref_name }}"
           title: "Refresh notebooks for ${{ github.ref_name }}"
           body: "Automatic PR with notebooks refresh for ${{ github.ref_name }}."
           add-paths: |
-            'docs/**/*.ipynb'
+            docs/**/*.ipynb
 
 
   stop-runner-linux:

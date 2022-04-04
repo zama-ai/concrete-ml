@@ -310,7 +310,7 @@ jupyter_execute_one:
 .PHONY: jupyter_execute_parallel # Execute all jupyter notebooks in parallel and sanitize
 jupyter_execute_parallel:
 	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks_parallel
-	"$(MAKE) finalize_nb"
+	"$(MAKE)" finalize_nb
 
 .PHONY: release_docker # Build a docker release image
 release_docker:
