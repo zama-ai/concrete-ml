@@ -1,8 +1,8 @@
-# Use **Concrete ML** with Scikit-Learn
+# Use **Concrete ML** with scikit-learn
 
-**Concrete ML** is compatible with sklearn APIs such as Pipeline() or GridSearch() that are popular model selection methods.
+**Concrete-ML** is compatible with sklearn APIs such as Pipeline() or GridSearch(), which are popular model selection methods.
 
-We give a simple example to such process:
+Here is a simple example of such a process:
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -71,7 +71,7 @@ print(f"Test accuracy: {(y_pred_clear == y_test).mean()}")
 # Compile the model to FHE
 clf.compile(X_train_transformed)
 
-# Run the mode in FHE
+# Run the model in FHE
 # Warning: this will take a while.
 #          It is recommended to run this with a very small batch of example first
 #          (e.g. N_TEST_FHE = 1)

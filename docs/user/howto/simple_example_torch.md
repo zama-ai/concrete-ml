@@ -1,6 +1,6 @@
-# Use **Concrete ML** with Torch
+# Use **Concrete ML** with PyTorch
 
-**Concrete ML** allows you to compile a torch model to its FHE counterpart.
+**Concrete-ML** allows you to compile a torch model to its FHE counterpart.
 
 This process executes most of the concepts described in the documentation on [how to use quantization](../../dev/explanation/use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
 
@@ -29,7 +29,7 @@ torch_model = LogisticRegression()
 Note that the architecture of the neural network passed to be compiled must respect some hard constraints given by FHE. Please read the our [detailed documentation](../howto/reduce_needed_precision.md) on these limitations.
 ```
 
-Once your model is trained you can simply call the `compile_torch_model` function to execute the compilation.
+Once your model is trained, you can simply call the `compile_torch_model` function to execute the compilation.
 
 <!--pytest-codeblocks:cont-->
 
@@ -73,7 +73,7 @@ If you want to see more compilation examples, you can check out the [Fully Conne
 
 Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete ML ONNX operator reference](../../user/howto/onnx_supported_ops.md) for more information.
 
-The following operators in torch will be exported as **Concrete ML** compatible ONNX operators:
+The following operators in torch will be exported as **Concrete-ML** compatible ONNX operators:
 
 - [`torch.abs`](https://pytorch.org/docs/stable/generated/torch.abs.html)
 - [`torch.clip`](https://pytorch.org/docs/stable/generated/torch.clip.html)
@@ -83,7 +83,7 @@ The following operators in torch will be exported as **Concrete ML** compatible 
 - [`torch.reshape`](https://pytorch.org/docs/stable/generated/torch.reshape.html)
 - [`torch.Tensor.view`](https://pytorch.org/docs/stable/generated/torch.Tensor.view.html#torch.Tensor.view)
 
-Operators that take an encrypted input and un-encrypted constants:
+Operators that take an encrypted input and unencrypted constants:
 
 - [`torch.add`, torch.Tensor operator +](https://pytorch.org/docs/stable/generated/torch.Tensor.add.html)
 - [`torch.conv2d`, `torch.nn.Conv2D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html)
