@@ -17,6 +17,8 @@ VERSION=X.Y.Z make set_version
 # or
 VERSION=X.Y.Z-rc? make set_version
 ```
+- [ ] Be sure to have pushed the new version to `main` branch
+
 
 Then:
 - [ ] For non RC releases: check the release milestone issues, cut out what can't be completed in time and change the milestones for these issues
