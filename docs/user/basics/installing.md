@@ -9,7 +9,7 @@ pip install concrete-ml
 ```
 
 ```{note}
-Note that **concrete-ml** installs **concrete-numpy** with all extras which includes `pygraphviz` to draw graphs.
+Note that **concrete-ml** installs **concrete-numpy** with all extras, including `pygraphviz` to draw graphs.
 ```
 
 ```{WARNING}
@@ -23,7 +23,7 @@ Do check <a href="https://pygraphviz.github.io/documentation/stable/install.html
 
 ## Docker image
 
-You can also get the **concrete-ml** docker image by either pulling the latest docker image or a specific version:
+You can also get the **concrete-ml** Docker image by either pulling the latest Docker image or a specific version:
 
 ```shell
 docker pull zamafhe/concrete-ml:latest
@@ -31,7 +31,7 @@ docker pull zamafhe/concrete-ml:latest
 docker pull zamafhe/concrete-ml:v0.1.0
 ```
 
-The image can be used with docker volumes, [see the docker documentation here](https://docs.docker.com/storage/volumes/).
+The image can be used with Docker volumes, [see the Docker documentation here](https://docs.docker.com/storage/volumes/).
 
 You can then use this image with the following command:
 
