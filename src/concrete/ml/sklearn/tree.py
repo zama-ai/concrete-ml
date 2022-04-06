@@ -227,16 +227,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             **kwargs: kwargs for super().fit
         """
         qX = numpy.zeros_like(X)
-        # Check that there are only 2 classes
-        assert_true(
-            len(numpy.unique(numpy.asarray(y).flatten())) == 2,
-            "Only 2 classes are supported currently.",
-        )
-        # Check that the classes are 0 and 1
-        assert_true(
-            bool(numpy.all(numpy.unique(y.ravel()) == [0, 1])),
-            "y must be in [0, 1]",
-        )
+
         self.q_x_byfeatures = []
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -265,7 +256,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         assert self.q_y is not None
         y_preds = self.q_y.update_quantized_values(y_preds)
         y_preds = numpy.squeeze(y_preds)
-        assert_true(y_preds.ndim > 1, "y_preds should be a 2D array")
+        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
         # Check if values are already probabilities
         if any(numpy.abs(numpy.sum(y_preds, axis=1) - 1) > 1e-4):
             # Apply softmax
