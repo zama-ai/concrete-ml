@@ -6,7 +6,7 @@ license = "BSD-3-Clause-Clear"
 authors = [
     "Zama <hello@zama.ai>",
 ]
-homepage = "https://zama.ai/concrete/"
+homepage = "https://zama.ai/concrete-ml/"
 repository = "https://github.com/zama-ai/concrete-ml"
 documentation = "http://docs.zama.ai/concrete-ml/"
 keywords = ["FHE", "homomorphic encryption", "privacy", "security"]
