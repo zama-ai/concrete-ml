@@ -91,4 +91,20 @@ VERSION=A.B.C make set_version
 VERSION=A.B.C-rc? make set_version
 ```
 
+At the end, to avoid any confusion
+- [ ] it may be a good idea to remove the public repo:
+
+```bash
+git remote remove public
+````
+
+and check
+
+```bash
+git remote -vv
+# Should output something similar to this
+origin  git@github.com:zama-ai/concrete-ml-internal.git (fetch)
+origin  git@github.com:zama-ai/concrete-ml-internal.git (push)
+```
+
 All done!
