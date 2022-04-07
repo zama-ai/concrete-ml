@@ -29,7 +29,7 @@ readme = "pypi_readme.md"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
-concrete-numpy = {version = "^0.3.0", extras = ["full"]}
+concrete-numpy = {version = "^0.4.0", extras = ["full"]}
 numpy = "^1.22.3"
 setuptools = "*"
 onnx = "^1.11.0"
@@ -57,7 +57,7 @@ tomlkit = "^0.7.0"
 pytest-xdist = "^2.5.0"
 pytest-randomly = "^3.11.0"
 nbmake = "^1.3.0"
-sphinx-zama-theme = "^3.0.2"
+sphinx-zama-theme = "^3.0.3"
 nbsphinx = "0.8.7"
 pygments-style-tomorrow = "^1.0.0"
 pytest-repeat = "^0.9.1"
