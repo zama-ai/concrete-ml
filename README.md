@@ -20,9 +20,9 @@
 
 ## Links
 
-- [documentation](https://docs.zama.ai/concrete-ml/main/)
+- [documentation](https://docs.zama.ai/concrete-ml/stable/)
 - [community website](https://community.zama.ai/c/concrete-ml)
-- [demos](https://docs.zama.ai/concrete-ml/main/user/advanced_examples/index.html)
+- [demos](https://docs.zama.ai/concrete-ml/stable/user/advanced_examples/index.html)
 
 ## For end users
 
@@ -96,7 +96,7 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   True  True  True  True  True  True  True  True]
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML** in [this page dedicated to scikit-learn](docs/howto/simple_example_sklearn.md) and in [this page dedicated to torch](docs/howto/simple_example_torch.md).
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML** in [this page dedicated to scikit-learn](docs/user/howto/simple_example_sklearn.md) and in [this page dedicated to torch](docs/user/howto/simple_example_torch.md).
 
 ## For developers
 

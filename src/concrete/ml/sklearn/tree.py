@@ -255,14 +255,17 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         # mypy
         assert self.q_y is not None
         y_preds = self.q_y.update_quantized_values(y_preds)
-        y_preds = numpy.squeeze(y_preds)
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-        # Check if values are already probabilities
-        if any(numpy.abs(numpy.sum(y_preds, axis=1) - 1) > 1e-4):
-            # Apply softmax
-            # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/518, remove no-cover's
-            y_preds = numpy.exp(y_preds)  # pragma: no cover
-            y_preds = y_preds / y_preds.sum(axis=1, keepdims=True)  # pragma: no cover
+
+        # Make sure the shape of y_preds has 3 dimensions(n_tree, n_samples, n_classes)
+        # and here n_tree = 1.
+        assert_true(
+            (y_preds.ndim == 3) and (y_preds.shape[0] == 1),
+            f"Wrong dimensions for y_preds: {y_preds.shape} "
+            f"when is should have shape (1, n_samples, n_classes)",
+        )
+
+        # Remove the first dimension in y_preds
+        y_preds = y_preds[0]
         return y_preds
 
     # pylint: disable=arguments-differ
@@ -335,16 +338,12 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             f"You must call {self.compile.__name__} "
             f"before calling {self.predict.__name__} with execute_in_fhe=True.",
         )
-        y_preds = numpy.zeros((qX.shape[0], self.n_classes_), dtype=numpy.int32)
+        y_preds = numpy.zeros((1, qX.shape[0], self.n_classes_), dtype=numpy.int32)
         for i in range(qX.shape[0]):
             # FIXME transpose workaround see #292
             # expected x shape is (n_features, n_samples)
             fhe_pred = self.fhe_tree.run(qX[i].astype(numpy.uint8).reshape(qX[i].shape[0], 1))
-            # Shape of y_pred is (n_trees, classes, n_examples)
-            # For a single decision tree we can squeeze the first dimension
-            # and get a shape of (classes, n_examples)
-            fhe_pred = numpy.squeeze(fhe_pred, axis=0)
-            y_preds[i, :] = fhe_pred.transpose()
+            y_preds[:, i, :] = numpy.transpose(fhe_pred, axes=(0, 2, 1))
         return y_preds
 
     def _predict_with_tensors(self, X: numpy.ndarray) -> numpy.ndarray:
@@ -370,17 +369,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         qX = qX.T
         y_pred = self._tensor_tree_predict(qX)[0]
 
-        # Shape of y_pred is (n_trees, classes, n_examples)
-        # For a single decision tree we can squeeze the first dimension
-        # and get a shape of (classes, n_examples)
-        y_pred = numpy.squeeze(y_pred, axis=0)
-
-        # Transpose and reshape should be applied in clear.
-        assert_true(
-            (y_pred.shape[0] == self.n_classes_) and (y_pred.shape[1] == qX.shape[1]),
-            "y_pred should have shape (n_classes, n_examples)",
-        )
-        y_pred = y_pred.transpose()
+        y_pred = numpy.transpose(y_pred, axes=(0, 2, 1))
         return y_pred
 
     # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/365
