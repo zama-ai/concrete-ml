@@ -389,6 +389,10 @@ set_version:
 		git stash pop; \
 	fi
 
+.PHONY: set_version_and_push # Generate a new version number, update all files with it accordingly and push them
+set_version_and_push: set_version
+	git push 
+
 .PHONY: check_version_coherence # Check that all files containing version have the same value
 check_version_coherence:
 	poetry run python ./script/make_utils/version_utils.py check-version
