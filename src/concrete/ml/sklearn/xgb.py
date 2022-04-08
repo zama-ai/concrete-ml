@@ -239,9 +239,32 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
-        y_preds = super().post_processing(y_preds)
-        y_preds = 1.0 / (1.0 + numpy.exp(-y_preds))
-        y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        assert self.q_y is not None
+        y_preds = self.q_y.update_quantized_values(y_preds)
+
+        # Apply transpose
+        y_preds = numpy.transpose(y_preds, axes=(2, 1, 0))
+
+        # XGBoost returns a shape (n_examples, n_classes, n_trees) when self.n_classes_ >= 3
+        # otherwise it returns a shape (n_examples, 1, n_trees)
+
+        # Reshape to (-1, n_classes, n_trees)
+        # No need to reshape if n_classes = 2
+        if self.n_classes_ > 2:
+            y_preds = y_preds.reshape((-1, self.n_classes_, self.n_estimators))
+
+        # Sum all tree outputs.
+        y_preds = numpy.sum(y_preds, axis=2)
+        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+
+        if self.n_classes_ == 2:
+            # Apply sigmoid (since xgboost output only 1 value when self.n_classes_ = 2
+            y_preds = 1.0 / (1.0 + numpy.exp(-y_preds))
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        else:
+            # Otherwise we simply apply softmax
+            y_preds = numpy.exp(y_preds)
+            y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
         return y_preds
 
     def get_xgb_params(self) -> Dict[str, Any]:

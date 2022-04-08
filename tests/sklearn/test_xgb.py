@@ -36,13 +36,14 @@ PARAMS_XGB = {
         for value in values  # type: ignore
     ],
 )
-def test_xgb_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
+@pytest.mark.parametrize("n_classes", [2, 4])
+def test_xgb_hyperparameters(hyperparameters, n_classes, check_r2_score, check_accuracy):
     """Test that the hyperparameters are valid."""
     x, y = make_classification(
         n_samples=100,
         n_features=10,
         n_informative=5,
-        n_classes=2,
+        n_classes=n_classes,
         random_state=numpy.random.randint(0, 2**15),
     )
     model = XGBClassifier(
@@ -69,6 +70,17 @@ def test_xgb_hyperparameters(hyperparameters, check_r2_score, check_accuracy):
                 random_state=numpy.random.randint(0, 2**15),
             ),
             id="make_classification",
+        ),
+        pytest.param(
+            lambda: make_classification(
+                n_samples=1000,
+                n_features=100,
+                n_classes=4,
+                n_informative=100,
+                n_redundant=0,
+                random_state=numpy.random.randint(0, 2**15),
+            ),
+            id="make_multiclassification",
         ),
     ],
 )
