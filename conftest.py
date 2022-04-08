@@ -225,10 +225,10 @@ def check_is_good_execution_impl(
     check_function: Callable[[Any, Any], bool] = numpy.equal,
     verbose: bool = True,
 ):
-    """Run several times the check compiler_engine.run(*args) == function(*args). If always wrong,
-    return an error. One can set the expected probability of success of one execution and the
-    number of tests, to finetune the probability of bad luck, ie that we run several times the
-    check and always have a wrong result."""
+    """Run several times the check compiler_engine.encrypt_run_decrypt(*args) == function(*args).
+    If always wrong, return an error. One can set the expected probability of success of one
+    execution and the number of tests, to finetune the probability of bad luck, ie that we run
+    several times the check and always have a wrong result."""
     max_bit_width, _ = get_op_graph_max_bit_width_and_nodes_over_bit_width_limit(
         fhe_circuit.op_graph
     )
@@ -254,7 +254,9 @@ def check_is_good_execution_impl(
 
     for i in range(1, nb_tries + 1):
         preprocessed_args = tuple(preprocess_input_func(val) for val in args)
-        last_engine_result = postprocess_output_func(fhe_circuit.run(*preprocessed_args))
+        last_engine_result = postprocess_output_func(
+            fhe_circuit.encrypt_run_decrypt(*preprocessed_args)
+        )
         last_function_result = postprocess_output_func(function(*preprocessed_args))
 
         ok_execution = check_function(last_engine_result, last_function_result)

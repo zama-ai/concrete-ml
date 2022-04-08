@@ -20,7 +20,19 @@ class VirtualFHECircuit(FHECircuit):
     _has_warned: bool = False
 
     def __init__(self, op_graph: OPGraph):
-        super().__init__(op_graph, None)
+        # FIXME: once https://github.com/zama-ai/concrete-numpy-internal/issues/1494 is done, we
+        # can replace by None
+        # Useless program, just to feed some parameters of FHECircuit
+        dummy_mlir = (
+            "module  {\n"
+            + "  func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {\n"
+            + '    %0 = "FHE.add_eint"(%arg0, %arg1) : '
+            + "(!FHE.eint<4>, !FHE.eint<4>) -> !FHE.eint<4>\n"
+            + "    return %0 : !FHE.eint<4>\n"
+            + "  }\n"
+            + "}\n"
+        )
+        super().__init__(op_graph, dummy_mlir)
 
     def get_max_bit_width(self) -> int:
         """Get the max bit width of the simulated circuit.
@@ -78,7 +90,9 @@ class VirtualFHECircuit(FHECircuit):
 
         return check_ok, max_bit_width, formatted_graph_on_failure
 
-    def run(self, *args: List[Union[int, numpy.ndarray]]) -> Union[int, numpy.ndarray]:
+    def encrypt_run_decrypt(
+        self, *args: List[Union[int, numpy.ndarray]]
+    ) -> Union[int, numpy.ndarray]:
         """Simulate the FHE evaluation of the class's OPGraph.
 
         Args:

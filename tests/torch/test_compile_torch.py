@@ -198,7 +198,7 @@ def test_compile_torch(
     if not isinstance(qtest, tuple):
         qtest = (qtest,)
     assert quantized_numpy_module.is_compiled
-    quantized_numpy_module.forward_fhe.run(*qtest)
+    quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
 
@@ -240,4 +240,4 @@ def test_compile_torch(
     if not isinstance(qtest, tuple):
         qtest = (qtest,)
     assert quantized_numpy_module.is_compiled
-    quantized_numpy_module.forward_fhe.run(*qtest)
+    quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)

@@ -342,7 +342,9 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         for i in range(qX.shape[0]):
             # FIXME transpose workaround see #292
             # expected x shape is (n_features, n_samples)
-            fhe_pred = self.fhe_tree.run(qX[i].astype(numpy.uint8).reshape(qX[i].shape[0], 1))
+            fhe_pred = self.fhe_tree.encrypt_run_decrypt(
+                qX[i].astype(numpy.uint8).reshape(qX[i].shape[0], 1)
+            )
             y_preds[:, i, :] = numpy.transpose(fhe_pred, axes=(0, 2, 1))
         return y_preds
 

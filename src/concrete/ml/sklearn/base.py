@@ -204,7 +204,7 @@ class QuantizedTorchEstimatorMixin:
             y_pred = None
             for idx, x in enumerate(X):
                 q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)
-                q_pred = self.quantized_module_.forward_fhe.run(q_x)
+                q_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(q_x)
                 if y_pred is None:
                     y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
                 y_pred[idx, :] = self.quantized_module_.dequantize_output(q_pred)
@@ -450,7 +450,9 @@ class BaseTreeEstimatorMixin:
         for qX_i in qX:
             # FIXME transpose workaround see #292
             # expected x shape is (n_features, n_samples)
-            fhe_pred = self.fhe_tree.run(qX_i.astype(numpy.uint8).reshape(qX_i.shape[0], 1))
+            fhe_pred = self.fhe_tree.encrypt_run_decrypt(
+                qX_i.astype(numpy.uint8).reshape(qX_i.shape[0], 1)
+            )
             y_preds.append(fhe_pred)
         y_preds_array = numpy.concatenate(y_preds, axis=-1)
         if self.output_is_signed:

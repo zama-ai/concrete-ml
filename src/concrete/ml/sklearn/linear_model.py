@@ -176,7 +176,7 @@ class SklearnLinearModelMixin:
             # Execute the compiled FHE circuit
             # Create a numpy array with the expected shape: (n_samples, n_classes)
             for i, qX_i in enumerate(qX):
-                fhe_pred = self.quantized_module.forward_fhe.run(
+                fhe_pred = self.quantized_module.forward_fhe.encrypt_run_decrypt(
                     qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
                 )
                 y_preds[i, :] = fhe_pred[0]
