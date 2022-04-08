@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'release/*'
     tags:
       - "v*"
   # Workflow dispatch and schedule refer to the weekly build
@@ -26,6 +27,7 @@ env:
   IS_WEEKLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
   IS_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
 
 jobs:
   matrix-preparation:
@@ -51,6 +53,8 @@ jobs:
             BUILD_TYPE="release"
           elif [[ "${IS_PUSH_TO_MAIN}" == "true" ]]; then
             BUILD_TYPE="push_to_main"
+          elif [[ "${IS_PUSH_TO_RELEASE}" == "true" ]]; then
+            BUILD_TYPE="push_to_release"
           else
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1

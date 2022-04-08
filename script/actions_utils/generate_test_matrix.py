@@ -9,6 +9,7 @@ WEEKLY = "weekly"
 RELEASE = "release"
 PR = "pr"
 PUSH_TO_MAIN = "push_to_main"
+PUSH_TO_RELEASE = "push_to_release"
 
 LINUX = "linux"
 MACOS = "macos"
@@ -22,6 +23,10 @@ PR_CONF = {"os": PR_OSES, "python": PR_PYTHON_VERSIONS}
 PUSH_TO_MAIN_OSES = {LINUX: "ubuntu-20.04"}
 PUSH_TO_MAIN_PYTHON_VERSIONS = ["3.8"]
 PUSH_TO_MAIN_CONF = {"os": PUSH_TO_MAIN_OSES, "python": PUSH_TO_MAIN_PYTHON_VERSIONS}
+
+PUSH_TO_RELEASE_OSES = {LINUX: "ubuntu-20.04"}
+PUSH_TO_RELEASE_PYTHON_VERSIONS = ["3.8"]
+PUSH_TO_RELEASE_CONF = {"os": PUSH_TO_RELEASE_OSES, "python": PUSH_TO_RELEASE_PYTHON_VERSIONS}
 
 WEEKLY_OSES = {
     LINUX: "ubuntu-20.04",
@@ -46,6 +51,7 @@ CONFIGURATIONS = {
     WEEKLY: WEEKLY_CONF,
     RELEASE: RELEASE_CONF,
     PUSH_TO_MAIN: PUSH_TO_MAIN_CONF,
+    PUSH_TO_RELEASE: PUSH_TO_RELEASE_CONF,
 }
 
 
@@ -82,7 +88,7 @@ if __name__ == "__main__":
         "--build-type",
         type=str,
         required=True,
-        choices=[WEEKLY, RELEASE, PR, PUSH_TO_MAIN],
+        choices=[WEEKLY, RELEASE, PR, PUSH_TO_MAIN, PUSH_TO_RELEASE],
         help="The type of build for which the matrix generation is required",
     )
 
