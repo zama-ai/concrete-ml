@@ -24,7 +24,7 @@ Then:
 - [ ] For non RC releases: check the release milestone issues, cut out what can't be completed in time and change the milestones for these issues
 - [ ] Checkout the commit for release
 - [ ] Call `make release`, which creates a signed tag (requires GPG keys setup, see [here](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification)) and pushes it
-- [ ] Wait for the release workflow to finish and check everything went well.
+- [ ] Wait for the release workflow ([here](https://github.com/zama-ai/concrete-ml-internal/actions)) to finish and check everything went well. It should take a bit longer than a classical build
 
 For public releases:
 - [ ] Check you have the public remote in your repo with the command below
@@ -73,6 +73,7 @@ git push public refs/tags/v0.1.0
 ```
 - [ ] Download all assets from the private GitHub release. Releases are found [here](https://github.com/zama-ai/concrete-ml-internal/releases)
 - [ ] Update the text for the private release to include a human readable summary
+- [ ] Fine tune the changelog, notably to not contain links to issues (which are sometimes added by squash-and-merge), and remove commit messages which are a bit useless (e.g., "fix review")
 - [ ] Change `concrete-ml-internal` references to `concrete-ml` in the downloaded CHANGELOG.md
 - [ ] Create a GitHub release on the public repo [here](https://github.com/zama-ai/concrete-ml/releases/new) by selecting the tag you just pushed
 - [ ] Copy the text from the private release to the public release DO NOT VALIDATE THE RELEASE YET
@@ -83,6 +84,7 @@ git push public refs/tags/v0.1.0
 
 To continue the release cycle:
 - [ ] Choose the version number for next release, e.g. `vA.B.C` (can be `vA.B.C-rc?` for Release Candidates) following semantic versioning: https://semver.org/
+- [ ] Be sure to be on the `main` branch
 - [ ] Update the project version to `A.B.C` (or `A.B.C-rc?`) by running:
 
 ```bash
@@ -90,6 +92,7 @@ VERSION=A.B.C make set_version
 # or
 VERSION=A.B.C-rc? make set_version
 ```
+- [ ] Be sure to have pushed the new version to `main` branch
 
 At the end, to avoid any confusion
 - [ ] it may be a good idea to remove the public repo:
