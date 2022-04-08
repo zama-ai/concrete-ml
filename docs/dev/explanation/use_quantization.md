@@ -82,7 +82,7 @@ for i in range(x_test_q.shape[0]):
     x_q = np.expand_dims(x_test_q[i, :], 0)
 
     # Execute the model in FHE
-    out_fhe = quantized_module.forward_fhe.run(x_q)
+    out_fhe = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
 
     # Dequantization is done in the clear
     output = quantized_module.dequantize_output(out_fhe)
@@ -97,7 +97,7 @@ min and max of the value distributions will be recorded, and these are then appl
 
 Here, a different usage of `QuantizedArray` is shown, where it is constructed from quantized integer values
 and the `scale` and `zero-point` are set explicitly from calibration parameters. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the
-`forward_fhe.run(..)` call.
+`forward_fhe.encrypt_run_decrypt(..)` call.
 
 <!--pytest-codeblocks:skip-->
 

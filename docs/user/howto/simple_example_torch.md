@@ -44,7 +44,7 @@ quantized_numpy_module = compile_torch_model(
 )
 ```
 
-You can then call `quantized_numpy_module.forward_fhe.run()` to have the FHE inference.
+You can then call `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to have the FHE inference.
 
 Now your model is ready to infer in FHE settings.
 
@@ -54,7 +54,7 @@ Now your model is ready to infer in FHE settings.
 enc_x = numpy.array([numpy.random.randn(14)])
 # An example that is going to be encrypted, and used for homomorphic inference.
 enc_x_q = quantized_numpy_module.quantize_input(enc_x)
-fhe_prediction = quantized_numpy_module.forward_fhe.run(enc_x)
+fhe_prediction = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(enc_x)
 ```
 
 `fhe_prediction` contains the clear quantized output. The user can now dequantize the output to get the actual floating point prediction as follows:
