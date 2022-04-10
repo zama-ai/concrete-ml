@@ -86,7 +86,7 @@ jobs:
           make jupyter_execute_parallel
 
       - name: Open PR
-        uses: peter-evans/create-pull-request@f1a7646cead32c950d90344a4fb5d4e926972a8f
+        uses: peter-evans/create-pull-request@bd72e1b7922d417764d27d30768117ad7da78a0e
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: refresh notebooks"
