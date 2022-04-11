@@ -75,11 +75,12 @@ git push public refs/tags/v0.1.0
 - [ ] Update the text for the private release to include a human readable summary
 - [ ] Fine tune the changelog, notably to not contain links to issues (which are sometimes added by squash-and-merge), and remove commit messages which are a bit useless (e.g., "fix review")
 - [ ] Change `concrete-ml-internal` references to `concrete-ml` in the downloaded CHANGELOG.md
-- [ ] Create a GitHub release on the public repo [here](https://github.com/zama-ai/concrete-ml/releases/new) by selecting the tag you just pushed
+- [ ] Create a GitHub release on the public repo [here](https://github.com/zama-ai/concrete-ml/releases/new) by selecting the tag you just pushed. The name of the release is `vX.Y.Z`, exactly as the name of the tag.
 - [ ] Copy the text from the private release to the public release DO NOT VALIDATE THE RELEASE YET
 - [ ] Change `concrete-ml-internal` references to `concrete-ml` in the release text
 - [ ] For the docker image replace `ghcr.io/zama-ai` by `zamafhe`
-- [ ] Upload the assets from the private release to the public release
+- [ ] Upload the assets from the private release to the public release, except `concrete-ml-internal-x.y.z.tar.gz` and `concrete-ml-internal-x.y.z.zip` which will be added automatically by GitHub
+
 - [ ] Validate the public release
 
 To continue the release cycle:
