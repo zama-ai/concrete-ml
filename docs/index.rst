@@ -17,15 +17,14 @@ Organization of the documentation
 
 We have divided our documentation into several parts:
 
-- basic elements, notably containing a description of the installation (which you are currently reading);
-- tutorials, how-tos and deeper explanations, exclusively for users of **Concrete-ML**;
+- installation, tutorials, how-tos and deeper explanations, exclusively for users of **Concrete-ML**;
 - an API guide of the different functions of **Concrete-ML**, created by directly parsing its source code;
 - and, finally, a developer section, for both internal or external contributors to **Concrete-ML**.
 
 A work in progress
 ----------------------------------
 
-This is the very first version of the package, so, even if we are able to show very appealing examples (see [our examples](../../user/advanced_examples/index.md)), it is neither complete nor bug-free and not quite as efficient as one would hope. We will improve it in further releases.
+This is the very first version of the package, so, even if we are able to show very appealing examples (see `our examples <user/advanced_examples/index.rst>`__), it is neither complete nor bug-free and not quite as efficient as one would hope. We will improve it in further releases.
 
 The main difficulty is that some models currently do not work well due to the fact that **Concrete-Library** only supports 7 bits. Because of this, we sometimes have to quantize too much, which has a strong negative impact on certain models. Further, because **Concrete-Compiler** is also a work in progress, we have FHE programs which are sometimes too slow (notably, parallelism is lacking and will be updated soon) or they may require a massive amount of RAM. Last but not least, we have selected some models for this release, and we will add more in future releases.
 
