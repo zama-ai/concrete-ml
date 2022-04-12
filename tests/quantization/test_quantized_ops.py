@@ -19,12 +19,14 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedExp,
     QuantizedGemm,
     QuantizedHardSigmoid,
+    QuantizedHardSwish,
     QuantizedIdentity,
     QuantizedLeakyRelu,
     QuantizedLinear,
     QuantizedLog,
     QuantizedMatMul,
     QuantizedOp,
+    QuantizedPRelu,
     QuantizedRelu,
     QuantizedReshape,
     QuantizedSelu,
@@ -69,6 +71,7 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
         QuantizedSelu,
         QuantizedCelu,
         QuantizedSoftplus,
+        QuantizedHardSwish,
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -513,6 +516,43 @@ def test_quantized_reshape(shape):
     assert numpy.all(q_arr0.qvalues == q_arr1.qvalues)
 
 
+@pytest.mark.parametrize(
+    "n_bits",
+    [pytest.param(n_bits) for n_bits in N_BITS_LIST],
+)
+@pytest.mark.parametrize(
+    "input_range",
+    INPUT_RANGES,
+)
+@pytest.mark.parametrize(
+    "input_shape",
+    [pytest.param((10, 40, 20))],
+)
+@pytest.mark.parametrize("slope", [[1], numpy.ones((20,))])
+@pytest.mark.parametrize("is_signed", IS_SIGNED)
+def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, check_r2_score):
+    """Test quantized PRelu."""
+
+    values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
+    q_inputs = QuantizedArray(n_bits, values, is_signed)
+    q_cst_inputs = QuantizedArray(n_bits, numpy.asarray(slope))
+
+    quantized_op = QuantizedPRelu(n_bits, constant_inputs={"slope": q_cst_inputs})
+    expected_output = quantized_op.calibrate(values)
+    q_output = quantized_op(q_inputs)
+    qvalues = q_output.qvalues
+
+    # Quantized values must be contained between 0 and 2**n_bits - 1.
+    assert numpy.max(qvalues) <= 2**n_bits - 1
+    assert numpy.min(qvalues) >= 0
+
+    # Dequantized values must be close to original values
+    dequant_values = q_output.dequant()
+
+    # Check that all values are close
+    check_r2_score(dequant_values, expected_output)
+
+
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
@@ -538,8 +578,10 @@ def test_all_ops_were_tested():
         QuantizedIdentity: test_identity_op,
         QuantizedConv: test_quantized_conv,
         QuantizedReshape: test_quantized_reshape,
+        QuantizedPRelu: test_quantized_prelu,
+        QuantizedHardSwish: test_univariate_ops_no_attrs,
     }
+    not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
-        "Missing tests and manual acknowledgement for: "
-        f"{', '.join(sorted(cls.__name__ for cls in ALL_QUANTIZED_OPS))}"
+        "Missing tests and manual acknowledgement for: " f"{', '.join(sorted(not_tested))}"
     )

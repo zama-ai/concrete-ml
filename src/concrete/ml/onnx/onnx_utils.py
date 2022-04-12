@@ -50,6 +50,7 @@ from .ops_impl import (
     numpy_gemm,
     numpy_greater,
     numpy_hardsigmoid,
+    numpy_hardswish,
     numpy_identity,
     numpy_leakyrelu,
     numpy_less,
@@ -57,6 +58,7 @@ from .ops_impl import (
     numpy_matmul,
     numpy_mul,
     numpy_not,
+    numpy_prelu,
     numpy_relu,
     numpy_reshape,
     numpy_selu,
@@ -127,6 +129,8 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Reshape": numpy_reshape,
     "Less": numpy_less,
     "Conv": torch_conv,
+    "PRelu": numpy_prelu,
+    "HardSwish": numpy_hardswish,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

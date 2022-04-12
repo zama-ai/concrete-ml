@@ -578,7 +578,29 @@ def numpy_log(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.log(x),)
+    # Epsilon is here to avoid problems with 0 or negative values, which may happen when Concrete
+    # Numpy creates the table (even if these problematic values would normally never be used)
+    epsilon = 10**-8
+
+    return (numpy.log(numpy.maximum(x, epsilon)),)
+
+
+def numpy_prelu(x: numpy.ndarray, slope: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute prelu in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#prelu-16
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        slope (numpy.ndarray): Slope of PRelu
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    a = numpy.minimum(0, slope * x)
+    b = numpy.maximum(0, x)
+    return (a + b,)
 
 
 def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -594,6 +616,25 @@ def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """
 
     return (special.erf(x),)  # pylint: disable=no-member
+
+
+def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute hardswitch in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#hardswish-14
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    alpha = 1.0 / 6
+    beta = 0.5
+    r = x * numpy.maximum(0, numpy.minimum(1, alpha * x + beta))
+
+    return (r,)
 
 
 def numpy_exp(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:

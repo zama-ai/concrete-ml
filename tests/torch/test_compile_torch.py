@@ -106,22 +106,24 @@ class UnivariateModule(nn.Module):
         pytest.param(nn.ReLU, id="relu"),
         pytest.param(nn.ReLU6, id="relu6"),
         pytest.param(nn.Tanh, id="tanh"),
+        pytest.param(nn.ELU, id="ELU"),
+        pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
         pytest.param(nn.Hardtanh, id="Hardtanh"),
+        pytest.param(nn.LeakyReLU, id="LeakyReLU"),
+        pytest.param(nn.LogSigmoid, id="LogSigmoid"),
+        pytest.param(nn.SELU, id="SELU"),
         pytest.param(nn.CELU, id="CELU"),
         pytest.param(nn.Softplus, id="Softplus"),
-        pytest.param(nn.ELU, id="ELU"),
-        pytest.param(nn.LeakyReLU, id="LeakyReLU"),
-        pytest.param(nn.SELU, id="SELU"),
-        pytest.param(nn.Hardsigmoid, id="Hardsigmoid")
+        pytest.param(nn.PReLU, id="PReLU"),
+        pytest.param(nn.Hardswish, id="Hardswish"),
         # FIXME: to be done, https://github.com/zama-ai/concrete-ml-internal/issues/335
         #   FIXME: because of missing quantized Mul / Div / Sub
         # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
+        # pytest.param(nn.Hardshrink, id="Hardshrink"),
         # pytest.param(nn.Mish, id="Mish"),
         # pytest.param(nn.SiLU, id="SiLU"),
         # pytest.param(nn.GELU, id="GELU"),
         # pytest.param(nn.Softsign, id="Softsign"),
-        #   FIXME: divisions by 0
-        # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
     ],
 )
 @pytest.mark.parametrize(

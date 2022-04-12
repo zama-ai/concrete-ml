@@ -42,6 +42,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Gemm
 - Greater
 - HardSigmoid
+- HardSwish
 - Identity
 - LeakyRelu
 - Less
@@ -49,6 +50,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - MatMul
 - Mul
 - Not
+- PRelu
 - Relu
 - Reshape
 - Selu
@@ -78,11 +80,13 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Exp: QuantizedExp
 - Gemm: QuantizedGemm
 - HardSigmoid: QuantizedHardSigmoid
+- HardSwish: QuantizedHardSwish
 - Identity: QuantizedIdentity
 - LeakyRelu: QuantizedLeakyRelu
 - Linear: QuantizedLinear
 - Log: QuantizedLog
 - MatMul: QuantizedMatMul
+- PRelu: QuantizedPRelu
 - Relu: QuantizedRelu
 - Reshape: QuantizedReshape
 - Selu: QuantizedSelu

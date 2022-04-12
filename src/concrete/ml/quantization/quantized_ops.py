@@ -362,10 +362,22 @@ class QuantizedRelu(QuantizedOp):
     _impl_for_op_named: str = "Relu"
 
 
+class QuantizedPRelu(QuantizedOp):
+    """Quantized PRelu op."""
+
+    _impl_for_op_named: str = "PRelu"
+
+
 class QuantizedLeakyRelu(QuantizedOp):
     """Quantized LeakyRelu op."""
 
     _impl_for_op_named: str = "LeakyRelu"
+
+
+class QuantizedHardSwish(QuantizedOp):
+    """Quantized Hardswish op."""
+
+    _impl_for_op_named: str = "HardSwish"
 
 
 class QuantizedElu(QuantizedOp):

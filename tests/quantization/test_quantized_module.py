@@ -85,24 +85,35 @@ N_BITS_LIST = [20, 16, 8, {"inputs": 8, "weights": 8}]
         pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
         pytest.param(nn.Hardtanh, id="Hardtanh"),
         pytest.param(nn.LeakyReLU, id="LeakyReLU"),
+        pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         pytest.param(nn.SELU, id="SELU"),
         pytest.param(nn.CELU, id="CELU"),
         pytest.param(nn.Softplus, id="Softplus"),
+        pytest.param(nn.PReLU, id="PReLU"),
+        pytest.param(nn.Hardswish, id="Hardswish"),
         # Are currently not supported for various reasons:
-        # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
-        # pytest.param(nn.GELU, id="GELU"),
-        # pytest.param(nn.SiLU, id="SiLU"),
-        # pytest.param(nn.Mish, id="Mish"),
-        # pytest.param(nn.Softsign, id="Softsign"),
-        # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
-        # pytest.param(nn.Hardshrink, id="Hardshrink"),
-        # pytest.param(nn.Hardswish, id="Hardswish"),
+        #
+        # No quantized operators
+        # pytest.param(nn.GELU, id="GELU"), # No quantized Div
+        # pytest.param(nn.SiLU, id="SiLU"), # No quantized Mul
+        # pytest.param(nn.Mish, id="Mish"), # No quantized Mul
+        # pytest.param(nn.Softsign, id="Softsign"), # No quantized Div
+        # pytest.param(nn.Tanhshrink, id="Tanhshrink"), # No quantized Sub
+        #
+        # Missing operators in ONNX
+        # pytest.param(nn.Hardshrink, id="Hardshrink"), # Missing Cast, Or, Where in ONNX
+        # pytest.param(nn.RReLU, id="RReLU"), # Missing RandomUniformLike in ONNX
+        # pytest.param(nn.Softshrink, id="Softshrink"), # Missing Where in ONNX
+        #
+        # Other issues
         # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
-        # pytest.param(nn.PReLU, id="PReLU"),
-        # pytest.param(nn.RReLU, id="RReLU"),
-        # pytest.param(nn.Softshrink, id="Softshrink"),
+        #       TypeError: __init__() missing 2 required positional arguments: 'embed_dim' and
+        #       'num_heads'
         # pytest.param(nn.Threshold, id="Threshold"),
+        #       TypeError: __init__() missing 2 required positional arguments: 'threshold' and
+        #       'value'
         # pytest.param(nn.GLU, id="GLU"),
+        #       RuntimeError: mat1 and mat2 shapes cannot be multiplied (100x64 and 128x64)
     ],
 )
 @pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
