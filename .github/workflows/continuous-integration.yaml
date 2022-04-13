@@ -339,7 +339,6 @@ jobs:
           make pytest_nb
 
       - name: Fast sanity check
-        id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make fast_sanity_check

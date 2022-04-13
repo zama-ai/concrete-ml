@@ -67,12 +67,13 @@ reinstall_env:
 .PHONY: python_format # Apply python formatting
 python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources
 
 .PHONY: check_python_format # Check python format
 check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --check
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources \
+	--check
 
 .PHONY: check_finalize_nb # Check sanitization of notebooks
 check_finalize_nb:
@@ -102,13 +103,15 @@ pylint_benchmarks:
 .PHONY: pylint_script # Run pylint on scripts
 pylint_script:
 	find ./script/ -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
+	find docker/release_resources -type f -name "*.py" | xargs poetry run pylint --rcfile=pylintrc
 
 .PHONY: flake8 # Run flake8 (including darglint)
 flake8:
 	poetry run flake8 --config flake8_src.cfg $(SRC_DIR)/
 
 	@# --extend-ignore=DAR is because we don't want to run darglint on tests/ script/ benchmarks/
-	poetry run flake8 --config flake8_others.cfg tests/ script/ benchmarks/
+	poetry run flake8 --config flake8_others.cfg tests/ script/ benchmarks/ \
+		docker/release_resources/
 
 .PHONY: python_linting # Run python linters
 python_linting: pylint flake8
@@ -187,6 +190,7 @@ mypy_test:
 .PHONY: mypy_script # Run mypy on scripts
 mypy_script:
 	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports
+	find ./docker/release_resources -name "*.py" | xargs poetry run mypy --ignore-missing-imports
 
 .PHONY: mypy_benchmark # Run mypy on benchmark files
 mypy_benchmark:
