@@ -1,4 +1,6 @@
 import random
+import argparse
+from pathlib import Path
 
 # Check that concrete-numpy extra packages are installed in the docker image
 import pygraphviz
@@ -14,9 +16,13 @@ from sklearn.model_selection import train_test_split
 
 from concrete import ml
 from concrete.ml.sklearn import DecisionTreeClassifier as ConcreteDecisionTreeClassifier
+from concrete.numpy import compile as compile_
 
 
-def ml_check():
+def ml_check(args):
+
+    is_fast = args.fast
+
     print(ml.__version__)
 
     features, classes = fetch_openml(data_id=44, as_frame=False, cache=True, return_X_y=True)
@@ -57,24 +63,32 @@ def ml_check():
     # We first compile the model with some data, here the training set
     model.compile(
         x_train,
-        compilation_configuration=CompilationConfiguration(enable_unsafe_features=True),
+        compilation_configuration=CompilationConfiguration(
+            enable_unsafe_features=True,  # This is for our tests only, never use that in prod
+            use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
+        ),
         use_virtual_lib=True,
     )
 
+    nb_samples = 1 if is_fast else 10
+
     # Predict in VL for a few examples
-    y_pred_vl = model.predict(x_test[:10], execute_in_fhe=True)
+    y_pred_vl = model.predict(x_test[:nb_samples], execute_in_fhe=True)
 
     # Check prediction VL vs sklearn
     print(f"Prediction VL:      {y_pred_vl}")
-    print(f"Prediction sklearn: {y_pred[:10]}")
+    print(f"Prediction sklearn: {y_pred[:nb_samples]}")
 
     print(
-        f"{numpy.sum(y_pred_vl==y_pred[:10])}/10 "
+        f"{numpy.sum(y_pred_vl==y_pred[:nb_samples])}/{nb_samples} "
         "predictions are similar between the VL model and the clear sklearn model."
     )
 
 
-def cn_check():
+def cn_check(args):
+
+    is_fast = args.fast
+
     def function_to_compile(x):
         return x + 42
 
@@ -83,15 +97,23 @@ def cn_check():
     compiler = hnp.NPFHECompiler(
         function_to_compile,
         {"x": "encrypted"},
+        compilation_configuration=CompilationConfiguration(
+            enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
+            use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
+        ),
     )
 
     print("Compiling...")
 
-    engine = compiler.compile_on_inputset(range(2**n_bits))
+    engine = compiler.compile_on_inputset(
+        range(2**n_bits),
+    )
 
     inputs = []
     labels = []
-    for _ in range(4):
+    nb_samples = 1 if is_fast else 4
+
+    for _ in range(nb_samples):
         sample_x = random.randint(0, 2**n_bits - 1)
 
         inputs.append([sample_x])
@@ -108,10 +130,39 @@ def cn_check():
     print(f"{correct}/{len(inputs)}")
 
 
-def main():
-    ml_check()
-    cn_check()
+def main(args):
+    """Entry point"""
+    is_fast = args.fast
+
+    if is_fast:
+        keyring_dir = Path.home().resolve() / ".cache/concrete-ml_pytest"
+        keyring_dir.mkdir(parents=True, exist_ok=True)
+        keyring_dir_as_str = str(keyring_dir)
+        print(f"Using {keyring_dir_as_str} as key cache dir")
+        compile_._COMPILE_FHE_INSECURE_KEY_CACHE_DIR = (  # pylint: disable=protected-access
+            keyring_dir_as_str
+        )
+
+    ml_check(args)
+    cn_check(args)
+
+    if is_fast:
+        keyring_dir = Path.home().resolve() / ".cache/concrete-ml_pytest"
+        if keyring_dir is not None:
+            # Remove incomplete keys
+            for incomplete_keys in keyring_dir.glob("**/*incomplete*"):
+                shutil.rmtree(incomplete_keys, ignore_errors=True)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(allow_abbrev=False)
+
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="do a single test, just to check that the code is correct.",
+    )
+
+    cli_args = parser.parse_args()
+
+    main(cli_args)

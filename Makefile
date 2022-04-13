@@ -541,3 +541,12 @@ check_supported_ops:
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:
 	gitleaks --source "$${PWD}" detect --redact -v
+
+.PHONY: sanity_check # Sanity checks, eg to check that a release is viable
+sanity_check:
+	time python3 ./docker/release_resources/sanity_check.py
+
+.PHONY: fast_sanity_check # Fast sanity checks, eg to check that a release is viable
+fast_sanity_check:
+	time python3 ./docker/release_resources/sanity_check.py --fast
+
