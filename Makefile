@@ -126,7 +126,7 @@ pcc:
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa check_supported_ops
-PCC_DEPS += gitleaks
+PCC_DEPS += check_links gitleaks
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -395,7 +395,7 @@ set_version:
 
 .PHONY: set_version_and_push # Generate a new version number, update all files with it accordingly and push them
 set_version_and_push: set_version
-	git push 
+	git push
 
 .PHONY: check_version_coherence # Check that all files containing version have the same value
 check_version_coherence:
@@ -553,4 +553,8 @@ sanity_check:
 .PHONY: fast_sanity_check # Fast sanity checks, eg to check that a release is viable
 fast_sanity_check:
 	poetry run python ./docker/release_resources/sanity_check.py --fast
+
+.PHONY: check_links # Check (web) links in the documentation
+check_links:
+	poetry run python -m linkcheckmd docs && poetry run python -m linkcheckmd README.md
 
