@@ -100,7 +100,7 @@ def cn_check():
     correct = 0
     for idx, (input_i, label_i) in enumerate(zip(inputs, labels), 1):
         print(f"Inference #{idx}")
-        result_i = engine.run(*input_i)
+        result_i = engine.encrypt_run_decrypt(*input_i)
 
         if result_i == label_i:
             correct += 1
