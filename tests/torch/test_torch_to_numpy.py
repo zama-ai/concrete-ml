@@ -182,7 +182,7 @@ def test_raises(model):
         ValueError,
         match=(
             "The following ONNX operators are required to convert the torch model to numpy but are"
-            " not currently implemented: AveragePool, Flatten, Pad\\..*"
+            " not currently implemented: Flatten\\..*"
         ),
     ):
         dummy_input = torch.randn(1, 3, 32, 32)

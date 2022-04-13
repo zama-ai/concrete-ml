@@ -12,6 +12,7 @@ from concrete.ml.quantization.quantized_ops import (
     ALL_QUANTIZED_OPS,
     QuantizedAbs,
     QuantizedAdd,
+    QuantizedAvgPool,
     QuantizedCelu,
     QuantizedClip,
     QuantizedConv,
@@ -26,6 +27,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedLog,
     QuantizedMatMul,
     QuantizedOp,
+    QuantizedPad,
     QuantizedPRelu,
     QuantizedRelu,
     QuantizedReshape,
@@ -457,6 +459,53 @@ def test_quantized_conv(params, n_bits, check_r2_score):
     check_r2_score(expected_result, result)
 
 
+@pytest.mark.parametrize("n_bits", [16])
+@pytest.mark.parametrize(
+    "params",
+    [
+        (
+            numpy.random.uniform(size=(1, 1, 32, 32)) * 4,
+            (3, 3),
+            (2, 2),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2,
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+        ),
+        (
+            numpy.random.uniform(size=(2, 32, 4, 4)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+        ),
+    ],
+)
+def test_quantized_avg_pool(params, n_bits, check_r2_score):
+    """Test the quantized average pool operator."""
+
+    # Retrieve arguments
+    net_input, kernel_shape, strides, pads = params
+
+    # Create quantized data
+    q_input = QuantizedArray(n_bits, net_input, is_signed=False)
+
+    q_op = QuantizedAvgPool(
+        n_bits=n_bits, strides=strides, pads=pads, kernel_shape=kernel_shape, ceil_mode=0
+    )
+
+    # Compute the result in floating point
+    expected_result = q_op.calibrate(net_input)
+
+    # Compute the quantized result
+    result = q_op(q_input).dequant()
+
+    # The fp32 and quantized results should be very similar when quantization precision is high
+    check_r2_score(expected_result, result)
+
+
 def test_quantized_conv_args():
     """Check that conv arguments are validated"""
     n_bits = 2
@@ -484,6 +533,36 @@ def test_quantized_conv_args():
         print(kwargs_op)
         with pytest.raises(AssertionError, match=error):
             QuantizedConv(n_bits, constant_inputs={1: q_weights, 2: q_bias}, **kwargs_op)
+
+
+def test_quantized_pad():
+    """Test the padding operator on quantized values."""
+
+    # First we test that the operator result is the same as the input
+    # when the padding is 0
+    # This is currently the only supported mode
+    data = numpy.random.uniform(size=(1, 1, 32, 32)) * 4
+    q_data = QuantizedArray(2, data)
+    q_op = QuantizedPad(2, mode="constant")
+    pads = QuantizedArray(2, numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0]))
+    pad_value = QuantizedArray(2, numpy.asarray([0]))
+
+    q_op.calibrate(q_data.values, pads.values, pad_value.values)
+
+    q_pad_output = q_op(q_data, pads, pad_value)
+    assert numpy.array_equal(q_pad_output.qvalues, q_data.qvalues)
+
+    # Test that we can't actually pad an input tensor
+    # this is not yet supported, this operation is only a stub for now
+    # FIXME: Change this when we have a real solution for the Pad operator
+    # see https://github.com/zama-ai/concrete-ml-internal/issues/747
+    pads_invalid = QuantizedArray(2, numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0]))
+    with pytest.raises(AssertionError):
+        q_pad_output = q_op(q_data, pads_invalid, pad_value)
+
+    # Now check that we assert when a different padding mode is given
+    with pytest.raises(AssertionError):
+        QuantizedPad(2, mode="reflect")
 
 
 @pytest.mark.parametrize("shape", [(1,), (10, 5), (10, 5, 2)])
@@ -580,6 +659,8 @@ def test_all_ops_were_tested():
         QuantizedReshape: test_quantized_reshape,
         QuantizedPRelu: test_quantized_prelu,
         QuantizedHardSwish: test_univariate_ops_no_attrs,
+        QuantizedAvgPool: test_quantized_avg_pool,
+        QuantizedPad: test_quantized_pad,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

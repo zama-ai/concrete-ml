@@ -28,6 +28,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Asinh
 - Atan
 - Atanh
+- AveragePool
 - Celu
 - Clip
 - Constant
@@ -51,6 +52,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Mul
 - Not
 - PRelu
+- Pad
 - Relu
 - Reshape
 - Selu
@@ -73,6 +75,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 
 - Abs: QuantizedAbs
 - Add: QuantizedAdd
+- AveragePool: QuantizedAvgPool
 - Celu: QuantizedCelu
 - Clip: QuantizedClip
 - Conv: QuantizedConv
@@ -87,6 +90,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Log: QuantizedLog
 - MatMul: QuantizedMatMul
 - PRelu: QuantizedPRelu
+- Pad: QuantizedPad
 - Relu: QuantizedRelu
 - Reshape: QuantizedReshape
 - Selu: QuantizedSelu

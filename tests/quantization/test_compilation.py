@@ -104,13 +104,14 @@ class TinyCNN(nn.Module):
         super().__init__()
 
         self.conv1 = nn.Conv2d(1, 2, 2, stride=1, padding=0)
+        self.avg_pool1 = nn.AvgPool2d(2, 2)
         self.conv2 = nn.Conv2d(2, n_classes, 2, stride=1, padding=0)
         self.act = act()
         self.n_classes = n_classes
 
     def forward(self, x):
         """Forward the two layers with the chosen activation function"""
-        x = self.act(self.conv1(x))
+        x = self.act(self.avg_pool1(self.conv1(x)))
         x = self.act(self.conv2(x))
         return x
 

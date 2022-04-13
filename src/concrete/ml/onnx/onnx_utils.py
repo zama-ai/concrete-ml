@@ -58,6 +58,7 @@ from .ops_impl import (
     numpy_matmul,
     numpy_mul,
     numpy_not,
+    numpy_pad,
     numpy_prelu,
     numpy_relu,
     numpy_reshape,
@@ -70,6 +71,7 @@ from .ops_impl import (
     numpy_tan,
     numpy_tanh,
     numpy_thresholdedrelu,
+    torch_avgpool,
     torch_conv,
 )
 
@@ -77,7 +79,7 @@ ATTR_TYPES = dict(onnx.AttributeProto.AttributeType.items())
 ATTR_GETTERS = {
     ATTR_TYPES["FLOAT"]: lambda attr: attr.f,
     ATTR_TYPES["INT"]: lambda attr: attr.i,
-    ATTR_TYPES["STRING"]: lambda attr: attr.s,
+    ATTR_TYPES["STRING"]: lambda attr: attr.s.decode("utf-8"),
     ATTR_TYPES["TENSOR"]: lambda attr: numpy_helper.to_array(attr.t),
     ATTR_TYPES["FLOATS"]: lambda attr: attr.floats,
     ATTR_TYPES["INTS"]: lambda attr: tuple(attr.ints),
@@ -131,6 +133,8 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Conv": torch_conv,
     "PRelu": numpy_prelu,
     "HardSwish": numpy_hardswish,
+    "AveragePool": torch_avgpool,
+    "Pad": numpy_pad,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

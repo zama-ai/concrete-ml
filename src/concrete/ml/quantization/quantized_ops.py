@@ -864,3 +864,112 @@ class QuantizedConv(QuantizedOp):
             scale=self.output_scale,
             zero_point=self.output_zero_point,
         )
+
+
+class QuantizedAvgPool(QuantizedOp):
+    """Quantized Average Pooling op."""
+
+    _impl_for_op_named: str = "AveragePool"
+
+    def __init__(
+        self,
+        n_bits: int,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        **attrs,
+    ) -> None:
+
+        super().__init__(n_bits, constant_inputs, **attrs)
+
+        # Get the ONNX parameters
+        self.ceil_mode = attrs.get("ceil_mode", None)
+        self.kernel_shape = attrs.get("kernel_shape", None)
+        self.pads = attrs.get("pads", (0, 0, 0, 0))
+        self.strides = attrs.get("strides", (1, 1))
+
+        # Validate the parameters
+        assert_true(
+            len(self.kernel_shape) == 2, "The convolution operator currently supports only 2d"
+        )
+        assert_true(
+            len(self.kernel_shape) == len(self.strides),
+            "The convolution operator requires the number of strides to "
+            "be the same as the number of kernel dimensions",
+        )
+        assert_true(
+            len(self.pads) == 2 * len(self.kernel_shape),
+            "The convolution operator in Concrete ML requires padding to be specified as "
+            " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
+            " standard",
+        )
+        assert_true(
+            self.pads[0] == self.pads[len(self.kernel_shape)]
+            and self.pads[1] == self.pads[1 + len(self.kernel_shape)],
+            "The convolution operator in Concrete ML only supports symmetric padding",
+        )
+        assert_true(
+            self.pads[0] == 0 and self.pads[1] == 0,
+            "Quantized convolution only supports 0-padding convolution for now",
+        )
+        assert_true(
+            self.ceil_mode == 0,
+            "Average Pooling only supports Torch-style dimension computation with ceil_mode=0",
+        )
+
+        self.kernel: Union[numpy.ndarray, None] = None
+        self.norm_const: Union[float, None] = None
+
+    def q_impl(
+        self,
+        *q_inputs: QuantizedArray,
+        **attrs,
+    ) -> QuantizedArray:
+
+        # Retrieve the quantized inputs
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+        q_input: QuantizedArray = prepared_inputs[0]
+
+        n_in_channels = q_input.qvalues.shape[1]
+        kernel = numpy.zeros(
+            (n_in_channels, n_in_channels, self.kernel_shape[0], self.kernel_shape[1]),
+            dtype=numpy.uint8,
+        )
+        for i in range(n_in_channels):
+            kernel[i, i, ::] = 1
+
+        norm_const = 1.0 / numpy.prod(self.kernel_shape)
+
+        sum_result = hconv.conv2d(q_input.qvalues, kernel, None, self.pads, self.strides)
+
+        result = sum_result.astype(numpy.float32) * norm_const * q_input.scale
+
+        return QuantizedArray(
+            self.n_bits,
+            result,
+            is_signed=q_input.is_signed,
+            value_is_float=True,
+            scale=self.output_scale,
+            zero_point=self.output_zero_point,
+        )
+
+
+class QuantizedPad(QuantizedOp):
+    """Quantized Padding op."""
+
+    _impl_for_op_named: str = "Pad"
+
+    def __init__(
+        self,
+        n_bits: int,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        **attrs,
+    ) -> None:
+
+        super().__init__(n_bits, constant_inputs, **attrs)
+
+        # Get the ONNX parameters
+        self.mode = attrs.get("mode", None)
+        assert_true(
+            self.mode == "constant", "Padding operator only supports padding with a constant"
+        )

@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Union
 
 import numpy
 import torch
+import torch.nn
 from scipy import special
 
 from ..common.debugging import assert_true
@@ -810,3 +811,83 @@ def torch_conv(
     res = torch.conv2d(tx, tw, tb, strides, torch_pads, dilations, group).numpy()
 
     return (res,)
+
+
+def torch_avgpool(
+    x: numpy.ndarray,
+    /,
+    *,
+    ceil_mode: int,
+    kernel_shape: Tuple[int, ...],
+    pads: Tuple[int, ...],
+    strides: Tuple[int, ...],
+):
+    """Compute Average Pooling using Torch.
+
+    Currently supports 2d average pooling with torch semantics. This function is ONNX compatible.
+
+    Args:
+        x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
+        ceil_mode (int): ONNX rounding parameter, expected 0 (torch style dimension computation)
+        kernel_shape (Tuple[int]): shape of the kernel. Should have 2 elements for 2d conv
+        pads (Tuple[int]): padding in ONNX format (begin, end) on each axis
+        strides (Tuple[int]): stride of the convolution on each axis
+
+    Returns:
+        res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight x OutWidth).
+           See https://pytorch.org/docs/stable/generated/torch.nn.AveragePool.html
+
+    Raises:
+        AssertionError: if the pooling arguments are wrong
+    """
+
+    # Convert the inputs to tensors to compute conv using torch
+    tx = torch.Tensor(x)
+
+    assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
+    assert_true(ceil_mode == 0, "Average Pooling only supports torch style dimension computation")
+    # For mypy
+    assert len(pads) == 4
+
+    # For mypy
+    assert len(kernel_shape) == 2
+
+    assert len(strides) == 2
+
+    assert_true(
+        pads[0] == pads[1] and pads[2] == pads[3],
+        "The convolution operator in Concrete ML only supports symmetric padding",
+    )
+
+    # Extract the 'begin' pads for all dimensions. Begin padding should be the same as the end pad
+    torch_pads = (pads[0], pads[1])
+
+    # Compute the torch convolution
+    res = torch.nn.functional.avg_pool2d(
+        tx, kernel_shape, strides, torch_pads, ceil_mode=False, count_include_pad=True
+    ).numpy()
+    return (res,)
+
+
+def numpy_pad(data, pads, constant_value, /, *, mode):
+    """Apply padding in numpy according to ONNX spec.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Pad
+
+    Args:
+        data (numpy.ndarray): Input variable/tensor to pad
+        pads (numpy.ndarray): List of pads (size 8) to apply, two per N,C,H,W dimension
+        constant_value (float): Constant value to use for padding
+        mode (int): padding mode: constant/edge/reflect
+
+    Returns:
+        res (numpy.ndarray): Padded tensor
+    """
+
+    assert_true(numpy.all(pads == 0), "Padding operator supported only with all pads at zero")
+    assert_true(mode == "constant", "Padding only supported with a constant pad value")
+    assert_true(
+        constant_value is None or constant_value == 0, "Pad only accepts a constant padding with 0s"
+    )
+
+    return (data,)
