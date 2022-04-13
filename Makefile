@@ -126,7 +126,7 @@ pcc:
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa check_supported_ops
-PCC_DEPS += check_links gitleaks
+PCC_DEPS += gitleaks
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -260,6 +260,9 @@ docs: clean_docs
 	poetry run sphinx-apidoc --implicit-namespaces -o docs/_apidoc $(CONCRETE_PACKAGE_PATH)
 	@# Docs
 	cd docs && poetry run "$(MAKE)" html SPHINXOPTS='-W --keep-going'
+	@# Check links
+	"$(MAKE)" check_links
+
 
 .PHONY: clean_docs # Clean docs build directory
 clean_docs:
@@ -554,7 +557,22 @@ sanity_check:
 fast_sanity_check:
 	poetry run python ./docker/release_resources/sanity_check.py --fast
 
-.PHONY: check_links # Check (web) links in the documentation
+.PHONY: check_links # Check links in the documentation
 check_links:
+	@# Remark that this target is not in PCC, because it needs the doc to be built
+	@# Mainly for web links
 	poetry run python -m linkcheckmd docs && poetry run python -m linkcheckmd README.md
 
+	@# For weblinks and internal references
+	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it
+	@# 		requires credentials
+	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
+	@#	--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: issues with access to
+	@#		our private repo
+	@#   --ignore-url="docs/user/advanced_examples/*.py": because nbqa creates temporary files in the
+	@#		meantime, when run in make pcc
+	poetry run linkchecker docs --check-extern \
+		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
+		--ignore-url=_static/webpack-macros.html \
+		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
+		--ignore-url="docs/user/advanced_examples/*.py"
