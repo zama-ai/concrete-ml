@@ -120,7 +120,7 @@ benchmark_params = {
             "module__n_layers": 3,
             "module__n_w_bits": 2,
             "module__n_a_bits": 2,
-            "module__n_accum_bits": 32,
+            "module__n_accum_bits": 7,
             "module__n_hidden_neurons_multiplier": 1,
             "max_epochs": 200,
             "verbose": 0,
