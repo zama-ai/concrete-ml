@@ -548,9 +548,9 @@ gitleaks:
 
 .PHONY: sanity_check # Sanity checks, eg to check that a release is viable
 sanity_check:
-	time python3 ./docker/release_resources/sanity_check.py
+	poetry run python ./docker/release_resources/sanity_check.py
 
 .PHONY: fast_sanity_check # Fast sanity checks, eg to check that a release is viable
 fast_sanity_check:
-	time python3 ./docker/release_resources/sanity_check.py --fast
+	poetry run python ./docker/release_resources/sanity_check.py --fast
 

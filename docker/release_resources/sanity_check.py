@@ -4,28 +4,24 @@ import random
 import shutil
 from pathlib import Path
 
-# Check that concrete-numpy extra packages are installed in the docker image
-import pygraphviz
-
-# Disable for flake8: E402, module level import not at top of file
-# pylint: disable=wrong-import-position
-# pylint: disable=ungrouped-imports
-
-print("pygraphviz import check OK", pygraphviz.__version__)
-
 import concrete.numpy as hnp
 import numpy
+
+# Check that concrete-numpy extra packages are installed in the docker image
+import pygraphviz
 from concrete.common.compilation import CompilationConfiguration
 from concrete.numpy import compile as compile_
 from sklearn.datasets import fetch_openml
 from sklearn.metrics import average_precision_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 
+# pylint: disable=ungrouped-imports
 from concrete import ml
 from concrete.ml.sklearn import DecisionTreeClassifier as ConcreteDecisionTreeClassifier
 
-# pylint: enable=wrong-import-position
 # pylint: enable=ungrouped-imports
+
+print("pygraphviz import check OK", pygraphviz.__version__)
 
 
 def ml_check(args):
@@ -143,6 +139,7 @@ def cn_check(args):
 
 def main(args):
     """Entry point"""
+
     is_fast = args.fast
 
     if is_fast:
