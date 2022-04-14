@@ -569,10 +569,10 @@ check_links:
 	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#	--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: issues with access to
 	@#		our private repo
-	@#   --ignore-url="docs/user/advanced_examples/*.py": because nbqa creates temporary files in the
-	@#		meantime, when run in make pcc
+	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
+	@#		the server from AWS
 	poetry run linkchecker docs --check-extern \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
-		--ignore-url="docs/user/advanced_examples/*.py"
+		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/

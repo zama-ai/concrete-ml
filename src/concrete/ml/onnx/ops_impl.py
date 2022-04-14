@@ -835,7 +835,7 @@ def torch_avgpool(
 
     Returns:
         res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight x OutWidth).
-           See https://pytorch.org/docs/stable/generated/torch.nn.AveragePool.html
+           See https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
 
     Raises:
         AssertionError: if the pooling arguments are wrong
