@@ -240,6 +240,10 @@ jobs:
             exit 1
           fi
 
+      - name: Check actionlint
+        run:
+          make actionlint
+
       - name: Source code Conformance
         id: cs
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}

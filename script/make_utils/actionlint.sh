@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+LOG_FILE=$(mktemp /tmp/actionlint.script.XXXXXX)
+SUMMARY_LOG_FILE=$(mktemp /tmp/actionlint.script.XXXXXX)
+
+# Get actionlint errors
+actionlint | cat > "$LOG_FILE"
+
+# Get only where the errors are, not their type
+grep -v github/workflows/continuous-integration.yaml "$LOG_FILE" | grep -v ^"    |" > "$SUMMARY_LOG_FILE"
+
+# Check errors which are not whitelisted
+if python3 script/make_utils/actionlint_check_with_whitelists.py < "$SUMMARY_LOG_FILE";
+then
+    echo "Successful end"
+else
+    echo "Full log file: "
+    cat "$LOG_FILE"
+
+    echo
+    echo "Summary log file:"
+    cat "$SUMMARY_LOG_FILE"
+    exit 255
+fi
+

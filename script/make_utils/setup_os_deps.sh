@@ -49,6 +49,31 @@ linux_install_gitleaks () {
     return "${STATUS}"
 }
 
+linux_install_actionlint () {
+    ACTIONLINT_VERSION=1.6.12
+    ACTIONLINT_LINUX_X64_SHA256=9a7ea97e07a2c058756609274126e78b60ed15c1ed481ccb9da94b74c24d5f3f
+
+    ACTIONLINT_ARCHIVE_LINK="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+
+    TMP_WORKDIR="$(mktemp -d)"
+    DOWNLOADED_FILE="${TMP_WORKDIR}/actionlint.tar.gz"
+    wget --https-only --output-document="${DOWNLOADED_FILE}" "${ACTIONLINT_ARCHIVE_LINK}"
+    SHA256_DOWNLOADED_FILE="$(sha256sum "${DOWNLOADED_FILE}" | cut -d ' ' -f 1)"
+    STATUS=0
+    if [[ "${SHA256_DOWNLOADED_FILE}" == "${ACTIONLINT_LINUX_X64_SHA256}" ]]; then
+        tar -xvf "${DOWNLOADED_FILE}" -C "${TMP_WORKDIR}"
+        ACTIONLINT_BIN="${TMP_WORKDIR}/actionlint"
+        chmod +x "${ACTIONLINT_BIN}"
+        cp "${ACTIONLINT_BIN}" /usr/local/bin/
+    else
+        echo "Hash mismatch"
+        echo "Got sha256:           ${SHA256_DOWNLOADED_FILE}"
+        echo "Expected sha256:      ${ACTIONLINT_LINUX_X64_SHA256}"
+        STATUS=1
+    fi
+    rm -rf "${TMP_WORKDIR}"
+    return "${STATUS}"
+}
 
 OS_NAME=$(uname)
 
@@ -92,10 +117,10 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir poetry && \
-    linux_install_gitleaks"
+    linux_install_gitleaks && linux_install_actionlint"
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
-    brew install curl git gitleaks graphviz jq make pandoc shellcheck openssl libomp
+    brew install curl git gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint
     python3 -m pip install -U pip
     python3 -m pip install poetry
 

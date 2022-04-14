@@ -576,3 +576,7 @@ check_links:
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/
+
+.PHONY: actionlint # Linter for our github actions
+actionlint:
+	./script/make_utils/actionlint.sh
