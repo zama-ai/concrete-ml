@@ -238,15 +238,13 @@ def check_is_good_execution_impl(
     # >= if there are 8 bits signed integers
     allow_relaxed_tests_passing = max_bit_width >= ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB
 
-    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1255
-    # Increased with compiler accuracy which dropped, make sure to remove once accuracy improves
+    # For exactly ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB bits, we have not exactly 100%
+    # accuracy, so let's have more tries
     nb_tries = 10
 
     if max_bit_width < ACCEPTABLE_MAXIMAL_BITWIDTH_FROM_CONCRETE_LIB:
         # Here, things are supposed to be more exact, so let's reduce nb_tries
-        # FIXME: waiting for compiler updates on
-        # https://github.com/zama-ai/concrete-ml-internal/issues/512
-        nb_tries = 10
+        nb_tries = 3
 
     # Prepare the bool array to record if cells were properly computed
     preprocessed_args = tuple(preprocess_input_func(val) for val in args)
