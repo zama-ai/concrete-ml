@@ -571,11 +571,13 @@ check_links:
 	@#		our private repo
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
+	@#  --ignore-url=https://www.openml.org: lot of time outs
 	poetry run linkchecker docs --check-extern \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
-		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/
+		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
+		--ignore-url=https://www.openml.org
 
 .PHONY: actionlint # Linter for our github actions
 actionlint:
