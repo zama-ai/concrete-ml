@@ -37,6 +37,7 @@ from .ops_impl import (
     numpy_asinh,
     numpy_atan,
     numpy_atanh,
+    numpy_batchnorm,
     numpy_cast,
     numpy_celu,
     numpy_clip,
@@ -139,6 +140,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Pad": numpy_pad,
     "Where": numpy_where,
     "Cast": numpy_cast,
+    "BatchNormalization": numpy_batchnorm,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

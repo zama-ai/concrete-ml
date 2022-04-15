@@ -729,3 +729,9 @@ class QuantizedSub(QuantizedAdd):
 
     _impl_for_op_named: str = "Sub"
     b_sign: int = -1
+
+
+class QuantizedBatchNormalization(QuantizedOp):
+    """Quantized Batch normalization with encrypted input and in-the-clear normalization params."""
+
+    _impl_for_op_named: str = "BatchNormalization"

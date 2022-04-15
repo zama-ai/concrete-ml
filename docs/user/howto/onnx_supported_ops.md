@@ -29,6 +29,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Atan
 - Atanh
 - AveragePool
+- BatchNormalization
 - Cast
 - Celu
 - Clip
@@ -78,6 +79,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Abs: QuantizedAbs
 - Add: QuantizedAdd
 - AveragePool: QuantizedAvgPool
+- BatchNormalization: QuantizedBatchNormalization
 - Cast: QuantizedCast
 - Celu: QuantizedCelu
 - Clip: QuantizedClip

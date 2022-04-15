@@ -919,3 +919,75 @@ def numpy_cast(data: numpy.ndarray, /, *, to: int) -> Tuple[numpy.ndarray]:
     """
     assert_true(to == onnx.TensorProto.BOOL)
     return (data.astype(numpy.int64),)
+
+
+def numpy_batchnorm(
+    x: numpy.ndarray,
+    scale: numpy.ndarray,
+    bias: numpy.ndarray,
+    input_mean: numpy.ndarray,
+    input_var: numpy.ndarray,
+    /,
+    *,
+    epsilon=1e-05,
+    momentum=0.9,  # pylint: disable=unused-argument
+    training_mode=0,
+):
+    """Compute the batch normalization of the input tensor.
+
+    This can be expressed as:
+
+    Y = (X - input_mean) / sqrt(input_var + epsilon) * scale + B
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#BatchNormalization-14
+
+    Args:
+        x (numpy.ndarray): tensor to normalize, dimensions are in the form of (N,C,D1,D2,...,Dn),
+                           where N is the batch size, C is the number of channels.
+        scale (numpy.ndarray): scale tensor of shape (C,)
+        bias (numpy.ndarray): bias tensor of shape (C,)
+        input_mean (numpy.ndarray): mean values to use for each input channel, shape (C,)
+        input_var (numpy.ndarray): variance values to use for each input channel, shape (C,)
+        epsilon (float): avoids division by zero
+        momentum (float): momentum used during training of the mean/variance, not used in inference
+        training_mode (int): if the model was exported in training mode this is set to 1, else 0
+
+    Returns:
+        numpy.ndarray: Normalized tensor
+    """
+
+    assert_true(
+        training_mode == 0,
+        "Model was exported with BatchNorm in training mode, this is not supported",
+    )
+
+    assert_true(
+        x.shape[1] == input_mean.shape[0],
+        "Number of channels in BatchNorm mean does not match input",
+    )
+
+    assert_true(
+        x.shape[1] == scale.shape[0],
+        "Number of channels in BatchNorm scale does not match input",
+    )
+
+    assert_true(
+        x.shape[1] == input_var.shape[0],
+        "Number of channels in BatchNorm variance does not match input",
+    )
+
+    assert_true(
+        x.shape[1] == bias.shape[0],
+        "Number of channels in BatchNorm bias does not match input",
+    )
+
+    shape_input = numpy.ones_like(x.shape)
+    shape_input[1] = x.shape[1]
+
+    input_mean = input_mean.reshape(shape_input)
+    input_var = input_var.reshape(shape_input)
+    scale = scale.reshape(shape_input)
+    bias = bias.reshape(shape_input)
+
+    y = (x - input_mean) / numpy.sqrt(input_var + epsilon) * scale + bias
+    return (y,)

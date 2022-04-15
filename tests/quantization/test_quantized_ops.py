@@ -14,6 +14,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedAbs,
     QuantizedAdd,
     QuantizedAvgPool,
+    QuantizedBatchNormalization,
     QuantizedCast,
     QuantizedCelu,
     QuantizedClip,
@@ -687,6 +688,48 @@ def test_quantized_gt_where(params, n_bits, check_r2_score):
     check_r2_score(reference_value, result)
 
 
+@pytest.mark.parametrize(
+    "tensor_shape",
+    [
+        pytest.param((1, 10)),
+        pytest.param((5, 10)),
+        pytest.param((1, 10, 3, 3)),
+        pytest.param((5, 10, 1, 1)),
+    ],
+)
+@pytest.mark.parametrize(
+    "n_bits",
+    [pytest.param(16)],
+)
+def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
+    """Test that batchnormalization gives good results under quantization."""
+
+    # Generate some data both 1d and 2d
+    x = numpy.random.randn(*tensor_shape)
+
+    # Generate random parameters for the normalization, with the right shapes
+    mean = QuantizedArray(n_bits, numpy.random.uniform(size=(tensor_shape[1],)))
+    var = QuantizedArray(n_bits, numpy.random.uniform(size=(tensor_shape[1],)))
+    bias = QuantizedArray(n_bits, numpy.random.uniform(size=(tensor_shape[1],)))
+    scale = QuantizedArray(n_bits, numpy.random.uniform(size=(tensor_shape[1],)))
+
+    q_op = QuantizedBatchNormalization(
+        n_bits, {"input_mean": mean, "input_var": var, "scale": scale, "bias": bias}
+    )
+
+    # Compute the fp32 results
+    raw_result = q_op.calibrate(x)
+
+    # Compute the results when using a quantized array
+    # Note that this will actually use the float32 values since BatchNormalization is an op
+    # that must be fused to a TLU and has a single encrypted input
+    q_x = QuantizedArray(n_bits, x)
+    quant_result = q_op(q_x).dequant()
+
+    # Check that all values are close
+    check_r2_score(raw_result, quant_result)
+
+
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
@@ -721,6 +764,7 @@ def test_all_ops_were_tested():
         QuantizedGreater: test_quantized_gt_where,
         QuantizedMul: test_all_arith_ops,
         QuantizedSub: test_all_arith_ops,
+        QuantizedBatchNormalization: test_batch_normalization,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

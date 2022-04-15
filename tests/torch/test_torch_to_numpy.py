@@ -34,14 +34,16 @@ class CNN(nn.Module):
         return x
 
 
-class FC(nn.Module):
+class FC(nn.Module):  # pylint: disable=too-many-instance-attributes
     """Torch model for the tests"""
 
     def __init__(self, activation_function):
         super().__init__()
         self.fc1 = nn.Linear(in_features=32 * 32 * 3, out_features=128)
         self.act_1 = activation_function()
+        self.bn1 = nn.BatchNorm1d(128)
         self.fc2 = nn.Linear(in_features=128, out_features=64)
+        self.bn2 = nn.BatchNorm1d(64)
         self.act_2 = activation_function()
         self.fc3 = nn.Linear(in_features=64, out_features=64)
         self.act_3 = activation_function()
@@ -51,9 +53,9 @@ class FC(nn.Module):
 
     def forward(self, x):
         """Forward pass."""
-        out = self.fc1(x)
+        out = self.bn1(self.fc1(x))
         out = self.act_1(out)
-        out = self.fc2(out)
+        out = self.bn2(self.fc2(out))
         out = self.act_2(out)
         out = self.fc3(out)
         out = self.act_3(out)
@@ -185,6 +187,12 @@ def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score)
 
     # Define the torch model
     torch_fc_model = model(activation_function=activation_function)
+
+    # Since we have networks with Batch Normalization, we need to manually set them to evaluation
+    # mode. ONNX export does the same, so to ensure torch results are the same as the results
+    # when running the ONNX graph through NumpyMode we need to call .eval()
+    # Calling .eval() fixes the mean/var of the BN layer and stops is being updated during .forward
+    torch_fc_model.eval()
 
     # Create random input
     torch_input_1 = torch.randn(input_shape)
