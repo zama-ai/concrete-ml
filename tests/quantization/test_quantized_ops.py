@@ -5,20 +5,23 @@ from itertools import combinations
 from typing import Callable, Tuple, Union
 
 import numpy
+import onnx
 import pytest
 
 from concrete.ml.quantization import QuantizedArray
+from concrete.ml.quantization.base_quantized_op import ALL_QUANTIZED_OPS
 from concrete.ml.quantization.quantized_ops import (
-    ALL_QUANTIZED_OPS,
     QuantizedAbs,
     QuantizedAdd,
     QuantizedAvgPool,
+    QuantizedCast,
     QuantizedCelu,
     QuantizedClip,
     QuantizedConv,
     QuantizedElu,
     QuantizedExp,
     QuantizedGemm,
+    QuantizedGreater,
     QuantizedHardSigmoid,
     QuantizedHardSwish,
     QuantizedIdentity,
@@ -26,6 +29,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedLinear,
     QuantizedLog,
     QuantizedMatMul,
+    QuantizedMul,
     QuantizedOp,
     QuantizedPad,
     QuantizedPRelu,
@@ -34,7 +38,9 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedSelu,
     QuantizedSigmoid,
     QuantizedSoftplus,
+    QuantizedSub,
     QuantizedTanh,
+    QuantizedWhere,
 )
 
 N_BITS_LIST = [20, 16, 8]
@@ -198,7 +204,10 @@ def test_clip_op(
 ARITH_N_BITS_LIST = [20, 16, 8]
 
 
-@pytest.mark.parametrize("operator", [QuantizedAdd])
+@pytest.mark.parametrize(
+    "operator, supports_enc_with_enc",
+    [(QuantizedAdd, True), (QuantizedSub, True), (QuantizedMul, False)],
+)
 @pytest.mark.parametrize("n_bits", ARITH_N_BITS_LIST)
 @pytest.mark.parametrize(
     "params_a, params_b, n_dims",
@@ -221,6 +230,7 @@ ARITH_N_BITS_LIST = [20, 16, 8]
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
 def test_all_arith_ops(
     operator: QuantizedOp,
+    supports_enc_with_enc: bool,
     n_bits: int,
     is_signed: bool,
     params_a: Tuple[float, float],
@@ -245,17 +255,22 @@ def test_all_arith_ops(
     # Using n_bits is not always desirable in practice as the output could feed into another TLU
     # So using n_bits would waste precision, but we test the worst case scenario here
 
-    # Variable+Variable (V+V) test
-    q_op = operator(n_bits)
+    if supports_enc_with_enc:
+        # Variable+Variable (V+V) test
+        q_op = operator(n_bits)
 
-    # Calibrate the layer
-    raw_output_vv = q_op.calibrate(input_0, input_1)
+        # Calibrate the layer
+        raw_output_vv = q_op.calibrate(input_0, input_1)
 
-    # Compute the quantized operator result
-    quantized_output_vv = q_op(q_inputs_0, q_inputs_1).dequant()
+        # Compute the quantized operator result
+        quantized_output_vv = q_op(q_inputs_0, q_inputs_1).dequant()
 
-    # Check the R2 of raw output and quantized output
-    check_r2_score(raw_output_vv, quantized_output_vv)
+        # Check the R2 of raw output and quantized output
+        check_r2_score(raw_output_vv, quantized_output_vv)
+    else:
+        with pytest.raises(Exception):
+            # Variable+Variable (V+V) test
+            q_op = operator(n_bits)
 
     # Variable + Constant test (V+C)
     q_op = operator(n_bits, constant_inputs={"b": q_inputs_1})
@@ -281,8 +296,9 @@ def test_all_arith_ops(
     # Check the R2 of raw output and quantized output (C+V)
     check_r2_score(raw_output_cv, quantized_output_cv)
 
-    # Check that we get the same fp32 results in V+V, V+C and C+V modes
-    check_float_arrays_equal(raw_output_vv, raw_output_vc)
+    # Check that we get the same fp32 results in V+V (if supported), V+C and C+V modes
+    if supports_enc_with_enc:
+        check_float_arrays_equal(raw_output_vv, raw_output_vc)
     check_float_arrays_equal(raw_output_cv, raw_output_vc)
 
     # Check that V+C and C+V is symmetric (int+float mode)
@@ -290,7 +306,8 @@ def test_all_arith_ops(
 
     # As V+C and C+V work on float values they will not be exactly equal to
     # the V+V case which works in quantized, we only check R2 for a high bitwidth in this case
-    check_r2_score(quantized_output_vc, quantized_output_vv)
+    if supports_enc_with_enc:
+        check_r2_score(quantized_output_vc, quantized_output_vv)
 
 
 GEMM_N_BITS_LIST = [20, 16, 8]
@@ -632,6 +649,44 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     check_r2_score(dequant_values, expected_output)
 
 
+@pytest.mark.parametrize(
+    "params",
+    [
+        (
+            numpy.random.uniform(size=(1, 3, 32, 32)) * 4,
+            numpy.random.uniform() * 0.7 + 2,
+            numpy.random.uniform(),
+            numpy.random.uniform(),
+        ),
+        (numpy.random.uniform(size=(1, 32)) * 100 - 50, numpy.random.uniform() * 50 - 25, 0, -1),
+        (numpy.random.uniform(size=(1024,)), numpy.random.uniform(), -100, 100),
+    ],
+)
+@pytest.mark.parametrize("n_bits", [16])
+def test_quantized_gt_where(params, n_bits, check_r2_score):
+    """Test a conditional pattern that is very common in quantization aware training."""
+    values, threshold, val_if_true, val_if_false = params
+
+    q_values = QuantizedArray(n_bits, values)
+    q_op_greater = QuantizedGreater(n_bits, constant_inputs={1: QuantizedArray(n_bits, threshold)})
+    q_cast = QuantizedCast(n_bits, to=onnx.TensorProto.BOOL)
+    q_op_where = QuantizedWhere(
+        n_bits,
+        constant_inputs={
+            1: QuantizedArray(n_bits, val_if_true),
+            2: QuantizedArray(n_bits, val_if_false),
+        },
+    )
+
+    reference_value = q_op_where.calibrate(q_cast.calibrate(q_op_greater.calibrate(values)))
+
+    q_result = q_op_where(q_cast(q_op_greater(q_values)))
+
+    result = q_result.dequant()
+
+    check_r2_score(reference_value, result)
+
+
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
@@ -661,6 +716,11 @@ def test_all_ops_were_tested():
         QuantizedHardSwish: test_univariate_ops_no_attrs,
         QuantizedAvgPool: test_quantized_avg_pool,
         QuantizedPad: test_quantized_pad,
+        QuantizedCast: test_quantized_gt_where,
+        QuantizedWhere: test_quantized_gt_where,
+        QuantizedGreater: test_quantized_gt_where,
+        QuantizedMul: test_all_arith_ops,
+        QuantizedSub: test_all_arith_ops,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

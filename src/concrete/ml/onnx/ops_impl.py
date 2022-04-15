@@ -3,6 +3,7 @@
 from typing import Optional, Tuple, Union
 
 import numpy
+import onnx
 import torch
 import torch.nn
 from scipy import special
@@ -10,7 +11,7 @@ from scipy import special
 from ..common.debugging import assert_true
 
 
-def fake_numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray) -> numpy.ndarray:
+def numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute the equivalent of numpy.where.
 
     Args:
@@ -24,7 +25,7 @@ def fake_numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray) -> nu
     # FIXME: can it be improved with a native numpy.where in Concrete Numpy?
     # https://github.com/zama-ai/concrete-numpy-internal/issues/1429
     """
-    return c * t + (1 - c) * f
+    return (c * t + (1.0 - c) * f,)
 
 
 def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -390,8 +391,7 @@ def numpy_elu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    y = fake_numpy_where(x > 0, x, alpha * (numpy.exp(x) - 1))
-    return (y,)
+    return numpy_where(x > 0, x, alpha * (numpy.exp(x) - 1))
 
 
 def numpy_selu(
@@ -414,8 +414,7 @@ def numpy_selu(
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    y = fake_numpy_where(x > 0, gamma * x, (gamma * alpha) * (numpy.exp(x) - 1))
-    return (y,)
+    return numpy_where(x > 0, gamma * x, (gamma * alpha) * (numpy.exp(x) - 1))
 
 
 def numpy_celu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
@@ -447,8 +446,7 @@ def numpy_leakyrelu(x: numpy.ndarray, /, *, alpha: float = 0.01) -> Tuple[numpy.
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    y = fake_numpy_where(x > 0, x, alpha * x)
-    return (y,)
+    return numpy_where(x > 0, x, alpha * x)
 
 
 def numpy_thresholdedrelu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
@@ -535,36 +533,36 @@ def numpy_div(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (x / y,)
 
 
-def numpy_mul(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_mul(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute mul in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Mul-14
 
     Args:
-        x (numpy.ndarray): Input tensor
-        y (numpy.ndarray): Input tensor
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Input tensor
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (x * y,)
+    return (a * b,)
 
 
-def numpy_sub(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_sub(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute sub in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sub-14
 
     Args:
-        x (numpy.ndarray): Input tensor
-        y (numpy.ndarray): Input tensor
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Input tensor
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (x - y,)
+    return (a - b,)
 
 
 def numpy_log(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -697,7 +695,8 @@ def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.greater(x, y),)
+    # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
+    return (numpy.greater(x, y).astype(numpy.int64),)
 
 
 def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -761,10 +760,12 @@ def torch_conv(
     kernel_shape: Tuple[int, ...],
     pads: Tuple[int, ...],
     strides: Tuple[int, ...],
-):
+) -> Tuple[numpy.ndarray]:
     """Compute N-D convolution using Torch.
 
     Currently supports 2d convolution with torch semantics. This function is also ONNX compatible.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Conv
 
     Args:
         x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
@@ -785,9 +786,9 @@ def torch_conv(
     """
 
     # Convert the inputs to tensors to compute conv using torch
-    tx = torch.Tensor(x)
-    tw = torch.Tensor(w)
-    tb = torch.Tensor(b.squeeze()) if b is not None else None
+    tx = torch.Tensor(x.copy())
+    tw = torch.Tensor(w.copy())
+    tb = torch.Tensor(b.squeeze().copy()) if b is not None else None
 
     assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
     assert_true(
@@ -821,10 +822,12 @@ def torch_avgpool(
     kernel_shape: Tuple[int, ...],
     pads: Tuple[int, ...],
     strides: Tuple[int, ...],
-):
+) -> Tuple[numpy.ndarray]:
     """Compute Average Pooling using Torch.
 
     Currently supports 2d average pooling with torch semantics. This function is ONNX compatible.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
     Args:
         x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
@@ -842,7 +845,7 @@ def torch_avgpool(
     """
 
     # Convert the inputs to tensors to compute conv using torch
-    tx = torch.Tensor(x)
+    tx = torch.Tensor(x.copy())
 
     assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
     assert_true(ceil_mode == 0, "Average Pooling only supports torch style dimension computation")
@@ -869,7 +872,14 @@ def torch_avgpool(
     return (res,)
 
 
-def numpy_pad(data, pads, constant_value, /, *, mode):
+def numpy_pad(
+    data: numpy.ndarray,
+    pads: numpy.ndarray,
+    constant_value: Union[numpy.ndarray, None] = None,
+    /,
+    *,
+    mode: str,
+) -> Tuple[numpy.ndarray]:
     """Apply padding in numpy according to ONNX spec.
 
     See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Pad
@@ -878,16 +888,34 @@ def numpy_pad(data, pads, constant_value, /, *, mode):
         data (numpy.ndarray): Input variable/tensor to pad
         pads (numpy.ndarray): List of pads (size 8) to apply, two per N,C,H,W dimension
         constant_value (float): Constant value to use for padding
-        mode (int): padding mode: constant/edge/reflect
+        mode (str): padding mode: constant/edge/reflect
 
     Returns:
         res (numpy.ndarray): Padded tensor
     """
 
-    assert_true(numpy.all(pads == 0), "Padding operator supported only with all pads at zero")
+    assert_true(bool(numpy.all(pads == 0)), "Padding operator supported only with all pads at zero")
     assert_true(mode == "constant", "Padding only supported with a constant pad value")
     assert_true(
         constant_value is None or constant_value == 0, "Pad only accepts a constant padding with 0s"
     )
 
     return (data,)
+
+
+def numpy_cast(data: numpy.ndarray, /, *, to: int) -> Tuple[numpy.ndarray]:
+    """Execute ONNX cast in Numpy.
+
+    Supports only booleans for now, which are converted to integers.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
+
+    Args:
+        data (numpy.ndarray): Input encrypted tensor
+        to (int): integer value of the onnx.TensorProto DataType enum
+
+    Returns:
+        result (numpy.ndarray): a tensor with the required data type
+    """
+    assert_true(to == onnx.TensorProto.BOOL)
+    return (data.astype(numpy.int64),)

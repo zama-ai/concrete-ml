@@ -6,7 +6,7 @@ from pathlib import Path
 import mdformat._cli as mdformat_cli
 
 from concrete.ml.onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
-from concrete.ml.quantization.quantized_ops import ONNX_OPS_TO_QUANTIZED_IMPL
+from concrete.ml.quantization.base_quantized_op import ONNX_OPS_TO_QUANTIZED_IMPL
 
 SCRIPT_NAME = Path(__file__).name
 

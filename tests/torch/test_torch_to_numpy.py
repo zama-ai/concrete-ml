@@ -12,8 +12,10 @@ from concrete.ml.torch import NumpyModule
 class CNN(nn.Module):
     """Torch CNN model for the tests."""
 
-    def __init__(self):
+    def __init__(self, activation_function):
         super().__init__()
+
+        self.activation_function = activation_function()
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.AvgPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
@@ -23,11 +25,11 @@ class CNN(nn.Module):
 
     def forward(self, x):
         """Forward pass."""
-        x = self.pool(torch.relu(self.conv1(x)))
-        x = self.pool(torch.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
+        x = self.pool(self.activation_function(self.conv1(x)))
+        x = self.pool(self.activation_function(self.conv2(x)))
+        x = x.reshape(x.shape[0], -1)
+        x = self.activation_function(self.fc1(x))
+        x = self.activation_function(self.fc2(x))
         x = self.fc3(x)
         return x
 
@@ -62,6 +64,34 @@ class FC(nn.Module):
         return out
 
 
+class CNNInvalid(nn.Module):
+    """Torch CNN model for the tests."""
+
+    def __init__(self, activation_function, padding, groups, flatten):
+        super().__init__()
+
+        self.activation_function = activation_function()
+        self.flatten_function = (
+            (lambda x: torch.flatten(x, 1)) if flatten else (lambda x: x.reshape(x.shape[0], -1))
+        )
+        self.conv1 = nn.Conv2d(3, 6, 5)
+        self.pool = nn.AvgPool2d(2, 2, padding=1) if padding else nn.AvgPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5, groups=2) if groups else nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * (5 + padding * 1) * (5 + padding * 1), 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+
+    def forward(self, x):
+        """Forward pass."""
+        x = self.pool(self.activation_function(self.conv1(x)))
+        x = self.pool(self.activation_function(self.conv2(x)))
+        x = self.flatten_function(x)
+        x = self.activation_function(self.fc1(x))
+        x = self.activation_function(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+
 class NetWithLoops(torch.nn.Module):
     """Torch model, where we reuse some elements in a loop in the forward and don't expect the
     user to define these elements in a particular order"""
@@ -85,11 +115,36 @@ class NetWithLoops(torch.nn.Module):
         return x
 
 
+class QATTestModule(nn.Module):
+    """Torch model that implements a simple non-uniform quantizer."""
+
+    def __init__(self, activation_function):
+        super().__init__()
+
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass with a quantizer built into the computation graph."""
+
+        def step(x, bias):
+            """The step function for quantization."""
+            y = torch.zeros_like(x)
+            mask = torch.gt(x - bias, 0.0)
+            y[mask] = 1.0
+            return y
+
+        x = step(x, 0.5) * 2.0
+        x = self.act(x)
+        return x
+
+
 @pytest.mark.parametrize(
     "model, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
+        pytest.param(CNN, (5, 3, 32, 32)),
         pytest.param(partial(NetWithLoops, n_feat=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)),
+        pytest.param(QATTestModule, (5, 3, 6, 6)),
     ],
 )
 @pytest.mark.parametrize(
@@ -170,23 +225,36 @@ def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score)
 
 
 @pytest.mark.parametrize(
-    "model",
-    [pytest.param(CNN)],
+    "padding, groups, flatten",
+    [
+        pytest.param(True, False, False),
+        pytest.param(False, True, False),
+        pytest.param(False, False, True),
+    ],
 )
-def test_raises(model):
+def test_raises(padding, groups, flatten):
     """Function to test incompatible layers."""
 
-    torch_incompatible_model = model()
+    torch_incompatible_model = CNNInvalid(nn.ReLU, padding, groups, flatten)
 
-    with pytest.raises(
-        ValueError,
-        match=(
+    error_msg_pattern = None
+    if padding:
+        error_msg_pattern = ".*Padding.*"
+    elif groups:
+        error_msg_pattern = ".*groups.*"
+    elif flatten:
+        error_msg_pattern = (
             "The following ONNX operators are required to convert the torch model to numpy but are"
             " not currently implemented: Flatten\\..*"
-        ),
+        )
+
+    with pytest.raises(
+        Exception,
+        match=error_msg_pattern,
     ):
         dummy_input = torch.randn(1, 3, 32, 32)
-        NumpyModule(torch_incompatible_model, dummy_input)
+        mod = NumpyModule(torch_incompatible_model, dummy_input)
+        mod(dummy_input.numpy())
 
 
 class AddTest(nn.Module):

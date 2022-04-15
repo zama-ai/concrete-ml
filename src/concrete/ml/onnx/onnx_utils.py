@@ -37,6 +37,7 @@ from .ops_impl import (
     numpy_asinh,
     numpy_atan,
     numpy_atanh,
+    numpy_cast,
     numpy_celu,
     numpy_clip,
     numpy_constant,
@@ -71,6 +72,7 @@ from .ops_impl import (
     numpy_tan,
     numpy_tanh,
     numpy_thresholdedrelu,
+    numpy_where,
     torch_avgpool,
     torch_conv,
 )
@@ -135,6 +137,8 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "HardSwish": numpy_hardswish,
     "AveragePool": torch_avgpool,
     "Pad": numpy_pad,
+    "Where": numpy_where,
+    "Cast": numpy_cast,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

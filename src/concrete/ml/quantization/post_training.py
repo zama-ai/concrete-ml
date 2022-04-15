@@ -9,9 +9,9 @@ from onnx import numpy_helper
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute
 from ..torch.numpy_module import NumpyModule
+from .base_quantized_op import ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
 from .quantized_array import QuantizedArray
 from .quantized_module import QuantizedModule
-from .quantized_ops import ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
 
 
 class PostTrainingAffineQuantization:

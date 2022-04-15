@@ -29,6 +29,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Atan
 - Atanh
 - AveragePool
+- Cast
 - Celu
 - Clip
 - Constant
@@ -64,6 +65,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Tan
 - Tanh
 - ThresholdedRelu
+- Where
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [END] -->
 
@@ -76,12 +78,14 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Abs: QuantizedAbs
 - Add: QuantizedAdd
 - AveragePool: QuantizedAvgPool
+- Cast: QuantizedCast
 - Celu: QuantizedCelu
 - Clip: QuantizedClip
 - Conv: QuantizedConv
 - Elu: QuantizedElu
 - Exp: QuantizedExp
 - Gemm: QuantizedGemm
+- Greater: QuantizedGreater
 - HardSigmoid: QuantizedHardSigmoid
 - HardSwish: QuantizedHardSwish
 - Identity: QuantizedIdentity
@@ -89,6 +93,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Linear: QuantizedLinear
 - Log: QuantizedLog
 - MatMul: QuantizedMatMul
+- Mul: QuantizedMul
 - PRelu: QuantizedPRelu
 - Pad: QuantizedPad
 - Relu: QuantizedRelu
@@ -96,6 +101,8 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Selu: QuantizedSelu
 - Sigmoid: QuantizedSigmoid
 - Softplus: QuantizedSoftplus
+- Sub: QuantizedSub
 - Tanh: QuantizedTanh
+- Where: QuantizedWhere
 
 <!--- gen_supported_ops.py: inject supported operations for PTQ [END] -->

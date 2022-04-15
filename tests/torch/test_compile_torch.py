@@ -80,7 +80,7 @@ class BranchingModule(nn.Module):
 
     def forward(self, x):
         """Forward pass."""
-        return x + self.act(x + 1.0)
+        return x + self.act(x + 1.0) - self.act(x * 2.0)
 
 
 class UnivariateModule(nn.Module):
@@ -96,6 +96,29 @@ class UnivariateModule(nn.Module):
         x = x.view(-1, 1)
         x = torch.reshape(x, (-1, 1))
         x = self.act(torch.abs(torch.exp(torch.log(1.0 + torch.sigmoid(x)))))
+        return x
+
+
+class StepActivationModule(nn.Module):
+    """Torch model implements a step function that needs Greater, Cast and Where."""
+
+    def __init__(self, _n_feat, activation_function):
+        super().__init__()
+
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass with a quantizer built into the computation graph."""
+
+        def step(x, bias):
+            """The step function for quantization."""
+            y = torch.zeros_like(x)
+            mask = torch.gt(x - bias, 0.0)
+            y[mask] = 1.0
+            return y
+
+        x = step(x, 0.5) * 2.0
+        x = self.act(x)
         return x
 
 
@@ -134,6 +157,7 @@ class UnivariateModule(nn.Module):
         pytest.param(BranchingModule),
         pytest.param(MultiInputNN),
         pytest.param(UnivariateModule),
+        pytest.param(StepActivationModule),
     ],
 )
 @pytest.mark.parametrize(

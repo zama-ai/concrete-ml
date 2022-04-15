@@ -11,8 +11,8 @@ from concrete.numpy.np_fhe_compiler import NPFHECompiler
 from ..common.debugging import assert_true
 from ..common.utils import generate_proxy_function
 from ..virtual_lib import VirtualNPFHECompiler
+from .base_quantized_op import QuantizedOp
 from .quantized_array import QuantizedArray
-from .quantized_ops import QuantizedOp
 
 
 class QuantizedModule:
