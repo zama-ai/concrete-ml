@@ -4,13 +4,13 @@ import random
 import shutil
 from pathlib import Path
 
-import concrete.numpy as hnp
 import numpy
 
 # Check that concrete-numpy extra packages are installed in the docker image
 import pygraphviz
-from concrete.common.compilation import CompilationConfiguration
-from concrete.numpy import compile as compile_
+from concrete.numpy.compilation import configuration
+from concrete.numpy.compilation.compiler import Compiler
+from concrete.numpy.compilation.configuration import CompilationConfiguration
 from sklearn.datasets import fetch_openml
 from sklearn.metrics import average_precision_score, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -69,7 +69,7 @@ def ml_check(args):
     # We first compile the model with some data, here the training set
     model.compile(
         x_train,
-        compilation_configuration=CompilationConfiguration(
+        configuration=CompilationConfiguration(
             enable_unsafe_features=True,  # This is for our tests only, never use that in prod
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
         ),
@@ -101,10 +101,10 @@ def cn_check(args):
 
     n_bits = 3
 
-    compiler = hnp.NPFHECompiler(
+    compiler = Compiler(
         function_to_compile,
         {"x": "encrypted"},
-        compilation_configuration=CompilationConfiguration(
+        configuration=CompilationConfiguration(
             enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
         ),
@@ -112,7 +112,7 @@ def cn_check(args):
 
     print("Compiling...")
 
-    engine = compiler.compile_on_inputset(
+    engine = compiler.compile(
         range(2**n_bits),
     )
 
@@ -147,7 +147,7 @@ def main(args):
         keyring_dir.mkdir(parents=True, exist_ok=True)
         keyring_dir_as_str = str(keyring_dir)
         print(f"Using {keyring_dir_as_str} as key cache dir")
-        compile_._COMPILE_FHE_INSECURE_KEY_CACHE_DIR = (  # pylint: disable=protected-access
+        configuration._INSECURE_KEY_CACHE_LOCATION = (  # pylint: disable=protected-access
             keyring_dir_as_str
         )
 

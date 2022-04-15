@@ -24,7 +24,6 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
     n_bits: int
     q_y: QuantizedArray
     _tensor_tree_predict: Optional[Callable]
-    output_is_signed: bool
 
     CONCRETE_SPECIFIC_PARAMS: Set[str] = {"n_bits"}
 

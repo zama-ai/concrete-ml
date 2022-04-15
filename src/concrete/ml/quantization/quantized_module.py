@@ -3,14 +3,14 @@ import copy
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
-from concrete.common.compilation.artifacts import CompilationArtifacts
-from concrete.common.compilation.configuration import CompilationConfiguration
-from concrete.common.fhe_circuit import FHECircuit
-from concrete.numpy.np_fhe_compiler import NPFHECompiler
+from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.circuit import Circuit
+from concrete.numpy.compilation.compiler import Compiler
+from concrete.numpy.compilation.configuration import CompilationConfiguration
 
 from ..common.debugging import assert_true
 from ..common.utils import generate_proxy_function
-from ..virtual_lib import VirtualNPFHECompiler
+from ..virtual_lib import VirtualCompiler
 from .base_quantized_op import QuantizedOp
 from .quantized_array import QuantizedArray
 
@@ -22,7 +22,7 @@ class QuantizedModule:
     ordered_module_output_names: Tuple[str, ...]
     quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     q_inputs: List[QuantizedArray]
-    forward_fhe: Union[None, FHECircuit]
+    forward_fhe: Union[None, Circuit]
 
     def __init__(
         self,
@@ -207,17 +207,17 @@ class QuantizedModule:
     def compile(
         self,
         q_inputs: Union[Tuple[QuantizedArray, ...], QuantizedArray],
-        compilation_configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-    ) -> FHECircuit:
+    ) -> Circuit:
         """Compile the forward function of the module.
 
         Args:
             q_inputs (Union[Tuple[QuantizedArray, ...], QuantizedArray]): Needed for tracing and
                 building the boundaries.
-            compilation_configuration (Optional[CompilationConfiguration]): Configuration object
+            configuration (Optional[CompilationConfiguration]): Configuration object
                                                                             to use during
                                                                             compilation
             compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
@@ -229,7 +229,7 @@ class QuantizedModule:
                 Defaults to False.
 
         Returns:
-            FHECircuit: the compiled FHECircuit.
+            Circuit: the compiled Circuit.
         """
 
         if not isinstance(q_inputs, tuple):
@@ -247,12 +247,12 @@ class QuantizedModule:
             self._forward, self.ordered_module_input_names
         )
 
-        compiler_class = VirtualNPFHECompiler if use_virtual_lib else NPFHECompiler
+        compiler_class = VirtualCompiler if use_virtual_lib else Compiler
 
         compiler = compiler_class(
             forward_proxy,
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
-            compilation_configuration,
+            configuration,
             compilation_artifacts,
         )
 
@@ -266,7 +266,7 @@ class QuantizedModule:
 
         inputset = get_inputset_iterable()
 
-        self.forward_fhe = compiler.compile_on_inputset(
+        self.forward_fhe = compiler.compile(
             inputset,
             show_mlir,
         )

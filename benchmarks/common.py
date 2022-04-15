@@ -1,8 +1,8 @@
 from functools import partial
 
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import py_progress_tracker as progress
-from concrete.numpy import compile as compile_
+from concrete.numpy.compilation import configuration
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -13,15 +13,15 @@ from sklearn.metrics import (
 
 # This is only for benchmarks to speed up compilation times
 # pylint: disable=protected-access
-compile_._COMPILE_FHE_INSECURE_KEY_CACHE_DIR = "/tmp/keycache"
+configuration._INSECURE_KEY_CACHE_DIR = "/tmp/keycache"
 # pylint: enable=protected-access
 
-BENCHMARK_CONFIGURATION = hnp.CompilationConfiguration(
-    check_every_input_in_inputset=True,
+BENCHMARK_CONFIGURATION = cnp.CompilationConfiguration(
+    # FIXME, Concrete Numpy 0.6 integration, #795 check_every_input_in_inputset=True,
     dump_artifacts_on_unexpected_failures=True,
-    enable_topological_optimizations=True,
+    # FIXME, Concrete Numpy 0.6 integration, #795 enable_topological_optimizations=True,
     enable_unsafe_features=True,
-    treat_warnings_as_errors=True,
+    # FIXME, Concrete Numpy 0.6 integration, #795 treat_warnings_as_errors=True,
     use_insecure_key_cache=True,
 )
 

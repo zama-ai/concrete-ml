@@ -275,9 +275,7 @@ def test_pipeline_and_cv():
     ],
 )
 @pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
-def test_compile_and_calib(
-    activation_function, model, default_compilation_configuration, use_virtual_lib
-):
+def test_compile_and_calib(activation_function, model, default_configuration, use_virtual_lib):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
 
@@ -351,7 +349,7 @@ def test_compile_and_calib(
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
         clf.compile(
             x_train,
-            compilation_configuration=default_compilation_configuration,
+            configuration=default_configuration,
             use_virtual_lib=use_virtual_lib,
         )
 
@@ -371,7 +369,7 @@ def test_compile_and_calib(
     # Compile the model
     clf.compile(
         x_train,
-        compilation_configuration=default_compilation_configuration,
+        configuration=default_configuration,
         use_virtual_lib=use_virtual_lib,
     )
 

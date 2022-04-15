@@ -84,7 +84,7 @@ def test_rf_classifier(
     max_depth,
     n_estimators,
     n_bits,
-    default_compilation_configuration,
+    default_configuration,
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
 ):
@@ -103,7 +103,7 @@ def test_rf_classifier(
     model.fit(x, y)
 
     # Test compilation
-    model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
+    model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
 
     # Compare FHE vs non-FHE
     check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)

@@ -35,7 +35,7 @@ from concrete.ml.sklearn import DecisionTreeClassifier
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_decision_tree_classifier(
     load_data,
-    default_compilation_configuration,
+    default_configuration,
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
 ):
@@ -50,7 +50,7 @@ def test_decision_tree_classifier(
     model.fit(x, y)
 
     # Test compilation
-    model.compile(x, default_compilation_configuration, use_virtual_lib=use_virtual_lib)
+    model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
 
     # Compare FHE vs non-FHE
     check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)

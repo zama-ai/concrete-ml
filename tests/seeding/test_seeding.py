@@ -41,7 +41,7 @@ def test_seed_2():
 
 @pytest.mark.parametrize("n_classes", [2])
 @pytest.mark.parametrize("input_dim", [100])
-def test_seed_sklearn(n_classes, input_dim, default_compilation_configuration):
+def test_seed_sklearn(n_classes, input_dim, default_configuration):
     """Test seeding of sklearn function"""
     # Get the dataset
     x, y = make_classification(
@@ -64,9 +64,7 @@ def test_seed_sklearn(n_classes, input_dim, default_compilation_configuration):
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:
-        model.compile(
-            x, show_mlir=True, compilation_configuration=default_compilation_configuration
-        )
+        model.compile(x, show_mlir=True, configuration=default_configuration)
     except RuntimeError as err:
         print(err)
     except AssertionError as err:
@@ -89,7 +87,7 @@ def test_seed_torch(
     activation_function,
     n_classes,
     input_dim,
-    default_compilation_configuration,
+    default_configuration,
 ):
     """Test seeding of torch function"""
     x, y = make_classification(
@@ -138,9 +136,7 @@ def test_seed_torch(
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:
-        concrete_classifier.compile(
-            x_train, show_mlir=True, compilation_configuration=default_compilation_configuration
-        )
+        concrete_classifier.compile(x_train, show_mlir=True, configuration=default_configuration)
     except RuntimeError as err:
         print(err)
     except AssertionError as err:

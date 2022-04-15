@@ -3,7 +3,7 @@
 from typing import Any, Dict, Optional, Union
 
 import numpy
-from concrete.common.extensions import convolution as hconv
+from concrete.numpy.extensions import convolution as cnp_conv
 
 from ..common.debugging import assert_true
 from .base_quantized_op import QuantizedOp
@@ -472,7 +472,7 @@ class QuantizedConv(QuantizedOp):
         # to split the core computation from the zero points and scales.
 
         # Compute the first encrypted term that convolves weights and inputs
-        conv_wx = hconv.conv2d(
+        conv_wx = cnp_conv.conv2d(
             q_input.qvalues,
             q_weights.qvalues,
             None,
@@ -482,7 +482,7 @@ class QuantizedConv(QuantizedOp):
         )
 
         # Compute the sum of the inputs (second encrypted term)
-        zw_conv_1x = -q_weights.zero_point * hconv.conv2d(
+        zw_conv_1x = -q_weights.zero_point * cnp_conv.conv2d(
             q_input.qvalues,
             q_weights_1,
             None,
@@ -610,7 +610,7 @@ class QuantizedAvgPool(QuantizedOp):
 
         norm_const = 1.0 / numpy.prod(self.kernel_shape)
 
-        sum_result = hconv.conv2d(q_input.qvalues, kernel, None, self.pads, self.strides)
+        sum_result = cnp_conv.conv2d(q_input.qvalues, kernel, None, self.pads, self.strides)
 
         result = sum_result.astype(numpy.float32) * norm_const * q_input.scale
 

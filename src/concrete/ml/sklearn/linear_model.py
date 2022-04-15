@@ -8,7 +8,8 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import numpy
 import onnx
 import sklearn.linear_model
-from concrete.common.compilation import CompilationArtifacts, CompilationConfiguration
+from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.configuration import CompilationConfiguration
 
 from ..common.debugging.custom_assert import assert_true
 from ..onnx.onnx_model_manipulations import (
@@ -189,7 +190,7 @@ class SklearnLinearModelMixin:
     def compile(
         self,
         X: numpy.ndarray,
-        compilation_configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
@@ -198,7 +199,7 @@ class SklearnLinearModelMixin:
 
         Args:
             X (numpy.ndarray): The input data.
-            compilation_configuration (Optional[CompilationConfiguration]): Configuration object
+            configuration (Optional[CompilationConfiguration]): Configuration object
                 to use during compilation
             compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
                 compilation
@@ -215,7 +216,7 @@ class SklearnLinearModelMixin:
         # Compile the model
         self.quantized_module.compile(
             quantized_numpy_inputset,
-            compilation_configuration,
+            configuration,
             compilation_artifacts,
             show_mlir,
             use_virtual_lib=use_virtual_lib,

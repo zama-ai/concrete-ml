@@ -136,7 +136,7 @@ def test_quantized_module_compilation(
     input_output_feature,
     model,
     activation,
-    default_compilation_configuration,
+    default_configuration,
     check_is_good_execution,
     use_virtual_lib,
 ):
@@ -165,7 +165,7 @@ def test_quantized_module_compilation(
     # Compile
     quantized_model.compile(
         q_input,
-        default_compilation_configuration,
+        default_configuration,
         use_virtual_lib=use_virtual_lib,
     )
 
@@ -199,7 +199,7 @@ def test_quantized_cnn_compilation(
     input_output_feature,
     model,
     activation,
-    default_compilation_configuration,
+    default_configuration,
     check_is_good_execution,
     use_virtual_lib,
 ):
@@ -229,7 +229,7 @@ def test_quantized_cnn_compilation(
     # Compile
     quantized_model.compile(
         q_input,
-        default_compilation_configuration,
+        default_configuration,
         use_virtual_lib=use_virtual_lib,
     )
 

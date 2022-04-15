@@ -4,7 +4,8 @@ from typing import Optional, Tuple, Union
 
 import numpy
 import torch
-from concrete.common.compilation import CompilationArtifacts, CompilationConfiguration
+from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.configuration import CompilationConfiguration
 
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray, QuantizedModule
 from . import NumpyModule
@@ -35,7 +36,7 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
 def compile_torch_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
-    compilation_configuration: Optional[CompilationConfiguration] = None,
+    configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
     n_bits=7,
@@ -49,7 +50,7 @@ def compile_torch_model(
         torch_model (torch.nn.Module): the model to quantize,
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
-        compilation_configuration (CompilationConfiguration): Configuration object to use
+        configuration (CompilationConfiguration): Configuration object to use
             during compilation
         compilation_artifacts (CompilationArtifacts): Artifacts object to fill
             during compilation
@@ -92,7 +93,7 @@ def compile_torch_model(
 
     quantized_module.compile(
         quantized_numpy_inputset,
-        compilation_configuration,
+        configuration,
         compilation_artifacts,
         show_mlir,
         use_virtual_lib,

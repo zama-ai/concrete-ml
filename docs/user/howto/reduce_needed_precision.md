@@ -9,12 +9,12 @@ In this situation, you will get a compilation error. Here is an example:
 <!--pytest-codeblocks:skip-->
 
 ```python
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 
 def f(x):
     return 42 * x
 
-compiler = hnp.NPFHECompiler(f, {"x": "encrypted"})
+compiler = cnp.NPFHECompiler(f, {"x": "encrypted"})
 circuit = compiler.compile_on_inputset(range(8))
 ```
 

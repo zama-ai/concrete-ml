@@ -1,73 +1,84 @@
-"""Virtual NPFHECompiler code."""
+"""Virtual Compiler code."""
 
-from typing import Callable, Dict, Optional, Union, cast
+# FIXME, Concrete Numpy 0.6 integration, #795
+# pylint: disable=E1101
 
-from concrete.common.compilation import CompilationArtifacts, CompilationConfiguration
-from concrete.common.debugging import format_operation_graph
-from concrete.common.mlir.utils import check_graph_values_compatibility_with_mlir
-from concrete.numpy.np_fhe_compiler import EncryptedStatus, NPFHECompiler
+from typing import Any, Callable, Dict, Optional, Union, cast
+
+# FIXME, Concrete Numpy 0.6 integration, #795
+# from concrete.common.mlir.utils import check_graph_values_compatibility_with_mlir
+from concrete.numpy.compilation import (
+    CompilationArtifacts,
+    CompilationConfiguration,
+    Compiler,
+    EncryptionStatus,
+)
 
 from ..common.debugging import assert_true
-from .virtual_fhe_circuit import VirtualFHECircuit
+from .virtual_fhe_circuit import VirtualCircuit
 
 
-class VirtualNPFHECompiler(NPFHECompiler):
-    """Class simulating NPFHECompiler behavior in the clear, without any actual FHE computations."""
+class VirtualCompiler(Compiler):
+    """Class simulating Compiler behavior in the clear, without any actual FHE computations."""
 
     def __init__(
         self,
         function_to_compile: Callable,
-        function_parameters_encrypted_status: Dict[str, Union[str, EncryptedStatus]],
-        compilation_configuration: Optional[CompilationConfiguration] = None,
+        function_parameters_encrypted_status: Dict[str, Union[str, EncryptionStatus]],
+        configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
     ) -> None:
         assert_true(
-            compilation_configuration is not None,
+            configuration is not None,
             "Using the virtual lib requires a CompilationConfiguration.",
             ValueError,
         )
         # for mypy
-        compilation_configuration = cast(CompilationConfiguration, compilation_configuration)
+        configuration = cast(CompilationConfiguration, configuration)
         assert_true(
-            compilation_configuration.enable_unsafe_features,
-            "Using the virtual lib requires enabling unsafe features "
-            "in compilation_configuration.",
+            configuration.enable_unsafe_features,
+            "Using the virtual lib requires enabling unsafe features " "in configuration.",
             ValueError,
         )
 
         super().__init__(
             function_to_compile,
             function_parameters_encrypted_status,
-            compilation_configuration,
+            configuration,
             compilation_artifacts,
         )
 
-    def get_compiled_fhe_circuit(self, show_mlir: bool = False) -> VirtualFHECircuit:
-        """Return a compiled VirtualFHECircuit if the instance was evaluated on an inputset.
+    def get_compiled_fhe_circuit(self, show_mlir: bool = False) -> VirtualCircuit:
+        """Return a compiled VirtualCircuit if the instance was evaluated on an inputset.
 
         Args:
             show_mlir (bool): ignored in this virtual overload. Defaults to False.
 
         Returns:
-            VirtualFHECircuit: the compiled VirtualFHECircuit
+            VirtualCircuit: the compiled VirtualCircuit
         """
         self._eval_on_current_inputset()
 
         assert_true(
-            self._op_graph is not None,
-            "Requested VirtualFHECircuit but no OPGraph was compiled. "
+            self._graph is not None,
+            "Requested VirtualCircuit but no Graph was compiled. "
             f"Did you forget to evaluate {self.__class__.__name__} over an inputset?",
             RuntimeError,
         )
 
+        # FIXME, Concrete Numpy 0.6 integration, #795
+        print("FIXME, remove this, #795", show_mlir)
+
         # We don't have the compilation check to verify that nodes are Integer -> Integer so we need
         # to check ourselves here
-        offending_nodes = check_graph_values_compatibility_with_mlir(self._op_graph)
+        # FIXME, Concrete Numpy 0.6 integration, #795
+        # offending_nodes = check_graph_values_compatibility_with_mlir(self._graph)
+        offending_nodes: Dict[Any, Any] = {}
         assert_true(
             offending_nodes is None,
             "function you are trying to compile isn't supported for MLIR lowering\n\n"
-            + format_operation_graph(self._op_graph, highlighted_nodes=offending_nodes),
+            + self.graph.format(highlighted_nodes=offending_nodes),
             RuntimeError,
         )
 
-        return VirtualFHECircuit(self._op_graph)
+        return VirtualCircuit(self._graph)

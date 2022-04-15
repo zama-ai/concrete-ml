@@ -7,18 +7,18 @@ from abc import abstractmethod
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy
 import torch
-from concrete.common.compilation.artifacts import CompilationArtifacts
-from concrete.common.compilation.configuration import CompilationConfiguration
-from concrete.common.data_types import Integer
+from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.configuration import CompilationConfiguration
+from concrete.numpy.dtypes.integer import Integer
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray
 from ..torch import NumpyModule
-from ..virtual_lib import VirtualNPFHECompiler
+from ..virtual_lib import VirtualCompiler
 
 
 class QuantizedTorchEstimatorMixin:
@@ -65,7 +65,7 @@ class QuantizedTorchEstimatorMixin:
     def compile(
         self,
         X: numpy.ndarray,
-        compilation_configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
@@ -74,7 +74,7 @@ class QuantizedTorchEstimatorMixin:
 
         Args:
             X (numpy.ndarray): the unquantized dataset
-            compilation_configuration (Optional[CompilationConfiguration]): the options for
+            configuration (Optional[CompilationConfiguration]): the options for
                 compilation
             compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
                 during compilation
@@ -98,7 +98,7 @@ class QuantizedTorchEstimatorMixin:
         # Call the compilation backend to produce the FHE inference circuit
         self.quantized_module_.compile(
             quantized_numpy_inputset,
-            compilation_configuration=compilation_configuration,
+            configuration=configuration,
             compilation_artifacts=compilation_artifacts,
             show_mlir=show_mlir,
             use_virtual_lib=use_virtual_lib,
@@ -206,7 +206,15 @@ class QuantizedTorchEstimatorMixin:
                 q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)
                 q_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(q_x)
                 if y_pred is None:
+                    assert_true(
+                        isinstance(q_pred, numpy.ndarray),
+                        f"bad type {q_pred}, expected np.ndarray",
+                    )
+                    # pylint is lost: Instance of 'tuple' has no 'size' member (no-member)
+                    # because it doesn't understand the Union in encrypt_run_decrypt
+                    # pylint: disable=no-member
                     y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
+                    # pylint: enable=no-member
                 y_pred[idx, :] = self.quantized_module_.dequantize_output(q_pred)
 
             nonlin = self._get_predict_nonlinearity()
@@ -292,7 +300,6 @@ class BaseTreeEstimatorMixin:
     init_args: Dict[str, Any]
     random_state: Optional[Union[numpy.random.RandomState, int]]  # pylint: disable=no-member
     sklearn_alg: Any
-    output_is_signed: bool
     _tensor_tree_predict: Optional[Callable]
 
     def __init__(self, n_bits: int):
@@ -455,21 +462,13 @@ class BaseTreeEstimatorMixin:
             )
             y_preds.append(fhe_pred)
         y_preds_array = numpy.concatenate(y_preds, axis=-1)
-        if self.output_is_signed:
-            # FIXME work around for signed integers
-            # see https://github.com/zama-ai/concrete-ml-internal/issues/556
-            negative_idx = y_preds_array >= 2 ** (self.output_compiled_bitwidth)
-            y_preds_array = numpy.where(
-                negative_idx,
-                y_preds_array - 2 ** (self.output_compiled_bitwidth + 1),
-                y_preds_array,
-            )
+
         return y_preds_array
 
     def compile(
         self,
         X: numpy.ndarray,
-        compilation_configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
@@ -478,7 +477,7 @@ class BaseTreeEstimatorMixin:
 
         Args:
             X (numpy.ndarray): the unquantized dataset
-            compilation_configuration (Optional[CompilationConfiguration]): the options for
+            configuration (Optional[CompilationConfiguration]): the options for
                 compilation
             compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
                 during compilation
@@ -497,29 +496,25 @@ class BaseTreeEstimatorMixin:
             self._tensor_tree_predict, ["inputs"]
         )
 
-        compiler_class = VirtualNPFHECompiler if use_virtual_lib else hnp.NPFHECompiler
+        compiler_class = VirtualCompiler if use_virtual_lib else cnp.Compiler
 
         X = self.quantize_input(X)
         compiler = compiler_class(
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
-            compilation_configuration,
+            configuration,
             compilation_artifacts,
         )
-        self.fhe_tree = compiler.compile_on_inputset(
+        self.fhe_tree = compiler.compile(
             (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir
         )
 
-        # FIXME work around for signed integers
-        # see https://github.com/zama-ai/concrete-ml-internal/issues/556
-        output_op_graph = self.fhe_tree.op_graph.get_ordered_outputs()
+        output_graph = self.fhe_tree.graph.ordered_outputs()
         assert_true(
-            (len(output_op_graph) == 1) and (len(output_op_graph[0].outputs) == 1),
-            "op_graph has too many outputs",
+            len(output_graph) == 1,
+            "graph has too many outputs",
         )
         assert_true(
-            isinstance(dtype_output := output_op_graph[0].outputs[0].dtype, Integer),
+            isinstance(dtype_output := output_graph[0].output.dtype, Integer),
             f"output is {dtype_output} but an Integer is expected.",
         )
-        self.output_compiled_bitwidth = dtype_output.bit_width
-        self.output_is_signed = dtype_output.is_signed

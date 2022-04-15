@@ -1,28 +1,28 @@
-"""Virtual FHECircuit code."""
+"""Virtual Circuit code."""
 
 from typing import Dict, List, Tuple, Union
 
 import numpy
-from concrete.common.data_types import Integer
-from concrete.common.debugging import format_operation_graph
-from concrete.common.fhe_circuit import FHECircuit
-from concrete.common.operator_graph import OPGraph
-from concrete.common.representation.intermediate import IntermediateNode
+from concrete.compiler import CompilationOptions
+from concrete.numpy.compilation.circuit import Circuit
+from concrete.numpy.dtypes.integer import Integer
+from concrete.numpy.representation.graph import Graph
+from concrete.numpy.representation.node import Node
 
 from ..common.debugging import assert_true
 
 
-class VirtualFHECircuit(FHECircuit):
-    """Class simulating FHECircuit behavior in the clear, without any actual FHE computations."""
+class VirtualCircuit(Circuit):
+    """Class simulating Circuit behavior in the clear, without any actual FHE computations."""
 
     # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/640
     # remove this once 640 is done
     _has_warned: bool = False
 
-    def __init__(self, op_graph: OPGraph):
+    def __init__(self, graph: Graph):
         # FIXME: once https://github.com/zama-ai/concrete-numpy-internal/issues/1494 is done, we
         # can replace by None
-        # Useless program, just to feed some parameters of FHECircuit
+        # Useless program, just to feed some parameters of Circuit
         dummy_mlir = (
             "module  {\n"
             + "  func @main(%arg0: !FHE.eint<4>, %arg1: !FHE.eint<4>) -> !FHE.eint<4> {\n"
@@ -32,7 +32,11 @@ class VirtualFHECircuit(FHECircuit):
             + "  }\n"
             + "}\n"
         )
-        super().__init__(op_graph, dummy_mlir)
+
+        # FIXME, Concrete Numpy 0.6 integration, #795: is it good?
+        configuration = CompilationOptions.new("main")
+
+        super().__init__(graph, dummy_mlir, configuration=configuration)
 
     def get_max_bit_width(self) -> int:
         """Get the max bit width of the simulated circuit.
@@ -53,14 +57,14 @@ class VirtualFHECircuit(FHECircuit):
                 element of the return tuple.
 
         Returns:
-            Tuple[bool, int, Dict[IntermediateNode, List[str]]]: returns a tuple containing in order
+            Tuple[bool, int, Dict[Node, List[str]]]: returns a tuple containing in order
                 a boolean to indicate if the circuit conforms to the limit, the observed maximum
                 bit width and in case of failure the formatted graph with highlighted offending
                 nodes.
         """
         max_bit_width = 0
-        offending_nodes: Dict[IntermediateNode, List[str]] = {}
-        for node in self.op_graph.graph.nodes:
+        offending_nodes: Dict[Node, List[str]] = {}
+        for node in self.graph.graph.nodes:
             for value_out in node.outputs:
                 assert_true(isinstance(value_out.dtype, Integer))
                 current_node_out_bit_width = value_out.dtype.bit_width
@@ -85,7 +89,7 @@ class VirtualFHECircuit(FHECircuit):
         formatted_graph_on_failure = (
             f"Graph had all intermediate values with a bit width <= {bit_width_to_report}"
             if check_ok
-            else format_operation_graph(self.op_graph, highlighted_nodes=offending_nodes)
+            else self.graph.format(highlighted_nodes=offending_nodes)
         )
 
         return check_ok, max_bit_width, formatted_graph_on_failure
@@ -93,7 +97,7 @@ class VirtualFHECircuit(FHECircuit):
     def encrypt_run_decrypt(
         self, *args: List[Union[int, numpy.ndarray]]
     ) -> Union[int, numpy.ndarray]:
-        """Simulate the FHE evaluation of the class's OPGraph.
+        """Simulate the FHE evaluation of the class's Graph.
 
         Args:
             *args (List[Union[int, numpy.ndarray]]): inputs to the simulated circuit
@@ -111,4 +115,4 @@ class VirtualFHECircuit(FHECircuit):
             )
             self._has_warned = True
 
-        return self.op_graph(*args)
+        return self.graph(*args)

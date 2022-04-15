@@ -118,13 +118,13 @@ def tree_to_numpy(
             # Quantize probabilities and store QuantizedArray
             # IMPORTANT: we must use symmetric signed quantization such that
             # 0 in clear == 0 in quantized.
-            output_is_signed = False
+            is_signed = False
             if init_tensor.min() < 0:
-                output_is_signed = True
+                is_signed = True
             q_y = QuantizedArray(
                 n_bits=output_n_bits,
                 values=init_tensor,
-                is_signed=output_is_signed,
+                is_signed=is_signed,
                 is_symmetric=True,
             )
             # Make sure the zero_point is 0

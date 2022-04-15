@@ -3,17 +3,17 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-import concrete.numpy as hnp
+import concrete.numpy as cnp
 import numpy
 import sklearn
-from concrete.common.compilation.artifacts import CompilationArtifacts
-from concrete.common.compilation.configuration import CompilationConfiguration
-from concrete.common.fhe_circuit import FHECircuit
+from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.circuit import Circuit
+from concrete.numpy.compilation.configuration import CompilationConfiguration
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..quantization.quantized_array import QuantizedArray
-from ..virtual_lib import VirtualNPFHECompiler
+from ..virtual_lib import VirtualCompiler
 from .base import BaseTreeEstimatorMixin
 from .tree_to_numpy import tree_to_numpy
 
@@ -26,7 +26,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
 
     sklearn_alg = sklearn.tree.DecisionTreeClassifier
     q_x_byfeatures: list
-    fhe_tree: FHECircuit
+    fhe_tree: Circuit
     _tensor_tree_predict: Optional[Callable]
     q_y: QuantizedArray
 
@@ -377,7 +377,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
     def compile(
         self,
         X: numpy.ndarray,
-        compilation_configuration: Optional[CompilationConfiguration] = None,
+        configuration: Optional[CompilationConfiguration] = None,
         compilation_artifacts: Optional[CompilationArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
@@ -386,7 +386,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
 
         Args:
             X (numpy.ndarray): the unquantized dataset
-            compilation_configuration (Optional[CompilationConfiguration]): the options for
+            configuration (Optional[CompilationConfiguration]): the options for
                 compilation
             compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
                 during compilation
@@ -406,15 +406,15 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             self._tensor_tree_predict, ["inputs"]
         )
 
-        compiler_class = VirtualNPFHECompiler if use_virtual_lib else hnp.NPFHECompiler
+        compiler_class = VirtualCompiler if use_virtual_lib else cnp.Compiler
 
         X = self.quantize_input(X)
         compiler = compiler_class(
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
-            compilation_configuration,
+            configuration,
             compilation_artifacts,
         )
-        self.fhe_tree = compiler.compile_on_inputset(
+        self.fhe_tree = compiler.compile(
             (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir
         )

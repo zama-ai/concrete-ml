@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from concrete.ml.torch.compile import compile_torch_model
-from concrete.ml.virtual_lib.virtual_fhe_circuit import VirtualFHECircuit
+from concrete.ml.virtual_lib.virtual_fhe_circuit import VirtualCircuit
 
 N_EPOCHS = 30
 TINYCNN_CHECKPOINT_FILE = "tiny_mnist.pth"
@@ -269,12 +269,12 @@ def main(n_bits):
         x_train,
         n_bits=n_bits,
         use_virtual_lib=True,
-        compilation_configuration=BENCHMARK_CONFIGURATION,
+        configuration=BENCHMARK_CONFIGURATION,
     )
 
-    assert isinstance(q_module_vl.forward_fhe, VirtualFHECircuit)
-    vfhe_circuit = cast(VirtualFHECircuit, q_module_vl.forward_fhe)
-    # Despite casting and the assert, pylint still does not consider this a VirtualFHECircuit
+    assert isinstance(q_module_vl.forward_fhe, VirtualCircuit)
+    vfhe_circuit = cast(VirtualCircuit, q_module_vl.forward_fhe)
+    # Despite casting and the assert, pylint still does not consider this a VirtualCircuit
     # pylint: disable=no-member
     print(f"Max n_bits during inference: {vfhe_circuit.get_max_bit_width()}")
     # pylint: enable=no-member
@@ -302,7 +302,7 @@ def main(n_bits):
             x_train[0:N_MAX_COMPILE_FHE, ::],
             n_bits=2,
             use_virtual_lib=True,
-            compilation_configuration=BENCHMARK_CONFIGURATION,
+            configuration=BENCHMARK_CONFIGURATION,
         )
 
         test_concrete(
@@ -320,7 +320,7 @@ def main(n_bits):
             x_train[0:N_MAX_COMPILE_FHE, ::],
             n_bits=2,
             use_virtual_lib=False,
-            compilation_configuration=BENCHMARK_CONFIGURATION,
+            configuration=BENCHMARK_CONFIGURATION,
         )
 
         test_concrete(
