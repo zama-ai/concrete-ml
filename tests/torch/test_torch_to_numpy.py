@@ -69,19 +69,19 @@ class FC(nn.Module):  # pylint: disable=too-many-instance-attributes
 class CNNInvalid(nn.Module):
     """Torch CNN model for the tests."""
 
-    def __init__(self, activation_function, padding, groups, flatten):
+    def __init__(self, activation_function, padding, groups, gather_slice):
         super().__init__()
 
         self.activation_function = activation_function()
-        self.flatten_function = (
-            (lambda x: torch.flatten(x, 1)) if flatten else (lambda x: x.reshape(x.shape[0], -1))
-        )
+        self.flatten_function = lambda x: torch.flatten(x, 1)
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.AvgPool2d(2, 2, padding=1) if padding else nn.AvgPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5, groups=2) if groups else nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(16 * (5 + padding * 1) * (5 + padding * 1), 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
+
+        self.gather_slice = gather_slice
 
     def forward(self, x):
         """Forward pass."""
@@ -91,6 +91,9 @@ class CNNInvalid(nn.Module):
         x = self.activation_function(self.fc1(x))
         x = self.activation_function(self.fc2(x))
         x = self.fc3(x)
+        # Produce a Gather and Slice which are not supported
+        if self.gather_slice:
+            return x[0, 0:-1:2]
         return x
 
 
@@ -233,27 +236,27 @@ def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score)
 
 
 @pytest.mark.parametrize(
-    "padding, groups, flatten",
+    "padding, groups, gather_slice",
     [
         pytest.param(True, False, False),
         pytest.param(False, True, False),
         pytest.param(False, False, True),
     ],
 )
-def test_raises(padding, groups, flatten):
+def test_raises(padding, groups, gather_slice):
     """Function to test incompatible layers."""
 
-    torch_incompatible_model = CNNInvalid(nn.ReLU, padding, groups, flatten)
+    torch_incompatible_model = CNNInvalid(nn.ReLU, padding, groups, gather_slice)
 
     error_msg_pattern = None
     if padding:
         error_msg_pattern = ".*Padding.*"
     elif groups:
         error_msg_pattern = ".*groups.*"
-    elif flatten:
+    elif gather_slice:
         error_msg_pattern = (
             "The following ONNX operators are required to convert the torch model to numpy but are"
-            " not currently implemented: Flatten\\..*"
+            " not currently implemented: Gather, Slice\\..*"
         )
 
     with pytest.raises(

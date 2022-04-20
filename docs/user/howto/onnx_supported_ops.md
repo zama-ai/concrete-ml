@@ -42,6 +42,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Equal
 - Erf
 - Exp
+- Flatten
 - Gemm
 - Greater
 - HardSigmoid
@@ -86,6 +87,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Conv: QuantizedConv
 - Elu: QuantizedElu
 - Exp: QuantizedExp
+- Flatten: QuantizedFlatten
 - Gemm: QuantizedGemm
 - Greater: QuantizedGreater
 - HardSigmoid: QuantizedHardSigmoid

@@ -735,3 +735,45 @@ class QuantizedBatchNormalization(QuantizedOp):
     """Quantized Batch normalization with encrypted input and in-the-clear normalization params."""
 
     _impl_for_op_named: str = "BatchNormalization"
+
+
+class QuantizedFlatten(QuantizedOp):
+    """Quantized flatten for encrypted inputs."""
+
+    _impl_for_op_named: str = "Flatten"
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Flatten the input integer encrypted tensor.
+
+        Args:
+            q_inputs: an encrypted integer tensor at index 0
+            attrs: contains axis attribute
+
+        Returns:
+            result (QuantizedArray): reshaped encrypted integer tensor
+        """
+
+        # FIXME: Currently reshape quantizes the inputs, but this is unnecessary if the reshape
+        # operation could be fused into a Gemm/Add/Conv that follows it. We should reshape
+        # here only if the reshaped result is returned directly from the FHE program.
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        assert_true(len(q_inputs) == 1, "Flatten operator only takes a single input")
+
+        axis = attrs["axis"]
+        newshape = (
+            *q_inputs[0].qvalues.shape[0:axis],
+            numpy.prod(q_inputs[0].qvalues.shape[axis:]),
+        )
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].n_bits,
+            numpy.reshape(prepared_inputs[0].qvalues, newshape),
+            value_is_float=False,
+            scale=prepared_inputs[0].scale,
+            zero_point=prepared_inputs[0].zero_point,
+        )

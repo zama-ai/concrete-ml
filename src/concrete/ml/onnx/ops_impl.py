@@ -1,5 +1,6 @@
 """ONNX ops implementation in python + numpy."""
 
+# pylint: disable=too-many-lines
 from typing import Optional, Tuple, Union
 
 import numpy
@@ -932,7 +933,7 @@ def numpy_batchnorm(
     epsilon=1e-05,
     momentum=0.9,  # pylint: disable=unused-argument
     training_mode=0,
-):
+) -> Tuple[numpy.ndarray]:
     """Compute the batch normalization of the input tensor.
 
     This can be expressed as:
@@ -991,3 +992,20 @@ def numpy_batchnorm(
 
     y = (x - input_mean) / numpy.sqrt(input_var + epsilon) * scale + bias
     return (y,)
+
+
+def numpy_flatten(x: numpy.ndarray, /, *, axis: int = 1) -> Tuple[numpy.ndarray]:
+    """Flatten a tensor into a 2d array.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Flatten-13.
+
+    Args:
+        x (numpy.ndarray): tensor to flatten
+        axis (int): axis after which all dimensions will be flattened (axis=0 gives a 1D output)
+
+    Returns:
+        result: flattened tensor
+    """
+    output_shape = (*x.shape[0:axis], numpy.prod(x.shape[axis:]))
+
+    return (numpy.reshape(x, output_shape),)

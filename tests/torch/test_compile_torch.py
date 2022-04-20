@@ -95,6 +95,7 @@ class UnivariateModule(nn.Module):
         """Forward pass."""
         x = x.view(-1, 1)
         x = torch.reshape(x, (-1, 1))
+        x = x.flatten(1)
         x = self.act(torch.abs(torch.exp(torch.log(1.0 + torch.sigmoid(x)))))
         return x
 

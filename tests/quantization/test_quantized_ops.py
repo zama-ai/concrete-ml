@@ -21,6 +21,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedConv,
     QuantizedElu,
     QuantizedExp,
+    QuantizedFlatten,
     QuantizedGemm,
     QuantizedGreater,
     QuantizedHardSigmoid,
@@ -765,8 +766,50 @@ def test_all_ops_were_tested():
         QuantizedMul: test_all_arith_ops,
         QuantizedSub: test_all_arith_ops,
         QuantizedBatchNormalization: test_batch_normalization,
+        QuantizedFlatten: test_quantized_flatten,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
         "Missing tests and manual acknowledgement for: " f"{', '.join(sorted(not_tested))}"
     )
+
+
+@pytest.mark.parametrize(
+    "input_shape, expected_shape, axis",
+    [
+        pytest.param((1,), (1,), 0),
+        pytest.param((10, 5), (10, 5), 1),
+        pytest.param((10, 5, 2), (10, 10), 1),
+        pytest.param((10, 5, 2, 2), (10, 20), 1),
+        pytest.param((10, 5, 2, 2), (10, 5, 4), 2),
+        pytest.param((10, 5, 2, 2), (10, 5, 2, 2), 3),
+    ],
+)
+def test_quantized_flatten(input_shape, expected_shape, axis):
+    """Test the flatten operator on quantized data."""
+
+    n_bits_reshape = 7
+
+    # Generate data with the desired shape
+    num_values = numpy.prod(numpy.asarray(input_shape))
+    data = numpy.arange(num_values).astype(numpy.float32)
+    data = data.reshape(input_shape)
+    q_data = QuantizedArray(n_bits_reshape, data)
+
+    # Create the operator and calibrate
+    flatten_op = QuantizedFlatten(n_bits_reshape, axis=axis)
+    flatten_op.calibrate(data)
+
+    # Flatten a quantized array of data
+    q_reshaped = flatten_op(q_data)
+
+    # Check that the output calibration parameters did not change as flatten should not change
+    # the data
+    assert q_reshaped.zero_point == q_data.zero_point
+    assert q_reshaped.scale == q_data.scale
+
+    # Check that the data was not changed and is in the same order (i.e. no transposition)
+    assert numpy.all(q_data.qvalues.ravel() == q_reshaped.qvalues.ravel())
+
+    # Check that the output has the expected shape
+    assert numpy.all(q_reshaped.qvalues.shape == expected_shape)

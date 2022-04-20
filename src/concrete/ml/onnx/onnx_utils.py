@@ -49,6 +49,7 @@ from .ops_impl import (
     numpy_equal,
     numpy_erf,
     numpy_exp,
+    numpy_flatten,
     numpy_gemm,
     numpy_greater,
     numpy_hardsigmoid,
@@ -141,6 +142,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Where": numpy_where,
     "Cast": numpy_cast,
     "BatchNormalization": numpy_batchnorm,
+    "Flatten": numpy_flatten,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
