@@ -68,9 +68,8 @@ def test_rf_hyperparameters(hyperparameters, n_classes, check_r2_score, check_ac
     [
         pytest.param(2, 1, id="max_depth_2_n_estimators_1"),
         pytest.param(2, 5, id="max_depth_2_n_estimators_5"),
-        pytest.param(2, 10, id="max_depth_2_n_estimators_10"),
-        # FIXME add more trees when https://github.com/zama-ai/concrete-ml-internal/issues/572
-        # is fixed.
+        # FIXME test is quite long uncomment along with #786
+        # pytest.param(4, 20, id="max_depth_4_n_estimators_20"),
     ],
 )
 @pytest.mark.parametrize(

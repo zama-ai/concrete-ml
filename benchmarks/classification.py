@@ -157,7 +157,8 @@ def should_test_config_in_fhe(classifier, params, n_features):
             return True
 
     if classifier is XGBClassifier or classifier is RandomForestClassifier:
-        # FIXME XGBoost and RandomForestClassifier are not yet supported in FHE (see #436)
+        if params["n_bits"] <= 7:
+            return True
         return False
 
     raise ValueError(f"Classifier {str(classifier)} configurations not yet setup for FHE")
