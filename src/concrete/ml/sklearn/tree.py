@@ -374,8 +374,6 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         y_pred = numpy.transpose(y_pred, axes=(0, 2, 1))
         return y_pred
 
-    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/365
-    # add use_virtual_lib once the issue linked above is done
     def compile(
         self,
         X: numpy.ndarray,
