@@ -93,7 +93,9 @@ pylint_src:
 pylint_tests:
 	@# Disable duplicate code detection (R0801) in tests
 	@# Disable unnecessary lambda (W0108) for tests
-	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801,W0108 --rcfile=pylintrc
+	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CN
+	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801,W0108,C0412 \
+		--rcfile=pylintrc
 
 .PHONY: pylint_benchmarks # Run pylint on benchmarks
 pylint_benchmarks:

@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 import pytest
+from concrete.numpy import MAXIMUM_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -141,7 +142,7 @@ def test_parameter_validation(model):
         "module__n_layers": 3,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
-        "module__n_accum_bits": 7,
+        "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
         "module__n_outputs": 2,
         "module__input_dim": 10,
         "module__activation_function": nn.ReLU,
@@ -225,7 +226,7 @@ def test_pipeline_and_cv():
         "module__n_layers": 3,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
-        "module__n_accum_bits": 7,
+        "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
         "module__n_outputs": 2,
         "module__input_dim": 2,
         "module__activation_function": nn.SELU,

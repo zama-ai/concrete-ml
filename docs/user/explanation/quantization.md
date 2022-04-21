@@ -18,11 +18,11 @@ The basic idea of quantization is to take a **range of values** that are represe
 
 Let's first define some notations. Let $ [\alpha, \beta ] $ be the range of our value to quantize where $ \alpha $ is the minimum and $ \beta $ is the maximum.
 
-To quantize a range with floating point values (in $ \mathbb{R} $) to integer values (in $ \mathbb{Z} $), we first need to choose the data type that is going to be used. **Concrete-Library**, the backend library used by **Concrete-ML**, is currently limited to 7-bit integers, so we'll use this value for the example. Knowing the number of bits that can be used, for a value in the range $ [\alpha, \beta ] $, we can compute the `scale` $ S $ of the quantization:
+To quantize a range with floating point values (in $ \mathbb{R} $) to integer values (in $ \mathbb{Z} $), we first need to choose the data type that is going to be used. **Concrete-Library**, the backend library used by **Concrete-ML**, is currently limited to 8-bit integers, so we'll use this value for the example. Knowing the number of bits that can be used, for a value in the range $ [\alpha, \beta ] $, we can compute the `scale` $ S $ of the quantization:
 
 $$ S =  \frac{\beta - \alpha}{2^n - 1} $$
 
-where $ n $ is the number of bits (here, 7).
+where $ n $ is the number of bits ($n \leq 8$). For the sake of example, let's take $n = 7$.
 
 In practice, the quantization scale is then $ S = \frac{\beta - \alpha}{127} $. This means the gap between consecutive representable values cannot be smaller than $ S $, which, in turn, means there can be a substantial loss of precision. Every interval of length $ S $ will be represented by a value within the range $ [0..127] $.
 

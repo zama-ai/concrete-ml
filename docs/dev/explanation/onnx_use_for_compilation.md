@@ -24,7 +24,7 @@ During the PTQ process, the ONNX model stored in the `NumpyModule` is interprete
 
 Quantized operators are then used to create a `QuantizedModule` that, similarly to the `NumpyModule`, runs through the operators to perform the quantized inference with integers-only operations.
 
-That `QuantizedModule` is then compilable to FHE if the intermediate values conform to the 7 bits precision limit of the **Concrete** stack.
+That `QuantizedModule` is then compilable to FHE if the intermediate values conform to the 8 bits precision limit of the **Concrete** stack.
 
 ## How to use `QuantizedOp`
 

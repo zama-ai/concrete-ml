@@ -4,6 +4,7 @@ from typing import Optional, Tuple, Union
 
 import numpy
 import torch
+from concrete.numpy import MAXIMUM_BIT_WIDTH
 from concrete.numpy.compilation.artifacts import CompilationArtifacts
 from concrete.numpy.compilation.configuration import CompilationConfiguration
 
@@ -39,7 +40,7 @@ def compile_torch_model(
     configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=7,
+    n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
 ) -> QuantizedModule:
     """Take a model in torch, turn it to numpy, transform weights to integer.

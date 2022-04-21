@@ -1,8 +1,8 @@
 # Compute with Quantized Functions
 
-With the current version of the framework, we cannot represent encrypted integers with more than 7 bits. While we are working on supporting larger integers, currently, whenever a floating point model needs to be processed in FHE, quantization is necessary.
+With the current version of the framework, we cannot represent encrypted integers with more than 8 bits. While we are working on supporting larger integers, currently, whenever a floating point model needs to be processed in FHE, quantization is necessary.
 
-## What happens when encrypted computations produce values larger than 7 bits?
+## What happens when encrypted computations produce values larger than 8 bits?
 
 In this situation, you will get a compilation error. Here is an example:
 
@@ -68,21 +68,21 @@ The quantization of model parameters and model inputs is illustrated in the adva
 
 Recent quantization literature usually aims to make use of dedicated machine learning accelerators in a mixed setting where a CPU or General Purpose GPU (GPGPU) is also available. Thus, in literature, some floating point computation is assumed to be acceptable. This approach allows us to reach performance similar to those achieved by floating point models. In this popular mixed float-int setting, the input is usually left in floating point. This is also true for the first and last layers, which have more impact on the resulting model accuracy than hidden layers.
 
-However, in **Concrete-ML**, to respect FHE constraints, the inputs, the weights and the accumulator **must** all be represented with integers of a maximum of 7 bits.
+However, in **Concrete-ML**, to respect FHE constraints, the inputs, the weights and the accumulator **must** all be represented with integers of a maximum of 8 bits.
 
 Thus, in **Concrete-ML**, we also quantize the input data and network output activations in the same way as the rest of the network: everything is quantized to a specific number of bits. It turns out that the number of bits used for the input or the output of any activation function is crucial to comply with the constraint on accumulator width.
 
-The core operations in neural networks are matrix multiplications (matmul) and convolutions, which both compute linear combinations of inputs (encrypted) and weights (in clear). The linear combination operation must be done such that the maximum value of its result requires at most 7 bits of precision.
+The core operations in neural networks are matrix multiplications (matmul) and convolutions, which both compute linear combinations of inputs (encrypted) and weights (in clear). The linear combination operation must be done such that the maximum value of its result requires at most 8 bits of precision.
 
-For example, if you quantize your input and weights with $ n_{\mathsf{weights}} $, $ n_{\mathsf{inputs}} $  bits of precision, one can compute the maximum dimensionality of the input and weights before the matmul/convolution result could exceed the 7 bits as such:
+For example, if you quantize your input and weights with $ n_{\mathsf{weights}} $, $ n_{\mathsf{inputs}} $  bits of precision, one can compute the maximum dimensionality of the input and weights before the matmul/convolution result could exceed the 8 bits as such:
 
 $$ \Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{weights}}} - 1)(2^{n_{\mathsf{inputs}}} - 1)} \right) $$
 
-where $ n_{\mathsf{max}} = 7 $ is the maximum precision allowed. For example, if we set $ n_{\mathsf{weights}} = 2$ and $ n_{\mathsf{inputs}} = 2$ with $ n_{\mathsf{max}} = 7$, then we have the $ \Omega = 14 $ different inputs/weights are allowed in the linear combination.
+where $ n_{\mathsf{max}} = 8 $ is the maximum precision allowed. For example, if we set $ n_{\mathsf{weights}} = 2$ and $ n_{\mathsf{inputs}} = 2$ with $ n_{\mathsf{max}} = 8$, then we have the $ \Omega = 28 $ different inputs/weights are allowed in the linear combination.
 
 Exceeding $ \Omega $ dimensions in the input and weights, the risk of overflow increases quickly. It may happen that for some distributions of weights and values the computation does not overflow, but the risk increases rapidly with the number of dimensions.
 
-Currently, **Concrete-ML** computes the number of bits needed for the computation depending on the inputset calibration data and does not allow the overflow[^1] to happen, raising an exception as shown [above](./reduce_needed_precision.md#what-happens-when-encrypted-computations-produce-values-larger-than-7-bits).
+Currently, **Concrete-ML** computes the number of bits needed for the computation depending on the inputset calibration data and does not allow the overflow[^1] to happen, raising an exception as shown [above](./reduce_needed_precision.md#what-happens-when-encrypted-computations-produce-values-larger-than-8-bits).
 
 [^2]: We refer the reader to the [IEEE754 standard](https://en.wikipedia.org/wiki/IEEE_754) for more information on floating point representation and to [this simulator](https://www.h-schmidt.net/FloatConverter/IEEE754.html) that helps to understand the topic through practice.
 

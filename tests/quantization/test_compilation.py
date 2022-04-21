@@ -3,6 +3,7 @@ import numpy
 import onnx
 import pytest
 import torch
+from concrete.numpy import MAXIMUM_BIT_WIDTH
 from onnx import helper, numpy_helper
 from torch import nn
 
@@ -12,7 +13,8 @@ from concrete.ml.torch.numpy_module import NumpyModule
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
-# Currently, with 7 bits maximum, we can use 15 weights max in the theoretical case.
+# Currently, with MAXIMUM_BIT_WIDTH bits maximum, we can use few weights
+# max in the theoretical case.
 INPUT_OUTPUT_FEATURE = [1, 2, 3]
 
 
@@ -367,8 +369,9 @@ def test_post_training_quantization_constant_folding():
     onnx.checker.check_model(model_def)
 
     numpy_model = NumpyModuleTest(model_def)
+
     # Quantize with post-training static method
-    post_training_quant = PostTrainingAffineQuantization(7, numpy_model)
+    post_training_quant = PostTrainingAffineQuantization(MAXIMUM_BIT_WIDTH, numpy_model)
 
     numpy_input = numpy.random.random(size=(10, 10))
 
