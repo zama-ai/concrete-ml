@@ -9,6 +9,7 @@ SRC_DIR:=src
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
+PYTEST_OPTIONS:=
 
 .PHONY: setup_env # Set up the environment
 setup_env:
@@ -153,7 +154,8 @@ pytest:
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/ \
 	--count=$(COUNT) \
-	--randomly-dont-reset-seed
+	--randomly-dont-reset-seed \
+	${PYTEST_OPTIONS}
 
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
 pytest_one:
@@ -162,6 +164,7 @@ pytest_one:
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
+	${PYTEST_OPTIONS} \
 	"$${TEST}"
 
 .PHONY: pytest_one_single_cpu # Run pytest on a single file or directory (TEST) with a single CPU with RANDOMLY_SEED seed
@@ -171,6 +174,7 @@ pytest_one_single_cpu:
 	poetry run pytest -svv \
 	--randomly-dont-reorganize \
 	--randomly-dont-reset-seed \
+	${PYTEST_OPTIONS} \
 	"$${TEST}" --randomly-seed=${RANDOMLY_SEED}
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs

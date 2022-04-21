@@ -92,12 +92,11 @@ def test_xgb_hyperparameters(hyperparameters, n_classes, check_r2_score, check_a
     ],
 )
 @pytest.mark.parametrize(
-    "max_depth, n_estimators",
+    "max_depth, n_estimators, skip_if_not_weekly",
     [
-        pytest.param(2, 1, id="max_depth_2_n_estimators_1"),
-        pytest.param(2, 5, id="max_depth_2_n_estimators_5"),
-        # FIXME test is quite long uncomment along with #786
-        # pytest.param(4, 10, id="max_depth_4_n_estimators_10"),
+        pytest.param(2, 1, False, id="max_depth_2_n_estimators_1"),
+        pytest.param(2, 5, False, id="max_depth_2_n_estimators_5"),
+        pytest.param(4, 10, True, id="max_depth_4_n_estimators_10"),
     ],
 )
 @pytest.mark.parametrize(
@@ -111,16 +110,22 @@ def test_xgb_classifier(
     load_data,
     max_depth,
     n_estimators,
+    skip_if_not_weekly,
     n_bits,
     default_configuration,
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
+    is_weekly_option,
 ):
     """Tests the xgboost.
 
     WARNING: Increasing the number of trees will increase the compilation / inference
         time and risk of out-of-memory errors.
     """
+    if not is_weekly_option:
+        if skip_if_not_weekly:
+            # Skip long tests
+            return
 
     # Get the dataset
     x, y = load_data()

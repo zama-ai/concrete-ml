@@ -49,6 +49,12 @@ def pytest_addoption(parser):
         "reproduce a particular issue.",
     )
 
+    parser.addoption(
+        "--weekly",
+        action="store_true",
+        help="To do longer tests.",
+    )
+
 
 DEFAULT_KEYRING_PATH = Path.home().resolve() / ".cache/concrete-ml_pytest"
 
@@ -197,6 +203,13 @@ def autoseeding_of_everything(record_property, request):
     seed += 1
     function_to_seed_torch(seed)
     return {"main seed": main_seed}
+
+
+@pytest.fixture
+def is_weekly_option(request):
+    """Function to see if we are in --weekly configuration"""
+    is_weekly = request.config.getoption("--weekly")
+    return is_weekly
 
 
 def check_is_good_execution_for_quantized_models_impl(

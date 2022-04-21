@@ -333,9 +333,14 @@ jobs:
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         timeout-minutes: 35
+        env:
+          IS_WEEKLY_PYTEST: ${{ (fromJSON(env.IS_WEEKLY)) }}
         run: |
-          make pytest
-
+          if [[ "${IS_WEEKLY_PYTEST}" != "true" ]]; then
+            make pytest PYTEST_OPTIONS=--weekly
+          else
+            make pytest
+          fi
       - name: PyTest CodeBlocks
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
@@ -467,6 +472,8 @@ jobs:
 
           make setup_env
 
+      # macOS builds are already long, so we decide not to use --weekly on them, it could be
+      # changed
       - name: PyTest Source Code
         timeout-minutes: 80
         run: |
