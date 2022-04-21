@@ -36,7 +36,7 @@ class RandomForestClassifier(
         """Initialize the RandomForestClassifier.
 
         Args:
-            n_bits (int): The number of bits to use. Defaults to 7.
+            n_bits (int): The number of bits to use. Defaults to 6.
             max_depth (Optional[int]): The maximum depth of the tree. Defaults to 15.
             n_estimators (Optional[int]): The number of estimators. Defaults to 100.
             **kwargs: args for super().__init__
