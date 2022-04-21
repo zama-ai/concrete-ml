@@ -336,7 +336,7 @@ jobs:
         env:
           IS_WEEKLY_PYTEST: ${{ (fromJSON(env.IS_WEEKLY)) }}
         run: |
-          if [[ "${IS_WEEKLY_PYTEST}" != "true" ]]; then
+          if [[ "${IS_WEEKLY_PYTEST}" == "true" ]]; then
             make pytest PYTEST_OPTIONS=--weekly
           else
             make pytest
