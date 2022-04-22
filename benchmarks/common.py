@@ -17,11 +17,8 @@ configuration._INSECURE_KEY_CACHE_DIR = "/tmp/keycache"
 # pylint: enable=protected-access
 
 BENCHMARK_CONFIGURATION = cnp.CompilationConfiguration(
-    # FIXME, Concrete Numpy 0.6 integration, #795 check_every_input_in_inputset=True,
     dump_artifacts_on_unexpected_failures=True,
-    # FIXME, Concrete Numpy 0.6 integration, #795 enable_topological_optimizations=True,
     enable_unsafe_features=True,
-    # FIXME, Concrete Numpy 0.6 integration, #795 treat_warnings_as_errors=True,
     use_insecure_key_cache=True,
 )
 

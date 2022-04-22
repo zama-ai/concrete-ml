@@ -114,7 +114,7 @@ def pytest_sessionstart(session: pytest.Session):
     keyring_dir.mkdir(parents=True, exist_ok=True)
     keyring_dir_as_str = str(keyring_dir)
     print(f"Using {keyring_dir_as_str} as key cache dir")
-    configuration._COMPILE_FHE_INSECURE_KEY_CACHE_DIR = (  # pylint: disable=protected-access
+    configuration._INSECURE_KEY_CACHE_DIR = (  # pylint: disable=protected-access
         keyring_dir_as_str
     )
 
@@ -157,7 +157,6 @@ def default_configuration():
     return CompilationConfiguration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
-        # FIXME, Concrete Numpy 0.6 integration, #795 treat_warnings_as_errors=True,
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
     )
 
