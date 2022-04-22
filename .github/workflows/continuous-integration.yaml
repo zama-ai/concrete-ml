@@ -329,18 +329,20 @@ jobs:
           name: py3-wheel
           path: dist/*.whl
 
-      - name: PyTest Source Code
-        id: pytest
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+      - name: PyTest Source Code (regular)
+        id: pytest_regular
+        if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         timeout-minutes: 45
-        env:
-          IS_WEEKLY_PYTEST: ${{ (fromJSON(env.IS_WEEKLY)) }}
         run: |
-          if [[ "${IS_WEEKLY_PYTEST}" == "true" ]]; then
-            make pytest PYTEST_OPTIONS=--weekly
-          else
-            make pytest
-          fi
+          make pytest
+
+      - name: PyTest Source Code (weekly)
+        id: pytest_weekly
+        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
+        timeout-minutes: 120
+        run: |
+          make pytest PYTEST_OPTIONS=--weekly
+
       - name: PyTest CodeBlocks
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
@@ -360,7 +362,7 @@ jobs:
       # Compute coverage only on reference build
       - name: Test coverage
         id: coverage
-        if: ${{ always() && fromJSON(env.IS_REF_BUILD) && steps.pytest.outcome != 'skipped' && !cancelled() }}
+        if: ${{ always() && fromJSON(env.IS_REF_BUILD) && (steps.pytest_regular.outcome != 'skipped' || steps.pytest_weekly.outcome != 'skipped') && !cancelled() }}
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
