@@ -1,0 +1,47 @@
+name: Check GitHub Actions
+on:
+  pull_request:
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+concurrency:
+  # Add event_name in the group as workflow dispatch means we could run this in addition to other
+  # workflows already running on a PR or a merge e.g.
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
+  cancel-in-progress: true
+
+jobs:
+
+  check-github-actions:
+    name: Check GitHub Actions
+    timeout-minutes: 5
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@dcd71f646680f2efd8db4afa5ad64fdcba30e748
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          ./script/make_utils/setup_os_deps.sh --only-linux-actionlint
+
+      - name: Check GitHub actions
+        run: |
+          ./script/make_utils/actionlint.sh
+
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "Full run finished with status ${{ job.status }} \
+            (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}

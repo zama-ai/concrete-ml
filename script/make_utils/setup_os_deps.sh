@@ -6,12 +6,17 @@ DIR=$(dirname "$0")
 source "${DIR}/detect_docker.sh"
 
 LINUX_INSTALL_PYTHON=0
+ONLY_LINUX_ACTIONLINT=0
 
 while [ -n "$1" ]
 do
    case "$1" in
         "--linux-install-python" )
             LINUX_INSTALL_PYTHON=1
+            ;;
+
+        "--only-linux-actionlint" )
+            ONLY_LINUX_ACTIONLINT=1
             ;;
 
         *)
@@ -101,23 +106,28 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         "
     fi
 
-    SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && apt-get upgrade --no-install-recommends -y && \
-    ${SUDO_BIN:+$SUDO_BIN}apt-get install --no-install-recommends -y \
-    build-essential \
-    curl \
-    ${PYTHON_PACKAGES:+$PYTHON_PACKAGES} \
-    git \
-    graphviz* \
-    jq \
-    make \
-    pandoc \
-    openssl \
-    shellcheck \
-    wget && \
-    ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
-    pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir poetry && \
-    linux_install_gitleaks && linux_install_actionlint"
+    if [[ "${ONLY_LINUX_ACTIONLINT}" == "1" ]]
+    then
+        SETUP_CMD="linux_install_actionlint"
+    else
+        SETUP_CMD="${SUDO_BIN:+$SUDO_BIN}apt-get update && apt-get upgrade --no-install-recommends -y && \
+        ${SUDO_BIN:+$SUDO_BIN}apt-get install --no-install-recommends -y \
+        build-essential \
+        curl \
+        ${PYTHON_PACKAGES:+$PYTHON_PACKAGES} \
+        git \
+        graphviz* \
+        jq \
+        make \
+        pandoc \
+        openssl \
+        shellcheck \
+        wget && \
+        ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
+        pip install --no-cache-dir --upgrade pip && \
+        pip install --no-cache-dir poetry && \
+        linux_install_gitleaks && linux_install_actionlint"
+    fi
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
     brew install curl git gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint
