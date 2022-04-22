@@ -674,6 +674,9 @@ jobs:
             exit 1
           fi
 
+          # Check that the tag is part of the main or release/[GIT_TAG] branch
+          poetry run python ./script/actions_utils/check_tag_release_in_branch_main_or_release.py --git-tag "${GIT_TAG}"
+
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
           PRIVATE_RELEASE_IMG_GIT_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:${GIT_TAG}"
