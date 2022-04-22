@@ -244,11 +244,7 @@ def check_is_good_execution_impl(
     If always wrong, return an error. One can set the expected probability of success of one
     execution and the number of tests, to finetune the probability of bad luck, ie that we run
     several times the check and always have a wrong result."""
-    # FIXME, Concrete Numpy 0.6 integration, #795:
-    max_bit_width = 7
-    # max_bit_width, _ = get_op_graph_max_bit_width_and_nodes_over_bit_width_limit(
-    #     fhe_circuit.op_graph
-    # )
+    max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
 
     # Allow tests to pass if cells of the output result are good at least once over the nb_tries
     # Enabled only when we have a circuit that's using the maximum possible bit width

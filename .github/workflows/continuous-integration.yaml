@@ -332,7 +332,7 @@ jobs:
       - name: PyTest Source Code
         id: pytest
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 35
+        timeout-minutes: 45
         env:
           IS_WEEKLY_PYTEST: ${{ (fromJSON(env.IS_WEEKLY)) }}
         run: |
