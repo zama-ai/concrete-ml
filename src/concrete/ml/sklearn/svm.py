@@ -1,6 +1,4 @@
 """Implement Support Vector Machine."""
-from __future__ import annotations
-
 import numpy
 import onnx
 import sklearn.linear_model

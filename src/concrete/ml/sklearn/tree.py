@@ -1,6 +1,4 @@
 """Implement the sklearn tree models."""
-from __future__ import annotations
-
 from typing import Callable, Optional
 
 import concrete.numpy as cnp
