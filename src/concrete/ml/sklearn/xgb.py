@@ -277,31 +277,3 @@ class XGBClassifier(xgboost.sklearn.XGBClassifier, BaseTreeEstimatorMixin):
             if k not in self.CONCRETE_SPECIFIC_PARAMS and not callable(v):
                 filtered[k] = v
         return filtered
-
-    def fit_benchmark(
-        self,
-        X: numpy.ndarray,
-        y: numpy.ndarray,
-        *args,
-        random_state: Optional[int] = None,
-        **kwargs,
-    ) -> Tuple[Any, Any]:
-        """Fit the sklearn tree-based model and the FHE tree-based model.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
-                The random state. Defaults to None.
-            *args: args for super().fit
-            **kwargs: kwargs for super().fit
-
-        Returns:
-            Tuple[ConcreteEstimators, SklearnEstimators]:
-                                                The FHE and sklearn tree-based models.
-        """
-        # Impose the evaluation metric unless the user requests an explicit one
-        # This is passed to the original sklearn XGB classifier that is fitted by fit_benchmark
-        kwargs["eval_metric"] = kwargs.get("eval_metric", "logloss")
-
-        return super().fit_benchmark(X, y, *args, random_state=random_state, **kwargs)
