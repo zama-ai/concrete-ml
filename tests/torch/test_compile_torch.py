@@ -12,7 +12,6 @@ from torch import nn
 # packages/projects, disable the warning
 # pylint: disable=ungrouped-imports
 from concrete.ml.torch.compile import compile_torch_model
-from concrete.ml.virtual_lib.virtual_fhe_circuit import VirtualCircuit
 
 # pylint: enable=ungrouped-imports
 
@@ -167,10 +166,7 @@ class StepActivationModule(nn.Module):
 )
 @pytest.mark.parametrize(
     "use_virtual_lib",
-    [
-        # FIXME, Concrete Numpy 0.6 integration, #795, restore True,
-        False
-    ],
+    [True, False],
 )
 def test_compile_torch(
     input_output_feature,
@@ -210,18 +206,6 @@ def test_compile_torch(
         use_virtual_lib=use_virtual_lib,
     )
 
-    # pylint does not understand that we have a VirtualCircuit so disable its warning here
-    if use_virtual_lib:
-        # pylint: disable=no-member
-        assert isinstance(quantized_numpy_module.forward_fhe, VirtualCircuit)
-        check_ok, _, _ = quantized_numpy_module.forward_fhe.check_circuit_uses_n_bits_or_less(0)
-        assert not check_ok
-        check_ok, _, _ = quantized_numpy_module.forward_fhe.check_circuit_uses_n_bits_or_less(
-            MAXIMUM_BIT_WIDTH
-        )
-        assert check_ok
-        # pylint: enable=no-member
-
     # Create test data from the same distribution and quantize using
     # learned quantization parameters during compilation
     x_test = tuple(
@@ -252,19 +236,6 @@ def test_compile_torch(
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
     )
-
-    assert isinstance(quantized_numpy_module.forward_fhe, VirtualCircuit)
-    # pylint does not understand that we have a VirtualCircuit so disable its warning here
-    # Check we went overboard for the number of bits
-    # pylint: disable=no-member
-    (
-        check_ok,
-        max_bit_width,
-        _,
-    ) = quantized_numpy_module.forward_fhe.check_circuit_uses_n_bits_or_less(MAXIMUM_BIT_WIDTH)
-    # pylint: enable=no-member
-    assert not check_ok
-    assert max_bit_width > MAXIMUM_BIT_WIDTH
 
     # Check the forward works with the high bitwidth
     qtest = quantized_numpy_module.quantize_input(*x_test)

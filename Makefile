@@ -100,8 +100,9 @@ pylint_tests:
 .PHONY: pylint_benchmarks # Run pylint on benchmarks
 pylint_benchmarks:
 	@# Disable duplicate code detection, docstring requirement, too many locals/statements
+	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CN
 	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \
-	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,C0302,W0108 --rcfile=pylintrc
+	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,C0302,W0108,C0412 --rcfile=pylintrc
 
 .PHONY: pylint_script # Run pylint on scripts
 pylint_script:
@@ -147,12 +148,11 @@ pcc_internal: $(PCC_DEPS)
 # --durations=10 is to show the 10 slowest tests
 .PHONY: pytest # Run pytest
 pytest:
-	# FIXME, Concrete Numpy 0.6 integration, #795: restore --cov-fail-under=100 for coverage
 	poetry run pytest --durations=10 -svv \
 	--capture=tee-sys \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	-n $$(./script/make_utils/ncpus.sh) \
-	--cov=$(SRC_DIR) --cov-fail-under=1 \
+	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/ \
 	--count=$(COUNT) \

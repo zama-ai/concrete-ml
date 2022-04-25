@@ -1,17 +1,16 @@
 """Implement the sklearn tree models."""
 from typing import Callable, Optional
 
-import concrete.numpy as cnp
 import numpy
 import sklearn
 from concrete.numpy.compilation.artifacts import CompilationArtifacts
 from concrete.numpy.compilation.circuit import Circuit
+from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import CompilationConfiguration
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..quantization.quantized_array import QuantizedArray
-from ..virtual_lib import VirtualCompiler
 from .base import BaseTreeEstimatorMixin
 from .tree_to_numpy import tree_to_numpy
 
@@ -404,15 +403,13 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             self._tensor_tree_predict, ["inputs"]
         )
 
-        compiler_class = VirtualCompiler if use_virtual_lib else cnp.Compiler
-
         X = self.quantize_input(X)
-        compiler = compiler_class(
+        compiler = Compiler(
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
             configuration,
             compilation_artifacts,
         )
         self.fhe_tree = compiler.compile(
-            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir
+            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir, virtual=use_virtual_lib
         )

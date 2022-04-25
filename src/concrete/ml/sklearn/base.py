@@ -7,10 +7,10 @@ from abc import abstractmethod
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-import concrete.numpy as cnp
 import numpy
 import torch
 from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import CompilationConfiguration
 from concrete.numpy.dtypes.integer import Integer
 
@@ -18,7 +18,6 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray
 from ..torch import NumpyModule
-from ..virtual_lib import VirtualCompiler
 
 
 class QuantizedTorchEstimatorMixin:
@@ -496,17 +495,15 @@ class BaseTreeEstimatorMixin:
             self._tensor_tree_predict, ["inputs"]
         )
 
-        compiler_class = VirtualCompiler if use_virtual_lib else cnp.Compiler
-
         X = self.quantize_input(X)
-        compiler = compiler_class(
+        compiler = Compiler(
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
             configuration,
             compilation_artifacts,
         )
         self.fhe_tree = compiler.compile(
-            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir
+            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir, virtual=use_virtual_lib
         )
 
         output_graph = self.fhe_tree.graph.ordered_outputs()

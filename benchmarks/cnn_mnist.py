@@ -7,6 +7,7 @@ import py_progress_tracker as progress
 import torch
 import torch.utils
 from common import BENCHMARK_CONFIGURATION, run_and_report_classification_metrics
+from concrete.numpy.compilation.circuit import Circuit
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -16,7 +17,6 @@ from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
 from concrete.ml.torch.compile import compile_torch_model
-from concrete.ml.virtual_lib.virtual_fhe_circuit import VirtualCircuit
 
 N_EPOCHS = 30
 TINYCNN_CHECKPOINT_FILE = "tiny_mnist.pth"
@@ -272,9 +272,9 @@ def main(n_bits):
         configuration=BENCHMARK_CONFIGURATION,
     )
 
-    assert isinstance(q_module_vl.forward_fhe, VirtualCircuit)
-    vfhe_circuit = cast(VirtualCircuit, q_module_vl.forward_fhe)
-    # Despite casting and the assert, pylint still does not consider this a VirtualCircuit
+    assert isinstance(q_module_vl.forward_fhe, Circuit)
+    vfhe_circuit = cast(Circuit, q_module_vl.forward_fhe)
+    # Despite casting and the assert, pylint still does not consider this a Circuit
     # pylint: disable=no-member
     print(f"Max n_bits during inference: {vfhe_circuit.get_max_bit_width()}")
     # pylint: enable=no-member

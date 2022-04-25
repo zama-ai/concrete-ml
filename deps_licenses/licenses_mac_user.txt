@@ -2,11 +2,11 @@ Name, Version, License
 Pillow, 9.1.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
 concrete-compiler, 0.6.0, BSD-3
-concrete-numpy, 0.6.0rc1, BSD License
+concrete-numpy, 0.6.0rc2, BSD License
 cycler, 0.11.0, BSD License
 dill, 0.3.4, BSD License
 flatbuffers, 2.0, Apache Software License
-fonttools, 4.32.0, MIT License
+fonttools, 4.33.2, MIT License
 joblib, 1.1.0, BSD License
 kiwisolver, 1.4.2, BSD License
 loguru, 0.5.3, MIT License
@@ -18,7 +18,7 @@ onnxconverter-common, 1.9.0, MIT License
 onnxmltools, 1.11.0, Apache Software License
 onnxruntime, 1.11.0, MIT License
 packaging, 21.3, Apache Software License; BSD License
-protobuf, 3.20.0, BSD-3-Clause
+protobuf, 3.20.1, BSD-3-Clause
 psutil, 5.9.0, BSD License
 pygraphviz, 1.9, BSD License
 pyparsing, 3.0.8, MIT License
@@ -34,5 +34,5 @@ threadpoolctl, 3.1.0, BSD License
 tomli, 2.0.1, MIT License
 torch, 1.11.0, BSD License
 tqdm, 4.64.0, MIT License; Mozilla Public License 2.0 (MPL 2.0)
-typing-extensions, 4.1.1, Python Software Foundation License
-xgboost, 1.5.2, Apache Software License
+typing-extensions, 4.2.0, Python Software Foundation License
+xgboost, 1.6.0, Apache Software License

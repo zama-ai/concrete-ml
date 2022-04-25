@@ -10,7 +10,6 @@ from concrete.numpy.compilation.configuration import CompilationConfiguration
 
 from ..common.debugging import assert_true
 from ..common.utils import generate_proxy_function
-from ..virtual_lib import VirtualCompiler
 from .base_quantized_op import QuantizedOp
 from .quantized_array import QuantizedArray
 
@@ -247,9 +246,7 @@ class QuantizedModule:
             self._forward, self.ordered_module_input_names
         )
 
-        compiler_class = VirtualCompiler if use_virtual_lib else Compiler
-
-        compiler = compiler_class(
+        compiler = Compiler(
             forward_proxy,
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
             configuration,
@@ -266,10 +263,7 @@ class QuantizedModule:
 
         inputset = get_inputset_iterable()
 
-        self.forward_fhe = compiler.compile(
-            inputset,
-            show_mlir,
-        )
+        self.forward_fhe = compiler.compile(inputset, show_mlir, virtual=use_virtual_lib)
 
         self._is_compiled = True
 
