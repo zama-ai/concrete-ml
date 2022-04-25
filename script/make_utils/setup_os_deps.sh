@@ -130,6 +130,12 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
     fi
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
+
+    # Some problems with the git which is preinstalled on AWS virtual machines. Let's unlink it
+    # but not fail if it is not there, so use 'cat' as a hack to be sure that, even if set -x is
+    # activated later in this script, the status is still 0 == success
+    brew unlink git@2.35.1 | cat
+
     brew install curl git gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint
     python3 -m pip install -U pip
     python3 -m pip install poetry

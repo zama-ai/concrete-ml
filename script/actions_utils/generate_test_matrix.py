@@ -30,7 +30,7 @@ PUSH_TO_RELEASE_CONF = {"os": PUSH_TO_RELEASE_OSES, "python": PUSH_TO_RELEASE_PY
 
 WEEKLY_OSES = {
     LINUX: "ubuntu-20.04",
-    MACOS: "macos-10.15",
+    MACOS: "macos-11",
 }
 WEEKLY_PYTHON_VERSIONS = ["3.8", "3.9"]
 WEEKLY_CONF = {"os": WEEKLY_OSES, "python": WEEKLY_PYTHON_VERSIONS}
