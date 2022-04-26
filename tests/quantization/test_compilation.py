@@ -133,6 +133,7 @@ class TinyCNN(nn.Module):
         nn.Sigmoid,
     ],
 )
+@pytest.mark.parametrize("n_bits", [2, 9, 16])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_quantized_module_compilation(
     input_output_feature,
@@ -140,11 +141,14 @@ def test_quantized_module_compilation(
     activation,
     default_configuration,
     check_is_good_execution,
+    n_bits,
     use_virtual_lib,
 ):
     """Test a neural network compilation for FHE inference."""
 
-    n_bits = 2
+    # Do not test unsupported bit widths when we are not using the Virtual Lib
+    if not use_virtual_lib and n_bits > MAXIMUM_BIT_WIDTH:
+        return
 
     # Define an input shape (n_examples, n_features)
     input_shape = (5, input_output_feature)
@@ -153,14 +157,17 @@ def test_quantized_module_compilation(
 
     # Define the torch model
     torch_fc_model = model(input_output_feature, activation)
+
     # Create random input
     numpy_input = numpy.random.uniform(-100, 100, size=input_shape)
 
     # Create corresponding numpy model
     numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
+
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
+
     # Quantize input
     q_input = QuantizedArray(n_bits, numpy_input)
 
