@@ -20,16 +20,16 @@ class PostTrainingAffineQuantization:
     Create the quantized version of the passed numpy module.
 
     Args:
-        n_bits (int, Dict):             Number of bits to quantize the model. If an int is passed
-                                        for n_bits, the value will be used for activation,
-                                        inputs and weights. If a dict is passed, then it should
-                                        contain "inputs" and "weights" keys with corresponding
-                                        number of quantization bits for:
-                                        - inputs : any input data to any layers
-                                        - weights: learned parameters or constants in the network
-        numpy_model (NumpyModule):   Model in numpy.
-        is_signed:                      Whether the weights of the layers can be signed.
-                                        Currently, only the weights can be signed.
+        n_bits (int, Dict): Number of bits to quantize the model. If an int is passed for n_bits,
+            the value will be used for activation, inputs and weights. If a dict is passed, then it
+            should contain "inputs", "weights" and "outputs" keys with corresponding number of
+            quantization bits for:
+            - inputs : any input data to any layers
+            - weights: learned parameters or constants in the network
+            - outputs: final model output
+        numpy_model (NumpyModule): Model in numpy.
+        is_signed (bool): Whether the weights of the layers can be signed. Currently, only the
+            weights can be signed.
 
     Returns:
         QuantizedModule: A quantized version of the numpy model.
@@ -45,9 +45,9 @@ class PostTrainingAffineQuantization:
         self.quant_ops_dict = {}
         assert_true(
             isinstance(n_bits, int)
-            or (isinstance(n_bits, Dict) and n_bits.keys() == {"inputs", "weights"}),
+            or (isinstance(n_bits, Dict) and n_bits.keys() == {"inputs", "weights", "outputs"}),
             "Invalid n_bits, either pass an integer or a dictionary containing integer values for"
-            " the `inputs` and `weights` keys",
+            " the `inputs`, `weights` and 'outputs' keys",
         )
         self.n_bits = n_bits
         self.quant_params = {}
@@ -63,6 +63,17 @@ class PostTrainingAffineQuantization:
         """
         if isinstance(self.n_bits, Dict):
             return self.n_bits["inputs"]
+        return self.n_bits
+
+    @property
+    def n_bits_outputs(self):
+        """Get the number of bits to use for the quantization of the last layer's output.
+
+        Returns:
+            n_bits (int): number of bits for output quantization
+        """
+        if isinstance(self.n_bits, Dict):
+            return self.n_bits["outputs"]
         return self.n_bits
 
     @property
@@ -119,13 +130,23 @@ class PostTrainingAffineQuantization:
 
         constants: Set[str] = set(self.quant_params.keys())
 
+        # Retrieve the last node
+        last_node = None
+        for node in reversed(graph.node):
+            if node.op_type in ["MatMul", "Gemm", "Conv", "Exp"]:
+                last_node = node
+                break
+
         for node in graph.node:
             op_type = node.op_type
             attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
+
             # For now only single output nodes
             assert_true(len(node.output) == 1)
+
             output_name = node.output[0]
             if op_type == "Constant":
+
                 # FIXME: Do not handle constants with QuantizedArray, use numpy.ndarray
                 # let the ops quantize their own inputs
                 node_results[output_name] = QuantizedArray(
@@ -160,17 +181,19 @@ class PostTrainingAffineQuantization:
                 curr_calibration_data = tuple(
                     curr_inputs[input_name] for input_name in variable_input_names
                 )
+
                 # For mypy
                 assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
                 curr_calibration_data = cast(Tuple[numpy.ndarray, ...], curr_calibration_data)
 
-                quantized_op_instance = quantized_op_class(
-                    self.n_bits_inputs, curr_cst_inputs, **attributes
-                )
+                # The last node's values are quantized using the number of bits given for outputs
+                n_bits_op = self.n_bits_outputs if node == last_node else self.n_bits_inputs
+                quantized_op_instance = quantized_op_class(n_bits_op, curr_cst_inputs, **attributes)
                 output_calibration_data = self._calibrate_layers_activation(
                     variable_input_names, output_name, quantized_op_instance, *curr_calibration_data
                 )
                 node_results[output_name] = output_calibration_data
+
             # Otherwise use the original operator to operate on float values to do constant folding
             else:
                 # For mypy
@@ -181,6 +204,7 @@ class PostTrainingAffineQuantization:
                     )
                 )
                 curr_q_cst_inputs = cast(Dict[int, QuantizedArray], curr_cst_inputs)
+
                 # Get the non quantized values
                 real_cst_inputs = (qarray.values for qarray in curr_q_cst_inputs.values())
                 node_output = ONNX_OPS_TO_NUMPY_IMPL[op_type](*real_cst_inputs, **attributes)
@@ -215,10 +239,13 @@ class PostTrainingAffineQuantization:
         """
         # Calibrate the output of the layer
         quantized_op.calibrate(*calibration_data)
+
         # Store the learned quantized layer
         self.quant_ops_dict[name] = (tuple(variable_input_names), quantized_op)
+
         # Create new calibration data (output of the previous layer)
         q_calibration_data = (QuantizedArray(self.n_bits_inputs, data) for data in calibration_data)
+
         # Dequantize to have the value in clear and ready for next calibration
         return quantized_op(*q_calibration_data).dequant()
 
@@ -239,6 +266,7 @@ class PostTrainingAffineQuantization:
         self._quantize_params()
 
         self._quantize_layers(*calibration_data)
+
         # Create quantized module from self.quant_layers_dict
         quantized_module = QuantizedModule(
             (graph_input.name for graph_input in self.numpy_model.onnx_model.graph.input),

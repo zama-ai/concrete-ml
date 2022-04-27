@@ -4,7 +4,8 @@ from typing import Any, List
 
 import numpy
 import pytest
-from sklearn.datasets import make_classification, make_regression
+from sklearn.datasets import make_classification
+from sklearn.datasets import make_regression as sklearn_make_regression
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV
@@ -12,7 +13,50 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-from concrete.ml.sklearn import LinearRegression, LinearSVC, LinearSVR, LogisticRegression
+from concrete.ml.sklearn import (
+    LinearRegression,
+    LinearSVC,
+    LinearSVR,
+    LogisticRegression,
+    PoissonRegressor,
+)
+
+
+def make_regression(
+    reg_model,
+    n_features=10,
+    n_informative=10,
+    n_targets=1,
+    noise=0,
+):
+    """Generate a random regression problem.
+
+    Sklearn's make_regression() method generates a random regression problem without any domain
+    restrictions. However, a model like PoissonRegressor can only consider non negative target
+    values. This function therefore adapts it in order to make it work for any tested regressor or
+    classifier.
+    """
+
+    # sklearn_make_regression has 3 outputs only if coef=True, which is not the case here
+    # pylint: disable=unbalanced-tuple-unpacking
+    generated_x, generated_y = sklearn_make_regression(
+        n_samples=200,
+        n_features=n_features,
+        n_informative=n_informative,
+        n_targets=n_targets,
+        noise=noise,
+        random_state=numpy.random.randint(0, 2**15),
+    )
+
+    # pylint: enable=unbalanced-tuple-unpacking
+
+    # PoissonRegressor can only handle non-negative target values so one solution is to translate
+    # them. Additionally, we apply an exponential function in order to obtain a non-linear
+    # distribution.
+    if reg_model == PoissonRegressor:
+        generated_y = numpy.expm1((generated_y + numpy.abs(numpy.min(generated_y))) / 200)
+
+    return (generated_x, generated_y)
 
 
 def get_datasets_regression(reg_model_orig):
@@ -24,44 +68,34 @@ def get_datasets_regression(reg_model_orig):
     ans = [
         pytest.param(
             reg_model,
-            lambda: make_regression(
-                n_samples=200, n_features=10, random_state=numpy.random.randint(0, 2**15)
-            ),
-            id=f"make_regression_10_features_{reg_model_string}",
+            lambda: make_regression(reg_model, n_features=10),
+            id=f"make_regression_features_10_{reg_model_string}",
         ),
         pytest.param(
             reg_model,
-            lambda: make_regression(
-                n_samples=200, n_features=10, noise=2, random_state=numpy.random.randint(0, 2**15)
-            ),
+            lambda: make_regression(reg_model, n_features=10, noise=2),
             id=f"make_regression_features_10_noise_2_{reg_model_string}",
         ),
         pytest.param(
             reg_model,
-            lambda: make_regression(
-                n_samples=200,
-                n_features=14,
-                n_informative=14,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
+            lambda: make_regression(reg_model, n_features=14, n_informative=14),
             id=f"make_regression_features_14_informative_14_{reg_model_string}",
         ),
     ]
 
-    # LinearSVR does not support multi targets
-    if reg_model_orig != LinearSVR:
+    # LinearSVR and PoissonRegressor do not support multi targets
+    if reg_model_orig not in [LinearSVR, PoissonRegressor]:
         ans += [
             pytest.param(
                 reg_model,
                 lambda: make_regression(
-                    n_samples=200,
+                    reg_model,
                     n_features=14,
-                    n_targets=2,
                     n_informative=14,
-                    random_state=numpy.random.randint(0, 2**15),
+                    n_targets=2,
                 ),
                 id=f"make_regression_features_14_informative_14_targets_2_{reg_model_string}",
-            ),
+            )
         ]
 
     # if reg_model_orig == LinearSVR:
@@ -143,7 +177,7 @@ def get_datasets_classification(class_model_orig):
 
 datasets_regression: List[Any] = []
 
-for one_regression_model in [LinearRegression, LinearSVR]:
+for one_regression_model in [LinearRegression, LinearSVR, PoissonRegressor]:
     datasets_regression += get_datasets_regression(one_regression_model)
 
 datasets_classification: List[Any] = []
@@ -266,6 +300,7 @@ def test_double_fit():
         pytest.param(LogisticRegression),
         pytest.param(LinearSVR),
         pytest.param(LinearSVC),
+        pytest.param(PoissonRegressor),
     ],
 )
 def test_pipeline_sklearn(alg):
