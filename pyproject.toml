@@ -96,3 +96,4 @@ filterwarnings = [
 version_toml = "pyproject.toml:tool.poetry.version"
 version_variable = "docs/conf.py:release,src/concrete/ml/version.py:__version__"
 upload_to_pypi = "False"
+changelog_sections = "breaking, feature, fix, documentation, performance"
