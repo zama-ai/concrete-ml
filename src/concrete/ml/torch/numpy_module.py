@@ -14,7 +14,8 @@ class NumpyModule:
     """General interface to transform a torch.nn.Module to numpy module.
 
     Args:
-        torch_model (nn.Module): A fully trained, torch model alond with its parameters.
+        torch_model (Union[nn.Module, onnx.ModelProto]): A fully trained, torch model along with
+            its parameters or the onnx graph of the model.
         dummy_input (Union[torch.Tensor, Tuple[torch.Tensor, ...]]): Sample tensors for all the
             module inputs, used in the ONNX export to get a simple to manipulate nn representation.
         debug_onnx_output_file_path: (Optional[Union[Path, str]], optional): An optional path to
