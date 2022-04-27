@@ -114,9 +114,7 @@ def pytest_sessionstart(session: pytest.Session):
     keyring_dir.mkdir(parents=True, exist_ok=True)
     keyring_dir_as_str = str(keyring_dir)
     print(f"Using {keyring_dir_as_str} as key cache dir")
-    configuration._INSECURE_KEY_CACHE_DIR = (  # pylint: disable=protected-access
-        keyring_dir_as_str
-    )
+    configuration._INSECURE_KEY_CACHE_DIR = keyring_dir_as_str  # pylint: disable=protected-access
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disable=unused-argument
@@ -192,7 +190,14 @@ def autoseeding_of_everything(record_property, request):
     # Python
     random.seed(seed)
     print("\nForcing seed to random.seed to ", seed)
-    print(f"\nRelaunch the tests with --forcing_random_seed {seed} to reproduce")
+    print(
+        f"\nRelaunch the tests with --forcing_random_seed {seed} "
+        + "--randomly-dont-reset-seed to reproduce"
+    )
+    print(
+        "Remark that potentially, any option used in the pytest call may have an impact so in "
+        + "case of problem to reproduce, you may want to have a look to `make pytest` options"
+    )
 
     # Numpy
     seed += 1
