@@ -730,10 +730,17 @@ class QuantizedWhere(QuantizedOp):
     ) -> None:
         super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
-        # This op computes c * a + (1 - c) * b. As c is an encrypted value
-        # and since we can not multiply encrypted values together
-        # we only support the case where a and b are constants
-        assert_true(constant_inputs is not None and len(constant_inputs) >= 2)
+        # Remember that there are examples of where with more than 1 variable which are going to be
+        # well managed, thanks to fusing: eg,
+        # Act(x) = (x < 3) ? x + 42 : x ^ 42 would perfectly fuse
+        # But for this kind of example, we have int_input_names = {'x'} since they all depend only
+        # on x
+        assert_true(
+            self._int_input_names is not None and len(self._int_input_names) == 1,
+            "internal issue: "
+            + f"{self._int_input_names} "
+            + "{len(self._int_input_names) if self._int_input_names is not None else -1}",
+        )
 
 
 class QuantizedCast(QuantizedOp):
@@ -766,6 +773,53 @@ class QuantizedGreater(QuantizedOp):
         # We do not support testing a > b where a,b are encrypted
         # only comparing to a constant is supported
         assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
+
+
+class QuantizedLess(QuantizedOp):
+    """Comparison operator <.
+
+    Only supports comparison with a constant.
+    """
+
+    _impl_for_op_named: str = "Less"
+
+    # Since this op takes a single variable input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        **attrs,
+    ) -> None:
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+
+        # We do not support testing a < b where a,b are encrypted
+        # only comparing to a constant is supported
+        assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
+
+
+class QuantizedOr(QuantizedOp):
+    """Or operator ||.
+
+    This operation is not really working as a quantized operation. It just works when things got
+    fused, as in eg Act(x) = x || (x + 42))
+    """
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/854
+    # This is not really a quantized operation
+    _impl_for_op_named: str = "Or"
+
+
+class QuantizedDiv(QuantizedOp):
+    """Div operator /.
+
+    This operation is not really working as a quantized operation. It just works when things got
+    fused, as in eg Act(x) = 1000 / (x + 42))
+    """
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/854
+    # This is not really a quantized operation
+    _impl_for_op_named: str = "Div"
 
 
 class QuantizedMul(QuantizedOp):

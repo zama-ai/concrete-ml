@@ -349,15 +349,32 @@ def test_compile_torch_conv_networks(  # pylint: disable=unused-argument
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.PReLU, id="PReLU"),
         pytest.param(nn.Hardswish, id="Hardswish"),
-        # FIXME: to be done, https://github.com/zama-ai/concrete-ml-internal/issues/335
-        #   FIXME: because of missing quantized ONNX ops (e.g. Div)
-        # pytest.param(nn.Tanhshrink, id="Tanhshrink"),
-        # pytest.param(nn.Hardshrink, id="Hardshrink"),
-        # pytest.param(nn.Mish, id="Mish"),
-        # pytest.param(nn.SiLU, id="SiLU"),
-        # pytest.param(nn.GELU, id="GELU"),
-        # pytest.param(nn.Softsign, id="Softsign"),
+        pytest.param(nn.SiLU, id="SiLU"),  # Sometimes bad accuracy
+        pytest.param(nn.Mish, id="Mish"),
+        pytest.param(nn.Tanhshrink, id="Tanhshrink"),
+        pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
+        pytest.param(nn.Softshrink, id="Softshrink"),
+        pytest.param(nn.Hardshrink, id="Hardshrink"),
+        # FIXME, #335: still some issues with these activations
+        #
+        # - Works but sometimes issues with the accuracy
         # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
+        #
+        # - Missing Erf + not used in inference by practionnners for now
+        # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1520
+        # pytest.param(nn.GELU, id="GELU"),
+        #
+        # - Sometime have issues with `overflow encountered in long_scalars` + needing
+        # https://github.com/zama-ai/concrete-numpy-internal/issues/1519 FIXME
+        # pytest.param(nn.Softsign, id="Softsign"),
+        #
+        # Other problems, certainly related to tests:
+        # Required positional arguments: 'embed_dim' and 'num_heads' and fails with a partial
+        # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
+        # Activation with a RandomUniformLike
+        # pytest.param(nn.RReLU, id="RReLU"),
+        # Halving dimension must be even, but dimension 3 is size 3
+        # pytest.param(nn.GLU, id="GLU"),
     ],
 )
 @pytest.mark.parametrize(

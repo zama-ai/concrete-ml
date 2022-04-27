@@ -20,6 +20,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedCelu,
     QuantizedClip,
     QuantizedConv,
+    QuantizedDiv,
     QuantizedElu,
     QuantizedExp,
     QuantizedFlatten,
@@ -29,11 +30,13 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedHardSwish,
     QuantizedIdentity,
     QuantizedLeakyRelu,
+    QuantizedLess,
     QuantizedLinear,
     QuantizedLog,
     QuantizedMatMul,
     QuantizedMul,
     QuantizedOp,
+    QuantizedOr,
     QuantizedPad,
     QuantizedPRelu,
     QuantizedRelu,
@@ -680,12 +683,13 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     ],
 )
 @pytest.mark.parametrize("n_bits", [16])
-def test_quantized_gt_where(params, n_bits, check_r2_score):
+@pytest.mark.parametrize("comparator", [QuantizedGreater, QuantizedLess])
+def test_quantized_comparators_and_where(params, n_bits, comparator, check_r2_score):
     """Test a conditional pattern that is very common in quantization aware training."""
     values, threshold, val_if_true, val_if_false = params
 
     q_values = QuantizedArray(n_bits, values)
-    q_op_greater = QuantizedGreater(n_bits, constant_inputs={1: QuantizedArray(n_bits, threshold)})
+    q_op_comparator = comparator(n_bits, constant_inputs={1: QuantizedArray(n_bits, threshold)})
     q_cast = QuantizedCast(n_bits, to=onnx.TensorProto.BOOL)
     q_op_where = QuantizedWhere(
         n_bits,
@@ -695,9 +699,9 @@ def test_quantized_gt_where(params, n_bits, check_r2_score):
         },
     )
 
-    reference_value = q_op_where.calibrate(q_cast.calibrate(q_op_greater.calibrate(values)))
+    reference_value = q_op_where.calibrate(q_cast.calibrate(q_op_comparator.calibrate(values)))
 
-    q_result = q_op_where(q_cast(q_op_greater(q_values)))
+    q_result = q_op_where(q_cast(q_op_comparator(q_values)))
 
     result = q_result.dequant()
 
@@ -775,13 +779,20 @@ def test_all_ops_were_tested():
         QuantizedHardSwish: test_univariate_ops_no_attrs,
         QuantizedAvgPool: test_quantized_avg_pool,
         QuantizedPad: test_quantized_pad,
-        QuantizedCast: test_quantized_gt_where,
-        QuantizedWhere: test_quantized_gt_where,
-        QuantizedGreater: test_quantized_gt_where,
+        QuantizedCast: test_quantized_comparators_and_where,
+        QuantizedWhere: test_quantized_comparators_and_where,
+        QuantizedGreater: test_quantized_comparators_and_where,
+        QuantizedLess: test_quantized_comparators_and_where,
         QuantizedMul: test_all_arith_ops,
         QuantizedSub: test_all_arith_ops,
         QuantizedBatchNormalization: test_batch_normalization,
         QuantizedFlatten: test_quantized_flatten,
+        # These operations are partially supported, meaning they can be used only for portions of
+        # the code which are going to be fused. Typically, in activations which would depend only
+        # one input but contain operations which are normally not FHE friendly. Eg,
+        #   Act(x) = x || (x * x)
+        QuantizedOr: None,
+        QuantizedDiv: None,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

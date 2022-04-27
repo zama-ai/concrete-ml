@@ -54,6 +54,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - MatMul
 - Mul
 - Not
+- Or
 - PRelu
 - Pad
 - Relu
@@ -85,6 +86,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Celu: QuantizedCelu
 - Clip: QuantizedClip
 - Conv: QuantizedConv
+- Div: QuantizedDiv
 - Elu: QuantizedElu
 - Exp: QuantizedExp
 - Flatten: QuantizedFlatten
@@ -94,10 +96,12 @@ Do note that all operators may not be fully supported for conversion to a circui
 - HardSwish: QuantizedHardSwish
 - Identity: QuantizedIdentity
 - LeakyRelu: QuantizedLeakyRelu
+- Less: QuantizedLess
 - Linear: QuantizedLinear
 - Log: QuantizedLog
 - MatMul: QuantizedMatMul
 - Mul: QuantizedMul
+- Or: QuantizedOr
 - PRelu: QuantizedPRelu
 - Pad: QuantizedPad
 - Relu: QuantizedRelu

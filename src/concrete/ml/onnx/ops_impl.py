@@ -531,7 +531,11 @@ def numpy_div(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (x / y,)
+    # FIXME: still to be validated with
+    # https://github.com/zama-ai/concrete-numpy-internal/issues/1519
+    ans = numpy.divide(x, y, where=y != 0)
+
+    return (ans,)
 
 
 def numpy_mul(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -700,6 +704,23 @@ def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]
     return (numpy.greater(x, y).astype(numpy.int64),)
 
 
+def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute less in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
+    return (numpy.less(x, y).astype(numpy.int64),)
+
+
 def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute identity in numpy according to ONNX spec.
 
@@ -733,21 +754,6 @@ def numpy_reshape(
     assert_true(allowzero == 0, "Concrete ML currently only accepts numpy style reshape in ONNX")
 
     return (numpy.reshape(x, newshape),)
-
-
-def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
-    """Compute less in numpy according to ONNX spec.
-
-    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
-
-    Args:
-        x (numpy.ndarray): Input tensor
-        y (numpy.ndarray): Input tensor
-
-    Returns:
-        Tuple[numpy.ndarray]: Output tensor
-    """
-    return (numpy.less(x, y),)
 
 
 def torch_conv(
@@ -1009,3 +1015,19 @@ def numpy_flatten(x: numpy.ndarray, /, *, axis: int = 1) -> Tuple[numpy.ndarray]
     output_shape = (*x.shape[0:axis], numpy.prod(x.shape[axis:]))
 
     return (numpy.reshape(x, output_shape),)
+
+
+def numpy_or(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute or in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
+
+    Args:
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
+    return (numpy.logical_or(a, b).astype(numpy.int64),)

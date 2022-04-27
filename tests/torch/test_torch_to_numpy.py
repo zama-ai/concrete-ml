@@ -163,25 +163,30 @@ class QATTestModule(nn.Module):
         pytest.param(nn.Hardsigmoid, id="Hardsigmoid"),
         pytest.param(nn.Hardtanh, id="Hardtanh"),
         pytest.param(nn.LeakyReLU, id="LeakyReLU"),
-        pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         pytest.param(nn.SELU, id="SELU"),
         pytest.param(nn.CELU, id="CELU"),
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.PReLU, id="PReLU"),
         pytest.param(nn.Hardswish, id="Hardswish"),
-        # Works within the conversion but will not compile
-        pytest.param(nn.GELU, id="GELU"),
         pytest.param(nn.SiLU, id="SiLU"),
         pytest.param(nn.Mish, id="Mish"),
-        pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.Tanhshrink, id="Tanhshrink"),
-        # FIXME: Are currently not supported for various reasons:
-        # to be done, https://github.com/zama-ai/concrete-ml-internal/issues/335
-        # pytest.param(nn.Hardshrink, id="Hardshrink"),
+        pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
+        pytest.param(nn.Softshrink, id="Softshrink"),
+        pytest.param(nn.Hardshrink, id="Hardshrink"),
+        # Works but accuracy issues sometimes in compilation
+        pytest.param(nn.LogSigmoid, id="LogSigmoid"),
+        # Works within the conversion but will not compile
+        pytest.param(nn.GELU, id="GELU"),  # Missing Div
+        pytest.param(nn.Softsign, id="Softsign"),  # Missing Div
+        # FIXME, #335: still some issues with these activations
+        #
+        # Other problems, certainly related to tests:
+        # Required positional arguments: 'embed_dim' and 'num_heads' and fails with a partial
         # pytest.param(nn.MultiheadAttention, id="MultiheadAttention"),
+        # Activation with a RandomUniformLike
         # pytest.param(nn.RReLU, id="RReLU"),
-        # pytest.param(nn.Softshrink, id="Softshrink"),
-        # pytest.param(nn.Threshold, id="Threshold"),
+        # Halving dimension must be even, but dimension 3 is size 3
         # pytest.param(nn.GLU, id="GLU"),
     ],
 )
