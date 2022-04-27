@@ -260,7 +260,7 @@ def test_all_arith_ops(
 
     if supports_enc_with_enc:
         # Variable+Variable (V+V) test
-        q_op = operator(n_bits)
+        q_op = operator(n_bits, int_input_names={"0", "1"})
 
         # Calibrate the layer
         raw_output_vv = q_op.calibrate(input_0, input_1)
@@ -273,10 +273,10 @@ def test_all_arith_ops(
     else:
         with pytest.raises(Exception):
             # Variable+Variable (V+V) test
-            q_op = operator(n_bits)
+            q_op = operator(n_bits, int_input_names={"0", "1"})
 
     # Variable + Constant test (V+C)
-    q_op = operator(n_bits, constant_inputs={"b": q_inputs_1})
+    q_op = operator(n_bits, int_input_names={"0"}, constant_inputs={"b": q_inputs_1})
 
     # Calibrate the layer
     raw_output_vc = q_op.calibrate(input_0)
@@ -288,7 +288,7 @@ def test_all_arith_ops(
     check_r2_score(raw_output_vc, quantized_output_vc)
 
     # Constant + Variable test (C+V)
-    q_op = operator(n_bits, constant_inputs={"a": q_inputs_0})
+    q_op = operator(n_bits, int_input_names={"0"}, constant_inputs={"a": q_inputs_0})
 
     # Calibrate the layer
     raw_output_cv = q_op.calibrate(input_1)
@@ -361,8 +361,10 @@ def test_all_gemm_ops(
     q_bias = QuantizedArray(n_bits, bias, is_signed)
 
     # 1- Test our QuantizedGemm layer
-    q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias})
-    q_linear = QuantizedLinear(n_bits, q_weights, q_bias)
+    q_gemm = QuantizedGemm(
+        n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights, "c": q_bias}
+    )
+    q_linear = QuantizedLinear(n_bits, {"0"}, q_weights, q_bias)
 
     # Calibrate the Quantized layer
     expected_gemm_outputs = q_gemm.calibrate(inputs)
@@ -375,9 +377,9 @@ def test_all_gemm_ops(
     check_r2_score(expected_linear_outputs, actual_linear_output)
 
     # 2- Same test without bias
-    q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights})
-    q_linear = QuantizedLinear(n_bits, q_weights)
-    q_mm = QuantizedMatMul(n_bits, constant_inputs={"b": q_weights})
+    q_gemm = QuantizedGemm(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
+    q_linear = QuantizedLinear(n_bits, {"0"}, q_weights)
+    q_mm = QuantizedMatMul(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
 
     # Calibrate the quantized layers
     expected_gemm_outputs = q_gemm.calibrate(inputs)
@@ -394,7 +396,13 @@ def test_all_gemm_ops(
     check_r2_score(expected_mm_outputs, actual_mm_output)
 
     # 3- Same test but with (alpha, beta) = (1, 0)
-    q_gemm = QuantizedGemm(n_bits, constant_inputs={"b": q_weights, "c": q_bias}, alpha=1, beta=0)
+    q_gemm = QuantizedGemm(
+        n_bits,
+        int_input_names={"0"},
+        constant_inputs={"b": q_weights, "c": q_bias},
+        alpha=1,
+        beta=0,
+    )
 
     # Calibrate the Quantized layer
     expected_gemm_outputs = q_gemm.calibrate(inputs)
@@ -462,6 +470,7 @@ def test_quantized_conv(params, n_bits, check_r2_score):
     # Create the operator, specifying weights & biases as constants
     q_op = QuantizedConv(
         n_bits,
+        int_input_names={"0"},
         constant_inputs={1: q_weights, 2: q_bias},
         strides=strides,
         pads=pads,
@@ -552,7 +561,12 @@ def test_quantized_conv_args():
         kwargs_op = {**args_ok, **{name: value}}
         print(kwargs_op)
         with pytest.raises(AssertionError, match=error):
-            QuantizedConv(n_bits, constant_inputs={1: q_weights, 2: q_bias}, **kwargs_op)
+            QuantizedConv(
+                n_bits,
+                int_input_names={"0"},
+                constant_inputs={1: q_weights, 2: q_bias},
+                **kwargs_op,
+            )
 
 
 def test_quantized_pad():
@@ -563,7 +577,7 @@ def test_quantized_pad():
     # This is currently the only supported mode
     data = numpy.random.uniform(size=(1, 1, 32, 32)) * 4
     q_data = QuantizedArray(2, data)
-    q_op = QuantizedPad(2, mode="constant")
+    q_op = QuantizedPad(2, int_input_names={"0"}, constant_inputs=None, mode="constant")
     pads = QuantizedArray(2, numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0]))
     pad_value = QuantizedArray(2, numpy.asarray([0]))
 
@@ -582,7 +596,7 @@ def test_quantized_pad():
 
     # Now check that we assert when a different padding mode is given
     with pytest.raises(AssertionError):
-        QuantizedPad(2, mode="reflect")
+        QuantizedPad(2, int_input_names={"0"}, mode="reflect")
 
 
 @pytest.mark.parametrize("shape", [(1,), (10, 5), (10, 5, 2)])
@@ -716,7 +730,7 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
     scale = QuantizedArray(n_bits, numpy.random.uniform(size=(tensor_shape[1],)))
 
     q_op = QuantizedBatchNormalization(
-        n_bits, {"input_mean": mean, "input_var": var, "scale": scale, "bias": bias}
+        n_bits, constant_inputs={"input_mean": mean, "input_var": var, "scale": scale, "bias": bias}
     )
 
     # Compute the fp32 results

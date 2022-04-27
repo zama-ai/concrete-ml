@@ -108,15 +108,17 @@ class PostTrainingAffineQuantization:
         )
 
     def _quantize_layers(self, *input_calibration_data: numpy.ndarray):
-        """Compute all parameters for the static post-training quantization.
+        """Compute parameters for post-training quantization and generate quantized ops.
 
         Does a forward pass over a batch of data and compute all
-        quantization parameters for activations and layers.
+        quantization parameters for activations and layers. Moreover, this function determines
+        the compilation mode of the quantized ops: on integers or in floating point.
 
         Args:
             *input_calibration_data (numpy.ndarray): Data that will be used to compute the bounds,
                 scales and zero point values for every quantized object.
         """
+        # pylint: disable=too-many-locals
 
         graph = self.numpy_model.onnx_model.graph
 
@@ -136,6 +138,36 @@ class PostTrainingAffineQuantization:
             if node.op_type in ["MatMul", "Gemm", "Conv", "Exp"]:
                 last_node = node
                 break
+
+        # We need to determine, for each op, whether it only performs univariate computations.
+        # A univariate computation is one which depends on a single scalar integer encrypted input
+        # which is only multiplied or added to constants or to itself, or a nonlinear function is
+        # applied to it.
+        # Here a scalar integer encrypted input is a single element in an encrypted tensor.
+
+        # To determine what integer inputs are required for an op, we need to keep track of them
+        # through the graph computation. It is not possible to simply check the ONNX input nodes
+        # of an op, as they could be tensors produced by ops that do floating point computations
+        # with TLUs.
+
+        # We first define which ops perform 'non-fusable' computations and in which settings.
+        # Some examples are: gemm & conv, which add together scalars - different elements (cells) of
+        # their input encrypted tensors. Another case is Add which, when adding two different
+        # encrypted integer inputs, can not be fused. However, Add can be fused when it adds
+        # the results computed from a unique integer tensor. Such as the function f(x) = x + x / 2.
+
+        # We keep track, for each tensor, from which integer tensor(s) it is produced. We also
+        # consider that input tensors 'produce' themselves. When an operation can be fused, its
+        # input integer tensor names are simply forwarded to the next op.
+
+        # When an op can not be fused, it produces a new integer encrypted tensor.
+
+        # All tensor names are taken from the ONNX tensor names.
+
+        # First, input tensors produce themselves
+        tensor_int_producers: Dict[str, Set[str]] = {
+            graph_input.name: {graph_input.name} for graph_input in graph.input
+        }
 
         for node in graph.node:
             op_type = node.op_type
@@ -157,7 +189,10 @@ class PostTrainingAffineQuantization:
                 constants.add(output_name)
                 continue
 
+            # All inputs
             curr_inputs = {input_name: node_results[input_name] for input_name in node.input}
+
+            # Constant inputs
             curr_cst_inputs = {
                 input_idx: value
                 for input_idx, (input_name, value) in enumerate(curr_inputs.items())
@@ -188,7 +223,28 @@ class PostTrainingAffineQuantization:
 
                 # The last node's values are quantized using the number of bits given for outputs
                 n_bits_op = self.n_bits_outputs if node == last_node else self.n_bits_inputs
-                quantized_op_instance = quantized_op_class(n_bits_op, curr_cst_inputs, **attributes)
+
+                # Find the unique integer producers of the current's op output tensor
+                node_integer_inputs = set.union(
+                    *[tensor_int_producers.get(input_node, set()) for input_node in node.input]
+                )
+
+                quantized_op_instance = quantized_op_class(
+                    n_bits_op, node_integer_inputs, curr_cst_inputs, **attributes
+                )
+
+                # Store the output tensor's integer producers
+                tensor_int_producers[output_name] = set()
+                if not quantized_op_instance.can_fuse():
+                    # This tensor is produced by a non fusable op
+                    # Thus this tensor is marked as produced by itself
+                    tensor_int_producers[output_name].add(output_name)
+                else:
+                    # If the op that produces this output tensor is fusable
+                    # the output tensor's integer producers are the same as the op's inputs'
+                    # integer producers (forwarding)
+                    tensor_int_producers[output_name] = node_integer_inputs
+
                 output_calibration_data = self._calibrate_layers_activation(
                     variable_input_names, output_name, quantized_op_instance, *curr_calibration_data
                 )

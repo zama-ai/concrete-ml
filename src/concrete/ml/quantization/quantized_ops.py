@@ -1,6 +1,6 @@
 """Quantized versions of the ONNX operators for post training quantization."""
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Set, Union
 
 import numpy
 from concrete.onnx import conv2d as cnp_conv2d
@@ -79,10 +79,11 @@ class QuantizedGemm(QuantizedOp):
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str],
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         alpha = self.attrs.get("alpha", 1)
         beta = self.attrs.get("beta", 1)
@@ -189,6 +190,18 @@ class QuantizedGemm(QuantizedOp):
             zero_point=self.output_zero_point,
         )
 
+    def can_fuse(self):
+        """Determine if this op can be fused.
+
+        Gemm operation can not be fused since it must be performed over integer tensors and it
+        combines different values of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+
+        return False
+
 
 class QuantizedMatMul(QuantizedGemm):
     """Quantized MatMul op."""
@@ -223,17 +236,19 @@ class QuantizedAdd(QuantizedOp):
         q_input_0: QuantizedArray = prepared_inputs[0]
         q_input_1: QuantizedArray = prepared_inputs[1]
 
-        # Optimize computation when adding constants, using a TLU and no quantization
-        # Both inputs can not be constant since constant folding would eliminate the Add node
-        if len(self.constant_inputs) > 0:
-            assert_true(len(self.constant_inputs) == 1)
-            const_idx = list(self.constant_inputs.keys())[0]
-            encrypted_idx = 1 - const_idx
+        # Optimize computation when adding constants, or tensors obtained from a unique integer
+        # tensor. Optimization allows univariate float subgraph fusion to a TLU
+        execute_in_float = len(self.constant_inputs) > 0 or self.can_fuse()
+        assert_true(
+            len(self.constant_inputs) < 2,
+            "Constant folding should have eliminated a two constant-input add node",
+        )
 
+        if execute_in_float:
             return QuantizedArray(
                 self.n_bits,
                 prepared_inputs[0].values + self.b_sign * prepared_inputs[1].values,
-                is_signed=prepared_inputs[encrypted_idx].is_signed,
+                is_signed=prepared_inputs[0].is_signed or prepared_inputs[1].is_signed,
                 value_is_float=True,
                 scale=self.output_scale,
                 zero_point=self.output_zero_point,
@@ -274,6 +289,19 @@ class QuantizedAdd(QuantizedOp):
             zero_point=self.output_zero_point,
         )
 
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Add operation can be computed in float and fused if it operates over inputs produced
+        by a single integer tensor. For example the expression x + x * 1.75, where x is
+        an encrypted tensor, can be computed with a single TLU.
+
+        Returns:
+            bool: Whether the number of integer input tensors allows computing this op as a TLU
+        """
+
+        return len(self._int_input_names) == 1
+
 
 class QuantizedTanh(QuantizedOp):
     """Quantized Tanh op."""
@@ -313,11 +341,12 @@ class QuantizedLinear(QuantizedGemm):
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str],
         q_weights: QuantizedArray,
         q_bias: Optional[QuantizedArray] = None,
     ) -> None:
         constant_inputs = {"b": q_weights} if q_bias is None else {"b": q_weights, "c": q_bias}
-        super().__init__(n_bits, constant_inputs=constant_inputs)
+        super().__init__(n_bits, int_input_names, constant_inputs=constant_inputs)
 
 
 class QuantizedIdentity(QuantizedOp):
@@ -375,6 +404,7 @@ class QuantizedConv(QuantizedOp):
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str],
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
@@ -382,6 +412,7 @@ class QuantizedConv(QuantizedOp):
 
         Args:
             n_bits: number of bits for output quantization
+            int_input_names: names of integer tensors that are taken as input for this operation
             constant_inputs: the weights and activations
             attrs: convolution options
                 dilations (Tuple[int]): dilation of the kernel, default 1 on all dimensions.
@@ -391,7 +422,7 @@ class QuantizedConv(QuantizedOp):
                 strides (Tuple[int]): stride of the convolution on each axis
         """
 
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         # Get the ONNX parameters
         self.dilations = attrs.get("dilations", (1, 1))
@@ -535,20 +566,34 @@ class QuantizedConv(QuantizedOp):
             zero_point=self.output_zero_point,
         )
 
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Conv operation can not be fused since it must be performed over integer tensors and it
+        combines different elements of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+
+        return False
+
 
 class QuantizedAvgPool(QuantizedOp):
     """Quantized Average Pooling op."""
 
     _impl_for_op_named: str = "AveragePool"
 
+    # Since this op takes a single input, we can set int_input_names to a single default id
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         # Get the ONNX parameters
         self.ceil_mode = attrs.get("ceil_mode", None)
@@ -623,6 +668,17 @@ class QuantizedAvgPool(QuantizedOp):
             zero_point=self.output_zero_point,
         )
 
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Avg Pooling operation can not be fused since it must be performed over integer tensors and
+        it combines different elements of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+        return False
+
 
 class QuantizedPad(QuantizedOp):
     """Quantized Padding op."""
@@ -632,17 +688,28 @@ class QuantizedPad(QuantizedOp):
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         # Get the ONNX parameters
         self.mode = attrs.get("mode", None)
         assert_true(
             self.mode == "constant", "Padding operator only supports padding with a constant"
         )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Pad operation can not be fused since it must be performed over integer tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it is manipulates integer tensors
+        """
+        return False
 
 
 class QuantizedWhere(QuantizedOp):
@@ -653,13 +720,15 @@ class QuantizedWhere(QuantizedOp):
 
     _impl_for_op_named: str = "Where"
 
+    # This op takes a single variable input, so we can set int_input_names to a default id
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         # This op computes c * a + (1 - c) * b. As c is an encrypted value
         # and since we can not multiply encrypted values together
@@ -684,13 +753,15 @@ class QuantizedGreater(QuantizedOp):
 
     _impl_for_op_named: str = "Greater"
 
+    # Since this op takes a single variable input, we can set int_input_names to a single default id
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         # We do not support testing a > b where a,b are encrypted
         # only comparing to a constant is supported
@@ -709,16 +780,32 @@ class QuantizedMul(QuantizedOp):
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, constant_inputs, **attrs)
+        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
 
         # We do not support multiplication between encrypted tensors
-        # Only multiplication between encrypted tensors and float constants is supported
+        # Only multiplication between
+        # - encrypted tensors and float constants
+        # - tensors that are produced by a unique integer tensor
+        # is supported
         # Multiplication between two constants is possible but should be optimized out by
         # the constant folding procedure
-        assert_true(constant_inputs is not None and len(constant_inputs) == 1)
+        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Multiplication can be fused and computed in float when a single integer tensor generates
+        both the operands. For example in the formula: f(x) = x * (x + 1)  where x is an integer
+        tensor.
+
+        Returns:
+            bool: Can fuse
+        """
+        return len(self._int_input_names) == 1
 
 
 class QuantizedSub(QuantizedAdd):
@@ -777,3 +864,14 @@ class QuantizedFlatten(QuantizedOp):
             scale=prepared_inputs[0].scale,
             zero_point=prepared_inputs[0].zero_point,
         )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Flatten operation can not be fused since it must be performed over integer tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it is manipulates integer tensors
+        """
+
+        return False

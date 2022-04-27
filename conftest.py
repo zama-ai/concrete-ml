@@ -359,7 +359,7 @@ def check_float_arrays_equal():
 def check_r2_score():
     """Fixture to check r2 score"""
 
-    def check_r2_score_impl(expected, actual):
+    def check_r2_score_impl(expected, actual, acceptance_score=0.99):
         expected = expected.ravel()
         actual = actual.ravel()
         mean_expected = numpy.mean(expected)
@@ -378,7 +378,9 @@ def check_r2_score():
         r2_den = max(r2_den, 1e-5)
 
         r_square = 1 - r2_num / r2_den
-        assert r_square >= 0.99, f"r2 score of {numpy.round(r_square, 4)} is not high enough."
+        assert (
+            r_square >= acceptance_score
+        ), f"r2 score of {numpy.round(r_square, 4)} is not high enough."
 
     return check_r2_score_impl
 

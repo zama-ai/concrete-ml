@@ -45,12 +45,21 @@ class QuantizedOp(ABC):
     def __init__(
         self,
         n_bits: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         **attrs,
     ) -> None:
         self.n_bits = n_bits
         self.output_scale = None
         self.output_zero_point = None
+
+        # By default, such as for operators that only have a float implementation,
+        # we assume a single integer input tensor. Since we can't use {"0"} as a default value in
+        # python, we use None and we initialize the set to {"0"}. When constructing the ops
+        # through ONNX -> NumpyModule conversion, a value should always be provided
+        # for int_input_names. This default is only for instantiating ops manually, which is not
+        # recommended usage. We use "0" since this is a common ONNX tensor name for inputs.
+        self._int_input_names = {"0"} if int_input_names is None else int_input_names
 
         constant_inputs_per_name: Dict[str, Any] = {}
 
@@ -340,3 +349,17 @@ class QuantizedOp(ABC):
         )
 
         return outputs[0]
+
+    def can_fuse(self) -> bool:  # pylint: disable=no-self-use
+        """Determine if the operator impedes graph fusion.
+
+        This function shall be overloaded by inheriting classes to test self._int_input_names, to
+        determine whether the operation can be fused to a TLU or not. For example an operation
+        that takes inputs produced by a unique integer tensor can be fused to a TLU. Example:
+        f(x) = x * (x + 1) can be fused. A function that does f(x) = x * (x @ w + 1) can't be fused.
+
+        Returns:
+            bool: whether this instance of the QuantizedOp produces Concrete Numpy code
+                  that can be fused to TLUs
+        """
+        return True
