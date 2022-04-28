@@ -122,21 +122,35 @@ def replace_uncessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_to_
     """
 
     op_type_inputs = {}
+    op_type_inputs["input_0"] = "Input"
+
+    # Reference initializer as Constant
+    for initializer in onnx_model.graph.initializer:
+        op_type_inputs[initializer.name] = "Constant"
+
     # Replace not needed ops by Identity
     for node_index, node in enumerate(onnx_model.graph.node):
         # Save op_type for each node
         for output in node.output:
             op_type_inputs[output] = node.op_type
         if node.op_type in op_type_to_replace:
+
+            # Find the non-constant input
+            non_constant_input = None
+            for input_ in node.input:
+                if op_type_inputs[input_] != "Constant":
+                    non_constant_input = input_
+                    break
+
             # Check that node.input[0] is not a constant
-            if node.input[0] != "input_0" and op_type_inputs[node.input[0]] == "Constant":
+            if non_constant_input is None:
                 raise ValueError(
                     f"Trying to apply identity over a constant input." f"Node: {node.op_type}"
                 )  # pragma: no cover
             # Create a Identity node
             new_node = onnx.helper.make_node(
                 "Identity",
-                inputs=[str(node.input[0])],
+                inputs=[str(non_constant_input)],
                 outputs=node.output,
             )
             # Update current node with new_node

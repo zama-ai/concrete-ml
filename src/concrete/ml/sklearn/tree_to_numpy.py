@@ -105,7 +105,8 @@ def tree_to_numpy(
     keep_following_outputs_discard_others(onnx_model, (output_to_follow,))
 
     # TODO remove Transpose from the list when #292 is done
-    op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast"]
+    # TODO remove Gather from the list when #328 is done
+    op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast", "Gather"]
     replace_uncessary_nodes_by_identity(onnx_model, op_type_to_remove)
 
     # Modify onnx graph to fit in FHE

@@ -26,6 +26,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
     fhe_tree: Circuit
     _tensor_tree_predict: Optional[Callable]
     q_y: QuantizedArray
+    class_mapping_: Optional[dict]
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -196,6 +197,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         self.q_x_byfeatures = []
         self.n_bits = n_bits
         self.fhe_tree = None
+        self.class_mapping_ = None
 
         self.init_args = {
             "criterion": criterion,
@@ -231,6 +233,12 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
             self.q_x_byfeatures.append(q_x_)
             qX[:, i] = q_x_.qvalues.astype(numpy.int32)
+
+        # If classes are not starting from 0 and/or increasing by 1
+        # we need to map them to values 0, 1, ..., n_classes - 1
+        classes_ = numpy.unique(y)
+        if ~numpy.array_equal(numpy.arange(len(classes_)), classes_):
+            self.class_mapping_ = dict(enumerate(classes_))
 
         # Fit the model
         super().fit(qX, y, *args, **kwargs)
@@ -315,6 +323,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         X = self._validate_X_predict(X, check_input)
         y_preds = self.predict_proba(X, check_input, execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
+        if self.class_mapping_ is not None:
+            y_preds = numpy.array([self.class_mapping_[y_pred] for y_pred in y_preds])
         return y_preds
 
     # pylint: enable=arguments-differ

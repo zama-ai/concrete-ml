@@ -74,8 +74,11 @@ PARAMS_TREE = {
         for value in values  # type: ignore
     ],
 )
-@pytest.mark.parametrize("n_classes", [2, 4])
-def test_decision_tree_hyperparameters(hyperparameters, n_classes, check_accuracy, check_r2_score):
+@pytest.mark.parametrize("n_classes,", [2, 4])
+@pytest.mark.parametrize("offset", [0, 1, 2])
+def test_decision_tree_hyperparameters(
+    hyperparameters, n_classes, offset, check_accuracy, check_r2_score
+):
     """Test that the hyperparameters are valid."""
     x, y = make_classification(
         n_samples=1000,
@@ -84,6 +87,7 @@ def test_decision_tree_hyperparameters(hyperparameters, n_classes, check_accurac
         n_classes=n_classes,
         random_state=numpy.random.randint(0, 2**15),
     )
+    y += offset
     model = DecisionTreeClassifier(
         **hyperparameters, n_bits=24, random_state=numpy.random.randint(0, 2**15)
     )
