@@ -12,8 +12,13 @@ from scipy import special
 from ..common.debugging import assert_true
 
 
-def numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_where_body(
+    c: numpy.ndarray, t: numpy.ndarray, f: Union[numpy.ndarray, int], /
+) -> numpy.ndarray:
     """Compute the equivalent of numpy.where.
+
+    This function is not mapped to any ONNX operator (as opposed to numpy_where). It is usable by
+    functions which are mapped to ONNX operators, eg numpy_div or numpy_where.
 
     Args:
         c (numpy.ndarray): Condition operand.
@@ -26,7 +31,22 @@ def numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray, /) -> Tupl
     # FIXME: can it be improved with a native numpy.where in Concrete Numpy?
     # https://github.com/zama-ai/concrete-numpy-internal/issues/1429
     """
-    return (c * t + (1.0 - c) * f,)
+    return c * t + (1.0 - c) * f
+
+
+def numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute the equivalent of numpy.where.
+
+    Args:
+        c (numpy.ndarray): Condition operand.
+        t (numpy.ndarray): True operand.
+        f (numpy.ndarray): False operand.
+
+    Returns:
+        numpy.ndarray: numpy.where(c, t, f)
+
+    """
+    return (numpy_where_body(c, t, f),)
 
 
 def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -533,7 +553,7 @@ def numpy_div(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
     # FIXME: remove this once https://github.com/zama-ai/concrete-ml-internal/issues/857 is
     # explained
-    yp = numpy_where(y != 0, y, 1)[0]
+    yp = numpy_where_body(y != 0, y, 1)
     ans = numpy.divide(x, yp)
 
     return (ans,)

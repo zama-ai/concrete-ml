@@ -361,7 +361,7 @@ def test_compile_torch_conv_networks(  # pylint: disable=unused-argument
         # - Works but sometimes issues with the accuracy
         # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         #
-        # - Missing Erf + not used in inference by practionners for now
+        # - Missing Erf + not used in inference by practitioners for now
         # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1520
         # pytest.param(nn.GELU, id="GELU"),
         #
