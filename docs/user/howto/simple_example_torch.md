@@ -71,7 +71,7 @@ If you want to see more compilation examples, you can check out the [Fully Conne
 
 ## List of supported torch operators
 
-Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete ML ONNX operator reference](../../user/howto/onnx_supported_ops.md) for more information.
+Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete ML ONNX operator reference](../../dev/howto/onnx_supported_ops.md) for more information.
 
 The following operators in torch will be exported as **Concrete-ML** compatible ONNX operators:
 
@@ -94,14 +94,25 @@ Operators that take an encrypted input and unencrypted constants:
 
 Note that the equivalent versions from `torch.functional` are also supported.
 
+<!--- List done by hand from a look to the activation_function list in test_compile_torch_activations test -->
+
 - [`torch.nn.Celu`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
 - [`torch.nn.Elu`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
+- [`torch.nn.Hardshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html)
 - [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
+- [`torch.nn.Hardswish`](https://pytorch.org/docs/stable/generated/torch.nn.Hardswish)
+- [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)
 - [`torch.nn.LeakyRelu`](https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html)
-- [`torch.nn.ReLU`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
+- [`torch.nn.Mish`](https://pytorch.org/docs/stable/generated/torch.nn.Mish.html)
+- [`torch.nn.PReLU`](https://pytorch.org/docs/stable/generated/torch.nn.PReLU.html)
 - [`torch.nn.ReLU6`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU6.html)
+- [`torch.nn.ReLU`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU.html)
 - [`torch.nn.Selu`](https://pytorch.org/docs/stable/generated/torch.nn.SELU.html)
 - [`torch.nn.Sigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html)
+- [`torch.nn.SiLU`](https://pytorch.org/docs/stable/generated/torch.nn.SiLU.html)
 - [`torch.nn.Softplus`](https://pytorch.org/docs/stable/generated/torch.nn.Softplus.html)
+- [`torch.nn.Softshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Softshrink.html)
+- [`torch.nn.Softsign`](https://pytorch.org/docs/stable/generated/torch.nn.Softsign.html)
 - [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
-- [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)
+- [`torch.nn.Tanhshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html)
+- [`torch.nn.Threshold`](https://pytorch.org/docs/stable/generated/torch.nn.Threshold.html) -- partial support

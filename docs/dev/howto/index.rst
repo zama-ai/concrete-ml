@@ -8,4 +8,5 @@ How To
    docker.md
    documenting.md
    releasing.md
+   onnx_supported_ops.md
    contributing.md

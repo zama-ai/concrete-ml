@@ -83,3 +83,17 @@ y_pred_fhe = clf.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
 print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
       f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
 ```
+
+## Supported models
+
+Currently, we support the following models in scikit-learn:
+
+- LinearRegression
+- LogisticRegression
+- SVM (SVC and SVR)
+- DecisionTreeClassifier
+- NeuralNetworkClassifier
+- PoissonRegressor
+- GammaRegressor
+- TweedieRegressor
+- RandomForestClassifier

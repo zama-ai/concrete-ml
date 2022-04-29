@@ -6,7 +6,6 @@ from pathlib import Path
 import mdformat._cli as mdformat_cli
 
 from concrete.ml.onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
-from concrete.ml.quantization.base_quantized_op import ONNX_OPS_TO_QUANTIZED_IMPL
 
 SCRIPT_NAME = Path(__file__).name
 
@@ -17,18 +16,10 @@ CONVERSION_OPS_END_HEADER = (
     f"<!--- {SCRIPT_NAME}: inject supported operations for evaluation [END] -->"
 )
 
-PTQ_OPS_BEGIN_HEADER = f"<!--- {SCRIPT_NAME}: inject supported operations for PTQ [BEGIN] -->"
-
-PTQ_OPS_END_HEADER = f"<!--- {SCRIPT_NAME}: inject supported operations for PTQ [END] -->"
-
 
 def main(file_to_update):
     """Update list of supported functions in file_to_update"""
     supported_ops = sorted(ONNX_OPS_TO_NUMPY_IMPL)
-    supported_ptq_ops = sorted(
-        f"{op_name}: {quantized_op.__name__}"
-        for op_name, quantized_op in ONNX_OPS_TO_QUANTIZED_IMPL.items()
-    )
 
     with open(file_to_update, "r", encoding="utf-8") as file:
         lines = file.readlines()
@@ -40,21 +31,9 @@ def main(file_to_update):
         if line.startswith(CONVERSION_OPS_BEGIN_HEADER):
             keep_line = False
             newlines.append(line)
-            newlines.append(
-                f"<!--- do not edit, auto generated part by `python3 {SCRIPT_NAME}` in docker -->\n"
-            )
+            newlines.append("<!--- do not edit, auto generated part by `make supported_ops` -->\n")
             newlines.extend(f"- {op}\n" for op in supported_ops)
         elif line.startswith(CONVERSION_OPS_END_HEADER):
-            keep_line = True
-            newlines.append(line)
-        elif line.startswith(PTQ_OPS_BEGIN_HEADER):
-            keep_line = False
-            newlines.append(line)
-            newlines.append(
-                f"<!--- do not edit, auto generated part by `python3 {SCRIPT_NAME}` in docker -->\n"
-            )
-            newlines.extend(f"- {op}\n" for op in supported_ptq_ops)
-        elif line.startswith(PTQ_OPS_END_HEADER):
             keep_line = True
             newlines.append(line)
         elif line.startswith("<!---"):

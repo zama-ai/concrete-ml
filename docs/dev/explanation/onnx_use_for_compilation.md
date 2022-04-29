@@ -15,12 +15,12 @@ Note that if you keep the obtained `NumpyModule` without quantizing it with Post
 The `NumpyModule` stores the ONNX model that it interprets. The interpreter works by going through the ONNX graph (which, by specification, is sorted in [topological order](https://en.wikipedia.org/wiki/Topological_sorting), allowing users to run through the graph without having to care for evaluation order) and storing the intermediate results as it goes. To execute a node, the interpreter feeds the required inputs - taken either from the model inputs or the intermediate results - to the NumPy implementation of each ONNX node.
 
 ```{note}
-Do note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../../user/howto/onnx_supported_ops.md#ops-supported-for-evaluation-numpy-conversion).
+Do note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../../dev/howto/onnx_supported_ops.md#ops-supported-for-evaluation-numpy-conversion).
 ```
 
 Initializers (ONNX's parameters) are quantized according to `n_bits` and passed to the Post Training Quantization (PTQ) process.
 
-During the PTQ process, the ONNX model stored in the `NumpyModule` is interpreted and calibrated using [the supported ONNX operators for PTQ](../../user/howto/onnx_supported_ops.md#ops-supported-for-post-training-quantization).
+During the PTQ process, the ONNX model stored in the `NumpyModule` is interpreted and calibrated using `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary, which maps ONNX operators (eg, Gemm) to their quantized equivalent (eg, QuantizedGemm). Remark that for some ONNX operator, this quantized equivalence is only partial (FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/876).
 
 Quantized operators are then used to create a `QuantizedModule` that, similarly to the `NumpyModule`, runs through the operators to perform the quantized inference with integers-only operations.
 
