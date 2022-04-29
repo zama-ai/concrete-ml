@@ -174,11 +174,11 @@ class QATTestModule(nn.Module):
         pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
         pytest.param(nn.Softshrink, id="Softshrink"),
         pytest.param(nn.Hardshrink, id="Hardshrink"),
+        pytest.param(nn.Softsign, id="Softsign"),
         # Works but accuracy issues sometimes in compilation
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         # Works within the conversion but will not compile
         pytest.param(nn.GELU, id="GELU"),  # Missing Div
-        pytest.param(nn.Softsign, id="Softsign"),  # Missing Div
         # FIXME, #335: still some issues with these activations
         #
         # Other problems, certainly related to tests:

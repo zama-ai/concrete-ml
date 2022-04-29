@@ -355,18 +355,16 @@ def test_compile_torch_conv_networks(  # pylint: disable=unused-argument
         pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
         pytest.param(nn.Softshrink, id="Softshrink"),
         pytest.param(nn.Hardshrink, id="Hardshrink"),
+        pytest.param(nn.Softsign, id="Softsign"),
         # FIXME, #335: still some issues with these activations
         #
         # - Works but sometimes issues with the accuracy
         # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         #
-        # - Missing Erf + not used in inference by practionnners for now
+        # - Missing Erf + not used in inference by practionners for now
         # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1520
         # pytest.param(nn.GELU, id="GELU"),
         #
-        # - Sometime have issues with `overflow encountered in long_scalars` + needing
-        # https://github.com/zama-ai/concrete-numpy-internal/issues/1519 FIXME
-        # pytest.param(nn.Softsign, id="Softsign"),
         #
         # Other problems, certainly related to tests:
         # Required positional arguments: 'embed_dim' and 'num_heads' and fails with a partial

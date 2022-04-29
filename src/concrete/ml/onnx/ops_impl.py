@@ -531,9 +531,10 @@ def numpy_div(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # FIXME: still to be validated with
-    # https://github.com/zama-ai/concrete-numpy-internal/issues/1519
-    ans = numpy.divide(x, y, where=y != 0)
+    # FIXME: remove this once https://github.com/zama-ai/concrete-ml-internal/issues/857 is
+    # explained
+    yp = numpy_where(y != 0, y, 1)[0]
+    ans = numpy.divide(x, yp)
 
     return (ans,)
 
