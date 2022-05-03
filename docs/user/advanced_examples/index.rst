@@ -89,3 +89,11 @@ Comparison of Classifiers
 
    ClassifierComparison.ipynb
 
+Kaggle Competition
+**************************
+
+.. toctree::
+   :maxdepth: 1
+
+   KaggleTitanic.ipynb
+
