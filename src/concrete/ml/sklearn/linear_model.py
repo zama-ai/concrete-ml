@@ -8,10 +8,8 @@ from typing import Callable, Dict, Optional, Tuple, Union
 import numpy
 import onnx
 import sklearn.linear_model
-import torch
 from concrete.numpy.compilation.artifacts import CompilationArtifacts
 from concrete.numpy.compilation.configuration import CompilationConfiguration
-from torch import nn
 
 from ..common.debugging.custom_assert import assert_true
 from ..onnx.onnx_model_manipulations import (
@@ -30,7 +28,7 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 
 
 class SklearnLinearModelMixin:
-    """A Mixin class for sklearn linear model with FHE."""
+    """A Mixin class for sklearn linear models with FHE."""
 
     sklearn_alg: Callable
 
@@ -42,9 +40,9 @@ class SklearnLinearModelMixin:
                 n_bits, the value will be used for activation, inputs and weights. If a dict is
                 passed, then it should contain "inputs", "weights" and "outputs" keys with
                 corresponding number of quantization bits for:
-                    - inputs : any input data to any layers
-                    - weights: learned parameters or constants in the network
-                    - outputs: final model output
+                - inputs : any input data to any layers
+                - weights: learned parameters or constants in the network
+                - outputs: final model output
                 Default to 2.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
@@ -254,167 +252,6 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.linear_model.LinearRegre
             positive=positive,
         )
         self.n_bits = n_bits
-
-
-class PoissonRegressor(
-    SklearnLinearModelMixin, sklearn.base.RegressorMixin, sklearn.base.BaseEstimator
-):
-    """A Poisson regression model with FHE."""
-
-    base_regressor: sklearn.linear_model.PoissonRegressor
-
-    sklearn_alg = sklearn.linear_model.PoissonRegressor
-
-    # The new inheritance method does not inherit directly from the related Sklearn model
-    # And therefore is not initialized by using super()
-    # pylint: disable=super-init-not-called
-    def __init__(
-        self,
-        n_bits=2,
-        alpha=1,
-        fit_intercept=True,
-        max_iter=100,
-        tol=1e-4,
-        warm_start=False,
-        verbose=0,
-    ):
-        """Initialize the FHE Poisson regression model.
-
-        Args:
-            n_bits (int, Dict): Number of bits to quantize the model. If an int is passed for
-                n_bits, the value will be used for activation, inputs and weights. If a dict is
-                passed, then it should contain "inputs", "weights" and "outputs" keys with
-                corresponding number of quantization bits for:
-                    - inputs : any input data to any layers
-                    - weights: learned parameters or constants in the network
-                    - outputs: final model output
-                Default to 2.
-            alpha (float): Constant that multiplies the penalty term and thus determines the
-                regularization strength. ``alpha = 0`` is equivalent to unpenalized GLMs. In this
-                case, the design matrix `X` must have full column rank (no collinearities). Default
-                to 1.
-            fit_intercept (bool): Specifies if a constant (a.k.a. bias or intercept) should be
-                added to the linear predictor (X @ coef + intercept). Default to True.
-            max_iter (int): The maximal number of iterations for the solver. Default to 100.
-            tol (float): Stopping criterion. For the lbfgs solver, the iteration will stop when
-                ``max{|g_j|, j = 1, ..., d} <= tol`` where ``g_j`` is the j-th component of the
-                gradient (derivative) of the objective function. Default to 1e-4.
-            warm_start (bool): If set to ``True``, reuse the solution of the previous call to
-                ``fit`` as initialization for ``coef_`` and ``intercept_`` . Default to False.
-            verbose (int): For the lbfgs solver set verbose to any positive number for verbosity.
-                Default to 0.
-        """
-        self.alpha = alpha
-        self.fit_intercept = fit_intercept
-        self.max_iter = max_iter
-        self.tol = tol
-        self.warm_start = warm_start
-        self.verbose = verbose
-        self.n_bits = n_bits
-
-    # pylint: enable=super-init-not-called
-
-    def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
-        """Fit the FHE Poisson regression model.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
-        """
-
-        class LogLinearRegressionModel(nn.Module):
-            """A Torch module that will be used as a Poisson regression model."""
-
-            def __init__(self, input_size, output_size, bias=True):
-                super().__init__()
-                self.linear = nn.Linear(input_size, output_size, bias=bias)
-
-            def forward(self, x: torch.Tensor):
-                """Compute the inference for Poisson Regression.
-
-                Args:
-                    x (torch.tensor): The input data.
-
-                Returns:
-                    torch.Tensor: The predictions.
-                """
-                x = self.linear(x)
-                y_pred = torch.exp(x)
-                return y_pred
-
-        # Copy X
-        X = copy.deepcopy(X)
-
-        # Retrieving the Sklearn parameters
-        params = self.get_params()
-        params.pop("n_bits", None)
-
-        # Initialize a Sklearn PoissonRegressor model
-        poisson_regressor = self.sklearn_alg(**params)
-
-        # Train
-        poisson_regressor.fit(X, y, *args, **kwargs)
-
-        # Extract the weights
-        weight = poisson_regressor.coef_
-
-        # Store the weights in an attribute used for .predict()
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/445
-        # Improve the computation of number of outputs when refactoring is done, remove self.coef_
-        # pylint: disable=attribute-defined-outside-init
-        self.coef_ = poisson_regressor.coef_
-
-        # Extract the input and output sizes
-        input_size = weight.shape[0]
-        output_size = weight.shape[1] if len(weight.shape) > 1 else 1
-
-        # Initialize the Torch model
-        torch_model = LogLinearRegressionModel(
-            input_size=input_size, output_size=output_size, bias=self.fit_intercept
-        )
-
-        # Update the Torch model's weights and bias using the Sklearn model's one
-        torch_model.linear.weight.data = torch.from_numpy(weight).reshape(output_size, input_size)
-        if self.fit_intercept:
-            torch_model.linear.bias.data = torch.tensor(poisson_regressor.intercept_)
-
-        # Create a NumpyModule from the Torch model
-        numpy_module = NumpyModule(torch_model, dummy_input=torch.from_numpy(X[0]))
-
-        # Apply post-training quantization
-        post_training = PostTrainingAffineQuantization(
-            n_bits=self.n_bits, numpy_model=numpy_module, is_signed=True
-        )
-
-        # Calibrate and create quantize module
-        self.quantized_module = post_training.quantize_module(X)
-
-        # pylint: enable=attribute-defined-outside-init
-
-    def fit_benchmark(
-        self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
-    ) -> Tuple[PoissonRegressor, sklearn.linear_model.PoissonRegressor]:
-        """Fit the sklearn and FHE PoissonRegressor models.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
-
-        Returns:
-            Tuple[PoissonRegressor, sklearn.linear_model.PoissonRegressor]:
-                The FHE and sklearn PoissonRegressor.
-        """
-        # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(*args, **kwargs)
-        sklearn_model.fit(X, y, *args, **kwargs)
-
-        # Train the FHE model
-        self.fit(X, y, *args, **kwargs)
-        return self, sklearn_model
 
 
 class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticRegression):

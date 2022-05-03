@@ -11,19 +11,29 @@ from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
 
 from concrete.ml.sklearn import (
+    GammaRegressor,
     LinearRegression,
     LinearSVC,
     LinearSVR,
     LogisticRegression,
     PoissonRegressor,
+    TweedieRegressor,
 )
+
+regression_models = [
+    LinearRegression,
+    LinearSVR,
+    PoissonRegressor,
+    GammaRegressor,
+    TweedieRegressor,
+]
+classifier_models = [LogisticRegression, LinearSVC]
 
 
 def make_regression(
-    reg_model,
+    model,
     n_features=10,
     n_informative=10,
     n_targets=1,
@@ -50,82 +60,82 @@ def make_regression(
 
     # pylint: enable=unbalanced-tuple-unpacking
 
-    # PoissonRegressor can only handle non-negative target values so one solution is to translate
-    # them. Additionally, we apply an exponential function in order to obtain a non-linear
-    # distribution.
-    if reg_model == PoissonRegressor:
-        generated_y = numpy.expm1((generated_y + numpy.abs(numpy.min(generated_y))) / 200)
+    # PoissonRegressor can only handle non-negative target values.
+    if model == PoissonRegressor:
+        generated_y = numpy.abs(generated_y)
+
+    # GammaRegressor and most TweedieRegressor models (power > 1) can only handle (strictly)
+    # positive target values.
+    elif model in [GammaRegressor, TweedieRegressor]:
+        generated_y = numpy.abs(generated_y) + 1
 
     return (generated_x, generated_y)
 
 
-def get_datasets_regression(reg_model_orig):
+def get_datasets_regression(model):
     """Return tests to apply to a regression model."""
-    reg_model_string = reg_model_orig.__name__
 
-    reg_model = reg_model_orig
-
-    ans = [
+    regression_datasets = [
         pytest.param(
-            reg_model,
-            lambda: make_regression(reg_model, n_features=10),
-            id=f"make_regression_features_10_{reg_model_string}",
+            model,
+            lambda: make_regression(model, n_features=10),
+            id=f"make_regression_features_10_{model.__name__}",
         ),
         pytest.param(
-            reg_model,
-            lambda: make_regression(reg_model, n_features=10, noise=2),
-            id=f"make_regression_features_10_noise_2_{reg_model_string}",
+            model,
+            lambda: make_regression(model, n_features=10, noise=2),
+            id=f"make_regression_features_10_noise_2_{model.__name__}",
         ),
         pytest.param(
-            reg_model,
-            lambda: make_regression(reg_model, n_features=14, n_informative=14),
-            id=f"make_regression_features_14_informative_14_{reg_model_string}",
+            model,
+            lambda: make_regression(model, n_features=14, n_informative=14),
+            id=f"make_regression_features_14_informative_14_{model.__name__}",
         ),
     ]
 
-    # LinearSVR and PoissonRegressor do not support multi targets
-    if reg_model_orig not in [LinearSVR, PoissonRegressor]:
-        ans += [
+    # LinearSVR, PoissonRegressor, GammaRegressor and TweedieRegressor do not support multi targets
+    if model not in [LinearSVR, PoissonRegressor, GammaRegressor, TweedieRegressor]:
+        regression_datasets += [
             pytest.param(
-                reg_model,
+                model,
                 lambda: make_regression(
-                    reg_model,
+                    model,
                     n_features=14,
                     n_informative=14,
                     n_targets=2,
                 ),
-                id=f"make_regression_features_14_informative_14_targets_2_{reg_model_string}",
+                id=f"make_regression_features_14_informative_14_targets_2_{model.__name__}",
             )
         ]
 
-    # if reg_model_orig == LinearSVR:
-    #     reg_model = partial(reg_model, dual=False, loss="squared_epsilon_insensitive")
+    # if model == LinearSVR:
+    #     model = partial(model, dual=False, loss="squared_epsilon_insensitive")
     #
-    #     ans += [
+    #     regression_datasets += [
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/420
     # pytest.param(
     #     partial(
-    #         reg_model,
+    #         model,
     #         fit_intercept=False,
     #     ),
     #     lambda: make_regression(n_samples=200, n_features=10,
     #       random_state=numpy.random.randint(0, 2**15)),
-    #     id=f"make_regression_fit_intercept_false_{reg_model_string}",
+    #     id=f"make_regression_fit_intercept_false_{model.__name__}",
     # ),
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
     # pytest.param(
     #     partial(
-    #         reg_model,
+    #         model,
     #         fit_intercept=True,
     #     ),
     #     lambda: make_regression(n_samples=200, n_features=10,
     #       random_state=numpy.random.randint(0, 2**15)),
-    #     id=f"make_regression_fit_intercept_true_{reg_model_string}",
+    #     id=f"make_regression_fit_intercept_true_{model.__name__}",
     # ),
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
     # pytest.param(
     #     partial(
-    #         reg_model,
+    #         model,
     #         fit_intercept=True,
     #         intercept_scaling=1000,
     #     ),
@@ -134,32 +144,28 @@ def get_datasets_regression(reg_model_orig):
     #         n_features=10,
     #         random_state=numpy.random.randint(0, 2**15),
     #     ),
-    #     id=f"make_regression_fit_intercept_true_intercept_scaling_1000_{reg_model_string}",
+    #     id=f"make_regression_fit_intercept_true_intercept_scaling_1000_{model.__name__}",
     # ),
     # ]
 
-    return ans
+    return regression_datasets
 
 
-def get_datasets_classification(class_model_orig):
+def get_datasets_classification(model):
     """Return tests to apply to a classification model."""
-    class_model_string = class_model_orig.__name__
-
-    class_model = class_model_orig
-
-    ans = [
+    classifier_datasets = [
         pytest.param(
-            class_model,
+            model,
             lambda: make_classification(n_samples=200, class_sep=2, n_features=10, random_state=42),
-            id=f"make_classification_10_features_{class_model_string}",
+            id=f"make_classification_features_10_{model.__name__}",
         ),
         pytest.param(
-            class_model,
+            model,
             lambda: make_classification(n_samples=200, class_sep=2, n_features=14, random_state=42),
-            id=f"make_classification_features_14_informative_14_{class_model_string}",
+            id=f"make_classification_features_14_informative_14_{model.__name__}",
         ),
         pytest.param(
-            class_model,
+            model,
             lambda: make_classification(
                 n_samples=200,
                 n_features=14,
@@ -168,28 +174,28 @@ def get_datasets_classification(class_model_orig):
                 n_classes=4,
                 random_state=42,
             ),
-            id=f"make_classification_features_14_informative_14_classes_4_{class_model_string}",
+            id=f"make_classification_features_14_informative_14_classes_4_{model.__name__}",
         ),
     ]
 
-    return ans
+    return classifier_datasets
 
 
-datasets_regression: List[Any] = []
+multiple_models_datasets: List[Any] = []
+models_datasets: List[Any] = []
 
-for one_regression_model in [LinearRegression, LinearSVR, PoissonRegressor]:
-    datasets_regression += get_datasets_regression(one_regression_model)
+for regression_model in regression_models:
+    datasets_regression = get_datasets_regression(regression_model)
+    multiple_models_datasets += datasets_regression
+    models_datasets.append(datasets_regression[0])
 
-datasets_classification: List[Any] = []
+for classifier_model in classifier_models:
+    datasets_classification = get_datasets_classification(classifier_model)
+    multiple_models_datasets += datasets_classification
+    models_datasets.append(datasets_classification[0])
 
-for one_classifier_model in [LogisticRegression, LinearSVC]:
-    datasets_regression += get_datasets_classification(one_classifier_model)
 
-
-@pytest.mark.parametrize(
-    "alg, load_data",
-    datasets_regression + datasets_classification,
-)
+@pytest.mark.parametrize("alg, load_data", multiple_models_datasets)
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_linear_model_compile_run_fhe(load_data, alg, use_virtual_lib, default_configuration):
     """Tests the sklearn regressions."""
@@ -197,8 +203,8 @@ def test_linear_model_compile_run_fhe(load_data, alg, use_virtual_lib, default_c
     # Get the dataset
     x, y = load_data()
 
-    # Here we fix n_bits = 2 to make sure the quantized model does not overflow
-    # during the compilation.
+    # Here we fix n_bits = 2 to make sure the quantized model does not overflow during the
+    # compilation.
     model = alg(n_bits=2)
 
     # Sometimes, we miss convergence, which is not a problem for our test
@@ -218,10 +224,7 @@ def test_linear_model_compile_run_fhe(load_data, alg, use_virtual_lib, default_c
     assert y_pred_fhe.shape == y_pred.shape
 
 
-@pytest.mark.parametrize(
-    "alg, load_data",
-    datasets_regression + datasets_classification,
-)
+@pytest.mark.parametrize("alg, load_data", multiple_models_datasets)
 @pytest.mark.parametrize(
     "n_bits",
     [
@@ -277,10 +280,21 @@ def test_linear_model_quantization(
     check_r2_score(y_pred_sklearn, y_pred_quantized)
 
 
-def test_double_fit():
+@pytest.mark.parametrize("alg, load_data", models_datasets)
+def test_double_fit(alg, load_data):
     """Tests that calling fit multiple times gives the same results"""
-    x, y = make_classification()
-    model = DecisionTreeClassifier()
+    x, y = load_data()
+
+    model = alg(n_bits=2)
+
+    # The SVM models use a bit of randomness while fitting under scikit-learn, making the
+    # outputs always different after each fit. In order to avoid that problem, their random_state
+    # parameter needs to be fixed each time the test is ran. This is however not the case for
+    # other odels, which don't have any random_state attribute.
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+        model.set_params(**model_params)
 
     # First fit
     model.fit(x, y)
@@ -293,19 +307,11 @@ def test_double_fit():
     assert numpy.array_equal(y_pred_one, y_pred_two)
 
 
-@pytest.mark.parametrize(
-    "alg",
-    [
-        pytest.param(LinearRegression),
-        pytest.param(LogisticRegression),
-        pytest.param(LinearSVR),
-        pytest.param(LinearSVC),
-        pytest.param(PoissonRegressor),
-    ],
-)
-def test_pipeline_sklearn(alg):
+@pytest.mark.parametrize("alg, load_data", models_datasets)
+def test_pipeline_sklearn(alg, load_data):
     """Tests that the linear models work well within sklearn pipelines."""
-    x, y = make_classification(n_features=10, n_informative=2, n_redundant=0, n_classes=2)
+    x, y = load_data()
+
     pipe_cv = Pipeline(
         [
             ("pca", PCA(n_components=2)),
