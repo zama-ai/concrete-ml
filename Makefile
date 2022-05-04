@@ -590,3 +590,7 @@ check_links:
 .PHONY: actionlint # Linter for our github actions
 actionlint:
 	./script/make_utils/actionlint.sh
+
+.PHONY: download_datasets # Download datasets used in jupyter notebooks
+download_datasets:
+	poetry run env ./script/kaggle_utils/download_datasets.sh

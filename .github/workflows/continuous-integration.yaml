@@ -348,6 +348,14 @@ jobs:
         run: |
           make pytest_codeblocks
 
+      - name: Download datasets
+        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          make download_datasets
+
       - name: PyTest Notebooks
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         timeout-minutes: 90
