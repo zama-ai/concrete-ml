@@ -7,7 +7,9 @@ from ..onnx.onnx_model_manipulations import keep_following_outputs_discard_other
 from .linear_model import SklearnLinearModelMixin
 
 
-class LinearSVR(SklearnLinearModelMixin, sklearn.svm.LinearSVR):
+# pylint does not like sklearn uppercase namings
+# pylint: disable=invalid-name,too-many-instance-attributes,super-init-not-called
+class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin, sklearn.base.BaseEstimator):
     """A Regression Support Vector Machine (SVM)."""
 
     sklearn_alg = sklearn.svm.LinearSVR
@@ -27,30 +29,27 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.svm.LinearSVR):
         random_state=None,
         max_iter=1000,
     ):
-        super().__init__(
-            epsilon=epsilon,
-            tol=tol,
-            C=C,
-            loss=loss,
-            fit_intercept=fit_intercept,
-            intercept_scaling=intercept_scaling,
-            dual=dual,
-            verbose=verbose,
-            random_state=random_state,
-            max_iter=max_iter,
-        )
+        self.epsilon = epsilon
+        self.tol = tol
+        self.C = C
+        self.loss = loss
+        self.fit_intercept = fit_intercept
+        self.intercept_scaling = intercept_scaling
+        self.dual = dual
+        self.verbose = verbose
+        self.random_state = random_state
+        self.max_iter = max_iter
         self.n_bits = n_bits
 
     # pylint: enable=too-many-arguments
 
 
-class LinearSVC(SklearnLinearModelMixin, sklearn.svm.LinearSVC):
+class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator):
     """A Classification Support Vector Machine (SVM)."""
 
     sklearn_alg = sklearn.svm.LinearSVC
 
     # pylint: disable=too-many-arguments
-    # pylint: disable=invalid-name
     def __init__(
         self,
         n_bits=2,
@@ -68,24 +67,21 @@ class LinearSVC(SklearnLinearModelMixin, sklearn.svm.LinearSVC):
         random_state=None,
         max_iter=1000,
     ):
-        super().__init__(
-            penalty=penalty,
-            loss=loss,
-            dual=dual,
-            tol=tol,
-            C=C,
-            multi_class=multi_class,
-            fit_intercept=fit_intercept,
-            intercept_scaling=intercept_scaling,
-            class_weight=class_weight,
-            verbose=verbose,
-            random_state=random_state,
-            max_iter=max_iter,
-        )
+        self.penalty = penalty
+        self.loss = loss
+        self.dual = dual
+        self.tol = tol
+        self.C = C
+        self.multi_class = multi_class
+        self.fit_intercept = fit_intercept
+        self.intercept_scaling = intercept_scaling
+        self.class_weight = class_weight
+        self.verbose = verbose
+        self.random_state = random_state
+        self.max_iter = max_iter
         self.n_bits = n_bits
 
     # pylint: enable=too-many-arguments
-    # pylint: enable=invalid-name
 
     # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
     # use clean_graph and predict from BaseLinearClassifierMixin
@@ -119,9 +115,16 @@ class LinearSVC(SklearnLinearModelMixin, sklearn.svm.LinearSVC):
         keep_following_outputs_discard_others(onnx_model, [output_to_follow])
         return super().clean_graph(onnx_model)
 
-    # pylint: disable=arguments-differ
-    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
     def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict confidence scores for samples.
+
+        Args:
+            X: samples to predict
+            execute_in_fhe: if True, the model will be executed in FHE mode
+
+        Returns:
+            numpy.ndarray: confidence scores for samples
+        """
         y_preds = super().predict(X, execute_in_fhe)
         return y_preds
 

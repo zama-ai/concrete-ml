@@ -20,7 +20,7 @@ from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
 
 # Disable pylint to import hummingbird while ignoring the warnings
-# pylint: disable=wrong-import-position,wrong-import-order
+# pylint: disable=invalid-name,wrong-import-position,wrong-import-order,too-many-instance-attributes
 
 # Silence hummingbird warnings
 warnings.filterwarnings("ignore")
@@ -50,7 +50,6 @@ class SklearnLinearModelMixin:
         super().__init__(*args, **kwargs)
         self.n_bits = n_bits
 
-    # pylint: disable=invalid-name
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
         """Fit the FHE linear model.
 
@@ -64,11 +63,17 @@ class SklearnLinearModelMixin:
         X = copy.deepcopy(X)
 
         # Train
-        # mypy does not see the fit from super(). Need to ignore with mypy warning
-        super().fit(X, y, *args, **kwargs)  # type: ignore
+
+        # Initialize the model
+        params = self.get_params()  # type: ignore
+        params.pop("n_bits", None)
+        self.sklearn_model = self.sklearn_alg(**params)
+
+        # Fit the sklearn model
+        self.sklearn_model.fit(X, y, *args, **kwargs)
 
         # Convert to onnx
-        onnx_model = hb_convert(self, backend="onnx", test_input=X).model
+        onnx_model = hb_convert(self.sklearn_model, backend="onnx", test_input=X).model
 
         # Remove Cast nodes
         onnx_model = self.clean_graph(onnx_model)
@@ -179,7 +184,9 @@ class SklearnLinearModelMixin:
             assert self.quantized_module.forward_fhe is not None
             # mypy does not see the self.coef_ from sklearn.linear_model.LinearRegression.
             # Need to ignore with mypy warning.
-            n_targets = 1 if self.coef_.ndim == 1 else self.coef_.shape[0]  # type: ignore
+            n_targets = (
+                1 if self.sklearn_model.coef_.ndim == 1 else self.sklearn_model.coef_.shape[0]
+            )
             y_preds = numpy.zeros(shape=(X.shape[0], n_targets))
             # Execute the compiled FHE circuit
             # Create a numpy array with the expected shape: (n_samples, n_classes)
@@ -230,7 +237,9 @@ class SklearnLinearModelMixin:
         )
 
 
-class LinearRegression(SklearnLinearModelMixin, sklearn.linear_model.LinearRegression):
+class LinearRegression(
+    SklearnLinearModelMixin, sklearn.base.RegressorMixin, sklearn.base.BaseEstimator
+):
     """A linear regression model with FHE."""
 
     sklearn_alg = sklearn.linear_model.LinearRegression
@@ -244,14 +253,14 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.linear_model.LinearRegre
         n_jobs=None,
         positive=False,
     ):
-        super().__init__(
-            fit_intercept=fit_intercept,
-            normalize=normalize,
-            copy_X=copy_X,
-            n_jobs=n_jobs,
-            positive=positive,
-        )
+        # FIXME #893
         self.n_bits = n_bits
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.copy_X = copy_X
+        self.n_jobs = n_jobs
+        self.positive = positive
+        super().__init__(n_bits=n_bits)
 
 
 class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticRegression):
@@ -279,24 +288,23 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
         n_jobs=None,
         l1_ratio=None,
     ):
-        super().__init__(
-            penalty=penalty,
-            dual=dual,
-            tol=tol,
-            C=C,
-            fit_intercept=fit_intercept,
-            intercept_scaling=intercept_scaling,
-            class_weight=class_weight,
-            random_state=random_state,
-            solver=solver,
-            max_iter=max_iter,
-            multi_class=multi_class,
-            verbose=verbose,
-            warm_start=warm_start,
-            n_jobs=n_jobs,
-            l1_ratio=l1_ratio,
-        )
-        self.n_bits = n_bits
+        # FIXME #893
+        self.penalty = penalty
+        self.dual = dual
+        self.tol = tol
+        self.C = C
+        self.fit_intercept = fit_intercept
+        self.intercept_scaling = intercept_scaling
+        self.class_weight = class_weight
+        self.random_state = random_state
+        self.solver = solver
+        self.max_iter = max_iter
+        self.multi_class = multi_class
+        self.verbose = verbose
+        self.warm_start = warm_start
+        self.n_jobs = n_jobs
+        self.l1_ratio = l1_ratio
+        super().__init__(n_bits=n_bits)
 
     # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
     # use clean_graph and predict from BaseLinearClassifierMixin
@@ -330,17 +338,29 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
         keep_following_outputs_discard_others(onnx_model, [output_to_follow])
         return super().clean_graph(onnx_model)
 
-    # pylint: disable=arguments-differ
-    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
     def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict confidence scores for samples.
+
+        Args:
+            X: samples to predict
+            execute_in_fhe: if True, the model will be executed in FHE mode
+
+        Returns:
+            numpy.ndarray: confidence scores for samples
+        """
         y_preds = super().predict(X, execute_in_fhe)
         return y_preds
 
-    # pylint: enable=arguments-differ
-
-    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
-    # pylint: disable=arguments-differ
     def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict class probabilities for samples.
+
+        Args:
+            X: samples to predict
+            execute_in_fhe: if True, the model will be executed in FHE mode
+
+        Returns:
+            numpy.ndarray: class probabilities for samples
+        """
         y_preds = self.decision_function(X, execute_in_fhe)
         if y_preds.shape[1] == 1:
             # Sigmoid already applied in the graph
@@ -349,8 +369,6 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
             y_preds = numpy.exp(y_preds)
             y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
         return y_preds
-
-    # pylint: enable=arguments-differ
 
     # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
     # use clean_graph and predict from BaseLinearClassifierMixin
@@ -365,3 +383,5 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.linear_model.LogisticR
 
     # pylint: enable=duplicate-code
     # pylint: enable=R0801
+    # pylint: enable=too-many-instance-attributes
+    # pylint: enable=invalid-name

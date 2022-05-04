@@ -23,6 +23,7 @@ class RandomForestClassifier(
     n_bits: int
     q_y: QuantizedArray
     _tensor_tree_predict: Optional[Callable]
+    sklearn_model: Any
 
     def __init__(
         self,
@@ -88,38 +89,26 @@ class RandomForestClassifier(
         )
         return self
 
-    def predict(
-        self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
-    ) -> numpy.ndarray:
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict the target values.
 
         Args:
             X (numpy.ndarray): The input data.
-            args: args for super().predict
             execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-            kwargs: kwargs for super().predict
 
         Returns:
             numpy.ndarray: The predicted target values.
         """
-        return BaseTreeEstimatorMixin.predict(
-            self, X, *args, execute_in_fhe=execute_in_fhe, **kwargs
-        )
+        return BaseTreeEstimatorMixin.predict(self, X, execute_in_fhe=execute_in_fhe)
 
-    def predict_proba(
-        self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
-    ) -> numpy.ndarray:
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict the probabilities.
 
         Args:
             X (numpy.ndarray): The input data.
-            args: args for super().predict
             execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-            kwargs: kwargs for super().predict
 
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
-        return BaseTreeEstimatorMixin.predict_proba(
-            self, X, *args, execute_in_fhe=execute_in_fhe, **kwargs
-        )
+        return BaseTreeEstimatorMixin.predict_proba(self, X, execute_in_fhe=execute_in_fhe)

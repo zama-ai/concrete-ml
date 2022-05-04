@@ -60,7 +60,7 @@ def test_seed_sklearn(n_classes, input_dim, default_configuration):
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 
-    print("model", tree.plot_tree(model), sklearn_model)
+    print("model", tree.plot_tree(model.sklearn_model), sklearn_model)
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:

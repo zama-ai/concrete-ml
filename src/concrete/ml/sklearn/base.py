@@ -299,6 +299,7 @@ class BaseTreeEstimatorMixin:
     init_args: Dict[str, Any]
     random_state: Optional[Union[numpy.random.RandomState, int]]  # pylint: disable=no-member
     sklearn_alg: Any
+    sklearn_model: Any
     _tensor_tree_predict: Optional[Callable]
 
     def __init__(self, n_bits: int):
@@ -333,21 +334,17 @@ class BaseTreeEstimatorMixin:
             y (numpy.ndarray): the labels
         """
 
-    def predict(
-        self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
-    ) -> numpy.ndarray:
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict the target values.
 
         Args:
             X (numpy.ndarray): The input data.
-            args: args for super().predict
             execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-            kwargs: kwargs for super().predict
 
         Returns:
             numpy.ndarray: The predicted target values.
         """
-        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe, *args, **kwargs)
+        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
         return y_preds
 
@@ -369,22 +366,16 @@ class BaseTreeEstimatorMixin:
         y_preds = numpy.transpose(y_preds)
         return y_preds
 
-    def predict_proba(
-        self, X: numpy.ndarray, *args, execute_in_fhe: bool = False, **kwargs
-    ) -> numpy.ndarray:
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict the probabilities.
 
         Args:
             X (numpy.ndarray): The input data.
-            args: args for super().predict
             execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-            kwargs: kwargs for super().predict
 
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
-        assert_true(len(args) == 0, f"Unsupported *args parameters {args}")
-        assert_true(len(kwargs) == 0, f"Unsupported **kwargs parameters {kwargs}")
         # mypy
         assert self._tensor_tree_predict is not None
         qX = self.quantize_input(X)
@@ -418,21 +409,25 @@ class BaseTreeEstimatorMixin:
             Tuple[ConcreteEstimators, SklearnEstimators]:
                                                 The FHE and sklearn tree-based models.
         """
+
+        params = self.get_params()  # type: ignore
+        params.pop("n_bits", None)
+
         # Make sure the random_state is set or both algorithms will diverge
         # due to randomness in the training.
         if random_state is not None:
-            self.init_args["random_state"] = random_state
+            params["random_state"] = random_state
         elif self.random_state is not None:
-            self.init_args["random_state"] = self.random_state
+            params["random_state"] = self.random_state
         else:
-            self.init_args["random_state"] = numpy.random.randint(0, 2**15)
+            params["random_state"] = numpy.random.randint(0, 2**15)
 
         # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(**self.init_args)
+        sklearn_model = self.sklearn_alg(**params)
         sklearn_model.fit(X, y, *args, **kwargs)
 
         # Train the FHE model
-        self.__init__(n_bits=self.n_bits, **self.init_args)  # type: ignore
+        self.__init__(n_bits=self.n_bits, **params)  # type: ignore
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 

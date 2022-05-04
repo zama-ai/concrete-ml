@@ -15,10 +15,12 @@ from .base import BaseTreeEstimatorMixin
 from .tree_to_numpy import tree_to_numpy
 
 # Disabling invalid-name to use uppercase X
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,too-many-instance-attributes
 
 
-class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstimatorMixin):
+class DecisionTreeClassifier(
+    BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator
+):
     """Implements the sklearn DecisionTreeClassifier."""
 
     sklearn_alg = sklearn.tree.DecisionTreeClassifier
@@ -27,6 +29,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
     _tensor_tree_predict: Optional[Callable]
     q_y: QuantizedArray
     class_mapping_: Optional[dict]
+    n_classes_: int
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -178,41 +181,24 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
             n_bits : int, default=6
                 Number of bits used to quantize the input data.
         """
-        sklearn.tree.DecisionTreeClassifier.__init__(
-            self,
-            criterion=criterion,
-            splitter=splitter,
-            max_depth=max_depth,
-            min_samples_split=min_samples_split,
-            min_samples_leaf=min_samples_leaf,
-            min_weight_fraction_leaf=min_weight_fraction_leaf,
-            max_features=max_features,
-            max_leaf_nodes=max_leaf_nodes,
-            class_weight=class_weight,
-            random_state=random_state,
-            min_impurity_decrease=min_impurity_decrease,
-            ccp_alpha=ccp_alpha,
-        )
+        self.criterion = criterion
+        self.splitter = splitter
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.min_samples_leaf = min_samples_leaf
+        self.min_weight_fraction_leaf = min_weight_fraction_leaf
+        self.max_features = max_features
+        self.max_leaf_nodes = max_leaf_nodes
+        self.class_weight = class_weight
+        self.random_state = random_state
+        self.min_impurity_decrease = min_impurity_decrease
+        self.ccp_alpha = ccp_alpha
+
         BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.q_x_byfeatures = []
         self.n_bits = n_bits
         self.fhe_tree = None
         self.class_mapping_ = None
-
-        self.init_args = {
-            "criterion": criterion,
-            "splitter": splitter,
-            "max_depth": max_depth,
-            "min_samples_split": min_samples_split,
-            "min_samples_leaf": min_samples_leaf,
-            "min_weight_fraction_leaf": min_weight_fraction_leaf,
-            "max_features": max_features,
-            "max_leaf_nodes": max_leaf_nodes,
-            "class_weight": class_weight,
-            "random_state": random_state,
-            "min_impurity_decrease": min_impurity_decrease,
-            "ccp_alpha": ccp_alpha,
-        }
 
     # pylint: enable=too-many-arguments
 
@@ -240,12 +226,24 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         if ~numpy.array_equal(numpy.arange(len(classes_)), classes_):
             self.class_mapping_ = dict(enumerate(classes_))
 
+        # Register number of classes
+        self.n_classes_ = len(classes_)
+
+        # Initialize the model
+        params = self.get_params()
+        params.pop("n_bits", None)
+        self.sklearn_model = self.sklearn_alg(**params)
+
         # Fit the model
-        super().fit(qX, y, *args, **kwargs)
+        self.sklearn_model.fit(qX, y, *args, **kwargs)
 
         # Tree inference to numpy
         self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self, qX, "sklearn", output_n_bits=self.n_bits, use_workaround_for_transpose=True
+            self.sklearn_model,
+            qX,
+            "sklearn",
+            output_n_bits=self.n_bits,
+            use_workaround_for_transpose=True,
         )
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -274,27 +272,21 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         return y_preds
 
     # pylint: disable=arguments-differ
-    # DecisionTreeClassifier needs a check_input arg which differs from the superclass.
-    # Disabling mypy warning for this.
-    def predict_proba(  # type: ignore
+    def predict_proba(
         self,
         X: numpy.ndarray,
-        check_input: Optional[bool] = True,
         execute_in_fhe: Optional[bool] = False,
     ) -> numpy.ndarray:
         """Predict class probabilities of the input samples X.
 
         Args:
             X (numpy.ndarray): The input data.
-            check_input (Optional[bool]): check if the input conforms to shape and
-                dtype constraints.
             execute_in_fhe (bool, optional): If True, the predictions are computed in FHE.
                 If False, the predictions are computed in the sklearn model. Defaults to False.
 
         Returns:
             numpy.ndarray: The class probabilities of the input samples X.
         """
-        X = self._validate_X_predict(X, check_input)
         if execute_in_fhe:
             y_preds = self._execute_in_fhe(X)
         else:
@@ -302,11 +294,7 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         y_preds = self.post_processing(y_preds)
         return y_preds
 
-    # DecisionTreeClassifier needs a check_input arg which differs from the superclass.
-    # Disabling mypy warning for this.
-    def predict(  # type: ignore
-        self, X: numpy.ndarray, check_input: bool = True, execute_in_fhe: bool = False
-    ) -> numpy.ndarray:
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict on user data.
 
         Predict on user data using either the quantized clear model,
@@ -314,14 +302,12 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
 
         Args:
             X (numpy.ndarray): the input data
-            check_input (bool): check if the input conforms to shape and dtype constraints
             execute_in_fhe (bool): whether to execute the inference in FHE
 
         Returns:
             the prediction as ordinals
         """
-        X = self._validate_X_predict(X, check_input)
-        y_preds = self.predict_proba(X, check_input, execute_in_fhe)
+        y_preds = self.predict_proba(X, execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
         if self.class_mapping_ is not None:
             y_preds = numpy.array([self.class_mapping_[y_pred] for y_pred in y_preds])
@@ -373,7 +359,8 @@ class DecisionTreeClassifier(sklearn.tree.DecisionTreeClassifier, BaseTreeEstima
         # _tensor_tree_predict needs X with shape (n_features, n_samples) but
         # X from sklearn is (n_samples, n_features)
         assert_true(
-            qX.shape[1] == self.n_features_in_, "qX should have shape (n_samples, n_features)"
+            qX.shape[1] == self.sklearn_model.n_features_in_,
+            "qX should have shape (n_samples, n_features)",
         )
         qX = qX.T
         y_pred = self._tensor_tree_predict(qX)[0]
