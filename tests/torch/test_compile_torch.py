@@ -234,13 +234,24 @@ def compile_and_test_torch(
         use_virtual_lib=use_virtual_lib,
     )
 
+    # Create test data from the same distribution and quantize using.
+    n_examples_test = 100
+    x_test = tuple(
+        numpy.random.uniform(-100, 100, size=(n_examples_test, *input_output_feature))
+        for _ in range(num_inputs)
+    )
+
     # Check the forward works with the high bitwidth
     qtest = quantized_numpy_module.quantize_input(*x_test)
     if not isinstance(qtest, tuple):
         qtest = (qtest,)
     assert quantized_numpy_module.is_compiled
-    q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
-    result = quantized_numpy_module.dequantize_output(q_result)
+    results = []
+    for i in range(n_examples_test):
+        q_x = tuple(qtest[input][[i]] for input in range(len(qtest)))
+        q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
+        result = quantized_numpy_module.dequantize_output(q_result)
+        results.append(result)
 
     # Run the network through torch, using dynamic quantization
     # This mode only quantizes the weights and keeps all activations in float32
@@ -254,9 +265,12 @@ def compile_and_test_torch(
     torch_input = (torch.from_numpy(x).float() for x in x_test)
     torch_result = torch_quantized_model(*torch_input).numpy()
 
+    # Results to array and reshape to torch_result
+    results = numpy.array(results).reshape(torch_result.shape)
+
     # Check that we have similar results between CML and torch in 8 bits
     # Due to differences in quantization approach, we allow a lower R2 in the comparison
-    check_r2_score(result, torch_result, 0.9)
+    check_r2_score(results, torch_result, 0.9)
 
 
 @pytest.mark.parametrize(
