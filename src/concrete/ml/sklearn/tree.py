@@ -141,7 +141,7 @@ class DecisionTreeClassifier(
     ) -> numpy.ndarray:
         """Predict class probabilities of the input samples X.
 
-        # noqa: DAR101
+        .. # noqa: DAR101
 
         Args:
             execute_in_fhe (bool, optional): If True, the predictions are computed in FHE.
@@ -165,7 +165,7 @@ class DecisionTreeClassifier(
         Predict on user data using either the quantized clear model,
         implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
 
-        # noqa: DAR101
+        .. # noqa: DAR101
 
         Args:
             execute_in_fhe (bool): whether to execute the inference in FHE
