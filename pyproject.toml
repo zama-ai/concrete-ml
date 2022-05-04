@@ -38,8 +38,8 @@ xgboost = "^1.5.2"
 skorch = "^0.11.0"
 scikit-learn = "^1.0.2"
 torch = "^1.11.0"
-concrete-ml-extensions-hb = {extras = ["onnx"], version = "^0.4.2"}
 custom-inherit = "^2.4.0"
+hummingbird-ml = {version="^0.4.4", extras = ["onnx"]}
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"

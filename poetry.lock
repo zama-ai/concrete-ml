@@ -295,33 +295,6 @@ numpy = "*"
 PyYAML = "*"
 
 [[package]]
-name = "concrete-ml-extensions-hb"
-version = "0.4.2.2"
-description = "Convert trained traditional machine learning models into tensor computations"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[package.dependencies]
-dill = "*"
-numpy = ">=1.15"
-onnxconverter-common = ">=1.6.0"
-onnxmltools = {version = ">=1.6.0", optional = true, markers = "extra == \"onnx\""}
-onnxruntime = {version = ">=1.0.0", optional = true, markers = "extra == \"onnx\""}
-psutil = "*"
-scikit-learn = ">=0.21.3"
-scipy = "*"
-skl2onnx = {version = ">=1.7.0", optional = true, markers = "extra == \"onnx\""}
-torch = ">=1.4"
-
-[package.extras]
-benchmark = ["onnxruntime (>=1.0.0)", "onnxmltools (>=1.6.0)", "skl2onnx (>=1.7.0)", "xgboost (>=0.90)", "lightgbm (>=2.2)", "prophet (==1.0.1)", "memory-profiler", "psutil"]
-extra = ["xgboost (>=0.90)", "lightgbm (>=2.2)", "prophet (==1.0.1)"]
-onnx = ["onnxruntime (>=1.0.0)", "onnxmltools (>=1.6.0)", "skl2onnx (>=1.7.0)"]
-sparkml = ["pyspark (>=2.4.4,<3.1.2)", "pyarrow (>1.0)"]
-tests = ["flake8", "pytest", "coverage", "pre-commit"]
-
-[[package]]
 name = "concrete-numpy"
 version = "0.5.0"
 description = "Concrete Numpy is a python package that contains the tools data scientists need to compile various numpy functions into their Fully Homomorphic Encryption (FHE) equivalents. Concrete Numpy goes on top of the Concrete Library and its Compiler."
@@ -359,7 +332,7 @@ toml = ["tomli"]
 
 [[package]]
 name = "cryptography"
-version = "37.0.1"
+version = "37.0.2"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
 category = "dev"
 optional = false
@@ -627,6 +600,33 @@ all = ["genshi", "chardet (>=2.2)", "lxml"]
 chardet = ["chardet (>=2.2)"]
 genshi = ["genshi"]
 lxml = ["lxml"]
+
+[[package]]
+name = "hummingbird-ml"
+version = "0.4.4"
+description = "Convert trained traditional machine learning models into tensor computations"
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+dill = "*"
+numpy = ">=1.15"
+onnxconverter-common = ">=1.6.0"
+onnxmltools = {version = ">=1.6.0", optional = true, markers = "extra == \"onnx\""}
+onnxruntime = {version = ">=1.0.0", optional = true, markers = "extra == \"onnx\""}
+psutil = "*"
+scikit-learn = ">=0.21.3"
+scipy = "*"
+skl2onnx = {version = ">=1.7.0", optional = true, markers = "extra == \"onnx\""}
+torch = ">=1.4"
+
+[package.extras]
+benchmark = ["onnxruntime (>=1.0.0)", "onnxmltools (>=1.6.0)", "skl2onnx (>=1.7.0)", "xgboost (>=0.90)", "lightgbm (>=2.2)", "prophet (==1.0.1)", "memory-profiler", "psutil"]
+extra = ["xgboost (>=0.90)", "lightgbm (>=2.2)", "prophet (==1.0.1)"]
+onnx = ["onnxruntime (>=1.0.0)", "onnxmltools (>=1.6.0)", "skl2onnx (>=1.7.0)"]
+sparkml = ["pyspark (>=2.4.4,<3.1.2)", "pyarrow (>1.0)"]
+tests = ["flake8", "pytest", "coverage", "pre-commit"]
 
 [[package]]
 name = "idna"
@@ -1327,7 +1327,7 @@ webpdf = ["pyppeteer (>=1,<1.1)"]
 
 [[package]]
 name = "nbformat"
-version = "5.3.0"
+version = "5.4.0"
 description = "The Jupyter Notebook format"
 category = "dev"
 optional = false
@@ -1337,7 +1337,7 @@ python-versions = ">=3.7"
 fastjsonschema = "*"
 jsonschema = ">=2.6"
 jupyter-core = "*"
-traitlets = ">=4.1"
+traitlets = ">=5.1"
 
 [package.extras]
 test = ["check-manifest", "testpath", "pytest", "pre-commit"]
@@ -2834,7 +2834,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "39c39af13132a030eab801dffbdb12d8e5b61e5aa850226c97d07d8b32886deb"
+content-hash = "f96fcc1cb7152b4c4877818ccba72553a929cc7a5ee3191ffa2ee067930c1942"
 
 [metadata.files]
 aiohttp = [
@@ -3095,9 +3095,6 @@ concrete-compiler = [
     {file = "concrete_compiler-0.6.0-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:4d633adc8b1b5b3bebe0a152ad1bf008ad0d31484be2ea6e28242541c5603b6b"},
     {file = "concrete_compiler-0.6.0-cp39-cp39-manylinux_2_24_x86_64.whl", hash = "sha256:a7a29435c9485a4cda0ee8bafb1b9a94b64e2a845ca819d88aad38c9f9076439"},
 ]
-concrete-ml-extensions-hb = [
-    {file = "concrete_ml_extensions_hb-0.4.2.2-py2.py3-none-any.whl", hash = "sha256:3c630a9cfed4edc987bf07af0711a148da5d54746b16cf1dcdbe0715e804f2ea"},
-]
 concrete-numpy = [
     {file = "concrete_numpy-0.5.0-py3-none-any.whl", hash = "sha256:57e58a7c427325bf71a01ef936817f13dbe4627268696957cd0abb2347c2552f"},
 ]
@@ -3145,28 +3142,28 @@ coverage = [
     {file = "coverage-6.3.2.tar.gz", hash = "sha256:03e2a7826086b91ef345ff18742ee9fc47a6839ccd517061ef8fa1976e652ce9"},
 ]
 cryptography = [
-    {file = "cryptography-37.0.1-cp36-abi3-macosx_10_10_universal2.whl", hash = "sha256:74b55f67f4cf026cb84da7a1b04fc2a1d260193d4ad0ea5e9897c8b74c1e76ac"},
-    {file = "cryptography-37.0.1-cp36-abi3-macosx_10_10_x86_64.whl", hash = "sha256:0db5cf21bd7d092baacb576482b0245102cea2d3cf09f09271ce9f69624ecb6f"},
-    {file = "cryptography-37.0.1-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:faf0f5456c059c7b1c29441bdd5e988f0ba75bdc3eea776520d8dcb1e30e1b5c"},
-    {file = "cryptography-37.0.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_24_aarch64.whl", hash = "sha256:06bfafa6e53ccbfb7a94be4687b211a025ce0625e3f3c60bb15cd048a18f3ed8"},
-    {file = "cryptography-37.0.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:bf585476fcbcd37bed08072e8e2db3954ce1bfc68087a2dc9c19cfe0b90979ca"},
-    {file = "cryptography-37.0.1-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6d4daf890e674d191757d8d7d60dc3a29c58c72c7a76a05f1c0a326013f47e8b"},
-    {file = "cryptography-37.0.1-cp36-abi3-manylinux_2_24_x86_64.whl", hash = "sha256:ae1cd29fbe6b716855454e44f4bf743465152e15d2d317303fe3b58ee9e5af7a"},
-    {file = "cryptography-37.0.1-cp36-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:451aaff8b8adf2dd0597cbb1fdcfc8a7d580f33f843b7cce75307a7f20112dd8"},
-    {file = "cryptography-37.0.1-cp36-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:1858eff6246bb8bbc080eee78f3dd1528739e3f416cba5f9914e8631b8df9871"},
-    {file = "cryptography-37.0.1-cp36-abi3-win32.whl", hash = "sha256:e69a0e36e62279120e648e787b76d79b41e0f9e86c1c636a4f38d415595c722e"},
-    {file = "cryptography-37.0.1-cp36-abi3-win_amd64.whl", hash = "sha256:a18ff4bfa9d64914a84d7b06c46eb86e0cc03113470b3c111255aceb6dcaf81d"},
-    {file = "cryptography-37.0.1-pp37-pypy37_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cce90609e01e1b192fae9e13665058ab46b2ea53a3c05a3ea74a3eb8c3af8857"},
-    {file = "cryptography-37.0.1-pp37-pypy37_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:c4a58eeafbd7409054be41a377e726a7904a17c26f45abf18125d21b1215b08b"},
-    {file = "cryptography-37.0.1-pp38-pypy38_pp73-macosx_10_10_x86_64.whl", hash = "sha256:618391152147a1221c87b1b0b7f792cafcfd4b5a685c5c72eeea2ddd29aeceff"},
-    {file = "cryptography-37.0.1-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7ceae26f876aabe193b13a0c36d1bb8e3e7e608d17351861b437bd882f617e9f"},
-    {file = "cryptography-37.0.1-pp38-pypy38_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:930b829e8a2abaf43a19f38277ae3c5e1ffcf547b936a927d2587769ae52c296"},
-    {file = "cryptography-37.0.1-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:58021d6e9b1d88b1105269d0da5e60e778b37dfc0e824efc71343dd003726831"},
-    {file = "cryptography-37.0.1-pp39-pypy39_pp73-macosx_10_10_x86_64.whl", hash = "sha256:b1ee5c82cf03b30f6ae4e32d2bcb1e167ef74d6071cbb77c2af30f101d0b360b"},
-    {file = "cryptography-37.0.1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f095988548ec5095e3750cdb30e6962273d239b1998ba1aac66c0d5bee7111c1"},
-    {file = "cryptography-37.0.1-pp39-pypy39_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:125702572be12bcd318e3a14e9e70acd4be69a43664a75f0397e8650fe3c6cc3"},
-    {file = "cryptography-37.0.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:315af6268de72bcfa0bb3401350ce7d921f216e6b60de12a363dad128d9d459f"},
-    {file = "cryptography-37.0.1.tar.gz", hash = "sha256:d610d0ee14dd9109006215c7c0de15eee91230b70a9bce2263461cf7c3720b83"},
+    {file = "cryptography-37.0.2-cp36-abi3-macosx_10_10_universal2.whl", hash = "sha256:ef15c2df7656763b4ff20a9bc4381d8352e6640cfeb95c2972c38ef508e75181"},
+    {file = "cryptography-37.0.2-cp36-abi3-macosx_10_10_x86_64.whl", hash = "sha256:3c81599befb4d4f3d7648ed3217e00d21a9341a9a688ecdd615ff72ffbed7336"},
+    {file = "cryptography-37.0.2-cp36-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:2bd1096476aaac820426239ab534b636c77d71af66c547b9ddcd76eb9c79e004"},
+    {file = "cryptography-37.0.2-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.manylinux_2_24_aarch64.whl", hash = "sha256:31fe38d14d2e5f787e0aecef831457da6cec68e0bb09a35835b0b44ae8b988fe"},
+    {file = "cryptography-37.0.2-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:093cb351031656d3ee2f4fa1be579a8c69c754cf874206be1d4cf3b542042804"},
+    {file = "cryptography-37.0.2-cp36-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:59b281eab51e1b6b6afa525af2bd93c16d49358404f814fe2c2410058623928c"},
+    {file = "cryptography-37.0.2-cp36-abi3-manylinux_2_24_x86_64.whl", hash = "sha256:0cc20f655157d4cfc7bada909dc5cc228211b075ba8407c46467f63597c78178"},
+    {file = "cryptography-37.0.2-cp36-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:f8ec91983e638a9bcd75b39f1396e5c0dc2330cbd9ce4accefe68717e6779e0a"},
+    {file = "cryptography-37.0.2-cp36-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:46f4c544f6557a2fefa7ac8ac7d1b17bf9b647bd20b16decc8fbcab7117fbc15"},
+    {file = "cryptography-37.0.2-cp36-abi3-win32.whl", hash = "sha256:731c8abd27693323b348518ed0e0705713a36d79fdbd969ad968fbef0979a7e0"},
+    {file = "cryptography-37.0.2-cp36-abi3-win_amd64.whl", hash = "sha256:471e0d70201c069f74c837983189949aa0d24bb2d751b57e26e3761f2f782b8d"},
+    {file = "cryptography-37.0.2-pp37-pypy37_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a68254dd88021f24a68b613d8c51d5c5e74d735878b9e32cc0adf19d1f10aaf9"},
+    {file = "cryptography-37.0.2-pp37-pypy37_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:a7d5137e556cc0ea418dca6186deabe9129cee318618eb1ffecbd35bee55ddc1"},
+    {file = "cryptography-37.0.2-pp38-pypy38_pp73-macosx_10_10_x86_64.whl", hash = "sha256:aeaba7b5e756ea52c8861c133c596afe93dd716cbcacae23b80bc238202dc023"},
+    {file = "cryptography-37.0.2-pp38-pypy38_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:95e590dd70642eb2079d280420a888190aa040ad20f19ec8c6e097e38aa29e06"},
+    {file = "cryptography-37.0.2-pp38-pypy38_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:1b9362d34363f2c71b7853f6251219298124aa4cc2075ae2932e64c91a3e2717"},
+    {file = "cryptography-37.0.2-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:e53258e69874a306fcecb88b7534d61820db8a98655662a3dd2ec7f1afd9132f"},
+    {file = "cryptography-37.0.2-pp39-pypy39_pp73-macosx_10_10_x86_64.whl", hash = "sha256:1f3bfbd611db5cb58ca82f3deb35e83af34bb8cf06043fa61500157d50a70982"},
+    {file = "cryptography-37.0.2-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:419c57d7b63f5ec38b1199a9521d77d7d1754eb97827bbb773162073ccd8c8d4"},
+    {file = "cryptography-37.0.2-pp39-pypy39_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:dc26bb134452081859aa21d4990474ddb7e863aa39e60d1592800a8865a702de"},
+    {file = "cryptography-37.0.2-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:3b8398b3d0efc420e777c40c16764d6870bcef2eb383df9c6dbb9ffe12c64452"},
+    {file = "cryptography-37.0.2.tar.gz", hash = "sha256:f224ad253cc9cea7568f49077007d2263efa57396a2f2f78114066fd54b5c68e"},
 ]
 custom-inherit = [
     {file = "custom_inherit-2.4.0-py3-none-any.whl", hash = "sha256:a332144a96ab6a61a81144b23aeac244efb4122a04bb489bbd12bf0624179851"},
@@ -3331,6 +3328,10 @@ gitpython = [
 html5lib = [
     {file = "html5lib-1.1-py2.py3-none-any.whl", hash = "sha256:0d78f8fde1c230e99fe37986a60526d7049ed4bf8a9fadbad5f00e22e58e041d"},
     {file = "html5lib-1.1.tar.gz", hash = "sha256:b2e5b40261e20f354d198eae92afc10d750afb487ed5e50f9c4eaf07c184146f"},
+]
+hummingbird-ml = [
+    {file = "hummingbird-ml-0.4.4.tar.gz", hash = "sha256:8a5b6fe74e32460ada638081c31f9b978880855786874dac0a6c0c8822efffb1"},
+    {file = "hummingbird_ml-0.4.4-py2.py3-none-any.whl", hash = "sha256:d749b71d2d7f1d9659fca8d0b4678cb75c77f0dca71596d544c53646485c2eae"},
 ]
 idna = [
     {file = "idna-3.3-py3-none-any.whl", hash = "sha256:84d9dd047ffa80596e0f246e2eab0b391788b0503584e8945f2368256d2735ff"},
@@ -3785,8 +3786,8 @@ nbconvert = [
     {file = "nbconvert-6.5.0.tar.gz", hash = "sha256:223e46e27abe8596b8aed54301fadbba433b7ffea8196a68fd7b1ff509eee99d"},
 ]
 nbformat = [
-    {file = "nbformat-5.3.0-py3-none-any.whl", hash = "sha256:38856d97de49e8292e2d5d8f595e9d26f02abfd87e075d450af4511870b40538"},
-    {file = "nbformat-5.3.0.tar.gz", hash = "sha256:fcc5ab8cb74e20b19570b5be809e2dba9b82836fd2761a89066ad43394ba29f5"},
+    {file = "nbformat-5.4.0-py3-none-any.whl", hash = "sha256:0d6072aaec95dddc39735c144ee8bbc6589c383fb462e4058abc855348152dad"},
+    {file = "nbformat-5.4.0.tar.gz", hash = "sha256:44ba5ca6acb80c5d5a500f1e5b83ede8cbe364d5a495c4c8cf60aaf1ba656501"},
 ]
 nbmake = [
     {file = "nbmake-1.3.0-py3-none-any.whl", hash = "sha256:8b38089dd232142ce894a9ad3e57a7c0f0a0edb0254662a8446346a84ac4079d"},
