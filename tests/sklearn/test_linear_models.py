@@ -281,33 +281,6 @@ def test_linear_model_quantization(
 
 
 @pytest.mark.parametrize("alg, load_data", models_datasets)
-def test_double_fit(alg, load_data):
-    """Tests that calling fit multiple times gives the same results"""
-    x, y = load_data()
-
-    model = alg(n_bits=2)
-
-    # The SVM models use a bit of randomness while fitting under scikit-learn, making the
-    # outputs always different after each fit. In order to avoid that problem, their random_state
-    # parameter needs to be fixed each time the test is ran. This is however not the case for
-    # other odels, which don't have any random_state attribute.
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-        model.set_params(**model_params)
-
-    # First fit
-    model.fit(x, y)
-    y_pred_one = model.predict(x)
-
-    # Second fit
-    model.fit(x, y)
-    y_pred_two = model.predict(x)
-
-    assert numpy.array_equal(y_pred_one, y_pred_two)
-
-
-@pytest.mark.parametrize("alg, load_data", models_datasets)
 def test_pipeline_sklearn(alg, load_data):
     """Tests that the linear models work well within sklearn pipelines."""
     x, y = load_data()
