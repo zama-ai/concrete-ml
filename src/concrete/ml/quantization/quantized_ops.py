@@ -148,12 +148,7 @@ class QuantizedGemm(QuantizedOp):
         matmul = input_q_values @ weights_q_values
 
         # Sum operation in full integers resulting in large integers (INTEGERS)
-        # [WORKAROUND #995] numpy.sum can't be currently done in our framework
-        # sum_input = q_weights.zero_point * numpy.sum(input_q_values, axis=1, keepdims=True)
-        # Hack because we can't do numpy.sum(axis...,keepdims...)
-        n_features = 1 if len(input_q_values.shape) <= 1 else input_q_values.shape[1]
-        const_ones = numpy.ones(shape=(n_features, 1), dtype=numpy.int64)
-        sum_input = -q_weights.zero_point * (input_q_values @ const_ones)
+        sum_input = -q_weights.zero_point * numpy.sum(input_q_values, axis=1, keepdims=True)
 
         # Last part that has to be done in integer, the rest must go in a PBS.
         # Forced fusing using .astype(numpy.float32)
