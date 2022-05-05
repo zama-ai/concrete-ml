@@ -777,6 +777,21 @@ def numpy_reshape(
     return (numpy.reshape(x, newshape),)
 
 
+def numpy_transpose(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Transpose in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Transpose-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    # FIXME: #292, remove the no-cover once #292 is done
+    return (numpy.transpose(x),)  # pragma: no cover
+
+
 def torch_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,

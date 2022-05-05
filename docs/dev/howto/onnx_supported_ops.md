@@ -61,6 +61,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Tan
 - Tanh
 - ThresholdedRelu
+- Transpose
 - Where
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [END] -->
