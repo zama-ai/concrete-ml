@@ -3,6 +3,7 @@ from typing import Any, Callable, List, Optional
 
 import numpy
 import sklearn.ensemble
+from custom_inherit import doc_inherit
 
 from ..quantization import QuantizedArray
 from .base import BaseTreeEstimatorMixin
@@ -12,9 +13,9 @@ from .tree_to_numpy import tree_to_numpy
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name,too-many-ancestors
 # Hummingbird needs to see the protected _forest class
-# pylint: disable=protected-access
+# pylint: disable=protected-access,too-many-instance-attributes
 class RandomForestClassifier(
-    sklearn.ensemble._forest.RandomForestClassifier, BaseTreeEstimatorMixin
+    BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator
 ):
     """Implements the RandomForest classifier."""
 
@@ -25,33 +26,55 @@ class RandomForestClassifier(
     _tensor_tree_predict: Optional[Callable]
     sklearn_model: Any
 
+    # pylint: disable=too-many-arguments
+
+    @doc_inherit(
+        sklearn.ensemble._forest.RandomForestClassifier.__init__, style="google_with_merge"
+    )
     def __init__(
         self,
         n_bits: int = 6,
-        max_depth: Optional[int] = 15,
-        n_estimators: Optional[int] = 100,
-        **kwargs: Any,
+        n_estimators=100,
+        criterion="gini",
+        max_depth=None,
+        min_samples_split=2,
+        min_samples_leaf=1,
+        min_weight_fraction_leaf=0.0,
+        max_features="auto",
+        max_leaf_nodes=None,
+        min_impurity_decrease=0.0,
+        bootstrap=True,
+        oob_score=False,
+        n_jobs=None,
+        random_state=None,
+        verbose=0,
+        warm_start=False,
+        class_weight=None,
+        ccp_alpha=0.0,
+        max_samples=None,
     ):
-        """Initialize the RandomForestClassifier.
-
-        Args:
-            n_bits (int): The number of bits to use. Defaults to 6.
-            max_depth (Optional[int]): The maximum depth of the tree. Defaults to 15.
-            n_estimators (Optional[int]): The number of estimators. Defaults to 100.
-            **kwargs: args for super().__init__
-        """
-        sklearn.ensemble.RandomForestClassifier.__init__(
-            self,
-            max_depth=max_depth,
-            n_estimators=n_estimators,
-            **kwargs,
-        )
+        # FIXME #893
         BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
-        self.init_args = {
-            "max_depth": max_depth,
-            "n_estimators": n_estimators,
-            **kwargs,
-        }
+        self.n_estimators = n_estimators
+        self.bootstrap = bootstrap
+        self.oob_score = oob_score
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+        self.verbose = verbose
+        self.warm_start = warm_start
+        self.class_weight = class_weight
+        self.max_samples = max_samples
+        self.criterion = criterion
+        self.max_depth = max_depth
+        self.min_samples_split = min_samples_split
+        self.min_samples_leaf = min_samples_leaf
+        self.min_weight_fraction_leaf = min_weight_fraction_leaf
+        self.max_features = max_features
+        self.max_leaf_nodes = max_leaf_nodes
+        self.min_impurity_decrease = min_impurity_decrease
+        self.ccp_alpha = ccp_alpha
+
+    # pylint: enable=too-many-arguments
 
     #  pylint: disable=arguments-differ
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, **kwargs) -> "RandomForestClassifier":
@@ -77,11 +100,17 @@ class RandomForestClassifier(
             self.q_x_byfeatures.append(q_x_)
             qX[:, i] = q_x_.qvalues.astype(numpy.int32)
 
-        super().fit(qX, y, **kwargs)
+        # Initialize the sklearn model
+        params = self.get_params()
+        params.pop("n_bits", None)
+
+        self.sklearn_model = self.sklearn_alg(**params)
+
+        self.sklearn_model.fit(qX, y, **kwargs)
 
         # Tree ensemble inference to numpy
         self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self,
+            self.sklearn_model,
             qX,
             framework="sklearn",
             output_n_bits=self.n_bits,
@@ -112,3 +141,5 @@ class RandomForestClassifier(
             numpy.ndarray: The predicted probabilities.
         """
         return BaseTreeEstimatorMixin.predict_proba(self, X, execute_in_fhe=execute_in_fhe)
+
+    # pylint: enable=protected-access,too-many-instance-attributes
