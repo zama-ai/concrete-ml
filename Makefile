@@ -11,6 +11,15 @@ COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 
+# If one wants to force the installation of a given rc version
+CN_VERSION_SPEC_FOR_RC="concrete-numpy[full]==0.6.0-rc2"
+
+# If one wants to use the last RC version
+# CN_VERSION_SPEC_FOR_RC="$$(poetry run python \
+# ./script/make_utils/pyproject_version_parser_helper.py \
+# --pyproject-toml-file pyproject.toml \
+# --get-pip-install-spec-for-dependency concrete-numpy)"
+
 .PHONY: setup_env # Set up the environment
 setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
@@ -28,12 +37,9 @@ setup_env:
 	else \
 		poetry install; \
 	fi
-	CN_VERSION_SPEC_FOR_RC="$$(poetry run python \
-	./script/make_utils/pyproject_version_parser_helper.py \
-	--pyproject-toml-file pyproject.toml \
-	--get-pip-install-spec-for-dependency concrete-numpy)" && \
-	echo "Installing $${CN_VERSION_SPEC_FOR_RC}" && \
-	poetry run python -m pip install -U --pre "$${CN_VERSION_SPEC_FOR_RC}"
+
+	echo "Installing $(CN_VERSION_SPEC_FOR_RC)" && \
+	poetry run python -m pip install -U --pre "$(CN_VERSION_SPEC_FOR_RC)"
 
 .PHONY: sync_env # Synchronise the environment
 sync_env:
