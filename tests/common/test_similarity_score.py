@@ -1,5 +1,5 @@
 """Tests for the r2 score test """
-import numpy as np
+import numpy
 import pytest
 
 BIG_OFFSET = 10000
@@ -29,19 +29,19 @@ def test_r2(
     """Test our modified r2 test on various data distributions"""
 
     # Generate a uniform distribution and add a normal residual on top
-    gt_values = np.random.uniform(size=(num_values,)) * gt_range
-    gt_normal_residuals = np.random.normal(0, gt_stdev, size=(num_values,))
+    gt_values = numpy.random.uniform(size=(num_values,)) * gt_range
+    gt_normal_residuals = numpy.random.normal(0, gt_stdev, size=(num_values,))
     gt_values += gt_normal_residuals
 
     predicted_stdev, predicted_offset = predicted_params
 
     if predicted_stdev is not None:
         # Correlated predicted value
-        pred_normal_residuals = np.random.normal(0, predicted_stdev, size=(num_values,))
+        pred_normal_residuals = numpy.random.normal(0, predicted_stdev, size=(num_values,))
         predicted = gt_values + pred_normal_residuals
     else:
         # No correlation between gt and predicted
-        predicted = np.random.uniform(size=(num_values,))
+        predicted = numpy.random.uniform(size=(num_values,))
 
     predicted += predicted_offset
 

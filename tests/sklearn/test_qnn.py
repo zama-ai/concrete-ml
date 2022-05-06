@@ -1,7 +1,7 @@
 """Tests for the FHE sklearn compatible NNs."""
 from copy import deepcopy
 
-import numpy as np
+import numpy
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
@@ -73,12 +73,12 @@ def test_nn_models_quant(
             coef=True,
         )
         if y.ndim == 1:
-            y = np.expand_dims(y, 1)
-        y = y.astype(np.float32)
+            y = numpy.expand_dims(y, 1)
+        y = y.astype(numpy.float32)
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
 
-    x = x.astype(np.float32)
+    x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -168,7 +168,7 @@ def test_parameter_validation(model):
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
 
-    x = x.astype(np.float32)
+    x = x.astype(numpy.float32)
 
     invalid_params_and_exception_pattern = {
         ("module__n_layers", 0, ".* number of layers.*"),
@@ -195,74 +195,6 @@ def test_parameter_validation(model):
                 _ = concrete_classifier.n_bits_quant
 
             concrete_classifier.fit(x, y)
-
-
-def test_pipeline_and_cv():
-    """Test whether we can use the quantized NN sklearn wrappers in pipelines and in
-    cross-validation"""
-
-    n_features = 10
-
-    x, y = make_classification(
-        1000,
-        n_features=n_features,
-        n_redundant=0,
-        n_repeated=0,
-        n_informative=5,
-        n_classes=2,
-        class_sep=2,
-        random_state=42,
-    )
-    x = x.astype(np.float32)
-
-    # Perform a classic test-train split (deterministic by fixing the seed)
-    x_train, x_test, y_train, y_test = train_test_split(
-        x,
-        y,
-        test_size=0.25,
-        random_state=42,
-    )
-    params = {
-        "module__n_layers": 3,
-        "module__n_w_bits": 2,
-        "module__n_a_bits": 2,
-        "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
-        "module__n_outputs": 2,
-        "module__input_dim": 2,
-        "module__activation_function": nn.SELU,
-        "max_epochs": 10,
-        "verbose": 0,
-    }
-
-    pipe = Pipeline(
-        [
-            ("pca", PCA(n_components=2)),
-            ("scaler", StandardScaler()),
-            ("net", NeuralNetClassifier(**params)),
-        ]
-    )
-
-    pipe.fit(x_train, y_train)
-
-    # Call .fit twice, this can occur and is valid usage
-    # Sometimes it can be done by the user to warm-start, or just to reuse the obj
-    pipe.fit(x_train, y_train)
-
-    pipe.score(x_test, y_test)
-
-    pipe_cv = Pipeline(
-        [
-            ("pca", PCA(n_components=2)),
-            ("scaler", StandardScaler()),
-            ("net", NeuralNetClassifier(**params)),
-        ]
-    )
-
-    clf = GridSearchCV(
-        pipe_cv,
-        {"net__module__n_layers": (3, 5), "net__module__activation_function": (nn.Tanh, nn.ReLU6)},
-    )
-    clf.fit(x_train, y_train)
 
 
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
@@ -304,12 +236,12 @@ def test_compile_and_calib(activation_function, model, default_configuration, us
             coef=True,
         )
         if y.ndim == 1:
-            y = np.expand_dims(y, 1)
-        y = y.astype(np.float32)
+            y = numpy.expand_dims(y, 1)
+        y = y.astype(numpy.float32)
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
 
-    x = x.astype(np.float32)
+    x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -326,7 +258,7 @@ def test_compile_and_calib(activation_function, model, default_configuration, us
     x_test = normalizer.transform(x_test)
 
     # Setup dummy class weights that will be converted to a tensor
-    class_weights = np.asarray([1, 1]).reshape((-1,))
+    class_weights = numpy.asarray([1, 1]).reshape((-1,))
 
     # Configure a minimal neural network and train it quickly
     params = {
@@ -356,7 +288,7 @@ def test_compile_and_calib(activation_function, model, default_configuration, us
 
     # Predicting in FHE with a model that is not trained and calibrated should fail
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
-        x_test_q = np.zeros((1, n_features), dtype=np.uint8)
+        x_test_q = numpy.zeros((1, n_features), dtype=numpy.uint8)
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Train the model
@@ -364,7 +296,7 @@ def test_compile_and_calib(activation_function, model, default_configuration, us
 
     # Predicting with a model that is not compiled should fail
     with pytest.raises(ValueError, match=".* not yet compiled .*"):
-        x_test_q = np.zeros((1, n_features), dtype=np.uint8)
+        x_test_q = numpy.zeros((1, n_features), dtype=numpy.uint8)
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Compile the model
@@ -437,7 +369,7 @@ def test_custom_net_classifier():
         random_state=42,
     )
 
-    x = x.astype(np.float32)
+    x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
