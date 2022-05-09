@@ -40,6 +40,7 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.random_state = random_state
         self.max_iter = max_iter
         self.n_bits = n_bits
+        self._onnx = None
 
     # pylint: enable=too-many-arguments
 
@@ -80,6 +81,7 @@ class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         self.random_state = random_state
         self.max_iter = max_iter
         self.n_bits = n_bits
+        self._onnx = None
 
     # pylint: enable=too-many-arguments
 

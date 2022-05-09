@@ -33,7 +33,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     output_n_bits: Optional[int] = MAXIMUM_BIT_WIDTH,
-) -> Tuple[Callable, QuantizedArray]:
+) -> Tuple[Callable, QuantizedArray, onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
     Args:
@@ -44,9 +44,9 @@ def tree_to_numpy(
         output_n_bits (int): The number of bits of the output.
 
     Returns:
-        Union[Callable, QuantizedArray]: A tuple with a function that takes a numpy array and
-            returns a numpy array, QuantizedArray object to quantize and dequantize
-            the output of the tree.
+        Tuple[Callable, QuantizedArray, onnx.ModelProto]: A tuple with a function that takes a
+            numpy array and returns a numpy array, QuantizedArray object to quantize and dequantize
+            the output of the tree, and the ONNX model.
     """
     # mypy
     assert output_n_bits is not None
@@ -145,4 +145,4 @@ def tree_to_numpy(
     simplify_onnx_model(onnx_model)
     _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
 
-    return (_tensor_tree_predict, q_y)
+    return (_tensor_tree_predict, q_y, onnx_model)

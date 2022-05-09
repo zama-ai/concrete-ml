@@ -92,7 +92,7 @@ class PostTrainingAffineQuantization:
     # layer to have weight quantization that manages all that by itself.
     def _quantize_params(self):
         """Transform all floating points initializers to integers."""
-        graph: onnx.GraphProto = self.numpy_model.onnx_model.graph
+        graph: onnx.GraphProto = self.numpy_model.get_onnx().graph
         inits = graph.initializer
         self.quant_params.update(
             (
@@ -120,7 +120,7 @@ class PostTrainingAffineQuantization:
         """
         # pylint: disable=too-many-locals
 
-        graph = self.numpy_model.onnx_model.graph
+        graph = self.numpy_model.get_onnx().graph
 
         node_results: Dict[str, Union[numpy.ndarray, QuantizedArray]] = dict(
             {
@@ -325,8 +325,8 @@ class PostTrainingAffineQuantization:
 
         # Create quantized module from self.quant_layers_dict
         quantized_module = QuantizedModule(
-            (graph_input.name for graph_input in self.numpy_model.onnx_model.graph.input),
-            (graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output),
+            (graph_input.name for graph_input in self.numpy_model.get_onnx().graph.input),
+            (graph_output.name for graph_output in self.numpy_model.get_onnx().graph.output),
             self.quant_ops_dict,
         )
         q_input = (QuantizedArray(self.n_bits_inputs, val) for val in calibration_data)

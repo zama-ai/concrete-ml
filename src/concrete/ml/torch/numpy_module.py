@@ -36,12 +36,12 @@ class NumpyModule:
                 dummy_input is not None
             ), "dummy_input must be provided if model is a torch.nn.Module"
 
-            self.numpy_forward, self.onnx_model = get_equivalent_numpy_forward_and_onnx_model(
+            self.numpy_forward, self._onnx_model = get_equivalent_numpy_forward_and_onnx_model(
                 model, dummy_input, debug_onnx_output_file_path
             )
 
         elif isinstance(model, onnx.ModelProto):
-            self.onnx_model = model
+            self._onnx_model = model
             self.numpy_forward = get_equivalent_numpy_forward(model)
         else:
             raise ValueError(
@@ -63,3 +63,11 @@ class NumpyModule:
         """
         outputs = self.numpy_forward(*args)
         return outputs[0] if len(outputs) == 1 else outputs
+
+    def get_onnx(self):
+        """Return ONNX model.
+
+        Returns:
+            ONNX model
+        """
+        return self._onnx_model

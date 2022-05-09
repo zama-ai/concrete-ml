@@ -2,5 +2,6 @@
 
 In addition to our support for scikit-learn and PyTorch, we also propose support of
 
-- NeuralNetworkRegressor from skorch
+- NeuralNetClassifier
+- NeuralNetRegressor from skorch
 - XGBoostClassifier from xgboost

@@ -92,7 +92,6 @@ Currently, we support the following models in scikit-learn:
 - LogisticRegression
 - SVM (SVC and SVR)
 - DecisionTreeClassifier
-- NeuralNetworkClassifier
 - PoissonRegressor
 - GammaRegressor
 - TweedieRegressor

@@ -259,7 +259,15 @@ class NumpyModuleTest(NumpyModule):
 
     def __init__(self, onnx_model: onnx.ModelProto):  # pylint: disable=super-init-not-called
         self.numpy_forward = lambda x: x
-        self.onnx_model = onnx_model
+        self._onnx_model = onnx_model
+
+    def get_onnx(self):
+        """Return ONNX model.
+
+        Returns:
+            ONNX model
+        """
+        return self._onnx_model
 
 
 def test_post_training_quantization_constant_folding():
