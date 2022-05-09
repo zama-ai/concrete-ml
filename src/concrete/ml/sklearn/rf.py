@@ -3,7 +3,6 @@ from typing import Any, Callable, List, Optional
 
 import numpy
 import sklearn.ensemble
-from custom_inherit import doc_inherit
 
 from ..quantization import QuantizedArray
 from .base import BaseTreeEstimatorMixin
@@ -28,9 +27,6 @@ class RandomForestClassifier(
 
     # pylint: disable=too-many-arguments
 
-    @doc_inherit(
-        sklearn.ensemble._forest.RandomForestClassifier.__init__, style="google_with_merge"
-    )
     def __init__(
         self,
         n_bits: int = 6,
@@ -53,6 +49,11 @@ class RandomForestClassifier(
         ccp_alpha=0.0,
         max_samples=None,
     ):
+        """Initialize the RandomForestClassifier.
+
+        # noqa: DAR101
+        """
+
         # FIXME #893
         BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
         self.n_estimators = n_estimators

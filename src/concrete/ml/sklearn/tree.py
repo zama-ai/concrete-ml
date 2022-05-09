@@ -4,7 +4,6 @@ from typing import Callable, Optional
 import numpy
 import sklearn
 from concrete.numpy.compilation.circuit import Circuit
-from custom_inherit import doc_inherit
 
 from ..common.debugging.custom_assert import assert_true
 from ..quantization.quantized_array import QuantizedArray
@@ -45,6 +44,11 @@ class DecisionTreeClassifier(
         ccp_alpha: float = 0.0,
         n_bits: int = 6,
     ):
+        """Initialize the DecisionTreeClassifier.
+
+        # noqa: DAR101
+
+        """
         self.criterion = criterion
         self.splitter = splitter
         self.max_depth = max_depth
@@ -65,9 +69,15 @@ class DecisionTreeClassifier(
         self.class_mapping_ = None
 
     # pylint: enable=too-many-arguments
-
-    @doc_inherit(sklearn.tree.DecisionTreeClassifier.fit)
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs):
+        """Fit the sklearn DecisionTreeClassifier.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            y (numpy.ndarray): The target data.
+            *args: args for super().fit
+            **kwargs: kwargs for super().fit
+        """
         qX = numpy.zeros_like(X)
 
         self.q_x_byfeatures = []
@@ -125,7 +135,6 @@ class DecisionTreeClassifier(
         return y_preds
 
     # pylint: disable=arguments-differ
-    @doc_inherit(sklearn.tree.DecisionTreeClassifier.predict_proba, style="google_with_merge")
     def predict_proba(
         self,
         X: numpy.ndarray,
@@ -133,15 +142,13 @@ class DecisionTreeClassifier(
     ) -> numpy.ndarray:
         """Predict class probabilities of the input samples X.
 
-        .. # noqa: DAR101
-
         Args:
+            X (numpy.ndarray): The input data.
             execute_in_fhe (bool, optional): If True, the predictions are computed in FHE.
                 If False, the predictions are computed in the sklearn model. Defaults to False.
 
         Returns:
             numpy.ndarray: The class probabilities of the input samples X.
-
         """
         if execute_in_fhe:
             y_preds = self._execute_in_fhe(X)
@@ -150,16 +157,14 @@ class DecisionTreeClassifier(
         y_preds = self.post_processing(y_preds)
         return y_preds
 
-    @doc_inherit(sklearn.tree.DecisionTreeClassifier.predict, style="google_with_merge")
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict on user data.
 
         Predict on user data using either the quantized clear model,
         implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
 
-        .. # noqa: DAR101
-
         Args:
+            X (numpy.ndarray): the input data
             execute_in_fhe (bool): whether to execute the inference in FHE
 
         Returns:

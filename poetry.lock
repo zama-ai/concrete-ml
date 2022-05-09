@@ -78,7 +78,7 @@ tests = ["pytest"]
 
 [[package]]
 name = "astroid"
-version = "2.11.4"
+version = "2.11.5"
 description = "An abstract syntax tree for Python with inference support."
 category = "dev"
 optional = false
@@ -348,14 +348,6 @@ pep8test = ["black", "flake8", "flake8-import-order", "pep8-naming"]
 sdist = ["setuptools_rust (>=0.11.4)"]
 ssh = ["bcrypt (>=3.1.5)"]
 test = ["pytest (>=6.2.0)", "pytest-benchmark", "pytest-cov", "pytest-subtests", "pytest-xdist", "pretend", "iso8601", "pytz", "hypothesis (>=1.11.4,!=3.79.2)"]
-
-[[package]]
-name = "custom-inherit"
-version = "2.4.0"
-description = "A Python package that provides customized docstring inheritance       schemes between derived classes and their parents."
-category = "main"
-optional = false
-python-versions = "*"
 
 [[package]]
 name = "cycler"
@@ -842,7 +834,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "jsonschema"
-version = "4.4.0"
+version = "4.5.1"
 description = "An implementation of JSON Schema validation for Python"
 category = "dev"
 optional = false
@@ -875,7 +867,7 @@ qtconsole = "*"
 
 [[package]]
 name = "jupyter-client"
-version = "7.3.0"
+version = "7.3.1"
 description = "Jupyter protocol implementation and client libraries"
 category = "dev"
 optional = false
@@ -2715,7 +2707,7 @@ python-versions = "*"
 
 [[package]]
 name = "types-toml"
-version = "0.10.6"
+version = "0.10.7"
 description = "Typing stubs for toml"
 category = "dev"
 optional = false
@@ -2790,7 +2782,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
 [[package]]
 name = "xgboost"
-version = "1.6.0"
+version = "1.6.1"
 description = "XGBoost Python Package"
 category = "main"
 optional = false
@@ -2834,7 +2826,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.10"
-content-hash = "f96fcc1cb7152b4c4877818ccba72553a929cc7a5ee3191ffa2ee067930c1942"
+content-hash = "a7fd0422c4f94e6dc6d65fdd555d863e55a44eb1010f713dd57f38776a8cf60b"
 
 [metadata.files]
 aiohttp = [
@@ -2951,8 +2943,8 @@ argon2-cffi-bindings = [
     {file = "argon2_cffi_bindings-21.2.0-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:5e00316dabdaea0b2dd82d141cc66889ced0cdcbfa599e8b471cf22c620c329a"},
 ]
 astroid = [
-    {file = "astroid-2.11.4-py3-none-any.whl", hash = "sha256:da0632b7c046d8361dfe1b1abb2e085a38624961fabe2997565a9c06c1be9d9a"},
-    {file = "astroid-2.11.4.tar.gz", hash = "sha256:561dc6015eecce7e696ff7e3b40434bc56831afeff783f0ea853e19c4f635c06"},
+    {file = "astroid-2.11.5-py3-none-any.whl", hash = "sha256:14ffbb4f6aa2cf474a0834014005487f7ecd8924996083ab411e7fa0b508ce0b"},
+    {file = "astroid-2.11.5.tar.gz", hash = "sha256:f4e4ec5294c4b07ac38bab9ca5ddd3914d4bf46f9006eb5c0ae755755061044e"},
 ]
 asttokens = [
     {file = "asttokens-2.0.5-py2.py3-none-any.whl", hash = "sha256:0844691e88552595a6f4a4281a9f7f79b8dd45ca4ccea82e5e05b4bbdb76705c"},
@@ -3164,10 +3156,6 @@ cryptography = [
     {file = "cryptography-37.0.2-pp39-pypy39_pp73-manylinux_2_24_x86_64.whl", hash = "sha256:dc26bb134452081859aa21d4990474ddb7e863aa39e60d1592800a8865a702de"},
     {file = "cryptography-37.0.2-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:3b8398b3d0efc420e777c40c16764d6870bcef2eb383df9c6dbb9ffe12c64452"},
     {file = "cryptography-37.0.2.tar.gz", hash = "sha256:f224ad253cc9cea7568f49077007d2263efa57396a2f2f78114066fd54b5c68e"},
-]
-custom-inherit = [
-    {file = "custom_inherit-2.4.0-py3-none-any.whl", hash = "sha256:a332144a96ab6a61a81144b23aeac244efb4122a04bb489bbd12bf0624179851"},
-    {file = "custom_inherit-2.4.0.tar.gz", hash = "sha256:283dddf54e1baebdf33e8e655c0186a76dc4069590fa4e3e0c8a218dcad2bd37"},
 ]
 cycler = [
     {file = "cycler-0.11.0-py3-none-any.whl", hash = "sha256:3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3"},
@@ -3394,8 +3382,8 @@ joblib = [
     {file = "joblib-1.1.0.tar.gz", hash = "sha256:4158fcecd13733f8be669be0683b96ebdbbd38d23559f54dca7205aea1bf1e35"},
 ]
 jsonschema = [
-    {file = "jsonschema-4.4.0-py3-none-any.whl", hash = "sha256:77281a1f71684953ee8b3d488371b162419767973789272434bbc3f29d9c8823"},
-    {file = "jsonschema-4.4.0.tar.gz", hash = "sha256:636694eb41b3535ed608fe04129f26542b59ed99808b4f688aa32dcf55317a83"},
+    {file = "jsonschema-4.5.1-py3-none-any.whl", hash = "sha256:71b5e39324422543546572954ce71c67728922c104902cb7ce252e522235b33f"},
+    {file = "jsonschema-4.5.1.tar.gz", hash = "sha256:7c6d882619340c3347a1bf7315e147e6d3dae439033ae6383d6acb908c101dfc"},
 ]
 jupyter = [
     {file = "jupyter-1.0.0-py2.py3-none-any.whl", hash = "sha256:5b290f93b98ffbc21c0c7e749f054b3267782166d72fa5e3ed1ed4eaf34a2b78"},
@@ -3403,8 +3391,8 @@ jupyter = [
     {file = "jupyter-1.0.0.zip", hash = "sha256:3e1f86076bbb7c8c207829390305a2b1fe836d471ed54be66a3b8c41e7f46cc7"},
 ]
 jupyter-client = [
-    {file = "jupyter_client-7.3.0-py3-none-any.whl", hash = "sha256:671dd2d90d03f41716b09627a4eb06bb37875f92bf6563cc2ce4fe71c61c5cda"},
-    {file = "jupyter_client-7.3.0.tar.gz", hash = "sha256:3bcc8e08a294d0fa9406e48cfe17e11ef0efdb7c504fe8cc335128e3ef8f3dac"},
+    {file = "jupyter_client-7.3.1-py3-none-any.whl", hash = "sha256:404abe552540aff3527e66e16beb114b6b4ff58479d51a301f4eb9701e4f52ef"},
+    {file = "jupyter_client-7.3.1.tar.gz", hash = "sha256:05d4ff6a0ade25138c6bb0fbeac7ddc26b5fe835e7dd816b64b4a45b931bdc0b"},
 ]
 jupyter-console = [
     {file = "jupyter_console-6.4.3-py3-none-any.whl", hash = "sha256:e630bcb682c0088dda45688ad7c2424d4a825c8acf494cb036ced03ed0424841"},
@@ -4653,8 +4641,8 @@ types-setuptools = [
     {file = "types_setuptools-57.4.14-py3-none-any.whl", hash = "sha256:828f7e7e51e157876f47c80518b23ba0c3c36aa8081efd39d5d39f393938aec9"},
 ]
 types-toml = [
-    {file = "types-toml-0.10.6.tar.gz", hash = "sha256:6aeb3ed7bfa869381551c774ed6a9142e3eed98a83efa5108a9632eafd56dcd3"},
-    {file = "types_toml-0.10.6-py3-none-any.whl", hash = "sha256:c1289e9fb748a6a1ed068694ded1eb16f83df22d58cc1abae8ef6262403545d8"},
+    {file = "types-toml-0.10.7.tar.gz", hash = "sha256:a567fe2614b177d537ad99a661adc9bfc8c55a46f95e66370a4ed2dd171335f9"},
+    {file = "types_toml-0.10.7-py3-none-any.whl", hash = "sha256:05a8da4bfde2f1ee60e90c7071c063b461f74c63a9c3c1099470c08d6fa58615"},
 ]
 typing-extensions = [
     {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
@@ -4747,12 +4735,12 @@ wrapt = [
     {file = "wrapt-1.14.1.tar.gz", hash = "sha256:380a85cf89e0e69b7cfbe2ea9f765f004ff419f34194018a6827ac0e3edfed4d"},
 ]
 xgboost = [
-    {file = "xgboost-1.6.0-py3-none-macosx_10_15_x86_64.macosx_11_0_x86_64.macosx_12_0_x86_64.whl", hash = "sha256:5f7fd61024c41d0c424a8272dfd27797a0393a616b717c05c0f981a49a47b4fd"},
-    {file = "xgboost-1.6.0-py3-none-macosx_12_0_arm64.whl", hash = "sha256:ad27c6a72f6abef6d20e67f957fb25553bb09a6d1c4eaf08cb8ee7efca288255"},
-    {file = "xgboost-1.6.0-py3-none-manylinux2014_aarch64.whl", hash = "sha256:b1d532b8d548dd3acb4bd5f56632339e48167d9e2ec0eda2d8d6b4cd772e03b4"},
-    {file = "xgboost-1.6.0-py3-none-manylinux2014_x86_64.whl", hash = "sha256:640b9649104f22f0dc43c7202d22cde5531cc303801a9c75cad3f2b6e413dcf7"},
-    {file = "xgboost-1.6.0-py3-none-win_amd64.whl", hash = "sha256:e2f9baca0b7cbc208ad4fbafa4cd70b50b292717ee8ba817a3ba7a0fe49de958"},
-    {file = "xgboost-1.6.0.tar.gz", hash = "sha256:9c944c2495cb426b8a365021565755c39ee0b53156cf5e53a4346bdad2e3b734"},
+    {file = "xgboost-1.6.1-py3-none-macosx_10_15_x86_64.macosx_11_0_x86_64.macosx_12_0_x86_64.whl", hash = "sha256:2b3d4ee105f8434873b40edc511330b8276bf3a8d9d42fb0319973079df30b07"},
+    {file = "xgboost-1.6.1-py3-none-macosx_12_0_arm64.whl", hash = "sha256:bd3e59a5490e010004106d8ea1d07aa8e048be51a0974fca6b4f00988f087ab8"},
+    {file = "xgboost-1.6.1-py3-none-manylinux2014_aarch64.whl", hash = "sha256:bbf16af8bf72e8761fcf69fdb5798bd5add6ecb48049198551b13c1d7abeabb5"},
+    {file = "xgboost-1.6.1-py3-none-manylinux2014_x86_64.whl", hash = "sha256:6207c77f611b54d9f056edede819ead03f0235615675f88030ff9fe10d359551"},
+    {file = "xgboost-1.6.1-py3-none-win_amd64.whl", hash = "sha256:3adcb7e4ccf774d5e0128c01e5c381303c3799910ab0f2e996160fe3cd23b7fc"},
+    {file = "xgboost-1.6.1.tar.gz", hash = "sha256:24072028656f3428e7b8aabf77340ece057f273e41f7f85d67ccaefb7454bb18"},
 ]
 yarl = [
     {file = "yarl-1.7.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:f2a8508f7350512434e41065684076f640ecce176d262a7d54f0da41d99c5a95"},
