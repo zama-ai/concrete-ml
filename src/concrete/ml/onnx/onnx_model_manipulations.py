@@ -186,29 +186,3 @@ def cut_onnx_graph_after_node_name(onnx_model: onnx.ModelProto, node_name: str) 
         onnx_model.graph.node.remove(node)
 
     return output_to_follow
-
-
-def remove_transpose_in_first_gemm_node(onnx_model):
-    """Find the first Gemm node and remove the transpose option.
-
-    FIXME remove this function once #292 is fixed
-
-    Args:
-        onnx_model (onnx.ModelProto): the ONNX model to modify.
-    """
-    # Find the Gemm node
-    for node_index, node in enumerate(onnx_model.graph.node):
-        if node.op_type == "Gemm":
-            gemm_node_index = node_index
-            break
-
-    gemm_node = onnx_model.graph.node[gemm_node_index]
-    new_node = onnx.numpy_helper.helper.make_node(
-        name=gemm_node.name,
-        op_type=gemm_node.op_type,
-        inputs=gemm_node.input,
-        outputs=gemm_node.output,
-        alpha=1.0,
-        beta=0.0,
-    )
-    onnx_model.graph.node[gemm_node_index].CopyFrom(new_node)

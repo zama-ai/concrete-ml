@@ -114,7 +114,6 @@ class RandomForestClassifier(
             qX,
             framework="sklearn",
             output_n_bits=self.n_bits,
-            use_workaround_for_transpose=True,
         )
         return self
 

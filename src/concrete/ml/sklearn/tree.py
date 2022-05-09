@@ -3,14 +3,10 @@ from typing import Callable, Optional
 
 import numpy
 import sklearn
-from concrete.numpy.compilation.artifacts import CompilationArtifacts
 from concrete.numpy.compilation.circuit import Circuit
-from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import CompilationConfiguration
 from custom_inherit import doc_inherit
 
 from ..common.debugging.custom_assert import assert_true
-from ..common.utils import generate_proxy_function
 from ..quantization.quantized_array import QuantizedArray
 from .base import BaseTreeEstimatorMixin
 from .tree_to_numpy import tree_to_numpy
@@ -100,11 +96,7 @@ class DecisionTreeClassifier(
 
         # Tree inference to numpy
         self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self.sklearn_model,
-            qX,
-            "sklearn",
-            output_n_bits=self.n_bits,
-            use_workaround_for_transpose=True,
+            self.sklearn_model, qX, "sklearn", output_n_bits=self.n_bits
         )
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -199,11 +191,10 @@ class DecisionTreeClassifier(
         )
         y_preds = numpy.zeros((1, qX.shape[0], self.n_classes_), dtype=numpy.int32)
         for i in range(qX.shape[0]):
-            # FIXME transpose workaround see #292
-            # expected x shape is (n_features, n_samples)
             fhe_pred = self.fhe_tree.encrypt_run_decrypt(
-                qX[i].astype(numpy.uint8).reshape(qX[i].shape[0], 1)
+                qX[i].astype(numpy.uint8).reshape(1, qX[i].shape[0])
             )
+            # FIXME transpose workaround see #292
             y_preds[:, i, :] = numpy.transpose(fhe_pred, axes=(0, 2, 1))
         return y_preds
 
@@ -228,51 +219,7 @@ class DecisionTreeClassifier(
             qX.shape[1] == self.sklearn_model.n_features_in_,
             "qX should have shape (n_samples, n_features)",
         )
-        qX = qX.T
         y_pred = self._tensor_tree_predict(qX)[0]
 
         y_pred = numpy.transpose(y_pred, axes=(0, 2, 1))
         return y_pred
-
-    def compile(
-        self,
-        X: numpy.ndarray,
-        configuration: Optional[CompilationConfiguration] = None,
-        compilation_artifacts: Optional[CompilationArtifacts] = None,
-        show_mlir: bool = False,
-        use_virtual_lib: bool = False,
-    ):
-        """Compile the model.
-
-        Args:
-            X (numpy.ndarray): the unquantized dataset
-            configuration (Optional[CompilationConfiguration]): the options for
-                compilation
-            compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
-                during compilation
-            show_mlir (bool): whether or not to show MLIR during the compilation
-            use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-                Defaults to False.
-
-        """
-        # Make sure that self.tree_predict is not None
-        assert_true(
-            self._tensor_tree_predict is not None, "You must fit the model before compiling it."
-        )
-
-        # mypy bug fix
-        assert self._tensor_tree_predict is not None
-        _tensor_tree_predict_proxy, parameters_mapping = generate_proxy_function(
-            self._tensor_tree_predict, ["inputs"]
-        )
-
-        X = self.quantize_input(X)
-        compiler = Compiler(
-            _tensor_tree_predict_proxy,
-            {parameters_mapping["inputs"]: "encrypted"},
-            configuration,
-            compilation_artifacts,
-        )
-        self.fhe_tree = compiler.compile(
-            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir, virtual=use_virtual_lib
-        )

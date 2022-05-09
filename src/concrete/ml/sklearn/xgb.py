@@ -159,7 +159,6 @@ class XGBClassifier(
             qX,
             framework="xgboost",
             output_n_bits=self.n_bits,
-            use_workaround_for_transpose=True,
         )
         return self
 

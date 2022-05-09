@@ -382,7 +382,6 @@ class BaseTreeEstimatorMixin:
         if execute_in_fhe:
             y_preds = self._execute_in_fhe(X)
         else:
-            qX = qX.transpose()
             y_preds = self._tensor_tree_predict(qX)[0]
         y_preds = self.post_processing(y_preds)
         return y_preds
@@ -449,10 +448,9 @@ class BaseTreeEstimatorMixin:
         )
         y_preds = []
         for qX_i in qX:
-            # FIXME transpose workaround see #292
             # expected x shape is (n_features, n_samples)
             fhe_pred = self.fhe_tree.encrypt_run_decrypt(
-                qX_i.astype(numpy.uint8).reshape(qX_i.shape[0], 1)
+                qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
             )
             y_preds.append(fhe_pred)
         y_preds_array = numpy.concatenate(y_preds, axis=-1)
@@ -498,7 +496,7 @@ class BaseTreeEstimatorMixin:
             compilation_artifacts,
         )
         self.fhe_tree = compiler.compile(
-            (sample.reshape(sample.shape[0], 1) for sample in X), show_mlir, virtual=use_virtual_lib
+            (sample.reshape(1, sample.shape[0]) for sample in X), show_mlir, virtual=use_virtual_lib
         )
 
         output_graph = self.fhe_tree.graph.ordered_outputs()

@@ -12,7 +12,6 @@ from ..onnx.convert import get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import (
     cut_onnx_graph_after_node_name,
     keep_following_outputs_discard_others,
-    remove_transpose_in_first_gemm_node,
     replace_uncessary_nodes_by_identity,
     simplify_onnx_model,
 )
@@ -34,7 +33,6 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     output_n_bits: Optional[int] = MAXIMUM_BIT_WIDTH,
-    use_workaround_for_transpose: bool = False,
 ) -> Tuple[Callable, QuantizedArray]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
@@ -44,7 +42,6 @@ def tree_to_numpy(
         framework (str): The framework from which the onnx_model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output.
-        use_workaround_for_transpose (bool): Whether to use the workaround for transpose.
 
     Returns:
         Union[Callable, QuantizedArray]: A tuple with a function that takes a numpy array and
@@ -104,7 +101,7 @@ def tree_to_numpy(
         output_to_follow = cut_onnx_graph_after_node_name(onnx_model, cut_node_name)
     keep_following_outputs_discard_others(onnx_model, (output_to_follow,))
 
-    # TODO remove Transpose from the list when #292 is done
+    # TODO remove Transpose from the list when #931 is done
     # TODO remove Gather from the list when #328 is done
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast", "Gather"]
     replace_uncessary_nodes_by_identity(onnx_model, op_type_to_remove)
@@ -144,19 +141,6 @@ def tree_to_numpy(
                 init_tensor = numpy.floor(init_tensor)
         new_initializer = numpy_helper.from_array(init_tensor.astype(int), initializer.name)
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
-
-    if use_workaround_for_transpose:
-        # Since the transpose is currently not implemented in concrete numpy
-        # the input is transposed in clear. We need to update the Gemm
-        # where the input is transposed.
-
-        # Gemm has transA and transB parameter. B is the input.
-        # If we transpose the input before, we don't have to do it afterward.
-        # In FHE we currently only send 1 example so the input has shape (1, n_features)
-        # We simply need to transpose it to (n_features, 1)
-
-        # FIXME remove this workaround once #292 is fixed
-        remove_transpose_in_first_gemm_node(onnx_model)
 
     simplify_onnx_model(onnx_model)
     _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
