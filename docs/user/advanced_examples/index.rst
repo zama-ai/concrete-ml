@@ -4,7 +4,7 @@ Advanced examples
 Here is a summary of our results. Remark that from one seed to the other, results of the different notebooks may vary. Please look in the different notebooks for details.
 
 .. list-table::
-    :widths: 10 5 10 10 10 10
+    :widths: 10 15 10 10 10 10
     :header-rows: 1
     :stub-columns: 1
 
@@ -27,11 +27,23 @@ Here is a summary of our results. Remark that from one seed to the other, result
       - 0.875
       - 0.875
     * - Poisson Regression
-      - `OpenML insurance <https://www.openml.org/d/41214>`_
-      - deviance
-      - 1.38
-      - 1.68
-      - 1.68
+      - `OpenML insurance (freq) <https://www.openml.org/d/41214>`_
+      - mean Poisson deviance
+      - 0.61
+      - 0.60
+      - 0.60
+    * - Gamma Regression
+      - `OpenML insurance (freq) <https://www.openml.org/d/41214>`__ `OpenML insurance (sev) <https://www.openml.org/d/41215>`__
+      - mean Gamma deviance
+      - 0.45
+      - 0.45
+      - 0.45
+    * - Tweedie Regression
+      - `OpenML insurance (freq) <https://www.openml.org/d/41214>`__ `OpenML insurance (sev) <https://www.openml.org/d/41215>`__
+      - mean Tweedie deviance (power=1.9) 
+      - 33.42
+      - 34.18
+      - 34.18
     * - Decision Tree
       - `OpenML spams <https://www.openml.org/d/44>`_
       - precision score
@@ -71,6 +83,7 @@ Scikit-learn
    PoissonRegression.ipynb
    DecisionTreeClassifier.ipynb
    XGBClassifier.ipynb
+   GLMComparison.ipynb
 
 Torch
 **********************
