@@ -3,6 +3,7 @@
 import onnx
 from onnx import helper
 
+from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.onnx.onnx_model_manipulations import remove_unused_constant_nodes
 
 
@@ -54,7 +55,7 @@ def test_remove_unused_constant_nodes():
 
     # Create the model (ModelProto)
     model_def = helper.make_model(graph_def, producer_name="onnx-example")
-    model_def.opset_import[0].version = 14
+    model_def.opset_import[0].version = OPSET_VERSION_FOR_ONNX_EXPORT
 
     model_def = onnx.shape_inference.infer_shapes(model_def)
 

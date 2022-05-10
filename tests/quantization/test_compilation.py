@@ -7,6 +7,7 @@ from concrete.numpy import MAXIMUM_BIT_WIDTH
 from onnx import helper, numpy_helper
 from torch import nn
 
+from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.quantization import QuantizedArray, QuantizedGemm
 from concrete.ml.quantization.post_training import PostTrainingAffineQuantization
 from concrete.ml.torch.numpy_module import NumpyModule
@@ -369,7 +370,7 @@ def test_post_training_quantization_constant_folding():
 
     # Create the model (ModelProto)
     model_def = helper.make_model(graph_def, producer_name="onnx-example")
-    model_def.opset_import[0].version = 14
+    model_def.opset_import[0].version = OPSET_VERSION_FOR_ONNX_EXPORT
 
     model_def = onnx.shape_inference.infer_shapes(model_def)
 

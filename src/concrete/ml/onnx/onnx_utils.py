@@ -95,7 +95,8 @@ ATTR_GETTERS = {
 
 # pylint: enable=invalid-name
 
-# We are using opset 14 for ONNX export, implement the relevant revisions of the operators
+# We are using OPSET_VERSION_FOR_ONNX_EXPORT for ONNX export, implement the relevant revisions of
+# the operators
 ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Add": numpy_add,
     "Clip": numpy_clip,

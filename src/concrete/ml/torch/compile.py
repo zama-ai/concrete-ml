@@ -3,6 +3,7 @@
 from typing import Optional, Tuple, Union
 
 import numpy
+import onnx
 import torch
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from concrete.numpy.compilation.artifacts import CompilationArtifacts
@@ -34,8 +35,8 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
     )
 
 
-def compile_torch_model(
-    torch_model: torch.nn.Module,
+def _compile_torch_or_onnx_model(
+    model: Union[torch.nn.Module, onnx.ModelProto],
     torch_inputset: Dataset,
     configuration: Optional[CompilationConfiguration] = None,
     compilation_artifacts: Optional[CompilationArtifacts] = None,
@@ -43,12 +44,14 @@ def compile_torch_model(
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
 ) -> QuantizedModule:
-    """Take a model in torch, turn it to numpy, transform weights to integer.
+    """Compile a torch module or ONNX into an FHE equivalent.
 
-    Later, we'll compile the integer model.
+    Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and
+    finally compile it with Concrete-Numpy
 
     Args:
-        torch_model (torch.nn.Module): the model to quantize,
+        model (Union[torch.nn.Module, onnx.ModelProto]): the model to quantize, either in torch or
+            in ONNX
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
         configuration (CompilationConfiguration): Configuration object to use
@@ -60,7 +63,6 @@ def compile_torch_model(
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False.
-
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -83,7 +85,7 @@ def compile_torch_model(
     )
 
     # Create corresponding numpy model
-    numpy_model = NumpyModule(torch_model, dummy_input_for_tracing)
+    numpy_model = NumpyModule(model, dummy_input_for_tracing)
 
     # Quantize with post-training static method, to have a model with integer weights
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
@@ -101,3 +103,87 @@ def compile_torch_model(
     )
 
     return quantized_module
+
+
+def compile_torch_model(
+    torch_model: torch.nn.Module,
+    torch_inputset: Dataset,
+    configuration: Optional[CompilationConfiguration] = None,
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+    show_mlir: bool = False,
+    n_bits=MAXIMUM_BIT_WIDTH,
+    use_virtual_lib: bool = False,
+) -> QuantizedModule:
+    """Compile a torch module into an FHE equivalent.
+
+    Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
+    compile it with Concrete-Numpy
+
+    Args:
+        torch_model (torch.nn.Module): the model to quantize
+        torch_inputset (Dataset): the inputset, can contain either torch
+            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+        show_mlir (bool): if set, the MLIR produced by the converter and which is going
+            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+        n_bits: the number of bits for the quantization
+        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
+            Defaults to False.
+
+    Returns:
+        QuantizedModule: The resulting compiled QuantizedModule.
+    """
+    return _compile_torch_or_onnx_model(
+        torch_model,
+        torch_inputset,
+        configuration=configuration,
+        compilation_artifacts=compilation_artifacts,
+        show_mlir=show_mlir,
+        n_bits=n_bits,
+        use_virtual_lib=use_virtual_lib,
+    )
+
+
+def compile_onnx_model(
+    onnx_model: onnx.ModelProto,
+    torch_inputset: Dataset,
+    configuration: Optional[CompilationConfiguration] = None,
+    compilation_artifacts: Optional[CompilationArtifacts] = None,
+    show_mlir: bool = False,
+    n_bits=MAXIMUM_BIT_WIDTH,
+    use_virtual_lib: bool = False,
+) -> QuantizedModule:
+    """Compile a torch module into an FHE equivalent.
+
+    Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
+    compile it with Concrete-Numpy
+
+    Args:
+        onnx_model (onnx.ModelProto): the model to quantize
+        torch_inputset (Dataset): the inputset, can contain either torch
+            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        configuration (CompilationConfiguration): Configuration object to use
+            during compilation
+        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+            during compilation
+        show_mlir (bool): if set, the MLIR produced by the converter and which is going
+            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+        n_bits: the number of bits for the quantization
+        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
+            Defaults to False.
+
+    Returns:
+        QuantizedModule: The resulting compiled QuantizedModule.
+    """
+    return _compile_torch_or_onnx_model(
+        onnx_model,
+        torch_inputset,
+        configuration=configuration,
+        compilation_artifacts=compilation_artifacts,
+        show_mlir=show_mlir,
+        n_bits=n_bits,
+        use_virtual_lib=use_virtual_lib,
+    )

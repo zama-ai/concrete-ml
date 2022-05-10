@@ -1,17 +1,22 @@
 """Tests for the torch to numpy module."""
+import tempfile
 from functools import partial
 from inspect import signature
+from pathlib import Path
 
 import numpy
+import onnx
 import pytest
 import torch
 import torch.quantization
 from torch import nn
 
+from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
+
 # pylint sees separated imports from concrete but does not understand they come from two different
 # packages/projects, disable the warning
 # pylint: disable=ungrouped-imports
-from concrete.ml.torch.compile import compile_torch_model
+from concrete.ml.torch.compile import compile_onnx_model, compile_torch_model
 
 # pylint: enable=ungrouped-imports
 
@@ -163,12 +168,14 @@ class StepActivationModule(nn.Module):
         return x
 
 
-def compile_and_test_torch(
+# pylint: disable=too-many-locals
+def compile_and_test_torch_or_onnx(
     input_output_feature,
     model,
     activation_function,
     default_configuration,
     use_virtual_lib,
+    is_onnx,
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
@@ -182,9 +189,9 @@ def compile_and_test_torch(
     if not isinstance(input_output_feature, tuple):
         input_output_feature = (input_output_feature,)
 
-    torch_fc_model = model(input_output_feature[0], activation_function=activation_function)
+    torch_model = model(input_output_feature[0], activation_function=activation_function)
 
-    num_inputs = len(signature(torch_fc_model.forward).parameters)
+    num_inputs = len(signature(torch_model.forward).parameters)
 
     # Create random input
     inputset = (
@@ -197,13 +204,39 @@ def compile_and_test_torch(
     )
 
     # Compile
-    quantized_numpy_module = compile_torch_model(
-        torch_fc_model,
-        inputset,
-        default_configuration,
-        n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
-    )
+    if is_onnx:
+
+        output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
+        inputset_as_numpy_tuple = (
+            (val for val in inputset) if isinstance(inputset, tuple) else (inputset,)
+        )
+        dummy_input = tuple(
+            torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
+        )
+        torch.onnx.export(
+            torch_model,
+            dummy_input,
+            str(output_onnx_file_path),
+            opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
+        )
+        onnx_model = onnx.load_model(output_onnx_file_path)
+        onnx.checker.check_model(onnx_model)
+
+        quantized_numpy_module = compile_onnx_model(
+            onnx_model,
+            inputset,
+            default_configuration,
+            n_bits=n_bits,
+            use_virtual_lib=use_virtual_lib,
+        )
+    else:
+        quantized_numpy_module = compile_torch_model(
+            torch_model,
+            inputset,
+            default_configuration,
+            n_bits=n_bits,
+            use_virtual_lib=use_virtual_lib,
+        )
 
     # Create test data from the same distribution and quantize using
     # learned quantization parameters during compilation
@@ -227,7 +260,7 @@ def compile_and_test_torch(
 
     # Compile with higher quantization bitwidth
     quantized_numpy_module = compile_torch_model(
-        torch_fc_model,
+        torch_model,
         inputset,
         default_configuration,
         n_bits=n_bits,
@@ -260,7 +293,7 @@ def compile_and_test_torch(
     # will not match, but they should be close
     # see: https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html
     torch_quantized_model = torch.quantization.quantize_dynamic(
-        torch_fc_model, {nn.Linear}, dtype=torch.qint8
+        torch_model, {nn.Linear}, dtype=torch.qint8
     )
     torch_input = (torch.from_numpy(x).float() for x in x_test)
     torch_result = torch_quantized_model(*torch_input).numpy()
@@ -271,6 +304,9 @@ def compile_and_test_torch(
     # Check that we have similar results between CML and torch in 8 bits
     # Due to differences in quantization approach, we allow a lower R2 in the comparison
     check_r2_score(results, torch_result, 0.9)
+
+
+# pylint: enable=too-many-locals
 
 
 @pytest.mark.parametrize(
@@ -296,21 +332,24 @@ def compile_and_test_torch(
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-def test_compile_torch_networks(
+@pytest.mark.parametrize("is_onnx", [True, False])
+def test_compile_torch_or_onnx_networks(
     input_output_feature,
     model,
     activation_function,
     default_configuration,
     use_virtual_lib,
+    is_onnx,
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
-    compile_and_test_torch(
+    compile_and_test_torch_or_onnx(
         input_output_feature,
         model,
         activation_function,
         default_configuration,
         use_virtual_lib,
+        is_onnx,
         check_r2_score,
     )
 
@@ -328,21 +367,24 @@ def test_compile_torch_networks(
     ],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-def test_compile_torch_conv_networks(  # pylint: disable=unused-argument
+@pytest.mark.parametrize("is_onnx", [True, False])
+def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     model,
     activation_function,
     default_configuration,
     use_virtual_lib,
+    is_onnx,
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
 
-    compile_and_test_torch(
+    compile_and_test_torch_or_onnx(
         (1, 7, 7),
         model,
         activation_function,
         default_configuration,
         use_virtual_lib,
+        is_onnx,
         check_r2_score,
     )
 
@@ -400,20 +442,23 @@ def test_compile_torch_conv_networks(  # pylint: disable=unused-argument
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-def test_compile_torch_activations(
+@pytest.mark.parametrize("is_onnx", [True, False])
+def test_compile_torch_or_onnx_activations(
     input_output_feature,
     model,
     activation_function,
     default_configuration,
     use_virtual_lib,
+    is_onnx,
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
-    compile_and_test_torch(
+    compile_and_test_torch_or_onnx(
         input_output_feature,
         model,
         activation_function,
         default_configuration,
         use_virtual_lib,
+        is_onnx,
         check_r2_score,
     )

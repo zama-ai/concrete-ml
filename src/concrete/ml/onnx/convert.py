@@ -11,6 +11,8 @@ from onnx import checker
 
 from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy
 
+OPSET_VERSION_FOR_ONNX_EXPORT = 14
+
 
 def get_equivalent_numpy_forward_and_onnx_model(
     torch_module: torch.nn.Module,
@@ -39,7 +41,12 @@ def get_equivalent_numpy_forward_and_onnx_model(
         else output_onnx_file
     )
 
-    torch.onnx.export(torch_module, dummy_input, str(output_onnx_file_path), opset_version=14)
+    torch.onnx.export(
+        torch_module,
+        dummy_input,
+        str(output_onnx_file_path),
+        opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
+    )
     equivalent_onnx_model = onnx.load_model(output_onnx_file_path)
     checker.check_model(equivalent_onnx_model)
 
