@@ -14,6 +14,7 @@ from torch import nn
 
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
+    GammaRegressor,
     LinearRegression,
     LinearSVC,
     LinearSVR,
@@ -68,7 +69,7 @@ list_regressors = [
         ),
     )
     for alg in [
-        # FIXME: #916, GammaRegressor,
+        GammaRegressor,
         LinearRegression,
         LinearSVR,
         LogisticRegression,
@@ -82,6 +83,10 @@ list_regressors = [
 def test_pipeline_classifier(alg, load_data):
     """Tests that the classifier work well within sklearn pipelines."""
     x, y = load_data()
+
+    # For Gamma regressor
+    if alg is GammaRegressor:
+        y = numpy.abs(y) + 1
 
     pipe_cv = Pipeline(
         [
