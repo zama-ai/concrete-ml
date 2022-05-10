@@ -343,7 +343,7 @@ release_docker:
 	--new-version "$${PROJECT_VERSION}" \
 	--existing-versions "$${PROJECT_VERSION}" | jq -rc '.is_prerelease')" && \
 	echo "PRERELEASE=$${IS_PRERELEASE}" >> "$${EV_FILE}" && \
-	echo "CN_VERSION='$${CN_VERSION_SPEC_FOR_RC}'" >> "$${EV_FILE}" && \
+	echo "CN_VERSION='$(CN_VERSION_SPEC_FOR_RC)'" >> "$${EV_FILE}" && \
 	echo "" >> "$${EV_FILE}" && \
 	./docker/build_release_image.sh "$${EV_FILE}" && rm -f "$${EV_FILE}" || rm -f "$${EV_FILE}"
 
@@ -449,13 +449,17 @@ todo:
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
-	./script/make_utils/licenses.sh --cn_version "$${CN_VERSION_SPEC_FOR_RC}"
+	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)"
+
+.PHONY: force_licenses # Generate the list of licenses of dependencies (force the regeneration)
+force_licenses:
+	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)" --force_update
 
 .PHONY: check_licenses # Check if the licenses of dependencies have changed
 check_licenses:
 	@TMP_OUT="$$(mktemp)" && \
 	if ! poetry run env bash ./script/make_utils/licenses.sh --check \
-		--cn_version "$${CN_VERSION_SPEC_FOR_RC}" > "$${TMP_OUT}"; then \
+		--cn_version "$(CN_VERSION_SPEC_FOR_RC)" > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
 		echo "Error while checking licenses, see log above."; \
