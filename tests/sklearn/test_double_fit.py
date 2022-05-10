@@ -10,12 +10,14 @@ from torch import nn
 
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
+    GammaRegressor,
     LinearRegression,
     LinearSVC,
     LinearSVR,
     LogisticRegression,
     NeuralNetClassifier,
     PoissonRegressor,
+    RandomForestClassifier,
     TweedieRegressor,
     XGBClassifier,
 )
@@ -24,12 +26,10 @@ from concrete.ml.sklearn import (
 @pytest.mark.parametrize(
     "alg",
     [
-        # FIXME: this fails and needs to be fixed, #913
-        # pytest.param(RandomForestClassifier, id="RandomForestClassifier"),
+        pytest.param(RandomForestClassifier, id="RandomForestClassifier"),
         pytest.param(DecisionTreeClassifier, id="DecisionTreeClassifier"),
         pytest.param(XGBClassifier, id="XGBClassifier"),
-        # FIXME: this fails and needs to be fixed, #918
-        # pytest.param(GammaRegressor, id="GammaRegressor"),
+        pytest.param(GammaRegressor, id="GammaRegressor"),
         pytest.param(LinearRegression, id="LinearRegression"),
         pytest.param(LinearSVC, id="LinearSVC"),
         pytest.param(LinearSVR, id="LinearSVR"),
@@ -66,6 +66,10 @@ from concrete.ml.sklearn import (
 def test_double_fit(alg, load_data):
     """Tests that calling fit multiple times gives the same results"""
     x, y = load_data()
+
+    # For Gamma regressor
+    if alg is GammaRegressor:
+        y = numpy.abs(y) + 1
 
     model = alg(n_bits=2)
 
