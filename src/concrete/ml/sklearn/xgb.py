@@ -10,14 +10,11 @@ import xgboost.sklearn
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import QuantizedArray
 from .base import BaseTreeEstimatorMixin
-from .tree_to_numpy import tree_to_numpy
 
 
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name,too-many-instance-attributes
-class XGBClassifier(
-    BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator
-):
+class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
     """Implements the XGBoost classifier."""
 
     sklearn_alg = xgboost.sklearn.XGBClassifier
@@ -27,8 +24,9 @@ class XGBClassifier(
     _tensor_tree_predict: Optional[Callable]
     n_classes_: int
     sklearn_model: Any
+    framework: str = "xgboost"
 
-    # pylint: disable=too-many-arguments,missing-docstring,too-many-locals
+    # pylint: disable=too-many-arguments,too-many-locals
     def __init__(
         self,
         n_bits: int = 6,
@@ -115,76 +113,6 @@ class XGBClassifier(
         self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
-
-    # pylint: enable=too-many-arguments,missing-docstring,too-many-locals
-
-    #  pylint: disable=arguments-differ
-    def fit(self, X: numpy.ndarray, y: numpy.ndarray, **kwargs) -> "XGBClassifier":
-        """Fit the XGBoostClassifier.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            **kwargs: args for super().fit
-
-        Returns:
-            XGBoostClassifier: The XGBoostClassifier.
-        """
-        # mypy
-        assert self.n_bits is not None
-
-        # Register the number of classes
-        self.n_classes_ = len(numpy.unique(y))
-
-        qX = numpy.zeros_like(X)
-        self.q_x_byfeatures = []
-
-        # Quantization of each feature in X
-        for i in range(X.shape[1]):
-            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
-            self.q_x_byfeatures.append(q_x_)
-            qX[:, i] = q_x_.qvalues.astype(numpy.int32)
-
-        # Initialize the sklearn model
-        params = self.get_params()
-        params.pop("n_bits", None)
-
-        self.sklearn_model = xgboost.sklearn.XGBClassifier(**params)
-
-        self.sklearn_model.fit(qX, y, **kwargs)
-
-        # Tree ensemble inference to numpy
-        self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self.sklearn_model,
-            qX,
-            framework="xgboost",
-            output_n_bits=self.n_bits,
-        )
-        return self
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict the target values.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted target values.
-        """
-        return BaseTreeEstimatorMixin.predict(self, X, execute_in_fhe=execute_in_fhe)
-
-    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict the probabilities.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted probabilities.
-        """
-        return BaseTreeEstimatorMixin.predict_proba(self, X, execute_in_fhe=execute_in_fhe)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the predictions.

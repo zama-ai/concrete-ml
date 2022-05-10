@@ -13,14 +13,12 @@ from sklearn.linear_model._glm.link import BaseLink
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
-from .linear_model import SklearnLinearModelMixin
+from .base import SklearnLinearModelMixin
 from .torch_module import LINK_NAMES, _LinearRegressionTorchModel
 
 
 # pylint: disable=too-many-instance-attributes
-class _GeneralizedLinearRegressor(
-    SklearnLinearModelMixin, sklearn.base.RegressorMixin, sklearn.base.BaseEstimator
-):
+class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """Regression via a penalized Generalized Linear Model (GLM) with FHE."""
 
     # The inheritance method does not inherit directly from the related Sklearn model and therefore

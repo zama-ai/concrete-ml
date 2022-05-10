@@ -3,11 +3,17 @@
 # Disable pylint invalid name since scikit learn uses "X" as variable name for data
 # pylint: disable=invalid-name
 
+import copy
+
+# Disable pylint to import hummingbird while ignoring the warnings
+# pylint: disable=invalid-name,wrong-import-position,wrong-import-order,too-many-instance-attributes
+import warnings
 from abc import abstractmethod
-from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy
+import onnx
+import sklearn
 import torch
 from concrete.numpy.compilation.artifacts import CompilationArtifacts
 from concrete.numpy.compilation.compiler import Compiler
@@ -16,8 +22,18 @@ from concrete.numpy.dtypes.integer import Integer
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
+from ..onnx.onnx_model_manipulations import simplify_onnx_model
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray
 from ..torch import NumpyModule
+from .tree_to_numpy import tree_to_numpy
+
+# pylint: disable=wrong-import-position,wrong-import-order
+
+# Silence hummingbird warnings
+warnings.filterwarnings("ignore")
+from hummingbird.ml import convert as hb_convert  # noqa: E402
+
+# pylint: enable=wrong-import-position,wrong-import-order
 
 
 class QuantizedTorchEstimatorMixin:
@@ -91,7 +107,7 @@ class QuantizedTorchEstimatorMixin:
             )
 
         # Quantize the compilation input set using the quantization parameters computed in .fit()
-        quantized_numpy_inputset = deepcopy(self.quantized_module_.q_inputs[0])
+        quantized_numpy_inputset = copy.deepcopy(self.quantized_module_.q_inputs[0])
         quantized_numpy_inputset.update_values(X)
 
         # Call the compilation backend to produce the FHE inference circuit
@@ -256,7 +272,7 @@ class QuantizedTorchEstimatorMixin:
         self.fit(X, y)
 
         # Create a skorch estimator with the same training parameters as this one
-        # Follow sklearn.base.clone: deepcopy parameters obtained with get_params()
+        # Follow sklearn.base.clone: copy.deepcopy parameters obtained with get_params()
         # and pass them to the constructor
 
         # sklearn docs: "Clone does a deep copy of the model in an estimator without actually
@@ -266,10 +282,10 @@ class QuantizedTorchEstimatorMixin:
         new_object_params = self.get_params_for_benchmark()
 
         for name, param in new_object_params.items():
-            new_object_params[name] = deepcopy(param)
+            new_object_params[name] = copy.deepcopy(param)
 
         klass = self.base_estimator_type
-        module_copy = deepcopy(self.base_module_to_compile)
+        module_copy = copy.deepcopy(self.base_module_to_compile)
 
         # Construct with the fp32 network already trained for this quantized estimator
         # Need to remove the `module` parameter as we pass the trained instance here
@@ -286,7 +302,7 @@ class QuantizedTorchEstimatorMixin:
         return self, fp32_model
 
 
-class BaseTreeEstimatorMixin:
+class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
     """Mixin class for tree-based estimators.
 
     This class is used to add functionality to tree-based estimators, such as
@@ -301,6 +317,10 @@ class BaseTreeEstimatorMixin:
     sklearn_alg: Any
     sklearn_model: Any
     _tensor_tree_predict: Optional[Callable]
+    framework: str
+    class_mapping_: Optional[dict] = None
+    classes_: str
+    n_classes_: int
 
     def __init__(self, n_bits: int):
         """Initialize the TreeBasedEstimatorMixin.
@@ -309,6 +329,9 @@ class BaseTreeEstimatorMixin:
             n_bits (int): number of bits used for quantization
         """
         self.n_bits = n_bits
+        self.q_x_byfeatures = []
+        self.n_bits = n_bits
+        self.fhe_tree = None
 
     def quantize_input(self, X: numpy.ndarray):
         """Quantize the input.
@@ -325,14 +348,56 @@ class BaseTreeEstimatorMixin:
             qX[:, i] = q_x_.update_values(X[:, i])
         return qX.astype(numpy.int32)
 
-    @abstractmethod
-    def fit(self, X, y):
+    def fit(self, X: numpy.ndarray, y: numpy.ndarray, **kwargs) -> Any:
         """Fit the tree-based estimator.
 
         Args:
-            X (numpy.ndarray): the input
-            y (numpy.ndarray): the labels
+            X (numpy.ndarray): The input data.
+            y (numpy.ndarray): The target data.
+            **kwargs: args for super().fit
+
+        Returns:
+            Any: The fitted model.
         """
+        # mypy
+        assert self.n_bits is not None
+
+        qX = numpy.zeros_like(X)
+        self.q_x_byfeatures = []
+
+        self.n_classes_ = len(numpy.unique(y))
+
+        # If classes are not starting from 0 and/or increasing by 1
+        # we need to map them to values 0, 1, ..., n_classes - 1
+        classes_ = numpy.unique(y)
+        if not numpy.array_equal(numpy.arange(len(classes_)), classes_):
+            self.class_mapping_ = dict(enumerate(classes_))
+
+        # Register the number of classes
+        self.n_classes_ = len(classes_)
+
+        # Quantization of each feature in X
+        for i in range(X.shape[1]):
+            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
+            self.q_x_byfeatures.append(q_x_)
+            qX[:, i] = q_x_.qvalues.astype(numpy.int32)
+
+        # Initialize the sklearn model
+        params = self.get_params()
+        params.pop("n_bits", None)
+
+        self.sklearn_model = self.sklearn_alg(**params)
+
+        self.sklearn_model.fit(qX, y, **kwargs)
+
+        # Tree ensemble inference to numpy
+        self._tensor_tree_predict, self.q_y = tree_to_numpy(
+            self.sklearn_model,
+            qX,
+            framework=self.framework,
+            output_n_bits=self.n_bits,
+        )
+        return self
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict the target values.
@@ -346,6 +411,28 @@ class BaseTreeEstimatorMixin:
         """
         y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
+        if self.class_mapping_ is not None:
+            y_preds = numpy.array([self.class_mapping_[y_pred] for y_pred in y_preds])
+        return y_preds
+
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict the probabilities.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
+
+        Returns:
+            numpy.ndarray: The predicted probabilities.
+        """
+        # mypy
+        assert self._tensor_tree_predict is not None
+        qX = self.quantize_input(X)
+        if execute_in_fhe:
+            y_preds = self._execute_in_fhe(qX)
+        else:
+            y_preds = self._tensor_tree_predict(qX)[0]
+        y_preds = self.post_processing(y_preds)
         return y_preds
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -363,27 +450,8 @@ class BaseTreeEstimatorMixin:
         # Sum all tree outputs.
         y_preds = numpy.sum(y_preds, axis=0)
         assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+        # FIXME transpose workaround see #292
         y_preds = numpy.transpose(y_preds)
-        return y_preds
-
-    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict the probabilities.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted probabilities.
-        """
-        # mypy
-        assert self._tensor_tree_predict is not None
-        qX = self.quantize_input(X)
-        if execute_in_fhe:
-            y_preds = self._execute_in_fhe(X)
-        else:
-            y_preds = self._tensor_tree_predict(qX)[0]
-        y_preds = self.post_processing(y_preds)
         return y_preds
 
     def fit_benchmark(
@@ -430,22 +498,24 @@ class BaseTreeEstimatorMixin:
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 
-    def _execute_in_fhe(self, X: numpy.ndarray) -> numpy.ndarray:
+    def _execute_in_fhe(self, qX: numpy.ndarray) -> numpy.ndarray:
         """Execute the FHE inference on the input data.
 
         Args:
-            X (numpy.ndarray): the input data
+            qX (numpy.ndarray): the input data quantized
 
         Returns:
             numpy.ndarray: the prediction as ordinals
         """
-        qX = self.quantize_input(X)
         # Check that self.fhe_tree is not None
         assert_true(
             self.fhe_tree is not None,
             f"You must call {self.compile.__name__} "
             f"before calling {self.predict.__name__} with execute_in_fhe=True.",
         )
+        # mypy
+        assert self.fhe_tree is not None
+
         y_preds = []
         for qX_i in qX:
             # expected x shape is (n_features, n_samples)
@@ -498,7 +568,8 @@ class BaseTreeEstimatorMixin:
         self.fhe_tree = compiler.compile(
             (sample.reshape(1, sample.shape[0]) for sample in X), show_mlir, virtual=use_virtual_lib
         )
-
+        # mypy
+        assert self.fhe_tree is not None
         output_graph = self.fhe_tree.graph.ordered_outputs()
         assert_true(
             len(output_graph) == 1,
@@ -507,4 +578,215 @@ class BaseTreeEstimatorMixin:
         assert_true(
             isinstance(dtype_output := output_graph[0].output.dtype, Integer),
             f"output is {dtype_output} but an Integer is expected.",
+        )
+
+
+# pytlint: disable=invalid-name,too-many-instance-attributes
+class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
+    """A Mixin class for sklearn linear models with FHE."""
+
+    sklearn_alg: Callable
+
+    def __init__(self, *args, n_bits: Union[int, Dict] = 2, **kwargs):
+        """Initialize the FHE linear model.
+
+        Args:
+            n_bits (int, Dict): Number of bits to quantize the model. If an int is passed for
+                n_bits, the value will be used for activation, inputs and weights. If a dict is
+                passed, then it should contain "inputs", "weights" and "outputs" keys with
+                corresponding number of quantization bits for:
+                - inputs : any input data to any layers
+                - weights: learned parameters or constants in the network
+                - outputs: final model output
+                Default to 2.
+            *args: The arguments to pass to the sklearn linear model.
+            **kwargs: The keyword arguments to pass to the sklearn linear model.
+        """
+        super().__init__(*args, **kwargs)
+        self.n_bits = n_bits
+
+    def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
+        """Fit the FHE linear model.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            y (numpy.ndarray): The target data.
+            *args: The arguments to pass to the sklearn linear model.
+            **kwargs: The keyword arguments to pass to the sklearn linear model.
+        """
+        # Copy X
+        X = copy.deepcopy(X)
+
+        # Train
+
+        # Initialize the model
+        params = self.get_params()  # type: ignore
+        params.pop("n_bits", None)
+        self.sklearn_model = self.sklearn_alg(**params)
+
+        # Fit the sklearn model
+        self.sklearn_model.fit(X, y, *args, **kwargs)
+
+        # Convert to onnx
+        onnx_model = hb_convert(self.sklearn_model, backend="onnx", test_input=X).model
+
+        # Remove Cast nodes
+        onnx_model = self.clean_graph(onnx_model)
+
+        # Create NumpyModule from onnx model
+        numpy_module = NumpyModule(onnx_model)
+
+        # Apply post-training quantization
+        post_training = PostTrainingAffineQuantization(
+            n_bits=self.n_bits, numpy_model=numpy_module, is_signed=True
+        )
+
+        # Calibrate and create quantize module
+        self.quantized_module = post_training.quantize_module(X)
+
+    # clean_graph is used by inheritance and the calling self is needed.
+    # pylint does not see it and complains that clean_graph should use @staticmethod
+    # thus we need to ignore the warning.
+    # pylint: disable=no-self-use
+
+    def clean_graph(self, onnx_model: onnx.ModelProto):
+        """Clean the graph of the onnx model.
+
+        This will remove the Cast node in the onnx.graph since they
+        have no use in the quantized/FHE model.
+
+        Args:
+            onnx_model (onnx.ModelProto): the onnx model
+
+        Returns:
+            onnx.ModelProto: the cleaned onnx model
+        """
+        op_type_to_remove = {"Cast", "Softmax", "ArgMax"}
+
+        # Remove the input and output nodes
+        for node_index, node in enumerate(onnx_model.graph.node):
+            if node.op_type in op_type_to_remove:
+                if node.op_type == "Cast":
+                    assert_true(len(node.attribute) == 1, "Cast node has more than one attribute")
+                    node_attribute = node.attribute[0]
+                    assert_true(
+                        (node_attribute.name == "to") & (node_attribute.i == onnx.TensorProto.FLOAT)
+                    )
+                new_node = onnx.helper.make_node(
+                    "Identity",
+                    inputs=[str(node.input[0])],
+                    outputs=node.output,
+                )
+                # Update current node with new_node
+                onnx_model.graph.node[node_index].CopyFrom(new_node)
+
+        simplify_onnx_model(onnx_model)
+        return onnx_model
+
+    # pylint: enable=no-self-use
+
+    def fit_benchmark(
+        self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
+    ) -> Tuple["SklearnLinearModelMixin", sklearn.linear_model.LinearRegression]:
+        """Fit the sklearn linear model and the FHE linear model.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            y (numpy.ndarray): The target data.
+            *args: The arguments to pass to the sklearn linear model.
+            **kwargs: The keyword arguments to pass to the sklearn linear model.
+
+        Returns:
+            Tuple[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression]:
+                The FHE and sklearn LinearRegression.
+        """
+        # Train the sklearn model without X quantized
+        sklearn_model = self.sklearn_alg(*args, **kwargs)
+        sklearn_model.fit(X, y, *args, **kwargs)
+
+        # Train the FHE model
+        SklearnLinearModelMixin.fit(self, X, y, *args, **kwargs)
+        return self, sklearn_model
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict on user data.
+
+        Predict on user data using either the quantized clear model,
+        implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
+
+        Args:
+            X (numpy.ndarray): the input data
+            execute_in_fhe (bool): whether to execute the inference in FHE
+
+        Returns:
+            numpy.ndarray: the prediction as ordinals
+        """
+        # Quantize the input
+        qX = self.quantized_module.quantize_input(X)
+
+        # mypy
+        assert isinstance(qX, numpy.ndarray)
+
+        if execute_in_fhe:
+
+            # Make sure the model is compiled
+            assert_true(
+                self.quantized_module.is_compiled,
+                "The model is not compiled. Please run compile(...) first.",
+            )
+
+            # mypy
+            assert self.quantized_module.forward_fhe is not None
+            # mypy does not see the self.coef_ from sklearn.linear_model.LinearRegression.
+            # Need to ignore with mypy warning.
+            n_targets = (
+                1 if self.sklearn_model.coef_.ndim == 1 else self.sklearn_model.coef_.shape[0]
+            )
+            y_preds = numpy.zeros(shape=(X.shape[0], n_targets))
+            # Execute the compiled FHE circuit
+            # Create a numpy array with the expected shape: (n_samples, n_classes)
+            for i, qX_i in enumerate(qX):
+                fhe_pred = self.quantized_module.forward_fhe.encrypt_run_decrypt(
+                    qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
+                )
+                y_preds[i, :] = fhe_pred[0]
+            # Convert to numpy array
+            y_preds = self.quantized_module.dequantize_output(y_preds)
+        else:
+            y_preds = self.quantized_module.forward_and_dequant(qX)
+        return y_preds
+
+    def compile(
+        self,
+        X: numpy.ndarray,
+        configuration: Optional[CompilationConfiguration] = None,
+        compilation_artifacts: Optional[CompilationArtifacts] = None,
+        show_mlir: bool = False,
+        use_virtual_lib: bool = False,
+    ) -> None:
+        """Compile the FHE linear model.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            configuration (Optional[CompilationConfiguration]): Configuration object
+                to use during compilation
+            compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
+                compilation
+            show_mlir (bool): if set, the MLIR produced by the converter and which is
+                going to be sent to the compiler backend is shown on the screen, e.g., for debugging
+                or demo. Defaults to False.
+            use_virtual_lib (bool): whether to compile using the virtual library that allows higher
+                bitwidths with simulated FHE computation. Defaults to False
+        """
+        # Quantize the input
+        quantized_numpy_inputset = copy.deepcopy(self.quantized_module.q_inputs[0])
+        quantized_numpy_inputset.update_values(X)
+
+        # Compile the model
+        self.quantized_module.compile(
+            quantized_numpy_inputset,
+            configuration,
+            compilation_artifacts,
+            show_mlir,
+            use_virtual_lib=use_virtual_lib,
         )

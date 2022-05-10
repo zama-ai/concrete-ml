@@ -4,12 +4,12 @@ import onnx
 import sklearn.linear_model
 
 from ..onnx.onnx_model_manipulations import keep_following_outputs_discard_others
-from .linear_model import SklearnLinearModelMixin
+from .base import SklearnLinearModelMixin
 
 
 # pylint does not like sklearn uppercase namings
 # pylint: disable=invalid-name,too-many-instance-attributes,super-init-not-called
-class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin, sklearn.base.BaseEstimator):
+class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """A Regression Support Vector Machine (SVM)."""
 
     sklearn_alg = sklearn.svm.LinearSVR
@@ -44,7 +44,7 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin, sklearn.ba
     # pylint: enable=too-many-arguments
 
 
-class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator):
+class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
     """A Classification Support Vector Machine (SVM)."""
 
     sklearn_alg = sklearn.svm.LinearSVC

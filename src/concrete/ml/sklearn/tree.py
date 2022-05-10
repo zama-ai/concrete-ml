@@ -1,22 +1,15 @@
 """Implement the sklearn tree models."""
 from typing import Callable, Optional
 
-import numpy
 import sklearn
 from concrete.numpy.compilation.circuit import Circuit
 
-from ..common.debugging.custom_assert import assert_true
 from ..quantization.quantized_array import QuantizedArray
 from .base import BaseTreeEstimatorMixin
-from .tree_to_numpy import tree_to_numpy
-
-# Disabling invalid-name to use uppercase X
-# pylint: disable=invalid-name,too-many-instance-attributes
 
 
-class DecisionTreeClassifier(
-    BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin, sklearn.base.BaseEstimator
-):
+# pylint: disable=too-many-instance-attributes
+class DecisionTreeClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
     sklearn_alg = sklearn.tree.DecisionTreeClassifier
@@ -26,6 +19,7 @@ class DecisionTreeClassifier(
     q_y: QuantizedArray
     class_mapping_: Optional[dict]
     n_classes_: int
+    framework: str = "sklearn"
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -49,6 +43,7 @@ class DecisionTreeClassifier(
         # noqa: DAR101
 
         """
+
         self.criterion = criterion
         self.splitter = splitter
         self.max_depth = max_depth
@@ -67,164 +62,3 @@ class DecisionTreeClassifier(
         self.n_bits = n_bits
         self.fhe_tree = None
         self.class_mapping_ = None
-
-    # pylint: enable=too-many-arguments
-    def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs):
-        """Fit the sklearn DecisionTreeClassifier.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            *args: args for super().fit
-            **kwargs: kwargs for super().fit
-        """
-        qX = numpy.zeros_like(X)
-
-        self.q_x_byfeatures = []
-        # Quantization of each feature in X
-        for i in range(X.shape[1]):
-            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
-            self.q_x_byfeatures.append(q_x_)
-            qX[:, i] = q_x_.qvalues.astype(numpy.int32)
-
-        # If classes are not starting from 0 and/or increasing by 1
-        # we need to map them to values 0, 1, ..., n_classes - 1
-        classes_ = numpy.unique(y)
-        if ~numpy.array_equal(numpy.arange(len(classes_)), classes_):
-            self.class_mapping_ = dict(enumerate(classes_))
-
-        # Register number of classes
-        self.n_classes_ = len(classes_)
-
-        # Initialize the model
-        params = self.get_params()
-        params.pop("n_bits", None)
-        self.sklearn_model = self.sklearn_alg(**params)
-
-        # Fit the model
-        self.sklearn_model.fit(qX, y, *args, **kwargs)
-
-        # Tree inference to numpy
-        self._tensor_tree_predict, self.q_y = tree_to_numpy(
-            self.sklearn_model, qX, "sklearn", output_n_bits=self.n_bits
-        )
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-        # mypy
-        assert self.q_y is not None
-        y_preds = self.q_y.update_quantized_values(y_preds)
-
-        # Make sure the shape of y_preds has 3 dimensions(n_tree, n_samples, n_classes)
-        # and here n_tree = 1.
-        assert_true(
-            (y_preds.ndim == 3) and (y_preds.shape[0] == 1),
-            f"Wrong dimensions for y_preds: {y_preds.shape} "
-            f"when is should have shape (1, n_samples, n_classes)",
-        )
-
-        # Remove the first dimension in y_preds
-        y_preds = y_preds[0]
-        return y_preds
-
-    # pylint: disable=arguments-differ
-    def predict_proba(
-        self,
-        X: numpy.ndarray,
-        execute_in_fhe: Optional[bool] = False,
-    ) -> numpy.ndarray:
-        """Predict class probabilities of the input samples X.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool, optional): If True, the predictions are computed in FHE.
-                If False, the predictions are computed in the sklearn model. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The class probabilities of the input samples X.
-        """
-        if execute_in_fhe:
-            y_preds = self._execute_in_fhe(X)
-        else:
-            y_preds = self._predict_with_tensors(X)
-        y_preds = self.post_processing(y_preds)
-        return y_preds
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict on user data.
-
-        Predict on user data using either the quantized clear model,
-        implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
-
-        Args:
-            X (numpy.ndarray): the input data
-            execute_in_fhe (bool): whether to execute the inference in FHE
-
-        Returns:
-            the prediction as ordinals
-        """
-        y_preds = self.predict_proba(X, execute_in_fhe)
-        y_preds = numpy.argmax(y_preds, axis=1)
-        if self.class_mapping_ is not None:
-            y_preds = numpy.array([self.class_mapping_[y_pred] for y_pred in y_preds])
-        return y_preds
-
-    # pylint: enable=arguments-differ
-
-    def _execute_in_fhe(self, X: numpy.ndarray) -> numpy.ndarray:
-        """Execute the FHE inference on the input data.
-
-        Args:
-            X (numpy.ndarray): the input data
-
-        Returns:
-            numpy.ndarray: the prediction as ordinals
-        """
-        qX = self.quantize_input(X)
-        # Check that self.fhe_tree is not None
-        assert_true(
-            self.fhe_tree is not None,
-            f"You must call {self.compile.__name__} "
-            f"before calling {self.predict.__name__} with execute_in_fhe=True.",
-        )
-        y_preds = numpy.zeros((1, qX.shape[0], self.n_classes_), dtype=numpy.int32)
-        for i in range(qX.shape[0]):
-            fhe_pred = self.fhe_tree.encrypt_run_decrypt(
-                qX[i].astype(numpy.uint8).reshape(1, qX[i].shape[0])
-            )
-            # FIXME transpose workaround see #292
-            y_preds[:, i, :] = numpy.transpose(fhe_pred, axes=(0, 2, 1))
-        return y_preds
-
-    def _predict_with_tensors(self, X: numpy.ndarray) -> numpy.ndarray:
-        """Predict using the tensors.
-
-        Mainly used for debugging.
-
-        Args:
-            X: The input data.
-
-        Returns:
-            numpy.ndarray: The prediction.
-        """
-        # for mypy
-        assert self._tensor_tree_predict is not None, "You must fit the model before using it."
-
-        qX = self.quantize_input(X)
-        # _tensor_tree_predict needs X with shape (n_features, n_samples) but
-        # X from sklearn is (n_samples, n_features)
-        assert_true(
-            qX.shape[1] == self.sklearn_model.n_features_in_,
-            "qX should have shape (n_samples, n_features)",
-        )
-        y_pred = self._tensor_tree_predict(qX)[0]
-
-        y_pred = numpy.transpose(y_pred, axes=(0, 2, 1))
-        return y_pred
