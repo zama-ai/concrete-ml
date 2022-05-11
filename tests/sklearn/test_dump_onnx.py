@@ -1,13 +1,17 @@
 """Tests for the sklearn decision trees."""
+import types
 import warnings
 from functools import partial
 
 import numpy
 import onnx
 import pytest
-from sklearn.datasets import make_classification
+from concrete.numpy import MAXIMUM_BIT_WIDTH
+from sklearn.datasets import make_classification, make_regression
 from sklearn.exceptions import ConvergenceWarning
+from torch import nn
 
+# Remark that the dump tests for torch module is directly done in test_compile_torch.py
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
     GammaRegressor,
@@ -15,6 +19,8 @@ from concrete.ml.sklearn import (
     LinearSVC,
     LinearSVR,
     LogisticRegression,
+    NeuralNetClassifier,
+    NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
     TweedieRegressor,
@@ -22,14 +28,8 @@ from concrete.ml.sklearn import (
 )
 
 
-def check_onnx_file_dump(algo, algo_name, load_data, str_expected, default_configuration):
+def check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
-
-    # Get the dataset
-    x, y = load_data()
-
-    if algo is GammaRegressor:
-        y = numpy.abs(y) + 1
 
     # Set the model
     model = algo(
@@ -42,16 +42,28 @@ def check_onnx_file_dump(algo, algo_name, load_data, str_expected, default_confi
 
     model.set_params(**model_params)
 
-    # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        # Sometimes, we hit "RuntimeWarning: overflow encountered in exp", which is not a problem
+        # for our test
+        if algo_name == "NeuralNetRegressor":
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+
         model.fit(x, y)
 
-    # Use virtual lib to not have issues with precision
-    model.compile(x, default_configuration, use_virtual_lib=True)
+    with warnings.catch_warnings():
+        # Sometimes, we hit "RuntimeWarning: overflow encountered in exp", which is not a problem
+        # for our test
+        if algo_name == "NeuralNetRegressor":
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+
+        # Use virtual lib to not have issues with precision
+        model.compile(x, default_configuration, use_virtual_lib=True)
 
     # Get ONNX model
-    onnx_model = model.get_onnx()
+    onnx_model = model.onnx_model
 
     # Save locally on disk, if one wants to have a look
     onnx.save(onnx_model, "/tmp/" + algo_name + ".onnx")
@@ -175,8 +187,9 @@ def test_tree_classifier(
     default_configuration,
 ):
     """Tests the tree models."""
+    x, y = load_data()
 
-    check_onnx_file_dump(algo, algo_name, load_data, str_expected, default_configuration)
+    check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configuration)
 
 
 @pytest.mark.parametrize(
@@ -277,38 +290,134 @@ def test_tree_classifier(
   return %variable
 }""",
         ),
-    ],
-)
-@pytest.mark.parametrize(
-    "load_data",
-    [
-        pytest.param(
-            lambda n_classes: make_classification(
-                n_samples=100,
-                n_features=20,
-                n_classes=n_classes,
-                n_informative=10,
-                random_state=numpy.random.randint(0, 2**15),
+        (
+            lambda n_bits: NeuralNetClassifier(
+                n_bits=n_bits,
+                **{
+                    "module__n_layers": 3,
+                    "module__n_w_bits": 2,
+                    "module__n_a_bits": 2,
+                    "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
+                    "module__n_outputs": 2,
+                    "module__input_dim": 20,
+                    "module__activation_function": nn.SELU,
+                    "max_epochs": 10,
+                    "verbose": 0,
+                },
             ),
-            id="make_classification",
-        )
+            """graph torch-jit-export (
+  %onnx::MatMul_0[FLOAT, 20]
+) initializers (
+  %features.fc0.bias[FLOAT, 80]
+  %features.fc1.bias[FLOAT, 80]
+  %features.fc2.bias[FLOAT, 2]
+  %onnx::MatMul_19[FLOAT, 20x80]
+  %onnx::MatMul_20[FLOAT, 80x80]
+  %onnx::MatMul_21[FLOAT, 80x2]
+) {
+  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
+  %input = Add(%features.fc0.bias, %onnx::Add_8)
+  %onnx::MatMul_10 = Selu(%input)
+  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
+  %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
+  %onnx::MatMul_14 = Selu(%input.3)
+  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
+  %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
+  %18 = Selu(%input.7)
+  return %18
+}""",
+        ),
+        (
+            lambda n_bits: NeuralNetRegressor(
+                n_bits=n_bits,
+                **{
+                    "module__n_layers": 3,
+                    "module__n_w_bits": 2,
+                    "module__n_a_bits": 2,
+                    "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
+                    "module__n_outputs": 2,
+                    "module__input_dim": 10,
+                    "module__activation_function": nn.SELU,
+                    "max_epochs": 10,
+                    "verbose": 0,
+                },
+            ),
+            """graph torch-jit-export (
+  %onnx::MatMul_0[FLOAT, 10]
+) initializers (
+  %features.fc0.bias[FLOAT, 40]
+  %features.fc1.bias[FLOAT, 40]
+  %features.fc2.bias[FLOAT, 2]
+  %onnx::MatMul_19[FLOAT, 10x40]
+  %onnx::MatMul_20[FLOAT, 40x40]
+  %onnx::MatMul_21[FLOAT, 40x2]
+) {
+  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
+  %input = Add(%features.fc0.bias, %onnx::Add_8)
+  %onnx::MatMul_10 = Selu(%input)
+  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
+  %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
+  %onnx::MatMul_14 = Selu(%input.3)
+  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
+  %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
+  %18 = Selu(%input.7)
+  return %18
+}""",
+        ),
     ],
 )
-def test_linear_models(
+def test_other_models(
     algo,
-    load_data,
     str_expected,
     default_configuration,
 ):
     """Tests the linear models."""
-    algo_name = algo.__name__
+    if isinstance(algo, (types.FunctionType, types.LambdaType)):
+        if algo(0).__class__ is NeuralNetClassifier:
+            algo_name = "NeuralNetClassifier"
+        if algo(0).__class__ is NeuralNetRegressor:
+            algo_name = "NeuralNetRegressor"
+    else:
+        algo_name = algo.__name__
 
-    n_classes = 4 if algo is not LogisticRegression else 2
+    assert isinstance(algo_name, str), f"problem {algo}"
 
-    def load_data_with_n_classes():
-        """Fix n_classes."""
-        return load_data(n_classes)
+    n_classes = 4
 
-    check_onnx_file_dump(
-        algo, algo_name, load_data_with_n_classes, str_expected, default_configuration
-    )
+    if algo_name in ["LogisticRegression", "NeuralNetClassifier"]:
+        n_classes = 2
+
+    if algo_name in ["NeuralNetRegressor"]:
+        x, y, _ = make_regression(
+            1000,
+            n_features=10,
+            n_informative=10,
+            n_targets=2,
+            noise=2,
+            random_state=numpy.random.randint(0, 2**15),
+            coef=True,
+        )
+
+        if y.ndim == 1:
+            y = numpy.expand_dims(y, 1)
+
+        x = x.astype(numpy.float32)
+        y = y.astype(numpy.float32)
+
+    else:
+        x, y = make_classification(
+            n_samples=100,
+            n_features=20,
+            n_classes=n_classes,
+            n_informative=10,
+            random_state=numpy.random.randint(0, 2**15),
+        )
+
+        # Get the dataset
+        if algo_name == "GammaRegressor":
+            y = numpy.abs(y) + 1
+
+        if algo_name in ["NeuralNetClassifier"]:
+            x = x.astype(numpy.float32)
+
+    check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configuration)

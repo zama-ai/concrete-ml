@@ -42,6 +42,7 @@ class QuantizedModule:
         self._is_compiled = False
         self.forward_fhe = None
         self.input_quantizers = []
+        self._onnx_model = None
 
     @property
     def is_compiled(self) -> bool:
@@ -51,6 +52,21 @@ class QuantizedModule:
             bool: the compiled status of the module.
         """
         return self._is_compiled
+
+    @property
+    def onnx_model(self):
+        """Get the ONNX model.
+
+        .. # noqa: DAR201
+
+        Returns:
+           _onnx_model (onnx.ModelProto): the ONNX model
+        """
+        return self._onnx_model
+
+    @onnx_model.setter
+    def onnx_model(self, value):
+        self._onnx_model = value
 
     def __call__(self, *x: numpy.ndarray):
         return self.forward(*x)

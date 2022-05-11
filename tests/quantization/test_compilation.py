@@ -270,14 +270,6 @@ class NumpyModuleTest(NumpyModule):
         self.numpy_forward = lambda x: x
         self._onnx_model = onnx_model
 
-    def get_onnx(self):
-        """Return ONNX model.
-
-        Returns:
-            ONNX model
-        """
-        return self._onnx_model
-
 
 def test_post_training_quantization_constant_folding():
     """Test to check that constant folding works properly."""

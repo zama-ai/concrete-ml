@@ -53,6 +53,7 @@ class QuantizedTorchEstimatorMixin:
         # parameter. Only training parameters should register, to enable easy cloning of un-trained
         # estimator
         self.quantized_module_ = None
+        self._onnx_model_ = None
 
     @property
     @abstractmethod
@@ -76,6 +77,17 @@ class QuantizedTorchEstimatorMixin:
     @abstractmethod
     def n_bits_quant(self):
         """Get the number of quantization bits."""
+
+    @property
+    def onnx_model(self):
+        """Get the ONNX model.
+
+        .. # noqa: DAR201
+
+        Returns:
+           _onnx_model_ (onnx.ModelProto): the ONNX model
+        """
+        return self._onnx_model_
 
     def compile(
         self,
@@ -154,6 +166,8 @@ class QuantizedTorchEstimatorMixin:
 
         # Create corresponding numpy model
         numpy_model = NumpyModule(self.base_module_to_compile, torch.tensor(X[0, ::]))
+
+        self._onnx_model_ = numpy_model.onnx_model
 
         # Get the number of bits used in model creation (used to setup pruning)
         n_bits = self.n_bits_quant
@@ -331,7 +345,18 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         self.q_x_byfeatures = []
         self.n_bits = n_bits
         self.fhe_tree = None
-        self._onnx_model = None
+        self._onnx_model_ = None
+
+    @property
+    def onnx_model(self) -> onnx.ModelProto:
+        """Get the ONNX model.
+
+        .. # noqa: DAR201
+
+        Returns:
+           onnx.ModelProto: the ONNX model
+        """
+        return self._onnx_model_
 
     def quantize_input(self, X: numpy.ndarray):
         """Quantize the input.
@@ -391,7 +416,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         self.sklearn_model.fit(qX, y, **kwargs)
 
         # Tree ensemble inference to numpy
-        self._tensor_tree_predict, self.q_y, self._onnx_model = tree_to_numpy(
+        self._tensor_tree_predict, self.q_y, self._onnx_model_ = tree_to_numpy(
             self.sklearn_model,
             qX,
             framework=self.framework,
@@ -582,14 +607,6 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             f"output is {dtype_output} but an Integer is expected.",
         )
 
-    def get_onnx(self):
-        """Return ONNX model.
-
-        Returns:
-            ONNX model
-        """
-        return self._onnx_model
-
 
 # pytlint: disable=invalid-name,too-many-instance-attributes
 class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
@@ -614,6 +631,17 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         """
         super().__init__(*args, **kwargs)
         self.n_bits = n_bits
+
+    @property
+    def onnx_model(self) -> onnx.ModelProto:
+        """Get the ONNX model.
+
+        .. # noqa: DAR201
+
+        Returns:
+           onnx.ModelProto: the ONNX model
+        """
+        return self._onnx_model_
 
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
         """Fit the FHE linear model.
@@ -645,7 +673,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         # Create NumpyModule from onnx model
         numpy_module = NumpyModule(onnx_model)
-        self._onnx_model = onnx_model
+        self._onnx_model_ = onnx_model
 
         # Apply post-training quantization
         post_training = PostTrainingAffineQuantization(
@@ -800,11 +828,3 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             show_mlir=show_mlir,
             use_virtual_lib=use_virtual_lib,
         )
-
-    def get_onnx(self):
-        """Return ONNX model.
-
-        Returns:
-            ONNX model
-        """
-        return self._onnx_model

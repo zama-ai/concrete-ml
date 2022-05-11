@@ -91,6 +91,7 @@ def _compile_torch_or_onnx_model(
 
     # Create corresponding numpy model
     numpy_model = NumpyModule(model, dummy_input_for_tracing)
+    onnx_model = numpy_model.onnx_model
 
     # Quantize with post-training static method, to have a model with integer weights
     if import_qat:
@@ -108,6 +109,8 @@ def _compile_torch_or_onnx_model(
         show_mlir=show_mlir,
         use_virtual_lib=use_virtual_lib,
     )
+
+    quantized_module.onnx_model = onnx_model
 
     return quantized_module
 

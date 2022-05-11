@@ -29,7 +29,7 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.positive = positive
-        self._onnx_model = None
+        self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
 
@@ -74,7 +74,7 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         self.warm_start = warm_start
         self.n_jobs = n_jobs
         self.l1_ratio = l1_ratio
-        self._onnx_model = None
+        self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
     # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:

@@ -48,6 +48,17 @@ class NumpyModule:
                 f"model must be a torch.nn.Module or an onnx.ModelProto, got {type(model).__name__}"
             )
 
+    @property
+    def onnx_model(self):
+        """Get the ONNX model.
+
+        .. # noqa: DAR201
+
+        Returns:
+           _onnx_model (onnx.ModelProto): the ONNX model
+        """
+        return self._onnx_model
+
     def __call__(self, *args: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         return self.forward(*args)
 
@@ -63,11 +74,3 @@ class NumpyModule:
         """
         outputs = self.numpy_forward(*args)
         return outputs[0] if len(outputs) == 1 else outputs
-
-    def get_onnx(self):
-        """Return ONNX model.
-
-        Returns:
-            ONNX model
-        """
-        return self._onnx_model

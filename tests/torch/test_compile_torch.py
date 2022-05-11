@@ -222,7 +222,7 @@ class SimpleQAT(nn.Module):
         return self.act(result_fc1)
 
 
-def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals
+def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many-statements
     input_output_feature,
     model,
     activation_function,
@@ -231,6 +231,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals
     use_virtual_lib,
     is_onnx,
     check_r2_score,
+    dump_onnx=False,
+    expected_onnx_str=None,
 ):
     """Test the different model architecture from torch numpy."""
 
@@ -372,6 +374,14 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals
         # Check that we have similar results between CML and torch in 8 bits
         # Due to differences in quantization approach, we allow a lower R2 in the comparison
         check_r2_score(results, torch_result, 0.9)
+
+        onnx_model = quantized_numpy_module.onnx_model
+
+        if dump_onnx:
+            str_model = onnx.helper.printable_graph(onnx_model.graph)
+            print("ONNX model:")
+            print(str_model)
+            assert str_model == expected_onnx_str
 
 
 @pytest.mark.parametrize(
@@ -595,4 +605,58 @@ def test_compile_torch_qat(
         use_virtual_lib,
         is_onnx,
         check_r2_score,
+    )
+
+
+@pytest.mark.parametrize(
+    "model, expected_onnx_str",
+    [
+        pytest.param(
+            FC,
+            """graph torch-jit-export (
+  %onnx::Gemm_0[FLOAT, 1x7]
+) initializers (
+  %fc1.weight[FLOAT, 7x7]
+  %fc1.bias[FLOAT, 7]
+  %fc2.weight[FLOAT, 7x7]
+  %fc2.bias[FLOAT, 7]
+) {
+  %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_0, %fc1.weight, %fc1.bias)
+  %onnx::Gemm_6 = Relu(%input)
+  %7 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_6, %fc2.weight, %fc2.bias)
+  return %7
+}""",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.ReLU, id="relu"),
+    ],
+)
+def test_dump_torch_network(
+    model,
+    expected_onnx_str,
+    activation_function,
+    default_configuration,
+    check_r2_score,
+):
+    """This is a test which is equivalent to tests in test_dump_onnx.py, but for torch modules."""
+    input_output_feature = 7
+    use_virtual_lib = True
+    is_onnx = False
+    qat_bits = 0
+
+    compile_and_test_torch_or_onnx(
+        input_output_feature,
+        model,
+        activation_function,
+        qat_bits,
+        default_configuration,
+        use_virtual_lib,
+        is_onnx,
+        check_r2_score,
+        dump_onnx=True,
+        expected_onnx_str=expected_onnx_str,
     )

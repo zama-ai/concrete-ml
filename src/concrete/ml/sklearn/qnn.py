@@ -351,6 +351,8 @@ class NeuralNetClassifier(
                 "n_outputs should be larger than one"
             )
 
+        kwargs.pop("n_bits", None)
+
         # Note that our default optimizer is Adam which was found to be more stable when pruning
         super().__init__(
             SparseQuantNeuralNetImpl,
@@ -408,6 +410,8 @@ class NeuralNetRegressor(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
+        kwargs.pop("n_bits", None)
+
         # Note that our default optimizer is Adam which was found to be more stable when pruning
         super().__init__(
             SparseQuantNeuralNetImpl,

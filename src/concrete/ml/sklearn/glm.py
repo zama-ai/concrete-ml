@@ -48,9 +48,13 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self.tol = tol
         self.warm_start = warm_start
         self.verbose = verbose
-        self._onnx_model = None
+        self._onnx_model_ = None
 
     # pylint: enable=super-init-not-called
+
+    @property
+    def onnx_model(self):
+        return self._onnx_model_
 
     def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
         """Fit the GLM regression quantized model.
@@ -119,7 +123,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
             torch_model,
             dummy_input=torch.from_numpy(X[0]),
         )
-        self._onnx_model = numpy_module.get_onnx()
+        self._onnx_model_ = numpy_module.onnx_model
 
         # Apply post-training quantization
         post_training = PostTrainingAffineQuantization(
@@ -154,14 +158,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         # Train the quantized model
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
-
-    def get_onnx(self):
-        """Return ONNX model.
-
-        Returns:
-            ONNX model
-        """
-        return self._onnx_model
 
 
 # pylint: enable=too-many-instance-attributes
