@@ -246,7 +246,7 @@ def train_and_test_on_dataset(classifier, dataset, config):
 
         # Compile and report compilation time
         t_start = time.time()
-        concrete_classifier.compile(x_test_comp, compilation_configuration=BENCHMARK_CONFIGURATION)
+        concrete_classifier.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
         duration = time.time() - t_start
         progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
 
