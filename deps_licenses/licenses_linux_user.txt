@@ -5,7 +5,7 @@ concrete-compiler, 0.7.0, BSD-3
 concrete-numpy, 0.6.0rc4, BSD License
 cycler, 0.11.0, BSD License
 dill, 0.3.4, BSD License
-flatbuffers, 2.0, Apache Software License
+flatbuffers, 1.12, Apache Software License
 fonttools, 4.33.3, MIT License
 hummingbird-ml, 0.4.4, MIT License
 joblib, 1.1.0, BSD License
