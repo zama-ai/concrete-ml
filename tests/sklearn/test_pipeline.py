@@ -5,6 +5,7 @@ import numpy
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from sklearn.datasets import make_classification
+from sklearn.datasets import make_regression as sklearn_make_regression
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -26,10 +27,27 @@ from concrete.ml.sklearn import (
     XGBClassifier,
 )
 
+
+def make_regression(positive_targets, *args, **kwargs):
+    """Generate a random regression problem.
+
+    Sklearn's make_regression() method generates a random regression problem without any domain
+    restrictions. However, some models can only handle non negative or (stricly) positive target
+    values. This function therefore adapts it in order to make it work for any tested regressors.
+    """
+    generated_regression = list(sklearn_make_regression(*args, **kwargs))
+
+    # Some regressors can only handle positive target values, often stricly positive.
+    if positive_targets:
+        generated_regression[1] = numpy.abs(generated_regression[1]) + 1
+
+    return tuple(generated_regression)
+
+
 list_classifiers = [
     (
         alg,
-        lambda: make_classification(
+        make_classification(
             n_samples=1000,
             n_features=100,
             n_classes=4,
@@ -44,27 +62,22 @@ list_classifiers = [
         XGBClassifier,
         LinearSVC,
         LinearSVC,
+        LogisticRegression,
     ]
 ]
 
+# Only LinearRegression supports multi targets
+# GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
 list_regressors = [
     (
         alg,
-        # FIXME: make it work
-        # lambda: make_regression(
-        #     n_samples=200,
-        #     n_features=10,
-        #     n_informative=10,
-        #     n_targets=2,
-        #     noise=0,
-        #     random_state=numpy.random.randint(0, 2**15),
-        # ),
-        lambda: make_classification(
-            n_samples=1000,
-            n_features=100,
-            n_classes=4,
-            n_informative=100,
-            n_redundant=0,
+        make_regression(
+            positive_targets=alg in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+            n_samples=200,
+            n_features=10,
+            n_informative=10,
+            n_targets=2 if alg == LinearRegression else 1,
+            noise=0,
             random_state=numpy.random.randint(0, 2**15),
         ),
     )
@@ -72,21 +85,16 @@ list_regressors = [
         GammaRegressor,
         LinearRegression,
         LinearSVR,
-        LogisticRegression,
         PoissonRegressor,
         TweedieRegressor,
     ]
 ]
 
 
-@pytest.mark.parametrize("alg, load_data", list_classifiers + list_regressors)
-def test_pipeline_classifier(alg, load_data):
-    """Tests that the classifier work well within sklearn pipelines."""
-    x, y = load_data()
-
-    # For Gamma regressor
-    if alg is GammaRegressor:
-        y = numpy.abs(y) + 1
+@pytest.mark.parametrize("alg, data", list_classifiers + list_regressors)
+def test_pipeline_classifiers_regressors(alg, data):
+    """Tests that classifiers and regressors work well within sklearn pipelines."""
+    x, y = data
 
     pipe_cv = Pipeline(
         [
