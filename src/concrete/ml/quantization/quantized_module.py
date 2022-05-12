@@ -3,10 +3,10 @@ import copy
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
-from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import CompilationConfiguration
+from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
 from ..common.utils import generate_proxy_function
@@ -206,8 +206,8 @@ class QuantizedModule:
     def compile(
         self,
         q_inputs: Union[Tuple[QuantizedArray, ...], QuantizedArray],
-        configuration: Optional[CompilationConfiguration] = None,
-        compilation_artifacts: Optional[CompilationArtifacts] = None,
+        configuration: Optional[Configuration] = None,
+        compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
     ) -> Circuit:
@@ -216,11 +216,10 @@ class QuantizedModule:
         Args:
             q_inputs (Union[Tuple[QuantizedArray, ...], QuantizedArray]): Needed for tracing and
                 building the boundaries.
-            configuration (Optional[CompilationConfiguration]): Configuration object
+            configuration (Optional[Configuration]): Configuration object
                                                                             to use during
                                                                             compilation
-            compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
-                                                                    compilation
+            compilation_artifacts (Optional[DebugArtifacts]): Artifacts object to fill during
             show_mlir (bool): if set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
                 or demo. Defaults to False.
@@ -249,8 +248,6 @@ class QuantizedModule:
         compiler = Compiler(
             forward_proxy,
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
-            configuration,
-            compilation_artifacts,
         )
 
         def get_inputset_iterable():
@@ -263,7 +260,13 @@ class QuantizedModule:
 
         inputset = get_inputset_iterable()
 
-        self.forward_fhe = compiler.compile(inputset, show_mlir, virtual=use_virtual_lib)
+        self.forward_fhe = compiler.compile(
+            inputset,
+            configuration,
+            compilation_artifacts,
+            show_mlir=show_mlir,
+            virtual=use_virtual_lib,
+        )
 
         self._is_compiled = True
 

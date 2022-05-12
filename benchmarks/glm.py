@@ -212,11 +212,7 @@ def main():
     test_data = poisson_glm_pca["pca"].transform(poisson_glm_pca["preprocessor"].transform(df_test))
     q_test_data = q_glm.quantize_input(test_data)
 
-    engine = q_glm.compile(
-        q_test_data,
-        BENCHMARK_CONFIGURATION,
-        show_mlir=False,
-    )
+    engine = q_glm.compile(q_test_data, BENCHMARK_CONFIGURATION, show_mlir=False)
 
     y_pred_fhe = np.zeros((test_data.shape[0],), np.float32)
     for i, test_sample in enumerate(tqdm(q_test_data.qvalues)):

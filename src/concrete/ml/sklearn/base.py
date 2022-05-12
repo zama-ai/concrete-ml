@@ -15,9 +15,9 @@ import numpy
 import onnx
 import sklearn
 import torch
-from concrete.numpy.compilation.artifacts import CompilationArtifacts
+from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import CompilationConfiguration
+from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
 from ..common.debugging.custom_assert import assert_true
@@ -80,8 +80,8 @@ class QuantizedTorchEstimatorMixin:
     def compile(
         self,
         X: numpy.ndarray,
-        configuration: Optional[CompilationConfiguration] = None,
-        compilation_artifacts: Optional[CompilationArtifacts] = None,
+        configuration: Optional[Configuration] = None,
+        compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
     ):
@@ -89,9 +89,9 @@ class QuantizedTorchEstimatorMixin:
 
         Args:
             X (numpy.ndarray): the unquantized dataset
-            configuration (Optional[CompilationConfiguration]): the options for
+            configuration (Optional[Configuration]): the options for
                 compilation
-            compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
+            compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill
                 during compilation
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): whether to compile using the virtual library that allows higher
@@ -531,8 +531,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
     def compile(
         self,
         X: numpy.ndarray,
-        configuration: Optional[CompilationConfiguration] = None,
-        compilation_artifacts: Optional[CompilationArtifacts] = None,
+        configuration: Optional[Configuration] = None,
+        compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
     ):
@@ -540,9 +540,9 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
 
         Args:
             X (numpy.ndarray): the unquantized dataset
-            configuration (Optional[CompilationConfiguration]): the options for
+            configuration (Optional[Configuration]): the options for
                 compilation
-            compilation_artifacts (Optional[CompilationArtifacts]): artifacts object to fill
+            compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill
                 during compilation
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): set to True to use the so called virtual lib
@@ -563,11 +563,13 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         compiler = Compiler(
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
-            configuration,
-            compilation_artifacts,
         )
         self.fhe_tree = compiler.compile(
-            (sample.reshape(1, sample.shape[0]) for sample in X), show_mlir, virtual=use_virtual_lib
+            (sample.reshape(1, sample.shape[0]) for sample in X),
+            configuration=configuration,
+            artifacts=compilation_artifacts,
+            show_mlir=show_mlir,
+            virtual=use_virtual_lib,
         )
         # mypy
         assert self.fhe_tree is not None
@@ -769,8 +771,8 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
     def compile(
         self,
         X: numpy.ndarray,
-        configuration: Optional[CompilationConfiguration] = None,
-        compilation_artifacts: Optional[CompilationArtifacts] = None,
+        configuration: Optional[Configuration] = None,
+        compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
     ) -> None:
@@ -778,9 +780,9 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         Args:
             X (numpy.ndarray): The input data.
-            configuration (Optional[CompilationConfiguration]): Configuration object
+            configuration (Optional[Configuration]): Configuration object
                 to use during compilation
-            compilation_artifacts (Optional[CompilationArtifacts]): Artifacts object to fill during
+            compilation_artifacts (Optional[DebugArtifacts]): Artifacts object to fill during
                 compilation
             show_mlir (bool): if set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
@@ -797,7 +799,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             quantized_numpy_inputset,
             configuration,
             compilation_artifacts,
-            show_mlir,
+            show_mlir=show_mlir,
             use_virtual_lib=use_virtual_lib,
         )
 

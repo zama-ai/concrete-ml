@@ -64,7 +64,7 @@ def test_seed_sklearn(n_classes, input_dim, default_configuration):
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:
-        model.compile(x, show_mlir=True, configuration=default_configuration)
+        model.compile(x, configuration=default_configuration, show_mlir=True)
     except RuntimeError as err:
         print(err)
     except AssertionError as err:
@@ -136,7 +136,7 @@ def test_seed_torch(
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:
-        concrete_classifier.compile(x_train, show_mlir=True, configuration=default_configuration)
+        concrete_classifier.compile(x_train, configuration=default_configuration, show_mlir=True)
     except RuntimeError as err:
         print(err)
     except AssertionError as err:

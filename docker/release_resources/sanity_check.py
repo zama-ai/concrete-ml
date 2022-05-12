@@ -10,7 +10,7 @@ import numpy
 import pygraphviz
 from concrete.numpy.compilation import configuration
 from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import CompilationConfiguration
+from concrete.numpy.compilation.configuration import Configuration
 from sklearn.datasets import fetch_openml
 from sklearn.metrics import average_precision_score, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -69,7 +69,7 @@ def ml_check(args):
     # We first compile the model with some data, here the training set
     model.compile(
         x_train,
-        configuration=CompilationConfiguration(
+        configuration=Configuration(
             enable_unsafe_features=True,  # This is for our tests only, never use that in prod
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
         ),
@@ -104,17 +104,15 @@ def cn_check(args):
     compiler = Compiler(
         function_to_compile,
         {"x": "encrypted"},
-        configuration=CompilationConfiguration(
-            enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
-            use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
-        ),
+    )
+    config = Configuration(
+        enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
+        use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
     )
 
     print("Compiling...")
 
-    engine = compiler.compile(
-        range(2**n_bits),
-    )
+    engine = compiler.compile(range(2**n_bits), config)
 
     inputs = []
     labels = []

@@ -12,7 +12,7 @@ RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 
 # If one wants to force the installation of a given rc version
-CN_VERSION_SPEC_FOR_RC="concrete-numpy[full]==0.6.0-rc2"
+CN_VERSION_SPEC_FOR_RC="concrete-numpy[full]==0.6.0-rc4"
 
 # If one wants to use the last RC version
 # CN_VERSION_SPEC_FOR_RC="$$(poetry run python \

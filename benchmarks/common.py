@@ -16,10 +16,13 @@ from sklearn.metrics import (
 configuration._INSECURE_KEY_CACHE_DIR = "/tmp/keycache"
 # pylint: enable=protected-access
 
-BENCHMARK_CONFIGURATION = cnp.CompilationConfiguration(
+BENCHMARK_CONFIGURATION = cnp.Configuration(
     dump_artifacts_on_unexpected_failures=True,
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
+    show_mlir=False,
+    show_graph=False,
+    jit=True,
 )
 
 

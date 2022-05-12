@@ -12,8 +12,8 @@ import torch
 
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from concrete.numpy.compilation import (
-    CompilationArtifacts,
-    CompilationConfiguration,
+    DebugArtifacts,
+    Configuration,
     Compiler,
     EncryptionStatus,
     Circuit,
@@ -83,11 +83,11 @@ def default_keyring_path():
 
 
 # This is only for doctests where we currently cannot make use of fixtures
-original_compilation_config_init = CompilationConfiguration.__init__
+original_compilation_config_init = Configuration.__init__
 
 
 def monkeypatched_compilation_configuration_init_for_codeblocks(
-    self: CompilationConfiguration, *args, **kwargs
+    self: Configuration, *args, **kwargs
 ):
     """Monkeypatched compilation configuration init for codeblocks tests."""
     original_compilation_config_init(self, *args, **kwargs)
@@ -98,12 +98,12 @@ def monkeypatched_compilation_configuration_init_for_codeblocks(
 
 
 def pytest_sessionstart(session: pytest.Session):
-    """Handle keyring for session and codeblocks CompilationConfiguration if needed."""
+    """Handle keyring for session and codeblocks Configuration if needed."""
     if session.config.getoption("--codeblocks", default=False):
         # setattr to avoid mypy complaining
         # Disable the flake8 bug bear warning for the mypy fix
         setattr(  # noqa: B010
-            CompilationConfiguration,
+            Configuration,
             "__init__",
             monkeypatched_compilation_configuration_init_for_codeblocks,
         )
@@ -152,10 +152,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
 @pytest.fixture
 def default_configuration():
     """Return the default test compilation configuration"""
-    return CompilationConfiguration(
+    return Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
+        jit=True,
     )
 
 

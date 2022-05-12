@@ -6,8 +6,8 @@ import numpy
 import onnx
 import torch
 from concrete.numpy import MAXIMUM_BIT_WIDTH
-from concrete.numpy.compilation.artifacts import CompilationArtifacts
-from concrete.numpy.compilation.configuration import CompilationConfiguration
+from concrete.numpy.compilation.artifacts import DebugArtifacts
+from concrete.numpy.compilation.configuration import Configuration
 
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray, QuantizedModule
 from . import NumpyModule
@@ -38,8 +38,8 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
 def _compile_torch_or_onnx_model(
     model: Union[torch.nn.Module, onnx.ModelProto],
     torch_inputset: Dataset,
-    configuration: Optional[CompilationConfiguration] = None,
-    compilation_artifacts: Optional[CompilationArtifacts] = None,
+    configuration: Optional[Configuration] = None,
+    compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
@@ -54,9 +54,9 @@ def _compile_torch_or_onnx_model(
             in ONNX
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
-        configuration (CompilationConfiguration): Configuration object to use
+        configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+        compilation_artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
@@ -98,8 +98,8 @@ def _compile_torch_or_onnx_model(
         quantized_numpy_inputset,
         configuration,
         compilation_artifacts,
-        show_mlir,
-        use_virtual_lib,
+        show_mlir=show_mlir,
+        use_virtual_lib=use_virtual_lib,
     )
 
     return quantized_module
@@ -108,8 +108,8 @@ def _compile_torch_or_onnx_model(
 def compile_torch_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
-    configuration: Optional[CompilationConfiguration] = None,
-    compilation_artifacts: Optional[CompilationArtifacts] = None,
+    configuration: Optional[Configuration] = None,
+    compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
@@ -123,9 +123,9 @@ def compile_torch_model(
         torch_model (torch.nn.Module): the model to quantize
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
-        configuration (CompilationConfiguration): Configuration object to use
+        configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+        compilation_artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
@@ -150,8 +150,8 @@ def compile_torch_model(
 def compile_onnx_model(
     onnx_model: onnx.ModelProto,
     torch_inputset: Dataset,
-    configuration: Optional[CompilationConfiguration] = None,
-    compilation_artifacts: Optional[CompilationArtifacts] = None,
+    configuration: Optional[Configuration] = None,
+    compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
@@ -165,9 +165,9 @@ def compile_onnx_model(
         onnx_model (onnx.ModelProto): the model to quantize
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
-        configuration (CompilationConfiguration): Configuration object to use
+        configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (CompilationArtifacts): Artifacts object to fill
+        compilation_artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo

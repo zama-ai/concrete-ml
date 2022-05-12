@@ -12,14 +12,13 @@ def test_torch_matmul_virtual_lib(default_configuration):
 
     thousand_ones = numpy.ones((1000,), dtype=numpy.int64)
 
-    matmul_thousand_ones_compiler = Compiler(
-        lambda x: f(x, thousand_ones), {"x": "encrypted"}, default_configuration
-    )
+    matmul_thousand_ones_compiler = Compiler(lambda x: f(x, thousand_ones), {"x": "encrypted"})
 
     # Special inputset
     inputset = [thousand_ones]
-
-    virtual_fhe_circuit = matmul_thousand_ones_compiler.compile(inputset, virtual=True)
+    virtual_fhe_circuit = matmul_thousand_ones_compiler.compile(
+        inputset, default_configuration, virtual=True
+    )
 
     assert isinstance(virtual_fhe_circuit, Circuit)
 
@@ -34,13 +33,12 @@ def test_torch_matmul_virtual_lib(default_configuration):
     matmul_three_thousand_plus_minus_ones_compiler = Compiler(
         lambda x: f(x, two_thousand_ones_and_a_thousand_minus_ones),
         {"x": "encrypted"},
-        default_configuration,
     )
 
     # Special inputset
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     virtual_fhe_circuit = matmul_three_thousand_plus_minus_ones_compiler.compile(
-        inputset, virtual=True
+        inputset, default_configuration, virtual=True
     )
 
     assert isinstance(virtual_fhe_circuit, Circuit)
@@ -56,13 +54,12 @@ def test_torch_matmul_virtual_lib(default_configuration):
     sin_matmul_three_thousand_plus_minus_ones_compiler = Compiler(
         lambda x: g(x, two_thousand_ones_and_a_thousand_minus_ones),
         {"x": "encrypted"},
-        default_configuration,
     )
 
     # Special inputset
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     virtual_fhe_circuit = sin_matmul_three_thousand_plus_minus_ones_compiler.compile(
-        inputset, virtual=True
+        inputset, default_configuration, virtual=True
     )
 
     assert isinstance(virtual_fhe_circuit, Circuit)
