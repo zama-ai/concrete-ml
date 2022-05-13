@@ -116,6 +116,7 @@ def test_xgb_classifier(
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
     is_weekly_option,
+    is_vl_only_option,
 ):
     """Tests the xgboost.
 
@@ -126,6 +127,10 @@ def test_xgb_classifier(
         if skip_if_not_weekly:
             # Skip long tests
             return
+
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     # Get the dataset
     x, y = load_data()

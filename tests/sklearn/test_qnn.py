@@ -208,9 +208,14 @@ def test_parameter_validation(model):
     ],
 )
 @pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
-def test_compile_and_calib(activation_function, model, default_configuration, use_virtual_lib):
+def test_compile_and_calib(
+    activation_function, model, default_configuration, use_virtual_lib, is_vl_only_option
+):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     n_features = 10
 

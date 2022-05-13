@@ -55,6 +55,12 @@ def pytest_addoption(parser):
         help="To do longer tests.",
     )
 
+    parser.addoption(
+        "--only_vl_tests",
+        action="store_true",
+        help="To run only VL tests (i.e., no FHE compilation nor execution).",
+    )
+
 
 DEFAULT_KEYRING_PATH = Path.home().resolve() / ".cache/concrete-ml_pytest"
 
@@ -215,6 +221,13 @@ def is_weekly_option(request):
     """Function to see if we are in --weekly configuration"""
     is_weekly = request.config.getoption("--weekly")
     return is_weekly
+
+
+@pytest.fixture
+def is_vl_only_option(request):
+    """Function to see if we are in --only_vl_tests configuration"""
+    only_vl_tests = request.config.getoption("--only_vl_tests")
+    return only_vl_tests
 
 
 def check_is_good_execution_for_quantized_models_impl(

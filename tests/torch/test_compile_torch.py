@@ -179,7 +179,6 @@ def compile_and_test_torch_or_onnx(
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
-
     n_bits = 2
 
     # Define an input shape (n_examples, n_features)
@@ -341,8 +340,13 @@ def test_compile_torch_or_onnx_networks(
     use_virtual_lib,
     is_onnx,
     check_r2_score,
+    is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
+
     compile_and_test_torch_or_onnx(
         input_output_feature,
         model,
@@ -375,8 +379,12 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     use_virtual_lib,
     is_onnx,
     check_r2_score,
+    is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     compile_and_test_torch_or_onnx(
         (1, 7, 7),
@@ -451,8 +459,13 @@ def test_compile_torch_or_onnx_activations(
     use_virtual_lib,
     is_onnx,
     check_r2_score,
+    is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
+
     compile_and_test_torch_or_onnx(
         input_output_feature,
         model,

@@ -197,8 +197,13 @@ for classifier_model in classifier_models:
 
 @pytest.mark.parametrize("alg, load_data", multiple_models_datasets)
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-def test_linear_model_compile_run_fhe(load_data, alg, use_virtual_lib, default_configuration):
+def test_linear_model_compile_run_fhe(
+    load_data, alg, use_virtual_lib, default_configuration, is_vl_only_option
+):
     """Tests the sklearn regressions."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     # Get the dataset
     x, y = load_data()

@@ -38,8 +38,12 @@ def test_decision_tree_classifier(
     default_configuration,
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
+    is_vl_only_option,
 ):
     """Tests the sklearn DecisionTreeClassifier."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     # Get the dataset
     x, y = load_data()

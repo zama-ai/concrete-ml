@@ -144,8 +144,12 @@ def test_quantized_module_compilation(
     check_is_good_execution,
     n_bits,
     use_virtual_lib,
+    is_vl_only_option,
 ):
     """Test a neural network compilation for FHE inference."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     # Do not test unsupported bit widths when we are not using the Virtual Lib
     if not use_virtual_lib and n_bits > MAXIMUM_BIT_WIDTH:
@@ -212,8 +216,12 @@ def test_quantized_cnn_compilation(
     default_configuration,
     check_is_good_execution,
     use_virtual_lib,
+    is_vl_only_option,
 ):
     """Test a convolutional neural network compilation for FHE inference."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     n_bits = 2
 
