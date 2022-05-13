@@ -328,22 +328,6 @@ class QuantizedAbs(QuantizedOp):
     _impl_for_op_named: str = "Abs"
 
 
-class QuantizedLinear(QuantizedGemm):
-    """Helper Class to have the equivalent layer to torch.nn.Linear."""
-
-    _impl_for_op_named: str = "Linear"
-
-    def __init__(
-        self,
-        n_bits: int,
-        int_input_names: Set[str],
-        q_weights: QuantizedArray,
-        q_bias: Optional[QuantizedArray] = None,
-    ) -> None:
-        constant_inputs = {"b": q_weights} if q_bias is None else {"b": q_weights, "c": q_bias}
-        super().__init__(n_bits, int_input_names, constant_inputs=constant_inputs)
-
-
 class QuantizedIdentity(QuantizedOp):
     """Quantized Identity op."""
 

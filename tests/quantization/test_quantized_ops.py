@@ -31,7 +31,6 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedIdentity,
     QuantizedLeakyRelu,
     QuantizedLess,
-    QuantizedLinear,
     QuantizedLog,
     QuantizedMatMul,
     QuantizedMul,
@@ -367,35 +366,27 @@ def test_all_gemm_ops(
     q_gemm = QuantizedGemm(
         n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights, "c": q_bias}
     )
-    q_linear = QuantizedLinear(n_bits, {"0"}, q_weights, q_bias)
 
     # Calibrate the Quantized layer
     expected_gemm_outputs = q_gemm.calibrate(inputs)
-    expected_linear_outputs = q_linear.calibrate(inputs)
 
     actual_gemm_output = q_gemm(q_inputs).dequant()
-    actual_linear_output = q_linear(q_inputs).dequant()
 
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
-    check_r2_score(expected_linear_outputs, actual_linear_output)
 
     # 2- Same test without bias
     q_gemm = QuantizedGemm(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
-    q_linear = QuantizedLinear(n_bits, {"0"}, q_weights)
     q_mm = QuantizedMatMul(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
 
     # Calibrate the quantized layers
     expected_gemm_outputs = q_gemm.calibrate(inputs)
-    expected_linear_outputs = q_linear.calibrate(inputs)
     expected_mm_outputs = q_mm.calibrate(inputs)
 
     actual_gemm_output = q_gemm(q_inputs).dequant()
-    actual_linear_output = q_linear(q_inputs).dequant()
     actual_mm_output = q_mm(q_inputs).dequant()
 
     # Now check that the quantized results are close to non quantized
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
-    check_r2_score(expected_linear_outputs, actual_linear_output)
     check_r2_score(expected_mm_outputs, actual_mm_output)
 
     # 3- Same test but with (alpha, beta) = (1, 0)
@@ -756,7 +747,6 @@ def test_all_ops_were_tested():
     # If you can think of a way to make this automatic, please provide a PR!
     currently_tested_ops = {
         QuantizedGemm: test_all_gemm_ops,
-        QuantizedLinear: test_all_gemm_ops,
         QuantizedMatMul: test_all_gemm_ops,
         QuantizedAdd: test_all_arith_ops,
         QuantizedRelu: test_univariate_ops_no_attrs,

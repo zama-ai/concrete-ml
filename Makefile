@@ -512,6 +512,11 @@ benchmark:
 	  poetry run python $$script; \
 	done
 
+.PHONY: benchmark_one # Perform benchmark on one script file (SCRIPT)
+benchmark_one:
+	rm -rf progress.json && \
+	poetry run python $${SCRIPT}; \
+
 .PHONY: docker_publish_measurements # Run benchmarks in docker and publish results
 docker_publish_measurements: docker_rebuild
 	docker run --rm --volume /"$$(pwd)":/src \

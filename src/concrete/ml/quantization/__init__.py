@@ -21,7 +21,6 @@ from .quantized_ops import (
     QuantizedIdentity,
     QuantizedLeakyRelu,
     QuantizedLess,
-    QuantizedLinear,
     QuantizedLog,
     QuantizedMatMul,
     QuantizedMul,
