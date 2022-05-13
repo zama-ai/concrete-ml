@@ -334,7 +334,7 @@ jobs:
         if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         timeout-minutes: 60
         run: |
-          make pytest
+          make pytest PYTEST_OPTIONS=--only_vl_tests
 
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
