@@ -401,5 +401,6 @@ def test_custom_net_classifier():
     clf = GridSearchCV(
         pipe_cv,
         {"net__lr": [0.01, 0.1]},
+        error_score="raise",
     )
     clf.fit(x_train, y_train)

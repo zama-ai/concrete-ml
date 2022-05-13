@@ -107,7 +107,7 @@ def test_pipeline_classifiers_regressors(alg, data):
     param_grid = {
         "alg__n_bits": [2, 3],
     }
-    grid_search = GridSearchCV(pipe_cv, param_grid, cv=3)
+    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -174,5 +174,6 @@ def test_pipeline_and_cv_qnn():
     clf = GridSearchCV(
         pipe_cv,
         {"net__module__n_layers": (3, 5), "net__module__activation_function": (nn.Tanh, nn.ReLU6)},
+        error_score="raise",
     )
     clf.fit(x_train, y_train)

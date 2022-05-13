@@ -370,12 +370,12 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
 
         # If classes are not starting from 0 and/or increasing by 1
         # we need to map them to values 0, 1, ..., n_classes - 1
-        classes_ = numpy.unique(y)
-        if not numpy.array_equal(numpy.arange(len(classes_)), classes_):
-            self.class_mapping_ = dict(enumerate(classes_))
+        self.classes_ = numpy.unique(y)
+        if not numpy.array_equal(numpy.arange(len(self.classes_)), self.classes_):
+            self.class_mapping_ = dict(enumerate(self.classes_))
 
         # Register the number of classes
-        self.n_classes_ = len(classes_)
+        self.n_classes_ = len(self.classes_)
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -509,10 +509,10 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             numpy.ndarray: the prediction as ordinals
         """
         # Check that self.fhe_tree is not None
-        assert_true(
-            self.fhe_tree is not None,
+        # mypy
+        assert self.fhe_tree is not None, (
             f"You must call {self.compile.__name__} "
-            f"before calling {self.predict.__name__} with execute_in_fhe=True.",
+            f"before calling {self.predict.__name__} with execute_in_fhe=True."
         )
         # mypy
         assert self.fhe_tree is not None

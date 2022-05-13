@@ -296,7 +296,7 @@ def test_pipeline_sklearn(alg, load_data):
     param_grid = {
         "alg__n_bits": [2, 3],
     }
-    grid_search = GridSearchCV(pipe_cv, param_grid, cv=3)
+    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():

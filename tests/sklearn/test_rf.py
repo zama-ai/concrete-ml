@@ -133,6 +133,6 @@ def test_grid_search():
     grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
 
     concrete_clf = RandomForestClassifier()
-    _ = GridSearchCV(concrete_clf, param_grid, cv=5, scoring=grid_scorer, verbose=1, n_jobs=1).fit(
-        x, y
-    )
+    _ = GridSearchCV(
+        concrete_clf, param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
+    ).fit(x, y)
