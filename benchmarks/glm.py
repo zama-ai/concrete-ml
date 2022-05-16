@@ -116,7 +116,7 @@ def get_train_test_data(data: pandas.DataFrame) -> Tuple[pandas.DataFrame, panda
         random_state=0,
     )
 
-    # The test set is reduced to only 100 values for faster FHE runs.
+    # The test set is reduced for faster FHE runs.
     _, test_data, = train_test_split(
         test_data,
         test_size=500,
