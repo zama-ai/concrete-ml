@@ -8,7 +8,7 @@ from onnx import helper, numpy_helper
 from torch import nn
 
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
-from concrete.ml.quantization import QuantizedArray, QuantizedGemm
+from concrete.ml.quantization import QuantizedGemm
 from concrete.ml.quantization.post_training import PostTrainingAffineQuantization
 from concrete.ml.torch.numpy_module import NumpyModule
 
@@ -174,7 +174,7 @@ def test_quantized_module_compilation(
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
     # Quantize input
-    q_input = QuantizedArray(n_bits, numpy_input)
+    q_input = quantized_model.quantize_input(numpy_input)
 
     # Compile
     quantized_model.compile(
@@ -183,7 +183,7 @@ def test_quantized_module_compilation(
         use_virtual_lib=use_virtual_lib,
     )
 
-    for x_q in q_input.qvalues:
+    for x_q in q_input:
         x_q = numpy.expand_dims(x_q, 0)
         check_is_good_execution(
             fhe_circuit=quantized_model.forward_fhe,
@@ -241,8 +241,9 @@ def test_quantized_cnn_compilation(
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(n_bits, torch_cnn_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
+
     # Quantize input
-    q_input = QuantizedArray(n_bits, numpy_input)
+    q_input = quantized_model.quantize_input(numpy_input)
 
     # Compile
     quantized_model.compile(
@@ -251,7 +252,7 @@ def test_quantized_cnn_compilation(
         use_virtual_lib=use_virtual_lib,
     )
 
-    for x_q in q_input.qvalues:
+    for x_q in q_input:
         x_q = numpy.expand_dims(x_q, 0)
         check_is_good_execution(
             fhe_circuit=quantized_model.forward_fhe,
@@ -395,7 +396,9 @@ def test_post_training_quantization_constant_folding():
     numpy_model = NumpyModuleTest(model_def)
 
     # Quantize with post-training static method
-    post_training_quant = PostTrainingAffineQuantization(MAXIMUM_BIT_WIDTH, numpy_model)
+    post_training_quant = PostTrainingAffineQuantization(
+        MAXIMUM_BIT_WIDTH, numpy_model, is_signed=True
+    )
 
     numpy_input = numpy.random.random(size=(10, 10))
 

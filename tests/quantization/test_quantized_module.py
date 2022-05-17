@@ -69,8 +69,8 @@ N_BITS_LIST = [
     20,
     16,
     8,
-    {"inputs": 8, "weights": 8, "outputs": 8},
-    {"inputs": 12, "weights": 15, "outputs": 16},
+    {"net_inputs": 8, "op_weights": 8, "op_inputs": 8, "net_outputs": 8},
+    {"net_inputs": 12, "op_weights": 15, "op_inputs": 15, "net_outputs": 16},
 ]
 
 
@@ -79,6 +79,7 @@ N_BITS_LIST = [
     "model, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
+        pytest.param(CNN, (100, 3, 32, 32)),
     ],
 )
 @pytest.mark.parametrize(

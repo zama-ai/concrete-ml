@@ -9,7 +9,9 @@ from concrete.numpy import MAXIMUM_BIT_WIDTH
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 
-from ..quantization import PostTrainingAffineQuantization, QuantizedArray, QuantizedModule
+from concrete.ml.quantization.post_training import PostTrainingQATImporter
+
+from ..quantization import PostTrainingAffineQuantization, QuantizedModule
 from . import NumpyModule
 
 Tensor = Union[torch.Tensor, numpy.ndarray]
@@ -38,6 +40,7 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
 def _compile_torch_or_onnx_model(
     model: Union[torch.nn.Module, onnx.ModelProto],
     torch_inputset: Dataset,
+    import_qat: bool = False,
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -54,6 +57,8 @@ def _compile_torch_or_onnx_model(
             in ONNX
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        import_qat (bool): Flag to signal that the network being imported contains quantizers in
+            in its computation graph and that Concrete ML should not re-quantize it.
         configuration (Configuration): Configuration object to use
             during compilation
         compilation_artifacts (DebugArtifacts): Artifacts object to fill
@@ -88,11 +93,13 @@ def _compile_torch_or_onnx_model(
     numpy_model = NumpyModule(model, dummy_input_for_tracing)
 
     # Quantize with post-training static method, to have a model with integer weights
-    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
+    if import_qat:
+        post_training_quant = PostTrainingQATImporter(n_bits, numpy_model, is_signed=True)
+    else:
+        post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
-    # Quantize input
-    quantized_numpy_inputset = tuple(QuantizedArray(n_bits, val) for val in inputset_as_numpy_tuple)
+    quantized_numpy_inputset = quantized_module.quantize_input(*inputset_as_numpy_tuple)
 
     quantized_module.compile(
         quantized_numpy_inputset,
@@ -108,6 +115,7 @@ def _compile_torch_or_onnx_model(
 def compile_torch_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
+    import_qat: bool = False,
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -123,6 +131,8 @@ def compile_torch_model(
         torch_model (torch.nn.Module): the model to quantize
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        import_qat (bool): Set to True to import a network that contains quantizers and was
+            trained using quantization aware training
         configuration (Configuration): Configuration object to use
             during compilation
         compilation_artifacts (DebugArtifacts): Artifacts object to fill
@@ -139,6 +149,7 @@ def compile_torch_model(
     return _compile_torch_or_onnx_model(
         torch_model,
         torch_inputset,
+        import_qat,
         configuration=configuration,
         compilation_artifacts=compilation_artifacts,
         show_mlir=show_mlir,
@@ -150,6 +161,7 @@ def compile_torch_model(
 def compile_onnx_model(
     onnx_model: onnx.ModelProto,
     torch_inputset: Dataset,
+    import_qat: bool = False,
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -165,6 +177,8 @@ def compile_onnx_model(
         onnx_model (onnx.ModelProto): the model to quantize
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        import_qat (bool): Flag to signal that the network being imported contains quantizers in
+            in its computation graph and that Concrete ML should not re-quantize it.
         configuration (Configuration): Configuration object to use
             during compilation
         compilation_artifacts (DebugArtifacts): Artifacts object to fill
@@ -181,6 +195,7 @@ def compile_onnx_model(
     return _compile_torch_or_onnx_model(
         onnx_model,
         torch_inputset,
+        import_qat,
         configuration=configuration,
         compilation_artifacts=compilation_artifacts,
         show_mlir=show_mlir,

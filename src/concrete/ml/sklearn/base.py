@@ -107,8 +107,7 @@ class QuantizedTorchEstimatorMixin:
             )
 
         # Quantize the compilation input set using the quantization parameters computed in .fit()
-        quantized_numpy_inputset = copy.deepcopy(self.quantized_module_.q_inputs[0])
-        quantized_numpy_inputset.update_values(X)
+        quantized_numpy_inputset = self.quantized_module_.quantize_input(X)
 
         # Call the compilation backend to produce the FHE inference circuit
         self.quantized_module_.compile(
@@ -791,8 +790,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
                 bitwidths with simulated FHE computation. Defaults to False
         """
         # Quantize the input
-        quantized_numpy_inputset = copy.deepcopy(self.quantized_module.q_inputs[0])
-        quantized_numpy_inputset.update_values(X)
+        quantized_numpy_inputset = self.quantized_module.quantize_input(X)
 
         # Compile the model
         self.quantized_module.compile(

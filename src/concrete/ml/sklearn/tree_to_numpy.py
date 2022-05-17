@@ -128,7 +128,7 @@ def tree_to_numpy(
             )
             # Make sure the zero_point is 0
             assert_true(
-                q_y.zero_point == 0,
+                q_y.quantizer.zero_point == 0,
                 "Zero point is not 0. Symmetric signed quantization must work.",
             )
             init_tensor = q_y.quant()

@@ -7,7 +7,7 @@ from concrete.onnx import conv as cnp_conv
 
 from ..common.debugging import assert_true
 from .base_quantized_op import QuantizedOp
-from .quantized_array import QuantizedArray
+from .quantized_array import QuantizationOptions, QuantizedArray
 
 
 class QuantizedSigmoid(QuantizedOp):
@@ -78,12 +78,13 @@ class QuantizedGemm(QuantizedOp):
 
     def __init__(
         self,
-        n_bits: int,
-        int_input_names: Set[str],
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         alpha = self.attrs.get("alpha", 1)
         beta = self.attrs.get("beta", 1)
@@ -132,8 +133,15 @@ class QuantizedGemm(QuantizedOp):
         weights_q_values = numpy.transpose(q_weights.qvalues) if transpose_w else q_weights.qvalues
 
         # For mypy
-        assert self.output_scale is not None
-        assert self.output_zero_point is not None
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
+
+        assert q_weights.quantizer.scale is not None
+        assert q_weights.quantizer.zero_point is not None
+
+        assert q_input.quantizer.scale is not None
+        assert q_input.quantizer.zero_point is not None
 
         # The following MatMul is done with integers, and thus, does not use of any PBS.
         # Rescaling the output of the integer MatMul to handle scale changes is done
@@ -148,16 +156,20 @@ class QuantizedGemm(QuantizedOp):
         matmul = input_q_values @ weights_q_values
 
         # Sum operation in full integers resulting in large integers (INTEGERS)
-        sum_input = -q_weights.zero_point * numpy.sum(input_q_values, axis=1, keepdims=True)
+        sum_input = -q_weights.quantizer.zero_point * numpy.sum(
+            input_q_values, axis=1, keepdims=True
+        )
 
         # Last part that has to be done in integer, the rest must go in a PBS.
         # Forced fusing using .astype(numpy.float32)
         numpy_q_out = (matmul + sum_input).astype(numpy.float32)
 
         # sum_weights is a constant
-        sum_weights = q_input.zero_point * numpy.sum(weights_q_values, axis=0, keepdims=True)
+        sum_weights = q_input.quantizer.zero_point * numpy.sum(
+            weights_q_values, axis=0, keepdims=True
+        )
 
-        final_term = p * q_input.zero_point * q_weights.zero_point
+        final_term = p * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
         numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
 
@@ -167,7 +179,7 @@ class QuantizedGemm(QuantizedOp):
         # Note that here we do not rescale to the output_scale and we do not add a zero-point
         # Any following Gemm/MatMul/Conv layers will do the rescaling (during requantization)
         # by calling _prepare_inputs_with_constants(...quantize_real_values=True)
-        m_matmul = q_input.scale * q_weights.scale
+        m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
         numpy_q_out = m_matmul * numpy_q_out
 
         if q_bias is not None:
@@ -181,8 +193,9 @@ class QuantizedGemm(QuantizedOp):
             self.n_bits,
             numpy_q_out,
             value_is_float=True,
-            scale=self.output_scale,
-            zero_point=self.output_zero_point,
+            options=self.input_quant_opts,
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
         )
 
     def can_fuse(self):
@@ -220,16 +233,10 @@ class QuantizedAdd(QuantizedOp):
     ) -> QuantizedArray:
 
         # For mypy
-        assert self.output_scale is not None
-        assert self.output_zero_point is not None
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
         assert self.b_sign in [-1, 1]
-
-        prepared_inputs = self._prepare_inputs_with_constants(
-            *q_inputs, calibrate=False, quantize_actual_values=True
-        )
-
-        q_input_0: QuantizedArray = prepared_inputs[0]
-        q_input_1: QuantizedArray = prepared_inputs[1]
 
         # Optimize computation when adding constants, or tensors obtained from a unique integer
         # tensor. Optimization allows univariate float subgraph fusion to a TLU
@@ -240,14 +247,31 @@ class QuantizedAdd(QuantizedOp):
         )
 
         if execute_in_float:
+            prepared_inputs = self._prepare_inputs_with_constants(
+                *q_inputs, calibrate=False, quantize_actual_values=False
+            )
+
             return QuantizedArray(
                 self.n_bits,
-                prepared_inputs[0].values + self.b_sign * prepared_inputs[1].values,
-                is_signed=prepared_inputs[0].is_signed or prepared_inputs[1].is_signed,
+                prepared_inputs[0] + self.b_sign * prepared_inputs[1],
                 value_is_float=True,
-                scale=self.output_scale,
-                zero_point=self.output_zero_point,
+                options=self.input_quant_opts,
+                stats=self.output_quant_stats,
+                params=self.output_quant_params,
             )
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        q_input_0: QuantizedArray = prepared_inputs[0]
+        q_input_1: QuantizedArray = prepared_inputs[1]
+
+        assert q_input_0.quantizer.scale is not None
+        assert q_input_0.quantizer.zero_point is not None
+
+        assert q_input_1.quantizer.scale is not None
+        assert q_input_1.quantizer.zero_point is not None
 
         # De-quantize with input params and re-quantize with output parameters
         # This will use TLUs over each element of the two inputs
@@ -255,11 +279,15 @@ class QuantizedAdd(QuantizedOp):
         # So that we do not lose precision in the computation
 
         rescale_q0 = numpy.rint(
-            q_input_0.scale / self.output_scale * (q_input_0.qvalues + (-q_input_0.zero_point))
+            q_input_0.quantizer.scale
+            / self.output_quant_params.scale
+            * (q_input_0.qvalues + (-q_input_0.quantizer.zero_point))
         ).astype(numpy.int64)
 
         rescale_q1 = numpy.rint(
-            q_input_1.scale / self.output_scale * (q_input_1.qvalues + (-q_input_1.zero_point))
+            q_input_1.quantizer.scale
+            / self.output_quant_params.scale
+            * (q_input_1.qvalues + (-q_input_1.quantizer.zero_point))
         ).astype(numpy.int64)
 
         # The sum of quantized encrypted integer values
@@ -271,17 +299,17 @@ class QuantizedAdd(QuantizedOp):
             sum_q = rescale_q0 + (-1) * rescale_q1
 
         # But we would like the output to have n_bits, so we de-quantize
-        dequant_sum = self.output_scale * sum_q
+        dequant_sum = self.output_quant_params.scale * sum_q
 
         # Return the raw float32 values without re-quantizing them to the new scale, as any
         # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
         return QuantizedArray(
             self.n_bits,
             dequant_sum,
-            is_signed=q_input_0.is_signed or q_input_1.is_signed or self.b_sign == -1,
             value_is_float=True,
-            scale=self.output_scale,
-            zero_point=self.output_zero_point,
+            options=self.input_quant_opts,
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
         )
 
     def can_fuse(self) -> bool:
@@ -335,8 +363,7 @@ class QuantizedIdentity(QuantizedOp):
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
         assert_true(len(q_inputs) == 1, "Identity does not work with multiple QuantizedArray")
-        self.output_scale = q_inputs[0].scale
-        self.output_zero_point = q_inputs[0].zero_point
+        self.output_quant_params = q_inputs[0].quantizer.quant_params
         return super().q_impl(*q_inputs, **attrs)
 
 
@@ -367,11 +394,12 @@ class QuantizedReshape(QuantizedOp):
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
-            q_inputs[0].n_bits,
+            q_inputs[0].quantizer.n_bits,
             numpy.reshape(prepared_inputs[0].qvalues, newshape),
             value_is_float=False,
-            scale=prepared_inputs[0].scale,
-            zero_point=prepared_inputs[0].zero_point,
+            options=self.input_quant_opts,
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
         )
 
 
@@ -382,17 +410,19 @@ class QuantizedConv(QuantizedOp):
 
     def __init__(
         self,
-        n_bits: int,
-        int_input_names: Set[str],
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
         """Construct the quantized convolution operator and retrieve parameters.
 
         Args:
-            n_bits: number of bits for output quantization
+            n_bits_output: number of bits for the quantization of the outputs of this operator
             int_input_names: names of integer tensors that are taken as input for this operation
             constant_inputs: the weights and activations
+            input_quant_opts: options for the input quantizer
             attrs: convolution options
                 dilations (Tuple[int]): dilation of the kernel, default 1 on all dimensions.
                 group (int): number of convolution groups, default 1
@@ -401,7 +431,7 @@ class QuantizedConv(QuantizedOp):
                 strides (Tuple[int]): stride of the convolution on each axis
         """
 
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Get the ONNX parameters
         self.dilations = attrs.get("dilations", (1, 1))
@@ -463,8 +493,9 @@ class QuantizedConv(QuantizedOp):
         """
 
         # For mypy
-        assert self.output_scale is not None
-        assert self.output_zero_point is not None
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
 
         # Retrieve the quantized inputs
         prepared_inputs = self._prepare_inputs_with_constants(
@@ -476,6 +507,12 @@ class QuantizedConv(QuantizedOp):
 
         # Prepare a constant tensor to compute the sum of the inputs
         q_weights_1 = numpy.ones_like(q_weights.qvalues)
+
+        assert q_weights.quantizer.scale is not None
+        assert q_weights.quantizer.zero_point is not None
+
+        assert q_input.quantizer.scale is not None
+        assert q_input.quantizer.zero_point is not None
 
         # We follow the Quantized Gemm implementation
         # which in turn follows Eq.7 in https://arxiv.org/abs/1712.05877
@@ -492,7 +529,7 @@ class QuantizedConv(QuantizedOp):
         )
 
         # Compute the sum of the inputs (second encrypted term)
-        zw_conv_1x = -q_weights.zero_point * cnp_conv(
+        zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
             q_input.qvalues,
             q_weights_1,
             None,
@@ -509,12 +546,12 @@ class QuantizedConv(QuantizedOp):
         numpy_q_out = (conv_wx + zw_conv_1x).astype(numpy.float32)
 
         # Compute the third term, the sum of the weights which is a constant
-        sum_weights = q_input.zero_point * numpy.sum(
+        sum_weights = q_input.quantizer.zero_point * numpy.sum(
             q_weights.qvalues, axis=(1, 2, 3), keepdims=True
         ).transpose(1, 0, 2, 3)
 
         # Compute the forth term which is a constant
-        final_term = n_weights * q_input.zero_point * q_weights.zero_point
+        final_term = n_weights * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
         # Now compute the whole sum (sum of the four terms)
         numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
@@ -523,7 +560,7 @@ class QuantizedConv(QuantizedOp):
         # This is going to be compiled with a PBS (along with the following activation function)
         # Note that we don't requantize the output of the conv, this will be done by
         # any Gemm/Add/Conv layers that follow
-        m_matmul = q_input.scale * q_weights.scale
+        m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
 
         # Rescale from scale=scale_inputs x scale_outputs to output scale
         numpy_q_out = m_matmul * numpy_q_out
@@ -533,16 +570,15 @@ class QuantizedConv(QuantizedOp):
             # Broadcast the rescaled biases to each channel
             numpy_q_out = numpy_q_out + q_bias.values.reshape((1, -1, 1, 1))  # bias_part
 
-        bias_is_signed = q_bias.is_signed if q_bias is not None else False
         # And return as a QuantizedArray initialized from the float32 data, keeping
         # track of the quantization parameters
         return QuantizedArray(
             self.n_bits,
             numpy_q_out,
-            is_signed=q_input.is_signed or q_weights.is_signed or bias_is_signed,
             value_is_float=True,
-            scale=self.output_scale,
-            zero_point=self.output_zero_point,
+            options=self.input_quant_opts,
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
         )
 
     def can_fuse(self) -> bool:
@@ -566,13 +602,14 @@ class QuantizedAvgPool(QuantizedOp):
     # Since this op takes a single input, we can set int_input_names to a single default id
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Get the ONNX parameters
         self.ceil_mode = attrs.get("ceil_mode", None)
@@ -636,15 +673,15 @@ class QuantizedAvgPool(QuantizedOp):
 
         sum_result = cnp_conv(q_input.qvalues, kernel, None, self.pads, self.strides)
 
-        result = sum_result.astype(numpy.float32) * norm_const * q_input.scale
+        result = sum_result.astype(numpy.float32) * norm_const * q_input.quantizer.scale
 
         return QuantizedArray(
             self.n_bits,
             result,
-            is_signed=q_input.is_signed,
             value_is_float=True,
-            scale=self.output_scale,
-            zero_point=self.output_zero_point,
+            options=self.input_quant_opts,
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
         )
 
     def can_fuse(self) -> bool:
@@ -666,13 +703,14 @@ class QuantizedPad(QuantizedOp):
 
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Get the ONNX parameters
         self.mode = attrs.get("mode", None)
@@ -702,12 +740,13 @@ class QuantizedWhere(QuantizedOp):
     # This op takes a single variable input, so we can set int_input_names to a default id
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Remember that there are examples of where with more than 1 variable which are going to be
         # well managed, thanks to fusing: eg,
@@ -742,12 +781,13 @@ class QuantizedGreater(QuantizedOp):
     # Since this op takes a single variable input, we can set int_input_names to a single default id
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # We do not support testing a > b where a,b are encrypted
         # only comparing to a constant is supported
@@ -765,12 +805,13 @@ class QuantizedLess(QuantizedOp):
     # Since this op takes a single variable input, we can set int_input_names to a single default id
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # We do not support testing a < b where a,b are encrypted
         # only comparing to a constant is supported
@@ -812,12 +853,13 @@ class QuantizedMul(QuantizedOp):
 
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits, int_input_names, constant_inputs, **attrs)
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # We do not support multiplication between encrypted tensors
         # Only multiplication between
@@ -891,11 +933,12 @@ class QuantizedFlatten(QuantizedOp):
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
-            q_inputs[0].n_bits,
+            q_inputs[0].quantizer.n_bits,
             numpy.reshape(prepared_inputs[0].qvalues, newshape),
             value_is_float=False,
-            scale=prepared_inputs[0].scale,
-            zero_point=prepared_inputs[0].zero_point,
+            options=self.input_quant_opts,
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
         )
 
     def can_fuse(self) -> bool:

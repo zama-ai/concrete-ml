@@ -1,6 +1,7 @@
 """Post Training Quantization methods."""
 
-from typing import Dict, Iterable, Set, Tuple, Union, cast
+from abc import abstractmethod
+from typing import Dict, Set, Tuple, Union, cast
 
 import numpy
 import onnx
@@ -9,30 +10,37 @@ from onnx import numpy_helper
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute
 from ..torch.numpy_module import NumpyModule
-from .base_quantized_op import ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
-from .quantized_array import QuantizedArray
+from .base_quantized_op import DEFAULT_OUTPUT_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
+from .quantized_array import QuantizationOptions, QuantizedArray
 from .quantized_module import QuantizedModule
 
 
-class PostTrainingAffineQuantization:
-    """Post-training Affine Quantization.
+class ONNXConverter:
+    """Base ONNX to Concrete ML computation graph conversion class.
 
-    Create the quantized version of the passed numpy module.
+    This class provides a method to parse an ONNX graph and apply several transformations. First,
+    it creates QuantizedOps for each ONNX graph op. These quantized ops have calibrated
+    quantizers that are useful when the operators work on integer data or when the output of
+    the ops is the output of the encrypted program. For operators that compute in float and will
+    be merged to TLUs, these quantizers are not used. Second, this converter creates quantized
+    tensors for initializer and weights stored in the graph.
 
-    Args:
-        n_bits (int, Dict): Number of bits to quantize the model. If an int is passed for n_bits,
-            the value will be used for activation, inputs and weights. If a dict is passed, then it
-            should contain "inputs", "weights" and "outputs" keys with corresponding number of
-            quantization bits for:
-            - inputs : any input data to any layers
-            - weights: learned parameters or constants in the network
-            - outputs: final model output
+    This class should be sub-classed to provide specific calibration and quantization options
+    depending on the usage (Post-training quantization vs Quantization Aware training).
+
+    Arguments:
+        n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
+            a dictionary with "net_inputs", "op_inputs", "op_weights", "net_outputs" keys, with
+            a bitwidth for each of these elements. When using a single value for n_bits,
+            it is assigned to "op_inputs" and "op_weights" bits and a default value is
+            assigned to the number of output bits. This default is a compromise between model
+            accuracy and runtime performance in FHE. Output bits give the precision of
+            the final network output, while "net_input" bits give the precision of quantization
+            of network inputs. "op_inputs" and "op_weights" control the quantization for the
+            inputs and weights of all layers.
         numpy_model (NumpyModule): Model in numpy.
         is_signed (bool): Whether the weights of the layers can be signed. Currently, only the
             weights can be signed.
-
-    Returns:
-        QuantizedModule: A quantized version of the numpy model.
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
@@ -45,36 +53,50 @@ class PostTrainingAffineQuantization:
         self.quant_ops_dict = {}
         assert_true(
             isinstance(n_bits, int)
-            or (isinstance(n_bits, Dict) and n_bits.keys() == {"inputs", "weights", "outputs"}),
+            or (
+                isinstance(n_bits, Dict)
+                and n_bits.keys() == {"net_inputs", "op_weights", "net_outputs", "op_inputs"}
+            ),
             "Invalid n_bits, either pass an integer or a dictionary containing integer values for"
-            " the `inputs`, `weights` and 'outputs' keys",
+            " the `net_inputs`, `op_weights`, `net_outputs`, `op_inputs` keys",
         )
+
+        # If a single integer is passed, use a default value for output bits
+        if isinstance(n_bits, int):
+            n_bits = {
+                "net_inputs": max(DEFAULT_OUTPUT_BITS, n_bits),
+                "op_weights": n_bits,
+                "op_inputs": n_bits,
+                "net_outputs": max(DEFAULT_OUTPUT_BITS, n_bits),
+            }
+
+        assert_true(
+            n_bits["net_outputs"] >= n_bits["op_inputs"],
+            "Using fewer bits to represent the net outputs than the op inputs is not recommended",
+        )
+
         self.n_bits = n_bits
         self.quant_params = {}
         self.numpy_model = numpy_model
         self.is_signed = is_signed
 
     @property
-    def n_bits_inputs(self):
-        """Get the number of bits to use for the quantization of all layers' input.
-
-        Returns:
-            n_bits (int): number of bits for input quantization
-        """
-        if isinstance(self.n_bits, Dict):
-            return self.n_bits["inputs"]
-        return self.n_bits
-
-    @property
-    def n_bits_outputs(self):
+    def n_bits_net_outputs(self):
         """Get the number of bits to use for the quantization of the last layer's output.
 
         Returns:
             n_bits (int): number of bits for output quantization
         """
-        if isinstance(self.n_bits, Dict):
-            return self.n_bits["outputs"]
-        return self.n_bits
+        return self.n_bits["net_outputs"]
+
+    @property
+    def n_bits_net_inputs(self):
+        """Get the number of bits to use for the quantization of the last layer's output.
+
+        Returns:
+            n_bits (int): number of bits for output quantization
+        """
+        return self.n_bits["net_inputs"]
 
     @property
     def n_bits_weights(self):
@@ -83,9 +105,58 @@ class PostTrainingAffineQuantization:
         Returns:
             n_bits (int): number of bits for constants quantization
         """
-        if isinstance(self.n_bits, Dict):
-            return self.n_bits["weights"]
-        return self.n_bits
+        return self.n_bits["op_weights"]
+
+    @property
+    def n_bits_op_input_quant(self):
+        """Get the number of bits to use for the quantization of any constant (usually weights).
+
+        Returns:
+            n_bits (int): number of bits for constants quantization
+        """
+        return self.n_bits["op_inputs"]
+
+    @abstractmethod
+    def _process_layer(
+        self,
+        quantized_op: QuantizedOp,
+        *calibration_data: numpy.ndarray,
+    ) -> numpy.ndarray:
+        """Configure a graph operation according to model conversion mode.
+
+        Args:
+            quantized_op (QuantizedOp): Quantized graph operator instance
+            *calibration_data (numpy.ndarray): tuple of network input tensors to be used for
+                calibration
+
+        Returns:
+            numpy.ndarray: calibration data for the following operators
+        """
+
+    @abstractmethod
+    def _process_initializer(self, n_bits: int, values: numpy.ndarray) -> QuantizedArray:
+        """Transform a constant tensor according to the model conversion mode.
+
+        The values supplied are floating point values that will be quantized.
+
+        Arguments:
+            n_bits (int): Number of bits to quantize the weight values
+            values (numpy.ndarray): Float values that initialize this tensor
+
+        Returns:
+            QuantizedArray: a quantized tensor with integer values on n_bits bits
+        """
+
+    @abstractmethod
+    def _get_input_quant_opts(self, n_bits: int) -> QuantizationOptions:
+        """Construct a quantization options set for the input of a layer.
+
+        Args:
+            n_bits (int): number of bits for the operator's input quantizer
+
+        Returns:
+            QuantizationOptions: quantization options set, specific to the network conversion method
+        """
 
     # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/195
     # probably could work by calling layer.quantize_params on each layer just before quantizing them
@@ -97,12 +168,7 @@ class PostTrainingAffineQuantization:
         self.quant_params.update(
             (
                 onnx_init.name,
-                QuantizedArray(
-                    self.n_bits_weights,
-                    numpy_helper.to_array(onnx_init),
-                    is_signed=numpy_helper.to_array(onnx_init).min() < 0,
-                    is_symmetric=True,
-                ),
+                self._process_initializer(self.n_bits_weights, numpy_helper.to_array(onnx_init)),
             )
             for onnx_init in inits
         )
@@ -131,13 +197,6 @@ class PostTrainingAffineQuantization:
         )
 
         constants: Set[str] = set(self.quant_params.keys())
-
-        # Retrieve the last node
-        last_node = None
-        for node in reversed(graph.node):
-            if node.op_type in ["MatMul", "Gemm", "Conv", "Exp"]:
-                last_node = node
-                break
 
         # We need to determine, for each op, whether it only performs univariate computations.
         # A univariate computation is one which depends on a single scalar integer encrypted input
@@ -181,10 +240,8 @@ class PostTrainingAffineQuantization:
 
                 # FIXME: Do not handle constants with QuantizedArray, use numpy.ndarray
                 # let the ops quantize their own inputs
-                node_results[output_name] = QuantizedArray(
-                    self.n_bits_weights,
-                    ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0],
-                    self.is_signed,
+                node_results[output_name] = self._process_initializer(
+                    self.n_bits_weights, ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
                 )
                 constants.add(output_name)
                 continue
@@ -209,7 +266,6 @@ class PostTrainingAffineQuantization:
                     f"{op_type} can't be found in {ONNX_OPS_TO_QUANTIZED_IMPL}",
                 )
 
-                quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
                 variable_input_names = [
                     input_name for input_name in curr_inputs if input_name not in constants
                 ]
@@ -221,16 +277,18 @@ class PostTrainingAffineQuantization:
                 assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
                 curr_calibration_data = cast(Tuple[numpy.ndarray, ...], curr_calibration_data)
 
-                # The last node's values are quantized using the number of bits given for outputs
-                n_bits_op = self.n_bits_outputs if node == last_node else self.n_bits_inputs
-
                 # Find the unique integer producers of the current's op output tensor
                 node_integer_inputs = set.union(
                     *[tensor_int_producers.get(input_node, set()) for input_node in node.input]
                 )
 
+                quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
                 quantized_op_instance = quantized_op_class(
-                    n_bits_op, node_integer_inputs, curr_cst_inputs, **attributes
+                    self.n_bits_net_outputs,
+                    node_integer_inputs,
+                    curr_cst_inputs,
+                    self._get_input_quant_opts(self.n_bits_op_input_quant),
+                    **attributes,
                 )
 
                 # Store the output tensor's integer producers
@@ -245,8 +303,14 @@ class PostTrainingAffineQuantization:
                     # integer producers (forwarding)
                     tensor_int_producers[output_name] = node_integer_inputs
 
-                output_calibration_data = self._calibrate_layers_activation(
-                    variable_input_names, output_name, quantized_op_instance, *curr_calibration_data
+                # Store the learned quantized layer
+                self.quant_ops_dict[output_name] = (
+                    tuple(variable_input_names),
+                    quantized_op_instance,
+                )
+
+                output_calibration_data = self._process_layer(
+                    quantized_op_instance, *curr_calibration_data
                 )
                 node_results[output_name] = output_calibration_data
 
@@ -274,44 +338,13 @@ class PostTrainingAffineQuantization:
                 node_results[output_name] = q_node_output
                 constants.add(output_name)
 
-    def _calibrate_layers_activation(
-        self,
-        variable_input_names: Iterable[str],
-        name: str,
-        quantized_op: QuantizedOp,
-        *calibration_data: numpy.ndarray,
-    ) -> numpy.ndarray:
-        """Calibrate the QuantizedOp linked to name with previous calibration data.
-
-        Args:
-            variable_input_names (Iterable[str]): an iterable containing the ordered variable input
-                names to the layer being calibrated.
-            name (str): the name of the output/layer coming from the ONNX model.
-            quantized_op (QuantizedOp): the quantized operator for the current layer.
-            *calibration_data: numpy.ndarray: the previous layer's calibration data.
-
-        Returns:
-            numpy.ndarray: the output of the newly calibrated layer.
-        """
-        # Calibrate the output of the layer
-        quantized_op.calibrate(*calibration_data)
-
-        # Store the learned quantized layer
-        self.quant_ops_dict[name] = (tuple(variable_input_names), quantized_op)
-
-        # Create new calibration data (output of the previous layer)
-        q_calibration_data = (QuantizedArray(self.n_bits_inputs, data) for data in calibration_data)
-
-        # Dequantize to have the value in clear and ready for next calibration
-        return quantized_op(*q_calibration_data).dequant()
-
     def quantize_module(self, *calibration_data: numpy.ndarray) -> QuantizedModule:
         """Quantize numpy module.
 
         Following https://arxiv.org/abs/1712.05877 guidelines.
 
         Args:
-            *calibration_data (numpy.ndarray):   Data that will be used to compute the bounds,
+            *calibration_data (numpy.ndarray):  Data that will be used to compute the bounds,
                                                 scales and zero point values for every quantized
                                                 object.
 
@@ -329,6 +362,172 @@ class PostTrainingAffineQuantization:
             (graph_output.name for graph_output in self.numpy_model.get_onnx().graph.output),
             self.quant_ops_dict,
         )
-        q_input = (QuantizedArray(self.n_bits_inputs, val) for val in calibration_data)
+        q_input = (
+            QuantizedArray(self.n_bits_net_inputs, val).quantizer for val in calibration_data
+        )
         quantized_module.set_inputs_quantization_parameters(*q_input)
         return quantized_module
+
+
+class PostTrainingAffineQuantization(ONNXConverter):
+    """Post-training Affine Quantization.
+
+    Create the quantized version of the passed numpy module.
+
+    Args:
+        n_bits (int, Dict):             Number of bits to quantize the model. If an int is passed
+                                        for n_bits, the value will be used for activation,
+                                        inputs and weights. If a dict is passed, then it should
+                                        contain  "net_inputs", "op_inputs", "op_weights" and
+                                        "net_outputs" keys with corresponding number of
+                                        quantization bits for:
+                                        - net_inputs : number of bits for model input
+                                        - op_inputs : number of bits to quantize layer input values
+                                        - op_weights: learned parameters or constants in the network
+                                        - net_outputs: final model output quantization bits
+        numpy_model (NumpyModule):      Model in numpy.
+        is_signed:                      Whether the weights of the layers can be signed.
+                                        Currently, only the weights can be signed.
+
+    Returns:
+        QuantizedModule: A quantized version of the numpy model.
+    """
+
+    def _process_layer(
+        self,
+        quantized_op: QuantizedOp,
+        *calibration_data: numpy.ndarray,
+    ):
+        """Configure a graph operation by performing calibration for uniform quantization.
+
+        Args:
+            quantized_op (QuantizedOp): Quantized graph operator instance
+            *calibration_data (numpy.ndarray): tuple of network input tensors to be used for
+                calibration
+
+        Returns:
+            numpy.ndarray: calibration data for the following operators
+        """
+
+        return self._calibrate_layers_activation(quantized_op, *calibration_data)
+
+    def _calibrate_layers_activation(
+        self,
+        quantized_op: QuantizedOp,
+        *calibration_data: numpy.ndarray,
+    ) -> numpy.ndarray:
+        """Calibrate the QuantizedOp linked to name with previous calibration data.
+
+        Args:
+            quantized_op (QuantizedOp): the quantized operator for the current layer.
+            *calibration_data: numpy.ndarray: the previous layer's calibration data.
+
+        Returns:
+            numpy.ndarray: the output of the newly calibrated layer.
+        """
+        # Calibrate the output of the layer
+        quantized_op.calibrate(*calibration_data)
+
+        # Create new calibration data (output of the previous layer)
+        q_calibration_data = (
+            QuantizedArray(self.n_bits_op_input_quant, data) for data in calibration_data
+        )
+
+        # Dequantize to have the value in clear and ready for next calibration
+        return quantized_op(*q_calibration_data).dequant()
+
+    def _process_initializer(self, n_bits: int, values: numpy.ndarray):
+        """Quantize a network constant tensor (a weights tensor).
+
+        The values supplied are floating point values that will be quantized.
+
+        Arguments:
+            n_bits (int): Number of bits to quantize the weight values
+            values (numpy.ndarray): Float values that initialize this tensor
+
+        Returns:
+            QuantizedArray: a quantized tensor with integer values on n_bits bits
+        """
+        return QuantizedArray(
+            n_bits,
+            values,
+            is_signed=bool(numpy.min(values) < 0),
+            is_symmetric=True,
+        )
+
+    def _get_input_quant_opts(self, n_bits):
+        """Construct a quantization options set for the input of a layer.
+
+        Inputs and activations require signed quantization.
+
+        Args:
+            n_bits (int): number of bits for the operator's input quantizer
+
+        Returns:
+            QuantizationOptions: quantization options set, specific to the network conversion method
+        """
+        opts = QuantizationOptions(n_bits, is_signed=True)
+        return opts
+
+
+class PostTrainingQATImporter(ONNXConverter):
+    """Converter of Quantization Aware Training networks.
+
+    This class provides specific configuration for QAT networks during ONNX network conversion
+    to Concrete ML computation graphs.
+    """
+
+    def _process_layer(
+        self,
+        quantized_op: QuantizedOp,
+        *calibration_data: numpy.ndarray,
+    ):
+        """Configure a graph operation by calibrating it for Quantization Aware Training.
+
+        Args:
+            quantized_op (QuantizedOp): Quantized graph operator instance
+            *calibration_data (numpy.ndarray): tuple of network input tensors to be used for
+                calibration
+
+        Returns:
+            numpy.ndarray: calibration data for the following operators
+        """
+
+        layer_output = quantized_op.calibrate(*calibration_data)
+        return layer_output
+
+    def _process_initializer(self, n_bits, values):
+        """Process an already quantized weight tensor.
+
+        The values supplied are in floating point, but are discrete, in the sense
+        that the number of unique (possible) values is equal to 2**n_bits. These values,
+        w_hat take the form w_hat = alpha * w_int, where w_int are integer values. Therefore, this
+        function will retrieve the alpha and w_int that form w_hat which is passed here as `values`.
+
+        Arguments:
+            n_bits (int): Number of bits that was used to quantize the weight values
+            values (numpy.ndarray): Discrete float values that initialize this tensor
+
+        Returns:
+            QuantizedArray: a quantized tensor with integer values on n_bits bits and with alpha as
+                the scaling factor.
+        """
+        return QuantizedArray(
+            n_bits, values, is_signed=values.min() < 0, is_symmetric=True, is_qat=True
+        )
+
+    def _get_input_quant_opts(self, n_bits):
+        """Construct a quantization options set for the input of a layer of a QAT network.
+
+        QAT networks require specific quantization for inputs to nodes that perform quantization
+        (such as Gemm/Conv/Add).
+
+        Args:
+            n_bits (int): number of bits for the operator's input quantizer
+
+        Returns:
+            QuantizationOptions: quantization options set, specific to the network conversion method
+        """
+
+        opts = QuantizationOptions(n_bits, is_signed=True, is_qat=True)
+        return opts

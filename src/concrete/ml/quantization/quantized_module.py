@@ -11,7 +11,7 @@ from concrete.numpy.compilation.configuration import Configuration
 from ..common.debugging import assert_true
 from ..common.utils import generate_proxy_function
 from .base_quantized_op import QuantizedOp
-from .quantized_array import QuantizedArray
+from .quantized_array import QuantizedArray, UniformQuantizer
 
 
 class QuantizedModule:
@@ -20,7 +20,7 @@ class QuantizedModule:
     ordered_module_input_names: Tuple[str, ...]
     ordered_module_output_names: Tuple[str, ...]
     quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
-    q_inputs: List[QuantizedArray]
+    input_quantizers: List[UniformQuantizer]
     forward_fhe: Union[None, Circuit]
 
     def __init__(
@@ -41,7 +41,7 @@ class QuantizedModule:
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self._is_compiled = False
         self.forward_fhe = None
-        self.q_inputs = []
+        self.input_quantizers = []
 
     @property
     def is_compiled(self) -> bool:
@@ -92,15 +92,25 @@ class QuantizedModule:
         """
 
         assert_true(
-            (n_qvalues := len(qvalues)) == (n_qinputs := len(self.q_inputs)),
+            (n_qvalues := len(qvalues)) == (n_qinputs := len(self.input_quantizers)),
             f"Got {n_qvalues} inputs, expected {n_qinputs}",
             TypeError,
         )
-        for idx, qvalue in enumerate(qvalues):
-            self.q_inputs[idx].update_quantized_values(qvalue)
+
+        q_inputs = [
+            QuantizedArray(
+                self.input_quantizers[idx].n_bits,
+                qvalues[idx],
+                value_is_float=False,
+                options=self.input_quantizers[idx].quant_options,
+                stats=self.input_quantizers[idx].quant_stats,
+                params=self.input_quantizers[idx].quant_params,
+            )
+            for idx in range(len(self.input_quantizers))
+        ]
 
         # Init layer_results with the inputs
-        layer_results = dict(zip(self.ordered_module_input_names, self.q_inputs))
+        layer_results = dict(zip(self.ordered_module_input_names, q_inputs))
 
         for output_name, (input_names, layer) in self.quant_layers_dict.items():
             inputs = (layer_results[input_name] for input_name in input_names)
@@ -141,14 +151,13 @@ class QuantizedModule:
         """
 
         assert_true(
-            (n_values := len(values)) == (n_qinputs := len(self.q_inputs)),
+            (n_values := len(values)) == (n_qinputs := len(self.input_quantizers)),
             f"Got {n_values} inputs, expected {n_qinputs}",
             TypeError,
         )
-        for idx, qvalue in enumerate(values):
-            self.q_inputs[idx].update_values(qvalue)
 
-        qvalues = tuple(q_input.qvalues for q_input in self.q_inputs)
+        qvalues = tuple(self.input_quantizers[idx].quant(values[idx]) for idx in range(len(values)))
+
         qvalues_as_uint32 = tuple(qvalue.astype(numpy.uint32) for qvalue in qvalues)
         assert_true(
             all(
@@ -177,8 +186,8 @@ class QuantizedModule:
                 output_layer.n_bits,
                 qvalues,
                 value_is_float=False,
-                scale=output_layer.output_scale,
-                zero_point=output_layer.output_zero_point,
+                stats=output_layer.output_quant_stats,
+                params=output_layer.output_quant_params,
             ).dequant()
             for output_layer in output_layers
         )
@@ -187,12 +196,11 @@ class QuantizedModule:
 
         return real_values[0]
 
-    def set_inputs_quantization_parameters(self, *input_q_params: QuantizedArray):
+    def set_inputs_quantization_parameters(self, *input_q_params: UniformQuantizer):
         """Set the quantization parameters for the module's inputs.
 
         Args:
-            *input_q_params (QuantizedArray): The quantization parameters for the module in the form
-                of QuantizedArrays.
+            *input_q_params (UniformQuantizer): The quantizer(s) for the module.
         """
         assert_true(
             (n_values := len(input_q_params)) == (n_inputs := len(self.ordered_module_input_names)),
@@ -200,12 +208,12 @@ class QuantizedModule:
             TypeError,
         )
 
-        self.q_inputs.clear()
-        self.q_inputs.extend(copy.deepcopy(q_params) for q_params in input_q_params)
+        self.input_quantizers.clear()
+        self.input_quantizers.extend(copy.deepcopy(q_params) for q_params in input_q_params)
 
     def compile(
         self,
-        q_inputs: Union[Tuple[QuantizedArray, ...], QuantizedArray],
+        q_inputs: Union[Tuple[numpy.ndarray, ...], numpy.ndarray],
         configuration: Optional[Configuration] = None,
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
@@ -214,7 +222,7 @@ class QuantizedModule:
         """Compile the forward function of the module.
 
         Args:
-            q_inputs (Union[Tuple[QuantizedArray, ...], QuantizedArray]): Needed for tracing and
+            q_inputs (Union[Tuple[numpy.ndarray, ...], numpy.ndarray]): Needed for tracing and
                 building the boundaries.
             configuration (Optional[Configuration]): Configuration object
                                                                             to use during
@@ -233,9 +241,9 @@ class QuantizedModule:
         if not isinstance(q_inputs, tuple):
             q_inputs = (q_inputs,)
         else:
-            ref_len = q_inputs[0].values.shape[0]
+            ref_len = q_inputs[0].shape[0]
             assert_true(
-                all(q_input.values.shape[0] == ref_len for q_input in q_inputs),
+                all(q_input.shape[0] == ref_len for q_input in q_inputs),
                 "Mismatched dataset lengths",
             )
 
@@ -251,12 +259,12 @@ class QuantizedModule:
         )
 
         def get_inputset_iterable():
-            if len(self.q_inputs) > 1:
+            if len(self.input_quantizers) > 1:
                 return (
-                    tuple(numpy.expand_dims(q_input.qvalues[idx], 0) for q_input in q_inputs)
+                    tuple(numpy.expand_dims(q_input[idx], 0) for q_input in q_inputs)
                     for idx in range(ref_len)
                 )
-            return (numpy.expand_dims(arr, 0) for arr in q_inputs[0].qvalues)
+            return (numpy.expand_dims(arr, 0) for arr in q_inputs[0])
 
         inputset = get_inputset_iterable()
 

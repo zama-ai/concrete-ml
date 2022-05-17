@@ -168,18 +168,71 @@ class StepActivationModule(nn.Module):
         return x
 
 
-# pylint: disable=too-many-locals
-def compile_and_test_torch_or_onnx(
+class SimpleQAT(nn.Module):
+    """Torch model implements a step function that needs Greater, Cast and Where."""
+
+    def __init__(self, _n_feat, activation_function, n_bits=2):
+        super().__init__()
+
+        self.act = activation_function()
+        self.fc1 = nn.Linear(_n_feat, _n_feat)
+
+        # Create pre-quantized weights
+        # Note the weights in the network are not integers, but uniformly spaced float values
+        # that are selected from a discrete set
+        weight_scale = 1.5
+
+        n_bits_weights = n_bits
+
+        # Generate the integer weights, uniformly spaced
+        int_weights = numpy.random.randint(
+            0, 2**n_bits_weights, size=self.fc1.weight.shape
+        ) - 2 ** (n_bits_weights - 1)
+
+        # Initialize with scaled float weights
+        self.fc1.weight.data = torch.from_numpy(int_weights * weight_scale).float()
+
+        self.n_bits = n_bits
+
+    def forward(self, x):
+        """Forward pass with a quantizer built into the computation graph."""
+
+        def step(x, bias):
+            """The step function for quantization."""
+            y = torch.zeros_like(x)
+            mask = torch.gt(x - bias, 0.0)
+            y[mask] = 1.0
+            return y
+
+        # A step quantizer with steps at -5, 0, 5, ...
+        # For example at n_bits == 2
+        #         /  0  if x < -5                \
+        # f(x) = {   5  if x >= 0 and x < 5       }
+        #         \  10 if x >= 5 and x < 10     /
+        #          \ 15 if x >= 10              /
+
+        x_q = step(x, -5)
+        for i in range(1, 2**self.n_bits - 1):
+            x_q += step(x, (i - 1) * 5)
+
+        x_q = x_q.mul(5)
+
+        result_fc1 = self.fc1(x_q)
+
+        return self.act(result_fc1)
+
+
+def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals
     input_output_feature,
     model,
     activation_function,
+    qat_bits,
     default_configuration,
     use_virtual_lib,
     is_onnx,
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
-    n_bits = 2
 
     # Define an input shape (n_examples, n_features)
     n_examples = 50
@@ -202,110 +255,123 @@ def compile_and_test_torch_or_onnx(
         else numpy.random.uniform(-100, 100, size=(n_examples, *input_output_feature))
     )
 
-    # Compile
-    if is_onnx:
+    # FHE vs Quantized are not done in the test anymore (see issue #177)
+    if not use_virtual_lib:
+        n_bits = (
+            {"net_inputs": 2, "net_outputs": 2, "op_inputs": 2, "op_weights": 2}
+            if qat_bits == 0
+            else qat_bits
+        )
 
-        output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
-        inputset_as_numpy_tuple = (
-            (val for val in inputset) if isinstance(inputset, tuple) else (inputset,)
-        )
-        dummy_input = tuple(
-            torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
-        )
-        torch.onnx.export(
-            torch_model,
-            dummy_input,
-            str(output_onnx_file_path),
-            opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
-        )
-        onnx_model = onnx.load_model(output_onnx_file_path)
-        onnx.checker.check_model(onnx_model)
+        if is_onnx:
 
-        quantized_numpy_module = compile_onnx_model(
-            onnx_model,
-            inputset,
-            default_configuration,
-            n_bits=n_bits,
-            use_virtual_lib=use_virtual_lib,
+            output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
+            inputset_as_numpy_tuple = (
+                (val for val in inputset) if isinstance(inputset, tuple) else (inputset,)
+            )
+            dummy_input = tuple(
+                torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
+            )
+            torch.onnx.export(
+                torch_model,
+                dummy_input,
+                str(output_onnx_file_path),
+                opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
+            )
+            onnx_model = onnx.load_model(output_onnx_file_path)
+            onnx.checker.check_model(onnx_model)
+
+            quantized_numpy_module = compile_onnx_model(
+                onnx_model,
+                inputset,
+                import_qat=qat_bits != 0,
+                configuration=default_configuration,
+                n_bits=n_bits,
+                use_virtual_lib=use_virtual_lib,
+            )
+        else:
+            quantized_numpy_module = compile_torch_model(
+                torch_model,
+                inputset,
+                import_qat=qat_bits != 0,
+                configuration=default_configuration,
+                n_bits=n_bits,
+                use_virtual_lib=use_virtual_lib,
+            )
+
+        # Create test data from the same distribution and quantize using
+        # learned quantization parameters during compilation
+        x_test = tuple(
+            numpy.random.uniform(-100, 100, size=(1, *input_output_feature))
+            for _ in range(num_inputs)
         )
+        qtest = quantized_numpy_module.quantize_input(*x_test)
+        if not isinstance(qtest, tuple):
+            qtest = (qtest,)
+        assert quantized_numpy_module.is_compiled
+        quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
     else:
+        # Compile our network with 16 bits
+        # to compare to torch (8b weights + float 32 activations)
+        if qat_bits == 0:
+            n_bits = 16
+        else:
+            n_bits = {
+                "net_inputs": 16,
+                "op_weights": qat_bits,
+                "op_inputs": qat_bits,
+                "net_outputs": 16,
+            }
+
+        # Compile with higher quantization bitwidth
         quantized_numpy_module = compile_torch_model(
             torch_model,
             inputset,
-            default_configuration,
+            import_qat=qat_bits != 0,
+            configuration=default_configuration,
             n_bits=n_bits,
             use_virtual_lib=use_virtual_lib,
         )
 
-    # Create test data from the same distribution and quantize using
-    # learned quantization parameters during compilation
-    x_test = tuple(
-        numpy.random.uniform(-100, 100, size=(1, *input_output_feature)) for _ in range(num_inputs)
-    )
-    qtest = quantized_numpy_module.quantize_input(*x_test)
-    if not isinstance(qtest, tuple):
-        qtest = (qtest,)
-    assert quantized_numpy_module.is_compiled
-    quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
+        # Create test data from the same distribution and quantize using.
+        n_examples_test = 100
+        x_test = tuple(
+            numpy.random.uniform(-100, 100, size=(n_examples_test, *input_output_feature))
+            for _ in range(num_inputs)
+        )
 
-    # FHE vs Quantized are not done in the test anymore (see issue #177)
+        # Check the forward works with the high bitwidth
+        qtest = quantized_numpy_module.quantize_input(*x_test)
+        if not isinstance(qtest, tuple):
+            qtest = (qtest,)
+        assert quantized_numpy_module.is_compiled
+        results = []
+        for i in range(n_examples_test):
+            q_x = tuple(qtest[input][[i]] for input in range(len(qtest)))
+            q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
+            result = quantized_numpy_module.dequantize_output(q_result)
+            results.append(result)
 
-    if not use_virtual_lib:
-        return
+        # Run the network through torch, using dynamic quantization
+        # This mode only quantizes the weights and keeps all activations in float32
+        # Our quantization approach quantizes the activations for some layers and fuses all other
+        # float32 computations to table lookups. Thus the outputs from torch and Concrete ML
+        # will not match, but they should be close
+        # see: https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html
 
-    # Compile our network with 16 bits
-    # to compare to torch (8b weights + float 32 activations)
-    n_bits = 16
+        torch_quantized_model = torch.quantization.quantize_dynamic(
+            torch_model, {nn.Linear}, dtype=torch.qint8
+        )
+        torch_input = (torch.from_numpy(x).float() for x in x_test)
+        torch_input = tuple(list(torch_input))
+        torch_result = torch_quantized_model(*torch_input).numpy()
 
-    # Compile with higher quantization bitwidth
-    quantized_numpy_module = compile_torch_model(
-        torch_model,
-        inputset,
-        default_configuration,
-        n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
-    )
+        # Results to array and reshape to torch_result
+        results = numpy.array(results).reshape(torch_result.shape)
 
-    # Create test data from the same distribution and quantize using.
-    n_examples_test = 100
-    x_test = tuple(
-        numpy.random.uniform(-100, 100, size=(n_examples_test, *input_output_feature))
-        for _ in range(num_inputs)
-    )
-
-    # Check the forward works with the high bitwidth
-    qtest = quantized_numpy_module.quantize_input(*x_test)
-    if not isinstance(qtest, tuple):
-        qtest = (qtest,)
-    assert quantized_numpy_module.is_compiled
-    results = []
-    for i in range(n_examples_test):
-        q_x = tuple(qtest[input][[i]] for input in range(len(qtest)))
-        q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
-        result = quantized_numpy_module.dequantize_output(q_result)
-        results.append(result)
-
-    # Run the network through torch, using dynamic quantization
-    # This mode only quantizes the weights and keeps all activations in float32
-    # Our quantization approach quantizes the activations for some layers and fuses all other
-    # float32 computations to table lookups. Thus the outputs from torch and Concrete ML
-    # will not match, but they should be close
-    # see: https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html
-    torch_quantized_model = torch.quantization.quantize_dynamic(
-        torch_model, {nn.Linear}, dtype=torch.qint8
-    )
-    torch_input = (torch.from_numpy(x).float() for x in x_test)
-    torch_result = torch_quantized_model(*torch_input).numpy()
-
-    # Results to array and reshape to torch_result
-    results = numpy.array(results).reshape(torch_result.shape)
-
-    # Check that we have similar results between CML and torch in 8 bits
-    # Due to differences in quantization approach, we allow a lower R2 in the comparison
-    check_r2_score(results, torch_result, 0.9)
-
-
-# pylint: enable=too-many-locals
+        # Check that we have similar results between CML and torch in 8 bits
+        # Due to differences in quantization approach, we allow a lower R2 in the comparison
+        check_r2_score(results, torch_result, 0.9)
 
 
 @pytest.mark.parametrize(
@@ -347,10 +413,14 @@ def test_compile_torch_or_onnx_networks(
         print("Warning, skipping non VL tests")
         return
 
+    # To signal that this network is not using QAT set the QAT bits to 0
+    qat_bits = 0
+
     compile_and_test_torch_or_onnx(
         input_output_feature,
         model,
         activation_function,
+        qat_bits,
         default_configuration,
         use_virtual_lib,
         is_onnx,
@@ -386,10 +456,14 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         print("Warning, skipping non VL tests")
         return
 
+    # To signal that this network is not using QAT set the QAT bits to 0
+    qat_bits = 0
+
     compile_and_test_torch_or_onnx(
         (1, 7, 7),
         model,
         activation_function,
+        qat_bits,
         default_configuration,
         use_virtual_lib,
         is_onnx,
@@ -466,10 +540,57 @@ def test_compile_torch_or_onnx_activations(
         print("Warning, skipping non VL tests")
         return
 
+    # To signal that this network is not using QAT set the QAT bits to 0
+    qat_bits = 0
+
     compile_and_test_torch_or_onnx(
         input_output_feature,
         model,
         activation_function,
+        qat_bits,
+        default_configuration,
+        use_virtual_lib,
+        is_onnx,
+        check_r2_score,
+    )
+
+
+@pytest.mark.parametrize(
+    "model",
+    [
+        pytest.param(SimpleQAT),
+    ],
+)
+@pytest.mark.parametrize(
+    "input_output_feature",
+    [pytest.param(input_output_feature) for input_output_feature in [2, 4]],
+)
+@pytest.mark.parametrize(
+    "n_bits",
+    [pytest.param(n_bits) for n_bits in [1, 2]],
+)
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
+def test_compile_torch_qat(
+    input_output_feature,
+    model,
+    n_bits,
+    default_configuration,
+    use_virtual_lib,
+    check_r2_score,
+):
+    """Test the different model architecture from torch numpy."""
+
+    model = partial(model, n_bits=n_bits)
+
+    # Import these networks from torch directly
+    is_onnx = False
+    qat_bits = n_bits
+
+    compile_and_test_torch_or_onnx(
+        input_output_feature,
+        model,
+        nn.Sigmoid,
+        qat_bits,
         default_configuration,
         use_virtual_lib,
         is_onnx,

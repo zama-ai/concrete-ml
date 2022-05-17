@@ -17,18 +17,18 @@ from concrete.ml.quantization import QuantizedArray
 def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_array_equality):
     """Test the quant and dequant function."""
 
-    quant_array = QuantizedArray(n_bits, values, is_signed, is_symmetric=is_symmetric)
+    quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
     qvalues = quant_array.quant()
 
     # Quantized values must be contained between 0 and 2**n_bits
-    assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.offset
-    assert numpy.min(qvalues) >= -quant_array.offset
+    assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.quantizer.offset
+    assert numpy.min(qvalues) >= -quant_array.quantizer.offset
 
     # Dequantized values must be close to original values
     dequant_values = quant_array.dequant()
 
     # Check that all values are close
-    tolerance = quant_array.scale / 2
+    tolerance = quant_array.quantizer.scale / 2
     assert numpy.isclose(dequant_values, values, atol=tolerance).all()
 
     # Explain the choice of tolerance
@@ -76,14 +76,36 @@ def test_quantized_array_all_zeros(n_bits, is_signed, value_shape):
     quant_array = QuantizedArray(
         n_bits,
         values,
-        is_signed,
+        is_signed=is_signed,
     )
 
-    assert quant_array.scale == 1
-    assert quant_array.zero_point == 0
+    assert quant_array.quantizer.scale == 1
+    assert quant_array.quantizer.zero_point == 0
 
     qvalues = quant_array.quant()
 
     # Quantized values must be contained between 0 and 2**n_bits
-    assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.offset
-    assert numpy.min(qvalues) >= -quant_array.offset
+    assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.quantizer.offset
+    assert numpy.min(qvalues) >= -quant_array.quantizer.offset
+
+
+def test_quantized_array_constructor():
+    """Test various QuantizedArray construction semantics."""
+
+    value_shape = (10,)
+    values = numpy.random.uniform(0, 1, size=value_shape)
+
+    # Create an array with precomputed statistics
+    qarr = QuantizedArray(2, values, stats=None, rmax=2, rmin=-1)
+
+    # Verify that the statistics were not recomputed
+    assert qarr.quantizer.rmax == 2
+    assert qarr.quantizer.rmin == -1
+
+    # Create an array with an invalid quantizer parameter
+    with pytest.raises(TypeError):
+        QuantizedArray(2, values, stats=None, __InvalidParam=2)
+
+    # Test an incomplete stats structure, should throw an error
+    with pytest.raises(TypeError):
+        QuantizedArray(2, values, stats=None, rmax=2)

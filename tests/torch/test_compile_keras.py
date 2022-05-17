@@ -73,7 +73,7 @@ def compile_and_test_keras(
     quantized_numpy_module = compile_onnx_model(
         onnx_model,
         inputset,
-        default_configuration,
+        configuration=default_configuration,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
     )

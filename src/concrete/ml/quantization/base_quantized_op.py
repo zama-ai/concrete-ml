@@ -8,26 +8,53 @@ import numpy
 
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
-from .quantized_array import QuantizedArray
+from .quantized_array import (
+    MinMaxQuantizationStats,
+    QuantizationOptions,
+    QuantizedArray,
+    UniformQuantizationParameters,
+)
 
 ALL_QUANTIZED_OPS: Set[Type] = set()
 
 ONNX_OPS_TO_QUANTIZED_IMPL: Dict[str, Type["QuantizedOp"]] = {}
+
+# This constant determines the number of bits for the quantization of output values
+# of an ML model. This is not necessarily the maximum bitwidth in the network, as Gemm/Conv ops
+# have output bitwidth that is related to their weights and inputs.
+# Run time in FHE is strongly impacted by the number of bits, with increases of 5-20x for
+# each additional bit. However, strong quantization of the output can negatively impact accuracy.
+# This value is chosen as a compromise between run time and model accuracy. This default value
+# is used only if the user does not specifically specify a value for output bitwidth
+DEFAULT_OUTPUT_BITS = 5
 
 
 class QuantizedOp(ABC):
     """Base class for quantized ONNX ops implemented in numpy.
 
     Args:
-        n_bits (int): The number of bits to use for quantization.
+        n_bits_output (int): The number of bits to use for the quantization of the output
+        int_input_names (Set[str]): The set of names of integer tensors that are inputs to this op
+        constant_inputs (Optional[Union[Dict[str, Any], Dict[int, Any]]]): The constant tensors
+            that are inputs to this op
+        input_quant_opts (QuantizationOptions): Input quantizer options, determine the quantization
+            that is applied to input tensors (that are not constants)
     """
 
     # impl is not optional but mypy has a long standing bug and is not able to understand this
     # properly. See https://github.com/python/mypy/issues/708#issuecomment-605636623
     impl: Optional[Callable[..., Tuple[numpy.ndarray, ...]]] = None
     n_bits: int
-    output_scale: Optional[float]
-    output_zero_point: Optional[int]
+
+    # Quantized Ops have a quantizer for the input and one for the output
+    # For the output we store quantizer statistics and computed parameters
+    # For the input, we store only the quantization options, as the statistics
+    # are taken from the previous op's output and the input quantization parameters are computed
+    # from the input quantization options and the previous op's output statistics
+    output_quant_params: Optional[UniformQuantizationParameters]
+    output_quant_stats: Optional[MinMaxQuantizationStats]
+    input_quant_opts: QuantizationOptions
+
     constant_inputs: Dict[int, Any]
     attrs: Dict[str, Any] = {}
     _authorized_attr_names: Set[str] = set()
@@ -44,14 +71,24 @@ class QuantizedOp(ABC):
 
     def __init__(
         self,
-        n_bits: int,
+        n_bits_output: int,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        self.n_bits = n_bits
-        self.output_scale = None
-        self.output_zero_point = None
+        self.n_bits = n_bits_output
+
+        if input_quant_opts is not None:
+            self.input_quant_opts = input_quant_opts
+        else:
+            # By default, if the input quantization options are not given
+            # make the op work in legacy mode, where inputs and outputs are quantized
+            # to the same number of bits
+            self.input_quant_opts = QuantizationOptions(self.n_bits, is_signed=True)
+
+        self.output_quant_params = None
+        self.output_quant_stats = None
 
         # By default, such as for operators that only have a float implementation,
         # we assume a single integer input tensor. Since we can't use {"0"} as a default value in
@@ -186,7 +223,7 @@ class QuantizedOp(ABC):
         *inputs: Union[QuantizedArray, numpy.ndarray],
         calibrate: bool,
         quantize_actual_values: bool,
-    ) -> List:
+    ):
         """Retrieve all the inputs of an operator in the computational graph.
 
         This helper method will prepare a list of inputs to an operator. Inputs can be variables,
@@ -256,8 +293,29 @@ class QuantizedOp(ABC):
             elif quantize_actual_values:
                 # Here we want to trace the code that does quantization, to produce a TLU
                 input_ = cast(QuantizedArray, input_)
-                input_.quant()
-                prepared_inputs[curr_input_fill_idx] = input_
+
+                # We use the op's input quantization options
+                quant_opts = self.input_quant_opts
+
+                # And if this op is in a QAT enabled graph, we disable QAT if this op is fusable
+                # If the op can be fused, quantization will not be used, no need to run the QAT
+                # specific quantization process. This case is encountered for example for Add
+                # when the tensors that are added are produced from a single integer tensor
+                if self.can_fuse():
+                    quant_opts.is_qat = False
+
+                # Now we quantize the input. For ops that require quantized inputs (which
+                # call this function with quantize_actual_values==True), this
+                # will produce numpy ops that will be fused to a TLU. Fusable ops will
+                # use the .values directly (see else branch below). We need the quantization
+                # stats to generate the quantization code, they can not be computed on the fly.
+                new_input = QuantizedArray(
+                    quant_opts.n_bits,
+                    input_.values,
+                    options=quant_opts,
+                    stats=input_.quantizer.quant_stats,
+                )
+                prepared_inputs[curr_input_fill_idx] = new_input
             else:
                 input_ = cast(QuantizedArray, input_)
                 prepared_inputs[curr_input_fill_idx] = input_.values
@@ -284,8 +342,9 @@ class QuantizedOp(ABC):
         quantized_samples = QuantizedArray(
             self.n_bits, self.call_impl(*prepared_inputs, **self.attrs)
         )
-        self.output_scale = quantized_samples.scale
-        self.output_zero_point = quantized_samples.zero_point
+
+        self.output_quant_params = quantized_samples.quantizer.quant_params
+        self.output_quant_stats = quantized_samples.quantizer.quant_stats
 
         return quantized_samples.values
 
@@ -303,23 +362,18 @@ class QuantizedOp(ABC):
         """
 
         assert_true(
-            self.output_scale is not None,
-            f"output_scale was None for class {self.__class__.__name__}, "
-            "did you forget to call calibrate with sample data?",
-        )
-        assert_true(
-            self.output_zero_point is not None,
-            f"output_zero_point was None for class {self.__class__.__name__}, "
+            self.output_quant_params is not None,
+            f"output quantization params was None for class {self.__class__.__name__}, "
             "did you forget to call calibrate with sample data?",
         )
 
-        # for mypy
         return QuantizedArray(
             self.n_bits,
             qoutput_activation,
             value_is_float=True,
-            scale=self.output_scale,
-            zero_point=self.output_zero_point,
+            options=self.input_quant_opts,
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
         )
 
     def call_impl(self, *inputs: numpy.ndarray, **attrs) -> numpy.ndarray:

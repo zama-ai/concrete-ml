@@ -98,7 +98,7 @@ def test_univariate_ops_no_attrs(
 ):
     """Test activation functions."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
-    q_inputs = QuantizedArray(n_bits, values, is_signed)
+    q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
     quantized_op = quantized_op_type(n_bits)
     expected_output = quantized_op.calibrate(values)
     q_output = quantized_op(q_inputs)
@@ -139,7 +139,7 @@ def test_exp_op(
 ):
     """Test activation functions."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
-    q_inputs = QuantizedArray(n_bits, values, is_signed)
+    q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
     quantized_op = QuantizedExp(n_bits)
     expected_output = quantized_op.calibrate(values)
     q_output = quantized_op(q_inputs)
@@ -177,7 +177,7 @@ def test_clip_op(
 ):
     """Test for clip op."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
-    q_inputs = QuantizedArray(n_bits, values, is_signed)
+    q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
 
     # This is to easily generate test cases, do not access private properties this way in production
     # code. Class properties are not properly supported in python 3.8 so using this workaround
@@ -359,8 +359,8 @@ def test_all_gemm_ops(
 
     # Quantize the inputs and weights
     q_inputs = QuantizedArray(n_bits, inputs)
-    q_weights = QuantizedArray(n_bits, weights, is_signed)
-    q_bias = QuantizedArray(n_bits, bias, is_signed)
+    q_weights = QuantizedArray(n_bits, weights, is_signed=is_signed)
+    q_bias = QuantizedArray(n_bits, bias, is_signed=is_signed)
 
     # 1- Test our QuantizedGemm layer
     q_gemm = QuantizedGemm(
@@ -516,7 +516,7 @@ def test_quantized_avg_pool(params, n_bits, check_r2_score):
     q_input = QuantizedArray(n_bits, net_input, is_signed=False)
 
     q_op = QuantizedAvgPool(
-        n_bits=n_bits, strides=strides, pads=pads, kernel_shape=kernel_shape, ceil_mode=0
+        n_bits, strides=strides, pads=pads, kernel_shape=kernel_shape, ceil_mode=0
     )
 
     # Compute the result in floating point
@@ -610,16 +610,16 @@ def test_quantized_reshape(shape):
     q_arr0 = QuantizedArray(n_bits_reshape, data)
     q_reshaped = reshape(q_arr0)
 
-    assert q_reshaped.zero_point == q_arr0.zero_point
-    assert q_reshaped.scale == q_arr0.scale
+    assert q_reshaped.quantizer.zero_point == q_arr0.quantizer.zero_point
+    assert q_reshaped.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(numpy.reshape(q_arr0.qvalues, new_shape) == q_reshaped.qvalues)
 
     shape_qarr = QuantizedArray(1, numpy.asarray(shape))
     reshape_back = QuantizedReshape(n_bits_reshape, constant_inputs={1: shape_qarr})
 
     q_arr1 = reshape_back(q_reshaped)
-    assert q_arr1.zero_point == q_arr0.zero_point
-    assert q_arr1.scale == q_arr0.scale
+    assert q_arr1.quantizer.zero_point == q_arr0.quantizer.zero_point
+    assert q_arr1.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(q_arr0.qvalues == q_arr1.qvalues)
 
 
@@ -641,7 +641,7 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     """Test quantized PRelu."""
 
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
-    q_inputs = QuantizedArray(n_bits, values, is_signed)
+    q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
     q_cst_inputs = QuantizedArray(n_bits, numpy.asarray(slope))
 
     quantized_op = QuantizedPRelu(n_bits, constant_inputs={"slope": q_cst_inputs})
@@ -821,8 +821,8 @@ def test_quantized_flatten(input_shape, expected_shape, axis):
 
     # Check that the output calibration parameters did not change as flatten should not change
     # the data
-    assert q_reshaped.zero_point == q_data.zero_point
-    assert q_reshaped.scale == q_data.scale
+    assert q_reshaped.quantizer.zero_point == q_data.quantizer.zero_point
+    assert q_reshaped.quantizer.scale == q_data.quantizer.scale
 
     # Check that the data was not changed and is in the same order (i.e. no transposition)
     assert numpy.all(q_data.qvalues.ravel() == q_reshaped.qvalues.ravel())
