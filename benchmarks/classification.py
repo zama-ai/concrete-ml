@@ -1,3 +1,5 @@
+import argparse
+import json
 import os
 import time
 
@@ -18,10 +20,7 @@ from concrete.ml.sklearn import (
     XGBClassifier,
 )
 
-N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
-N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
-
-datasets = [
+possible_datasets = [
     "credit-g",
     "blood-transfusion-service-center",
     "wilt",
@@ -39,7 +38,7 @@ datasets = [
 
 dataset_versions = {"wilt": 2}
 
-classifiers = [
+possible_classifiers = [
     RandomForestClassifier,
     XGBClassifier,
     DecisionTreeClassifier,
@@ -48,16 +47,18 @@ classifiers = [
     LinearSVC,
 ]
 
+classifiers_string_to_class = {c.__name__: c for c in possible_classifiers}
+
 benchmark_params = {
     RandomForestClassifier: [
-        {"max_depth": max_detph, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_detph in [15]
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [15]
         for n_estimators in [100]
         for n_bits in [7, 16]
     ],
     XGBClassifier: [
-        {"max_depth": max_detph, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_detph in [7]
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [7]
         for n_estimators in [50]
         for n_bits in [7, 16]
     ],
@@ -122,10 +123,12 @@ benchmark_params = {
 }
 
 
-def should_test_config_in_fhe(classifier, params, n_features):
+# pylint: disable=too-many-return-statements, too-many-branches
+def should_test_config_in_fhe(classifier, params, n_features, local_args):
     """Determine whether a benchmark config for a classifier should be tested in FHE"""
 
-    # pylint: disable=too-many-return-statements
+    if local_args.execute_in_fhe != "auto":
+        return local_args.execute_in_fhe
 
     # System override to disable FHE benchmarks (useful for debugging)
     if os.environ.get("BENCHMARK_NO_FHE", "0") == "1":
@@ -162,16 +165,25 @@ def should_test_config_in_fhe(classifier, params, n_features):
         return False
 
     raise ValueError(f"Classifier {str(classifier)} configurations not yet setup for FHE")
-    # pylint: enable=too-many-return-statements
 
 
-def train_and_test_on_dataset(classifier, dataset, config):
+# pylint: enable=too-many-return-statements, too-many-branches
+
+
+def train_and_test_on_dataset(classifier, dataset, config, local_args):
     """
     Train and test a classifier on a dataset
 
     This function trains a classifier type (caller must pass a class name) on an OpenML dataset
     identified by its name.
     """
+
+    # Could be changed but not very useful
+    size_of_compilation_dataset = 1000
+
+    if local_args.verbose:
+        print("Start")
+        time_current = time.time()
 
     # Sometimes we want a specific version of a dataset, otherwise just get the 'active' one
     version = dataset_versions.get(dataset, "active")
@@ -222,6 +234,11 @@ def train_and_test_on_dataset(classifier, dataset, config):
 
     concrete_classifier = classifier(**config)
 
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current}")
+        time_current = time.time()
+        print("Fit")
+
     # Concrete ML classifiers follow the sklearn Estimator API but train differently than those
     # from sklearn. Our classifiers must work with quantized data or must determine data quantizers
     # after training the underlying sklearn classifier.
@@ -229,11 +246,21 @@ def train_and_test_on_dataset(classifier, dataset, config):
     # one that we would use if we were not using FHE. This classifier will be our baseline
     concrete_classifier, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
 
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current}")
+        time_current = time.time()
+        print("Predict with scikit-learn")
+
     # Predict with the sklearn classifier and compute accuracy. Although some datasets might be
     # imbalanced, we are not interested in the best metric for the case, but we want to measure
     # the difference in accuracy between the sklearn classifier and ours
     y_pred_sklearn = sklearn_classifier.predict(x_test)
     run_and_report_classification_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current}")
+        time_current = time.time()
+        print("Predict in clear")
 
     # Now predict with our classifier and report its accuracy
     y_pred_q = concrete_classifier.predict(x_test, execute_in_fhe=False)
@@ -241,8 +268,14 @@ def train_and_test_on_dataset(classifier, dataset, config):
 
     n_features = x_train.shape[1] if x_train.ndim == 2 else 1
 
-    if should_test_config_in_fhe(classifier, config, n_features):
-        x_test_comp = x_test[0:N_MAX_COMPILE_FHE, :]
+    if should_test_config_in_fhe(classifier, config, n_features, local_args):
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current}")
+            time_current = time.time()
+            print(f"Predict in FHE ({local_args.fhe_samples} samples)")
+
+        x_test_comp = x_test[0:size_of_compilation_dataset, :]
 
         # Compile and report compilation time
         t_start = time.time()
@@ -251,8 +284,8 @@ def train_and_test_on_dataset(classifier, dataset, config):
         progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
 
         # To keep the test short and to fit in RAM we limit the number of test samples
-        x_test = x_test[0:N_MAX_RUN_FHE, :]
-        y_test = y_test[0:N_MAX_RUN_FHE]
+        x_test = x_test[0 : local_args.fhe_samples, :]
+        y_test = y_test[0 : local_args.fhe_samples]
 
         # Now predict with our classifier and report its accuracy. We also measure
         # execution time per test sample
@@ -263,7 +296,10 @@ def train_and_test_on_dataset(classifier, dataset, config):
         run_and_report_classification_metrics(y_test, y_pred_c, "fhe", "FHE")
 
         run_and_report_classification_metrics(
-            y_test, y_pred_q[0:N_MAX_RUN_FHE], "quant-clear-fhe-set", "Quantized Clear on FHE set"
+            y_test,
+            y_pred_q[0 : local_args.fhe_samples],
+            "quant-clear-fhe-set",
+            "Quantized Clear on FHE set",
         )
 
         progress.measure(
@@ -272,12 +308,21 @@ def train_and_test_on_dataset(classifier, dataset, config):
             value=duration / x_test.shape[0] if x_test.shape[0] > 0 else 0,
         )
 
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current}")
+        time_current = time.time()
+        print("End")
 
-def benchmark_generator():
-    for dataset in datasets:
-        for classifier in classifiers:
-            for config in benchmark_params[classifier]:
-                yield (dataset, classifier, config)
+
+def benchmark_generator(local_args):
+    for dataset in local_args.datasets:
+        for classifier in local_args.classifiers:
+            if local_args.configs is None:
+                for config in benchmark_params[classifier]:
+                    yield (dataset, classifier, config)
+            else:
+                for config in local_args.configs:
+                    yield (dataset, classifier, config)
 
 
 def benchmark_name_generator(dataset, classifier, config, joiner):
@@ -305,6 +350,59 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
     return classifier.__name__ + config_str + joiner + dataset
 
 
+# Manage arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
+parser.add_argument("--datasets", type=str, nargs="+", default=None, help="dataset(s) to use")
+parser.add_argument(
+    "--classifiers",
+    choices=classifiers_string_to_class.keys(),
+    nargs="+",
+    default=None,
+    help="classifier(s) to use",
+)
+parser.add_argument(
+    "--configs",
+    nargs="+",
+    type=json.loads,
+    default=None,
+    help="config(s) to use",
+)
+parser.add_argument(
+    "--model_samples",
+    type=int,
+    default=1,
+    help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+)
+parser.add_argument(
+    "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
+)
+parser.add_argument(
+    "--execute_in_fhe",
+    action="store_true",
+    default="auto",
+    help="force to execute in FHE (default is to use should_test_config_in_fhe function)",
+)
+parser.add_argument(
+    "--dont_execute_in_fhe",
+    action="store_true",
+    help="force to not execute in FHE (default is to use should_test_config_in_fhe function)",
+)
+args, _ = parser.parse_known_args()
+if args.dont_execute_in_fhe:
+    assert args.execute_in_fhe == "auto"
+    args.execute_in_fhe = False
+
+if args.datasets is None:
+    args.datasets = possible_datasets
+if args.classifiers is None:
+    args.classifiers = possible_classifiers
+else:
+    args.classifiers = [classifiers_string_to_class[c] for c in args.classifiers]
+
+print(f"Will perform benchmarks on {len(list(benchmark_generator(args)))} test cases")
+
+
 # We run all the classifiers that we want to benchmark over all datasets listed
 @progress.track(
     [
@@ -312,9 +410,9 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
             "id": benchmark_name_generator(dataset, classifier, config, "_"),
             "name": benchmark_name_generator(dataset, classifier, config, " on "),
             "parameters": {"classifier": classifier, "dataset": dataset, "config": config},
-            "samples": 10,
+            "samples": args.model_samples,
         }
-        for (dataset, classifier, config) in benchmark_generator()
+        for (dataset, classifier, config) in benchmark_generator(args)
     ]
 )
 def main(classifier, dataset, config):
@@ -322,4 +420,4 @@ def main(classifier, dataset, config):
     This is the main test function called by the py-progress module. It just calls the
     benchmark function with the right parameter combination
     """
-    train_and_test_on_dataset(classifier, dataset, config)
+    train_and_test_on_dataset(classifier, dataset, config, args)
