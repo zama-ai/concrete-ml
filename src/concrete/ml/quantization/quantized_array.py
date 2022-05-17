@@ -183,7 +183,7 @@ class UniformQuantizationParameters:
                 # regarding the FHE compilation.
                 # Indeed, the zero_point value for the weights has to be an integer
                 # for the compilation to work.
-                self.zero_point = numpy.round(-stats.rmin)
+                self.zero_point = numpy.rint(-stats.rmin).astype(numpy.int64)
             else:
                 # If the value is not a 0 we can tweak the scale factor so that
                 # the value quantizes to 1
