@@ -781,7 +781,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             n_targets = (
                 1 if self.sklearn_model.coef_.ndim == 1 else self.sklearn_model.coef_.shape[0]
             )
-            y_preds = numpy.zeros(shape=(X.shape[0], n_targets))
+            y_preds = numpy.zeros(shape=(X.shape[0], n_targets), dtype=numpy.int64)
             # Execute the compiled FHE circuit
             # Create a numpy array with the expected shape: (n_samples, n_classes)
             for i, qX_i in enumerate(qX):

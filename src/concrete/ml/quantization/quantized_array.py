@@ -178,7 +178,7 @@ class UniformQuantizationParameters:
             if numpy.abs(stats.rmax) < STABILITY_CONST:
                 # If the value is a 0 we cannot do it since the scale would become 0 as well
                 # resulting in division by 0
-                self.scale = 1
+                self.scale = 1.0
                 # Ideally we should get rid of round here but it is risky
                 # regarding the FHE compilation.
                 # Indeed, the zero_point value for the weights has to be an integer
@@ -421,6 +421,13 @@ class QuantizedArray:
                 f"When initializing {self.__class__.__name__} with value_is_float == "
                 "False, the scale and zero_point parameters are required.",
             )
+            if isinstance(values, numpy.ndarray):
+                assert_true(
+                    numpy.issubdtype(values.dtype, numpy.integer)
+                    or numpy.issubdtype(values.dtype, numpy.unsignedinteger),
+                    f"Can not creating a QuantizedArray from {values.dtype} values "
+                    "when int/uint was required",
+                )
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
             # To be seen what should be done in the long run (refactor of this class or Tracers)
             self.qvalues = deepcopy(values) if isinstance(values, numpy.ndarray) else values
@@ -480,4 +487,8 @@ class QuantizedArray:
         # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/721
         # remove this + (-x) when the above issue is done
         self.values = self.quantizer.dequant(self.qvalues)
+        assert_true(
+            not isinstance(self.values, numpy.ndarray) or self.values.dtype == numpy.float64,
+            "Dequantized values must be float64",
+        )
         return self.values
