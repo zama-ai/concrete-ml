@@ -12,9 +12,6 @@ import torch
 
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 
-# FIXME: clean cache usage, #990
-from concrete.numpy.compilation import configuration as configuration_
-
 from concrete.numpy.compilation import (
     DebugArtifacts,
     Configuration,
@@ -163,17 +160,11 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
 def default_configuration():
     """Return the default test compilation configuration"""
 
-    # FIXME: clean cache usage, #990
-    # pylint: disable=protected-access
-    configuration_._INSECURE_KEY_CACHE_LOCATION = "ConcreteNumpyKeyCache"
-    # pylint: enable=protected-access
-
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
-        # FIXME: clean cache usage, #990
-        # insecure_key_cache_location="ConcreteNumpyKeyCache",
+        insecure_keycache_location="ConcreteNumpyKeyCache",
         jit=True,
     )
 

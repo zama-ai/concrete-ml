@@ -24,7 +24,7 @@ from concrete.ml.sklearn import DecisionTreeClassifier as ConcreteDecisionTreeCl
 print("pygraphviz import check OK", pygraphviz.__version__)
 
 
-def ml_check(args):
+def ml_check(args, keyring_dir_as_str):
     """Test about Concrete ML functions"""
 
     is_fast = args.fast
@@ -72,6 +72,7 @@ def ml_check(args):
         configuration=Configuration(
             enable_unsafe_features=True,  # This is for our tests only, never use that in prod
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
+            insecure_keycache_location=keyring_dir_as_str,
         ),
         use_virtual_lib=True,
     )
@@ -91,7 +92,7 @@ def ml_check(args):
     )
 
 
-def cn_check(args):
+def cn_check(args, keyring_dir_as_str):
     """Test about Concrete Numpy functions"""
 
     is_fast = args.fast
@@ -108,6 +109,7 @@ def cn_check(args):
     config = Configuration(
         enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
+        insecure_keycache_location=keyring_dir_as_str,
     )
 
     print("Compiling...")
@@ -141,7 +143,7 @@ def main(args):
     is_fast = args.fast
 
     if is_fast:
-        keyring_dir = Path.home().resolve() / ".cache/concrete-ml_pytest"
+        keyring_dir = Path.home().resolve() / "ConcreteNumpyKeyCache"
         keyring_dir.mkdir(parents=True, exist_ok=True)
         keyring_dir_as_str = str(keyring_dir)
         print(f"Using {keyring_dir_as_str} as key cache dir")
@@ -149,11 +151,11 @@ def main(args):
             keyring_dir_as_str
         )
 
-    ml_check(args)
-    cn_check(args)
+    ml_check(args, keyring_dir_as_str)
+    cn_check(args, keyring_dir_as_str)
 
     if is_fast:
-        keyring_dir = Path.home().resolve() / ".cache/concrete-ml_pytest"
+        keyring_dir = Path.home().resolve() / "ConcreteNumpyKeyCache"
         if keyring_dir is not None:
             # Remove incomplete keys
             for incomplete_keys in keyring_dir.glob("**/*incomplete*"):
