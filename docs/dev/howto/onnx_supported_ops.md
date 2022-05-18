@@ -50,8 +50,10 @@ Do note that all operators may not be fully supported for conversion to a circui
 - Or
 - PRelu
 - Pad
+- Pow
 - Relu
 - Reshape
+- Round
 - Selu
 - Sigmoid
 - Sin

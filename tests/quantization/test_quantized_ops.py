@@ -37,9 +37,11 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedOp,
     QuantizedOr,
     QuantizedPad,
+    QuantizedPow,
     QuantizedPRelu,
     QuantizedRelu,
     QuantizedReshape,
+    QuantizedRound,
     QuantizedSelu,
     QuantizedSigmoid,
     QuantizedSoftplus,
@@ -85,6 +87,7 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
         QuantizedCelu,
         QuantizedSoftplus,
         QuantizedHardSwish,
+        QuantizedRound,
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -211,7 +214,14 @@ ARITH_N_BITS_LIST = [20, 16, 8]
 
 @pytest.mark.parametrize(
     "operator, supports_enc_with_enc",
-    [(QuantizedAdd, True), (QuantizedSub, True), (QuantizedMul, False)],
+    [
+        (QuantizedAdd, True),
+        (QuantizedSub, True),
+        (QuantizedMul, False),
+        (QuantizedPow, False),
+        (QuantizedOr, False),
+        (QuantizedDiv, False),
+    ],
 )
 @pytest.mark.parametrize("n_bits", ARITH_N_BITS_LIST)
 @pytest.mark.parametrize(
@@ -251,6 +261,14 @@ def test_all_arith_ops(
     # But vary the dynamic range and the support of the distributions
     input_0 = generator(size=(n_dims, n_dims)) * params_a[1] + params_a[0]
     input_1 = generator(size=(n_dims, n_dims)) * params_b[1] + params_b[0]
+
+    if operator is QuantizedPow:
+
+        # Positive values for base
+        input_0 = numpy.maximum(input_0, 0)
+
+        # Small range for power
+        input_1 = numpy.clip(input_0, 0, 5)
 
     # Quantize the inputs with n_bits
     q_inputs_0 = QuantizedArray(n_bits, input_0, is_signed=is_signed)
@@ -777,12 +795,10 @@ def test_all_ops_were_tested():
         QuantizedSub: test_all_arith_ops,
         QuantizedBatchNormalization: test_batch_normalization,
         QuantizedFlatten: test_quantized_flatten,
-        # These operations are partially supported, meaning they can be used only for portions of
-        # the code which are going to be fused. Typically, in activations which would depend only
-        # one input but contain operations which are normally not FHE friendly. Eg,
-        #   Act(x) = x || (x * x)
-        QuantizedOr: None,
-        QuantizedDiv: None,
+        QuantizedRound: test_univariate_ops_no_attrs,
+        QuantizedOr: test_all_arith_ops,
+        QuantizedDiv: test_all_arith_ops,
+        QuantizedPow: test_all_arith_ops,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

@@ -66,13 +66,13 @@ def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 # input, min and max are python built-in but we need to match the ONNX naming, ignore the lint
 # pylint: disable=redefined-builtin
-def numpy_clip(input: numpy.ndarray, /, min=None, max=None) -> Tuple[numpy.ndarray]:
+def numpy_clip(a: numpy.ndarray, /, min=None, max=None) -> Tuple[numpy.ndarray]:
     """Compute clip in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Clip-13
 
     Args:
-        input (numpy.ndarray): Input tensor whose elements to be clipped.
+        a (numpy.ndarray): Input tensor whose elements to be clipped.
         min ([type], optional): Minimum value, under which element is replaced by min.
             It must be a scalar(tensor of empty shape).
             Defaults to None.
@@ -90,7 +90,7 @@ def numpy_clip(input: numpy.ndarray, /, min=None, max=None) -> Tuple[numpy.ndarr
         "for the min or max inputs.",
     )
 
-    return (numpy.clip(input, min, max),)
+    return (numpy.clip(a, min, max),)
 
 
 # pylint: enable=redefined-builtin
@@ -538,14 +538,14 @@ def numpy_abs(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.abs(x),)
 
 
-def numpy_div(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_div(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute div in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Div-14
 
     Args:
-        x (numpy.ndarray): Input tensor
-        y (numpy.ndarray): Input tensor
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Input tensor
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
@@ -553,8 +553,8 @@ def numpy_div(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
     # FIXME: remove this once https://github.com/zama-ai/concrete-ml-internal/issues/857 is
     # explained
-    yp = numpy_where_body(y != 0, y, 1)
-    ans = numpy.divide(x, yp)
+    bp = numpy_where_body(b != 0, b, 1)
+    ans = numpy.divide(a, bp)
 
     return (ans,)
 
@@ -1067,4 +1067,37 @@ def numpy_or(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
     # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
-    return (numpy.logical_or(a, b).astype(numpy.int64),)
+    return (numpy.logical_or(a, b).astype(numpy.float64),)
+
+
+def numpy_round(a: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute round in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Round-11
+    Remark that ONNX Round operator is actually a rint, since the number of decimals is forced to
+    be 0
+
+    Args:
+        a (numpy.ndarray): Input tensor whose elements to be rounded.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor with rounded input elements.
+    """
+
+    return (numpy.rint(a),)
+
+
+def numpy_pow(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute pow in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Pow-13
+
+    Args:
+        a (numpy.ndarray): Input tensor whose elements to be raised.
+        b (numpy.ndarray): The power to which we want to raise
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor.
+    """
+
+    return (numpy.power(a, b),)

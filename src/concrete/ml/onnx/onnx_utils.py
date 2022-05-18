@@ -63,9 +63,11 @@ from .ops_impl import (
     numpy_not,
     numpy_or,
     numpy_pad,
+    numpy_pow,
     numpy_prelu,
     numpy_relu,
     numpy_reshape,
+    numpy_round,
     numpy_selu,
     numpy_sigmoid,
     numpy_sin,
@@ -148,6 +150,8 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Cast": numpy_cast,
     "BatchNormalization": numpy_batchnorm,
     "Flatten": numpy_flatten,
+    "Round": numpy_round,
+    "Pow": numpy_pow,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())

@@ -1,5 +1,8 @@
 """Quantized versions of the ONNX operators for post training quantization."""
 
+# pylint: disable=too-many-lines
+# FIXME: #1018
+
 from typing import Any, Dict, Optional, Set, Union
 
 import numpy
@@ -68,6 +71,53 @@ class QuantizedClip(QuantizedOp):
     """Quantized clip op."""
 
     _impl_for_op_named: str = "Clip"
+
+
+class QuantizedRound(QuantizedOp):
+    """Quantized round op."""
+
+    _impl_for_op_named: str = "Round"
+
+
+class QuantizedPow(QuantizedOp):
+    """Quantized pow op.
+
+    Only works for a float constant power. This operation will be fused to a (potentially
+    larger) TLU.
+    """
+
+    _impl_for_op_named: str = "Pow"
+
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # We do not support power raising between encrypted tensors
+        # Only power-raising between
+        # - encrypted tensors and float constants
+        # - tensors that are produced by a unique integer tensor
+        # is supported
+        # Power-raising between two constants is possible but should be optimized out by
+        # the constant folding procedure
+        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Power raising can be fused and computed in float when a single integer tensor generates
+        both the operands. For example in the formula: f(x) = x ** (x + 1)  where x is an integer
+        tensor.
+
+        Returns:
+            bool: Can fuse
+        """
+        return len(self._int_input_names) == 1
 
 
 # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/195
@@ -825,9 +875,38 @@ class QuantizedOr(QuantizedOp):
     fused, as in eg Act(x) = x || (x + 42))
     """
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/854
-    # This is not really a quantized operation
     _impl_for_op_named: str = "Or"
+
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # We do not support Or between encrypted tensors
+        # Only Or between
+        # - encrypted tensors and float constants
+        # - tensors that are produced by a unique integer tensor
+        # is supported
+        # Or between two constants is possible but should be optimized out by
+        # the constant folding procedure
+        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Or can be fused and computed in float when a single integer tensor generates
+        both the operands. For example in the formula: f(x) = x || (x + 1)  where x is an integer
+        tensor.
+
+        Returns:
+            bool: Can fuse
+        """
+        return len(self._int_input_names) == 1
 
 
 class QuantizedDiv(QuantizedOp):
@@ -837,9 +916,38 @@ class QuantizedDiv(QuantizedOp):
     fused, as in eg Act(x) = 1000 / (x + 42))
     """
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/854
-    # This is not really a quantized operation
     _impl_for_op_named: str = "Div"
+
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # We do not support Div between encrypted tensors
+        # Only Div between
+        # - encrypted tensors and float constants
+        # - tensors that are produced by a unique integer tensor
+        # is supported
+        # Div between two constants is possible but should be optimized out by
+        # the constant folding procedure
+        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Div can be fused and computed in float when a single integer tensor generates
+        both the operands. For example in the formula: f(x) = x / (x + 1)  where x is an integer
+        tensor.
+
+        Returns:
+            bool: Can fuse
+        """
+        return len(self._int_input_names) == 1
 
 
 class QuantizedMul(QuantizedOp):
