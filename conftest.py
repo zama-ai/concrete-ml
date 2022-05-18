@@ -4,12 +4,14 @@ import random
 import re
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional
+from typing import Any, Callable, Iterable, Optional, Union
 
 import numpy
 import pytest
 import torch
 
+from sklearn.datasets import make_classification
+from sklearn.datasets import make_regression
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 
 from concrete.numpy.compilation import (
@@ -411,3 +413,49 @@ def check_accuracy():
         assert accuracy >= threshold, f"Accuracy of {accuracy} is not high enough ({threshold})."
 
     return check_accuracy_impl
+
+
+@pytest.fixture
+def load_data():
+    """Fixture for generating random regression or classification problem."""
+
+    def custom_load_data(
+        dataset: Union[str, Callable],
+        *args,
+        strictly_positive: bool = False,
+        **kwargs
+    ):
+        """Generate a random regression or classification problem.
+
+        Sklearn's make_regression() method generates a random regression problem without any domain
+        restrictions. However, some models can only handle non negative or (stricly) positive target
+        values. This function therefore adapts it in order to make it work for any tested regressors.
+
+        For classifier, Sklearn's make_classification() method is directly called.
+
+        Args:
+            dataset (str, Callable): Either "classification" or "regression" generating synthetic
+                datasets or a callable for any other dataset generation.
+            strictly_positive (bool): If True, the regression data will be only composed of stricly 
+                positive values. It has no effect on classification problems. Default to False.  
+        """
+
+        # If the dataset should be generated for a classification problem. 
+        if dataset == "classification":
+            return make_classification(*args, **kwargs)
+
+        # If the dataset should be generated for a regression problem. 
+        elif dataset == "regression":
+            generated_regression = list(make_regression(*args, **kwargs))
+
+            # Some regressors can only handle positive target values, often stricly positive.
+            if strictly_positive:
+                generated_regression[1] = numpy.abs(generated_regression[1]) + 1
+
+            return tuple(generated_regression)
+        
+        # Any other dataset to generate.
+        else:
+            return dataset()
+    
+    return custom_load_data

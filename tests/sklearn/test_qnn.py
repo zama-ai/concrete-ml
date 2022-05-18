@@ -4,7 +4,6 @@ from copy import deepcopy
 import numpy
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
-from sklearn.datasets import make_classification, make_regression
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
@@ -45,15 +44,17 @@ def test_nn_models_quant(
     n_outputs,
     input_dim,
     model,
+    load_data,
     check_r2_score,
     check_accuracy,
 ):
     """Test the correctness of the results of quantized NN classifiers through the sklearn
     wrapper."""
 
-    if model is NeuralNetClassifier:
-        x, y = make_classification(
-            1000,
+    if model == NeuralNetClassifier:
+        x, y = load_data(
+            dataset="classification",
+            n_samples=1000,
             n_features=input_dim,
             n_redundant=0,
             n_repeated=0,
@@ -62,9 +63,10 @@ def test_nn_models_quant(
             class_sep=2,
             random_state=42,
         )
-    elif model is NeuralNetRegressor:
-        x, y, _ = make_regression(
-            1000,
+    elif model == NeuralNetRegressor:
+        x, y, _ = load_data(
+            dataset="regression",
+            n_samples=1000,
             n_features=input_dim,
             n_informative=input_dim,
             n_targets=n_outputs,
@@ -100,7 +102,7 @@ def test_nn_models_quant(
         "verbose": 0,
     }
 
-    if n_outputs == 1 and model is NeuralNetClassifier:
+    if n_outputs == 1 and model == NeuralNetClassifier:
         with pytest.raises(
             ValueError,
             match=".* number of classes.*",
@@ -135,7 +137,7 @@ def test_nn_models_quant(
 
 
 @pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
-def test_parameter_validation(model):
+def test_parameter_validation(model, load_data):
     """Test that the sklearn quantized NN wrappers validate their parameters"""
 
     valid_params = {
@@ -150,9 +152,10 @@ def test_parameter_validation(model):
         "verbose": 0,
     }
 
-    if model is NeuralNetClassifier:
-        x, y = make_classification(
-            1000,
+    if model == NeuralNetClassifier:
+        x, y = load_data(
+            dataset="classification",
+            n_samples=1000,
             n_features=10,
             n_redundant=0,
             n_repeated=0,
@@ -161,9 +164,15 @@ def test_parameter_validation(model):
             class_sep=2,
             random_state=42,
         )
-    elif model is NeuralNetRegressor:
-        x, y, _ = make_regression(
-            1000, n_features=10, n_informative=10, noise=2, random_state=42, coef=True
+    elif model == NeuralNetRegressor:
+        x, y, _ = load_data(
+            dataset="regression",
+            n_samples=1000,
+            n_features=10,
+            n_informative=10,
+            noise=2,
+            random_state=42,
+            coef=True,
         )
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
@@ -209,7 +218,7 @@ def test_parameter_validation(model):
 )
 @pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
 def test_compile_and_calib(
-    activation_function, model, default_configuration, use_virtual_lib, is_vl_only_option
+    activation_function, model, load_data, default_configuration, use_virtual_lib, is_vl_only_option
 ):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
@@ -219,9 +228,10 @@ def test_compile_and_calib(
 
     n_features = 10
 
-    if model is NeuralNetClassifier:
-        x, y = make_classification(
-            1000,
+    if model == NeuralNetClassifier:
+        x, y = load_data(
+            dataset="classification",
+            n_samples=1000,
             n_features=n_features,
             n_redundant=0,
             n_repeated=0,
@@ -230,9 +240,10 @@ def test_compile_and_calib(
             class_sep=2,
             random_state=42,
         )
-    elif model is NeuralNetRegressor:
-        x, y, _ = make_regression(
-            1000,
+    elif model == NeuralNetRegressor:
+        x, y, _ = load_data(
+            dataset="regression",
+            n_samples=1000,
             n_features=n_features,
             n_informative=n_features,
             n_targets=2,
@@ -278,7 +289,7 @@ def test_compile_and_calib(
         "verbose": 0,
     }
 
-    if model is NeuralNetClassifier:
+    if model == NeuralNetClassifier:
         params["criterion__weight"] = class_weights
 
     clf = model(**params)
@@ -317,7 +328,7 @@ def test_compile_and_calib(
     clf.predict(x_test[0, :], execute_in_fhe=True)
 
 
-def test_custom_net_classifier():
+def test_custom_net_classifier(load_data):
     """Tests a wrapped custom network.
 
     Gives an example how to use our API to train a custom Torch network through the quantized
@@ -363,8 +374,9 @@ def test_custom_net_classifier():
 
     clf = MiniCustomNeuralNetClassifier(MiniNet, **params)
 
-    x, y = make_classification(
-        1000,
+    x, y = load_data(
+        dataset="classification",
+        n_samples=1000,
         n_features=2,
         n_redundant=0,
         n_repeated=0,

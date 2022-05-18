@@ -1,39 +1,45 @@
 """Tests for the sklearn decision trees."""
 import numpy
 import pytest
-from sklearn.datasets import load_breast_cancer, make_classification
+from sklearn.datasets import load_breast_cancer
 
 from concrete.ml.sklearn import DecisionTreeClassifier
 
 
 @pytest.mark.parametrize(
-    "load_data",
+    "parameters",
     [
-        pytest.param(lambda: load_breast_cancer(return_X_y=True), id="breast_cancer"),
         pytest.param(
-            lambda: make_classification(
-                n_samples=100,
-                n_features=10,
-                n_classes=2,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
+            {"dataset": lambda: load_breast_cancer(return_X_y=True)},
+            id="breast_cancer",
+        ),
+        pytest.param(
+            {
+                "dataset": "classification",
+                "n_samples": 100,
+                "n_features": 10,
+                "n_classes": 2,
+                "random_state": numpy.random.randint(0, 2**15),
+            },
             id="make_classification",
         ),
         pytest.param(
-            lambda: make_classification(
-                n_samples=100,
-                n_features=10,
-                n_classes=4,
-                n_informative=10,
-                n_redundant=0,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
+            {
+                "dataset": "classification",
+                "n_samples": 100,
+                "n_features": 10,
+                "n_classes": 4,
+                "n_informative": 10,
+                "n_redundant": 0,
+                "random_state": numpy.random.randint(0, 2**15),
+            },
             id="make_classification_multiclass",
         ),
     ],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_decision_tree_classifier(
+    parameters,
     load_data,
     default_configuration,
     check_is_good_execution_for_quantized_models,
@@ -46,7 +52,7 @@ def test_decision_tree_classifier(
         return
 
     # Get the dataset
-    x, y = load_data()
+    x, y = load_data(**parameters)
 
     model = DecisionTreeClassifier(
         n_bits=6, max_depth=7, random_state=numpy.random.randint(0, 2**15)
@@ -81,10 +87,11 @@ PARAMS_TREE = {
 @pytest.mark.parametrize("n_classes,", [2, 4])
 @pytest.mark.parametrize("offset", [0, 1, 2])
 def test_decision_tree_hyperparameters(
-    hyperparameters, n_classes, offset, check_accuracy, check_r2_score
+    hyperparameters, n_classes, offset, load_data, check_accuracy, check_r2_score
 ):
     """Test that the hyperparameters are valid."""
-    x, y = make_classification(
+    x, y = load_data(
+        dataset="classification",
         n_samples=1000,
         n_features=10,
         n_informative=5,

@@ -4,7 +4,6 @@ import warnings
 import numpy
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
-from sklearn.datasets import make_classification
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
@@ -22,56 +21,65 @@ from concrete.ml.sklearn import (
     XGBClassifier,
 )
 
+regression_models = [
+    GammaRegressor,
+    LinearRegression,
+    LinearSVR,
+    PoissonRegressor,
+    TweedieRegressor,
+]
 
-@pytest.mark.parametrize(
-    "alg",
-    [
-        pytest.param(RandomForestClassifier, id="RandomForestClassifier"),
-        pytest.param(DecisionTreeClassifier, id="DecisionTreeClassifier"),
-        pytest.param(XGBClassifier, id="XGBClassifier"),
-        pytest.param(GammaRegressor, id="GammaRegressor"),
-        pytest.param(LinearRegression, id="LinearRegression"),
-        pytest.param(LinearSVC, id="LinearSVC"),
-        pytest.param(LinearSVR, id="LinearSVR"),
-        pytest.param(LogisticRegression, id="LoisticRegression"),
-        pytest.param(PoissonRegressor, id="PoissonRegressor"),
-        pytest.param(TweedieRegressor, id="TweedieRegressor"),
-    ],
-)
-@pytest.mark.parametrize(
-    "load_data",
-    [
-        pytest.param(
-            lambda: make_classification(
-                n_samples=100,
-                n_features=10,
-                n_classes=2,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
-            id="make_classification",
-        ),
-        pytest.param(
-            lambda: make_classification(
-                n_samples=100,
-                n_features=10,
-                n_classes=4,
-                n_informative=10,
-                n_redundant=0,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
-            id="make_classification_multiclass",
-        ),
-    ],
-)
-def test_double_fit(alg, load_data):
+classifier_models = [
+    DecisionTreeClassifier,
+    RandomForestClassifier,
+    XGBClassifier,
+    LinearSVC,
+    LogisticRegression,
+]
+
+classifiers = [
+    pytest.param(
+        model,
+        {
+            "dataset": "classification",
+            "n_samples": 1000,
+            "n_features": 100,
+            "n_classes": n_classes,
+            "n_informative": 100,
+            "n_redundant": 0,
+        },
+        id=f"{model.__name__}_n_classes_{n_classes}",
+    )
+    for model in classifier_models
+    for n_classes in [2, 4]
+]
+
+# Only LinearRegression supports multi targets
+# GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
+regressors = [
+    pytest.param(
+        model,
+        {
+            "dataset": "regression",
+            "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+            "n_samples": 200,
+            "n_features": 10,
+            "n_informative": 10,
+            "n_targets": 2 if model == LinearRegression else 1,
+            "noise": 0,
+        },
+        id=model.__name__,
+    )
+    for model in regression_models
+]
+
+
+@pytest.mark.parametrize("model, parameters", classifiers + regressors)
+def test_double_fit(model, parameters, load_data):
     """Tests that calling fit multiple times gives the same results"""
-    x, y = load_data()
+    x, y = load_data(random_state=numpy.random.randint(0, 2**15), **parameters)
 
-    # For Gamma regressor
-    if alg is GammaRegressor:
-        y = numpy.abs(y) + 1
-
-    model = alg(n_bits=2)
+    model = model(n_bits=2)
 
     # Some models use a bit of randomness while fitting under scikit-learn, making the
     # outputs always different after each fit. In order to avoid that problem, their random_state
@@ -96,14 +104,13 @@ def test_double_fit(alg, load_data):
     assert numpy.array_equal(y_pred_one, y_pred_two)
 
 
-def test_double_fit_qnn():
+def test_double_fit_qnn(load_data):
     """Tests that calling fit multiple times gives the same results"""
 
-    n_features = 10
-
-    x, y = make_classification(
-        1000,
-        n_features=n_features,
+    x, y = load_data(
+        dataset="classification",
+        n_samples=1000,
+        n_features=10,
         n_redundant=0,
         n_repeated=0,
         n_informative=5,

@@ -7,7 +7,6 @@ import numpy
 import onnx
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
-from sklearn.datasets import make_classification, make_regression
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
@@ -27,14 +26,75 @@ from concrete.ml.sklearn import (
     XGBClassifier,
 )
 
+classifiers = [
+    DecisionTreeClassifier,
+    LinearSVC,
+    LogisticRegression,
+    RandomForestClassifier,
+    XGBClassifier,
+    NeuralNetClassifier,
+]
+regressors = [
+    GammaRegressor,
+    LinearRegression,
+    LinearSVR,
+    PoissonRegressor,
+    TweedieRegressor,
+    NeuralNetRegressor,
+]
 
-def check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configuration):
+
+def get_data(algo, load_data):
+    """Fetch the data for regressors and classifiers."""
+    if isinstance(algo, (types.FunctionType, types.LambdaType)):
+        func = algo(0).__class__
+    else:
+        func = algo.func
+
+    if func in classifiers:
+        x, y = load_data(
+            dataset="classification",
+            n_samples=100,
+            n_features=20,
+            n_classes=2 if func in [LogisticRegression, NeuralNetClassifier] else 4,
+            n_informative=10,
+            random_state=numpy.random.randint(0, 2**15),
+        )
+    else:
+        x, y = load_data(
+            dataset="regression",
+            strictly_positive=func in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+            n_samples=1000 if func in [NeuralNetRegressor] else 100,
+            n_features=10 if func in [NeuralNetRegressor] else 20,
+            n_informative=10,
+            n_targets=2 if func in [NeuralNetRegressor] else 1,
+            noise=2.0 if func in [NeuralNetRegressor] else 0.0,
+            random_state=numpy.random.randint(0, 2**15),
+        )
+
+    if func == NeuralNetRegressor:
+        if y.ndim == 1:
+            y = numpy.expand_dims(y, 1)
+
+        x = x.astype(numpy.float32)
+        y = y.astype(numpy.float32)
+
+    elif func == NeuralNetClassifier:
+        x = x.astype(numpy.float32)
+
+    return (x, y)
+
+
+def check_onnx_file_dump(algo, load_data, str_expected, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
 
+    algo_name = algo.func.__name__
+
+    # Get the data
+    x, y = get_data(algo, load_data)
+
     # Set the model
-    model = algo(
-        n_bits=6,
-    )
+    model = algo(n_bits=6)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -83,14 +143,13 @@ def check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configurat
 
 
 @pytest.mark.parametrize(
-    "algo, algo_name, str_expected",
+    "algo, str_expected",
     [
         (
             partial(
                 DecisionTreeClassifier,
                 max_depth=4,
             ),
-            "DecisionTreeClassifier",
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) {
@@ -116,7 +175,6 @@ def check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configurat
                 RandomForestClassifier,
                 max_depth=4,
             ),
-            "RandomForestClassifier",
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) {
@@ -142,7 +200,6 @@ def check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configurat
                 XGBClassifier,
                 max_depth=4,
             ),
-            "XGBClassifier",
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) {
@@ -164,39 +221,22 @@ def check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configurat
         ),
     ],
 )
-@pytest.mark.parametrize(
-    "load_data",
-    [
-        pytest.param(
-            lambda: make_classification(
-                n_samples=100,
-                n_features=20,
-                n_classes=4,
-                n_informative=10,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
-            id="make_classification",
-        ),
-    ],
-)
 def test_tree_classifier(
     algo,
-    algo_name,
     str_expected,
     load_data,
     default_configuration,
 ):
     """Tests the tree models."""
-    x, y = load_data()
 
-    check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configuration)
+    check_onnx_file_dump(algo, load_data, str_expected, default_configuration)
 
 
 @pytest.mark.parametrize(
     "algo, str_expected",
     [
         (
-            PoissonRegressor,
+            partial(PoissonRegressor),
             """graph torch-jit-export (
   %onnx::MatMul_0[DOUBLE, 20]
 ) initializers (
@@ -210,7 +250,7 @@ def test_tree_classifier(
 }""",
         ),
         (
-            GammaRegressor,
+            partial(GammaRegressor),
             """graph torch-jit-export (
   %onnx::MatMul_0[DOUBLE, 20]
 ) initializers (
@@ -224,7 +264,7 @@ def test_tree_classifier(
 }""",
         ),
         (
-            TweedieRegressor,
+            partial(TweedieRegressor),
             """graph torch-jit-export (
   %onnx::MatMul_0[DOUBLE, 20]
 ) initializers (
@@ -237,7 +277,7 @@ def test_tree_classifier(
 }""",
         ),
         (
-            LinearSVC,
+            partial(LinearSVC),
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) initializers (
@@ -251,7 +291,7 @@ def test_tree_classifier(
 }""",
         ),
         (
-            LogisticRegression,
+            partial(LogisticRegression),
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) initializers (
@@ -265,7 +305,7 @@ def test_tree_classifier(
 }""",
         ),
         (
-            LinearRegression,
+            partial(LinearRegression),
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) initializers (
@@ -278,7 +318,7 @@ def test_tree_classifier(
 }""",
         ),
         (
-            LinearSVR,
+            partial(LinearSVR),
             """graph torch-jit-export (
   %input_0[DOUBLE, symx20]
 ) initializers (
@@ -291,19 +331,17 @@ def test_tree_classifier(
 }""",
         ),
         (
-            lambda n_bits: NeuralNetClassifier(
-                n_bits=n_bits,
-                **{
-                    "module__n_layers": 3,
-                    "module__n_w_bits": 2,
-                    "module__n_a_bits": 2,
-                    "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
-                    "module__n_outputs": 2,
-                    "module__input_dim": 20,
-                    "module__activation_function": nn.SELU,
-                    "max_epochs": 10,
-                    "verbose": 0,
-                },
+            partial(
+                NeuralNetClassifier,
+                module__n_layers=3,
+                module__n_w_bits=2,
+                module__n_a_bits=2,
+                module__n_accum_bits=MAXIMUM_BIT_WIDTH,
+                module__n_outputs=2,
+                module__input_dim=20,
+                module__activation_function=nn.SELU,
+                max_epochs=10,
+                verbose=0,
             ),
             """graph torch-jit-export (
   %onnx::MatMul_0[FLOAT, 20]
@@ -328,19 +366,17 @@ def test_tree_classifier(
 }""",
         ),
         (
-            lambda n_bits: NeuralNetRegressor(
-                n_bits=n_bits,
-                **{
-                    "module__n_layers": 3,
-                    "module__n_w_bits": 2,
-                    "module__n_a_bits": 2,
-                    "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
-                    "module__n_outputs": 2,
-                    "module__input_dim": 10,
-                    "module__activation_function": nn.SELU,
-                    "max_epochs": 10,
-                    "verbose": 0,
-                },
+            partial(
+                NeuralNetRegressor,
+                module__n_layers=3,
+                module__n_w_bits=2,
+                module__n_a_bits=2,
+                module__n_accum_bits=MAXIMUM_BIT_WIDTH,
+                module__n_outputs=2,
+                module__input_dim=10,
+                module__activation_function=nn.SELU,
+                max_epochs=10,
+                verbose=0,
             ),
             """graph torch-jit-export (
   %onnx::MatMul_0[FLOAT, 10]
@@ -369,55 +405,9 @@ def test_tree_classifier(
 def test_other_models(
     algo,
     str_expected,
+    load_data,
     default_configuration,
 ):
     """Tests the linear models."""
-    if isinstance(algo, (types.FunctionType, types.LambdaType)):
-        if algo(0).__class__ is NeuralNetClassifier:
-            algo_name = "NeuralNetClassifier"
-        if algo(0).__class__ is NeuralNetRegressor:
-            algo_name = "NeuralNetRegressor"
-    else:
-        algo_name = algo.__name__
 
-    assert isinstance(algo_name, str), f"problem {algo}"
-
-    n_classes = 4
-
-    if algo_name in ["LogisticRegression", "NeuralNetClassifier"]:
-        n_classes = 2
-
-    if algo_name in ["NeuralNetRegressor"]:
-        x, y, _ = make_regression(
-            1000,
-            n_features=10,
-            n_informative=10,
-            n_targets=2,
-            noise=2,
-            random_state=numpy.random.randint(0, 2**15),
-            coef=True,
-        )
-
-        if y.ndim == 1:
-            y = numpy.expand_dims(y, 1)
-
-        x = x.astype(numpy.float32)
-        y = y.astype(numpy.float32)
-
-    else:
-        x, y = make_classification(
-            n_samples=100,
-            n_features=20,
-            n_classes=n_classes,
-            n_informative=10,
-            random_state=numpy.random.randint(0, 2**15),
-        )
-
-        # Get the dataset
-        if algo_name == "GammaRegressor":
-            y = numpy.abs(y) + 1
-
-        if algo_name in ["NeuralNetClassifier"]:
-            x = x.astype(numpy.float32)
-
-    check_onnx_file_dump(algo, algo_name, x, y, str_expected, default_configuration)
+    check_onnx_file_dump(algo, load_data, str_expected, default_configuration)

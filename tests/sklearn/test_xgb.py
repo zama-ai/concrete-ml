@@ -2,7 +2,7 @@
 
 import numpy
 import pytest
-from sklearn.datasets import load_breast_cancer, make_classification
+from sklearn.datasets import load_breast_cancer
 from sklearn.metrics import make_scorer, matthews_corrcoef
 from sklearn.model_selection import GridSearchCV
 
@@ -37,9 +37,10 @@ PARAMS_XGB = {
     ],
 )
 @pytest.mark.parametrize("n_classes", [2, 4])
-def test_xgb_hyperparameters(hyperparameters, n_classes, check_r2_score, check_accuracy):
+def test_xgb_hyperparameters(hyperparameters, n_classes, load_data, check_r2_score, check_accuracy):
     """Test that the hyperparameters are valid."""
-    x, y = make_classification(
+    x, y = load_data(
+        dataset="classification",
         n_samples=100,
         n_features=10,
         n_informative=5,
@@ -58,28 +59,31 @@ def test_xgb_hyperparameters(hyperparameters, n_classes, check_r2_score, check_a
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
 
+# pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
-    "load_data",
+    "parameters",
     [
-        pytest.param(lambda: load_breast_cancer(return_X_y=True), id="breast_cancer"),
+        pytest.param({"dataset": lambda: load_breast_cancer(return_X_y=True)}, id="breast_cancer"),
         pytest.param(
-            lambda: make_classification(
-                n_samples=1000,
-                n_features=100,
-                n_classes=2,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
+            {
+                "dataset": "classification",
+                "n_samples": 1000,
+                "n_features": 100,
+                "n_classes": 2,
+                "random_state": numpy.random.randint(0, 2**15),
+            },
             id="make_classification",
         ),
         pytest.param(
-            lambda: make_classification(
-                n_samples=1000,
-                n_features=100,
-                n_classes=4,
-                n_informative=100,
-                n_redundant=0,
-                random_state=numpy.random.randint(0, 2**15),
-            ),
+            {
+                "dataset": "classification",
+                "n_samples": 1000,
+                "n_features": 100,
+                "n_classes": 4,
+                "n_informative": 100,
+                "n_redundant": 0,
+                "random_state": numpy.random.randint(0, 2**15),
+            },
             id="make_multiclassification",
         ),
     ],
@@ -107,11 +111,12 @@ def test_xgb_hyperparameters(hyperparameters, n_classes, check_r2_score, check_a
     ],
 )
 def test_xgb_classifier(
-    load_data,
+    parameters,
     max_depth,
     n_estimators,
     skip_if_not_weekly,
     n_bits,
+    load_data,
     default_configuration,
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
@@ -133,7 +138,7 @@ def test_xgb_classifier(
         return
 
     # Get the dataset
-    x, y = load_data()
+    x, y = load_data(**parameters)
 
     model = XGBClassifier(
         max_depth=max_depth,
@@ -151,9 +156,10 @@ def test_xgb_classifier(
     check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
 
 
-def test_grid_search():
+def test_grid_search(load_data):
     """Tests xgboost with the gridsearchCV from sklearn."""
-    x, y = make_classification(
+    x, y = load_data(
+        dataset="classification",
         n_samples=1000,
         n_features=100,
         n_classes=2,
