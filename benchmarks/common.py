@@ -1,7 +1,10 @@
+import random
 from functools import partial
 
 import concrete.numpy as cnp
+import numpy as np
 import py_progress_tracker as progress
+import torch
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -62,3 +65,14 @@ def run_and_report_regression_metrics(y_gt, y_pred, metric_id_prefix, metric_lab
             "_".join((metric_id_prefix, metric_id)),
             " ".join((metric_label_prefix, metric_label)),
         )
+
+
+def seed_everything(seed):
+    random.seed(seed)
+    seed += 1
+    np.random.seed(seed % 2**32)
+    seed += 1
+    torch.manual_seed(seed)
+    seed += 1
+    torch.use_deterministic_algorithms(True)
+    return seed

@@ -16,6 +16,7 @@ import onnx
 import sklearn
 import torch
 from concrete.numpy.compilation.artifacts import DebugArtifacts
+from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
@@ -96,7 +97,7 @@ class QuantizedTorchEstimatorMixin:
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-    ):
+    ) -> Circuit:
         """Compile the model.
 
         Args:
@@ -108,6 +109,9 @@ class QuantizedTorchEstimatorMixin:
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): whether to compile using the virtual library that allows higher
                 bitwidths
+
+        Returns:
+            Circuit: the compiled Circuit.
 
         Raises:
             ValueError: if called before the model is trained
@@ -122,13 +126,15 @@ class QuantizedTorchEstimatorMixin:
         quantized_numpy_inputset = self.quantized_module_.quantize_input(X)
 
         # Call the compilation backend to produce the FHE inference circuit
-        self.quantized_module_.compile(
+        circuit = self.quantized_module_.compile(
             quantized_numpy_inputset,
             configuration=configuration,
             compilation_artifacts=compilation_artifacts,
             show_mlir=show_mlir,
             use_virtual_lib=use_virtual_lib,
         )
+
+        return circuit
 
     def fit(self, X, y, **fit_params):
         """Initialize and fit the module.
@@ -256,7 +262,7 @@ class QuantizedTorchEstimatorMixin:
 
     # pylint: enable=arguments-differ
 
-    def fit_benchmark(self, X, y):
+    def fit_benchmark(self, X, y, *args, **kwargs):
         """Fit the quantized estimator and return reference estimator.
 
         This function returns both the quantized estimator (itself),
@@ -276,13 +282,15 @@ class QuantizedTorchEstimatorMixin:
                 If this doesn't work with your data, you have to pass a
                 ``Dataset`` that can deal with the data.
             y (numpy.ndarray): labels associated with training data
+            *args: The arguments to pass to the sklearn linear model.
+            **kwargs: The keyword arguments to pass to the sklearn linear model.
 
         Returns:
             self: the trained quantized estimator
             fp32_model: trained raw (fp32) wrapped NN estimator
         """
 
-        self.fit(X, y)
+        self.fit(X, y, *args, **kwargs)
 
         # Create a skorch estimator with the same training parameters as this one
         # Follow sklearn.base.clone: copy.deepcopy parameters obtained with get_params()
@@ -559,7 +567,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-    ):
+    ) -> Circuit:
         """Compile the model.
 
         Args:
@@ -571,6 +579,10 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): set to True to use the so called virtual lib
                 simulating FHE computation. Defaults to False.
+
+        Returns:
+            Circuit: the compiled Circuit.
+
         """
         # Make sure that self.tree_predict is not None
         assert_true(
@@ -606,6 +618,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             isinstance(dtype_output := output_graph[0].output.dtype, Integer),
             f"output is {dtype_output} but an Integer is expected.",
         )
+
+        return self.fhe_tree
 
 
 # pytlint: disable=invalid-name,too-many-instance-attributes
@@ -802,7 +816,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-    ) -> None:
+    ) -> Circuit:
         """Compile the FHE linear model.
 
         Args:
@@ -816,15 +830,21 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
                 or demo. Defaults to False.
             use_virtual_lib (bool): whether to compile using the virtual library that allows higher
                 bitwidths with simulated FHE computation. Defaults to False
+
+        Returns:
+            Circuit: the compiled Circuit.
+
         """
         # Quantize the input
         quantized_numpy_inputset = self.quantized_module.quantize_input(X)
 
         # Compile the model
-        self.quantized_module.compile(
+        circuit = self.quantized_module.compile(
             quantized_numpy_inputset,
             configuration,
             compilation_artifacts,
             show_mlir=show_mlir,
             use_virtual_lib=use_virtual_lib,
         )
+
+        return circuit

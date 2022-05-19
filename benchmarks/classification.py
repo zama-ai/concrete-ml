@@ -1,11 +1,12 @@
 import argparse
 import json
 import os
+import random
 import time
 
 import numpy as np
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION, run_and_report_classification_metrics
+from common import BENCHMARK_CONFIGURATION, run_and_report_classification_metrics, seed_everything
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
@@ -235,7 +236,7 @@ def train_and_test_on_dataset(classifier, dataset, config, local_args):
     concrete_classifier = classifier(**config)
 
     if local_args.verbose:
-        print(f"  -- Done in {time.time() - time_current}")
+        print(f"  -- Done in {time.time() - time_current} seconds")
         time_current = time.time()
         print("Fit")
 
@@ -247,7 +248,7 @@ def train_and_test_on_dataset(classifier, dataset, config, local_args):
     concrete_classifier, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
 
     if local_args.verbose:
-        print(f"  -- Done in {time.time() - time_current}")
+        print(f"  -- Done in {time.time() - time_current} seconds")
         time_current = time.time()
         print("Predict with scikit-learn")
 
@@ -258,7 +259,7 @@ def train_and_test_on_dataset(classifier, dataset, config, local_args):
     run_and_report_classification_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
 
     if local_args.verbose:
-        print(f"  -- Done in {time.time() - time_current}")
+        print(f"  -- Done in {time.time() - time_current} seconds")
         time_current = time.time()
         print("Predict in clear")
 
@@ -271,17 +272,34 @@ def train_and_test_on_dataset(classifier, dataset, config, local_args):
     if should_test_config_in_fhe(classifier, config, n_features, local_args):
 
         if local_args.verbose:
-            print(f"  -- Done in {time.time() - time_current}")
+            print(f"  -- Done in {time.time() - time_current} seconds")
             time_current = time.time()
-            print(f"Predict in FHE ({local_args.fhe_samples} samples)")
+            print("Compile")
 
         x_test_comp = x_test[0:size_of_compilation_dataset, :]
 
         # Compile and report compilation time
         t_start = time.time()
-        concrete_classifier.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
+        forward_fhe = concrete_classifier.compile(
+            x_test_comp, configuration=BENCHMARK_CONFIGURATION
+        )
         duration = time.time() - t_start
         progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Key generation")
+
+        t_start = time.time()
+        forward_fhe.keygen()
+        duration = time.time() - t_start
+        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print(f"Predict in FHE ({local_args.fhe_samples} samples)")
 
         # To keep the test short and to fit in RAM we limit the number of test samples
         x_test = x_test[0 : local_args.fhe_samples, :]
@@ -309,7 +327,7 @@ def train_and_test_on_dataset(classifier, dataset, config, local_args):
         )
 
     if local_args.verbose:
-        print(f"  -- Done in {time.time() - time_current}")
+        print(f"  -- Done in {time.time() - time_current} seconds")
         time_current = time.time()
         print("End")
 
@@ -350,74 +368,96 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
     return classifier.__name__ + config_str + joiner + dataset
 
 
-# Manage arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
-parser.add_argument("--datasets", type=str, nargs="+", default=None, help="dataset(s) to use")
-parser.add_argument(
-    "--classifiers",
-    choices=classifiers_string_to_class.keys(),
-    nargs="+",
-    default=None,
-    help="classifier(s) to use",
-)
-parser.add_argument(
-    "--configs",
-    nargs="+",
-    type=json.loads,
-    default=None,
-    help="config(s) to use",
-)
-parser.add_argument(
-    "--model_samples",
-    type=int,
-    default=1,
-    help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
-)
-parser.add_argument(
-    "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
-)
-parser.add_argument(
-    "--execute_in_fhe",
-    action="store_true",
-    default="auto",
-    help="force to execute in FHE (default is to use should_test_config_in_fhe function)",
-)
-parser.add_argument(
-    "--dont_execute_in_fhe",
-    action="store_true",
-    help="force to not execute in FHE (default is to use should_test_config_in_fhe function)",
-)
-args, _ = parser.parse_known_args()
-if args.dont_execute_in_fhe:
-    assert args.execute_in_fhe == "auto"
-    args.execute_in_fhe = False
+def common_argument_manager():
+    # Manage arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
+    parser.add_argument("--datasets", type=str, nargs="+", default=None, help="dataset(s) to use")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=random.randint(0, 2**32 - 1),
+        help="set the seed for reproducibility",
+    )
+    parser.add_argument(
+        "--classifiers",
+        choices=classifiers_string_to_class.keys(),
+        nargs="+",
+        default=None,
+        help="classifier(s) to use",
+    )
+    parser.add_argument(
+        "--configs",
+        nargs="+",
+        type=json.loads,
+        default=None,
+        help="config(s) to use",
+    )
+    parser.add_argument(
+        "--model_samples",
+        type=int,
+        default=1,
+        help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+    )
+    parser.add_argument(
+        "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
+    )
+    parser.add_argument(
+        "--execute_in_fhe",
+        action="store_true",
+        default="auto",
+        help="force to execute in FHE (default is to use should_test_config_in_fhe function)",
+    )
+    parser.add_argument(
+        "--dont_execute_in_fhe",
+        action="store_true",
+        help="force to not execute in FHE (default is to use should_test_config_in_fhe function)",
+    )
+    args, _ = parser.parse_known_args()
+    if args.dont_execute_in_fhe:
+        assert args.execute_in_fhe == "auto"
+        args.execute_in_fhe = False
 
-if args.datasets is None:
-    args.datasets = possible_datasets
-if args.classifiers is None:
-    args.classifiers = possible_classifiers
-else:
-    args.classifiers = [classifiers_string_to_class[c] for c in args.classifiers]
+    if args.datasets is None:
+        args.datasets = possible_datasets
+    if args.classifiers is None:
+        args.classifiers = possible_classifiers
+    else:
+        args.classifiers = [classifiers_string_to_class[c] for c in args.classifiers]
 
-print(f"Will perform benchmarks on {len(list(benchmark_generator(args)))} test cases")
+    return args
 
 
-# We run all the classifiers that we want to benchmark over all datasets listed
-@progress.track(
-    [
-        {
-            "id": benchmark_name_generator(dataset, classifier, config, "_"),
-            "name": benchmark_name_generator(dataset, classifier, config, " on "),
-            "parameters": {"classifier": classifier, "dataset": dataset, "config": config},
-            "samples": args.model_samples,
-        }
-        for (dataset, classifier, config) in benchmark_generator(args)
-    ]
-)
-def main(classifier, dataset, config):
-    """
-    This is the main test function called by the py-progress module. It just calls the
-    benchmark function with the right parameter combination
-    """
-    train_and_test_on_dataset(classifier, dataset, config, args)
+def main():
+
+    # Parameters by the user
+    args = common_argument_manager()
+
+    print(f"Will perform benchmarks on {len(list(benchmark_generator(args)))} test cases")
+    print(f"Using --seed {args.seed}")
+
+    # Seed everything we can
+    seed_everything(args.seed)
+
+    # We run all the classifiers that we want to benchmark over all datasets listed
+    @progress.track(
+        [
+            {
+                "id": benchmark_name_generator(dataset, classifier, config, "_"),
+                "name": benchmark_name_generator(dataset, classifier, config, " on "),
+                "parameters": {"classifier": classifier, "dataset": dataset, "config": config},
+                "samples": args.model_samples,
+            }
+            for (dataset, classifier, config) in benchmark_generator(args)
+        ]
+    )
+    def perform_benchmark(classifier, dataset, config):
+        """
+        This is the test function called by the py-progress module. It just calls the
+        benchmark function with the right parameter combination
+        """
+        train_and_test_on_dataset(classifier, dataset, config, args)
+
+
+if __name__ == "__main__":
+    main()
