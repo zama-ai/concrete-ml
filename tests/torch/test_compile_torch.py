@@ -184,10 +184,20 @@ class SimpleQAT(nn.Module):
 
         n_bits_weights = n_bits
 
-        # Generate the integer weights, uniformly spaced
-        int_weights = numpy.random.randint(
-            0, 2**n_bits_weights, size=self.fc1.weight.shape
-        ) - 2 ** (n_bits_weights - 1)
+        # Generate the pattern 0, 1, ..., 2^N-1, 0, 1, .. 2^N-1, 0, 1..
+        all_weights = numpy.mod(
+            numpy.arange(numpy.prod(self.fc1.weight.shape)), 2**n_bits_weights
+        )
+
+        # Shuffle the pattern and reshape to weight shape
+        numpy.random.shuffle(all_weights)
+        int_weights = all_weights.reshape(self.fc1.weight.shape)
+
+        # Ensure we have the correct max/min that produces the correct scale in Quantized Array
+        assert numpy.max(int_weights) - numpy.min(int_weights) == (2**n_bits_weights - 1)
+
+        # We want signed weights, so offset the generated weights
+        int_weights = int_weights - 2 ** (n_bits_weights - 1)
 
         # Initialize with scaled float weights
         self.fc1.weight.data = torch.from_numpy(int_weights * weight_scale).float()
