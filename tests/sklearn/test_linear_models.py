@@ -3,6 +3,7 @@ import warnings
 from functools import partial
 from typing import Any, List
 
+import numpy
 import pytest
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
@@ -259,13 +260,19 @@ def test_linear_model_quantization(
 
     # Get the dataset
     x, y = load_data(**parameters)
-
     model = model(n_bits=n_bits)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model, sklearn_model = model.fit_benchmark(x, y)
+        params = {}
+        if model._estimator_type == "classifier":
+            params["random_state"] = numpy.random.randint(0, 2**15)
+            model.set_params(**params)
+            # Random state should be taken from the class variable
+            model, sklearn_model = model.fit_benchmark(x, y)
+        # Random state should be taken from the method parameter
+        model, sklearn_model = model.fit_benchmark(x, y, **params)
 
     if model._estimator_type == "classifier":  # pylint: disable=protected-access
         # Classification models

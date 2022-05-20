@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import copy
 from abc import abstractmethod
-from typing import Callable, Tuple, Union
+from typing import Callable, Union
 
 import numpy
 import sklearn
@@ -120,6 +120,10 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self.quantized_module = post_training.quantize_module(X)
 
         # pylint: enable=attribute-defined-outside-init
+
+    @abstractmethod
+    def _get_inverse_link(self):
+        """Get the inverse link function used in the inference."""
 
 
 # pylint: enable=too-many-instance-attributes

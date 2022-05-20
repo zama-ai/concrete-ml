@@ -527,7 +527,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         sklearn_model.fit(X, y, *args, **kwargs)
 
         # Train the FHE model
-        self.__init__(n_bits=self.n_bits, **params)  # type: ignore
+        self.set_params(n_bits=self.n_bits, **params)
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 
@@ -780,7 +780,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         sklearn_model.fit(X, y, *args, **kwargs)
 
         # Train the FHE model
-        self.__init__(n_bits=self.n_bits, **params)  # type: ignore
+        self.set_params(n_bits=self.n_bits, **params)
         self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 
