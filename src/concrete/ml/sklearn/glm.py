@@ -121,38 +121,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
         # pylint: enable=attribute-defined-outside-init
 
-    def fit_benchmark(
-        self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
-    ) -> Tuple[_GeneralizedLinearRegressor, sklearn.linear_model._glm._GeneralizedLinearRegressor]:
-        """Fit the sklearn and quantized models.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
-
-        Returns:
-            Tuple[_GeneralizedLinearRegressor,
-                sklearn.linear_model._glm._GeneralizedLinearRegressor]:
-                The quantized and sklearn GLM regressor.
-        """
-        # Train the quantized model
-        self.fit(X, y, *args, **kwargs)
-
-        params = self.get_params()  # type: ignore
-        params.pop("n_bits", None)
-
-        # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(**params)
-        sklearn_model.fit(X, y, *args, **kwargs)
-
-        return self, sklearn_model
-
-    @abstractmethod
-    def _get_inverse_link(self):
-        """Get the inverse link function used in the inference."""
-
 
 # pylint: enable=too-many-instance-attributes
 

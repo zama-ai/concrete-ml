@@ -627,6 +627,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
     """A Mixin class for sklearn linear models with FHE."""
 
     sklearn_alg: Callable
+    random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
 
     def __init__(self, *args, n_bits: Union[int, Dict] = 2, **kwargs):
         """Initialize the FHE linear model.
@@ -739,26 +740,48 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
     # pylint: enable=no-self-use
 
     def fit_benchmark(
-        self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
-    ) -> Tuple["SklearnLinearModelMixin", sklearn.linear_model.LinearRegression]:
+        self,
+        X: numpy.ndarray,
+        y: numpy.ndarray,
+        *args,
+        random_state: Optional[int] = None,
+        **kwargs,
+    ) -> Tuple[Any, Any]:
         """Fit the sklearn linear model and the FHE linear model.
 
         Args:
             X (numpy.ndarray): The input data.
             y (numpy.ndarray): The target data.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
+            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
+                The random state. Defaults to None.
+            *args: args for super().fit
+            **kwargs: kwargs for super().fit
 
         Returns:
             Tuple[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression]:
                 The FHE and sklearn LinearRegression.
         """
+
+        params = self.get_params()  # type: ignore
+        params.pop("n_bits", None)
+
+        # Make sure the random_state is set or both algorithms will diverge
+        # due to randomness in the training.
+        if "random_state" in params:
+            if random_state is not None:
+                params["random_state"] = random_state
+            elif self.random_state is not None:
+                params["random_state"] = self.random_state
+            else:
+                params["random_state"] = numpy.random.randint(0, 2**15)
+
         # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(*args, **kwargs)
+        sklearn_model = self.sklearn_alg(**params)
         sklearn_model.fit(X, y, *args, **kwargs)
 
         # Train the FHE model
-        SklearnLinearModelMixin.fit(self, X, y, *args, **kwargs)
+        self.__init__(n_bits=self.n_bits, **params)  # type: ignore
+        self.fit(X, y, *args, **kwargs)
         return self, sklearn_model
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
