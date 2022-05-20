@@ -71,7 +71,7 @@ PARAMS_TREE = {
     "min_samples_split": [2, 3, 4, 5],
     "min_samples_leaf": [1, 2, 3, 4],
     "min_weight_fraction_leaf": [0.0, 0.1, 0.2, 0.3],
-    "max_features": ["auto", "sqrt", "log2"],
+    "max_features": ["sqrt", "log2"],
     "max_leaf_nodes": [None, 5, 10, 20],
 }
 

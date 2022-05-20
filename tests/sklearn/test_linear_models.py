@@ -1,5 +1,6 @@
 """Tests for the sklearn linear models."""
 import warnings
+from functools import partial
 from typing import Any, List
 
 import pytest
@@ -78,6 +79,25 @@ def get_datasets_regression(model):
                 id=f"make_regression_features_14_informative_14_targets_2_{model.__name__}",
             )
         ]
+
+    # TweedieRegressor has some additional specific tests
+    if model == TweedieRegressor:
+        tweedie_parameters = {
+            "dataset": "regression",
+            "strictly_positive": True,
+            "n_features": 10,
+        }
+        links = ["auto", "auto", "log", "identity"]
+        powers = [0.0, 2.8, 1.0, 0.0]
+
+        for link, power in zip(links, powers):
+            regression_datasets += [
+                pytest.param(
+                    partial(model, link=link, power=power),
+                    tweedie_parameters,
+                    id=f"make_regression_features_10_{model.__name__}_link_{link}_power_{power}",
+                )
+            ]
 
     # if model == LinearSVR:
     #     model = partial(model, dual=False, loss="squared_epsilon_insensitive")

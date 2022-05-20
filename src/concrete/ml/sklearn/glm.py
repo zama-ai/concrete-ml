@@ -2,19 +2,18 @@
 from __future__ import annotations
 
 import copy
-from typing import Tuple, Union
+from abc import abstractmethod
+from typing import Callable, Tuple, Union
 
 import numpy
 import sklearn
 import torch
-from sklearn._loss.glm_distribution import ExponentialDispersionModel, TweedieDistribution
-from sklearn.linear_model._glm.link import BaseLink
 
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
 from .base import SklearnLinearModelMixin
-from .torch_module import LINK_NAMES, _LinearRegressionTorchModel
+from .torch_module import _LinearRegressionTorchModel
 
 
 # pylint: disable=too-many-instance-attributes
@@ -30,8 +29,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         n_bits: Union[int, dict] = 2,
         alpha: float = 1.0,
         fit_intercept: bool = True,
-        family: Union[str, ExponentialDispersionModel] = "normal",
-        link: Union[str, TweedieDistribution] = "auto",
         solver: str = "lbfgs",
         max_iter: int = 100,
         tol: float = 1e-4,
@@ -41,8 +38,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self.n_bits = n_bits
         self.alpha = alpha
         self.fit_intercept = fit_intercept
-        self.family = family
-        self.link = link
         self.solver = solver
         self.max_iter = max_iter
         self.tol = tol
@@ -92,13 +87,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         input_size = weight.shape[0]
         output_size = weight.shape[1] if len(weight.shape) > 1 else 1
 
-        # pylint: disable=protected-access
-
-        link = self.sklearn_model._link_instance.__class__
-
-        # Making sure we handle the extracted link function
-        assert_true(link in LINK_NAMES, f"Link must be a member of {LINK_NAMES.keys()}.")
-
         # Initialize the Torch model. Using a small Torch model that reproduces the proper
         # inference is necessary in this case because the Hummingbird library, which is used for
         # converting a Sklearn model into an ONNX one, doesn't not support GLMs. Also, the Torch
@@ -107,11 +95,9 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         torch_model = _LinearRegressionTorchModel(
             input_size=input_size,
             output_size=output_size,
+            inverse_link=self._get_inverse_link(),
             bias=self.fit_intercept,
-            link=LINK_NAMES[link],
         )
-
-        # pylint: enable=protected-access
 
         # Update the Torch model's weights and bias using the Sklearn model's one
         torch_model.linear.weight.data = torch.from_numpy(weight).reshape(output_size, input_size)
@@ -137,7 +123,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
     def fit_benchmark(
         self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs
-    ) -> Tuple[_GeneralizedLinearRegressor, sklearn.linear_model._glm.GeneralizedLinearRegressor]:
+    ) -> Tuple[_GeneralizedLinearRegressor, sklearn.linear_model._glm._GeneralizedLinearRegressor]:
         """Fit the sklearn and quantized models.
 
         Args:
@@ -148,16 +134,24 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
         Returns:
             Tuple[_GeneralizedLinearRegressor,
-                sklearn.linear_model._glm.GeneralizedLinearRegressor]:
+                sklearn.linear_model._glm._GeneralizedLinearRegressor]:
                 The quantized and sklearn GLM regressor.
         """
-        # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(*args, **kwargs)
-        sklearn_model.fit(X, y, *args, **kwargs)
-
         # Train the quantized model
         self.fit(X, y, *args, **kwargs)
+
+        params = self.get_params()  # type: ignore
+        params.pop("n_bits", None)
+
+        # Train the sklearn model without X quantized
+        sklearn_model = self.sklearn_alg(**params)
+        sklearn_model.fit(X, y, *args, **kwargs)
+
         return self, sklearn_model
+
+    @abstractmethod
+    def _get_inverse_link(self):
+        """Get the inverse link function used in the inference."""
 
 
 # pylint: enable=too-many-instance-attributes
@@ -183,13 +177,19 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
             n_bits=n_bits,
             alpha=alpha,
             fit_intercept=fit_intercept,
-            family="poisson",
-            link="log",
             max_iter=max_iter,
             tol=tol,
             warm_start=warm_start,
             verbose=verbose,
         )
+
+    def _get_inverse_link(self) -> Callable:
+        """Get the inverse link function used in the inference.
+
+        Returns:
+            The inverse of the link function as a Callable.
+        """
+        return torch.exp
 
 
 class GammaRegressor(_GeneralizedLinearRegressor):
@@ -212,13 +212,19 @@ class GammaRegressor(_GeneralizedLinearRegressor):
             n_bits=n_bits,
             alpha=alpha,
             fit_intercept=fit_intercept,
-            family="gamma",
-            link="log",
             max_iter=max_iter,
             tol=tol,
             warm_start=warm_start,
             verbose=verbose,
         )
+
+    def _get_inverse_link(self) -> Callable:
+        """Get the inverse link function used in the inference.
+
+        Returns:
+            The inverse of the link function as a Callable.
+        """
+        return torch.exp
 
 
 class TweedieRegressor(_GeneralizedLinearRegressor):
@@ -233,7 +239,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         power: float = 0.0,
         alpha: float = 1.0,
         fit_intercept: bool = True,
-        link: Union[str, BaseLink] = "auto",
+        link: str = "auto",
         max_iter: int = 100,
         tol: float = 1e-4,
         warm_start: bool = False,
@@ -243,11 +249,39 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
             n_bits=n_bits,
             alpha=alpha,
             fit_intercept=fit_intercept,
-            family=TweedieDistribution(power=power),
-            link=link,
             max_iter=max_iter,
             tol=tol,
             warm_start=warm_start,
             verbose=verbose,
         )
+
+        assert_true(
+            link in ["auto", "log", "identity"],
+            f"link must be an element of ['auto', 'identity', 'log'], got '{link}'",
+        )
+
         self.power = power
+        self.link = link
+
+    def _get_inverse_link(self) -> Callable:
+        """Return the inverse link function used in the inference.
+
+        This function is either the identity or the exponential.
+
+        Returns:
+            The inverse of the link function as a Callable.
+        """
+
+        if self.link == "auto":
+
+            # Identity link
+            if self.power <= 0:
+                return lambda x: x
+
+            # Log link
+            return torch.exp
+
+        if self.link == "log":
+            return torch.exp
+
+        return lambda x: x
