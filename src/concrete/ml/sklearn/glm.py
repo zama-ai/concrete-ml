@@ -51,11 +51,21 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
     def onnx_model(self):
         return self._onnx_model_
 
-    def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
+    def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> None:
         """Fit the GLM regression quantized model.
 
         Args:
-            X (numpy.ndarray): The input data.
+            X : training data, compatible with skorch.dataset.Dataset
+                By default, you should be able to pass:
+                * numpy arrays
+                * torch tensors
+                * pandas DataFrame or Series
+                * scipy sparse CSR matrices
+                * a dictionary of the former three
+                * a list/tuple of the former three
+                * a Dataset
+                If this doesn't work with your data, you have to pass a
+                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): The target data.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
@@ -63,6 +73,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
         # Copy X
         X = copy.deepcopy(X)
+        X, y = sklearn.utils.check_X_y(X, y)
 
         # Retrieving the Sklearn parameters
         params = self.get_params()

@@ -4,7 +4,7 @@ PyYAML, 6.0, MIT License
 concrete-compiler, 0.8.0, BSD-3
 concrete-numpy, 0.6.0rc5, BSD License
 cycler, 0.11.0, BSD License
-dill, 0.3.4, BSD License
+dill, 0.3.5.1, BSD License
 flatbuffers, 1.12, Apache Software License
 fonttools, 4.33.3, MIT License
 hummingbird-ml, 0.4.4, MIT License
@@ -12,7 +12,7 @@ joblib, 1.1.0, BSD License
 kiwisolver, 1.4.2, BSD License
 loguru, 0.5.3, MIT License
 matplotlib, 3.5.2, Python Software Foundation License
-networkx, 2.8, BSD License
+networkx, 2.8.1, BSD License
 numpy, 1.22.3, BSD License
 onnx, 1.11.0, Apache License v2.0
 onnxconverter-common, 1.9.0, MIT License
@@ -25,7 +25,11 @@ pygraphviz, 1.9, BSD License
 pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.1.0, new BSD
+<<<<<<< HEAD
 scipy, 1.8.0, BSD License
+=======
+scipy, 1.8.1, BSD License
+>>>>>>> 2fd575c (feat: support more input types in fit())
 setuptools-scm, 6.4.2, MIT License
 six, 1.16.0, MIT License
 skl2onnx, 1.11.1, Apache Software License

@@ -162,6 +162,9 @@ class QuantizedTorchEstimatorMixin:
         Returns:
             self: the trained quantized estimator
         """
+
+        X, y = sklearn.utils.check_X_y(X, y)
+
         # Reset the quantized module since quantization is lost during refit
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
@@ -381,17 +384,29 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             qX[:, i] = q_x_.update_values(X[:, i])
         return qX.astype(numpy.int32)
 
-    def fit(self, X: numpy.ndarray, y: numpy.ndarray, **kwargs) -> Any:
+    def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
         """Fit the tree-based estimator.
 
         Args:
-            X (numpy.ndarray): The input data.
+            X : training data, compatible with skorch.dataset.Dataset
+                By default, you should be able to pass:
+                * numpy arrays
+                * torch tensors
+                * pandas DataFrame or Series
+                * scipy sparse CSR matrices
+                * a dictionary of the former three
+                * a list/tuple of the former three
+                * a Dataset
+                If this doesn't work with your data, you have to pass a
+                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): The target data.
             **kwargs: args for super().fit
 
         Returns:
             Any: The fitted model.
         """
+        X, y = sklearn.utils.check_X_y(X, y)
+
         # mypy
         assert self.n_bits is not None
 
@@ -658,17 +673,32 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         """
         return self._onnx_model_
 
-    def fit(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> None:
+    def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> None:
         """Fit the FHE linear model.
 
         Args:
-            X (numpy.ndarray): The input data.
+            X : training data, compatible with skorch.dataset.Dataset
+                By default, you should be able to pass:
+                * numpy arrays
+                * torch tensors
+                * pandas DataFrame or Series
+                * scipy sparse CSR matrices
+                * a dictionary of the former three
+                * a list/tuple of the former three
+                * a Dataset
+                If this doesn't work with your data, you have to pass a
+                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): The target data.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
         """
+
         # Copy X
         X = copy.deepcopy(X)
+
+        # FIXME: not for LinearRegression
+        if self.sklearn_alg.__name__ != "LinearRegression":
+            X, y = sklearn.utils.check_X_y(X, y)
 
         # Train
 
