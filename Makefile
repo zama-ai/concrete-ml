@@ -136,6 +136,7 @@ pcc:
 
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa check_supported_ops
+PCC_DEPS += check_refresh_notebooks_list
 PCC_DEPS += gitleaks
 
 # Not commented on purpose for make help, since internal
@@ -331,6 +332,14 @@ jupyter_execute_one:
 jupyter_execute_parallel:
 	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks_parallel
 	"$(MAKE)" finalize_nb
+
+.PHONY: refresh_notebooks_list # Refresh the list of notebooks currently available 
+refresh_notebooks_list:
+	poetry run python script/actions_utils/refresh_notebooks_list.py .github/workflows/refresh-one-notebook.yaml
+
+.PHONY: check_refresh_notebooks_list # Check if the list of notebooks currently available hasn't change
+check_refresh_notebooks_list:
+	poetry run python script/actions_utils/refresh_notebooks_list.py .github/workflows/refresh-one-notebook.yaml --check
 
 .PHONY: release_docker # Build a docker release image
 release_docker:

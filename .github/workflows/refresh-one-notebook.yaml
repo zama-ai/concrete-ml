@@ -1,0 +1,188 @@
+name: Refresh One Notebook
+on:
+  workflow_dispatch:
+    inputs:
+      notebook:
+        # --- refresh_notebooks_list.py: refresh list of notebooks currently available [BEGIN] ---
+        # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
+        description: "Notebook file name only in: \n
+        - ClassifierComparison \n
+        - ConvolutionalNeuralNetwork \n
+        - DecisionTreeClassifier \n
+        - FullyConnectedNeuralNetwork \n
+        - GLMComparison \n
+        - KaggleTitanic \n
+        - LinearRegression \n
+        - LogisticRegression \n
+        - PoissonRegression \n
+        - XGBClassifier \n
+        "
+        # --- refresh_notebooks_list.py: refresh list of notebooks currently available [END] ---
+        required: true
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  start-runner-linux:
+    name: Start EC2 runner
+    runs-on: ubuntu-20.04
+    outputs:
+      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
+      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Start EC2 runner python 38
+        id: start-ec2-runner-38
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+
+  refresh-one-notebook:
+    needs: [start-runner-linux]
+
+    runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    # Run in a clean container
+    container:
+      image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
+      - name: Docker container related setup and git installation
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git -y
+
+      - name: Checkout Code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: 'Set up Python 3.8'
+        uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
+      - name: Download datasets
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          make download_datasets
+
+      - name: Refresh One Notebook
+        run: |
+          make jupyter_execute_one NOTEBOOK="docs/user/advanced_examples/${{ github.event.inputs.notebook }}.ipynb"
+
+      - name: Open PR
+        uses: peter-evans/create-pull-request@f094b77505fb89581e68a1163fbd2fffece39da1
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          commit-message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
+          branch: "refresh-${{ github.event.inputs.notebook }}-notebook-for-${{ github.ref_name }}"
+          base: "${{ github.ref_name }}"
+          title: "Refresh ${{ github.event.inputs.notebook }} notebook for ${{ github.ref_name }}"
+          body: "Automatic PR with notebook refresh of ${{ github.event.inputs.notebook }} \
+            for ${{ github.ref_name }}."
+          add-paths: |
+            docs/**/*.ipynb
+
+
+  stop-runner-linux:
+    name: Stop EC2 runner
+    needs: [refresh-one-notebook, start-runner-linux]
+    runs-on: ubuntu-20.04
+    if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop EC2 runner python 38
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-linux.outputs.label-38 }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+          mode: stop
+
+  send-report:
+    if: ${{ always() }}
+    needs:
+      [
+        start-runner-linux,
+        refresh-one-notebook,
+        stop-runner-linux,
+      ]
+
+    name: Send Slack notification
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Prepare whole job status
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS_JSON}" > /tmp/needs_context.json
+          JOB_STATUS=$(python3 ./script/actions_utils/actions_combine_status.py \
+          --needs_context_json /tmp/needs_context.json)
+          echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
+
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
+          SLACK_MESSAGE: "Refreshing ${{ github.event.inputs.notebook }} finished \
+            with status ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
+            - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
+            - refresh-one-notebook: ${{ needs.refresh-one-notebook.result || 'Did not run.' }}\n\n\
+            - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
