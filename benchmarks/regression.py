@@ -1,21 +1,19 @@
+import argparse
+import json
 import os
+import random
 import time
-from functools import partial
 
 import numpy as np
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics
-from sklearn.datasets import fetch_openml, make_regression
+from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics, seed_everything
+from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from concrete.ml.sklearn import LinearRegression, LinearSVR, NeuralNetRegressor
 
-N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
-N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
-
-
-openml_dataset_names = [
+possible_datasets = [
     "pol",
     "house_16H",
     "tecator",
@@ -44,72 +42,9 @@ dataset_versions = {
     "house_sales": 3,
 }
 
-
-def return_one_bias(i):
-    bias_list = [0, 0.0001, 0.1, 100, 10000]
-    return bias_list[i % len(bias_list)]
-
-
-def return_one_noise(i):
-    noise_list = [0, 0.001, 0.1, 10, 1000]
-    return noise_list[i % len(noise_list)]
-
-
-def return_one_n_targets(i):
-    n_targets_list = [1, 2, 3, 4, 5]
-    return n_targets_list[i % len(n_targets_list)]
-
-
-def return_one_n_features(i):
-    n_features_list = [1, 2, 5, 14, 100]
-    return n_features_list[i % len(n_features_list)]
-
-
-# Make the bias and noise not synchronized, ie not always the same bias with the same noise
-# 3, 7 and 11 are prime with 5, which is the length of bias_list and noise_list
-# Not all couples will be done, however
-synthetic_dataset_params = [
-    (
-        42 + i,
-        {
-            "bias": return_one_bias(i),
-            "noise": return_one_noise((i + 1) * 3),
-            "n_targets": return_one_n_targets((i + 2) * 7),
-            "n_features": return_one_n_features((i + 3) * 11),
-        },
-    )
-    for i in range(10)
-]
-
-
-def make_synthetic_name(i, bias, noise, n_targets, n_features):
-    return f"SyntheticReg_{i}_{bias}_{noise}_{n_targets}_{n_features}"
-
-
-def prepare_openml_dataset(dataset_name):
-    # Sometimes we want a specific version of a dataset, otherwise just get the 'active' one
-    version = dataset_versions.get(dataset_name, "active")
-    x_all, y_all = fetch_openml(
-        name=dataset_name, version=version, as_frame=False, cache=True, return_X_y=True
-    )
-    if y_all.ndim == 1:
-        y_all = np.expand_dims(y_all, 1)
-    return x_all, y_all, None
-
-
-synthetic_dataset_names = [make_synthetic_name(i, **p) for i, p in synthetic_dataset_params]
-
-synthetic_datasets = {
-    name: partial(make_regression, n_samples=200, coef=True, random_state=seed, **params)
-    for name, (seed, params) in zip(synthetic_dataset_names, synthetic_dataset_params)
-}
-
-openml_datasets = {name: partial(prepare_openml_dataset, name) for name in openml_dataset_names}
-
-datasets = {**openml_datasets, **synthetic_datasets}
-
 # Will contain all the regressors we can support
-regressors = [NeuralNetRegressor, LinearRegression, LinearSVR]
+possible_regressors = [NeuralNetRegressor, LinearRegression, LinearSVR]
+regressors_string_to_class = {c.__name__: c for c in possible_regressors}
 
 benchmark_params = {
     LinearRegression: [{"n_bits": n_bits} for n_bits in range(2, 11)],
@@ -172,8 +107,11 @@ benchmark_params = {
 
 
 # pylint: disable=too-many-return-statements
-def should_test_config_in_fhe(regressor, config, n_features):
+def should_test_config_in_fhe(regressor, config, n_features, local_args):
     """Determine whether a benchmark config for a regressor should be tested in FHE"""
+
+    if local_args.execute_in_fhe != "auto":
+        return local_args.execute_in_fhe
 
     assert config is not None
 
@@ -209,15 +147,19 @@ def should_test_config_in_fhe(regressor, config, n_features):
     raise ValueError(f"Regressor {str(regressor)} configurations not yet setup for FHE")
 
 
-def benchmark_generator():
+def benchmark_generator(local_args):
     # Iterate over the dataset names and the dataset generator functions
-    for dataset_str, dataset_fun in datasets.items():
-        for regressor in regressors:
-            for config in benchmark_params[regressor]:
-                yield (dataset_str, dataset_fun, regressor, config)
+    for dataset in local_args.datasets:
+        for regressor in local_args.regressors:
+            if local_args.configs is None:
+                for config in benchmark_params[regressor]:
+                    yield (dataset, regressor, config)
+            else:
+                for config in local_args.configs:
+                    yield (dataset, regressor, config)
 
 
-def benchmark_name_generator(dataset_str, regressor, config, joiner):
+def benchmark_name_generator(dataset, regressor, config, joiner):
     if regressor is LinearRegression:
         config_str = f"_{config['n_bits']}"
     elif regressor is LinearSVR:
@@ -227,34 +169,22 @@ def benchmark_name_generator(dataset_str, regressor, config, joiner):
     else:
         raise ValueError
 
-    return regressor.__name__ + config_str + joiner + dataset_str
+    return regressor.__name__ + config_str + joiner + dataset
 
 
-# We run all the regressor that we want to benchmark over all datasets listed
-@progress.track(
-    [
-        {
-            "id": benchmark_name_generator(dataset_str, regressor, config, "_"),
-            "name": benchmark_name_generator(dataset_str, regressor, config, " on "),
-            "parameters": {
-                "regressor": regressor,
-                "dataset_str": dataset_str,
-                "dataset_fun": dataset_fun,
-                "config": config,
-            },
-            "samples": 1,
-        }
-        for (dataset_str, dataset_fun, regressor, config) in benchmark_generator()
-    ]
-)
-def main(regressor, dataset_str, dataset_fun, config):
-    """
-    Our regressor benchmark. Use some synthetic data to train a regressor model,
-    then fit a model with sklearn. We quantize the sklearn model and compile it to FHE.
-    We compute the training loss for the quantized and FHE models and compare them. We also
-    predict on a test set and compare FHE results to predictions from the quantized model
-    """
-    X, y, _ = dataset_fun()
+def train_and_test_on_dataset(regressor, dataset, config, local_args):
+
+    # Could be changed but not very useful
+    size_of_compilation_dataset = 1000
+
+    if local_args.verbose:
+        print("Start")
+        time_current = time.time()
+
+    version = dataset_versions.get(dataset, "active")
+    X, y = fetch_openml(name=dataset, version=version, as_frame=False, cache=True, return_X_y=True)
+    if y.ndim == 1:
+        y = np.expand_dims(y, 1)
 
     if regressor is NeuralNetRegressor:
         # Cast to a type that works for both sklearn and Torch
@@ -273,18 +203,30 @@ def main(regressor, dataset_str, dataset_fun, config):
         config["module__input_dim"] = x_train.shape[1]
         config["module__n_outputs"] = y_train.shape[1] if y_train.ndim == 2 else 1
 
-    print("Dataset:", dataset_str)
-    print("Config:", config)
-
     concrete_regressor = regressor(**config)
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Fit")
 
     # We call fit_benchmark to both fit our Concrete ML regressors but also to return the sklearn
     # one that we would use if we were not using FHE. This regressor will be our baseline
     concrete_regressor, sklearn_regressor = concrete_regressor.fit_benchmark(x_train, y_train)
 
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Predict with scikit-learn")
+
     # Predict with the sklearn regressor and compute goodness of fit
     y_pred_sklearn = sklearn_regressor.predict(x_test)
     run_and_report_regression_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Predict in clear")
 
     # Now predict with our regressor and report its goodness of fit
     y_pred_q = concrete_regressor.predict(x_test, execute_in_fhe=False)
@@ -292,18 +234,39 @@ def main(regressor, dataset_str, dataset_fun, config):
 
     n_features = X.shape[1] if X.ndim == 2 else 1
 
-    if should_test_config_in_fhe(regressor, config, n_features):
-        x_test_comp = x_test[0:N_MAX_COMPILE_FHE, :]
+    if should_test_config_in_fhe(regressor, config, n_features, local_args):
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Compile")
+
+        x_test_comp = x_test[0:size_of_compilation_dataset, :]
 
         # Compile and report compilation time
         t_start = time.time()
-        concrete_regressor.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
+        forward_fhe = concrete_regressor.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
         duration = time.time() - t_start
         progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
 
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Key generation")
+
+        t_start = time.time()
+        forward_fhe.keygen()
+        duration = time.time() - t_start
+        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print(f"Predict in FHE ({local_args.fhe_samples} samples)")
+
         # To keep the test short and to fit in RAM we limit the number of test samples
-        x_test = x_test[0:N_MAX_RUN_FHE, :]
-        y_test = y_test[0:N_MAX_RUN_FHE]
+        x_test = x_test[0 : local_args.fhe_samples, :]
+        y_test = y_test[0 : local_args.fhe_samples]
 
         # Now predict with our regressor and report its goodness of fit. We also measure
         # execution time per test sample
@@ -314,7 +277,10 @@ def main(regressor, dataset_str, dataset_fun, config):
         run_and_report_regression_metrics(y_test, y_pred_c, "fhe", "FHE")
 
         run_and_report_regression_metrics(
-            y_test, y_pred_q[0:N_MAX_RUN_FHE], "quant-clear-fhe-set", "Quantized Clear on FHE set"
+            y_test,
+            y_pred_q[0 : local_args.fhe_samples],
+            "quant-clear-fhe-set",
+            "Quantized Clear on FHE set",
         )
 
         progress.measure(
@@ -322,3 +288,112 @@ def main(regressor, dataset_str, dataset_fun, config):
             label="FHE Inference Time per sample",
             value=duration / x_test.shape[0] if x_test.shape[0] > 0 else 0,
         )
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("End")
+
+
+def argument_manager():
+    # Manage arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
+    parser.add_argument(
+        "--datasets",
+        choices=possible_datasets,
+        type=str,
+        nargs="+",
+        default=None,
+        help="dataset(s) to use",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=random.randint(0, 2**32 - 1),
+        help="set the seed for reproducibility",
+    )
+    parser.add_argument(
+        "--regressors",
+        choices=regressors_string_to_class.keys(),
+        nargs="+",
+        default=None,
+        help="regressors(s) to use",
+    )
+    parser.add_argument(
+        "--configs",
+        nargs="+",
+        type=json.loads,
+        default=None,
+        help="config(s) to use",
+    )
+    parser.add_argument(
+        "--model_samples",
+        type=int,
+        default=1,
+        help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+    )
+    parser.add_argument(
+        "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
+    )
+    parser.add_argument(
+        "--execute_in_fhe",
+        action="store_true",
+        default="auto",
+        help="force to execute in FHE (default is to use should_test_config_in_fhe function)",
+    )
+    parser.add_argument(
+        "--dont_execute_in_fhe",
+        action="store_true",
+        help="force to not execute in FHE (default is to use should_test_config_in_fhe function)",
+    )
+    args, _ = parser.parse_known_args()
+    if args.dont_execute_in_fhe:
+        assert args.execute_in_fhe == "auto"
+        args.execute_in_fhe = False
+
+    if args.datasets is None:
+        args.datasets = possible_datasets
+    if args.regressors is None:
+        args.regressors = possible_regressors
+    else:
+        args.regressors = [regressors_string_to_class[c] for c in args.regressors]
+
+    return args
+
+
+def main():
+
+    # Parameters by the user
+    args = argument_manager()
+
+    print(f"Will perform benchmarks on {len(list(benchmark_generator(args)))} test cases")
+    print(f"Using --seed {args.seed}")
+
+    # Seed everything we can
+    seed_everything(args.seed)
+
+    # We run all the regressor that we want to benchmark over all datasets listed
+    @progress.track(
+        [
+            {
+                "id": benchmark_name_generator(dataset, regressor, config, "_"),
+                "name": benchmark_name_generator(dataset, regressor, config, " on "),
+                "parameters": {"regressor": regressor, "dataset": dataset, "config": config},
+                "samples": args.model_samples,
+            }
+            for (dataset, regressor, config) in benchmark_generator(args)
+        ]
+    )
+    def perform_benchmark(regressor, dataset, config):
+        """
+        Our regressor benchmark. Use some synthetic data to train a regressor model,
+        then fit a model with sklearn. We quantize the sklearn model and compile it to FHE.
+        We compute the training loss for the quantized and FHE models and compare them. We also
+        predict on a test set and compare FHE results to predictions from the quantized model
+        """
+        train_and_test_on_dataset(regressor, dataset, config, args)
+
+
+if __name__ == "__main__":
+    main()

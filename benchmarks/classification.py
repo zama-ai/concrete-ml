@@ -368,11 +368,18 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
     return classifier.__name__ + config_str + joiner + dataset
 
 
-def common_argument_manager():
+def argument_manager():
     # Manage arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
-    parser.add_argument("--datasets", type=str, nargs="+", default=None, help="dataset(s) to use")
+    parser.add_argument(
+        "--datasets",
+        choices=possible_datasets,
+        type=str,
+        nargs="+",
+        default=None,
+        help="dataset(s) to use",
+    )
     parser.add_argument(
         "--seed",
         type=int,
@@ -431,7 +438,7 @@ def common_argument_manager():
 def main():
 
     # Parameters by the user
-    args = common_argument_manager()
+    args = argument_manager()
 
     print(f"Will perform benchmarks on {len(list(benchmark_generator(args)))} test cases")
     print(f"Using --seed {args.seed}")
