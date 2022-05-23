@@ -77,17 +77,15 @@ regressors = [
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_pandas(model, parameters, load_data):
-    """Tests that calling fit multiple times gives the same results"""
-
-    # FIXME: LinearRegression problem
-    if model.__name__ == "LinearRegression":
-        return
+    """Tests that we can use Pandas for inputs to fit"""
 
     x, y = load_data(random_state=numpy.random.randint(0, 2**15), **parameters)
 
     # Turn to Pandas
     x = pandas.DataFrame(x)
-    y = pandas.Series(y)
+
+    if y.ndim == 1:
+        y = pandas.Series(y)
 
     model = model(n_bits=2)
 
@@ -104,7 +102,7 @@ def test_pandas(model, parameters, load_data):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
         model.fit(x, y)
-        model.predict(x.to_numpy())
+        model.predict(x)
 
 
 def test_pandas_qnn(load_data):
@@ -149,5 +147,33 @@ def test_pandas_qnn(load_data):
         model_params["random_state"] = numpy.random.randint(0, 2**15)
     model.set_params(**model_params)
 
-    model.fit(x, y)
+    # FIXME: still to be done
+    model.fit(x.to_numpy(), y.to_numpy())
     model.predict(x.to_numpy())
+
+
+@pytest.mark.parametrize("model", classifier_models + regression_models)
+@pytest.mark.parametrize(
+    "bad_value, expected_error",
+    [
+        (numpy.nan, "Input X contains NaN."),
+        (None, "Input X contains NaN."),
+        ("this", "could not convert string to float: 'this'"),
+    ],
+)
+def test_failure_bad_param(model, bad_value, expected_error):
+    """Check our checks see if ever the Panda dataset is not correct."""
+    dic = {
+        "Col One": [1, 2, bad_value, 3],
+        "Col Two": [4, 5, 6, bad_value],
+        "Col Three": [bad_value, 7, 8, 9],
+    }
+
+    # Creating a dataframe using dictionary
+    x_train = pandas.DataFrame(dic)
+    y_train = x_train["Col Three"]
+
+    model = model(n_bits=2)
+
+    with pytest.raises(ValueError, match=expected_error):
+        model.fit(x_train, y_train)

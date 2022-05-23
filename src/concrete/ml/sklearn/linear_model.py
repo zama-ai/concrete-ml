@@ -3,6 +3,7 @@ import numpy
 import onnx
 import sklearn.linear_model
 
+from ..common.check_inputs import check_array_and_assert
 from ..onnx.onnx_model_manipulations import keep_following_outputs_discard_others
 from .base import SklearnLinearModelMixin
 
@@ -132,6 +133,9 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         Returns:
             numpy.ndarray: class probabilities for samples
         """
+
+        X = check_array_and_assert(X)
+
         y_preds = self.decision_function(X, execute_in_fhe)
         if y_preds.shape[1] == 1:
             # Sigmoid already applied in the graph
@@ -148,6 +152,7 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
     # and not SklearnLinearModelMixin.clean_graph
     # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        X = check_array_and_assert(X)
         y_preds = self.predict_proba(X, execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
         return y_preds

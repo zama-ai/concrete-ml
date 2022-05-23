@@ -21,6 +21,7 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
+from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
 from ..onnx.onnx_model_manipulations import simplify_onnx_model
@@ -144,17 +145,11 @@ class QuantizedTorchEstimatorMixin:
         torch training step, this method performs quantization of the trained torch model.
 
         Args:
-            X : training data, compatible with skorch.dataset.Dataset
+            X : training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
-                * scipy sparse CSR matrices
-                * a dictionary of the former three
-                * a list/tuple of the former three
-                * a Dataset
-                If this doesn't work with your data, you have to pass a
-                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): labels associated with training data
             **fit_params: additional parameters that can be used during training, these are passed
                 to the torch training interface
@@ -162,9 +157,6 @@ class QuantizedTorchEstimatorMixin:
         Returns:
             self: the trained quantized estimator
         """
-
-        X, y = sklearn.utils.check_X_y(X, y)
-
         # Reset the quantized module since quantization is lost during refit
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
@@ -273,17 +265,11 @@ class QuantizedTorchEstimatorMixin:
         to compare performance between the quantized and fp32 versions of the classifier
 
         Args:
-            X : training data, compatible with skorch.dataset.Dataset
+            X : training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
-                * scipy sparse CSR matrices
-                * a dictionary of the former three
-                * a list/tuple of the former three
-                * a Dataset
-                If this doesn't work with your data, you have to pass a
-                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): labels associated with training data
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
@@ -388,24 +374,18 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         """Fit the tree-based estimator.
 
         Args:
-            X : training data, compatible with skorch.dataset.Dataset
+            X : training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
-                * scipy sparse CSR matrices
-                * a dictionary of the former three
-                * a list/tuple of the former three
-                * a Dataset
-                If this doesn't work with your data, you have to pass a
-                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): The target data.
             **kwargs: args for super().fit
 
         Returns:
             Any: The fitted model.
         """
-        X, y = sklearn.utils.check_X_y(X, y)
+        X, y = check_X_y_and_assert(X, y)
 
         # mypy
         assert self.n_bits is not None
@@ -457,6 +437,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         Returns:
             numpy.ndarray: The predicted target values.
         """
+        X = check_array_and_assert(X)
+
         y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
         if self.class_mapping_ is not None:
@@ -473,6 +455,9 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
+
+        X = check_array_and_assert(X)
+
         # mypy
         assert self._tensor_tree_predict is not None
         qX = self.quantize_input(X)
@@ -677,17 +662,11 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         """Fit the FHE linear model.
 
         Args:
-            X : training data, compatible with skorch.dataset.Dataset
+            X : training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
-                * scipy sparse CSR matrices
-                * a dictionary of the former three
-                * a list/tuple of the former three
-                * a Dataset
-                If this doesn't work with your data, you have to pass a
-                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): The target data.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
@@ -696,9 +675,8 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # Copy X
         X = copy.deepcopy(X)
 
-        # FIXME: not for LinearRegression
-        if self.sklearn_alg.__name__ != "LinearRegression":
-            X, y = sklearn.utils.check_X_y(X, y)
+        # For LinearRegression, we can have multi-labels
+        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
 
         # Train
 
@@ -827,6 +805,9 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         Returns:
             numpy.ndarray: the prediction as ordinals
         """
+
+        X = check_array_and_assert(X)
+
         # Quantize the input
         qX = self.quantized_module.quantize_input(X)
 

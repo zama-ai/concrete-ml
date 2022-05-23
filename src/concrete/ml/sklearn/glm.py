@@ -9,6 +9,7 @@ import numpy
 import sklearn
 import torch
 
+from ..common.check_inputs import check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
@@ -55,17 +56,11 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         """Fit the GLM regression quantized model.
 
         Args:
-            X : training data, compatible with skorch.dataset.Dataset
+            X : training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
-                * scipy sparse CSR matrices
-                * a dictionary of the former three
-                * a list/tuple of the former three
-                * a Dataset
-                If this doesn't work with your data, you have to pass a
-                ``Dataset`` that can deal with the data.
             y (numpy.ndarray): The target data.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
@@ -73,7 +68,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
         # Copy X
         X = copy.deepcopy(X)
-        X, y = sklearn.utils.check_X_y(X, y)
+        X, y = check_X_y_and_assert(X, y)
 
         # Retrieving the Sklearn parameters
         params = self.get_params()
