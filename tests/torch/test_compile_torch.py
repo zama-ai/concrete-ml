@@ -596,9 +596,13 @@ def test_compile_torch_qat(
     n_bits,
     default_configuration,
     use_virtual_lib,
+    is_vl_only_option,
     check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
 
     model = partial(model, n_bits=n_bits)
 

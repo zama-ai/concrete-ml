@@ -106,12 +106,13 @@ def compile_and_test_keras(
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_compile_keras_networks(
-    input_output_feature,
-    model,
-    default_configuration,
-    use_virtual_lib,
+    input_output_feature, model, default_configuration, use_virtual_lib, is_vl_only_option
 ):
     """Test the different model architecture from Keras."""
+    if not use_virtual_lib and is_vl_only_option:
+        print("Warning, skipping non VL tests")
+        return
+
     compile_and_test_keras(
         input_output_feature,
         model,
