@@ -1,17 +1,18 @@
+import argparse
+import json
 import math
+import random
+import time
 from typing import Dict, Tuple, Union
 
 import numpy as np
 import pandas
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION
+from common import BENCHMARK_CONFIGURATION, seed_everything
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA
-from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
-from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
-from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
 from sklearn.metrics import mean_tweedie_deviance
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
@@ -22,9 +23,10 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 
-from concrete.ml.sklearn import GammaRegressor as ConcreteGammaRegressor
-from concrete.ml.sklearn import PoissonRegressor as ConcretePoissonRegressor
-from concrete.ml.sklearn import TweedieRegressor as ConcreteTweedieRegressor
+from concrete.ml.sklearn import GammaRegressor, PoissonRegressor, TweedieRegressor
+
+glm_regressors = [GammaRegressor, PoissonRegressor, TweedieRegressor]
+glm_regressors_string_to_class = {c.__name__: c for c in glm_regressors}
 
 
 # pylint: disable=redefined-outer-name
@@ -126,14 +128,18 @@ def get_train_test_data(data: pandas.DataFrame) -> Tuple[pandas.DataFrame, panda
     return train_data, test_data
 
 
-def get_config() -> Tuple[list, Dict]:
+def get_config(args) -> Tuple[list, Dict]:
     """Fix the GLM parameters used for initialization, fitting, prediction and score evaluation."""
 
-    n_bits_to_tests = [
-        {"inputs": 2, "weights": 2, "outputs": 8},
-        {"inputs": 3, "weights": 2, "outputs": 8},
-        {"inputs": 3, "weights": 3, "outputs": 8},
-    ]
+    # Retrieving the number of bits to benchmark on
+    if args.configs is None:
+        n_bits_to_test = [
+            {"net_inputs": 5, "op_inputs": 2, "op_weights": 2, "net_outputs": 5},
+            {"net_inputs": 5, "op_inputs": 3, "op_weights": 2, "net_outputs": 5},
+            {"net_inputs": 5, "op_inputs": 3, "op_weights": 3, "net_outputs": 5},
+        ]
+    else:
+        n_bits_to_test = args.configs["n_bits"]
 
     # Fetching the data and initializing the parameters
     data = get_data()
@@ -145,9 +151,8 @@ def get_config() -> Tuple[list, Dict]:
     gamma_mask_test = test_data["ClaimAmount"] > 0
 
     parameters_glms = {
-        "Poisson": {
-            "sklearn": SklearnPoissonRegressor,
-            "concrete": ConcretePoissonRegressor,
+        "PoissonRegressor": {
+            "regressor": PoissonRegressor,
             "init_parameters": {
                 "alpha": 1e-3,
                 "max_iter": 400,
@@ -164,9 +169,8 @@ def get_config() -> Tuple[list, Dict]:
                 "power": 1,
             },
         },
-        "Gamma": {
-            "sklearn": SklearnGammaRegressor,
-            "concrete": ConcreteGammaRegressor,
+        "GammaRegressor": {
+            "regressor": GammaRegressor,
             "init_parameters": {
                 "alpha": 1e-3,
                 "max_iter": 300,
@@ -183,9 +187,8 @@ def get_config() -> Tuple[list, Dict]:
                 "power": 2,
             },
         },
-        "Tweedie": {
-            "sklearn": SklearnTweedieRegressor,
-            "concrete": ConcreteTweedieRegressor,
+        "TweedieRegressor": {
+            "regressor": TweedieRegressor,
             "init_parameters": {
                 "power": 1.9,
                 "alpha": 0.1,
@@ -204,7 +207,17 @@ def get_config() -> Tuple[list, Dict]:
             },
         },
     }
-    return n_bits_to_tests, parameters_glms
+
+    # Only keeping the desired regressors
+    if args.configs is None:
+        parameters_glms_filtered = {
+            regressor: parameters_glms[regressor] for regressor in args.regressors
+        }
+    else:
+        assert len(args.configs) == len(args.regressors)
+        parameters_glms_filtered = dict(zip(args.regressors, args.configs))
+
+    return n_bits_to_test, parameters_glms_filtered
 
 
 def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
@@ -213,8 +226,8 @@ def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
         n_bits_inputs = n_bits
         n_bits_weights = n_bits
     else:
-        n_bits_inputs = n_bits["inputs"]
-        n_bits_weights = n_bits["weights"]
+        n_bits_inputs = n_bits["op_inputs"]
+        n_bits_weights = n_bits["op_weights"]
 
     n_components = math.floor(
         (2**MAXIMUM_BIT_WIDTH - 1) / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
@@ -236,13 +249,14 @@ def score_estimator(
 
     # Concrete predictions' shape is (n, 1) but mean_tweedie_deviance only accepts arrays
     # of shape (n,)
-    y_pred = np.squeeze(y_pred)
+    y_pred = np.squeeze(y_pred, axis=1)
 
     # Find all strictly positive values
     mask = y_pred > 0
 
     # If any non-positive values are found, issue a warning
     number_of_negative_values = mask.shape[0] - mask.sum()
+
     if number_of_negative_values > 0:
         print(
             "WARNING: Estimator yields invalid, non-positive predictions "
@@ -266,8 +280,8 @@ def get_benchmark_id(n_bits) -> str:
         n_bits_inputs = n_bits
         n_bits_weights = n_bits
     else:
-        n_bits_inputs = n_bits["inputs"]
-        n_bits_weights = n_bits["weights"]
+        n_bits_inputs = n_bits["op_inputs"]
+        n_bits_weights = n_bits["op_weights"]
 
     pca_n_components = compute_number_of_components(n_bits)
 
@@ -277,114 +291,208 @@ def get_benchmark_id(n_bits) -> str:
     )
 
 
-n_bits_to_tests, parameters_glms = get_config()
+def argument_manager():
+    """Manage input arguments from the user."""
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=random.randint(0, 2**32 - 1),
+        help="set the seed for reproducibility",
+    )
+    parser.add_argument(
+        "--regressors",
+        choices=glm_regressors_string_to_class.keys(),
+        nargs="+",
+        default=None,
+        help="regressors(s) to use",
+    )
+    parser.add_argument(
+        "--configs",
+        nargs="+",
+        type=json.loads,
+        default=None,
+        help="config(s) to use",
+    )
+    parser.add_argument(
+        "--model_samples",
+        type=int,
+        default=1,
+        help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+    )
+    parser.add_argument(
+        "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
+    )
+
+    args, _ = parser.parse_known_args()
+
+    if args.regressors is None:
+        args.regressors = glm_regressors_string_to_class.keys()
+
+    return args
 
 
-@progress.track(
-    [
-        {
-            "id": glm + get_benchmark_id(n_bits),
-            "name": glm + " Regressor",
-            "parameters": {"glm": glm, "parameters": parameters, "n_bits": n_bits},
-            "samples": 1,
-        }
-        for glm, parameters in parameters_glms.items()
-        for n_bits in n_bits_to_tests
-    ]
-)
-def main(glm: str, parameters: Dict, n_bits: Union[Dict, int]) -> None:
-    """
-    This is our main benchmark function. It gets the datas and trains the available GLM models in
-    four different ways:
-    - using scikit-learn's model, in clear
-    - using scikit-learn's model on PCA reduced features, in clear
-    - using Concrete-ML's model on PCA reduced features, in clear
-    - using Concrete-ML's model on PCA reduced features, in FHE
-    The corresponding deviance scores are then computed in order to determine the impact of
-    quantization on the models' performances as well as to verify that executing them in FHE
-    correctly gives the same outputs as its equivalent model compiled 'in clear'.
-    """
-    concrete_regressor = parameters["concrete"]
-    init_parameters = parameters["init_parameters"]
+def main():
+    # Parameters from the user
+    args = argument_manager()
 
-    preprocessor = get_preprocessor()
+    # Seed everything possible
+    seed_everything(args.seed)
 
-    # Compute the maximum number of PCA components possible for executing the model in FHE
-    n_components = compute_number_of_components(n_bits)
+    n_bits_to_test, parameters_glms = get_config(args)
 
-    # Let's instantiate the pipelines
-    concrete_model_pca = Pipeline(
+    print(f"Will perform benchmarks on {len(n_bits_to_test)*len(parameters_glms)} test cases")
+    print(f"Using --seed {args.seed}")
+
+    @progress.track(
         [
-            ("preprocessor", preprocessor),
-            ("pca", PCA(n_components=n_components, whiten=True)),
-            ("regressor", concrete_regressor(n_bits=n_bits, **init_parameters)),
+            {
+                "id": glm + get_benchmark_id(n_bits),
+                "name": glm + " Regressor",
+                "parameters": {"glm": glm, "parameters": parameters, "n_bits": n_bits},
+                "samples": args.model_samples,
+            }
+            for glm, parameters in parameters_glms.items()
+            for n_bits in n_bits_to_test
         ]
     )
+    def perform_benchmark(glm: str, parameters: Dict, n_bits: Union[Dict, int]) -> None:
+        """
+        This is our main benchmark function. It gets the datas and trains the available GLM models
+        in four different ways:
+        - using scikit-learn's model, in clear
+        - using scikit-learn's model on PCA reduced features, in clear
+        - using Concrete-ML's model on PCA reduced features, in clear
+        - using Concrete-ML's model on PCA reduced features, in FHE
+        The corresponding deviance scores are then computed in order to determine the impact of
+        quantization on the models' performances as well as to verify that executing them in FHE
+        correctly gives the same outputs as its equivalent model compiled 'in clear'.
+        """
+        if args.verbose:
+            print("Start")
+            time_current = time.time()
 
-    # Fitting the models
-    fit_parameters = parameters["fit_parameters"]
-    concrete_model_pca.fit(**fit_parameters)
+        regressor = parameters["regressor"]
+        init_parameters = parameters["init_parameters"]
 
-    # Compute the predictions
-    x_test = parameters["x_test"]
-    concrete_predictions = concrete_model_pca.predict(x_test, execute_in_fhe=False)
+        preprocessor = get_preprocessor()
 
-    # Compile the Concrete-ML model for FHE, which needs some preprocessed data in order to run
-    x_train_subset_pca = concrete_model_pca["pca"].transform(
-        concrete_model_pca["preprocessor"].transform(fit_parameters["X"].head(100))
-    )
-    concrete_model_pca["regressor"].compile(  # pylint: disable=no-member
-        x_train_subset_pca,
-        use_virtual_lib=False,
-        configuration=BENCHMARK_CONFIGURATION,
-        show_mlir=False,
-    )
+        # Compute the maximum number of PCA components possible for executing the model in FHE
+        n_components = compute_number_of_components(n_bits)
 
-    # Compute the predictions in FHE and measure its running time (ms)
-    measure_id = "fhe-predict-evaluation-time-ms"
-    with progress.measure(id=measure_id, label="FHE Inference Time (ms)"):
-        concrete_fhe_predictions = concrete_model_pca.predict(x_test, execute_in_fhe=True)
+        # Let's instantiate the pipelines
+        model_pca = Pipeline(
+            [
+                ("preprocessor", preprocessor),
+                ("pca", PCA(n_components=n_components, whiten=True)),
+                ("regressor", regressor(n_bits=n_bits, **init_parameters)),
+            ]
+        )
 
-    # Add a measurement of running time (ms) per sample
-    progress.measure(
-        id="fhe-inference-time-ms-per-sample",
-        label="FHE Inference Time per sample (ms)",
-        value=(progress.state.MEASUREMENTS[measure_id][-1] / x_test.shape[0])
-        if x_test.shape[0] > 0
-        else 0,
-    )
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current:.4f} seconds")
+            time_current = time.time()
+            print("Fit")
 
-    # Compute the deviance scores
-    score_parameters = parameters["score_parameters"]
-    concrete_score = score_estimator(y_pred=concrete_predictions, **score_parameters)
-    concrete_fhe_score = score_estimator(y_pred=concrete_fhe_predictions, **score_parameters)
+        # Fitting the models
+        fit_parameters = parameters["fit_parameters"]
+        model_pca.fit(**fit_parameters)
 
-    # Let's check what prediction performance we lose due to PCA
-    print(glm, ":")
-    print("Evaluation in clear with PCA transformation (Concrete-ML):", concrete_score)
-    progress.measure(
-        id="non-homomorphic-deviance-score",
-        label="Non Homomorphic Deviance Score",
-        value=concrete_score,
-    )
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current:.4f} seconds")
+            time_current = time.time()
+            print("Predict in clear")
 
-    print("Evaluation in FHE with PCA transformation (Concrete-ML):", concrete_fhe_score)
-    progress.measure(
-        id="homomorphic-deviance-score",
-        label="Homomorphic Deviance Score",
-        value=concrete_fhe_score,
-    )
+        # Compute the predictions and limit the number of test samples in order to fit in the RAM
+        x_test = parameters["x_test"].head(args.fhe_samples)
 
-    # Let's make sure both models executed in clear and FHE output the same deviance score
-    if concrete_fhe_score > 0.001:
-        score_difference = abs(concrete_score - concrete_fhe_score) * 100 / concrete_fhe_score
-    else:
-        score_difference = 0
+        predictions = model_pca.predict(x_test, execute_in_fhe=False)
 
-    print(f"Percentage difference: {score_difference}%")
-    progress.measure(
-        id="relative-deviance-score-difference-percent",
-        label="Relative Deviance Score Difference (%)",
-        value=score_difference,
-        alert=(">", 7.5),
-    )
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current:.4f} seconds")
+            time_current = time.time()
+            print("Compile")
+
+        # Compile the Concrete-ML model for FHE, which needs some preprocessed data in order to run
+        x_train_subset_pca = model_pca["pca"].transform(
+            model_pca["preprocessor"].transform(fit_parameters["X"].head(100))
+        )
+        model_pca["regressor"].compile(  # pylint: disable=no-member
+            x_train_subset_pca,
+            use_virtual_lib=False,
+            configuration=BENCHMARK_CONFIGURATION,
+            show_mlir=False,
+        )
+
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current:.4f} seconds")
+            time_current = time.time()
+            print(f"Predict in FHE ({args.fhe_samples} samples)")
+
+        # Compute the predictions in FHE and measure its running time (ms)
+        measure_id = "fhe-predict-evaluation-time-ms"
+        with progress.measure(id=measure_id, label="FHE Inference Time (ms)"):
+            fhe_predictions = model_pca.predict(x_test, execute_in_fhe=True)
+
+        # Add a measurement of running time (ms) per sample
+        progress.measure(
+            id="fhe-inference-time-ms-per-sample",
+            label="FHE Inference Time per sample (ms)",
+            value=(progress.state.MEASUREMENTS[measure_id][-1] / x_test.shape[0])
+            if x_test.shape[0] > 0
+            else 0,
+        )
+
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current:.4f} seconds")
+            time_current = time.time()
+            print("Computing scores")
+
+        # Compute the deviance scores
+        score_parameters = parameters["score_parameters"]
+        score_parameters["y_true"] = score_parameters["y_true"].head(args.fhe_samples)
+        score_parameters["sample_weight"] = score_parameters["sample_weight"].head(args.fhe_samples)
+
+        score = score_estimator(y_pred=predictions, **score_parameters)
+        fhe_score = score_estimator(y_pred=fhe_predictions, **score_parameters)
+
+        # Let's check what prediction performance we lose due to PCA
+        print(glm, ":")
+        print("Evaluation in clear with PCA transformation (Concrete-ML):", score)
+        progress.measure(
+            id="non-homomorphic-deviance-score",
+            label="Non Homomorphic Deviance Score",
+            value=score,
+        )
+
+        print("Evaluation in FHE with PCA transformation (Concrete-ML):", fhe_score)
+        progress.measure(
+            id="homomorphic-deviance-score",
+            label="Homomorphic Deviance Score",
+            value=fhe_score,
+        )
+
+        # Let's make sure both models executed in clear and FHE output the same deviance score
+        if fhe_score > 0.001:
+            score_difference = abs(score - fhe_score) * 100 / fhe_score
+        else:
+            score_difference = 0
+
+        print(f"Percentage difference: {score_difference}%")
+        progress.measure(
+            id="relative-deviance-score-difference-percent",
+            label="Relative Deviance Score Difference (%)",
+            value=score_difference,
+            alert=(">", 7.5),
+        )
+
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current:.4f} seconds")
+            time_current = time.time()
+            print("End")
+
+
+if __name__ == "__main__":
+    main()
