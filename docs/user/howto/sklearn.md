@@ -79,7 +79,7 @@ clf.compile(X_train_transformed)
 N_TEST_FHE = 1
 y_pred_fhe = clf.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
 
-# Assert that FHE predictions are the same a the clear predictions
+# Assert that FHE predictions are the same as the clear predictions
 print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
       f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
 ```
