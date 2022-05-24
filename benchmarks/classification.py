@@ -420,7 +420,14 @@ def argument_manager():
         action="store_true",
         help="force to not execute in FHE (default is to use should_test_config_in_fhe function)",
     )
-    args, _ = parser.parse_known_args()
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="just list the different tasks and stop",
+    )
+
+    args = parser.parse_args()
+
     if args.dont_execute_in_fhe:
         assert args.execute_in_fhe == "auto"
         args.execute_in_fhe = False
@@ -440,11 +447,24 @@ def main():
     # Parameters by the user
     args = argument_manager()
 
-    print(f"Will perform benchmarks on {len(list(benchmark_generator(args)))} test cases")
-    print(f"Using --seed {args.seed}")
-
     # Seed everything we can
     seed_everything(args.seed)
+
+    all_tasks = benchmark_generator(args)
+
+    if args.list:
+        print("\nList of equivalent individual calls:\n")
+
+        for (dataset_i, classifier_i, config_i) in all_tasks:
+            config_n = str(config_i).replace("'", '"')
+            print(
+                f"--classifiers {classifier_i.__name__} --datasets {dataset_i} "
+                f"--configs '{config_n}'"
+            )
+        return
+
+    print(f"Will perform benchmarks on {len(list(all_tasks))} test cases")
+    print(f"Using --seed {args.seed}")
 
     # We run all the classifiers that we want to benchmark over all datasets listed
     @progress.track(
@@ -455,7 +475,7 @@ def main():
                 "parameters": {"classifier": classifier, "dataset": dataset, "config": config},
                 "samples": args.model_samples,
             }
-            for (dataset, classifier, config) in benchmark_generator(args)
+            for (dataset, classifier, config) in all_tasks
         ]
     )
     def perform_benchmark(classifier, dataset, config):

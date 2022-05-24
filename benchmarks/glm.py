@@ -325,8 +325,13 @@ def argument_manager():
     parser.add_argument(
         "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
     )
+    parser.add_argument(
+        "--list",
+        action="store_true",
+        help="just list the different tasks and stop",
+    )
 
-    args, _ = parser.parse_known_args()
+    args = parser.parse_args()
 
     if args.regressors is None:
         args.regressors = glm_regressors_string_to_class.keys()
@@ -342,6 +347,12 @@ def main():
     seed_everything(args.seed)
 
     n_bits_to_test, parameters_glms = get_config(args)
+
+    if args.list:
+        print("\nList of equivalent individual calls:\n")
+
+        # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/1054: Roman to fill
+        return
 
     print(f"Will perform benchmarks on {len(n_bits_to_test)*len(parameters_glms)} test cases")
     print(f"Using --seed {args.seed}")
