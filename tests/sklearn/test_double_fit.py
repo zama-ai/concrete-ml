@@ -1,83 +1,26 @@
 """Tests common to all sklearn models."""
 import warnings
+from functools import partial
 
 import numpy
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
+from shared import classifiers, regressors
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
-from concrete.ml.sklearn import (
-    DecisionTreeClassifier,
-    GammaRegressor,
-    LinearRegression,
-    LinearSVC,
-    LinearSVR,
-    LogisticRegression,
-    NeuralNetClassifier,
-    PoissonRegressor,
-    RandomForestClassifier,
-    TweedieRegressor,
-    XGBClassifier,
-)
-
-regression_models = [
-    GammaRegressor,
-    LinearRegression,
-    LinearSVR,
-    PoissonRegressor,
-    TweedieRegressor,
-]
-
-classifier_models = [
-    DecisionTreeClassifier,
-    RandomForestClassifier,
-    XGBClassifier,
-    LinearSVC,
-    LogisticRegression,
-]
-
-classifiers = [
-    pytest.param(
-        model,
-        {
-            "dataset": "classification",
-            "n_samples": 1000,
-            "n_features": 100,
-            "n_classes": n_classes,
-            "n_informative": 100,
-            "n_redundant": 0,
-        },
-        id=f"{model.__name__}_n_classes_{n_classes}",
-    )
-    for model in classifier_models
-    for n_classes in [2, 4]
-]
-
-# Only LinearRegression supports multi targets
-# GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
-regressors = [
-    pytest.param(
-        model,
-        {
-            "dataset": "regression",
-            "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
-            "n_samples": 200,
-            "n_features": 10,
-            "n_informative": 10,
-            "n_targets": 2 if model == LinearRegression else 1,
-            "noise": 0,
-        },
-        id=model.__name__,
-    )
-    for model in regression_models
-]
+from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_double_fit(model, parameters, load_data):
     """Tests that calling fit multiple times gives the same results"""
-    x, y = load_data(random_state=numpy.random.randint(0, 2**15), **parameters)
+    if isinstance(model, partial):
+        # Works differently for NeuralNetClassifier or NeuralNetRegressor
+        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+            return
+
+    x, y = load_data(**parameters)
 
     model = model(n_bits=2)
 

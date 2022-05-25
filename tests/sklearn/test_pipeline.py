@@ -1,9 +1,11 @@
 """Tests pipelines in our models."""
 import warnings
+from functools import partial
 
 import numpy
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
+from shared import classifiers, regressors
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -11,73 +13,16 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
-from concrete.ml.sklearn import (
-    DecisionTreeClassifier,
-    GammaRegressor,
-    LinearRegression,
-    LinearSVC,
-    LinearSVR,
-    LogisticRegression,
-    NeuralNetClassifier,
-    PoissonRegressor,
-    RandomForestClassifier,
-    TweedieRegressor,
-    XGBClassifier,
-)
-
-classifiers = [
-    pytest.param(
-        model,
-        {
-            "dataset": "classification",
-            "n_samples": 1000,
-            "n_features": 100,
-            "n_classes": 4,
-            "n_informative": 100,
-            "n_redundant": 0,
-            "random_state": numpy.random.randint(0, 2**15),
-        },
-        id=model.__name__,
-    )
-    for model in [
-        DecisionTreeClassifier,
-        RandomForestClassifier,
-        XGBClassifier,
-        LinearSVC,
-        LogisticRegression,
-    ]
-]
-
-# Only LinearRegression supports multi targets
-# GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
-regressors = [
-    pytest.param(
-        model,
-        {
-            "dataset": "regression",
-            "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
-            "n_samples": 200,
-            "n_features": 10,
-            "n_informative": 10,
-            "n_targets": 2 if model == LinearRegression else 1,
-            "noise": 0,
-            "random_state": numpy.random.randint(0, 2**15),
-        },
-        id=model.__name__,
-    )
-    for model in [
-        GammaRegressor,
-        LinearRegression,
-        LinearSVR,
-        PoissonRegressor,
-        TweedieRegressor,
-    ]
-]
+from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_pipeline_classifiers_regressors(model, parameters, load_data):
     """Tests that classifiers and regressors work well within sklearn pipelines."""
+    if isinstance(model, partial):
+        # Tested in test_pipeline_and_cv_qnn
+        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+            return
 
     x, y = load_data(**parameters)
 

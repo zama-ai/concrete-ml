@@ -21,7 +21,7 @@ from concrete.ml.sklearn import (
     TweedieRegressor,
 )
 
-regression_models = [
+regressor_models = [
     LinearRegression,
     LinearSVR,
     PoissonRegressor,
@@ -195,7 +195,7 @@ def get_datasets_classification(model):
 multiple_models_datasets: List[Any] = []
 models_datasets: List[Any] = []
 
-for regression_model in regression_models:
+for regression_model in regressor_models:
     datasets_regression = get_datasets_regression(regression_model)
     multiple_models_datasets += datasets_regression
     models_datasets.append(datasets_regression[0])
