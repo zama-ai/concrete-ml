@@ -72,7 +72,7 @@ def ml_check(args, keyring_dir_as_str):
         configuration=Configuration(
             enable_unsafe_features=True,  # This is for our tests only, never use that in prod
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
-            insecure_keycache_location=keyring_dir_as_str,
+            insecure_key_cache_location=keyring_dir_as_str,
         ),
         use_virtual_lib=True,
     )
@@ -109,7 +109,7 @@ def cn_check(args, keyring_dir_as_str):
     config = Configuration(
         enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
-        insecure_keycache_location=keyring_dir_as_str,
+        insecure_key_cache_location=keyring_dir_as_str,
     )
 
     print("Compiling...")

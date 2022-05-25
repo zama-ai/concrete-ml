@@ -166,7 +166,7 @@ def default_configuration():
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
-        insecure_keycache_location="ConcreteNumpyKeyCache",
+        insecure_key_cache_location="ConcreteNumpyKeyCache",
         jit=True,
     )
 
@@ -420,10 +420,7 @@ def load_data():
     """Fixture for generating random regression or classification problem."""
 
     def custom_load_data(
-        dataset: Union[str, Callable],
-        *args,
-        strictly_positive: bool = False,
-        **kwargs
+        dataset: Union[str, Callable], *args, strictly_positive: bool = False, **kwargs
     ):
         """Generate a random regression or classification problem.
 
@@ -436,15 +433,15 @@ def load_data():
         Args:
             dataset (str, Callable): Either "classification" or "regression" generating synthetic
                 datasets or a callable for any other dataset generation.
-            strictly_positive (bool): If True, the regression data will be only composed of stricly 
-                positive values. It has no effect on classification problems. Default to False.  
+            strictly_positive (bool): If True, the regression data will be only composed of stricly
+                positive values. It has no effect on classification problems. Default to False.
         """
 
-        # If the dataset should be generated for a classification problem. 
+        # If the dataset should be generated for a classification problem.
         if dataset == "classification":
             return make_classification(*args, **kwargs)
 
-        # If the dataset should be generated for a regression problem. 
+        # If the dataset should be generated for a regression problem.
         elif dataset == "regression":
             generated_regression = list(make_regression(*args, **kwargs))
 
@@ -453,9 +450,9 @@ def load_data():
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
 
             return tuple(generated_regression)
-        
+
         # Any other dataset to generate.
         else:
             return dataset()
-    
+
     return custom_load_data
