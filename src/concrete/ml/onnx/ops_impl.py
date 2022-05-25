@@ -962,7 +962,7 @@ def numpy_cast(data: numpy.ndarray, /, *, to: int) -> Tuple[numpy.ndarray]:
         result (numpy.ndarray): a tensor with the required data type
     """
     assert_true(to == onnx.TensorProto.BOOL)
-    return (data.astype(numpy.int64),)
+    return (data.astype(numpy.float64),)
 
 
 def numpy_batchnorm(
