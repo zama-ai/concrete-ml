@@ -73,9 +73,7 @@ linkcheckmd = "^1.4.0"
 keyring = "*"
 # pandas is required for some of our notebooks but not by our source code
 pandas = "^1.4.1"
-# jinja2 3.1 broke some other package, to be removed later once the packages are fixed
-# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/622
-jinja2 = "<3.1"
+jinja2 = "^3.1.2"
 LinkChecker = "^10.1.0"
 kaggle = "^1.5.12"
 tensorflow = "^2.8.0"

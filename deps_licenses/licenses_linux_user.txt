@@ -19,7 +19,7 @@ onnxconverter-common, 1.9.0, MIT License
 onnxmltools, 1.11.0, Apache Software License
 onnxruntime, 1.11.1, MIT License
 packaging, 21.3, Apache Software License; BSD License
-protobuf, 3.20.1, BSD-3-Clause
+protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.1, BSD License
 pygraphviz, 1.9, BSD License
 pyparsing, 3.0.9, MIT License
@@ -28,7 +28,7 @@ scikit-learn, 1.1.0, new BSD
 scipy, 1.8.1, BSD License
 setuptools-scm, 6.4.2, MIT License
 six, 1.16.0, MIT License
-skl2onnx, 1.11.1, Apache Software License
+skl2onnx, 1.11.2, Apache Software License
 skorch, 0.11.0, new BSD 3-Clause
 tabulate, 0.8.9, MIT License
 threadpoolctl, 3.1.0, BSD License
