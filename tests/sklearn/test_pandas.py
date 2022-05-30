@@ -1,85 +1,27 @@
 """Tests with Pandas."""
 import warnings
+from functools import partial
 
 import numpy
 import pandas
 import pytest
 from concrete.numpy import MAXIMUM_BIT_WIDTH
+from shared import classifier_models, classifiers, regressor_models, regressors
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
-from concrete.ml.sklearn import (
-    DecisionTreeClassifier,
-    GammaRegressor,
-    LinearRegression,
-    LinearSVC,
-    LinearSVR,
-    LogisticRegression,
-    NeuralNetClassifier,
-    PoissonRegressor,
-    RandomForestClassifier,
-    TweedieRegressor,
-    XGBClassifier,
-)
-
-regression_models = [
-    GammaRegressor,
-    LinearRegression,
-    LinearSVR,
-    PoissonRegressor,
-    TweedieRegressor,
-]
-
-classifier_models = [
-    DecisionTreeClassifier,
-    RandomForestClassifier,
-    XGBClassifier,
-    LinearSVC,
-    LogisticRegression,
-]
-
-classifiers = [
-    pytest.param(
-        model,
-        {
-            "dataset": "classification",
-            "n_samples": 1000,
-            "n_features": 100,
-            "n_classes": n_classes,
-            "n_informative": 100,
-            "n_redundant": 0,
-        },
-        id=f"{model.__name__}_n_classes_{n_classes}",
-    )
-    for model in classifier_models
-    for n_classes in [2, 4]
-]
-
-# Only LinearRegression supports multi targets
-# GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
-regressors = [
-    pytest.param(
-        model,
-        {
-            "dataset": "regression",
-            "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
-            "n_samples": 200,
-            "n_features": 10,
-            "n_informative": 10,
-            "n_targets": 2 if model == LinearRegression else 1,
-            "noise": 0,
-        },
-        id=model.__name__,
-    )
-    for model in regression_models
-]
+from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_pandas(model, parameters, load_data):
     """Tests that we can use Pandas for inputs to fit"""
+    if isinstance(model, partial):
+        # Works differently for NeuralNetClassifier or NeuralNetRegressor
+        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+            return
 
-    x, y = load_data(random_state=numpy.random.randint(0, 2**15), **parameters)
+    x, y = load_data(**parameters)
 
     # Turn to Pandas
     x = pandas.DataFrame(x)
@@ -152,7 +94,7 @@ def test_pandas_qnn(load_data):
     model.predict(x.to_numpy())
 
 
-@pytest.mark.parametrize("model", classifier_models + regression_models)
+@pytest.mark.parametrize("model", classifier_models + regressor_models)
 @pytest.mark.parametrize(
     "bad_value, expected_error",
     [
@@ -163,6 +105,11 @@ def test_pandas_qnn(load_data):
 )
 def test_failure_bad_param(model, bad_value, expected_error):
     """Check our checks see if ever the Panda dataset is not correct."""
+    if isinstance(model, partial):
+        # Works differently for NeuralNetClassifier or NeuralNetRegressor
+        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+            return
+
     dic = {
         "Col One": [1, 2, bad_value, 3],
         "Col Two": [4, 5, 6, bad_value],
