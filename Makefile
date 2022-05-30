@@ -92,8 +92,7 @@ pylint:
 
 .PHONY: pylint_src # Run pylint on sources
 pylint_src:
-	@# FIXME: #425 Disable duplicate code detection (R0801) in tests
-	poetry run pylint --rcfile=pylintrc $(SRC_DIR) --disable=R0801
+	poetry run pylint --rcfile=pylintrc $(SRC_DIR)
 
 .PHONY: pylint_tests # Run pylint on tests
 pylint_tests:
@@ -105,6 +104,7 @@ pylint_tests:
 
 .PHONY: pylint_benchmarks # Run pylint on benchmarks
 pylint_benchmarks:
+	@# Disable duplicate code detection (R0801) in benchmarks
 	@# Disable duplicate code detection, docstring requirement, too many locals/statements
 	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CN
 	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \

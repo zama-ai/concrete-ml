@@ -4,7 +4,7 @@ import onnx
 import sklearn.linear_model
 
 from ..common.check_inputs import check_array_and_assert
-from ..onnx.onnx_model_manipulations import keep_following_outputs_discard_others
+from ..onnx.onnx_model_manipulations import clean_graph_after_sigmoid
 from .base import SklearnLinearModelMixin
 
 
@@ -78,36 +78,18 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
-    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
-    # use clean_graph and predict from BaseLinearClassifierMixin
-    # but difficulties because we need to make python understand that
-    # LogisticRegression.clean_graph must be BaseLinearClassifierMixin.clean_graph
-    # and not SklearnLinearModelMixin.clean_graph
-    # pylint: disable=duplicate-code
-    # pylint: disable=R0801
+    # pylint: enable=too-many-arguments
+
     def clean_graph(self, onnx_model: onnx.ModelProto):
-        nodes_to_remove = []
-        output_to_follow = "variable"
-        # Find nodes to remove (after the sigmoid)
-        sigmoid_reached = False
-        for node in onnx_model.graph.node:
-            if sigmoid_reached:
-                nodes_to_remove.append(node)
-            if node.op_type == "Sigmoid":
-                sigmoid_reached = True
-                # Create output node
+        """Clean the graph of the onnx model.
 
-                onnx_model.graph.output[0].CopyFrom(
-                    onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
-                )
-                output_to_follow = node.output[0]
+        Args:
+            onnx_model (onnx.ModelProto): the onnx model
 
-        if sigmoid_reached:
-            # Remove nodes
-            for node in nodes_to_remove:
-                onnx_model.graph.node.remove(node)
-
-        keep_following_outputs_discard_others(onnx_model, [output_to_follow])
+        Returns:
+            onnx.ModelProto: the cleaned onnx model
+        """
+        onnx_model = clean_graph_after_sigmoid(onnx_model)
         return super().clean_graph(onnx_model)
 
     def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
@@ -145,12 +127,6 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
             y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
         return y_preds
 
-    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/425:
-    # use clean_graph and predict from BaseLinearClassifierMixin
-    # but difficulties because we need to make python understand that
-    # LogisticRegression.clean_graph must be BaseLinearClassifierMixin.clean_graph
-    # and not SklearnLinearModelMixin.clean_graph
-    # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/375: we need to refacto
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         X = check_array_and_assert(X)
         y_preds = self.predict_proba(X, execute_in_fhe)
@@ -158,4 +134,4 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         return y_preds
 
 
-# pylint: enable=duplicate-code,R0801,too-many-instance-attributes,invalid-name
+# pylint: enable=too-many-instance-attributes,invalid-name

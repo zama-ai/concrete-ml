@@ -186,3 +186,37 @@ def cut_onnx_graph_after_node_name(onnx_model: onnx.ModelProto, node_name: str) 
         onnx_model.graph.node.remove(node)
 
     return output_to_follow
+
+
+def clean_graph_after_sigmoid(onnx_model: onnx.ModelProto):
+    """Clean the graph of the onnx model, by removing nodes after the sigmoid.
+
+    Args:
+        onnx_model (onnx.ModelProto): the onnx model
+
+    Returns:
+        onnx.ModelProto: the cleaned onnx model
+    """
+    nodes_to_remove = []
+    output_to_follow = "variable"
+    # Find nodes to remove (after the sigmoid)
+    sigmoid_reached = False
+    for node in onnx_model.graph.node:
+        if sigmoid_reached:
+            nodes_to_remove.append(node)
+        if node.op_type == "Sigmoid":
+            sigmoid_reached = True
+            # Create output node
+
+            onnx_model.graph.output[0].CopyFrom(
+                onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
+            )
+            output_to_follow = node.output[0]
+
+    if sigmoid_reached:
+        # Remove nodes
+        for node in nodes_to_remove:
+            onnx_model.graph.node.remove(node)
+
+    keep_following_outputs_discard_others(onnx_model, [output_to_follow])
+    return onnx_model
