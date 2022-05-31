@@ -450,7 +450,7 @@ def main():
     # Seed everything we can
     seed_everything(args.seed)
 
-    all_tasks = benchmark_generator(args)
+    all_tasks = list(benchmark_generator(args))
 
     if args.list:
         print("\nList of equivalent individual calls:\n")
