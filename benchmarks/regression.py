@@ -380,8 +380,6 @@ def main():
     all_tasks = list(benchmark_generator(args))
 
     if args.list:
-        print("\nList of equivalent individual calls:\n")
-
         for (dataset_i, regressor_i, config_i) in all_tasks:
             config_n = str(config_i).replace("'", '"')
             print(
