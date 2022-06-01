@@ -1,10 +1,84 @@
-# Using ONNX as IR for FHE Compilation
+# Our Use of ONNX
+
+```{note}
+FIXME: two .md's have been concatenated, to be fusionned well
+```
+
+Internally, **Concrete-ML** uses [ONNX](https://github.com/onnx/onnx) operators as intermediate representation (or IR) for manipulating machine learning models produced through export for [PyTorch](https://github.com/pytorch/pytorch), [Hummingbird](https://github.com/microsoft/hummingbird) and [skorch](https://github.com/skorch-dev/skorch). As ONNX is becoming the standard exchange format for neural networks, this allows **Concrete-ML** to be flexible while also making model representation manipulation quite easy. In addition, it allows for straight-forward mapping to NumPy operators, supported by **Concrete-Numpy** to use the **Concrete** stack FHE conversion capabilities.
+
+In this page we list the operators that are supported.
+
+## Ops supported for evaluation/NumPy conversion
+
+The following operators have some support for evaluation and conversion to an equivalent NumPy circuit.
+Do note that all operators may not be fully supported for conversion to a circuit executable in FHE. We sometimes implement only partially the operators, either because of some limits due to FHE or because we did not need more than special case for supporting e.g. PyTorch activations or scikit-learn models.
+
+<!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
+
+<!--- do not edit, auto generated part by `make supported_ops` -->
+
+- Abs
+- Acos
+- Acosh
+- Add
+- Asin
+- Asinh
+- Atan
+- Atanh
+- AveragePool
+- BatchNormalization
+- Cast
+- Celu
+- Clip
+- Constant
+- Conv
+- Cos
+- Cosh
+- Div
+- Elu
+- Equal
+- Erf
+- Exp
+- Flatten
+- Gemm
+- Greater
+- HardSigmoid
+- HardSwish
+- Identity
+- LeakyRelu
+- Less
+- Log
+- MatMul
+- Mul
+- Not
+- Or
+- PRelu
+- Pad
+- Pow
+- Relu
+- Reshape
+- Round
+- Selu
+- Sigmoid
+- Sin
+- Sinh
+- Softplus
+- Sub
+- Tan
+- Tanh
+- ThresholdedRelu
+- Transpose
+- Where
+
+<!--- gen_supported_ops.py: inject supported operations for evaluation [END] -->
+
+## FIXME
 
 It was decided to use ONNX as the intermediate format to convert various ML models (including torch nn.Module and various sklearn models, among others) to NumPy. The reason here is that converting/interpreting torchscript and other representations would require a lot of effort while ONNX has tools readily available to easily manipulate the model's representation in Python. Additionally, JAX had an example of a lightweight interpreter to run ONNX models as NumPy code.
 
 ## Steps of the conversion and compilation of a torch model to NumPy via ONNX
 
-![Torch compilation flow with ONNX](../../_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
+![Torch compilation flow with ONNX](./_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
 
 In the diagram above, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the torch model as NumPy code without doing quantization.
 
@@ -15,7 +89,7 @@ Note that if you keep the obtained `NumpyModule` without quantizing it with Post
 The `NumpyModule` stores the ONNX model that it interprets. The interpreter works by going through the ONNX graph (which, by specification, is sorted in [topological order](https://en.wikipedia.org/wiki/Topological_sorting), allowing users to run through the graph without having to care for evaluation order) and storing the intermediate results as it goes. To execute a node, the interpreter feeds the required inputs - taken either from the model inputs or the intermediate results - to the NumPy implementation of each ONNX node.
 
 ```{note}
-Do note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../../dev/howto/onnx_supported_ops.md#ops-supported-for-evaluation-numpy-conversion).
+Do note that the `NumpyModule` interpreter currently [supports the following ONNX operators](onnx.md#ops-supported-for-evaluation-numpy-conversion).
 ```
 
 Initializers (ONNX's parameters) are quantized according to `n_bits` and passed to the Post Training Quantization (PTQ) process.

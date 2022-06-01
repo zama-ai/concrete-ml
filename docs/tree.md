@@ -1,4 +1,8 @@
-# Use **Concrete ML** with scikit-learn
+# Tree-based Models
+
+```{note}
+FIXME: to be refacto, was from the scikit-learn file
+```
 
 **Concrete-ML** is compatible with sklearn APIs such as Pipeline() or GridSearch(), which are popular model selection methods.
 

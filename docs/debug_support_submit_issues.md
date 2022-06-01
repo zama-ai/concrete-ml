@@ -41,6 +41,6 @@ To simplify our work and let us reproduce your bug easily, we need all the infor
 - any insight you might have on the bug
 - any workaround you have been able to find
 
-Remember, **Concrete-ML** is a project where we are open to contributions. You can find more information at [Contributing](../../dev/howto/contributing.md).
+Remember, **Concrete-ML** is a project where we are open to contributions. You can find more information at [Contributing](contributing.md).
 
 In case you have a reproducible bug that you have reduced to a small piece of code, we have our issue tracker in place (link on the right of the top menu). Remember that a well-described short issue is an issue that is more likely to be studied and fixed. The more issues we receive, the better the product will be.

@@ -9,9 +9,9 @@ is finished.
 
 Skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented
 in Torch as a `nn.Module`. We provide a simple, fully-connected, multi-layer NN with a configurable
-number of layers and optional pruning (see [pruning](../../user/explanation/pruning.md)).
+number of layers and optional pruning (see [pruning](pruning.md)).
 
-The `SparseQuantNeuralNetImpl` class implements this neural network. Please see the documentation on this class [in the API guide](../../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.SparseQuantNeuralNetImpl).
+The `SparseQuantNeuralNetImpl` class implements this neural network. Please see the documentation on this class [in the API guide](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.SparseQuantNeuralNetImpl).
 
 ```
 class SparseQuantNeuralNetImpl(nn.Module):
@@ -35,7 +35,7 @@ $\mathsf{output}_{xy}^{k} = \sum_c^{N}\sum_j^{K_h}\sum_i^{K_w}w_{cji}^kx_{c,y+j,
 
 where $k$ is the k-th filter of the convolutional layer and $N$, $K_h$, $K_w$ are the number of input channels, the kernel height and the kernel width, respectively.
 
-Following the formulas for the resulting bit width of quantized linear combinations described [here](../../user/howto/reduce_needed_precision.md), notably the maximum dimensionality of the input and weights that can make the result exceed 8 bits:
+Following the formulas for the resulting bit width of quantized linear combinations described [here](fhe_constraints.md), notably the maximum dimensionality of the input and weights that can make the result exceed 8 bits:
 
 $$ \Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{weights}}} - 1)(2^{n_{\mathsf{inputs}}} - 1)} \right) $$
 
@@ -71,4 +71,4 @@ concrete_classifier = NeuralNetClassifier(**params)
 
 We could then increase `n_hidden_neurons_multiplier` to improve performance, taking care to verify that the compiled NN does not exceed 8 bits of accumulator bit width.
 
-A similar example is given in the [classifier comparison notebook](../../user/advanced_examples/ClassifierComparison.ipynb).
+A similar example is given in the [classifier comparison notebook](advanced_examples/ClassifierComparison.ipynb).

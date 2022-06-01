@@ -558,12 +558,12 @@ determinism:
 
 .PHONY: supported_ops # Update docs with supported ops
 supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/dev/howto/onnx_supported_ops.md
+	poetry run python script/doc_utils/gen_supported_ops.py docs/onnx.md
 	"$(MAKE)" mdformat
 
 .PHONY: check_supported_ops # Check supported ops (for the doc)
 check_supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/dev/howto/onnx_supported_ops.md --check
+	poetry run python script/doc_utils/gen_supported_ops.py docs/onnx.md --check
 
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:
@@ -581,7 +581,8 @@ fast_sanity_check:
 check_links:
 	@# Remark that this target is not in PCC, because it needs the doc to be built
 	@# Mainly for web links
-	poetry run python -m linkcheckmd docs && poetry run python -m linkcheckmd README.md
+	poetry run python -m linkcheckmd docs -local
+	poetry run python -m linkcheckmd README.md
 
 	@# For weblinks and internal references
 	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it

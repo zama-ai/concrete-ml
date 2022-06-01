@@ -33,14 +33,14 @@ Here is a summary of our results. Remark that from one seed to the other, result
       - 0.60
       - 0.60
     * - Gamma Regression
-      - `OpenML insurance (freq) <https://www.openml.org/d/41214>`__ `OpenML insurance (sev) <https://www.openml.org/d/41215>`__
+      - `OpenML insurance (sev) <https://www.openml.org/d/41215>`_
       - mean Gamma deviance
       - 0.45
       - 0.45
       - 0.45
     * - Tweedie Regression
-      - `OpenML insurance (freq) <https://www.openml.org/d/41214>`__ `OpenML insurance (sev) <https://www.openml.org/d/41215>`__
-      - mean Tweedie deviance (power=1.9) 
+      - `OpenML insurance (sev) <https://www.openml.org/d/41215>`_
+      - mean Tweedie deviance (power=1.9)
       - 33.42
       - 34.18
       - 34.18
@@ -109,4 +109,3 @@ Kaggle Competition
    :maxdepth: 1
 
    KaggleTitanic.ipynb
-

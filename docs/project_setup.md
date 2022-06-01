@@ -5,7 +5,7 @@ You will need to first [install Python](#installing-python). This can be done au
 
 On Linux and macOS you will have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
 
-It is strongly recommended to use the development Docker (see the [docker](../../dev/howto/docker.md) guide). However, our helper script should bring all the tools you need to develop directly on Linux and macOS.
+It is strongly recommended to use the development Docker (see the [docker](docker.md) guide). However, our helper script should bring all the tools you need to develop directly on Linux and macOS.
 
 For Windows see the Warning admonition below.
 
@@ -20,12 +20,12 @@ The first step is to [install Python](#installing-python) (as some of our dev to
 - jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
 - make [https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make)
 
-Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](../../dev/howto/docker.md).
+Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](docker.md).
 ```
 
 ## Installing Python
 
-**Concrete ML** is a `Python` library, so `Python` should be installed to develop **Concrete ML**. `v3.8` and `v3.9` are the only supported versions.
+**Concrete-ML** is a `Python` library, so `Python` should be installed to develop **Concrete-ML**. `v3.8` and `v3.9` are the only supported versions.
 
 ```{note}
 As stated [at the start of this document](#set-up-the-project), you can install Python 3.8 for Linux automatically if it's available in your distribution's apt repository using the ./script/make_utils/setup_os_deps.sh script.
@@ -80,7 +80,7 @@ In the following sections, be sure to use the proper `make` tool for your system
 
 ## Cloning repository
 
-Now, it's time to get the source code of **Concrete ML**.
+Now, it's time to get the source code of **Concrete-ML**.
 
 Clone the code repository using the link for your favourite communication protocol (ssh or https).
 

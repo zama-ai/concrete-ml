@@ -1,8 +1,12 @@
-# Use **Concrete ML** with PyTorch
+# Neural Networks
+
+```{note}
+FIXME: to be refacto, was from the torch file
+```
 
 **Concrete-ML** allows you to compile a torch model to its FHE counterpart.
 
-This process executes most of the concepts described in the documentation on [how to use quantization](../../dev/explanation/use_quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
+This process executes most of the concepts described in the documentation on [how to use quantization](quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
 
 ```python
 from torch import nn
@@ -26,7 +30,7 @@ torch_model = LogisticRegression()
 ```
 
 ```{warning}
-Note that the architecture of the neural network passed to be compiled must respect some hard constraints given by FHE. Please read the our [detailed documentation](../howto/reduce_needed_precision.md) on these limitations.
+Note that the architecture of the neural network passed to be compiled must respect some hard constraints given by FHE. Please read the our [detailed documentation](fhe_constraints.md) on these limitations.
 ```
 
 Once your model is trained, you can simply call the `compile_torch_model` function to execute the compilation.
@@ -67,11 +71,11 @@ clear_output = quantized_numpy_module.dequantize_output(
 )
 ```
 
-If you want to see more compilation examples, you can check out the [Fully Connected Neural Network](../advanced_examples/FullyConnectedNeuralNetwork.ipynb)
+If you want to see more compilation examples, you can check out the [Fully Connected Neural Network](advanced_examples/FullyConnectedNeuralNetwork.ipynb)
 
 ## List of supported torch operators
 
-Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete ML ONNX operator reference](../../dev/howto/onnx_supported_ops.md) for more information.
+Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete-ML ONNX operator reference](onnx.md) for more information.
 
 The following operators in torch will be exported as **Concrete-ML** compatible ONNX operators:
 
@@ -116,3 +120,8 @@ Note that the equivalent versions from `torch.functional` are also supported.
 - [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
 - [`torch.nn.Tanhshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html)
 - [`torch.nn.Threshold`](https://pytorch.org/docs/stable/generated/torch.nn.Threshold.html) -- partial support
+
+## QNN's
+
+- NeuralNetClassifier
+- NeuralNetRegressor from skorch

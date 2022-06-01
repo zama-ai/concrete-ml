@@ -1,5 +1,9 @@
 # Concrete ML
 
+```{note}
+FIXME: to be updated with new links eg
+```
+
 **Concrete-ML** is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
 
 <!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=2 -->
@@ -36,7 +40,7 @@ To install **Concrete-ML** from PyPi, run the following:
 
 `pip install concrete-ml`
 
-You can find more detailed installation instructions in [installing.md](docs/user/basics/installing.md)
+You can find more detailed installation instructions in [installing.md](docs/nstalling.md)
 
 ### Supported models.
 
@@ -96,26 +100,24 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   True  True  True  True  True  True  True  True]
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML** in [this page dedicated to scikit-learn](docs/user/howto/simple_example_sklearn.md) and in [this page dedicated to torch](docs/user/howto/simple_example_torch.md).
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](linear.md), [tree-based models](tree.md) and [neural networks](neural_network.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
 
 ## For developers
 
 ### Project setup.
 
-Installation steps are described in [project_setup.md](docs/dev/howto/project_setup.md).
-Information about how to use Docker for development are available in [docker.md](docs/dev/howto/docker.md).
+Installation steps are described in [project_setup.md](docs/project_setup.md).
+Information about how to use Docker for development are available in [docker.md](docs/docker.md).
 
 ### Documenting.
 
-Some information about how to build the documentation of **Concrete-ML** are [available](docs/dev/howto/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
+Some information about how to build the documentation of **Concrete-ML** are [available](docs/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
 
 ### Developing.
 
-Some information about the infrastructure of **Concrete-ML** and some of the core elements we use are available [here](docs/dev/explanation/). Notably, an in-depth look at what is done in **Concrete-ML** is available in [onnx_use_for_compilation.md](docs/dev/explanation/onnx_use_for_compilation.md).
-
 ### Contributing.
 
-Information about how to contribute is available in [contributing.md](docs/dev/howto/contributing.md).
+Information about how to contribute is available in [contributing.md](docs/contributing.md).
 
 ## License
 

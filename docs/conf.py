@@ -19,10 +19,10 @@ import os
 
 # -- Project information -----------------------------------------------------
 
-project = "Concrete ML"
+project = "Concrete-ML"
 copyright = "2022, Zama"
 author = "Zama"
-description = "Zama Concrete ML"
+description = "Zama Concrete-ML"
 root_url = os.environ.get("DOC_ROOT_URL", "/concrete-ml")
 root_url = root_url if root_url.endswith("/") else root_url + "/"
 
@@ -53,7 +53,7 @@ myst_enable_extensions = [
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "SUMMARY.md", "EXAMPLES.md", "INTRO.md"]
 
 # Group member variables and methods separately (not alphabetically)
 autodoc_member_order = "groupwise"
@@ -67,24 +67,47 @@ nbsphinx_codecell_lexer = "ipython3"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_zama_theme"
+
+# We may be back with sphinx_zama_theme, as soon as it provides something which is very close to
+# GitBook look, or keep ReadsTheDocs theme eg if we want to push docs there
+html_theme = "sphinx_rtd_theme"
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+# Were options for sphinx_zama_theme theme
+# html_theme_options = {
+#     "github_url": "https://github.com/zama-ai/concrete-ml",
+#     "twitter_url": "https://twitter.com/zama_fhe",
+#     "icon_links": [
+#         {
+#             "name": "Discourse",
+#             "url": "https://community.zama.ai/c/concrete-ml",
+#             "icon": "fab fa-discourse",
+#         }
+#     ],
+#     "navigation_depth": 2,
+#     "collapse_navigation": True,
+#     "google_analytics_id": "G-XRM93J9QBW",
+# }
+
 html_theme_options = {
-    "github_url": "https://github.com/zama-ai/concrete-ml",
-    "twitter_url": "https://twitter.com/zama_fhe",
-    "icon_links": [
-        {
-            "name": "Discourse",
-            "url": "https://community.zama.ai/c/concrete-ml",
-            "icon": "fab fa-discourse",
-        }
-    ],
-    "navigation_depth": 2,
+    "analytics_id": "G-XRM93J9QBW",
+    # 'analytics_anonymize_ip': False,
+    # 'logo_only': False,
+    # 'display_version': True,
+    # 'prev_next_buttons_location': 'bottom',
+    # 'style_external_links': False,
+    # 'vcs_pageview_mode': '',
+    # 'style_nav_header_background': 'white',
+    # Toc options
     "collapse_navigation": True,
-    "google_analytics_id": "G-XRM93J9QBW",
+    "sticky_navigation": False,
+    "navigation_depth": 0,
+    "includehidden": True,
+    "titles_only": True,
 }
 html_context = {
     "show_version": True,

@@ -3,7 +3,7 @@ import argparse
 from pathlib import Path
 
 SCRIPT_NAME = Path(__file__).name
-NOTEBOOKS_DIR = Path(r"docs/user/advanced_examples")
+NOTEBOOKS_DIR = Path(r"docs/advanced_examples")
 
 TAB = "        "
 

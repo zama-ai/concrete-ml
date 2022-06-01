@@ -136,7 +136,10 @@ playground/
 progress.json
 
 # Kaggle datasets
-docs/user/advanced_examples/local_datasets/
+docs/advanced_examples/local_datasets/
 
 # Kaggle submissions
-docs/user/advanced_examples/titanic_submission.csv
+docs/advanced_examples/titanic_submission.csv
+
+# Key cache
+ConcreteNumpyKeyCache

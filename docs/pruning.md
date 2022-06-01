@@ -31,6 +31,6 @@ Fixing some of the weights to 0 makes the network graph look more similar to the
 | *Pruned Fully Connected Neural Network*  |
 |                                          |
 
-Pruning weights can reduce the prediction performance of the neural network, but studies show that a high level of pruning (above 50% [^1]) can be applied. In **Concrete-ML**, we implement [Fully Connected Neural Networks](../../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.NeuralNetClassifier) with pruning, as described in the [developer guide](../../dev/explanation/skorch_usage.md).
+Pruning weights can reduce the prediction performance of the neural network, but studies show that a high level of pruning (above 50% [^1]) can be applied. In **Concrete-ML**, we implement [Fully Connected Neural Networks](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.NeuralNetClassifier) with pruning, as described in the [developer guide](skorch_usage.md).
 
 [^1]: Han, Song & Pool, Jeff & Tran, John & Dally, William. (2015). Learning both Weights and Connections for Efficient Neural Networks.
