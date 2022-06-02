@@ -100,7 +100,7 @@ def test_decision_tree_hyperparameters(
     )
     y += offset
     model = DecisionTreeClassifier(
-        **hyperparameters, n_bits=24, random_state=numpy.random.randint(0, 2**15)
+        **hyperparameters, n_bits=26, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 

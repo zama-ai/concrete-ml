@@ -11,7 +11,7 @@ import pygraphviz
 from concrete.numpy.compilation import configuration
 from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
-from sklearn.datasets import fetch_openml
+from sklearn.datasets import make_classification
 from sklearn.metrics import average_precision_score, confusion_matrix
 from sklearn.model_selection import train_test_split
 
@@ -31,7 +31,15 @@ def ml_check(args, keyring_dir_as_str):
 
     print(ml.__version__)
 
-    features, classes = fetch_openml(data_id=44, as_frame=False, cache=True, return_X_y=True)
+    features, classes = make_classification(
+        n_samples=1000,
+        n_features=10,
+        n_classes=2,
+        n_informative=5,
+        n_redundant=0,
+        n_clusters_per_class=1,
+        weights=(0.2, 0.8),
+    )
     classes = classes.astype(numpy.int64)
 
     x_train, x_test, y_train, y_test = train_test_split(
@@ -41,7 +49,7 @@ def ml_check(args, keyring_dir_as_str):
         random_state=42,
     )
 
-    model = ConcreteDecisionTreeClassifier()
+    model = ConcreteDecisionTreeClassifier(n_bits=3, max_depth=6)
     model.fit(x_train, y_train)
 
     # Compute average precision on test
@@ -59,12 +67,12 @@ def ml_check(args, keyring_dir_as_str):
     num_spam = sum(y_test)
 
     print(f"Number of test samples: {num_samples}")
-    print(f"Number of spams in test samples: {num_spam}")
+    print(f"Number of negatives in test samples: {num_spam}")
 
-    print(f"True Negative (legit mail well classified) rate: {true_negative}")
-    print(f"False Positive (legit mail classified as spam) rate: {false_positive}")
-    print(f"False Negative (spam mail classified as legit) rate: {false_negative}")
-    print(f"True Positive (spam well classified) rate: {true_positive}")
+    print(f"True Negative rate: {true_negative}")
+    print(f"False Positive rate: {false_positive}")
+    print(f"False Negative rate: {false_negative}")
+    print(f"True Positive rate: {true_positive}")
 
     # We first compile the model with some data, here the training set
     model.compile(
