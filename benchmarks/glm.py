@@ -3,7 +3,7 @@ import json
 import math
 import random
 import time
-from typing import Dict, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas
@@ -128,19 +128,7 @@ def get_train_test_data(data: pandas.DataFrame) -> Tuple[pandas.DataFrame, panda
     return train_data, test_data
 
 
-def get_config(args) -> Tuple[list, Dict]:
-    """Fix the GLM parameters used for initialization, fitting, prediction and score evaluation."""
-
-    # Retrieving the number of bits to benchmark on
-    if args.configs is None:
-        n_bits_to_test = [
-            {"net_inputs": 5, "op_inputs": 2, "op_weights": 2, "net_outputs": 5},
-            {"net_inputs": 5, "op_inputs": 3, "op_weights": 2, "net_outputs": 5},
-            {"net_inputs": 5, "op_inputs": 3, "op_weights": 3, "net_outputs": 5},
-        ]
-    else:
-        n_bits_to_test = args.configs["n_bits"]
-
+def get_parameters_glms(config):
     # Fetching the data and initializing the parameters
     data = get_data()
     create_target_values(data)
@@ -154,8 +142,8 @@ def get_config(args) -> Tuple[list, Dict]:
         "PoissonRegressor": {
             "regressor": PoissonRegressor,
             "init_parameters": {
-                "alpha": 1e-3,
-                "max_iter": 400,
+                "alpha": config["PoissonRegressor"]["alpha"],
+                "max_iter": config["PoissonRegressor"]["max_iter"],
             },
             "fit_parameters": {
                 "X": train_data,
@@ -166,14 +154,14 @@ def get_config(args) -> Tuple[list, Dict]:
             "score_parameters": {
                 "y_true": test_data["Frequency"],
                 "sample_weight": test_data["Exposure"],
-                "power": 1,
+                "power": config["PoissonRegressor"]["power"],
             },
         },
         "GammaRegressor": {
             "regressor": GammaRegressor,
             "init_parameters": {
-                "alpha": 1e-3,
-                "max_iter": 300,
+                "alpha": config["GammaRegressor"]["alpha"],
+                "max_iter": config["GammaRegressor"]["max_iter"],
             },
             "fit_parameters": {
                 "X": train_data[gamma_mask_train],
@@ -184,15 +172,15 @@ def get_config(args) -> Tuple[list, Dict]:
             "score_parameters": {
                 "y_true": test_data[gamma_mask_test]["AvgClaimAmount"],
                 "sample_weight": test_data[gamma_mask_test]["ClaimNb"],
-                "power": 2,
+                "power": config["GammaRegressor"]["power"],
             },
         },
         "TweedieRegressor": {
             "regressor": TweedieRegressor,
             "init_parameters": {
-                "power": 1.9,
-                "alpha": 0.1,
-                "max_iter": 1000,
+                "power": config["TweedieRegressor"]["power"],
+                "alpha": config["TweedieRegressor"]["alpha"],
+                "max_iter": config["TweedieRegressor"]["max_iter"],
             },
             "fit_parameters": {
                 "X": train_data,
@@ -203,21 +191,52 @@ def get_config(args) -> Tuple[list, Dict]:
             "score_parameters": {
                 "y_true": test_data["PurePremium"],
                 "sample_weight": test_data["Exposure"],
-                "power": 1.9,
+                "power": config["TweedieRegressor"]["power"],
             },
         },
     }
 
-    # Only keeping the desired regressors
-    if args.configs is None:
-        parameters_glms_filtered = {
-            regressor: parameters_glms[regressor] for regressor in args.regressors
-        }
-    else:
-        assert len(args.configs) == len(args.regressors)
-        parameters_glms_filtered = dict(zip(args.regressors, args.configs))
+    return parameters_glms
 
-    return n_bits_to_test, parameters_glms_filtered
+
+def get_config(args) -> Dict:
+    """Fix the GLM parameters used for initialization, fitting, prediction and score evaluation."""
+
+    n_bits_list = [
+        {"net_inputs": 6, "op_inputs": 2, "op_weights": 2, "net_outputs": 6},
+        {"net_inputs": 6, "op_inputs": 3, "op_weights": 2, "net_outputs": 6},
+        {"net_inputs": 6, "op_inputs": 3, "op_weights": 3, "net_outputs": 6},
+    ]
+
+    config = {
+        "PoissonRegressor": {
+            "n_bits_list": n_bits_list,
+            "alpha": 1e-3,
+            "max_iter": 400,
+            "power": 1,
+        },
+        "GammaRegressor": {
+            "n_bits_list": n_bits_list,
+            "alpha": 1e-3,
+            "max_iter": 300,
+            "power": 2,
+        },
+        "TweedieRegressor": {
+            "n_bits_list": n_bits_list,
+            "alpha": 0.1,
+            "max_iter": 1000,
+            "power": 1.9,
+        },
+    }
+
+    # Retrieving the number of bits to benchmark on
+    if args.configs is not None:
+        # The configuration parameters should be in the same order as the input regressor list
+        assert len(args.configs) == len(args.regressors)
+        for i, regressor in enumerate(args.regressors):
+            config[regressor].update(args.configs[i])
+
+    return config
 
 
 def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
@@ -240,7 +259,7 @@ def score_estimator(
     y_true: pandas.Series,
     sample_weight: pandas.Series,
     power: float,
-) -> float:
+) -> Optional[float]:
     """Evaluate the score of a GLM using its predictions."""
 
     # Ignore non-positive predictions, as they are invalid for the Tweedie deviance. We want to
@@ -261,8 +280,12 @@ def score_estimator(
         print(
             "WARNING: Estimator yields invalid, non-positive predictions "
             f"for {number_of_negative_values} samples out of {mask.shape[0]}. These predictions "
-            "are ignored when computing the Poisson deviance."
+            "are ignored when computing the deviance score."
         )
+
+    # If all or at least 50% of the y_preds are non-positive, set this benchamrk as a failure.
+    if y_pred[mask].shape == (0,) or number_of_negative_values / mask.shape[0] > 0.5:
+        return None
 
     # mean_tweedie_deviance with power=1 is equivalent to mean_poisson_deviance
     # mean_tweedie_deviance with power=2 is equivalent to mean_gamma_deviance
@@ -274,7 +297,7 @@ def score_estimator(
     )
 
 
-def get_benchmark_id(n_bits) -> str:
+def get_benchmark_id(regressor, n_bits) -> str:
     """Create the suffix for benchmark ids."""
     if isinstance(n_bits, int):
         n_bits_inputs = n_bits
@@ -286,7 +309,7 @@ def get_benchmark_id(n_bits) -> str:
     pca_n_components = compute_number_of_components(n_bits)
 
     return (
-        f"Regressor_n_bits_i_{n_bits_inputs}_n_bits_w_{n_bits_weights}_"
+        f"{regressor}_n_bits_i_{n_bits_inputs}_n_bits_w_{n_bits_weights}_"
         f"n_compotent_{pca_n_components}"
     )
 
@@ -346,30 +369,38 @@ def main():
     # Seed everything possible
     seed_everything(args.seed)
 
-    n_bits_to_test, parameters_glms = get_config(args)
+    config = get_config(args)
 
     if args.list:
-        print("\nList of equivalent individual calls:\n")
-
-        # FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/1054: Roman to fill
+        for regressor in args.regressors:
+            for n_bits in config[regressor]["n_bits_list"]:
+                print_configs = config[regressor].copy()
+                print_configs.pop("n_bits_list")
+                print(f"--regressor {regressor} --n_bits '{n_bits}' --configs '{print_configs}'")
         return
 
-    print(f"Will perform benchmarks on {len(n_bits_to_test)*len(parameters_glms)} test cases")
+    number_of_test_cases = sum(
+        len(config[regressor]["n_bits_list"]) for regressor in args.regressors
+    )
+    print(f"Will perform benchmarks on {number_of_test_cases} test cases")
     print(f"Using --seed {args.seed}")
 
+    parameters_glms = get_parameters_glms(config)
+
+    # pylint: disable=undefined-loop-variable
     @progress.track(
         [
             {
-                "id": glm + get_benchmark_id(n_bits),
-                "name": glm + " Regressor",
-                "parameters": {"glm": glm, "parameters": parameters, "n_bits": n_bits},
+                "id": get_benchmark_id(regressor, n_bits),
+                "name": regressor,
+                "parameters": {"parameters": parameters_glms[regressor], "n_bits": n_bits},
                 "samples": args.model_samples,
             }
-            for glm, parameters in parameters_glms.items()
-            for n_bits in n_bits_to_test
+            for regressor in args.regressors
+            for n_bits in config[regressor]["n_bits_list"]
         ]
     )
-    def perform_benchmark(glm: str, parameters: Dict, n_bits: Union[Dict, int]) -> None:
+    def perform_benchmark(parameters: Dict, n_bits: Union[Dict, int]) -> None:
         """
         This is our main benchmark function. It gets the datas and trains the available GLM models
         in four different ways:
@@ -469,8 +500,15 @@ def main():
         score = score_estimator(y_pred=predictions, **score_parameters)
         fhe_score = score_estimator(y_pred=fhe_predictions, **score_parameters)
 
+        # In case all samples are invalid. This can happen with low bit quantization on a very few
+        # FHE samples
+        if score is None or fhe_score is None:
+            raise ValueError(
+                "Too many predictions were found set to 0, which is not supported for "
+                f"computing {regressor.__name__}'s deviance score."
+            )
+
         # Let's check what prediction performance we lose due to PCA
-        print(glm, ":")
         print("Evaluation in clear with PCA transformation (Concrete-ML):", score)
         progress.measure(
             id="non-homomorphic-deviance-score",
@@ -501,7 +539,6 @@ def main():
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
-            time_current = time.time()
             print("End")
 
 
