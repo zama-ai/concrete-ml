@@ -392,7 +392,7 @@ def main():
         [
             {
                 "id": get_benchmark_id(regressor, n_bits),
-                "name": regressor,
+                "name": regressor + "_" + str(n_bits),
                 "parameters": {"parameters": parameters_glms[regressor], "n_bits": n_bits},
                 "samples": args.model_samples,
             }
@@ -461,12 +461,22 @@ def main():
         x_train_subset_pca = model_pca["pca"].transform(
             model_pca["preprocessor"].transform(fit_parameters["X"].head(100))
         )
-        model_pca["regressor"].compile(  # pylint: disable=no-member
+        forward_fhe = model_pca["regressor"].compile(  # pylint: disable=no-member
             x_train_subset_pca,
             use_virtual_lib=False,
             configuration=BENCHMARK_CONFIGURATION,
             show_mlir=False,
         )
+
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Key generation")
+
+        t_start = time.time()
+        forward_fhe.keygen()
+        duration = time.time() - t_start
+        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
