@@ -1,5 +1,9 @@
 # Debug / Get Support / Submit Issues
 
+```{note}
+FIXME: Benoit to check
+```
+
 This version of **Concrete-ML** is a first version of the product, meaning that it is not completely finished, contains several bugs (both known and unknown at this time), and will improve over time with feedback from early users.
 
 Here are some ways to debug your problems. If nothing seems conclusive, you can still report the issue, as explained in a later section of this page.

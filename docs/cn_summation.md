@@ -1,5 +1,5 @@
 # Concrete-Numpy Summation
 
 ```{note}
-FIXME: to be done
+FIXME: to be done, Benoit
 ```

@@ -1,5 +1,9 @@
 # Contribute
 
+```{note}
+FIXME: Benoit to check
+```
+
 ```{important}
 There are two ways to contribute to **Concrete-ML** or to **Concrete** tools in general:
 - You can open issues to report bugs and typos and to suggest ideas.

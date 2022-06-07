@@ -1,5 +1,9 @@
 # Pruning
 
+```{note}
+FIXME: Andrei to check this
+```
+
 In neural networks, a neuron computes a linear combination of inputs and learned weights, then applies an activation function.
 
 |                   ![Artificial Neuron](figures/Artificial_neuron.png)                    |

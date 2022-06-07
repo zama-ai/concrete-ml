@@ -1,5 +1,9 @@
 # Hummingbird Usage
 
+```{note}
+FIXME: Jordan to check
+```
+
 ## Why Hummingbird?
 
 Hummingbird contains an interesting feature for **Concrete-ML**: it converts many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) to tensor computations using a specific backend (torch, torchscript, ONNX and TVM).

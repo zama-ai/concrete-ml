@@ -1,7 +1,7 @@
 # FHE Constraints
 
 ```{warning}
-FIXME: to be refactorized/rewritten/completed a lot
+FIXME: Benoit, to be refactorized/rewritten/completed a lot
 ```
 
 With the current version of the framework, we cannot represent encrypted integers with more than 8 bits. While we are working on supporting larger integers, currently, whenever a floating point model needs to be processed in FHE, quantization is necessary.

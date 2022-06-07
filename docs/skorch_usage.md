@@ -1,5 +1,9 @@
 # Skorch Usage
 
+```{note}
+FIXME: Andrei to check
+```
+
 We use [skorch](https://skorch.readthedocs.io/en/stable/) to implement multi-layer, fully-connected
 torch neural networks in **Concrete-ML** in a way that is compatible with the scikit-learn API.
 

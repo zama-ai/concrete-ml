@@ -1,6 +1,10 @@
 # Set Up the Project
 
 ```{note}
+FIXME: Benoit to check
+```
+
+```{note}
 You will need to first [install Python](#installing-python). This can be done automatically for Linux with the rest of the dependencies running the script indicated below with the `--linux-install-python` flag. If you want to install some of the dependencies manually, we detail the installations of [Poetry](#installing-poetry) and [Make](#installing-make).
 
 On Linux and macOS you will have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).

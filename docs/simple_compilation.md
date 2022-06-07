@@ -1,5 +1,9 @@
 # Converting a simple model to FHE
 
+```{note}
+FIXME: Andrei to check it looks good
+```
+
 A simple example which is very close to scikit-learn is as follows, for a logistic regression.
 
 First, we import classical ML packages.

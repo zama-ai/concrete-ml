@@ -1,4 +1,8 @@
-# Virtual Lib
+# FHE Assistant
+
+```{note}
+FIXME: Andrei to update
+```
 
 ## What is the Virtual Lib?
 

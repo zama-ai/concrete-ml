@@ -1,5 +1,9 @@
 # Document
 
+```{note}
+FIXME: Benoit to update, speak about GitBook
+```
+
 ## Using Sphinx
 
 One can simply create docs with Sphinx and open them, by doing:

@@ -1,7 +1,7 @@
 # Linear Models
 
 ```{note}
-FIXME: to be refacto, was from the scikit-learn file
+FIXME: Roman, to be refacto, was from the scikit-learn file. Speak about the available models, include Poisson etc
 ```
 
 **Concrete-ML** is compatible with sklearn APIs such as Pipeline() or GridSearch(), which are popular model selection methods.

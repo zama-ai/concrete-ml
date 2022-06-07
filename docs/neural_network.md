@@ -1,7 +1,7 @@
 # Neural Networks
 
 ```{note}
-FIXME: to be refacto, was from the torch file
+FIXME: to be refacto, was from the torch file. Roman to do it. Speak about QAT and QAT (with link to the `Importing your custom models` for this latter)
 ```
 
 **Concrete-ML** allows you to compile a torch model to its FHE counterpart.

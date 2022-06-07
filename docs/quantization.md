@@ -1,7 +1,7 @@
 # Quantization
 
 ```{note}
-FIXME: two .md's have been concatenated, to be fusionned well
+FIXME: Jordan, two .md's have been concatenated, to be fusionned well
 ```
 
 ```{note}
