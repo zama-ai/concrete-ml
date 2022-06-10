@@ -1,19 +1,20 @@
 # Converting a simple model to FHE
 
-```{note}
-FIXME: Andrei to check it looks good
-```
+**Concrete-ML** makes it easy to convert ML pipelines developed with other frameworks to FHE.
+This example shows how to use **Concrete-ML** to train, convert and run a simple classifier in FHE.
+The pipeline shown here is inspired by scikit-learn logistic regression.
 
-A simple example which is very close to scikit-learn is as follows, for a logistic regression.
+## Import packages
 
-First, we import classical ML packages.
+First, we import useful tools from scikit-learn.
 
 ```python
+import numpy
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 ```
 
-Second, we import `LogisticRegression`, but not the one from scikit-learn, the one from **Concrete-ML**, which shares the same API.
+Second, we import `LogisticRegression`, from **Concrete-ML**, which shares the same API as the equivalent scikit-learn class. Indeed, behind the scenes, **Concrete-ML** uses scikit-learn to train this classifier. Our library supports many types of classifier, such as [linear models](linear.md), [tree-based models](tree.md) and [neural networks](quantized_neural_networks.md).
 
 <!--pytest-codeblocks:cont-->
 
@@ -21,7 +22,9 @@ Second, we import `LogisticRegression`, but not the one from scikit-learn, the o
 from concrete.ml.sklearn import LogisticRegression
 ```
 
-Third, we create a synthetic dataset.
+## Data
+
+We now create a synthetic dataset.
 
 <!--pytest-codeblocks:cont-->
 
@@ -35,7 +38,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 ```
 
-Fourth, we need to define the quantization to 3 bits, and can then fit the model.
+## Quantization
+
+**Concrete-ML** requires that data and model parameters be integer values, so models trained in floating point need to be quantized, as described in the [the quantization documentation](quantization.md). For this dataset, which has 4 dimensions, we can quantize inputs and parameters to 3 bits.
 
 <!--pytest-codeblocks:cont-->
 
@@ -44,15 +49,20 @@ model = LogisticRegression(n_bits=3)
 model.fit(X_train, y_train)
 ```
 
-Fifth, we can run the predictions in clear (as a reference), i.e., without Fully Homomorphic Encryption.
+## Check quantized accuracy
+
+Once trained and quantized, we can check the accuracy that the model can obtain. Note, that this does not yet use Fully Homomorphic Encryption, as this step is done only to evaluate the model during its development.
 
 <!--pytest-codeblocks:cont-->
 
 ```python
 y_pred_clear = model.predict(X_test, execute_in_fhe=False)
+print(f"Accuracy clear: {numpy.mean(y_pred_clear == y_test)*100}%")
 ```
 
-Sixth, we compile the model, to get its equivalent FHE counterpart.
+## Compile to FHE
+
+We compile the model, to get its equivalent FHE counterpart. We provide a representative calibration set, in this case the same data set as for training:
 
 <!--pytest-codeblocks:cont-->
 
@@ -60,7 +70,9 @@ Sixth, we compile the model, to get its equivalent FHE counterpart.
 model.compile(x)
 ```
 
-Seventh, we can then run inferences, but now, in FHE.
+## Run the model in FHE
+
+Finally we perform inference in FHE.
 
 <!--pytest-codeblocks:cont-->
 
