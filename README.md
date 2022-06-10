@@ -100,7 +100,7 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   True  True  True  True  True  True  True  True]
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](linear.md), [tree-based models](tree.md) and [neural networks](neural_network.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](linear.md), [tree-based models](tree.md) and [neural networks](quantized_neural_networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
 
 ## For developers
 

@@ -1,9 +1,5 @@
 # Skorch Usage
 
-```{note}
-FIXME: Andrei to check
-```
-
 We use [skorch](https://skorch.readthedocs.io/en/stable/) to implement multi-layer, fully-connected
 torch neural networks in **Concrete-ML** in a way that is compatible with the scikit-learn API.
 
@@ -13,29 +9,26 @@ is finished.
 
 Skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented
 in Torch as a `nn.Module`. We provide a simple, fully-connected, multi-layer NN with a configurable
-number of layers and optional pruning (see [pruning](pruning.md)).
+number of layers and optional pruning (see [pruning](pruning.md)). To see how to use these types of networks,
+through the `NeuralNetClassifier` and `NeuralNetRegressor` classes, please see the [neural network documentation](quantized_neural_networks.md).
 
-The `SparseQuantNeuralNetImpl` class implements this neural network. Please see the documentation on this class [in the API guide](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.SparseQuantNeuralNetImpl).
+Under the hood, these two classes are simply skorch wrapper around a single torch module, `SparseQuantNeuralNetImpl`.
+Please see the documentation on this class [in the API guide](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.SparseQuantNeuralNetImpl).
 
 ```
 class SparseQuantNeuralNetImpl(nn.Module):
     """Sparse Quantized Neural Network classifier.
 ```
 
-The constructor of this class takes some parameters that influence FHE compatibility:
-
-- `n_w_bits` (default 3): number of bits for _weights_
-- `n_a_bits` (default 3): number of bits for _activations_ and _inputs_
-- `n_accum_bits` (default 8): maximum accumulator bit width to impose through pruning
-- `n_hidden_neurons_multiplier` (default 4): explained below
+## Parameter choice
 
 A linear or convolutional layer of an NN will compute a linear combination of weights and inputs (we also call this a  _'multi-sum'_). For example, a linear layer will compute:
 
-$\mathsf{output}^k = \sum_i^Nw_{i}^kx_i$
+$$\mathsf{output}^k = \sum_i^Nw_{i}^kx_i$$
 
 where $k$ is the k-th neuron in the layer. In this case, the sum is taken on a single dimension. A convolutional layer will compute:
 
-$\mathsf{output}_{xy}^{k} = \sum_c^{N}\sum_j^{K_h}\sum_i^{K_w}w_{cji}^kx_{c,y+j,x+i}^k$
+$$\mathsf{output}_{xy}^{k} = \sum_c^{N}\sum_j^{K_h}\sum_i^{K_w}w_{cji}^kx_{c,y+j,x+i}^k$$
 
 where $k$ is the k-th filter of the convolutional layer and $N$, $K_h$, $K_w$ are the number of input channels, the kernel height and the kernel width, respectively.
 
@@ -51,28 +44,4 @@ In a practical setting, the distribution of the weights of a neural network is G
 
 The pruning mechanism is already implemented in `SparseQuantNeuralNetImpl`, and the user only needs to determine the parameters listed above. They can choose them in a way that is convenient, e.g. maximizing accuracy.
 
-The skorch wrapper requires that all the parameters that will be passed to the wrapped `nn.Module` be prefixed with `module__`. For example, the code to create an FHE-compatible **Concrete-ML** fully-connected NN classifier for a dataset with 10 input dimensions and two classes, will thus be:
-
-<!--pytest-codeblocks:skip-->
-
-```python
-n_inputs = 10
-n_outputs = 2
-params = {
-    "module__n_layers": 2,
-    "module__n_w_bits": 2,
-    "module__n_a_bits": 2,
-    "module__n_accum_bits": 8,
-    "module__n_hidden_neurons_multiplier": 1,
-    "module__n_outputs": n_outputs,
-    "module__input_dim": n_inputs,
-    "module__activation_function": nn.ReLU,
-    "max_epochs": 10,
-}
-
-concrete_classifier = NeuralNetClassifier(**params)
-```
-
 We could then increase `n_hidden_neurons_multiplier` to improve performance, taking care to verify that the compiled NN does not exceed 8 bits of accumulator bit width.
-
-A similar example is given in the [classifier comparison notebook](advanced_examples/ClassifierComparison.ipynb).

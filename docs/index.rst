@@ -21,7 +21,7 @@ Philosophy of the Design
 
 Our primary concern in this release was the ease of adoption of our framework. That is why we built APIs, which should feel natural to data scientists. While performance is also an important concern for deployment of FHE machine learning models, improvements on this front will come in future releases.
 
-To this end, we have decided to mimic the APIs of scikit-learn and XGBoost for machine learning models (linear models and tree-based models) and of torch for deep learning models. We refer readers to `linear models <linear.md>`__, `tree-based models <tree.md>`__ and `neural networks <neural_network.md>`__ documentations, which show how similar our APIs are to their non-FHE counterparts.
+To this end, we have decided to mimic the APIs of scikit-learn and XGBoost for machine learning models (linear models and tree-based models) and of torch for deep learning models. We refer readers to `linear models <linear.md>`__, `tree-based models <tree.md>`__ and `neural networks <quantized_neural_networks.md>`__ documentations, which show how similar our APIs are to their non-FHE counterparts.
 
 Concrete Stack
 ----------------------------------
@@ -81,7 +81,7 @@ Additionally, we plan to publish academic and white papers explaining interestin
 
     linear.md
     tree.md
-    neural_network.md
+    quantized_neural_networks.md
     Examples <advanced_examples/index.rst>
 
 .. toctree::
@@ -96,12 +96,12 @@ Additionally, we plan to publish academic and white papers explaining interestin
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Importing your custom models
+    :caption: Building custom models
 
+    torch_support.md
     compilation_onnx.md
-    custom_models.md
     fhe_assistant.md
-    quantized_neural_networks.md
+    custom_models.md
 
 .. toctree::
     :maxdepth: 0

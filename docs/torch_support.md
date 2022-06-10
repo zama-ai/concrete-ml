@@ -1,81 +1,12 @@
-# Neural Networks
+# Torch support
 
-```{note}
-FIXME: to be refacto, was from the torch file. Roman to do it. Speak about QAT and QAT (with link to the `Importing your custom models` for this latter)
-```
-
-**Concrete-ML** allows you to compile a torch model to its FHE counterpart.
-
-This process executes most of the concepts described in the documentation on [how to use quantization](quantization.md) and triggers the compilation to be able to run the model over homomorphically encrypted data.
-
-```python
-from torch import nn
-import torch
-class LogisticRegression(nn.Module):
-    """LogisticRegression with torch"""
-
-    def __init__(self):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=14, out_features=1)
-        self.sigmoid1 = nn.Sigmoid()
-
-
-    def forward(self, x):
-        """Forward pass."""
-        out = self.fc1(x)
-        out = self.sigmoid1(out)
-        return out
-
-torch_model = LogisticRegression()
-```
-
-```{warning}
-Note that the architecture of the neural network passed to be compiled must respect some hard constraints given by FHE. Please read the our [detailed documentation](fhe_constraints.md) on these limitations.
-```
-
-Once your model is trained, you can simply call the `compile_torch_model` function to execute the compilation.
-
-<!--pytest-codeblocks:cont-->
-
-```python
-from concrete.ml.torch.compile import compile_torch_model
-import numpy
-torch_input = torch.randn(100, 14)
-quantized_numpy_module = compile_torch_model(
-    torch_model, # our model
-    torch_input, # a representative inputset to be used for both quantization and compilation
-    n_bits = 2,
-)
-```
-
-You can then call `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to have the FHE inference.
-
-Now your model is ready to infer in FHE settings.
-
-<!--pytest-codeblocks:cont-->
-
-```python
-enc_x = numpy.array([numpy.random.randn(14)])
-# An example that is going to be encrypted, and used for homomorphic inference.
-enc_x_q = quantized_numpy_module.quantize_input(enc_x)
-fhe_prediction = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(enc_x)
-```
-
-`fhe_prediction` contains the clear quantized output. The user can now dequantize the output to get the actual floating point prediction as follows:
-
-<!--pytest-codeblocks:cont-->
-
-```python
-clear_output = quantized_numpy_module.dequantize_output(
-    numpy.array(fhe_prediction, dtype=numpy.float32)
-)
-```
-
-If you want to see more compilation examples, you can check out the [Fully Connected Neural Network](advanced_examples/FullyConnectedNeuralNetwork.ipynb)
-
-## List of supported torch operators
+**Concrete-ML** supports a variety of torch operators that can be used to build fully connected
+or convolutional neural networks, with normalization and activation layers. Moreover, many
+element-wise operators are supported.
 
 Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete-ML ONNX operator reference](onnx.md) for more information.
+
+## List of supported torch operators
 
 The following operators in torch will be exported as **Concrete-ML** compatible ONNX operators:
 
@@ -120,8 +51,3 @@ Note that the equivalent versions from `torch.functional` are also supported.
 - [`torch.nn.Tanh`](https://pytorch.org/docs/stable/generated/torch.nn.Tanh.html)
 - [`torch.nn.Tanhshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Tanhshrink.html)
 - [`torch.nn.Threshold`](https://pytorch.org/docs/stable/generated/torch.nn.Threshold.html) -- partial support
-
-## QNN's
-
-- NeuralNetClassifier
-- NeuralNetRegressor from skorch
