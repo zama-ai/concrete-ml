@@ -8,7 +8,7 @@ from typing import Dict, Optional, Tuple, Union
 import numpy as np
 import pandas
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION, seed_everything
+from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics, seed_everything
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
@@ -387,7 +387,7 @@ def main():
 
     parameters_glms = get_parameters_glms(config)
 
-    # pylint: disable=undefined-loop-variable
+    # pylint: disable=undefined-loop-variable, too-many-branches
     @progress.track(
         [
             {
@@ -442,15 +442,30 @@ def main():
         fit_parameters = parameters["fit_parameters"]
         model_pca.fit(**fit_parameters)
 
+        # limit the number of test samples in order to fit in the RAM
+        x_test = parameters["x_test"].head(args.fhe_samples)
+
+        score_parameters = parameters["score_parameters"]
+        y_test = score_parameters["y_true"].head(args.fhe_samples)
+
+        # Compute the predictions for both Sklearn and Concrete clear models
+        if args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Predict with scikit-learn")
+
+        x_test_sklearn = model_pca["pca"].transform(model_pca["preprocessor"].transform(x_test))
+        sklearn_model_pca = model_pca["regressor"].sklearn_model  # pylint: disable=no-member
+        sklearn_predictions = sklearn_model_pca.predict(x_test_sklearn)
+        run_and_report_regression_metrics(y_test, sklearn_predictions, "sklearn", "Sklearn")
+
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
             time_current = time.time()
             print("Predict in clear")
 
-        # Compute the predictions and limit the number of test samples in order to fit in the RAM
-        x_test = parameters["x_test"].head(args.fhe_samples)
-
         predictions = model_pca.predict(x_test, execute_in_fhe=False)
+        run_and_report_regression_metrics(y_test, predictions, "quantized-clear", "Quantized Clear")
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
@@ -461,22 +476,21 @@ def main():
         x_train_subset_pca = model_pca["pca"].transform(
             model_pca["preprocessor"].transform(fit_parameters["X"].head(100))
         )
-        forward_fhe = model_pca["regressor"].compile(  # pylint: disable=no-member
-            x_train_subset_pca,
-            use_virtual_lib=False,
-            configuration=BENCHMARK_CONFIGURATION,
-            show_mlir=False,
-        )
+        with progress.measure(id="fhe-compile-time", label="FHE Compile Time"):
+            forward_fhe = model_pca["regressor"].compile(  # pylint: disable=no-member
+                x_train_subset_pca,
+                use_virtual_lib=False,
+                configuration=BENCHMARK_CONFIGURATION,
+                show_mlir=False,
+            )
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current} seconds")
             time_current = time.time()
             print("Key generation")
 
-        t_start = time.time()
-        forward_fhe.keygen()
-        duration = time.time() - t_start
-        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
+        with progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time"):
+            forward_fhe.keygen()
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
@@ -484,18 +498,24 @@ def main():
             print(f"Predict in FHE ({args.fhe_samples} samples)")
 
         # Compute the predictions in FHE and measure its running time (ms)
-        measure_id = "fhe-predict-evaluation-time-ms"
-        with progress.measure(id=measure_id, label="FHE Inference Time (ms)"):
+        measure_id = "fhe-inference_time"
+        with progress.measure(id=measure_id, label="FHE Inference Time per sample"):
             fhe_predictions = model_pca.predict(x_test, execute_in_fhe=True)
 
-        # Add a measurement of running time (ms) per sample
-        progress.measure(
-            id="fhe-inference-time-ms-per-sample",
-            label="FHE Inference Time per sample (ms)",
-            value=(progress.state.MEASUREMENTS[measure_id][-1] / x_test.shape[0])
-            if x_test.shape[0] > 0
-            else 0,
+        run_and_report_regression_metrics(y_test, fhe_predictions, "fhe", "FHE")
+
+        run_and_report_regression_metrics(
+            y_test,
+            predictions[0 : args.fhe_samples],
+            "quant-clear-fhe-set",
+            "Quantized Clear on FHE set",
         )
+
+        # Modify the prediction running time to consider the number of samples
+        if x_test.shape[0] > 0:
+            progress.state.MEASUREMENTS[measure_id][-1] /= x_test.shape[0]
+        else:
+            progress.state.MEASUREMENTS[measure_id][-1] = 0
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
@@ -503,7 +523,6 @@ def main():
             print("Computing scores")
 
         # Compute the deviance scores
-        score_parameters = parameters["score_parameters"]
         score_parameters["y_true"] = score_parameters["y_true"].head(args.fhe_samples)
         score_parameters["sample_weight"] = score_parameters["sample_weight"].head(args.fhe_samples)
 
@@ -519,32 +538,20 @@ def main():
             )
 
         # Let's check what prediction performance we lose due to PCA
-        print("Evaluation in clear with PCA transformation (Concrete-ML):", score)
+        if args.verbose:
+            print("Evaluation in clear with PCA transformation (Concrete-ML):", score)
+            print("Evaluation in FHE with PCA transformation (Concrete-ML):", fhe_score)
+
         progress.measure(
-            id="non-homomorphic-deviance-score",
-            label="Non Homomorphic Deviance Score",
+            id="quantized-deviance-score",
+            label="Quantized Deviance Score",
             value=score,
         )
 
-        print("Evaluation in FHE with PCA transformation (Concrete-ML):", fhe_score)
         progress.measure(
             id="homomorphic-deviance-score",
             label="Homomorphic Deviance Score",
             value=fhe_score,
-        )
-
-        # Let's make sure both models executed in clear and FHE output the same deviance score
-        if fhe_score > 0.001:
-            score_difference = abs(score - fhe_score) * 100 / fhe_score
-        else:
-            score_difference = 0
-
-        print(f"Percentage difference: {score_difference}%")
-        progress.measure(
-            id="relative-deviance-score-difference-percent",
-            label="Relative Deviance Score Difference (%)",
-            value=score_difference,
-            alert=(">", 7.5),
         )
 
         if args.verbose:
