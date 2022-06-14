@@ -1,108 +1,86 @@
 # Linear Models
 
-```{note}
-FIXME: Roman, to be refacto, was from the scikit-learn file. Speak about the available models, include Poisson etc
-```
+## Scikit-learn
 
-**Concrete-ML** is compatible with sklearn APIs such as Pipeline() or GridSearch(), which are popular model selection methods.
+**Concrete-ML** provides several of the most popular linear models for `regression` or `classification` that can be found in [scikit-learn](https://scikit-learn.org/stable/):
 
-Here is a simple example of such a process:
+|                                                          Concrete-ML                                                          |                                                                         scikit-learn                                                                         |
+| :---------------------------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|  [LinearRegression](_apidoc/concrete.ml.sklearn.html?highlight=regression#concrete.ml.sklearn.linear_model.LinearRegression)  |    [LinearRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression)    |
+| [LogisticRegression](_apidoc/concrete.ml.sklearn.html?highlight=logistic#concrete.ml.sklearn.linear_model.LogisticRegression) | [LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression) |
+|                 [LinearSVC](_apidoc/concrete.ml.sklearn.html?highlight=svc#concrete.ml.sklearn.svm.LinearSVC)                 |                       [LinearSVC](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC)                        |
+|                 [LinearSVR](_apidoc/concrete.ml.sklearn.html?highlight=svc#concrete.ml.sklearn.svm.LinearSVR)                 |                       [LinearSVR](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR)                        |
+|                 [PoissonRegressor](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.glm.PoissonRegressor)                 |    [PoissonRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html#sklearn.linear_model.PoissonRegressor)    |
+|                 [TweedieRegressor](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.glm.TweedieRegressor)                 |    [TweedieRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html#sklearn.linear_model.TweedieRegressor)    |
+|                   [GammaRegressor](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.glm.GammaRegressor)                   |       [GammaRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html#sklearn.linear_model.GammaRegressor)       |
+|                                                                                                                               |                                                                                                                                                              |
+
+Using those models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model). Any data scientists that are used to this framework should find the FHE tools very straightforward. More details about compiling and running any simple models can be found [here](simple_compilation.md).
+
+Models from **Concrete-ML** are also compatible with some of scikit-learn's main worflows, such as `Pipeline()` or `GridSearch()`.
+
+## Training and predicting with Concrete-ML
+
+All of the **training process is handled by scikit-learn**. Therefore, any users should refer to scikit-learn's documentation considering details and parameters about the training part. **Concrete-ML** enables executing the trained model's inferences on encrypted data using FHE.
+
+## Example
+
+Here's an example of how to use this model in FHE on a simple dataset below. A more complete example can be found in the [LogisticRegression notebook](advanced_examples.md). Additionally, a similar example using some of scikit-learn's most popular preprocessing tools is available in the documentation about [tree models](tree.md).
 
 ```python
-from sklearn.datasets import load_breast_cancer
-from sklearn.decomposition import PCA
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+import numpy
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
 
-from concrete.ml.sklearn.xgb import XGBClassifier
+from concrete.ml.sklearn import LogisticRegression
 
+# Create the data for classification
+X, y = make_classification(
+    n_features=2,
+    n_redundant=0,
+    n_informative=2,
+    random_state=2,
+    n_clusters_per_class=1,
+    n_samples=100,
+)
 
-# Get dataset and split into train and test
-X, y = load_breast_cancer(return_X_y=True)
+# Retrieve train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
-# Split the train and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=8)
+# Instantiate the model
+model = LogisticRegression(n_bits=6)
 
-# Define our model
-model = XGBClassifier(n_jobs=1, n_bits=3)
+# Fit the model
+model.fit(X_train, y_train)
 
-# Define the pipeline
-# We will normalize the data and apply a PCA before fitting the model
-pipeline = Pipeline([("standard_scaler", StandardScaler()), ("pca", PCA()), ("model", model)])
+# Compile the model
+model.compile(X_train)
 
-# Define the parameters to tune
-param_grid = {
-    "pca__n_components": [5, 10, 15],
-    "model__max_depth": [2, 3, 5],
-    "model__n_estimators": [5, 10, 20],
-}
+# Perform the inference in FHE
+y_pred = model.predict(X_test, execute_in_fhe=True)
 
-# Instantiate the grid search with 5-fold cross validation on all available cores
-grid = GridSearchCV(pipeline, param_grid, cv=5, n_jobs=-1, scoring="accuracy")
+# Check the model's accuracy
+print(f"Accuracy: {numpy.mean(y_pred == y_test)*100:0.2f}%")
 
-# Launch the grid search
-grid.fit(X_train, y_train)
+# Output : 
+#   90%
 
-# Print the best parameters found
-print(f"Best parameters found: {grid.best_params_}")
-
-# Output:
-#   Best parameters found:
-#   {'model__max_depth': 5, 'model__n_bits': 6, 'model__n_estimators': 20, 'pca__n_components': 15}
-
-# Currently we only focus on model inference in FHE
-# The data transformation will be done in clear (client machine)
-# while the model inference will be done in FHE on a server.
-# The pipeline can be split into 2 parts:
-#   1. data transformation
-#   2. estimator
-best_pipeline = grid.best_estimator_
-data_transformation_pipeline = best_pipeline[:-1]
-clf = best_pipeline[-1]
-
-# Transform test set
-X_train_transformed = data_transformation_pipeline.transform(X_train)
-X_test_transformed = data_transformation_pipeline.transform(X_test)
-
-# Evaluate the model on the test set (no FHE)
-y_pred_clear = clf.predict(X_test_transformed)
-print(f"Test accuracy: {(y_pred_clear == y_test).mean()}")
-
-# Output:
-#   Test accuracy: 0.9521
-
-# Compile the model to FHE
-clf.compile(X_train_transformed)
-
-# Run the model in FHE
-# Warning: this will take a while.
-#          It is recommended to run this with a very small batch of example first
-#          (e.g. N_TEST_FHE = 1)
-# Note that here the encryption and decryption is done behind the scene.
-N_TEST_FHE = 1
-y_pred_fhe = clf.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
-
-# Assert that FHE predictions are the same as the clear predictions
-print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
-      f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
 ```
 
-## Use **Concrete-ML** with XGBoost
+## Visual comparison
 
-In addition to our support for scikit-learn and PyTorch, we also propose support of
+Using the above example, we can then plot how the model classifies the inputs and then compare those results with a scikit-learn model executed in clear.
+The complete code can be found in the [LogisticRegression notebook](advanced_examples.md).
 
-- XGBoostClassifier from xgboost
+Let's plot the decision boundaries of both model.
 
-## Supported models
+### Classification Decision Boundaries
 
-Currently, we support the following models in scikit-learn:
+| ![Logistic Regression FHE](figures/logistic_regression_fhe.png) | ![Logistic Regression Clear](figures/logistic_regression_clear.png) |
+| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
+|                     *Concrete-ML FHE model*                     |                     *scikit-learn clear model*                      |
+|                                                                 |                                                                     |
 
-- LinearRegression
-- LogisticRegression
-- SVM (SVC and SVR)
-- DecisionTreeClassifier
-- PoissonRegressor
-- GammaRegressor
-- TweedieRegressor
-- RandomForestClassifier
+We can clearly observe the impact of quantization over the decision boundaries in the FHE model, breaking the initial lines into broken lines with steps. However, this does not change the overall score as both models output the same accuracy (90%).
+
+In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, the impact of those artifacts is often minor when considering linear models, making FHE models reach similar scores as their equivalent clear ones.

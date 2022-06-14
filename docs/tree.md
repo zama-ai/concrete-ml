@@ -1,12 +1,34 @@
-# Tree-based Models
+# Tree Models
 
-```{note}
-FIXME: Roman, to be refacto, was from the scikit-learn file. Speak about the available models
-```
+## Scikit-learn
 
-**Concrete-ML** is compatible with sklearn APIs such as Pipeline() or GridSearch(), which are popular model selection methods.
+**Concrete-ML** provides several of the most popular tree models `classification` that can be found in [scikit-learn](https://scikit-learn.org/stable/):
 
-Here is a simple example of such a process:
+|                                                                 Concrete-ML                                                                 |                                                                           scikit-learn                                                                           |
+| :-----------------------------------------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [DecisionTreeClassifier](_apidoc/concrete.ml.sklearn.html?highlight=decisiontreeclassifier#concrete.ml.sklearn.tree.DecisionTreeClassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
+|  [RandomForestClassifier](_apidoc/concrete.ml.sklearn.html?highlight=randomforestclassifier#concrete.ml.sklearn.rf.RandomForestClassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
+
+Using those models in FHE is extremely similar to what can be done with scikit-learn's API. Any data scientists that are used to this framework should find the FHE tools very straightforward. More details about compiling and running any simple models can be found [here](simple_compilation.md).
+
+Models from **Concrete-ML** are also compatible with some of scikit-learn's main worflows, such as `Pipeline()` or `GridSearch()`. See below for an example on how to use both.
+
+## XGBoost
+
+In addition to our support for scikit-learn, we also provide [XGBoost](https://xgboost.ai/) 's  `XGBClassifier`:
+
+|                                       Concrete-ML                                       |                                                XGboost                                                 |
+| :-------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
+| [XGBClassifier](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.xgb.XGBClassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
+
+## Training and predicting with Concrete-ML
+
+All of the **training process is handled by scikit-learn or XGBoost**. Therefore, any users should refer to the associated framework's documentation considering details and parameters about the training part. **Concrete-ML** enables executing the trained model's inferences on encrypted data using FHE.
+
+## Example
+
+Here's an example of how to use this model in FHE on a popular dataset using some of scikit-learn's most popular preprocessing tools.
+A more complete example can be found in the [XGBClassifier notebook](advanced_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -33,7 +55,7 @@ pipeline = Pipeline([("standard_scaler", StandardScaler()), ("pca", PCA()), ("mo
 
 # Define the parameters to tune
 param_grid = {
-    "pca__n_components": [5, 10, 15],
+    "pca__n_components": [2, 5, 10, 15],
     "model__max_depth": [2, 3, 5],
     "model__n_estimators": [5, 10, 20],
 }
@@ -49,7 +71,7 @@ print(f"Best parameters found: {grid.best_params_}")
 
 # Output:
 #   Best parameters found:
-#   {'model__max_depth': 5, 'model__n_bits': 6, 'model__n_estimators': 20, 'pca__n_components': 15}
+#   {'model__max_depth': 2, 'model__n_estimators': 5, 'pca__n_components': 2}
 
 # Currently we only focus on model inference in FHE
 # The data transformation will be done in clear (client machine)
@@ -70,7 +92,7 @@ y_pred_clear = clf.predict(X_test_transformed)
 print(f"Test accuracy: {(y_pred_clear == y_test).mean()}")
 
 # Output:
-#   Test accuracy: 0.9521
+#   Test accuracy: 0.947
 
 # Compile the model to FHE
 clf.compile(X_train_transformed)
@@ -88,15 +110,20 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
       f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
 ```
 
-## Supported models
+## Visual comparison
 
-Currently, we support the following models in scikit-learn:
+Using the above example, we can then plot how the model classifies the inputs and then compare those results with the XGBoost model executed in clear. A 6 bits model is also given in order to better understand the impact of quantization on classification.
+Similar plots can be found in the [Classifier Comparison notebook](advanced_examples.md).
 
-- LinearRegression
-- LogisticRegression
-- SVM (SVC and SVR)
-- DecisionTreeClassifier
-- PoissonRegressor
-- GammaRegressor
-- TweedieRegressor
-- RandomForestClassifier
+Let's plot the decision boundaries of both model.
+
+### Classification Decision Boundaries
+
+| ![XGBClassifier comparison](figures/xgb_comparison_pipeline.png) |
+| :--------------------------------------------------------------: |
+|                *XGBClassifier models comparison*                 |
+|                                                                  |
+
+We can clearly observe the impact of quantization over the decision boundaries in the FHE models, especially with the 3 bits model, where only three main decision boundaries can be observed. This results in a small decrease of accuracy of about 7% compared to the initial XGBoost classifier. Besides, using 6 bits of quantization makes the model reach 93% of accuracy, drastically reducing this difference to only 1.7%.
+
+In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, the impact of those artifacts is often minor when considering small tree-based models, making FHE models reach similar scores as their equivalent clear ones.
