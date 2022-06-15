@@ -201,6 +201,8 @@ def get_parameters_glms(config):
 
 def get_config(args) -> Dict:
     """Fix the GLM parameters used for initialization, fitting, prediction and score evaluation."""
+    if args.n_bits is not None:
+        n_bits_list = [args.n_bits]
 
     n_bits_list = [
         {"net_inputs": 6, "op_inputs": 2, "op_weights": 2, "net_outputs": 6},
@@ -340,6 +342,13 @@ def argument_manager():
         help="config(s) to use",
     )
     parser.add_argument(
+        "--n_bits",
+        nargs="+",
+        type=json.loads,
+        default=None,
+        help="Bitwidth config(s) to use",
+    )
+    parser.add_argument(
         "--model_samples",
         type=int,
         default=1,
@@ -376,6 +385,8 @@ def main():
             for n_bits in config[regressor]["n_bits_list"]:
                 print_configs = config[regressor].copy()
                 print_configs.pop("n_bits_list")
+                print_configs = str(print_configs).replace("'", '"')
+                n_bits = str(n_bits).replace("'", '"')
                 print(f"--regressor {regressor} --n_bits '{n_bits}' --configs '{print_configs}'")
         return
 

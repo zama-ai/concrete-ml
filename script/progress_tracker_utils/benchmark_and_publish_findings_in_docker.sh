@@ -3,6 +3,17 @@
 # Run benchmarks while logging the intermediate results
 # Publish findings in the progress tracker
 
+# Get LAUNCH_COMMAND arg
+LAUNCH_COMMAND="$1"
+
+# If launch command is not provided, run the default benchmark
+if [ -z "${LAUNCH_COMMAND}" ]; then
+    LAUNCH_COMMAND="make -s benchmark"
+fi
+
+# Print the command to the log
+echo "LAUNCH_COMMAND: ${LAUNCH_COMMAND}"
+
 set -e
 
 DEV_VENV_PATH="/home/dev_user/dev_venv"
@@ -24,11 +35,9 @@ fi
 cd /src/ && make setup_env
 
 mkdir -p /tmp/keycache
-mkdir -p logs
 
-ml_log=logs/latest.ml.log
-rm -f "${ml_log}"
-make -s benchmark 2>&1 | tee -a "${ml_log}"
+# Run launch command
+eval "$LAUNCH_COMMAND"
 
 curl \
 -H "Authorization: Bearer ${ML_PROGRESS_TRACKER_TOKEN}" \

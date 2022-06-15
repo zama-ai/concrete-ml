@@ -53,18 +53,22 @@ classifiers_string_to_class = {c.__name__: c for c in possible_classifiers}
 benchmark_params = {
     RandomForestClassifier: [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [15]
-        for n_estimators in [100]
-        for n_bits in [7, 16]
+        for max_depth in [3, 5, 15]
+        for n_estimators in [10, 20, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
     ],
     XGBClassifier: [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [7]
-        for n_estimators in [50]
-        for n_bits in [7, 16]
+        for max_depth in [1, 3, 5, 7]
+        for n_estimators in [10, 20, 30, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
     ],
     # Benchmark different depths of the quantized decision tree
-    DecisionTreeClassifier: [{"max_depth": 3}, {"max_depth": None}],
+    DecisionTreeClassifier: [
+        {"max_depth": max_depth, "n_bits": n_bits}
+        for max_depth in [1, 3, 5, 7, None]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
     LinearSVC: [{"n_bits": 2}],
     LogisticRegression: [{"n_bits": 2}],
     NeuralNetClassifier: [
@@ -137,8 +141,8 @@ def should_test_config_in_fhe(classifier, params, n_features, local_args):
 
     if classifier is DecisionTreeClassifier:
         # Only small trees should be compiled to FHE
-        if "max_depth" in params and params["max_depth"] is not None:
-            return params["max_depth"] <= 3
+        if "max_depth" in params and params["max_depth"] is not None and params["n_bits"] <= 7:
+            return True
         return False
     if classifier is NeuralNetClassifier:
         # For NNs only 7 bit accumulators with few neurons should be compiled to FHE
@@ -346,7 +350,7 @@ def benchmark_generator(local_args):
 def benchmark_name_generator(dataset, classifier, config, joiner):
     if classifier is DecisionTreeClassifier:
         if config["max_depth"] is not None:
-            config_str = f"_{config['max_depth']}"
+            config_str = f"_{config['max_depth']}_{config['n_bits']}"
         else:
             config_str = ""
     elif classifier is NeuralNetClassifier:

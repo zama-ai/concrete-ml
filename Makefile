@@ -528,11 +528,12 @@ benchmark_one:
 
 .PHONY: docker_publish_measurements # Run benchmarks in docker and publish results
 docker_publish_measurements: docker_rebuild
-	docker run --rm --volume /"$$(pwd)":/src \
+	docker run --volume /"$$(pwd)":/src \
 	--volume $(DEV_CONTAINER_VENV_VOLUME):/home/dev_user/dev_venv \
 	--volume $(DEV_CONTAINER_CACHE_VOLUME):/home/dev_user/.cache \
 	$(DEV_DOCKER_IMG) \
-	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh
+	/bin/bash ./script/progress_tracker_utils/benchmark_and_publish_findings_in_docker.sh \
+	"$${LAUNCH_COMMAND}"
 
 .PHONY: nbqa_one # Call nbqa on a single notebook
 nbqa_one:
