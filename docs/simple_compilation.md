@@ -14,7 +14,7 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 ```
 
-Second, we import `LogisticRegression`, from **Concrete-ML**, which shares the same API as the equivalent scikit-learn class. Indeed, behind the scenes, **Concrete-ML** uses scikit-learn to train this classifier. Our library supports many types of classifier, such as [linear models](linear.md), [tree-based models](tree.md) and [neural networks](quantized_neural_networks.md).
+Second, we import `LogisticRegression`, from **Concrete-ML**, which shares the same API as the equivalent scikit-learn class. Indeed, behind the scenes, **Concrete-ML** uses scikit-learn to train this classifier.
 
 <!--pytest-codeblocks:cont-->
 
@@ -94,4 +94,24 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   In FHE    : [0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 0 0 1 1 1]
 #   Comparison: [ True  True  True  True  True  True  True  True  True  True  True  True
 #   True  True  True  True  True  True  True  True]
+```
+
+## Setup a client/server protocol
+
+**Concrete ML** provides functionality to deploy FHE machine learning models in a client/server setting. The deployment workflow and model serving follows the following pattern:
+
+### Deployment
+
+The training of the model and its compilation to FHE are performed on a development machine. The compiled model, public cryptographic parameters and model meta data are deployed on the server.
+
+#### Serving
+
+The client obtains the cryptographic parameters and generates private and evaluation keys. Evaluation keys are sent to the server. Then the private data are encrypted by the client and sent to the server. The (FHE) model inference is done on the server with the evaluation keys, on those encrypted private data. The encrypted result is returned by the server to the client, which decrypts it using her private key. The client performs any necessary post-processing of the decrypted result.
+
+#### Example notebook
+
+We refer the reader to [this notebook / file](simple_compilation.md) for a complete description.
+
+```{warning}
+FIXME: Jordan, fix the previous link, link to your notebook or markdown
 ```
