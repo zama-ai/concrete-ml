@@ -266,7 +266,7 @@ def test_linear_model_quantization(
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         params = {}
-        if model._estimator_type == "classifier":
+        if model._estimator_type == "classifier":  # pylint: disable=protected-access
             params["random_state"] = numpy.random.randint(0, 2**15)
             model.set_params(**params)
             # Random state should be taken from the class variable
