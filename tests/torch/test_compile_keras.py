@@ -44,6 +44,7 @@ class FC(tensorflow.keras.Model):
 def compile_and_test_keras(
     input_output_feature,
     model,
+    opset,
     default_configuration,
     use_virtual_lib,
 ):
@@ -65,7 +66,7 @@ def compile_and_test_keras(
     # Convert to ONNX
     output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
     onnx_model, _ = tf2onnx.convert.from_keras(
-        keras_model, opset=OPSET_VERSION_FOR_ONNX_EXPORT, output_path=str(output_onnx_file_path)
+        keras_model, opset=opset, output_path=str(output_onnx_file_path)
     )
     onnx.checker.check_model(onnx_model)
 
@@ -106,7 +107,7 @@ def compile_and_test_keras(
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_compile_keras_networks(
-    input_output_feature, model, default_configuration, use_virtual_lib, is_vl_only_option
+    model, input_output_feature, default_configuration, use_virtual_lib, is_vl_only_option
 ):
     """Test the different model architecture from Keras."""
     if not use_virtual_lib and is_vl_only_option:
@@ -116,6 +117,28 @@ def test_compile_keras_networks(
     compile_and_test_keras(
         input_output_feature,
         model,
+        OPSET_VERSION_FOR_ONNX_EXPORT,
         default_configuration,
         use_virtual_lib,
     )
+
+
+def test_failure_wrong_offset():
+    """Test that wrong ONNX opset version are caught."""
+    input_output_feature = 4
+    model = FC
+
+    with pytest.raises(AssertionError) as excinfo:
+        compile_and_test_keras(
+            input_output_feature,
+            model,
+            OPSET_VERSION_FOR_ONNX_EXPORT - 1,
+            None,
+            None,
+        )
+
+    expected_string = (
+        f"ONNX version must be {OPSET_VERSION_FOR_ONNX_EXPORT} but "
+        + f"it is {OPSET_VERSION_FOR_ONNX_EXPORT - 1}"
+    )
+    assert expected_string == str(excinfo.value)

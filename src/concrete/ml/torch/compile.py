@@ -9,9 +9,10 @@ from concrete.numpy import MAXIMUM_BIT_WIDTH
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 
-from concrete.ml.quantization.post_training import PostTrainingQATImporter
-
-from ..quantization import PostTrainingAffineQuantization, QuantizedModule
+from ..common.debugging import assert_true
+from ..common.utils import get_onnx_opset_version
+from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
+from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedModule
 from . import NumpyModule
 
 Tensor = Union[torch.Tensor, numpy.ndarray]
@@ -94,6 +95,7 @@ def _compile_torch_or_onnx_model(
     onnx_model = numpy_model.onnx_model
 
     # Quantize with post-training static method, to have a model with integer weights
+    post_training_quant: Union[PostTrainingAffineQuantization, PostTrainingQATImporter]
     if import_qat:
         post_training_quant = PostTrainingQATImporter(n_bits, numpy_model, is_signed=True)
     else:
@@ -195,6 +197,14 @@ def compile_onnx_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
+
+    onnx_model_opset_version = get_onnx_opset_version(onnx_model)
+    assert_true(
+        onnx_model_opset_version == OPSET_VERSION_FOR_ONNX_EXPORT,
+        f"ONNX version must be {OPSET_VERSION_FOR_ONNX_EXPORT} "
+        + f"but it is {onnx_model_opset_version}",
+    )
+
     return _compile_torch_or_onnx_model(
         onnx_model,
         torch_inputset,

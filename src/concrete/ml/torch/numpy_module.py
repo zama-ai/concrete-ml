@@ -7,7 +7,13 @@ import onnx
 import torch
 from torch import nn
 
-from ..onnx.convert import get_equivalent_numpy_forward, get_equivalent_numpy_forward_and_onnx_model
+from ..common.debugging import assert_true
+from ..common.utils import get_onnx_opset_version
+from ..onnx.convert import (
+    OPSET_VERSION_FOR_ONNX_EXPORT,
+    get_equivalent_numpy_forward,
+    get_equivalent_numpy_forward_and_onnx_model,
+)
 
 
 class NumpyModule:
@@ -41,6 +47,14 @@ class NumpyModule:
             )
 
         elif isinstance(model, onnx.ModelProto):
+
+            onnx_model_opset_version = get_onnx_opset_version(model)
+            assert_true(
+                onnx_model_opset_version == OPSET_VERSION_FOR_ONNX_EXPORT,
+                f"ONNX version must be {OPSET_VERSION_FOR_ONNX_EXPORT} "
+                + f"but it is {onnx_model_opset_version}",
+            )
+
             self._onnx_model = model
             self.numpy_forward = get_equivalent_numpy_forward(model)
         else:

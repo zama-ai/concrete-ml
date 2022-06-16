@@ -24,6 +24,7 @@ from concrete.numpy.dtypes.integer import Integer
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import generate_proxy_function
+from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import simplify_onnx_model
 from ..quantization import PostTrainingAffineQuantization, QuantizedArray
 from ..torch import NumpyModule
@@ -689,7 +690,12 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         self.sklearn_model.fit(X, y, *args, **kwargs)
 
         # Convert to onnx
-        onnx_model = hb_convert(self.sklearn_model, backend="onnx", test_input=X).model
+        onnx_model = hb_convert(
+            self.sklearn_model,
+            backend="onnx",
+            test_input=X,
+            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
+        ).model
 
         # Remove Cast nodes
         onnx_model = self.clean_graph(onnx_model)

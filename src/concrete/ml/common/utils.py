@@ -4,6 +4,10 @@ import string
 from types import FunctionType
 from typing import Callable, Dict, Iterable, Tuple
 
+import onnx
+
+from ..common.debugging import assert_true
+
 _VALID_ARG_CHARS = set(string.ascii_letters).union(str(i) for i in range(10)).union(("_",))
 
 
@@ -65,3 +69,18 @@ def generate_proxy_function(
     function_proxy = FunctionType(function_proxy_code.co_consts[0], locals(), proxy_func_name)
 
     return function_proxy, orig_args_to_proxy_func_args
+
+
+def get_onnx_opset_version(onnx_model: onnx.ModelProto) -> int:
+    """Return the ONNX opset_version.
+
+    Args:
+        onnx_model (onnx.ModelProto): the model.
+
+    Returns:
+        int: the version of the model
+    """
+
+    info = onnx_model.opset_import[0]
+    assert_true(info.domain == "", "onnx version information is not as expected")
+    return info.version
