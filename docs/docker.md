@@ -1,9 +1,5 @@
 # Set Up Docker
 
-```{note}
-FIXME: Benoit to check
-```
-
 ## Setting up Docker and X forwarding
 
 Before you start this section, go ahead and install Docker. You can follow [this](https://docs.docker.com/engine/install/) official guide if you require assistance.

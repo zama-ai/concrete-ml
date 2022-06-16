@@ -33,11 +33,13 @@ Note that the equivalent versions from `torch.functional` are also supported.
 
 - [`torch.nn.Celu`](https://pytorch.org/docs/stable/generated/torch.nn.CELU.html)
 - [`torch.nn.Elu`](https://pytorch.org/docs/stable/generated/torch.nn.ELU.html)
+- [`torch.nn.GELU`](https://pytorch.org/docs/stable/generated/torch.nn.GELU.html) -- sometimes accuracy issues
 - [`torch.nn.Hardshrink`](https://pytorch.org/docs/stable/generated/torch.nn.Hardshrink.html)
 - [`torch.nn.HardSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.Hardsigmoid.html)
 - [`torch.nn.Hardswish`](https://pytorch.org/docs/stable/generated/torch.nn.Hardswish)
 - [`torch.nn.HardTanh`](https://pytorch.org/docs/stable/generated/torch.nn.Hardtanh.html)
 - [`torch.nn.LeakyRelu`](https://pytorch.org/docs/stable/generated/torch.nn.LeakyReLU.html)
+- [`torch.nn.LogSigmoid`](https://pytorch.org/docs/stable/generated/torch.nn.LogSigmoid.html) -- sometimes accuracy issues
 - [`torch.nn.Mish`](https://pytorch.org/docs/stable/generated/torch.nn.Mish.html)
 - [`torch.nn.PReLU`](https://pytorch.org/docs/stable/generated/torch.nn.PReLU.html)
 - [`torch.nn.ReLU6`](https://pytorch.org/docs/stable/generated/torch.nn.ReLU6.html)

@@ -24,16 +24,16 @@
 
 ## Pre-processing with Concrete-Numpy
 
-- [Small recap of Concrete-Numpy](cn_summation.md)
-- [Examples of preprocessing](preprocessing.md)
+- [Concrete-Numpy Summation](cn_summation.md)
+- [Preprocessing with Concrete-Numpy](preprocessing.md)
 - [Pandas](pandas.md)
 
 ## Importing your custom models
 
+- [Torch support](torch_support.md)
 - [Compiling ONNX models](compilation_onnx.md)
+- [FHE Assistant](fhe_assistant.md)
 - [Developing custom models](custom_models.md)
-- [Using the FHE Assistant](fhe_assistant.md)
-- [Quantized Neural networks](quantized_neural_networks.md)
 
 ## Developper Guide
 

@@ -1,10 +1,6 @@
 # Debug / Get Support / Submit Issues
 
-```{note}
-FIXME: Benoit to check
-```
-
-This version of **Concrete-ML** is a first version of the product, meaning that it is not completely finished, contains several bugs (both known and unknown at this time), and will improve over time with feedback from early users.
+**Concrete-ML** is a permanent work in progress, meaning that it is not completely finished, contains several bugs (both known and unknown at this time), and will improve over time with feedback from early users.
 
 Here are some ways to debug your problems. If nothing seems conclusive, you can still report the issue, as explained in a later section of this page.
 
@@ -33,9 +29,9 @@ Once you're sure it is a bug, it would be nice to:
 
 ## Asking the community
 
-You can directly ask the developers and community about your issue on our Discourse server (link on the right of the top menu).
+You can directly ask the developers and community about your issue on our [Discourse server](https://community.zama.ai).
 
-Hopefully, it is just a misunderstanding or a small mistake on your side that we can help you fix easily. Additionally, your feedback helps us make the documentation even clearer (by adding to the FAQ, for example).
+Hopefully, it is just a misunderstanding or a small mistake on your side that we can help you fix easily. Additionally, your feedback helps us make the documentation even clearer.
 
 ## Submitting an issue
 
@@ -47,4 +43,4 @@ To simplify our work and let us reproduce your bug easily, we need all the infor
 
 Remember, **Concrete-ML** is a project where we are open to contributions. You can find more information at [Contributing](contributing.md).
 
-In case you have a reproducible bug that you have reduced to a small piece of code, we have our issue tracker in place (link on the right of the top menu). Remember that a well-described short issue is an issue that is more likely to be studied and fixed. The more issues we receive, the better the product will be.
+In case you have a reproducible bug that you have reduced to a small piece of code, we have our [issue tracker](https://github.com/zama-ai/concrete-ml/issues). Remember that a well-described short issue is an issue that is more likely to be studied and fixed. The more issues we receive, the better the product will be.
