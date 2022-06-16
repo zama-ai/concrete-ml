@@ -55,6 +55,7 @@ Do note that all operators may not be fully supported for conversion to a circui
 - PRelu
 - Pad
 - Pow
+- ReduceSum
 - Relu
 - Reshape
 - Round

@@ -396,6 +396,13 @@ class QuantizedArray:
         self.quantizer = UniformQuantizer(options, stats, params)
 
         if value_is_float:
+            if isinstance(values, numpy.ndarray):
+                assert_true(
+                    numpy.issubdtype(values.dtype, numpy.floating),
+                    "Values must be float if value_is_float is set to True, "
+                    f"got {values.dtype}: {values}",
+                )
+
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
             # To be seen what should be done in the long run (refactor of this class or Tracers)
             self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
@@ -425,9 +432,10 @@ class QuantizedArray:
                 assert_true(
                     numpy.issubdtype(values.dtype, numpy.integer)
                     or numpy.issubdtype(values.dtype, numpy.unsignedinteger),
-                    f"Can not creating a QuantizedArray from {values.dtype} values "
+                    f"Can't create a QuantizedArray from {values.dtype} values "
                     "when int/uint was required",
                 )
+
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
             # To be seen what should be done in the long run (refactor of this class or Tracers)
             self.qvalues = deepcopy(values) if isinstance(values, numpy.ndarray) else values

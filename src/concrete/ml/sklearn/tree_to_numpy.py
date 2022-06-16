@@ -143,6 +143,8 @@ def tree_to_numpy(
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
 
     simplify_onnx_model(onnx_model)
-    _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
+
+    # FIXME: Remove force_int tag when #1117 is fixed.
+    _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model, force_int=True)
 
     return (_tensor_tree_predict, q_y, onnx_model)

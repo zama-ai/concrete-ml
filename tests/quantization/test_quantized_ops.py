@@ -39,6 +39,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedPad,
     QuantizedPow,
     QuantizedPRelu,
+    QuantizedReduceSum,
     QuantizedRelu,
     QuantizedReshape,
     QuantizedRound,
@@ -190,8 +191,12 @@ def test_clip_op(
     )
 
     for combination in input_combinations:
+
+        # FIXME: Remove this cast when #1141 is fixed.
+        # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
         q_cst_inputs = (
-            QuantizedArray(n_bits, numpy.asarray([inp_value])) for inp_value in cst_inputs
+            QuantizedArray(n_bits, numpy.asarray([inp_value]).astype(numpy.float64))
+            for inp_value in cst_inputs
         )
         quantized_op = QuantizedClip(n_bits, constant_inputs=dict(zip(combination, q_cst_inputs)))
         expected_output = quantized_op.calibrate(values)
@@ -590,8 +595,11 @@ def test_quantized_pad():
     data = numpy.random.uniform(size=(1, 1, 32, 32)) * 4
     q_data = QuantizedArray(2, data)
     q_op = QuantizedPad(2, int_input_names={"0"}, constant_inputs=None, mode="constant")
-    pads = QuantizedArray(2, numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0]))
-    pad_value = QuantizedArray(2, numpy.asarray([0]))
+
+    # FIXME: Remove those casts when #1141 is fixed.
+    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
+    pads = QuantizedArray(2, numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0]).astype(numpy.float64))
+    pad_value = QuantizedArray(2, numpy.asarray([0]).astype(numpy.float64))
 
     q_op.calibrate(q_data.values, pads.values, pad_value.values)
 
@@ -602,7 +610,9 @@ def test_quantized_pad():
     # this is not yet supported, this operation is only a stub for now
     # FIXME: Change this when we have a real solution for the Pad operator
     # see https://github.com/zama-ai/concrete-ml-internal/issues/747
-    pads_invalid = QuantizedArray(2, numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0]))
+    # FIXME: Remove this cast when #1141 is fixed.
+    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
+    pads_invalid = QuantizedArray(2, numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0]).astype(numpy.float64))
     with pytest.raises(AssertionError):
         q_pad_output = q_op(q_data, pads_invalid, pad_value)
 
@@ -622,7 +632,7 @@ def test_quantized_reshape(shape):
     data = data.reshape(shape)
 
     new_shape = (num_values,)
-    new_shape_qarr = QuantizedArray(1, numpy.asarray(new_shape))
+    new_shape_qarr = QuantizedArray(1, numpy.asarray(tuple(map(float, new_shape))))
     reshape = QuantizedReshape(n_bits_reshape, constant_inputs={1: new_shape_qarr})
 
     q_arr0 = QuantizedArray(n_bits_reshape, data)
@@ -632,7 +642,7 @@ def test_quantized_reshape(shape):
     assert q_reshaped.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(numpy.reshape(q_arr0.qvalues, new_shape) == q_reshaped.qvalues)
 
-    shape_qarr = QuantizedArray(1, numpy.asarray(shape))
+    shape_qarr = QuantizedArray(1, numpy.asarray(tuple(map(float, shape))))
     reshape_back = QuantizedReshape(n_bits_reshape, constant_inputs={1: shape_qarr})
 
     q_arr1 = reshape_back(q_reshaped)
@@ -660,7 +670,10 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
 
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
     q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
-    q_cst_inputs = QuantizedArray(n_bits, numpy.asarray(slope))
+
+    # FIXME: Remove this cast when #1141 is fixed.
+    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
+    q_cst_inputs = QuantizedArray(n_bits, numpy.asarray(slope).astype(numpy.float64))
 
     quantized_op = QuantizedPRelu(n_bits, constant_inputs={"slope": q_cst_inputs})
     expected_output = quantized_op.calibrate(values)
@@ -687,8 +700,18 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
             numpy.random.uniform(),
             numpy.random.uniform(),
         ),
-        (numpy.random.uniform(size=(1, 32)) * 100 - 50, numpy.random.uniform() * 50 - 25, 0, -1),
-        (numpy.random.uniform(size=(1024,)), numpy.random.uniform(), -100, 100),
+        (
+            numpy.random.uniform(size=(1, 32)) * 100 - 50,
+            numpy.random.uniform() * 50 - 25,
+            0,
+            -1,
+        ),
+        (
+            numpy.random.uniform(size=(1024,)),
+            numpy.random.uniform(),
+            -100,
+            100,
+        ),
     ],
 )
 @pytest.mark.parametrize("n_bits", [16])
@@ -703,8 +726,8 @@ def test_quantized_comparators_and_where(params, n_bits, comparator, check_r2_sc
     q_op_where = QuantizedWhere(
         n_bits,
         constant_inputs={
-            1: QuantizedArray(n_bits, val_if_true),
-            2: QuantizedArray(n_bits, val_if_false),
+            1: QuantizedArray(n_bits, float(val_if_true)),
+            2: QuantizedArray(n_bits, float(val_if_false)),
         },
     )
 
@@ -759,6 +782,57 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
     check_r2_score(raw_result, quant_result)
 
 
+@pytest.mark.parametrize(
+    "n_values, n_bits",
+    [
+        pytest.param(
+            2**power_n_values,
+            n_bits,
+            id=f"reduce_sum_{2**power_n_values}_values_{n_bits}_bits_in_FHE_(VL)",
+        )
+        for power_n_values in range(8)
+        for n_bits in range(1, 6)
+    ],
+)
+def test_reduce_sum(n_values, n_bits):
+    """Test the QuantizedReduceSum operator on values that sum up to 1."""
+
+    # Initialize the axes constant
+    axes = QuantizedArray(n_bits, numpy.array([1.0]))
+
+    # Instantiate the operator
+    quantized_op = QuantizedReduceSum(n_bits, constant_inputs={"axes": axes}, keepdims=0)
+
+    # Instantiate the inputs to that they all sum up to 1.
+    inputs = numpy.random.randint(
+        -(2 ** (n_bits - 1)), 2 ** (n_bits - 1), size=(1, n_values)
+    ).astype(numpy.float64)
+
+    # Compute the expected sum
+    expected_sum = quantized_op.calibrate(inputs)[0]
+
+    # Set the quantized inputs
+    q_inputs = QuantizedArray(n_bits, inputs)
+
+    # Compute the sum given by the operator
+    computed_sum = quantized_op(q_inputs).dequant()[0]
+
+    # Set the maximum error possible using the MSB-only algorithm. This max error is relevant only:
+    # - if there is not quantization error
+    # - if n_values is a power of 2
+    # The idea is that for each depth d (from 1 to total_depth) of the "tree sum", we lose up to
+    # n_values//(2**depth) * 2**(depth-1), so a total of (n_value//2)*total_depth.
+    total_depth = int(numpy.log2(n_values))
+    max_error = (n_values // 2) * total_depth
+
+    # Compute the error
+    error = abs(expected_sum - computed_sum)
+
+    # Check if the error does not exceed the theoretical limit. An error term is added for
+    # handeling minor quantization artifacts for low bitwidth with small n_values.
+    assert error <= max_error + 10e-1, f"Wrong sum: Got a difference of {error:0.4f}"
+
+
 def test_all_ops_were_tested():
     """Defensive test to check the developers added the proper test cases for the quantized ops."""
     # Sanity check: add tests for the missing quantized ops and update to prove you read this line
@@ -799,6 +873,7 @@ def test_all_ops_were_tested():
         QuantizedOr: test_all_arith_ops,
         QuantizedDiv: test_all_arith_ops,
         QuantizedPow: test_all_arith_ops,
+        QuantizedReduceSum: test_reduce_sum,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

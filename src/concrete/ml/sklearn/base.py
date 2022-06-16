@@ -481,9 +481,13 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         # mypy
         assert self.q_y is not None
         y_preds = self.q_y.update_quantized_values(y_preds)
+
         # Sum all tree outputs.
+        # FIXME Remove this once #1027 is done :
+        # https://github.com/zama-ai/concrete-ml-internal/issues/1027
         y_preds = numpy.sum(y_preds, axis=0)
         assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+
         # FIXME transpose workaround see #292
         y_preds = numpy.transpose(y_preds)
         return y_preds

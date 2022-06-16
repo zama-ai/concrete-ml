@@ -65,6 +65,7 @@ from .ops_impl import (
     numpy_pad,
     numpy_pow,
     numpy_prelu,
+    numpy_reduce_sum,
     numpy_relu,
     numpy_reshape,
     numpy_round,
@@ -152,6 +153,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Flatten": numpy_flatten,
     "Round": numpy_round,
     "Pow": numpy_pow,
+    "ReduceSum": numpy_reduce_sum,
 }
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
@@ -169,14 +171,20 @@ def get_attribute(attribute: onnx.AttributeProto) -> Any:
     return ATTR_GETTERS[attribute.type](attribute)
 
 
+# FIXME: force_int tag was added for forcing outputs to be integers in trees since some numpy
+# operators require integers and not floats. It will probably become useless when #1117
+# (https://github.com/zama-ai/concrete-ml-internal/issues/1117) is fixed.
 def execute_onnx_with_numpy(
-    graph: onnx.GraphProto, *inputs: numpy.ndarray
+    graph: onnx.GraphProto,
+    *inputs: numpy.ndarray,
+    force_int=False,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
         *inputs: The inputs of the graph.
+        force_int (bool): Force outputs to become integers. Default to False.
 
     Returns:
         Tuple[numpy.ndarray]: The result of the graph's execution.
@@ -192,5 +200,9 @@ def execute_onnx_with_numpy(
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
         outputs = ONNX_OPS_TO_NUMPY_IMPL[node.op_type](*curr_inputs, **attributes)
+
+        # FIXME: To remove when #1117 is fixed.
+        if force_int:
+            outputs = tuple(output.astype(numpy.int64) for output in outputs)
         node_results.update(zip(node.output, outputs))
     return tuple(node_results[output.name] for output in graph.output)

@@ -721,8 +721,7 @@ def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
-    return (numpy.greater(x, y).astype(numpy.int64),)
+    return (numpy.greater(x, y).astype(numpy.float64),)
 
 
 def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -738,8 +737,7 @@ def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
-    return (numpy.less(x, y).astype(numpy.int64),)
+    return (numpy.less(x, y).astype(numpy.float64),)
 
 
 def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -774,7 +772,9 @@ def numpy_reshape(
     """
     assert_true(allowzero == 0, "Concrete ML currently only accepts numpy style reshape in ONNX")
 
-    return (numpy.reshape(x, newshape),)
+    # FIXME: Remove this cast when #1141 is fixed.
+    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
+    return (numpy.reshape(x, newshape.astype(numpy.int64)),)
 
 
 def numpy_transpose(x: numpy.ndarray, /, *, perm=None) -> Tuple[numpy.ndarray]:
@@ -1094,10 +1094,58 @@ def numpy_pow(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
 
     Args:
         a (numpy.ndarray): Input tensor whose elements to be raised.
-        b (numpy.ndarray): The power to which we want to raise
+        b (numpy.ndarray): The power to which we want to raise.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor.
     """
 
     return (numpy.power(a, b),)
+
+
+# pylint: disable=unused-argument
+def numpy_reduce_sum(
+    a: numpy.ndarray,
+    /,
+    axes: Optional[numpy.ndarray] = None,
+    *,
+    keepdims: int = 1,
+    noop_with_empty_axes: int = 0,
+) -> Tuple[numpy.ndarray]:
+    """Compute ReduceSum in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md#ReduceSum
+
+    Args:
+        a (numpy.ndarray): Input tensor whose elements to sum.
+        axes (Optional[numpy.ndarray]): Array of integers along which to reduce. The default is to
+            reduce over all the dimensions of the input tensor if 'noop_with_empty_axes' is false,
+            else act as an Identity op when 'noop_with_empty_axes' is true. Accepted range is
+            [-r, r-1] where r = rank(data). Default to None.
+        keepdims (int): Keep the reduced dimension or not, 1 means keeping the
+            input dimension, 0 will reduce it along the given axis. Default to 1.
+        noop_with_empty_axes (int): Defines behaviour if 'axes' is empty or set to None.
+            Default behaviour with 0 is to reduce all axes. When axes is empty and this
+            attribute is set to true 1, input tensor will not be reduced, and the output
+            tensor would be equivalent to input tensor. Default to 0.
+
+    Returns:
+        numpy.ndarray: Output reduced tensor.
+    """
+
+    assert_true(
+        axes is not None and len(axes.shape) == 1 and axes[0] == 1,
+        "ReduceSum currently only handles summing over axis 1.",
+    )
+
+    assert_true(len(a.shape) == 2, "ReduceSum currently only handles arrays of 2 dimensions")
+
+    assert_true(keepdims == 0, "ReduceSum currently only outputs reduced dimension tensors.")
+
+    n_values = a.shape[1]
+    assert_true(
+        (n_values != 0) and (n_values & (n_values - 1) == 0),
+        "ReduceSum currently only handles N values with N a power of 2.",
+    )
+
+    return (numpy.sum(a, axis=1, keepdims=False),)

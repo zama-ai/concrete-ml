@@ -240,8 +240,20 @@ class ONNXConverter:
 
                 # FIXME: Do not handle constants with QuantizedArray, use numpy.ndarray
                 # let the ops quantize their own inputs
+                constant_values = ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
+
+                # We only handle graphs that are full-floating point. In some cases, constants
+                # might be integers, such as tensor shapes. In this case, we just cast them to
+                # float, the operators that use these values will know that the values should be
+                # treated as integers.
+                # FIXME: Remove this when #1141 is fixed.
+                # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
+                if isinstance(constant_values, numpy.ndarray):
+                    constant_values = constant_values.astype(numpy.float64)
+
                 node_results[output_name] = self._process_initializer(
-                    self.n_bits_weights, ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
+                    self.n_bits_weights,
+                    constant_values,
                 )
                 constants.add(output_name)
                 continue

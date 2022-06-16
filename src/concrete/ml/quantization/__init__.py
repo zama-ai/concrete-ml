@@ -28,6 +28,7 @@ from .quantized_ops import (
     QuantizedPad,
     QuantizedPow,
     QuantizedPRelu,
+    QuantizedReduceSum,
     QuantizedRelu,
     QuantizedReshape,
     QuantizedRound,

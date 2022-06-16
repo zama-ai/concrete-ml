@@ -65,8 +65,13 @@ def get_equivalent_numpy_forward_and_onnx_model(
     )
 
 
+# FIXME: force_int tag was added for forcing outputs to be integers in trees since some numpy
+# operators require integers and not floats. It will probably become useless when #1117
+# (https://github.com/zama-ai/concrete-ml-internal/issues/1117) is fixed.
 def get_equivalent_numpy_forward(
-    onnx_model: onnx.ModelProto, check_model: bool = True
+    onnx_model: onnx.ModelProto,
+    check_model: bool = True,
+    force_int=False,
 ) -> Callable[..., Tuple[numpy.ndarray, ...]]:
     """Get the numpy equivalent forward of the provided ONNX model.
 
@@ -75,6 +80,7 @@ def get_equivalent_numpy_forward(
             forward.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
+        force_int (bool): Force outputs to become integers. Default to False.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
@@ -96,4 +102,4 @@ def get_equivalent_numpy_forward(
             f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
         )
 
-    return lambda *args: execute_onnx_with_numpy(onnx_model.graph, *args)
+    return lambda *args: execute_onnx_with_numpy(onnx_model.graph, *args, force_int=force_int)

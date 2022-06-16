@@ -440,7 +440,10 @@ class QuantizedReshape(QuantizedOp):
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
-        newshape = prepared_inputs[1].values
+
+        # FIXME: Remove this cast when #1141 is fixed.
+        # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
+        newshape = prepared_inputs[1].values.astype(numpy.int64)
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
@@ -1055,7 +1058,151 @@ class QuantizedFlatten(QuantizedOp):
         Flatten operation can not be fused since it must be performed over integer tensors.
 
         Returns:
-            bool: False, this operation can not be fused as it is manipulates integer tensors
+            bool: False, this operation can not be fused as it is manipulates integer tensors.
         """
 
         return False
+
+
+class QuantizedReduceSum(QuantizedOp):
+    """ReduceSum with encrypted input."""
+
+    _impl_for_op_named: str = "ReduceSum"
+
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: Optional[QuantizationOptions] = None,
+        **attrs,
+    ) -> None:
+        """Construct the quantized ReduceSum operator and retrieve parameters.
+
+        Args:
+            n_bits_output (int): Number of bits for the operator's quantization of outputs.
+            int_input_names (Optional[Set[str]]): Names of input integer tensors. Default to None.
+            constant_inputs (Optional[Dict]): Input constant tensor.
+                axes (Optional[numpy.ndarray]): Array of integers along which to reduce.
+                    The default is to reduce over all the dimensions of the input tensor if
+                    'noop_with_empty_axes' is false, else act as an Identity op when
+                    'noop_with_empty_axes' is true. Accepted range is [-r, r-1] where
+                    r = rank(data). Default to None.
+            input_quant_opts (Optional[QuantizationOptions]): Options for the input quantizer.
+                Default to None.
+            attrs (dict): RecuseSum options.
+                keepdims (int): Keep the reduced dimension or not, 1 means keeping the
+                    input dimension, 0 will reduce it along the given axis. Default to 1.
+                noop_with_empty_axes (int): Defines behaviour if 'axes' is empty or set to None.
+                    Default behaviour with 0 is to reduce all axes. When axes is empty and this
+                    attribute is set to true 1, input tensor will not be reduced, and the output
+                    tensor would be equivalent to input tensor. Default to 0.
+        """
+
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # This attribute is truly set when calling the calibrate method
+        self.input_shapes = None
+
+        # Retrieve and set the ONNX parameters
+        self.keepdims = attrs.get("keepdims", 1)
+        self.noop_with_empty_axes = attrs.get("noop_with_empty_axes", 0)
+
+        assert_true(
+            self.keepdims == 0, "ReduceSum currently only outputs reduced dimension tensors."
+        )
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Sum the encrypted tensor's values over axis 1.
+
+        Args:
+            q_inputs (QuantizedArray): An encrypted integer tensor at index 0.
+            attrs (Dict): Contains axis attribute.
+
+        Returns:
+            (QuantizedArray): The sum of all values along axis 1 as an encrypted integer tensor.
+        """
+
+        assert_true(len(q_inputs) == 1, "ReduceSum only takes a single input")
+
+        assert_true(self.input_shapes is not None, "Calibrate needs to be called on the operator")
+
+        n_values = self.input_shapes[0][1]  # type: ignore
+        assert_true(
+            (n_values != 0) and (n_values & (n_values - 1) == 0),
+            "ReduceSum only handles N values with N a power of 2.",
+        )
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        axes = prepared_inputs[1]
+        assert_true(
+            axes is not None and len(axes.values.shape) == 1 and axes.values[0] == 1,
+            "ReduceSum currently only handles summing over axis 1.",
+        )
+
+        input_qarray = prepared_inputs[0].qvalues
+        assert_true(
+            len(input_qarray.shape) == 2,
+            "ReduceSum currently only handles arrays of 2 dimensions",
+        )
+
+        # Computing the total depth of the tree
+        total_depth = int(numpy.log2(n_values))
+
+        # Applying the tree sum technique with only one MSB.
+        # Since our accumulators have limited bitwidth, it is impossible to sum many integers of a
+        # certain precision (number of bits used) using numpy.sum() without overflowing. Therefore,
+        # the idea is first to sum all pairs of integers (precision: p + p = p+1) and then divide
+        # (floor division) the result by 2 (giving a precision of p). Multiplying this result by 2
+        # later gives the original sum, minus a bit of error (0 or 1). We then do this step again
+        # to each results until we get only one integer (MSB, for Most Valuable Bits), creating
+        # an inversed binary tree (for n_values a power of 2). Therefore, the final sum can be
+        # found by computing MSB*(2**total_depth) = MSB*n_values. The total amount of error caused
+        # by this technique can reach up to total_depth*(n_values)/2 and is independent of the
+        # actual integers' precision. However, the method doesn't properly work with
+        # non-uniformally distributed input values, causing the MSB to vanish before the
+        # reconstruction of the sum.
+        for depth in range(total_depth, 0, -1):
+            step = 2**depth
+            sum_arr = input_qarray[:, 0:step:2] + input_qarray[:, 1 : step + 1 : 2]
+            input_qarray = sum_arr // 2
+
+        # Dequantize the values to float
+        quantizer = prepared_inputs[0].quantizer
+        scaled_msbs = quantizer.scale * (input_qarray[:, 0] + -(quantizer.zero_point))
+
+        # Reconstruct the total sum. We need to keep the same range between the dequantized
+        # values and the calibrated float computations
+        # Note: 2**total_depth = n_values
+        final_sum = scaled_msbs * n_values
+
+        output_qarray = QuantizedArray(
+            self.n_bits,
+            final_sum,
+            value_is_float=True,
+            options=self.input_quant_opts,
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )
+        return output_qarray
+
+    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+        """Create corresponding QuantizedArray for the ReduceSum output.
+
+        Each inputs' shape need to be traced for the ReduceSum operator.
+
+        Args:
+            *inputs (numpy.ndarray): Calibration sample inputs.
+
+        Returns:
+            numpy.ndarray: the output values for the provided calibration samples.
+        """
+        # We need to trace the inputs' shapes in the class operator in order to apply the tree sum
+        # technique in the q_impl method. The reason is that it is currently not possible to execute
+        # a loop on an range based on an encrypted tensor's length.
+        self.input_shapes = tuple(input.shape for input in inputs)  # type: ignore
+
+        return super().calibrate(*inputs)
