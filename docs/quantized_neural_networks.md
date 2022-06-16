@@ -108,4 +108,4 @@ overflow errors. A value of 1 should be completely safe with respect to overflow
 
 ### Examples
 
-A similar example is given in the [classifier comparison notebook](advanced_examples/ClassifierComparison.ipynb).
+A similar example is given in the [classifier comparison notebook](advanced_examples.md).

@@ -1,5 +1,9 @@
 # What is **Concrete ML**?
 
+```{note}
+FIXME: to be done, Benoit
+```
+
 ## Introduction
 
 **Concrete-ML** is an open-source package, built on top of **Concrete-Numpy**. Its purpose is to allow data scientists without any prior knowledge of cryptography to automatically turn machine learning (ML) models into their fully homomorphic encryption (FHE) equivalent.
@@ -26,7 +30,7 @@ We refer the reader to **Concrete-Numpy** [documentation](https://docs.zama.ai/c
 
 ## A work in progress
 
-This is the very first version of the package, so, even if we are able to show very appealing examples (see [our examples](advanced_examples/index.rst), it is neither complete nor bug-free and not quite as efficient as one would hope. We will improve it in further releases.
+This is the very first version of the package, so, even if we are able to show very appealing examples (see [our examples](advanced_examples.md), it is neither complete nor bug-free and not quite as efficient as one would hope. We will improve it in further releases.
 
 The main difficulty is that some models currently do not work well due to the fact that **Concrete-Library** only supports 8 bits. Because of this, we sometimes have to quantize too much, which has a strong negative impact on certain models. Further, because **Concrete-Compiler** is also a work in progress, we have FHE programs which are sometimes too slow (notably, parallelism is lacking and will be updated soon) or they may require a massive amount of RAM. Last but not least, we have selected some models for this release, and we will add more in future releases.
 

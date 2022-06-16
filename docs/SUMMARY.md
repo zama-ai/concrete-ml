@@ -1,5 +1,9 @@
 # User Guide
 
+```{note}
+FIXME: to be done, Benoit
+```
+
 - [What is Concrete ML?](INTRO.md)
 
 ## Introduction
@@ -20,7 +24,7 @@
 - [Linear models](linear.md)
 - [Tree-based models](tree.md)
 - [Neural Networks](neural_network.md)
-- [Examples](examples.md)
+- [Advanced Examples](advanced_examples.md)
 
 ## Pre-processing with Concrete-Numpy
 

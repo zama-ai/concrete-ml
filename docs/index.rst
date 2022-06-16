@@ -24,7 +24,7 @@ A work in progress
 
 One of the main current difficulties is that some models currently do not work well due to the fact that **Concrete-Library** only supports 8 bits. Because of this, we sometimes have to quantize too much, which has a strong negative impact on certain models. Further, because **Concrete-Compiler** is also a work in progress, we have FHE programs which are sometimes too slow or they may require a massive amount of RAM: improvements on this front will come in future releases.
 
-Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see `examples <advanced_examples/index.rst>`__).
+Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see `examples <advanced_examples.md>`__).
 
 Resources
 ----------------------------------
@@ -69,7 +69,7 @@ Additionally, academic and white papers will be published, explaining interestin
     linear.md
     tree.md
     quantized_neural_networks.md
-    Examples <advanced_examples/index.rst>
+    advanced_examples.md
 
 .. toctree::
     :maxdepth: 0

@@ -595,6 +595,7 @@ check_links:
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
 	poetry run linkchecker docs --check-extern \
+		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \

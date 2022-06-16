@@ -48,7 +48,7 @@ While floating point values have 32 bits of precision, machine learning datasets
 
 For a more practical example, the MNIST classification task consists of taking an image, a 28x28 array containing uint8 values representing a handwritten digit, and predicting whether it belongs to one of 10 classes: the digits from 0 to 9. The output is a one-hot vector which indicates the class to which a particular sample belongs.
 
-The input contains 28x28x8 bits, so 6272 bits of information. In practice, you could still obtain good results on MNIST by thresholding the pixels to {0, 1} and training a model for this new binarized MNIST task. This means that in a real use case where you actually need to perform digit recognition, you could binarize your input on the fly, replacing each pixel with either 0 or 1. In doing so, you use 1 bit per pixel and now only have 784 bits of input data. It also means that if you are doing some accumulation (adding pixel values together), you are going to need accumulators that are smaller (adding 0s and 1s requires less space than adding values ranging from 0 to 255). An example of MNIST classification with a quantized neural network is given in the [CNN advanced example](advanced_examples/ConvolutionalNeuralNetwork.ipynb).
+The input contains 28x28x8 bits, so 6272 bits of information. In practice, you could still obtain good results on MNIST by thresholding the pixels to {0, 1} and training a model for this new binarized MNIST task. This means that in a real use case where you actually need to perform digit recognition, you could binarize your input on the fly, replacing each pixel with either 0 or 1. In doing so, you use 1 bit per pixel and now only have 784 bits of input data. It also means that if you are doing some accumulation (adding pixel values together), you are going to need accumulators that are smaller (adding 0s and 1s requires less space than adding values ranging from 0 to 255). An example of MNIST classification with a quantized neural network is given in the [CNN advanced example](advanced_examples.md).
 
 This shows how adapting your data or model parameters can allow you to use models that may require smaller data types (i.e. use less precision) to perform their computations.
 
@@ -57,7 +57,7 @@ Binarization is an extreme case of quantization which is introduced [here](quant
 ```
 
 ```{note}
-While applying quantization directly to the input features is mandatory to reduce the effective bit width of computations, a different and complementary approach is dimensionality reduction. This can be accomplished through Principal Component Analysis (PCA) as shown in the [Poisson Regression example](advanced_examples/PoissonRegression.ipynb)
+While applying quantization directly to the input features is mandatory to reduce the effective bit width of computations, a different and complementary approach is dimensionality reduction. This can be accomplished through Principal Component Analysis (PCA) as shown in the [Poisson Regression example](advanced_examples.md)
 ```
 
 ## Model accuracy concerns when using quantization
@@ -66,7 +66,7 @@ Quantization and dimensionality reduction reduce the bit width required to run t
 
 However, quantization and, especially, binarization, induce a loss in the accuracy of the model since its representation power is diminished. Carefully choosing a quantization approach for model parameters can alleviate accuracy loss, all the while allowing compilation to FHE.
 
-The quantization of model parameters and model inputs is illustrated in the advanced examples for [Linear Regression](advanced_examples/LinearRegression.ipynb) and for [Logistic Regression](advanced_examples/LogisticRegression.ipynb). Note that different quantization parameters are used for inputs and for model weights.
+The quantization of model parameters and model inputs is illustrated in the advanced examples for [Linear and Logistic Regressions](advanced_examples.md). Note that different quantization parameters are used for inputs and for model weights.
 
 ## Limitations for FHE friendly neural networks
 
