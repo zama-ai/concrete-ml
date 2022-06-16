@@ -1,8 +1,15 @@
 # Installing with pip
 
-**Concrete-ML** can be run on **Linux based OSes** as well as **macOS on x86 CPUs**. These hardware requirements are dictated by **Concrete-Lib**.
+## Conditions on OS
 
-Do note that since **WSL on Windows** is a Linux based OS, **Concrete-ML** will work as long as the package is not mandated in the /mnt/c/ directory, which corresponds to the host OS filesystem.
+**Concrete-ML** can be run on **Linux based OSes** as well as **macOS on x86 CPUs** (for **Apple Silicon CPUs**, there is currently no support, Docker needs to be used). For **Windows**, one can:
+
+- either use **WSL on Windows**, which is a Linux based OS: **Concrete-ML** will work as long as the package is not installed in the /mnt/c/ directory, which corresponds to the host OS filesystem.
+- or use Docker, see [instructions here](docker_installing.md)
+
+These hardware requirements are dictated by **Concrete-Lib**.
+
+## Actual installation steps
 
 To install **Concrete-ML** from PyPi, run the following:
 
