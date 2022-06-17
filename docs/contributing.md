@@ -1,11 +1,7 @@
 # Contribute
 
-```{note}
-FIXME: Benoit to check
-```
-
 ```{important}
-There are two ways to contribute to **Concrete-ML** or to **Concrete** tools in general:
+There are two ways to contribute to **Concrete-ML**:
 - You can open issues to report bugs and typos and to suggest ideas.
 - You can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do!
 ```
@@ -57,7 +53,7 @@ make pytest
 
 The last requirement is to make sure you get 100 percent code coverage. The `make pytest` command checks that by default and will fail with a coverage report at the end should some lines of your code not be executed during testing.
 
-If your coverage is below 100 percent, you should write more tests and then create the pull request (PR). If you ignore this warning and create the PR, GitHub actions will fail and your PR will not be merged.
+If your coverage is below 100 percent, you should write more tests and then create the pull request. If you ignore this warning and create the PR, GitHub actions will fail and your PR will not be merged.
 
 There may be cases where covering your code is not possible (an exception that cannot be triggered in normal execution circumstances). In those cases, you may be allowed to disable coverage for some specific lines. This should be the exception rather than the rule, and reviewers will ask why some lines are not covered. If it appears they can be covered, then the PR won't be accepted in that state.
 
@@ -80,10 +76,6 @@ git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
 
 ## Before creating a pull request
-
-```{important}
-We remind you that only official contributors can send pull requests. To become an official contributor, please email hello@zama.ai.
-```
 
 You should rebase on top of the `main` branch before you create your pull request. We don't allow merge commits, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
 
