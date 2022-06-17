@@ -786,16 +786,20 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
     "n_values, n_bits",
     [
         pytest.param(
-            2**power_n_values,
+            n_values := 2**power_n_values,
             n_bits,
-            id=f"reduce_sum_{2**power_n_values}_values_{n_bits}_bits_in_FHE_(VL)",
+            id=(
+                f"reduce_sum_{n_values}_values"  # pylint: disable=undefined-variable
+                f"_{n_bits}_bits_in_FHE_(VL)"
+            ),
         )
         for power_n_values in range(8)
         for n_bits in range(1, 6)
     ],
 )
 def test_reduce_sum(n_values, n_bits):
-    """Test the QuantizedReduceSum operator on values that sum up to 1."""
+    """Test the QuantizedReduceSum operator."""
+    max_value = 2 ** (n_bits - 1)
 
     # Initialize the axes constant
     axes = QuantizedArray(n_bits, numpy.array([1.0]))
@@ -804,9 +808,7 @@ def test_reduce_sum(n_values, n_bits):
     quantized_op = QuantizedReduceSum(n_bits, constant_inputs={"axes": axes}, keepdims=0)
 
     # Instantiate the inputs to that they all sum up to 1.
-    inputs = numpy.random.randint(
-        -(2 ** (n_bits - 1)), 2 ** (n_bits - 1), size=(1, n_values)
-    ).astype(numpy.float64)
+    inputs = numpy.random.randint(-max_value, max_value, size=(1, n_values)).astype(numpy.float64)
 
     # Compute the expected sum
     expected_sum = quantized_op.calibrate(inputs)[0]
@@ -825,12 +827,18 @@ def test_reduce_sum(n_values, n_bits):
     total_depth = int(numpy.log2(n_values))
     max_error = (n_values // 2) * total_depth
 
-    # Compute the error
-    error = abs(expected_sum - computed_sum)
-
     # Check if the error does not exceed the theoretical limit. An error term is added for
-    # handeling minor quantization artifacts for low bitwidth with small n_values.
-    assert error <= max_error + 10e-1, f"Wrong sum: Got a difference of {error:0.4f}"
+    # handeling minor quantization artifacts.
+    if n_values > 1:
+        error = abs(expected_sum - computed_sum) / max_error
+        assert (
+            error <= 1 + 10e-1
+        ), f"Error reached {error*100:0.2f}% of the max possible error ({max_error})"
+
+    # If only a single input value was considered, we expect no error from the sum.
+    else:
+        error = abs(expected_sum - computed_sum)
+        assert error < 10e-1, f"Got an unexpected error of {error:0.2f} with a single input value."
 
 
 def test_all_ops_were_tested():

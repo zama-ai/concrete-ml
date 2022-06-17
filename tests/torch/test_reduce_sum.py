@@ -28,18 +28,11 @@ class _TorchReduceSum(nn.Module):
 
 def get_numpy_input_and_inputset(n_values, max_value, n_samples=1, signed=False):
     """Create the input values needed for testing ReduceSum."""
-    inputset_samples = 100
-
     if signed:
         max_value = max_value // 2
         min_value = -max_value
     else:
         min_value = 0.0
-
-    if n_samples > 1:
-        inpuset_size = (inputset_samples, n_samples, n_values)
-    else:
-        inpuset_size = (inputset_samples, n_values)
 
     # Set an array of n_values integers with values in [min_value, max_value[
     numpy_input = numpy.random.randint(
@@ -47,15 +40,18 @@ def get_numpy_input_and_inputset(n_values, max_value, n_samples=1, signed=False)
     ).astype(numpy.float64)
 
     # Initialize the inputset for compilation
-    inputset = numpy.random.randint(low=min_value, high=max_value, size=inpuset_size).astype(
-        numpy.float64
-    )
+    if n_samples > 1:
+        inputset = numpy.random.randint(
+            low=min_value, high=max_value, size=(1, n_samples, n_values)
+        ).astype(numpy.float64)
 
-    # Setting min and max value in inpuset in order to make sure that the scale is correctly
-    # computed with only single inputs
-    if n_values == 1:
-        inputset[0][0] = min_value
-        inputset[-1][0] = max_value - 1
+    # Setting the inpuset with extreme values in order to make sure the scale and zero point values
+    # will be computed correctly during the quantization and dequantization process (for inputs as
+    # well as outputs)
+    else:
+        inputset = numpy.tile(
+            numpy.array([[min_value], [max_value - 1]], dtype=numpy.float64), (1, n_values)
+        )
 
     return numpy_input, inputset
 
@@ -93,16 +89,9 @@ def execute_reduce_sum(
         # Check that no error comes from the quantization process
         quantizer = quantized_numpy_module.input_quantizers[0]
 
-        # Quantizing a single input can create some slight error
-        if numpy_input.shape[1] > 1:
-            scale_error = 0.0
-        else:
-            # scale_error = 10e-1
-            scale_error = 0.0
-
-        assert abs(1.0 - quantizer.scale) <= scale_error and quantizer.zero_point == 2 ** (
-            n_bits - 1
-        ), ("Wrong quantization on inputs: should be 'one to one'." f"Got {numpy_input}")
+        assert quantizer.scale == 1.0 and quantizer.zero_point == 2 ** (n_bits - 1), (
+            "Wrong quantization on inputs: should be 'one to one'." f"Got {numpy_input}"
+        )
 
         # Quantize the input
         q_input = quantized_numpy_module.quantize_input(numpy_input)
@@ -187,10 +176,17 @@ def test_sum(n_values, n_bits, in_fhe, use_virtual_lib, default_configuration, i
     expected_sum = numpy.sum(numpy_input)
 
     # Check if the error does not exceed the theoretical limit. An error term is added for
-    # handeling minor quantization artifacts for low bitwidth with small n_values.
-    error = abs(expected_sum - computed_sum[0]) / (max_error + 10e-1)
-    assert error <= 1, f"Error reached {error:0.2f}% of the max possible error ({max_error})"
-    # assert error <= 0, f"Error reached {error:0.2f}% of the max possible error ({max_error})"
+    # handeling minor quantization artifacts.
+    if n_values > 1:
+        error = abs(expected_sum - computed_sum[0]) / max_error
+        assert (
+            error <= 1 + 10e-2
+        ), f"Error reached {error*100:0.2f}% of the max possible error ({max_error})"
+
+    # If only a single input value was considered, we expect no error from the sum.
+    else:
+        error = abs(expected_sum - computed_sum[0])
+        assert error < 10e-1, f"Got an unexpected error of {error:0.2f} with a single input value."
 
 
 def generate_parameters_and_id():
