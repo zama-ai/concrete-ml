@@ -23,7 +23,7 @@ VERSION=X.Y.Z-rc? make set_version
 Then:
 - [ ] For non RC releases: check the release milestone issues, cut out what can't be completed in time and change the milestones for these issues
 - [ ] Checkout the commit for release
-- [ ] Call `make release`, which creates a signed tag (requires GPG keys setup, see [here](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification)) and pushes it
+- [ ] Call `make release`. It will create a signed tag (requires GPG keys setup, see [here](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification)) and push it for you
 - [ ] Wait for the release workflow ([here](https://github.com/zama-ai/concrete-ml-internal/actions)) to finish and check everything went well. It should take a bit longer than a classical build
 
 For public releases:
