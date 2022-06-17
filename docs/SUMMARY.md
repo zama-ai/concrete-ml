@@ -1,9 +1,5 @@
 # User Guide
 
-```{note}
-FIXME: to be done, Benoit
-```
-
 - [What is Concrete ML?](INTRO.md)
 
 ## Introduction
