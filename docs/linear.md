@@ -48,7 +48,8 @@ X, y = make_classification(
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
 # Instantiate the model
-model = LogisticRegression(n_bits=6)
+n_bits = {"net_inputs": 5, "op_inputs": 5, "op_weights": 2, "net_outputs": 8}
+model = LogisticRegression(n_bits=n_bits)
 
 # Fit the model
 model.fit(X_train, y_train)
@@ -57,14 +58,10 @@ model.fit(X_train, y_train)
 model.compile(X_train)
 
 # Perform the inference in FHE
-y_pred = model.predict(X_test, execute_in_fhe=True)
-
-# Check the model's accuracy
-print(f"Accuracy: {numpy.mean(y_pred == y_test)*100:0.2f}%")
-
-# Output : 
-#   90%
-
+# Warning: this will take a while. It is recommended to run this with a very small batch of 
+# example first (e.g. N_TEST_FHE = 1)
+N_TEST_FHE = 1
+y_pred = model.predict(X_test[:N_TEST_FHE], execute_in_fhe=True)
 ```
 
 ## Visual comparison

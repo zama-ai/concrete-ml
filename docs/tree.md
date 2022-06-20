@@ -9,7 +9,7 @@
 | [DecisionTreeClassifier](_apidoc/concrete.ml.sklearn.html?highlight=decisiontreeclassifier#concrete.ml.sklearn.tree.DecisionTreeClassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
 |  [RandomForestClassifier](_apidoc/concrete.ml.sklearn.html?highlight=randomforestclassifier#concrete.ml.sklearn.rf.RandomForestClassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
 
-Using those models in FHE is extremely similar to what can be done with scikit-learn's API. Any data scientists that are used to this framework should find the FHE tools very straightforward. More details about compiling and running any simple models can be found [here](simple_compilation.md).
+Using those models in FHE is extremely similar to what can be done with scikit-learn's  \[API\](https://scikit-learn.org/stable/modules/classes. Any data scientists that are used to this framework should find the FHE tools very straightforward. More details about compiling and running any simple models can be found [here](simple_compilation.md).
 
 Models from **Concrete-ML** are also compatible with some of scikit-learn's main worflows, such as `Pipeline()` or `GridSearch()`. See below for an example on how to use both.
 
@@ -81,21 +81,21 @@ print(f"Best parameters found: {grid.best_params_}")
 #   2. estimator
 best_pipeline = grid.best_estimator_
 data_transformation_pipeline = best_pipeline[:-1]
-clf = best_pipeline[-1]
+model = best_pipeline[-1]
 
 # Transform test set
 X_train_transformed = data_transformation_pipeline.transform(X_train)
 X_test_transformed = data_transformation_pipeline.transform(X_test)
 
 # Evaluate the model on the test set (no FHE)
-y_pred_clear = clf.predict(X_test_transformed)
-print(f"Test accuracy: {(y_pred_clear == y_test).mean()}")
+y_pred_clear = model.predict(X_test_transformed)
+print(f"Test accuracy in clear: {(y_pred_clear == y_test).mean()}")
 
 # Output:
 #   Test accuracy: 0.947
 
 # Compile the model to FHE
-clf.compile(X_train_transformed)
+model.compile(X_train_transformed)
 
 # Run the model in FHE
 # Warning: this will take a while.
@@ -103,7 +103,7 @@ clf.compile(X_train_transformed)
 #          (e.g. N_TEST_FHE = 1)
 # Note that here the encryption and decryption is done behind the scene.
 N_TEST_FHE = 1
-y_pred_fhe = clf.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
+y_pred_fhe = model.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
 
 # Assert that FHE predictions are the same as the clear predictions
 print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
