@@ -89,9 +89,9 @@ def execute_reduce_sum(
         # Check that no error comes from the quantization process
         quantizer = quantized_numpy_module.input_quantizers[0]
 
-        assert quantizer.scale == 1.0 and quantizer.zero_point == 2 ** (n_bits - 1), (
-            "Wrong quantization on inputs: should be 'one to one'." f"Got {numpy_input}"
-        )
+        assert quantizer.scale == 1.0 and quantizer.zero_point == 2 ** (
+            n_bits - 1
+        ), "Wrong quantization of inputs: should be 'one to one'."
 
         # Quantize the input
         q_input = quantized_numpy_module.quantize_input(numpy_input)
@@ -180,13 +180,13 @@ def test_sum(n_values, n_bits, in_fhe, use_virtual_lib, default_configuration, i
     if n_values > 1:
         error = abs(expected_sum - computed_sum[0]) / max_error
         assert (
-            error <= 1 + 10e-2
+            error <= 1 + 10e-6
         ), f"Error reached {error*100:0.2f}% of the max possible error ({max_error})"
 
     # If only a single input value was considered, we expect no error from the sum.
     else:
         error = abs(expected_sum - computed_sum[0])
-        assert error < 10e-1, f"Got an unexpected error of {error:0.2f} with a single input value."
+        assert error < 10e-6, f"Got an unexpected error of {error:0.2f} with a single input value."
 
 
 def generate_parameters_and_id():

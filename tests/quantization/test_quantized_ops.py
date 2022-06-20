@@ -803,21 +803,32 @@ def test_reduce_sum(n_values, n_bits):
 
     # Initialize the axes constant
     axes = QuantizedArray(n_bits, numpy.array([1.0]))
+    keepdims = 0
 
     # Instantiate the operator
-    quantized_op = QuantizedReduceSum(n_bits, constant_inputs={"axes": axes}, keepdims=0)
+    quantized_op = QuantizedReduceSum(n_bits, constant_inputs={"axes": axes}, keepdims=keepdims)
 
     # Instantiate the inputs to that they all sum up to 1.
     inputs = numpy.random.randint(-max_value, max_value, size=(1, n_values)).astype(numpy.float64)
 
-    # Compute the expected sum
-    expected_sum = quantized_op.calibrate(inputs)[0]
+    inputset = numpy.tile(
+        numpy.array([[-max_value], [max_value - 1]], dtype=numpy.float64), (1, n_values)
+    )
+
+    quantized_op.calibrate(inputset)
 
     # Set the quantized inputs
-    q_inputs = QuantizedArray(n_bits, inputs)
+    q_inputs = QuantizedArray(n_bits, inputs, rmin=-max_value, rmax=max_value - 1)
+
+    assert q_inputs.quantizer.scale == 1.0 and q_inputs.quantizer.zero_point == 2 ** (
+        n_bits - 1
+    ), "Wrong quantization of inputs: should be 'one to one'."
 
     # Compute the sum given by the operator
     computed_sum = quantized_op(q_inputs).dequant()[0]
+
+    # Compute the expected sum
+    expected_sum = quantized_op.call_impl(inputs, axes=axes.values, keepdims=keepdims)[0]
 
     # Set the maximum error possible using the MSB-only algorithm. This max error is relevant only:
     # - if there is not quantization error
@@ -832,13 +843,13 @@ def test_reduce_sum(n_values, n_bits):
     if n_values > 1:
         error = abs(expected_sum - computed_sum) / max_error
         assert (
-            error <= 1 + 10e-1
+            error <= 1.0 + 10e-6
         ), f"Error reached {error*100:0.2f}% of the max possible error ({max_error})"
 
     # If only a single input value was considered, we expect no error from the sum.
     else:
         error = abs(expected_sum - computed_sum)
-        assert error < 10e-1, f"Got an unexpected error of {error:0.2f} with a single input value."
+        assert error < 10e-6, f"Got an unexpected error of {error:0.2f} with a single input value."
 
 
 def test_all_ops_were_tested():

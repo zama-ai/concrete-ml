@@ -169,6 +169,7 @@ pytest:
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
 pytest_one:
 	poetry run pytest --durations=10 -svv \
+	--capture=tee-sys \
 	-n $$(./script/make_utils/ncpus.sh) \
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
@@ -181,6 +182,7 @@ pytest_one:
 # checks
 pytest_one_single_cpu:
 	poetry run pytest -svv \
+	--capture=tee-sys \
 	--randomly-dont-reorganize \
 	--randomly-dont-reset-seed \
 	${PYTEST_OPTIONS} \
