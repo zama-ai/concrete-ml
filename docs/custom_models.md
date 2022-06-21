@@ -73,33 +73,14 @@ x_test_quantized = quantized_numpy_module.quantize_input(x_test)
 You can then call
 
 - `quantized_numpy_module.forward_and_dequant()` to compute predictions in the clear,
-  on quantized data and then de-quantize the result:
+  on quantized data and then de-quantize the result. The return value of this function contains
+  the dequantized (float) output of running the model in the clear. Calling the forward
+  function on the clear data is useful when debugging.
+  The results in FHE will be the same as those on clear quantized data.
 
-<!--pytest-codeblocks:cont-->
-
-```python
-clear_quantized_prediction = quantized_numpy_module.forward_and_dequant(x_test_quantized)
-```
-
-`clear_prediction` now contains the dequantized (float) output of running the model on `x_test_quantized`. Calling the forward function on the clear data is useful when debugging. The results in FHE will be the same as those on clear quantized data.
-
-- `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to perform the FHE inference. In this case, de-quantization is done in a second stage.
-
-<!--pytest-codeblocks:skipif(True)-->
-
-```python
-fhe_prediction = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(x_test_quantized)
-```
-
-`fhe_prediction` contains the clear quantized output. The user can now de-quantize the output to get the actual floating point prediction as follows:
-
-<!--pytest-codeblocks:skipif(True)-->
-
-```python
-fhe_output = quantized_numpy_module.dequantize_output(
-    numpy.array(fhe_prediction)
-)
-```
+- `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to perform the FHE inference.
+  In this case, de-quantization is done in a second stage using
+  `quantized_numpy_module.dequantize_output()`.
 
 We trained this network for three different numbers of hidden layer neurons, quantized it and compiled it to FHE.
 We then used the [FHE assistant](fhe_assistant.md) to get the observed accumulator size. We report the mean accumulator size for 10 networks trained in each setting.
