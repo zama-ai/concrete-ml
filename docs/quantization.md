@@ -83,9 +83,9 @@ print("q_A.qvalues = ", q_A.qvalues)
 # array([ 37,          73,          48,         36,          9,
 #         58,          12,          112,        127,         0])
 # the quantized integers values from A.
-print("q_A.scale = ", q_A.scale)
+print("q_A.quantizer.scale = ", q_A.quantizer.scale)
 # 0.018274684777173276, the scale S.
-print("q_A.zero_point = ", q_A.zero_point)
+print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 # 26, the zero point Z.
 print("q_A.dequant() = ", q_A.dequant())
 # array([ 0.20102153,  0.85891018,  0.40204307,  0.18274685, -0.31066964,
@@ -101,15 +101,15 @@ take negative values.
 ```python
 q_A = QuantizedArray(3, A)
 print("Unsigned: q_A.qvalues = ", q_A.qvalues)
-print("q_A.zero_point = ", q_A.zero_point)
+print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 # Unsigned: q_A.qvalues =  [2 4 2 2 0 3 0 6 7 0]
-# q_A.zero_point =  1
+# q_A.quantizer.zero_point =  1
 
 q_A = QuantizedArray(3, A, is_signed=True, is_symmetric=True)
 print("Signed Symmetric: q_A.qvalues = ", q_A.qvalues)
-print("q_A.zero_point = ", q_A.zero_point)
+print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 # Signed Symmetric: q_A.qvalues =  [ 0  1  1  0  0  1  0  3  3 -1]
-# q_A.zero_point =  0
+# q_A.quantizer.zero_point =  0
 ```
 
 ## Machine learning models in the quantized realm
