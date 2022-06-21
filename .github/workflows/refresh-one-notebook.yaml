@@ -16,6 +16,7 @@ on:
         - LinearRegression \n
         - LogisticRegression \n
         - PoissonRegression \n
+        - QuantizationAwareTraining \n
         - XGBClassifier \n
         "
         # --- refresh_notebooks_list.py: refresh list of notebooks currently available [END] ---
