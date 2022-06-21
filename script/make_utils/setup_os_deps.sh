@@ -116,6 +116,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         curl \
         ${PYTHON_PACKAGES:+$PYTHON_PACKAGES} \
         git \
+        git-lfs \
         graphviz* \
         jq \
         make \
@@ -137,7 +138,7 @@ elif [[ "${OS_NAME}" == "Darwin" ]]; then
     # activated later in this script, the status is still 0 == success
     brew unlink git@2.35.1 | cat
 
-    brew install curl git gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint unzip
+    brew install curl git git-lfs gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint unzip
     python3 -m pip install -U pip
     python3 -m pip install poetry
 

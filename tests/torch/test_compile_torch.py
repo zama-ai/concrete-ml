@@ -1,11 +1,14 @@
 """Tests for the torch to numpy module."""
+import io
 import tempfile
+import zipfile
 from functools import partial
 from inspect import signature
 from pathlib import Path
 
 import numpy
 import onnx
+import onnxruntime as ort
 import pytest
 import torch
 import torch.quantization
@@ -674,3 +677,100 @@ def test_dump_torch_network(
         dump_onnx=True,
         expected_onnx_str=expected_onnx_str,
     )
+
+
+def test_pretrained_mnist_qat(default_configuration, check_accuracy):
+    """Load a QAT MNIST model and make sure we get the same results in VL as with ONNX."""
+
+    onnx_file_path = "tests/data/mnist_2b_s1_1.zip"
+    mnist_test_path = "tests/data/mnist_test_batch.zip"
+
+    # Load ONNX model from zip file
+    with zipfile.ZipFile(onnx_file_path, "r") as archive_model:
+        onnx_model_serialized = io.BytesIO(archive_model.read("mnist_2b_s1_1.onnx")).read()
+        onnx_model = onnx.load_model_from_string(onnx_model_serialized)
+
+    onnx.checker.check_model(onnx_model)
+
+    # Load test data and ground truth from zip file
+    with zipfile.ZipFile(mnist_test_path, "r") as archive_data:
+        mnist_data = numpy.load(
+            io.BytesIO(archive_data.read("mnist_test_batch.npy")), allow_pickle=True
+        ).item()
+
+    # Get the test data
+    inputset = mnist_data["test_data"]
+
+    # Run through ONNX runtime and collect results
+    ort_session = ort.InferenceSession(onnx_model_serialized)
+
+    onnx_results = numpy.zeros((inputset.shape[0],), dtype=numpy.int64)
+    for i, x_test in enumerate(inputset):
+        onnx_outputs = ort_session.run(
+            None,
+            {onnx_model.graph.input[0].name: x_test.reshape(1, -1)},
+        )
+        onnx_results[i] = numpy.argmax(onnx_outputs[0])
+
+    # Compile to Concrete ML with the Virtual Library, with a high bitwidth
+    n_bits = {
+        "net_inputs": 16,
+        "op_weights": 2,
+        "op_inputs": 2,
+        "net_outputs": 16,
+    }
+
+    quantized_numpy_module = compile_onnx_model(
+        onnx_model,
+        inputset,
+        import_qat=True,
+        configuration=default_configuration,
+        n_bits=n_bits,
+        use_virtual_lib=True,
+    )
+
+    num_inputs = 1
+
+    # Create test data tuple
+    x_test = tuple(inputset for _ in range(num_inputs))
+
+    # Check the forward works with the high bitwidth
+    qtest = quantized_numpy_module.quantize_input(*x_test)
+    if not isinstance(qtest, tuple):
+        qtest = (qtest,)
+
+    assert quantized_numpy_module.is_compiled
+
+    # Collect VL results
+    results = []
+    for i in range(inputset.shape[0]):
+        q_x = tuple(qtest[input][[i]] for input in range(len(qtest)))
+        q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
+        result = quantized_numpy_module.dequantize_output(q_result)
+        result = numpy.argmax(result)
+        results.append(result)
+
+    # Compare ONNX runtime vs Virtual Lib
+    check_accuracy(onnx_results, results, threshold=0.999)
+
+    # Make sure absolute accuracy is good, this model should have at least 90% accuracy
+    check_accuracy(mnist_data["gt"], results, threshold=0.9)
+
+    # Compile to Concrete ML with the Virtual Library with an FHE compatible bitwidth
+    n_bits = {
+        "net_inputs": 7,
+        "op_weights": 2,
+        "op_inputs": 2,
+        "net_outputs": 7,
+    }
+
+    quantized_numpy_module = compile_onnx_model(
+        onnx_model,
+        inputset,
+        import_qat=True,
+        configuration=default_configuration,
+        n_bits=n_bits,
+        use_virtual_lib=False,
+    )
+
+    assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8

@@ -96,7 +96,7 @@ def test_quantized_array_constructor():
     values = numpy.random.uniform(0, 1, size=value_shape)
 
     # Create an array with precomputed statistics
-    qarr = QuantizedArray(2, values, stats=None, rmax=2, rmin=-1)
+    qarr = QuantizedArray(2, values, stats=None, rmax=2, rmin=-1, uvalues=[0, 1, 2])
 
     # Verify that the statistics were not recomputed
     assert qarr.quantizer.rmax == 2

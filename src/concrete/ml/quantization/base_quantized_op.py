@@ -80,7 +80,7 @@ class QuantizedOp(ABC):
         self.n_bits = n_bits_output
 
         if input_quant_opts is not None:
-            self.input_quant_opts = input_quant_opts
+            self.input_quant_opts = deepcopy(input_quant_opts)
         else:
             # By default, if the input quantization options are not given
             # make the op work in legacy mode, where inputs and outputs are quantized
@@ -295,7 +295,8 @@ class QuantizedOp(ABC):
                 input_ = cast(QuantizedArray, input_)
 
                 # We use the op's input quantization options
-                quant_opts = self.input_quant_opts
+                quant_opts = QuantizationOptions(self.input_quant_opts.n_bits)
+                quant_opts.copy_opts(self.input_quant_opts)
 
                 # And if this op is in a QAT enabled graph, we disable QAT if this op is fusable
                 # If the op can be fused, quantization will not be used, no need to run the QAT
@@ -371,7 +372,7 @@ class QuantizedOp(ABC):
             self.n_bits,
             qoutput_activation,
             value_is_float=True,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
@@ -417,3 +418,19 @@ class QuantizedOp(ABC):
                   that can be fused to TLUs
         """
         return True
+
+    def _get_output_quant_opts(self):
+        """Return the output quantization options.
+
+        This function computes the output quantization options based on the input quantizer
+        and whether the operation can be fused to a TLU.
+
+        Returns:
+            output_quant_opts (QuantizationOptions): the options for output quantization
+        """
+
+        output_quant_opts = QuantizationOptions(self.input_quant_opts.n_bits)
+        output_quant_opts.copy_opts(self.input_quant_opts)
+        if self.can_fuse():
+            output_quant_opts.is_qat = False
+        return output_quant_opts

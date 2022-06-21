@@ -529,17 +529,23 @@ def test_quantized_conv(params, n_bits, check_r2_score):
         ),
     ],
 )
-def test_quantized_avg_pool(params, n_bits, check_r2_score):
+@pytest.mark.parametrize("is_signed", [True, False])
+def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score):
     """Test the quantized average pool operator."""
 
     # Retrieve arguments
     net_input, kernel_shape, strides, pads = params
 
     # Create quantized data
-    q_input = QuantizedArray(n_bits, net_input, is_signed=False)
+    q_input = QuantizedArray(n_bits, net_input, is_signed=is_signed)
 
     q_op = QuantizedAvgPool(
-        n_bits, strides=strides, pads=pads, kernel_shape=kernel_shape, ceil_mode=0
+        n_bits,
+        strides=strides,
+        pads=pads,
+        kernel_shape=kernel_shape,
+        ceil_mode=0,
+        input_quant_opts=q_input.quantizer.quant_options,
     )
 
     # Compute the result in floating point
@@ -631,11 +637,16 @@ def test_quantized_reshape(shape):
     data = numpy.arange(num_values).astype(numpy.float32)
     data = data.reshape(shape)
 
+    q_arr0 = QuantizedArray(n_bits_reshape, data)
+
     new_shape = (num_values,)
     new_shape_qarr = QuantizedArray(1, numpy.asarray(tuple(map(float, new_shape))))
-    reshape = QuantizedReshape(n_bits_reshape, constant_inputs={1: new_shape_qarr})
+    reshape = QuantizedReshape(
+        n_bits_reshape,
+        constant_inputs={1: new_shape_qarr},
+        input_quant_opts=q_arr0.quantizer.quant_options,
+    )
 
-    q_arr0 = QuantizedArray(n_bits_reshape, data)
     q_reshaped = reshape(q_arr0)
 
     assert q_reshaped.quantizer.zero_point == q_arr0.quantizer.zero_point
@@ -643,7 +654,11 @@ def test_quantized_reshape(shape):
     assert numpy.all(numpy.reshape(q_arr0.qvalues, new_shape) == q_reshaped.qvalues)
 
     shape_qarr = QuantizedArray(1, numpy.asarray(tuple(map(float, shape))))
-    reshape_back = QuantizedReshape(n_bits_reshape, constant_inputs={1: shape_qarr})
+    reshape_back = QuantizedReshape(
+        n_bits_reshape,
+        constant_inputs={1: shape_qarr},
+        input_quant_opts=q_arr0.quantizer.quant_options,
+    )
 
     q_arr1 = reshape_back(q_reshaped)
     assert q_arr1.quantizer.zero_point == q_arr0.quantizer.zero_point
@@ -818,7 +833,7 @@ def test_reduce_sum(n_values, n_bits):
     quantized_op.calibrate(inputset)
 
     # Set the quantized inputs
-    q_inputs = QuantizedArray(n_bits, inputs, rmin=-max_value, rmax=max_value - 1)
+    q_inputs = QuantizedArray(n_bits, inputs, rmin=-max_value, rmax=max_value - 1, uvalues=[])
 
     assert q_inputs.quantizer.scale == 1.0 and q_inputs.quantizer.zero_point == 2 ** (
         n_bits - 1
@@ -911,7 +926,8 @@ def test_all_ops_were_tested():
         pytest.param((10, 5, 2, 2), (10, 5, 2, 2), 3),
     ],
 )
-def test_quantized_flatten(input_shape, expected_shape, axis):
+@pytest.mark.parametrize("is_signed", [True, False])
+def test_quantized_flatten(input_shape, expected_shape, axis, is_signed):
     """Test the flatten operator on quantized data."""
 
     n_bits_reshape = 7
@@ -920,10 +936,12 @@ def test_quantized_flatten(input_shape, expected_shape, axis):
     num_values = numpy.prod(numpy.asarray(input_shape))
     data = numpy.arange(num_values).astype(numpy.float32)
     data = data.reshape(input_shape)
-    q_data = QuantizedArray(n_bits_reshape, data)
+    q_data = QuantizedArray(n_bits_reshape, data, is_signed=is_signed)
 
     # Create the operator and calibrate
-    flatten_op = QuantizedFlatten(n_bits_reshape, axis=axis)
+    flatten_op = QuantizedFlatten(
+        n_bits_reshape, axis=axis, input_quant_opts=q_data.quantizer.quant_options
+    )
     flatten_op.calibrate(data)
 
     # Flatten a quantized array of data

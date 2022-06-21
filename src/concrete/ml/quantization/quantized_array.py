@@ -129,6 +129,7 @@ class MinMaxQuantizationStats:
 
     rmax: Optional[float] = None
     rmin: Optional[float] = None
+    uvalues: Optional[numpy.ndarray] = None
 
     def compute_quantization_stats(self, values: numpy.ndarray) -> None:
         """Compute the calibration set quantization statistics.
@@ -139,6 +140,16 @@ class MinMaxQuantizationStats:
 
         self.rmin = numpy.min(values)
         self.rmax = numpy.max(values)
+
+        # To find unique float values we need to round. We round to 2 decimal figures.
+        # Floating point innacuracies in computation can lead to differences in the last
+        # decimal figures. We want to ignore such differences but also avoid
+        # coalescing float values that should be distinct
+        rvalues = numpy.round(values, decimals=2)
+
+        # Unique values from the distribution sample. These values are sorted
+        # in order to extract the quantization scale in the case of QAT
+        self.uvalues = numpy.unique(rvalues)
 
     @property
     def quant_stats(self):
@@ -162,6 +173,7 @@ class MinMaxQuantizationStats:
 
         self.rmax = stats.rmax
         self.rmin = stats.rmin
+        self.uvalues = stats.uvalues
 
 
 class UniformQuantizationParameters:
@@ -210,8 +222,11 @@ class UniformQuantizationParameters:
         """
 
         self.offset = 0
-        if options.is_signed and options.is_symmetric:
+        if options.is_signed:
             self.offset = 2 ** (options.n_bits - 1)
+
+        assert_true(not options.is_symmetric or options.is_signed)
+        assert_true(not options.is_qat or not options.is_symmetric)
 
         # for mypy
         assert stats.rmax is not None
@@ -244,17 +259,34 @@ class UniformQuantizationParameters:
                 self.scale = stats.rmax
                 self.zero_point = 0
         else:
-            if not options.is_qat and options.is_symmetric:
+            if options.is_symmetric:
+                assert_true(not options.is_qat)
                 self.zero_point = 0
                 self.scale = numpy.maximum(numpy.abs(stats.rmax), numpy.abs(stats.rmin)) / (
                     (2**options.n_bits - 1 - self.offset)
                 )
             else:
-                self.scale = (
-                    (stats.rmax - stats.rmin) / (2**options.n_bits - 1)
-                    if stats.rmax != stats.rmin
-                    else 1.0
-                )
+                if (
+                    options.is_qat
+                    and stats.uvalues is not None
+                    and stats.uvalues.size <= 2**options.n_bits
+                ):
+                    assert_true(
+                        len(stats.uvalues) > 1,
+                        "A single unique value was"
+                        "detected in a tensor of quantized values in a QAT import. Please check"
+                        "the stability thresholds.",
+                    )
+
+                    unique_scales = numpy.unique(numpy.diff(stats.uvalues))
+                    self.scale = unique_scales[0]
+
+                if self.scale is None:
+                    self.scale = (
+                        (stats.rmax - stats.rmin) / (2**options.n_bits - 1)
+                        if stats.rmax != stats.rmin
+                        else 1.0
+                    )
 
                 if options.is_qat:
                     self.zero_point = 0
@@ -323,11 +355,11 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.offset is not None
         assert self.scale is not None
 
-        return (
-            numpy.rint(values / self.scale + self.zero_point)
-            .clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
-            .astype(numpy.int64)
-        )
+        qvalues = numpy.rint(values / self.scale + self.zero_point)
+        if not self.is_qat:
+            qvalues = qvalues.clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
+
+        return qvalues.astype(numpy.int64)
 
     def dequant(self, qvalues: numpy.ndarray) -> numpy.ndarray:
         """Dequantize values.

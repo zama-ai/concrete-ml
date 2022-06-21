@@ -205,14 +205,20 @@ class QuantizedGemm(QuantizedOp):
         # Core matmul operation in full intergers with a shape change (INTEGERS)
         matmul = input_q_values @ weights_q_values
 
-        # Sum operation in full integers resulting in large integers (INTEGERS)
-        sum_input = -q_weights.quantizer.zero_point * numpy.sum(
-            input_q_values, axis=1, keepdims=True
-        )
+        # If the weights have symmetric quantization, their zero point will be 0
+        # The following check avoids the computation of the sum of the inputs, which may have
+        # large bitwidth, in the case where it would be multiplied by zero
+        if q_weights.quantizer.zero_point != 0:
+            # Sum operation in full integers resulting in large integers (INTEGERS)
+            sum_input = -q_weights.quantizer.zero_point * numpy.sum(
+                input_q_values, axis=1, keepdims=True
+            )
 
-        # Last part that has to be done in integer, the rest must go in a PBS.
-        # Forced fusing using .astype(numpy.float32)
-        numpy_q_out = (matmul + sum_input).astype(numpy.float32)
+            # Last part that has to be done in integer, the rest must go in a PBS.
+            # Forced fusing using .astype(numpy.float32)
+            numpy_q_out = (matmul + sum_input).astype(numpy.float32)
+        else:
+            numpy_q_out = matmul.astype(numpy.float32)
 
         # sum_weights is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
@@ -243,7 +249,7 @@ class QuantizedGemm(QuantizedOp):
             self.n_bits,
             numpy_q_out,
             value_is_float=True,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
@@ -305,7 +311,7 @@ class QuantizedAdd(QuantizedOp):
                 self.n_bits,
                 prepared_inputs[0] + self.b_sign * prepared_inputs[1],
                 value_is_float=True,
-                options=self.input_quant_opts,
+                options=self._get_output_quant_opts(),
                 stats=self.output_quant_stats,
                 params=self.output_quant_params,
             )
@@ -357,7 +363,7 @@ class QuantizedAdd(QuantizedOp):
             self.n_bits,
             dequant_sum,
             value_is_float=True,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
@@ -450,7 +456,7 @@ class QuantizedReshape(QuantizedOp):
             q_inputs[0].quantizer.n_bits,
             numpy.reshape(prepared_inputs[0].qvalues, newshape),
             value_is_float=False,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
@@ -581,22 +587,28 @@ class QuantizedConv(QuantizedOp):
             self.dilations,
         )
 
-        # Compute the sum of the inputs (second encrypted term)
-        zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
-            q_input.qvalues,
-            q_weights_1,
-            None,
-            self.pads,
-            self.strides,
-            self.dilations,
-        )
-
         # The total number of elements that are convolved by the application of a single kernel
         n_weights = numpy.prod(q_weights.qvalues.shape[1:])
 
-        # Last part that has to be done in FHE the rest must go in a PBS.
-        # Forced fusing using .astype(numpy.float32)
-        numpy_q_out = (conv_wx + zw_conv_1x).astype(numpy.float32)
+        # If the weights have symmetric quantization, their zero point will be 0
+        # The following check avoids the computation of the sum of the inputs, which may have
+        # large bitwidth, in the case where it would be multiplied by zero
+        if q_weights.quantizer.zero_point != 0:
+            # Compute the sum of the inputs (second encrypted term)
+            zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
+                q_input.qvalues,
+                q_weights_1,
+                None,
+                self.pads,
+                self.strides,
+                self.dilations,
+            )
+
+            # Last part that has to be done in FHE the rest must go in a PBS.
+            # Forced fusing using .astype(numpy.float32)
+            numpy_q_out = (conv_wx + zw_conv_1x).astype(numpy.float32)
+        else:
+            numpy_q_out = conv_wx.astype(numpy.float32)
 
         # Compute the third term, the sum of the weights which is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
@@ -629,7 +641,7 @@ class QuantizedConv(QuantizedOp):
             self.n_bits,
             numpy_q_out,
             value_is_float=True,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
@@ -726,13 +738,15 @@ class QuantizedAvgPool(QuantizedOp):
 
         sum_result = cnp_conv(q_input.qvalues, kernel, None, self.pads, self.strides)
 
-        result = sum_result.astype(numpy.float32) * norm_const * q_input.quantizer.scale
+        result = (
+            sum_result.astype(numpy.float32) * norm_const - q_input.quantizer.zero_point
+        ) * q_input.quantizer.scale
 
         return QuantizedArray(
             self.n_bits,
             result,
             value_is_float=True,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
@@ -1044,10 +1058,10 @@ class QuantizedFlatten(QuantizedOp):
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
-            q_inputs[0].quantizer.n_bits,
+            prepared_inputs[0].quantizer.n_bits,
             numpy.reshape(prepared_inputs[0].qvalues, newshape),
             value_is_float=False,
-            options=self.input_quant_opts,
+            options=prepared_inputs[0].quantizer.quant_options,
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )

@@ -148,10 +148,13 @@ class ONNXConverter:
         """
 
     @abstractmethod
-    def _get_input_quant_opts(self, n_bits: int) -> QuantizationOptions:
+    def _get_input_quant_opts(
+        self, values: Tuple[numpy.ndarray], n_bits: int
+    ) -> QuantizationOptions:
         """Construct a quantization options set for the input of a layer.
 
         Args:
+            values (Tuple[numpy.ndarray]): calibration data for this op
             n_bits (int): number of bits for the operator's input quantizer
 
         Returns:
@@ -287,7 +290,7 @@ class ONNXConverter:
 
                 # For mypy
                 assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
-                curr_calibration_data = cast(Tuple[numpy.ndarray, ...], curr_calibration_data)
+                curr_calibration_data = cast(Tuple[numpy.ndarray], curr_calibration_data)
 
                 # Find the unique integer producers of the current's op output tensor
                 node_integer_inputs = set.union(
@@ -299,7 +302,7 @@ class ONNXConverter:
                     self.n_bits_net_outputs,
                     node_integer_inputs,
                     curr_cst_inputs,
-                    self._get_input_quant_opts(self.n_bits_op_input_quant),
+                    self._get_input_quant_opts(curr_calibration_data, self.n_bits_op_input_quant),
                     **attributes,
                 )
 
@@ -346,7 +349,7 @@ class ONNXConverter:
                     f"got {num_output} for op {op_type}",
                     RuntimeError,
                 )
-                q_node_output = QuantizedArray(self.n_bits_weights, node_output[0], self.is_signed)
+                q_node_output = self._process_initializer(self.n_bits_weights, node_output[0])
                 node_results[output_name] = q_node_output
                 constants.add(output_name)
 
@@ -375,9 +378,18 @@ class ONNXConverter:
             self.quant_ops_dict,
         )
 
-        q_input = (
-            QuantizedArray(self.n_bits_net_inputs, val).quantizer for val in calibration_data
+        q_input = tuple(
+            QuantizedArray(self.n_bits_net_inputs, val, is_signed=False).quantizer
+            for val in calibration_data
         )
+
+        # Note that the input quantizer can not be signed
+        # since Concrete Numpy does not yet support signed inputs
+        assert_true(
+            all(not q.is_signed for q in q_input),
+            "The QuantizedModule input " "quantizer can not be signed",
+        )
+
         quantized_module.set_inputs_quantization_parameters(*q_input)
         return quantized_module
 
@@ -461,26 +473,69 @@ class PostTrainingAffineQuantization(ONNXConverter):
         Returns:
             QuantizedArray: a quantized tensor with integer values on n_bits bits
         """
+
+        is_signed = is_symmetric = self._check_distribution_is_symmetric_around_zero(values)
+
         return QuantizedArray(
             n_bits,
             values,
-            is_signed=bool(numpy.min(values) < 0),
-            is_symmetric=True,
+            is_signed=is_signed,
+            is_symmetric=is_symmetric,
         )
 
-    def _get_input_quant_opts(self, n_bits):
+    def _get_input_quant_opts(self, values: Tuple[numpy.ndarray], n_bits: int):
         """Construct a quantization options set for the input of a layer.
 
         Inputs and activations require signed quantization.
 
         Args:
+            values (Tuple[numpy.ndarray]): calibration data for this op
             n_bits (int): number of bits for the operator's input quantizer
 
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
-        opts = QuantizationOptions(n_bits, is_signed=True)
+
+        is_signed = any(v.min() < 0 for v in values)
+
+        opts = QuantizationOptions(
+            n_bits,
+            is_signed=is_signed,
+        )
         return opts
+
+    @staticmethod
+    def _check_distribution_is_symmetric_around_zero(values: numpy.ndarray) -> bool:
+        """Check if the distribution of the values is somewhat symmetric around 0.
+
+        Neural network weights are usually symmetric, while regression coefficients
+        are usually non-symmetric
+
+        Symmetric quantization will have a zero zero-point, which avoids the computation
+        of a term in the quantized Gemm, leading to lower overall circuit bitwidth
+        and faster speed. However, symmetric quantization can lose precision if the distribution
+        of the original values is not symmetric
+
+        Args:
+            values (numpy.ndarray): a sample from the distribution to check
+
+        Returns:
+            bool: whether the distribution can be considered symmetric around 0
+        """
+
+        vmin, vmax = numpy.percentile(values, 3), numpy.percentile(values, 97)
+        ratio_min_max = 0 if numpy.abs(vmax) < 0.001 else numpy.abs(vmin / vmax)
+
+        max_skew = 3
+        # We check if the distribution support contains zero, and if
+        # the size of the support of the distribution on one side of 0 is
+        # not too large (skewed distribution) with respect to the support on the other side.
+        return not (
+            (vmin > 0 and vmax > 0)
+            or (vmin < 0 and vmax < 0)
+            or ratio_min_max < 1 / max_skew
+            or ratio_min_max > max_skew
+        )
 
 
 class PostTrainingQATImporter(ONNXConverter):
@@ -525,17 +580,16 @@ class PostTrainingQATImporter(ONNXConverter):
             QuantizedArray: a quantized tensor with integer values on n_bits bits and with alpha as
                 the scaling factor.
         """
-        return QuantizedArray(
-            n_bits, values, is_signed=values.min() < 0, is_symmetric=True, is_qat=True
-        )
+        return QuantizedArray(n_bits, values, is_signed=True, is_symmetric=False, is_qat=True)
 
-    def _get_input_quant_opts(self, n_bits):
+    def _get_input_quant_opts(self, values: Tuple[numpy.ndarray], n_bits: int):
         """Construct a quantization options set for the input of a layer of a QAT network.
 
         QAT networks require specific quantization for inputs to nodes that perform quantization
         (such as Gemm/Conv/Add).
 
         Args:
+            values (Tuple[numpy.ndarray]): calibration data for this op
             n_bits (int): number of bits for the operator's input quantizer
 
         Returns:

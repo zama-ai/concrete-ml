@@ -185,13 +185,14 @@ jobs:
           echo "TZ=${TZ}" >> "$GITHUB_ENV"
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
-          apt update && apt install git -y
+          apt update && apt install git git-lfs -y
 
       - name: Checkout Code
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         # Fetch-detph 0 to have all commits for changelog generation
         with:
           fetch-depth: 0
+          lfs: true
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
@@ -466,6 +467,8 @@ jobs:
 
       - name: Checkout Code
         uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          lfs: true
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@d09bd5e6005b175076f227b13d9730d56e9dcfcb
