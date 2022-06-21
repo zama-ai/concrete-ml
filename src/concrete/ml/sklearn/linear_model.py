@@ -92,6 +92,19 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         onnx_model = clean_graph_after_sigmoid(onnx_model)
         return super().clean_graph(onnx_model)
 
+    def post_processing(
+        self, y_preds: numpy.ndarray, already_dequantized: bool = False
+    ) -> numpy.ndarray:
+        if not already_dequantized:
+            y_preds = super().post_processing(y_preds)
+        if y_preds.shape[1] == 1:
+            # Sigmoid already applied in the graph
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        else:
+            y_preds = numpy.exp(y_preds)
+            y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
+        return y_preds
+
     def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict confidence scores for samples.
 
@@ -117,14 +130,8 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         """
 
         X = check_array_and_assert(X)
-
         y_preds = self.decision_function(X, execute_in_fhe)
-        if y_preds.shape[1] == 1:
-            # Sigmoid already applied in the graph
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-        else:
-            y_preds = numpy.exp(y_preds)
-            y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
+        y_preds = self.post_processing(y_preds, True)
         return y_preds
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:

@@ -42,6 +42,7 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.max_iter = max_iter
         self.n_bits = n_bits
         self._onnx = None
+        super().__init__(n_bits=n_bits)
 
     # pylint: enable=too-many-arguments
 
@@ -83,6 +84,7 @@ class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         self.max_iter = max_iter
         self.n_bits = n_bits
         self._onnx = None
+        super().__init__(n_bits=n_bits)
 
     # pylint: enable=too-many-arguments
 
@@ -111,11 +113,33 @@ class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         y_preds = super().predict(X, execute_in_fhe)
         return y_preds
 
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        X = check_array_and_assert(X)
-        y_preds = self.decision_function(X, execute_in_fhe)
+    def post_processing(
+        self, y_preds: numpy.ndarray, already_dequantized: bool = False
+    ) -> numpy.ndarray:
+        if not already_dequantized:
+            y_preds = super().post_processing(y_preds)
         if y_preds.shape[1] == 1:
             # Sigmoid already applied in the graph
             y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+        return y_preds
+
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict class probabilities for samples.
+
+        Args:
+            X: samples to predict
+            execute_in_fhe: if True, the model will be executed in FHE mode
+
+        Returns:
+            numpy.ndarray: class probabilities for samples
+        """
+        X = check_array_and_assert(X)
+        y_preds = self.decision_function(X, execute_in_fhe)
+        y_preds = self.post_processing(y_preds, already_dequantized=True)
+        return y_preds
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        X = check_array_and_assert(X)
+        y_preds = self.predict_proba(X, execute_in_fhe)
         y_preds = numpy.argmax(y_preds, axis=1)
         return y_preds

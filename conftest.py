@@ -171,6 +171,19 @@ def default_configuration():
     )
 
 
+@pytest.fixture
+def default_configuration_no_jit():
+    """Return the default test compilation configuration"""
+
+    return Configuration(
+        dump_artifacts_on_unexpected_failures=False,
+        enable_unsafe_features=True,  # This is for our tests only, never use that in prod
+        use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
+        insecure_key_cache_location="ConcreteNumpyKeyCache",
+        jit=False,
+    )
+
+
 REMOVE_COLOR_CODES_RE = re.compile(r"\x1b[^m]*m")
 
 

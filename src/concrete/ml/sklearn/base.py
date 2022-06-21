@@ -1,9 +1,10 @@
 """Module that contains base classes for our libraries estimators."""
 
 # Disable pylint invalid name since scikit learn uses "X" as variable name for data
-# pylint: disable=invalid-name
+# pylint: disable=invalid-name,too-many-lines
 
 import copy
+import functools
 
 # Disable pylint to import hummingbird while ignoring the warnings
 # pylint: disable=invalid-name,wrong-import-position,wrong-import-order,too-many-instance-attributes
@@ -20,6 +21,9 @@ from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
+
+from concrete.ml.quantization.quantized_array import UniformQuantizer
+from concrete.ml.quantization.quantized_module import QuantizedModule
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
@@ -45,6 +49,8 @@ class QuantizedTorchEstimatorMixin:
     This class should be mixed in with another that provides the full Estimator API. This class
     only provides modifiers for .fit() (with quantization) and .predict() (optionally in FHE)
     """
+
+    post_processing_params: Dict[str, Any] = {}
 
     def __init__(
         self,
@@ -72,6 +78,25 @@ class QuantizedTorchEstimatorMixin:
         return self.get_params()
 
     @property
+    def input_quantizers(self) -> List[QuantizedArray]:
+        """Get the input quantizers.
+
+        Returns:
+            List[QuantizedArray]: the input quantizers
+        """
+        return self.quantized_module_.input_quantizers
+
+    @input_quantizers.setter
+    def input_quantizers(self, value: List[QuantizedArray]):
+        """Set the input quantizers.
+
+        Args:
+            value (List[QuantizedArray]): the input quantizers
+        """
+        self.quantized_module_ = QuantizedModule()
+        self.quantized_module_.input_quantizers = value
+
+    @property
     @abstractmethod
     def base_module_to_compile(self):
         """Get the Torch module that should be compiled to FHE."""
@@ -91,6 +116,76 @@ class QuantizedTorchEstimatorMixin:
            _onnx_model_ (onnx.ModelProto): the ONNX model
         """
         return self._onnx_model_
+
+    @property
+    def quantize_input(self) -> Callable:
+        """Get the input quantization function.
+
+        Returns:
+            Callable : function that quantizes the input
+        """
+        assert self.quantized_module_ is not None
+        return self.quantized_module_.quantize_input
+
+    @property
+    def fhe_circuit(self) -> Circuit:
+        """Get the FHE circuit.
+
+        Returns:
+            Circuit: the FHE circuit
+        """
+        return self.quantized_module_.forward_fhe
+
+    @property
+    def output_quantizers(self) -> List[QuantizedArray]:
+        """Get the input quantizers.
+
+        Returns:
+            List[QuantizedArray]: the input quantizers
+        """
+        return self.quantized_module_.output_quantizers
+
+    @output_quantizers.setter
+    def output_quantizers(self, value: List[QuantizedArray]):
+        """Set the input quantizers.
+
+        Args:
+            value (List[QuantizedArray]): the input quantizers
+        """
+        self.quantized_module_.output_quantizers = value
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Post-processing the output.
+
+        Args:
+            y_preds (numpy.ndarray): the output to post-process
+
+        Raises:
+            ValueError: if unknown post-processing function
+
+        Returns:
+            numpy.ndarray: the post-processed output
+        """
+        y_preds = self.quantized_module_.dequantize_output(y_preds)
+        if self.post_processing_params["post_processing_function_name"] == "softmax":
+            # Get dim argument
+            dim = self.post_processing_params["post_processing_function_keywords"]["dim"]
+
+            # Apply softmax to the output
+            y_preds = numpy.exp(y_preds)
+            y_preds /= y_preds.sum(axis=dim, keepdims=True)
+        elif "sigmoid" in self.post_processing_params["post_processing_function_name"]:
+            # Transform in a 2d array where [p, 1-p] is the output
+            y_preds = numpy.concatenate((y_preds, 1 - y_preds), axis=1)  # pragma: no cover
+        elif self.post_processing_params["post_processing_function_name"] == "_identity":
+            pass
+        else:
+            raise ValueError(
+                "Unknown post-processing function "
+                f"{self.post_processing_params['post_processing_function_name']}"
+            )  # pragma: no cover
+        # To match torch softmax we need to cast to float32
+        return y_preds.astype(numpy.float32)
 
     def compile(
         self,
@@ -177,7 +272,26 @@ class QuantizedTorchEstimatorMixin:
         # Quantize with post-training static method, to have a model with integer weights
         post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
         self.quantized_module_ = post_training_quant.quantize_module(X)
+
+        # Set post-processing params
+        self.update_post_processing_params()
         return self
+
+    def update_post_processing_params(self):
+        """Update the post-processing parameters."""
+        params = self._get_predict_nonlinearity()  # type: ignore
+        if isinstance(params, functools.partial):
+            post_processing_function_name = params.func.__name__
+            post_processing_function_keywords = params.keywords
+        else:
+            post_processing_function_name = params.__name__
+            post_processing_function_keywords = {}
+        post_processing_params: Dict[str, Any] = {}
+        post_processing_params["post_processing_function_name"] = post_processing_function_name
+        post_processing_params[
+            "post_processing_function_keywords"
+        ] = post_processing_function_keywords
+        self.post_processing_params = post_processing_params
 
     # Disable pylint here because we add an additional argument to .predict,
     # with respect to the base class .predict method.
@@ -245,11 +359,8 @@ class QuantizedTorchEstimatorMixin:
                     # pylint: disable=no-member
                     y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
                     # pylint: enable=no-member
-                y_pred[idx, :] = self.quantized_module_.dequantize_output(q_pred)
-
-            nonlin = self._get_predict_nonlinearity()
-            y_pred = nonlin(torch.from_numpy(y_pred)).numpy()
-
+                y_pred[idx, :] = q_pred
+            y_pred = self.post_processing(y_pred)
             return y_pred
 
         # For prediction in the clear we call the super class which, in turn,
@@ -320,9 +431,9 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
     the tree-based classifier.
     """
 
-    q_x_byfeatures: List[QuantizedArray]
+    input_quantizers: List[UniformQuantizer]
     n_bits: int
-    q_y: QuantizedArray
+    output_quantizers: List[UniformQuantizer]
     init_args: Dict[str, Any]
     random_state: Optional[Union[numpy.random.RandomState, int]]  # pylint: disable=no-member
     sklearn_alg: Any
@@ -340,10 +451,11 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             n_bits (int): number of bits used for quantization
         """
         self.n_bits = n_bits
-        self.q_x_byfeatures = []
+        self.input_quantizers = []
         self.n_bits = n_bits
-        self.fhe_tree = None
+        self.fhe_circuit = None
         self._onnx_model_ = None
+        self.post_processing_params: Dict[str, Any] = {}
 
     @property
     def onnx_model(self) -> onnx.ModelProto:
@@ -367,9 +479,13 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         """
         qX = numpy.zeros_like(X)
         # Quantize using the learned quantization parameters for each feature
-        for i, q_x_ in enumerate(self.q_x_byfeatures):
-            qX[:, i] = q_x_.update_values(X[:, i])
+        for i, q_x_ in enumerate(self.input_quantizers):
+            qX[:, i] = q_x_.quant(X[:, i])
         return qX.astype(numpy.int32)
+
+    def update_post_processing_params(self):
+        """Update the post processing parameters."""
+        self.post_processing_params = {}
 
     def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
         """Fit the tree-based estimator.
@@ -392,7 +508,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         assert self.n_bits is not None
 
         qX = numpy.zeros_like(X)
-        self.q_x_byfeatures = []
+        self.input_quantizers = []
 
         self.n_classes_ = len(numpy.unique(y))
 
@@ -407,9 +523,9 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
-            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i])
-            self.q_x_byfeatures.append(q_x_)
-            qX[:, i] = q_x_.qvalues.astype(numpy.int32)
+            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
+            self.input_quantizers.append(q_x_)
+            qX[:, i] = q_x_.quant(X[:, i])
 
         # Initialize the sklearn model
         params = self.get_params()
@@ -418,9 +534,10 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         self.sklearn_model = self.sklearn_alg(**params)
 
         self.sklearn_model.fit(qX, y, **kwargs)
+        self.update_post_processing_params()
 
         # Tree ensemble inference to numpy
-        self._tensor_tree_predict, self.q_y, self._onnx_model_ = tree_to_numpy(
+        self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
             self.sklearn_model,
             qX,
             framework=self.framework,
@@ -479,8 +596,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             numpy.ndarray: The post-processed predictions.
         """
         # mypy
-        assert self.q_y is not None
-        y_preds = self.q_y.update_quantized_values(y_preds)
+        assert self.output_quantizers is not None
+        y_preds = self.output_quantizers[0].dequant(y_preds)
 
         # Sum all tree outputs.
         # FIXME Remove this once #1027 is done :
@@ -547,17 +664,17 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         """
         # Check that self.fhe_tree is not None
         # mypy
-        assert self.fhe_tree is not None, (
+        assert self.fhe_circuit is not None, (
             f"You must call {self.compile.__name__} "
             f"before calling {self.predict.__name__} with execute_in_fhe=True."
         )
         # mypy
-        assert self.fhe_tree is not None
+        assert self.fhe_circuit is not None
 
         y_preds = []
         for qX_i in qX:
             # expected x shape is (n_features, n_samples)
-            fhe_pred = self.fhe_tree.encrypt_run_decrypt(
+            fhe_pred = self.fhe_circuit.encrypt_run_decrypt(
                 qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
             )
             y_preds.append(fhe_pred)
@@ -605,7 +722,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
         )
-        self.fhe_tree = compiler.compile(
+        self.fhe_circuit = compiler.compile(
             (sample.reshape(1, sample.shape[0]) for sample in X),
             configuration=configuration,
             artifacts=compilation_artifacts,
@@ -613,8 +730,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             virtual=use_virtual_lib,
         )
         # mypy
-        assert self.fhe_tree is not None
-        output_graph = self.fhe_tree.graph.ordered_outputs()
+        assert self.fhe_circuit is not None
+        output_graph = self.fhe_circuit.graph.ordered_outputs()
         assert_true(
             len(output_graph) == 1,
             "graph has too many outputs",
@@ -624,7 +741,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             f"output is {dtype_output} but an Integer is expected.",
         )
 
-        return self.fhe_tree
+        return self.fhe_circuit
 
 
 # pytlint: disable=invalid-name,too-many-instance-attributes
@@ -654,6 +771,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         """
         super().__init__(*args, **kwargs)
         self.n_bits = n_bits
+        self.post_processing_params: Dict[str, Any] = {}
 
     @property
     def onnx_model(self) -> onnx.ModelProto:
@@ -665,6 +783,73 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
            onnx.ModelProto: the ONNX model
         """
         return self._onnx_model_
+
+    @property
+    def quantize_input(self) -> Callable:
+        """Get the input quantization function.
+
+        Returns:
+            Callable : function that quantizes the input
+        """
+        assert self.quantized_module_ is not None
+        return self.quantized_module_.quantize_input
+
+    @property
+    def fhe_circuit(self) -> Circuit:
+        """Get the FHE circuit.
+
+        Returns:
+            Circuit: the FHE circuit
+        """
+        return self.quantized_module_.forward_fhe
+
+    @property
+    def input_quantizers(self) -> List[QuantizedArray]:
+        """Get the input quantizers.
+
+        Returns:
+            List[QuantizedArray]: the input quantizers
+        """
+        return self.quantized_module_.input_quantizers
+
+    @input_quantizers.setter
+    def input_quantizers(self, value: List[QuantizedArray]):
+        """Set the input quantizers.
+
+        Args:
+            value (List[QuantizedArray]): the input quantizers
+        """
+        self.quantized_module_ = QuantizedModule()
+        self.quantized_module_.input_quantizers = value
+
+    @property
+    def output_quantizers(self) -> List[QuantizedArray]:
+        """Get the input quantizers.
+
+        Returns:
+            List[QuantizedArray]: the input quantizers
+        """
+        return self.quantized_module_.output_quantizers
+
+    @output_quantizers.setter
+    def output_quantizers(self, value: List[QuantizedArray]):
+        """Set the input quantizers.
+
+        Args:
+            value (List[QuantizedArray]): the input quantizers
+        """
+        self.quantized_module_.output_quantizers = value
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Post-processing the output.
+
+        Args:
+            y_preds (numpy.ndarray): the output to post-process
+
+        Returns:
+            numpy.ndarray: the post-processed output
+        """
+        return self.quantized_module_.dequantize_output(y_preds)
 
     def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> None:
         """Fit the FHE linear model.
@@ -717,7 +902,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         )
 
         # Calibrate and create quantize module
-        self.quantized_module = post_training.quantize_module(X)
+        self.quantized_module_ = post_training.quantize_module(X)
 
     # clean_graph is used by inheritance and the calling self is needed.
     # pylint does not see it and complains that clean_graph should use @staticmethod
@@ -822,7 +1007,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         X = check_array_and_assert(X)
 
         # Quantize the input
-        qX = self.quantized_module.quantize_input(X)
+        qX = self.quantized_module_.quantize_input(X)
 
         # mypy
         assert isinstance(qX, numpy.ndarray)
@@ -831,12 +1016,12 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
             # Make sure the model is compiled
             assert_true(
-                self.quantized_module.is_compiled,
+                self.quantized_module_.is_compiled,
                 "The model is not compiled. Please run compile(...) first.",
             )
 
             # mypy
-            assert self.quantized_module.forward_fhe is not None
+            assert self.quantized_module_.forward_fhe is not None
             # mypy does not see the self.coef_ from sklearn.linear_model.LinearRegression.
             # Need to ignore with mypy warning.
             n_targets = (
@@ -846,14 +1031,14 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             # Execute the compiled FHE circuit
             # Create a numpy array with the expected shape: (n_samples, n_classes)
             for i, qX_i in enumerate(qX):
-                fhe_pred = self.quantized_module.forward_fhe.encrypt_run_decrypt(
+                fhe_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(
                     qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
                 )
                 y_preds[i, :] = fhe_pred[0]
             # Convert to numpy array
-            y_preds = self.quantized_module.dequantize_output(y_preds)
+            y_preds = self.quantized_module_.dequantize_output(y_preds)
         else:
-            y_preds = self.quantized_module.forward_and_dequant(qX)
+            y_preds = self.quantized_module_.forward_and_dequant(qX)
         return y_preds
 
     def compile(
@@ -883,10 +1068,10 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         """
         # Quantize the input
-        quantized_numpy_inputset = self.quantized_module.quantize_input(X)
+        quantized_numpy_inputset = self.quantized_module_.quantize_input(X)
 
         # Compile the model
-        circuit = self.quantized_module.compile(
+        circuit = self.quantized_module_.compile(
             quantized_numpy_inputset,
             configuration,
             compilation_artifacts,

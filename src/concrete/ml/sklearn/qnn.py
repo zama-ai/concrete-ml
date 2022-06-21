@@ -338,6 +338,10 @@ class NeuralNetClassifier(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
+        # If no parameters are passed just returns
+        # Used to load the model class from json
+        if len(args) == 0 and len(kwargs) == 0:
+            return
         # A helper for users so they don't need to import torch directly
         args_to_convert_to_tensor = ["criterion__weight"]
         for arg_name in args_to_convert_to_tensor:
@@ -410,6 +414,11 @@ class NeuralNetRegressor(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
+        # If no parameters are passed just return
+        # Used to load the model class from json
+        if len(args) == 0 and len(kwargs) == 0:
+            return
+
         kwargs.pop("n_bits", None)
 
         # Note that our default optimizer is Adam which was found to be more stable when pruning

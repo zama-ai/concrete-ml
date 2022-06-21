@@ -119,7 +119,7 @@ def test_dump(
     """Tests dump."""
     expected_strings = {
         XGBClassifier: """graph torch-jit-export (
-  %input_0[DOUBLE, symx100]
+  %input_0[DOUBLE, symx10]
 ) {
   %onnx::Less_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %onnx::Reshape_8 = Less(%onnx::Less_7, %_operators.0.bias_1)
@@ -179,7 +179,7 @@ def test_dump(
   return %6
 }""",
         DecisionTreeClassifier: """graph torch-jit-export (
-  %input_0[DOUBLE, symx100]
+  %input_0[DOUBLE, symx10]
 ) {
   %onnx::Greater_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %onnx::Not_8 = Greater(%onnx::Greater_7, %_operators.0.bias_1)
@@ -208,25 +208,26 @@ def test_dump(
   return %variable
 }""",
         LogisticRegression: """graph torch-jit-export (
-  %input_0[DOUBLE, symx100]
+  %input_0[DOUBLE, symx10]
 ) initializers (
-  %_operators.0.coefficients[FLOAT, 100x4]
-  %_operators.0.intercepts[FLOAT, 4]
-) {
-  %onnx::Softmax_6 = Gemm[alpha = 1, beta = 1](%input_0, """
-        """%_operators.0.coefficients, %_operators.0.intercepts)
-  return %onnx::Softmax_6
-}""",
-        LinearSVC: """graph torch-jit-export (
-  %input_0[DOUBLE, symx100]
-) initializers (
-  %_operators.0.coefficients[FLOAT, 100x4]
-  %_operators.0.intercepts[FLOAT, 4]
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
 ) {
   %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, """
         """%_operators.0.coefficients, %_operators.0.intercepts)
-  %onnx::ReduceSum_7 = Sigmoid(%onnx::Sigmoid_6)
-  return %onnx::ReduceSum_7
+  %onnx::Sub_7 = Sigmoid(%onnx::Sigmoid_6)
+  return %onnx::Sub_7
+}""",
+        LinearSVC: """graph torch-jit-export (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, """
+        """%_operators.0.coefficients, %_operators.0.intercepts)
+  %onnx::Sub_7 = Sigmoid(%onnx::Sigmoid_6)
+  return %onnx::Sub_7
 }""",
         RandomForestClassifier: "Not tested",
         NeuralNetClassifier: """graph torch-jit-export (

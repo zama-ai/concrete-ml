@@ -96,7 +96,8 @@ filterwarnings = [
     "ignore:Using or importing the ABCs from 'collections' instead of from 'collections\\.abc' is deprecated.*:DeprecationWarning",
     "ignore: distutils Version classes are deprecated. Use packaging\\.version instead.*:DeprecationWarning",
     "ignore: forcing n_jobs = 1 on mac for segfault issue",
-    "ignore: allowzero=0 by default.*:UserWarning"
+    "ignore: allowzero=0 by default.*:UserWarning",
+    "ignore:Implicitly cleaning up:ResourceWarning"
 ]
 
 [tool.semantic_release]

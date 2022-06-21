@@ -1,6 +1,6 @@
 """Implements the conversion of a tree model to a numpy function."""
 import warnings
-from typing import Callable, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy
 import onnx
@@ -16,6 +16,7 @@ from ..onnx.onnx_model_manipulations import (
     simplify_onnx_model,
 )
 from ..quantization import QuantizedArray
+from ..quantization.quantized_array import UniformQuantizer
 
 # pylint: disable=wrong-import-position,wrong-import-order
 
@@ -33,7 +34,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     output_n_bits: Optional[int] = MAXIMUM_BIT_WIDTH,
-) -> Tuple[Callable, QuantizedArray, onnx.ModelProto]:
+) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
     Args:
@@ -44,7 +45,7 @@ def tree_to_numpy(
         output_n_bits (int): The number of bits of the output.
 
     Returns:
-        Tuple[Callable, QuantizedArray, onnx.ModelProto]: A tuple with a function that takes a
+        Tuple[Callable, List[QuantizedArray], onnx.ModelProto]: A tuple with a function that takes a
             numpy array and returns a numpy array, QuantizedArray object to quantize and dequantize
             the output of the tree, and the ONNX model.
     """
@@ -131,7 +132,7 @@ def tree_to_numpy(
                 q_y.quantizer.zero_point == 0,
                 "Zero point is not 0. Symmetric signed quantization must work.",
             )
-            init_tensor = q_y.quant()
+            init_tensor = q_y.qvalues
         else:
             if framework == "xgboost":
                 # xgboost uses "<" operator thus we must round up.
@@ -147,4 +148,4 @@ def tree_to_numpy(
     # FIXME: Remove force_int tag when #1117 is fixed.
     _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model, force_int=True)
 
-    return (_tensor_tree_predict, q_y, onnx_model)
+    return (_tensor_tree_predict, [q_y.quantizer], onnx_model)

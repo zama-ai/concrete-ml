@@ -3,10 +3,9 @@ from functools import partial
 
 import numpy
 import pytest
-from concrete.numpy import MAXIMUM_BIT_WIDTH
 from torch import nn
 
-from concrete.ml.sklearn import (
+from concrete.ml.sklearn import (  # NeuralNetRegressor,
     DecisionTreeClassifier,
     GammaRegressor,
     LinearRegression,
@@ -14,7 +13,6 @@ from concrete.ml.sklearn import (
     LinearSVR,
     LogisticRegression,
     NeuralNetClassifier,
-    NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
     TweedieRegressor,
@@ -27,18 +25,19 @@ regressor_models = [
     LinearSVR,
     PoissonRegressor,
     TweedieRegressor,
-    partial(
-        NeuralNetRegressor,
-        module__n_layers=3,
-        module__n_w_bits=2,
-        module__n_a_bits=2,
-        module__n_accum_bits=MAXIMUM_BIT_WIDTH,
-        module__n_outputs=2,
-        module__input_dim=20,
-        module__activation_function=nn.SELU,
-        max_epochs=10,
-        verbose=0,
-    ),
+    # FIXME NeuralNetRegressor takes too long to run (see #1163)
+    # partial(
+    #     NeuralNetRegressor,
+    #     module__n_layers=3,
+    #     module__n_w_bits=2,
+    #     module__n_a_bits=2,
+    #     module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time
+    #     module__n_outputs=1,
+    #     module__input_dim=20,
+    #     module__activation_function=nn.SELU,
+    #     max_epochs=10,
+    #     verbose=0,
+    # ),
 ]
 
 classifier_models = [
@@ -52,7 +51,7 @@ classifier_models = [
         module__n_layers=3,
         module__n_w_bits=2,
         module__n_a_bits=2,
-        module__n_accum_bits=MAXIMUM_BIT_WIDTH,
+        module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time.
         module__n_outputs=2,
         module__input_dim=20,
         module__activation_function=nn.SELU,
@@ -69,9 +68,9 @@ classifiers = [
         {
             "dataset": "classification",
             "n_samples": 1000,
-            "n_features": 100,
-            "n_classes": 4,
-            "n_informative": 100,
+            "n_features": 10,
+            "n_classes": 2,  # qnns do not have multiclass yet
+            "n_informative": 10,
             "n_redundant": 0,
             "random_state": numpy.random.randint(0, 2**15),
         },

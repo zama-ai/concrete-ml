@@ -45,6 +45,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self.warm_start = warm_start
         self.verbose = verbose
         self._onnx_model_ = None
+        super().__init__(n_bits=n_bits)
 
     # pylint: enable=super-init-not-called
 
@@ -123,7 +124,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         )
 
         # Calibrate and create quantize module
-        self.quantized_module = post_training.quantize_module(X)
+        self.quantized_module_ = post_training.quantize_module(X)
 
         # pylint: enable=attribute-defined-outside-init
 

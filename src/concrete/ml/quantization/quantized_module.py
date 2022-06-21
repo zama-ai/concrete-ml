@@ -1,6 +1,6 @@
 """QuantizedModule API."""
 import copy
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 from concrete.numpy.compilation.artifacts import DebugArtifacts
@@ -21,14 +21,23 @@ class QuantizedModule:
     ordered_module_output_names: Tuple[str, ...]
     quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     input_quantizers: List[UniformQuantizer]
+    output_quantizers: List[UniformQuantizer]
     forward_fhe: Union[None, Circuit]
 
     def __init__(
         self,
-        ordered_module_input_names: Iterable[str],
-        ordered_module_output_names: Iterable[str],
-        quant_layers_dict: dict,
+        ordered_module_input_names: Iterable[str] = None,
+        ordered_module_output_names: Iterable[str] = None,
+        quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]] = None,
     ):
+        # If any of the arguments are not provided, skip the init
+        if not all([ordered_module_input_names, ordered_module_output_names, quant_layers_dict]):
+            return
+
+        # for mypy
+        assert isinstance(ordered_module_input_names, Iterable)
+        assert isinstance(ordered_module_output_names, Iterable)
+        assert all([ordered_module_input_names, ordered_module_output_names, quant_layers_dict])
         self.ordered_module_input_names = tuple(ordered_module_input_names)
         self.ordered_module_output_names = tuple(ordered_module_output_names)
 
@@ -38,11 +47,14 @@ class QuantizedModule:
             f"got {num_outputs}",
         )
 
+        assert quant_layers_dict is not None
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self._is_compiled = False
         self.forward_fhe = None
         self.input_quantizers = []
+        self.output_quantizers = self._set_output_quantizers()
         self._onnx_model = None
+        self._post_processing_params: Dict[str, Any] = {}
 
     @property
     def is_compiled(self) -> bool:
@@ -52,6 +64,66 @@ class QuantizedModule:
             bool: the compiled status of the module.
         """
         return self._is_compiled
+
+    @property
+    def fhe_circuit(self) -> Circuit:
+        """Get the FHE circuit.
+
+        Returns:
+            Circuit: the FHE circuit
+        """
+        return self.forward_fhe
+
+    @property
+    def post_processing_params(self) -> Dict[str, Any]:
+        """Get the post-processing parameters.
+
+        Returns:
+            Dict[str, Any]: the post-processing parameters
+        """
+        return self._post_processing_params
+
+    @post_processing_params.setter
+    def post_processing_params(self, post_processing_params: Dict[str, Any]):
+        """Set the post-processing parameters.
+
+        Args:
+            post_processing_params (dict): the post-processing parameters
+        """
+        self._post_processing_params = post_processing_params
+
+    def post_processing(self, qvalues: numpy.ndarray) -> numpy.ndarray:
+        """Post-processing of the quantized output.
+
+        Args:
+            qvalues (numpy.ndarray): numpy.ndarray containing the quantized input values.
+
+        Returns:
+            (numpy.ndarray): Predictions of the quantized model
+        """
+        return self.dequantize_output(qvalues)
+
+    def _set_output_quantizers(self) -> List[UniformQuantizer]:
+        """Get the output quantizers.
+
+        Returns:
+            List[UniformQuantizer]: List of output quantizers.
+        """
+        output_layers = (
+            self.quant_layers_dict[output_name][1]
+            for output_name in self.ordered_module_output_names
+        )
+        output_quantizers = list(
+            QuantizedArray(
+                output_layer.n_bits,
+                values=None,
+                value_is_float=False,
+                stats=output_layer.output_quant_stats,
+                params=output_layer.output_quant_params,
+            ).quantizer
+            for output_layer in output_layers
+        )
+        return output_quantizers
 
     @property
     def onnx_model(self):
@@ -193,19 +265,8 @@ class QuantizedModule:
         Returns:
             numpy.ndarray: Dequantized values of the last layer.
         """
-        output_layers = (
-            self.quant_layers_dict[output_name][1]
-            for output_name in self.ordered_module_output_names
-        )
         real_values = tuple(
-            QuantizedArray(
-                output_layer.n_bits,
-                qvalues,
-                value_is_float=False,
-                stats=output_layer.output_quant_stats,
-                params=output_layer.output_quant_params,
-            ).dequant()
-            for output_layer in output_layers
+            output_quantizer.dequant(qvalues) for output_quantizer in self.output_quantizers
         )
 
         assert_true(len(real_values) == 1)

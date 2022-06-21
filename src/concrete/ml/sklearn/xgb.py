@@ -7,6 +7,8 @@ import numpy
 import sklearn
 import xgboost.sklearn
 
+from concrete.ml.quantization.quantized_array import UniformQuantizer
+
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import QuantizedArray
 from .base import BaseTreeEstimatorMixin
@@ -20,7 +22,7 @@ class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
     sklearn_alg = xgboost.sklearn.XGBClassifier
     q_x_byfeatures: List[QuantizedArray]
     n_bits: int
-    q_y: QuantizedArray
+    output_quantizers: List[UniformQuantizer]
     _tensor_tree_predict: Optional[Callable]
     n_classes_: int
     sklearn_model: Any
@@ -113,6 +115,14 @@ class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
         self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
+        self.post_processing_params: Dict[str, Any] = {}
+
+    def update_post_processing_params(self):
+        """Update the post processing params."""
+        self.post_processing_params = {
+            "n_classes_": self.n_classes_,
+            "n_estimators": self.n_estimators,
+        }
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the predictions.
@@ -123,8 +133,12 @@ class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
-        assert self.q_y is not None
-        y_preds = self.q_y.update_quantized_values(y_preds)
+        assert self.output_quantizers is not None
+
+        # Update post-processing params with their current values
+        self.__dict__.update(self.post_processing_params)
+
+        y_preds = self.output_quantizers[0].dequant(y_preds)
 
         # Apply transpose
         y_preds = numpy.transpose(y_preds, axes=(2, 1, 0))

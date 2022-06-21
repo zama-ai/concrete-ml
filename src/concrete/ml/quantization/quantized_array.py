@@ -10,6 +10,60 @@ from ..common.debugging import assert_true
 STABILITY_CONST = 10**-6
 
 
+def fill_from_kwargs(obj, klass, **kwargs):
+    """Fill a parameter set structure from kwargs parameters.
+
+    Args:
+        obj: an object of type klass, if None the object is created if any of the type's
+            members appear in the kwargs
+        klass: the type of object to fill
+        kwargs: parameter names and values to fill into an instance of the klass type
+
+    Returns:
+        obj: an object of type klass
+        kwargs: remaining parameter names and values that were not filled into obj
+
+    Raises:
+        TypeError: if the types of the parameters in kwargs could not be converted
+            to the corresponding types of members of klass
+    """
+
+    # Get the members of the parameter set structure
+    hints = get_type_hints(klass)
+
+    # Keep track of the parameters that were used
+    list_args_used = []
+    for name, value in kwargs.items():
+        # If this parameter is not in the structure, ignore it
+        if name not in hints:
+            continue
+
+        # Create the structure if needed, otherwise continue filling an existing structure
+        if obj is None:
+            obj = klass()
+
+        # Set the parameter in the structure
+        setattr(obj, name, value)
+
+        # Mark the parameter as used
+        list_args_used.append(name)
+
+    # Remove all the parameters that were filled in the structure for kwargs
+    # Keep all other kwargs parameters to be able to fill other structures
+    for name in list_args_used:
+        kwargs.pop(name)
+
+    # If the structure was created or modified by a call to this function, check
+    # that it is completely filled
+    if obj is not None:
+        for name in hints:
+            if getattr(obj, name) is None:
+                raise TypeError(f"Missing quantizer parameter {name}")
+
+    # Return the parameter structure and the kwargs with the used parameters removed
+    return obj, kwargs
+
+
 class QuantizationOptions:
     """Options for quantization.
 
@@ -235,6 +289,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         options: QuantizationOptions = None,
         stats: Optional[MinMaxQuantizationStats] = None,
         params: Optional[UniformQuantizationParameters] = None,
+        **kwargs,
     ):
         if options is not None:
             self.copy_opts(options)
@@ -244,6 +299,14 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         if params is not None:
             self.copy_params(params)
+
+        if kwargs:
+            self.options, kwargs = fill_from_kwargs(self, QuantizationOptions, **kwargs)
+            self.stats, kwargs = fill_from_kwargs(self, MinMaxQuantizationStats, **kwargs)
+            self.params, kwargs = fill_from_kwargs(self, UniformQuantizationParameters, **kwargs)
+
+        # All kwargs should belong to one of the parameter sets, anything else is unsupported
+        assert_true(len(kwargs) == 0, f"Unexpected kwargs: {kwargs}")
 
     def quant(self, values: numpy.ndarray) -> numpy.ndarray:
         """Quantize values.
@@ -311,11 +374,13 @@ class QuantizedArray:
     STABILITY_CONST = 10**-6
 
     quantizer: UniformQuantizer
+    values: numpy.ndarray
+    qvalues: numpy.ndarray
 
     def __init__(
         self,
         n_bits,
-        values: numpy.ndarray,
+        values: Optional[numpy.ndarray],
         value_is_float: bool = True,
         options: QuantizationOptions = None,
         stats: Optional[MinMaxQuantizationStats] = None,
@@ -328,59 +393,6 @@ class QuantizedArray:
         # Override the options number of bits if an options struct was provided
         # with the number of bits specified by the caller.
         options.n_bits = n_bits
-
-        def fill_from_kwargs(obj, klass, **kwargs):
-            """Fill a parameter set structure from kwargs parameters.
-
-            Args:
-                obj: an object of type klass, if None the object is created if any of the type's
-                    members appear in the kwargs
-                klass: the type of object to fill
-                kwargs: parameter names and values to fill into an instance of the klass type
-
-            Returns:
-                obj: an object of type klass
-                kwargs: remaining parameter names and values that were not filled into obj
-
-            Raises:
-                TypeError: if the types of the parameters in kwargs could not be converted
-                    to the corresponding types of members of klass
-            """
-
-            # Get the members of the parameter set structure
-            hints = get_type_hints(klass)
-
-            # Keep track of the parameters that were used
-            list_args_used = []
-            for name, value in kwargs.items():
-                # If this parameter is not in the structure, ignore it
-                if name not in hints:
-                    continue
-
-                # Create the structure if needed, otherwise continue filling an existing structure
-                if obj is None:
-                    obj = klass()
-
-                # Set the parameter in the structure
-                setattr(obj, name, value)
-
-                # Mark the parameter as used
-                list_args_used.append(name)
-
-            # Remove all the parameters that were filled in the structure for kwargs
-            # Keep all other kwargs parameters to be able to fill other structures
-            for name in list_args_used:
-                kwargs.pop(name)
-
-            # If the structure was created or modified by a call to this function, check
-            # that it is completely filled
-            if obj is not None:
-                for name in hints:
-                    if getattr(obj, name) is None:
-                        raise TypeError(f"Missing quantizer parameter {name}")
-
-            # Return the parameter structure and the kwargs with the used parameters removed
-            return obj, kwargs
 
         options, kwargs = fill_from_kwargs(options, QuantizationOptions, **kwargs)
         stats, kwargs = fill_from_kwargs(stats, MinMaxQuantizationStats, **kwargs)
@@ -395,6 +407,28 @@ class QuantizedArray:
         # Some parameters could be None and are computed below
         self.quantizer = UniformQuantizer(options, stats, params)
 
+        if values is not None:
+            self._values_setup(values, value_is_float, options, stats, params)
+
+    def _values_setup(
+        self,
+        values: numpy.ndarray,
+        value_is_float: bool,
+        options: QuantizationOptions = None,
+        stats: Optional[MinMaxQuantizationStats] = None,
+        params: Optional[UniformQuantizationParameters] = None,
+    ):
+        """Set up the values of the quantized array.
+
+        Args:
+            values (numpy.ndarray): Values to be quantized.
+            value_is_float (bool): Whether the passed values are real (float) values or not.
+                If False, the values will be quantized according to the passed scale and zero_point.
+            options (QuantizationOptions): Quantization options set
+            stats (Optional[MinMaxQuantizationStats]): Quantization batch statistics set
+            params (Optional[UniformQuantizationParameters]): Quantization parameters set
+                (scale, zero-point)
+        """
         if value_is_float:
             if isinstance(values, numpy.ndarray):
                 assert_true(
