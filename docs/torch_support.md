@@ -4,7 +4,7 @@
 or convolutional neural networks, with normalization and activation layers. Moreover, many
 element-wise operators are supported.
 
-Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete-ML ONNX operator reference](onnx.md) for more information.
+Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete-ML ONNX operator reference](onnx.md) for more information. We can also note that it is also possible to directly [compile ONNX models](compilation_onnx.md).
 
 ## List of supported torch operators
 
