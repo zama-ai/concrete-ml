@@ -364,26 +364,11 @@ upgrade_py_deps:
 
 .PHONY: pytest_codeblocks # Test code blocks using pytest in the documentation
 pytest_codeblocks:
-	@# grep -v "^\./\." is to avoid files in .hidden_directories
-	MD_FILES=($$(find . -type f -name "*.md" | grep -v "^\./\.")) && \
-	TEST_DIR="/tmp/cml_codeblocks" && \
-	rm -rf "$${TEST_DIR}" && \
-	mkdir -p "$${TEST_DIR}" && \
-	DEST_MDS=() && \
-	for MD_FILE in $${MD_FILES[@]}; do \
-		DEST_MD="$${TEST_DIR}/$${MD_FILE}"; \
-		mkdir -p "$$(dirname $${DEST_MD})"; \
-		cp "$${MD_FILE}" "$${DEST_MD}"; \
-		DEST_MDS+=("$${DEST_MD}"); \
-	done && \
-	poetry run python ./script/make_utils/deactivate_docs_admonitions_for_tests.py \
-	--files $${DEST_MDS[@]} && \
-	poetry run pytest --codeblocks -svv \
-	--capture=tee-sys \
-	-n $$(./script/make_utils/ncpus.sh) \
-	--randomly-dont-reorganize \
-	--count=$(COUNT) \
-	--randomly-dont-reset-seed "$${TEST_DIR}" && rm -rf "$${TEST_DIR}" || rm -rf "$${TEST_DIR}"
+	./script/make_utils/pytest_codeblocks.sh
+
+.PHONY: pytest_codeblocks_one # Test code blocks using pytest in one file (TEST)
+pytest_codeblocks_one:
+	./script/make_utils/pytest_codeblocks.sh --file "$${TEST}"
 
 # From https://stackoverflow.com/a/63523300 for the find command
 .PHONY: shell_lint # Lint all bash scripts
