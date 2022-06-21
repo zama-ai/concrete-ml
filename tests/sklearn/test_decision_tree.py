@@ -94,7 +94,8 @@ def test_decision_tree_hyperparameters(
         dataset="classification",
         n_samples=1000,
         n_features=10,
-        n_informative=5,
+        n_informative=10,
+        n_redundant=0,
         n_classes=n_classes,
         random_state=numpy.random.randint(0, 2**15),
     )
