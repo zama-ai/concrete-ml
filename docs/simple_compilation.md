@@ -96,22 +96,6 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   True  True  True  True  True  True  True  True]
 ```
 
-## Setup a client/server protocol
+## Deploy FHE models in a client/server setting
 
-**Concrete ML** provides functionality to deploy FHE machine learning models in a client/server setting. The deployment workflow and model serving follows the following pattern:
-
-### Deployment
-
-The training of the model and its compilation to FHE are performed on a development machine. The compiled model, public cryptographic parameters and model meta data are deployed on the server.
-
-#### Serving
-
-The client obtains the cryptographic parameters and generates private and evaluation keys. Evaluation keys are sent to the server. Then the private data are encrypted by the client and sent to the server. The (FHE) model inference is done on the server with the evaluation keys, on those encrypted private data. The encrypted result is returned by the server to the client, which decrypts it using her private key. The client performs any necessary post-processing of the decrypted result.
-
-#### Example notebook
-
-We refer the reader to [this notebook / file](simple_compilation.md) for a complete description.
-
-```{warning}
-FIXME: Jordan, fix the previous link, link to your notebook or markdown
-```
+Please refer to [the client server documentation](client_server.md)

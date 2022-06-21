@@ -50,6 +50,7 @@ Additionally, academic and white papers will be published, explaining interestin
     pip_installing.md
     docker_installing.md
     simple_compilation.md
+    client_server.md
 
 .. toctree::
     :maxdepth: 0

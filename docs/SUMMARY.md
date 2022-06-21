@@ -7,6 +7,7 @@
 - [Installing the Python package](pip_installing.md)
 - [Working with Concrete ML through Docker](docker_installing.md)
 - [Converting a simple model to FHE](simple_compilation.md)
+- [Deploying FHE models](client_server.md)
 
 ## Converting ML models to FHE
 

@@ -7,6 +7,7 @@ on:
         # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
         description: "Notebook file name only in: \n
         - ClassifierComparison \n
+        - ClientServer \n
         - ConvolutionalNeuralNetwork \n
         - DecisionTreeClassifier \n
         - FullyConnectedNeuralNetwork \n
