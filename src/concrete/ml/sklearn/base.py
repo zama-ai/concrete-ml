@@ -638,13 +638,16 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         """Initialize the FHE linear model.
 
         Args:
-            n_bits (int, Dict): Number of bits to quantize the model. If an int is passed for
-                n_bits, the value will be used for activation, inputs and weights. If a dict is
-                passed, then it should contain "inputs", "weights" and "outputs" keys with
-                corresponding number of quantization bits for:
-                - inputs : any input data to any layers
-                - weights: learned parameters or constants in the network
-                - outputs: final model output
+            n_bits (int, Dict): Number of bits to quantize the model. If an int is passed
+                for n_bits, the value will be used for activation,
+                inputs and weights. If a dict is passed, then it should
+                contain  "net_inputs", "op_inputs", "op_weights" and
+                "net_outputs" keys with corresponding number of
+                quantization bits for:
+                    - net_inputs : number of bits for model input
+                    - op_inputs : number of bits to quantize layer input values
+                    - op_weights: learned parameters or constants in the network
+                    - net_outputs: final model output quantization bits
                 Default to 2.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
