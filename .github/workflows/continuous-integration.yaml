@@ -344,10 +344,10 @@ jobs:
         run: |
           make pytest PYTEST_OPTIONS=--weekly
 
-      - name: PyTest CodeBlocks
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          make pytest_codeblocks
+      # - name: PyTest CodeBlocks
+      #   if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+      #   run: |
+      #     make pytest_codeblocks
 
       - name: Download datasets
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
