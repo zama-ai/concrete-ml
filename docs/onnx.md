@@ -117,3 +117,40 @@ During the PTQ process, the ONNX model stored in the `NumpyModule` is interprete
 Quantized operators are then used to create a `QuantizedModule` that, similarly to the `NumpyModule`, runs through the operators to perform the quantized inference with integers-only operations.
 
 That `QuantizedModule` is then compilable to FHE if the intermediate values conform to the 8 bits precision limit of the **Concrete** stack.
+
+## Understanding the models with ONNX
+
+In order to better understand how Concrete-ML works under the hood, it is possible to access each model in their ONNX format and then either either print it or visualize it by importing the associated file in [Netron](https://netron.app). For example, with `LogisticRegression`:
+
+```python
+import onnx
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+from concrete.ml.sklearn import LogisticRegression
+
+# Create the data for classification
+x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+
+# Retrieve train and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    x, y, test_size=10, random_state=42
+)
+
+# Fix the number of bits to used for quantization
+model = LogisticRegression(n_bits=2)
+
+# Fit the model
+model.fit(X_train, y_train)
+
+# Access to the model
+onnx_model = model.onnx_model
+
+# Print the model
+print(onnx.helper.printable_graph(onnx_model.graph))
+
+# Save the model
+onnx.save(onnx_model, "tmp.onnx")
+
+# And then visualize it with Netron
+```
