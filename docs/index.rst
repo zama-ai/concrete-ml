@@ -103,6 +103,7 @@ Additionally, academic and white papers will be published, explaining interestin
     releasing.md
     contributing.md
     onnx.md
+    quantized_ops.md
     hummingbird_usage.md
     skorch_usage.md
 
