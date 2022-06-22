@@ -672,6 +672,8 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
       - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          fetch-depth: 0
 
       # See #570 To be updated to only install required dependencies group with poetry 1.2 and
       # remove graphviz installs which are only required for the actual package and not dev tools
