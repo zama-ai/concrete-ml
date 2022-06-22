@@ -117,25 +117,48 @@ def execute_reduce_sum(
     return numpy_module(numpy_input)
 
 
-@pytest.mark.parametrize(
-    "n_values, n_bits",
-    [
-        pytest.param(
-            n_values := 2**power_n_values,
-            n_bits,
-            id=f"reduce_sum_{n_values}_values_{n_bits}_bits",  # pylint: disable=undefined-variable
+def generate_test_sum_cases():
+    """Generate all tests cases use in the test_sum."""
+
+    def generate_sum_id(n_values, n_bits, in_fhe, use_virtual_lib):
+        return (
+            f"reduce_sum_{n_values}_values_{n_bits}_bits"
+            + "_in_fhe" * in_fhe
+            + "_(VL)" * use_virtual_lib
         )
-        for power_n_values in range(8)
-        for n_bits in range(1, 6)
-    ],
-)
+
+    tests_cases = []
+
+    # One test in FHE
+    tests_cases.append(
+        pytest.param(
+            n_values := 2 ** (numpy.random.randint(8)),
+            n_bits := 4,
+            in_fhe := True,
+            use_virtual_lib := False,
+            id=generate_sum_id(n_values, n_bits, in_fhe, use_virtual_lib),
+        )
+    )
+
+    # Several tests in FHE (VL) and non-FHE
+    for in_fhe in [True, False]:
+        for n_bits in range(1, 6):
+            for power_n_values in range(8):
+                tests_cases.append(
+                    pytest.param(
+                        n_values := 2**power_n_values,
+                        n_bits,
+                        in_fhe,
+                        use_virtual_lib := True,
+                        id=generate_sum_id(n_values, n_bits, in_fhe, use_virtual_lib),
+                    )
+                )
+    return tests_cases
+
+
 @pytest.mark.parametrize(
-    "in_fhe, use_virtual_lib",
-    [
-        pytest.param(True, False, id="fhe_no_virtual_lib"),
-        pytest.param(True, True, id="fhe_use_virtual_lib"),
-        pytest.param(False, False, id="no_fhe"),
-    ],
+    "n_values, n_bits, in_fhe, use_virtual_lib",
+    generate_test_sum_cases(),
 )
 def test_sum(n_values, n_bits, in_fhe, use_virtual_lib, default_configuration, is_vl_only_option):
     """Tests ReduceSum ONNX operator on a torch model."""
@@ -189,7 +212,7 @@ def test_sum(n_values, n_bits, in_fhe, use_virtual_lib, default_configuration, i
         assert error < 10e-6, f"Got an unexpected error of {error:0.2f} with a single input value."
 
 
-def generate_parameters_and_id():
+def generate_wrong_parameters_and_id():
     """Generator for parameters used in test_reduce_sum_wrong_parameters"""
     wrong_parameters = [
         {"n_values": 13},
@@ -230,7 +253,7 @@ def generate_parameters_and_id():
             *parameters,
             id=pytest_id,
         )
-        for parameters, pytest_id in generate_parameters_and_id()
+        for parameters, pytest_id in generate_wrong_parameters_and_id()
     ],
 )
 def test_reduce_sum_wrong_parameters(
