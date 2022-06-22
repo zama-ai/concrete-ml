@@ -1,10 +1,12 @@
 # Contribute
 
-```{important}
+{% hint style='danger' %}
 There are two ways to contribute to **Concrete-ML**:
+
 - You can open issues to report bugs and typos and to suggest ideas.
 - You can ask to become an official contributor by emailing hello@zama.ai. Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do!
-```
+
+{% endhint %}
 
 Let's go over some other important things that you need to be careful about.
 

@@ -1,8 +1,8 @@
 # Compilation of ONNX Models
 
-```{note}
+{% hint style='info' %}
 FIXME: to be done, Benoit, #959, #968
-```
+{% endhint %}
 
 ## Ops supported for evaluation/NumPy conversion
 

@@ -1,5 +1,5 @@
 # Concrete-Numpy Summation
 
-```{note}
+{% hint style='info' %}
 FIXME: to be done, Benoit
-```
+{% endhint %}

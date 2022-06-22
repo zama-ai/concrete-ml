@@ -1,8 +1,8 @@
 # FHE Constraints
 
-```{warning}
+{% hint style='danger' %}
 FIXME: Benoit, to be refactorized/rewritten/completed a lot
-```
+{% endhint %}
 
 With the current version of the framework, we cannot represent encrypted integers with more than 8 bits. While we are working on supporting larger integers, currently, whenever a floating point model needs to be processed in FHE, quantization is necessary.
 
@@ -36,11 +36,11 @@ return %2
 
 Notice that the maximum bit width, determined by the compiler, depends on the inputset passed to the `compile_on_inputset` function. In this case, the error is caused by the input value in the inputset that produces a result whose representation requires 9 bits. This input is the value 8, since 8 * 42 = 336, which is a 9-bit value.
 
-```{note}
+{% hint style='info' %}
 You can determine the number of bits necessary to represent an integer value with the formula:
 
 $n_{\mathsf{bits}}(x) = \mathsf{floor}(\mathsf{log}_2(x)) + 1$
-```
+{% endhint %}
 
 ## Can floating point computations be replaced by integer computations?
 
@@ -52,13 +52,13 @@ The input contains 28x28x8 bits, so 6272 bits of information. In practice, you c
 
 This shows how adapting your data or model parameters can allow you to use models that may require smaller data types (i.e. use less precision) to perform their computations.
 
-```{note}
+{% hint style='info' %}
 Binarization is an extreme case of quantization which is introduced [here](quantization.md). You can also find further resources on the linked page.
-```
+{% endhint %}
 
-```{note}
+{% hint style='info' %}
 While applying quantization directly to the input features is mandatory to reduce the effective bit width of computations, a different and complementary approach is dimensionality reduction. This can be accomplished through Principal Component Analysis (PCA) as shown in the [Poisson Regression example](advanced_examples.md)
-```
+{% endhint %}
 
 ## Model accuracy concerns when using quantization
 

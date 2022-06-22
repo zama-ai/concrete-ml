@@ -1,14 +1,15 @@
 # Quantization
 
-```{note}
+{% hint style='info' %}
 FIXME: Jordan, two .md's have been concatenated, to be fusionned well
-```
+{% endhint %}
 
-```{note}
+{% hint style='info' %}
 from [Wikipedia](https://en.wikipedia.org/wiki/Quantization):
 
 > Quantization is the process of constraining an input from a continuous or otherwise large set of values (such as the real numbers) to a discrete set (such as the integers).
-```
+
+{% endhint %}
 
 ## Why is it needed?
 

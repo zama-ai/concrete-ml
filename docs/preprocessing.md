@@ -1,5 +1,5 @@
 # Preprocessing with Concrete-Numpy
 
-```{note}
+{% hint style='info' %}
 FIXME: to be done, Jordan
-```
+{% endhint %}

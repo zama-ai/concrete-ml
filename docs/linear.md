@@ -58,7 +58,7 @@ model.fit(X_train, y_train)
 model.compile(X_train)
 
 # Perform the inference in FHE
-# Warning: this will take a while. It is recommended to run this with a very small batch of 
+# Warning: this will take a while. It is recommended to run this with a very small batch of
 # example first (e.g. N_TEST_FHE = 1)
 N_TEST_FHE = 1
 y_pred = model.predict(X_test[:N_TEST_FHE], execute_in_fhe=True)

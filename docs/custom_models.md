@@ -43,9 +43,9 @@ class SimpleNet(nn.Module):
 
 Once the model is trained, we can import it in **Concrete-ML**, a process that applies quantization and performs the compilation to FHE. This is done through the `compile_torch_model` function. Note that we quantize this model using 3 bits for both weights and activations.
 
-```{note}
+{% hint style='info' %}
 In this usage of the `compile_torch_model` function, the quantization will be performed post-training. Thus the weights that were trained in floating point will become integer values.
-```
+{% endhint %}
 
 <!--pytest-codeblocks:cont-->
 
@@ -107,15 +107,15 @@ In the following sections we show how to increase quantized accuracy while keepi
 
 In the above example we implemented an FCNN model and quantized it to 3 bits. We note that, when there are few neurons on the hidden layers, the accuracy of the model is lower. However, when we have more neurons, we obtained good accuracy but the bitwidth  increased proportionally. Thus, we run the risk of overflowing the maximum allowed FHE accumulator bitwidth.
 
-```{note}
+{% hint style='info' %}
 The `Linear` layer computes a dot product between weights and inputs:
 
 $y = \sum_i w_i x_i$
 
-Let's examine a theoretical setting, using 2 bits for weights and layer inputs/outputs. With 2 bits we are ensured that no overflow can occur during the computation of the `Linear` layer if the number of neurons does not exceed 14: the sum of 14 products of 2-bit numbers does not exceed 7 bits. As, by default, **Concrete-ML** uses symmetric quantization for model weights, weight values are in the interval: $\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$. For example, for $n_{bits}=2$ the possible values are $[-2, -1, 0, 1]$, for $n_{bits}=3$ the values can be $[-4,-3,-2,-1,0,1,2,3]$. 
+Let's examine a theoretical setting, using 2 bits for weights and layer inputs/outputs. With 2 bits we are ensured that no overflow can occur during the computation of the `Linear` layer if the number of neurons does not exceed 14: the sum of 14 products of 2-bit numbers does not exceed 7 bits. As, by default, **Concrete-ML** uses symmetric quantization for model weights, weight values are in the interval: $\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$. For example, for $n_{bits}=2$ the possible values are $[-2, -1, 0, 1]$, for $n_{bits}=3$ the values can be $[-4,-3,-2,-1,0,1,2,3]$.
 
 However, in a typical setting, the weights will not all have the maximum or minimum value (e.g. $-2^{n_{bits}-1}$). Weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
-```
+{% endhint %}
 
 We would thus like to train a network with many neurons, to increase the robustness of the training step, all the while having a low number of non-zero neurons. Neural network pruning, [described summarily here](pruning.md) is a training technique that allows the model developer to impose the number of zero-valued weights. Luckily torch [provides tools to prune neural networks](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html).
 
@@ -135,9 +135,9 @@ class PrunedSimpleNet(SimpleNet):
         for layer in self.named_modules():
             if isinstance(layer, nn.Linear):
                 num_zero_weights = (layer.weight.shape[1] - max_non_zero) * layer.weight.shape[0]
-                if num_zero_weights <= 0: 
+                if num_zero_weights <= 0:
                     continue
-                
+
                 if enable:
                     prune.l1_unstructured(layer, "weight", amount=num_zero_weights)
                 else:
@@ -154,9 +154,9 @@ Results with `PrunedSimpleNet`, a pruned version of the `SimpleNet` with 100 neu
 
 We can see that the fp32 accuracy has been improved while maintaining constant mean accumulator size.
 
-```{note}
+{% hint style='info' %}
 The accumulator size is determined by **Concrete Numpy** as being the maximum bitwidth encountered anywhere in the encrypted circuit
-```
+{% endhint %}
 
 When pruning a larger neural network during training, it is easier to obtain a low a bitwidth accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar smaller network.
 
@@ -172,10 +172,10 @@ To train the network using QAT, we make use of [brevitas](https://github.com/Xil
 the network above using brevitas, changing `Linear` layers to `QuantLinear` and adding
 quantizers on the inputs of linear layers (using `QuantIdentity`).
 
-```{note}
+{% hint style='info' %}
 The quantization-aware training (QAT) import tool in **Concrete-ML** is a work in progress. While we tested
-it with some networks built with brevitas it's possible to use other tools to obtain QAT networks. 
-```
+it with some networks built with brevitas it's possible to use other tools to obtain QAT networks.
+{% endhint %}
 
 <!--pytest-codeblocks:cont-->
 
@@ -265,7 +265,7 @@ class QATPrunedSimpleNet(nn.Module):
             True,
             weight_quant=CommonWeightQuant,
             weight_bit_width=n_hidden,
-            bias_quant=None,  
+            bias_quant=None,
         )
 
         for m in self.modules():
@@ -284,9 +284,9 @@ class QATPrunedSimpleNet(nn.Module):
         for name, layer in self.named_modules():
             if isinstance(layer, nn.Linear):
                 num_zero_weights = (layer.weight.shape[1] - max_non_zero) * layer.weight.shape[0]
-                if num_zero_weights <= 0: 
+                if num_zero_weights <= 0:
                     continue
-                
+
                 if enable:
                     print(f"Pruning layer {name} factor {num_zero_weights}")
                     prune.l1_unstructured(layer, "weight", amount=num_zero_weights)
@@ -307,13 +307,13 @@ Here are the predictions on the test set for this quantization aware trained net
 
 ![predictions_qat](../docs/figures/checkerboard_qat.png)
 
-```{note}
+{% hint style='info' %}
 The torch QAT training loop is the same as the standard floating point training loop, but hyperparameters
 such as learning rate might need to be adjusted.
-```
+{% endhint %}
 
-```{note}
+{% hint style='info' %}
 Quantization Aware Training is somewhat slower thant normal training. QAT introduces quantization
 during both the forward and backward passes. The quantization process is inefficient on GPUs as its
 computational intensity is low with respect to data transfer time.
-```
+{% endhint %}

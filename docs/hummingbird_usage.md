@@ -1,8 +1,8 @@
 # Hummingbird Usage
 
-```{note}
+{% hint style='info' %}
 FIXME: Jordan to check
-```
+{% endhint %}
 
 ## Why Hummingbird?
 

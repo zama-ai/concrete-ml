@@ -268,7 +268,9 @@ docker_clean_volumes:
 docker_cv: docker_clean_volumes
 
 .PHONY: docs # Build docs
-docs: clean_docs
+
+# We check links before changing the admonitions, due to some priiledges issues with check_links
+docs: clean_docs check_links admonition_to_sphinx
 	@# Create _static if nothing is commited in it
 	mkdir -p docs/_static/
 	@# Generate the auto summary of documentations
@@ -276,8 +278,8 @@ docs: clean_docs
 	poetry run sphinx-apidoc --implicit-namespaces -o docs/_apidoc $(CONCRETE_PACKAGE_PATH)
 	@# Docs
 	cd docs && poetry run "$(MAKE)" html SPHINXOPTS='-W --keep-going'
-	@# Check links
-	"$(MAKE)" check_links
+	@# Back to GitBook admonitions
+	"$(MAKE)" admonition_to_gitbook
 
 
 .PHONY: clean_docs # Clean docs build directory
@@ -290,6 +292,16 @@ open_docs:
 
 .PHONY: docs_and_open # Make docs and open them in a browser
 docs_and_open: docs open_docs
+
+.PHONY: admonition_to_gitbook # Change admonitions from sphinx-style to gitbook-style
+admonition_to_gitbook:
+	./script/make_utils/sphinx_gitbook_admonitions.sh
+	"$(MAKE)" mdformat
+
+.PHONY: admonition_to_sphinx # Change admonitions from gitbook-style to sphinx-style
+admonition_to_sphinx:
+	./script/make_utils/sphinx_gitbook_admonitions.sh --gitbook_to_sphinx
+	"$(MAKE)" mdformat
 
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:

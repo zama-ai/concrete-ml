@@ -1,8 +1,8 @@
 # FHE Assistant
 
-```{note}
+{% hint style='info' %}
 FIXME: Andrei to update
-```
+{% endhint %}
 
 ## What is the Virtual Lib?
 

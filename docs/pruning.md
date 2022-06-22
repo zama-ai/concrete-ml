@@ -1,8 +1,8 @@
 # Pruning
 
-```{note}
+{% hint style='info' %}
 FIXME: Andrei to check this
-```
+{% endhint %}
 
 In neural networks, a neuron computes a linear combination of inputs and learned weights, then applies an activation function.
 

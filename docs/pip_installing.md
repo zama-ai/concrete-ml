@@ -17,15 +17,15 @@ To install **Concrete-ML** from PyPi, run the following:
 pip install concrete-ml
 ```
 
-```{note}
+{% hint style='info' %}
 Note that **concrete-ml** installs **concrete-numpy** with all extras, including `pygraphviz` to draw graphs.
-```
+{% endhint %}
 
-```{WARNING}
+{% hint style='danger' %}
 `pygraphviz` requires `graphviz` packages being installed on your OS, see <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a>
-```
+{% endhint %}
 
-```{DANGER}
+{% hint style='danger' %}
 `graphviz` packages are binary packages that won't automatically be installed by pip.
 Do check <a href="https://pygraphviz.github.io/documentation/stable/install.html">https://pygraphviz.github.io/documentation/stable/install.html</a> for instructions on how to install `graphviz` for `pygraphviz`.
-```
+{% endhint %}

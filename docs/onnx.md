@@ -92,9 +92,9 @@ Moreover, by passing a user provided `nn.Module` to step 2 of the above process,
 
 Once an ONNX model is imported, it is converted to a `NumpyModule`, then to a `QuantizedModule` and, finally, to an FHE circuit. However, as the diagram shows, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the torch model as NumPy code without doing quantization.
 
-```{note}
+{% hint style='info' %}
 Note that if you keep the obtained `NumpyModule` without quantizing it with Post Training Quantization (PTQ), it will not be convertible to FHE since the **Concrete** stack requires operators to use integers for computations.
-```
+{% endhint %}
 
 The `NumpyModule` stores the ONNX model that it interprets. The interpreter works by going through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting), and storing the intermediate results as it goes. To execute a node, the interpreter feeds the required inputs - taken either from the model inputs or the intermediate results - to the NumPy implementation of each ONNX node.
 
@@ -102,9 +102,9 @@ The `NumpyModule` stores the ONNX model that it interprets. The interpreter work
 
 Calibration is the process of executing the `NumpyModule` with a representative set of data, in floating point. It allows to compute statistics for all the intermediate tensors used in the network to determine quantization parameters.
 
-```{note}
+{% hint style='info' %}
 Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](onnx.md#ops-supported-for-evaluation-numpy-conversion).
-```
+{% endhint %}
 
 ## Quantization
 
