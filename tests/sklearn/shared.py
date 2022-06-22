@@ -5,7 +5,7 @@ import numpy
 import pytest
 from torch import nn
 
-from concrete.ml.sklearn import (  # NeuralNetRegressor,
+from concrete.ml.sklearn import (
     DecisionTreeClassifier,
     GammaRegressor,
     LinearRegression,
@@ -13,6 +13,7 @@ from concrete.ml.sklearn import (  # NeuralNetRegressor,
     LinearSVR,
     LogisticRegression,
     NeuralNetClassifier,
+    NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
     TweedieRegressor,
@@ -25,19 +26,19 @@ regressor_models = [
     LinearSVR,
     PoissonRegressor,
     TweedieRegressor,
-    # FIXME NeuralNetRegressor takes too long to run (see #1163)
-    # partial(
-    #     NeuralNetRegressor,
-    #     module__n_layers=3,
-    #     module__n_w_bits=2,
-    #     module__n_a_bits=2,
-    #     module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time
-    #     module__n_outputs=1,
-    #     module__input_dim=20,
-    #     module__activation_function=nn.SELU,
-    #     max_epochs=10,
-    #     verbose=0,
-    # ),
+    partial(
+        NeuralNetRegressor,
+        module__n_layers=3,
+        module__n_w_bits=2,
+        module__n_a_bits=2,
+        module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time
+        module__n_hidden_neurons_multiplier=1,
+        module__n_outputs=1,
+        module__input_dim=20,
+        module__activation_function=nn.SELU,
+        max_epochs=10,
+        verbose=0,
+    ),
 ]
 
 classifier_models = [

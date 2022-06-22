@@ -51,12 +51,12 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
             n_samples=1000,
             n_features=20,
             n_informative=20,
-            n_targets=2,
+            n_targets=1,
             noise=2.0,
             random_state=numpy.random.randint(0, 2**15),
         )
         x = x.astype(numpy.float32)
-        y = y.astype(numpy.float32)
+        y = y.reshape(-1, 1).astype(numpy.float32)
     else:
         x, y = load_data(**parameters)
 
@@ -254,12 +254,12 @@ def test_dump(
         NeuralNetRegressor: """graph torch-jit-export (
   %onnx::MatMul_0[FLOAT, 20]
 ) initializers (
-  %features.fc0.bias[FLOAT, 80]
-  %features.fc1.bias[FLOAT, 80]
-  %features.fc2.bias[FLOAT, 2]
-  %onnx::MatMul_19[FLOAT, 20x80]
-  %onnx::MatMul_20[FLOAT, 80x80]
-  %onnx::MatMul_21[FLOAT, 80x2]
+  %features.fc0.bias[FLOAT, 20]
+  %features.fc1.bias[FLOAT, 20]
+  %features.fc2.bias[FLOAT, 1]
+  %onnx::MatMul_19[FLOAT, 20x20]
+  %onnx::MatMul_20[FLOAT, 20x20]
+  %onnx::MatMul_21[FLOAT, 20x1]
 ) {
   %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
   %input = Add(%features.fc0.bias, %onnx::Add_8)

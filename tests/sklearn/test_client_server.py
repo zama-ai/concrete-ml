@@ -93,7 +93,7 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
             x_train = x_train.astype(numpy.float32)
             x_test = x_test.astype(numpy.float32)
 
-            if model is NeuralNetRegressor:
+            if model.func is NeuralNetRegressor:
                 # Reshape y_train and y_test if 1d (regression for neural nets)
                 if y_train.ndim == 1:
                     y_train = y_train.reshape(-1, 1).astype(numpy.float32)
