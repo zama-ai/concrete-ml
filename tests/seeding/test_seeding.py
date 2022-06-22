@@ -39,6 +39,13 @@ def test_seed_2():
         print(numpy.random.uniform(-10, 100, size=(3, 3)))
 
 
+@pytest.mark.parametrize("random_inputs", [numpy.random.randint(0, 2**15, size=20)])
+def test_seed_3(random_inputs):
+    """Test python and numpy seeding for pytest parameters"""
+
+    print("Random inputs", random_inputs)
+
+
 @pytest.mark.parametrize("n_classes", [2])
 @pytest.mark.parametrize("input_dim", [100])
 def test_seed_sklearn(n_classes, input_dim, default_configuration):
