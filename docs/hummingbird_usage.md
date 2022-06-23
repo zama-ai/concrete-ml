@@ -1,9 +1,5 @@
 # Hummingbird Usage
 
-{% hint style='info' %}
-FIXME: Jordan to check
-{% endhint %}
-
 ## Why Hummingbird?
 
 Hummingbird contains an interesting feature for **Concrete-ML**: it converts many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) to tensor computations using a specific backend (torch, torchscript, ONNX and TVM).
@@ -44,9 +40,9 @@ lr.fit(X, y)
 onnx_model = convert(lr, backend="onnx", test_input=X).model
 ```
 
-In theory, we can directly use this `onnx_model` within our `get_equivalent_numpy_forward` (as long as all operators present in the ONNX model are implemented in NumPy) and get the NumPy inference.
+In theory, we can directly use this `onnx_model` within our `get_equivalent_numpy_forward` method (as long as all operators present in the ONNX model are implemented in NumPy) and get the NumPy inference.
 
 In practice, we have some steps to clean the ONNX and make the graph compatible with our framework such as:
 
 - applying quantization where needed
-- deleting non-FHE friendly ONNX operators, such as *Softmax* and *ArgMax*
+- deleting or replacing non-FHE friendly ONNX operators, such as *Softmax* and *ArgMax*

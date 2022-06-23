@@ -1,10 +1,6 @@
 # Quantization
 
 {% hint style='info' %}
-FIXME: Jordan, two .md's have been concatenated, to be fusionned well
-{% endhint %}
-
-{% hint style='info' %}
 from [Wikipedia](https://en.wikipedia.org/wiki/Quantization):
 
 > Quantization is the process of constraining an input from a continuous or otherwise large set of values (such as the real numbers) to a discrete set (such as the integers).
@@ -37,14 +33,10 @@ $$ Z = \mathtt{round} \left(- \frac{\alpha}{S} \right) $$
 
 When using quantized values in a matrix multiplication or convolution, the equations for computing the result are more involved. The IntelLabs distiller quantization documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) of the maths to quantize values and how to keep computations consistent.
 
-Regarding quantization in **Concrete-ML** and FHE compilation, it is important to understand the difference between two approaches:
+Quantization is implemented in **Concrete-ML** and, as other quantization framework, brings its own limitations alongside. The user is then offered two ways to implement his model:
 
-1. The quantization is done automatically during the model compilation stage (inside our framework). This approach requires little work by the user, but may not be a one-size-fits-all solution for all types of models that a user may want to implement.
-1. The quantization is done by the user, before compilation to FHE; notably, the quantization is completely controlled by the user, and can be done by any means, including by using third-party frameworks. In this approach, the user is responsible for implementing their models directly with NumPy.
-
-For the moment, the first method is applicable through the tools provided by in **Concrete-ML**, and the models implemented in our framework make use of this approach. When quantization is only performed in the compilation stage, the model training stage does not
-take into account that the model will be quantized. This setting is called Post-Training Quantization (PTQ), and this is the approach
-currently taken in **Concrete-ML**. PTQ is effective for moderate bit widths, such as 7-8 bits per weight and activation, but, for a model to be compatible with FHE constraints, we must quantize these values to as few as 2-3 bits. Thus, for models with more than a few neurons per layer, PTQ is not the optimal solution, and we plan to implement a more performant approach called Quantization Aware Training in the near future.
+1. The quantization is done automatically during the model compilation stage (inside our framework). This approach requires little work by the user, but may not be a one-size-fits-all solution for all types of models that a user may want to implement. The final quantized model is FHE friendly and ready to predict over encrypted data. This approach is done using Post-Training Quantization (PTQ).
+1. In some cases (when doing extreme quantization) PTQ is not sufficient to achieve a decent final model accuracy. **Concrete-ML** offer the possibility for the user to do quantization before compilation to FHE; notably, the quantization is completely controlled by the user, and can be done by any means, including by using third-party frameworks. In this approach, the user is responsible for implementing a full-integer model respecting the [FHE constraints](fhe_constraints.md). **Concrete-ML** now supports the compilation of models generated with Quantization Aware Training. Please refer to the [custom models documentation](custom_models.md)
 
 We detail the use of quantization within **Concrete-ML** [here](quantization.md).
 
@@ -54,9 +46,9 @@ We detail the use of quantization within **Concrete-ML** [here](quantization.md)
 - Lei Mao's blog on quantization: [Quantization for Neural Networks](https://leimao.github.io/article/Neural-Networks-Quantization/)
 - Google paper on neural network quantization and integer-only inference: [Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference](https://arxiv.org/abs/1712.05877)
 
-## FIXME
+## Quantization in **Concrete-ML**
 
-In this section, we detail the usage of [quantization](quantization.md) in **Concrete-ML**.
+In this section, we detail the usage in **Concrete-ML**.
 
 ## Quantizing data
 

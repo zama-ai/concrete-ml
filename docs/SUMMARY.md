@@ -23,10 +23,9 @@
 - [Neural Networks](neural_network.md)
 - [Advanced Examples](advanced_examples.md)
 
-## Pre-processing with Concrete-Numpy
+## Pre post processing with Concrete-Numpy
 
-- [Concrete-Numpy Summation](cn_summation.md)
-- [Preprocessing with Concrete-Numpy](preprocessing.md)
+- [Concrete-Numpy Summation](concrete_numpy.md)
 - [Pandas](pandas.md)
 
 ## Importing your custom models

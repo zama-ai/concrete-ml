@@ -87,6 +87,6 @@ Remark that this example shows that a data scientist may use Keras with **Concre
 
 ### Importing an already trained model (with quantized-aware training)
 
-```{note}
+{% hint style='info' %}
 FIXME: Andrei to add
-```
+{% endhint %}

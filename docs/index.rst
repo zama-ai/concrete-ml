@@ -75,10 +75,9 @@ Additionally, academic and white papers will be published, explaining interestin
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Pre-processing
+    :caption: Pre post processing
 
-    cn_summation.md
-    preprocessing.md
+    concrete_numpy.md
     pandas.md
 
 .. toctree::
