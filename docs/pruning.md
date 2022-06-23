@@ -1,8 +1,7 @@
 # Pruning
 
-{% hint style='info' %}
-FIXME: Andrei to check this
-{% endhint %}
+Pruning is a method to reduce neural network complexity, usually applied in order reduce the computation cost or memory size.
+We use pruning in **Concrete-ML** to control the size of accumulators in neural networks, thus making them FHE compatible. See the [FHE constraints](fhe_constraints.md) page for an explanation of the accumulator bitwidth constraints.
 
 In neural networks, a neuron computes a linear combination of inputs and learned weights, then applies an activation function.
 
@@ -35,6 +34,6 @@ Fixing some of the weights to 0 makes the network graph look more similar to the
 | *Pruned Fully Connected Neural Network*  |
 |                                          |
 
-Pruning weights can reduce the prediction performance of the neural network, but studies show that a high level of pruning (above 50% [^1]) can be applied. In **Concrete-ML**, we implement [Fully Connected Neural Networks](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.NeuralNetClassifier) with pruning, as described in the [developer guide](skorch_usage.md).
+Pruning weights can reduce the prediction performance of the neural network, but studies show that a high level of pruning (above 50% [^1]) can be applied. In **Concrete-ML**, we implement [Fully Connected Neural Networks](_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.NeuralNetClassifier) with pruning, as described in the [neural network documentation](quantized_neural_networks.md).
 
 [^1]: Han, Song & Pool, Jeff & Tran, John & Dally, William. (2015). Learning both Weights and Connections for Efficient Neural Networks.

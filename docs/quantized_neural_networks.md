@@ -60,7 +60,7 @@ Quantization parameters:
 - `n_w_bits` (default 3): number of bits for _weights_
 - `n_a_bits` (default 3): number of bits for _activations_ and _inputs_
 - `n_accum_bits` (default 8): maximum accumulator bit width that is desired. The implementation
-  will attempt to keep accumulators under this bitwidth through pruning, i.e. setting some weights to
+  will attempt to keep accumulators under this bitwidth through [pruning](pruning.md), i.e. setting some weights to
   zero
 
 Training parameters (from skorch):
