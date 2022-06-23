@@ -70,8 +70,7 @@ grid.fit(X_train, y_train)
 print(f"Best parameters found: {grid.best_params_}")
 
 # Output:
-#   Best parameters found:
-#   {'model__max_depth': 2, 'model__n_estimators': 5, 'pca__n_components': 2}
+#  Best parameters found: {'model__max_depth': 5, 'model__n_estimators': 10, 'pca__n_components': 5}
 
 # Currently we only focus on model inference in FHE
 # The data transformation will be done in clear (client machine)
@@ -87,20 +86,19 @@ model = best_pipeline[-1]
 X_train_transformed = data_transformation_pipeline.transform(X_train)
 X_test_transformed = data_transformation_pipeline.transform(X_test)
 
-# Evaluate the model on the test set (no FHE)
+# Evaluate the model on the test set in clear
 y_pred_clear = model.predict(X_test_transformed)
-print(f"Test accuracy in clear: {(y_pred_clear == y_test).mean()}")
+print(f"Test accuracy in clear: {(y_pred_clear == y_test).mean():0.2f}")
 
 # Output:
-#   Test accuracy: 0.947
+#  Test accuracy: 0.98
 
 # Compile the model to FHE
 model.compile(X_train_transformed)
 
-# Run the model in FHE
-# Warning: this will take a while.
-#          It is recommended to run this with a very small batch of example first
-#          (e.g. N_TEST_FHE = 1)
+# Perform the inference in FHE
+# Warning: this will take a while. It is recommended to run this with a very small batch of
+# example first (e.g. N_TEST_FHE = 1)
 # Note that here the encryption and decryption is done behind the scene.
 N_TEST_FHE = 1
 y_pred_fhe = model.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
@@ -108,6 +106,9 @@ y_pred_fhe = model.predict(X_test_transformed[:N_TEST_FHE], execute_in_fhe=True)
 # Assert that FHE predictions are the same as the clear predictions
 print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
       f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
+
+# Output:
+#  1 examples over 1 have a FHE inference equal to the clear inference
 ```
 
 ## Visual comparison

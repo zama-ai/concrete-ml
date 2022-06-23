@@ -48,11 +48,13 @@ X, y = make_classification(
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
 # Instantiate the model
-n_bits = {"net_inputs": 5, "op_inputs": 5, "op_weights": 2, "net_outputs": 8}
-model = LogisticRegression(n_bits=n_bits)
+model = LogisticRegression(n_bits=2)
 
 # Fit the model
 model.fit(X_train, y_train)
+
+# Evaluate the model on the test set in clear
+y_pred_clear = model.predict(X_test)
 
 # Compile the model
 model.compile(X_train)
@@ -60,8 +62,16 @@ model.compile(X_train)
 # Perform the inference in FHE
 # Warning: this will take a while. It is recommended to run this with a very small batch of
 # example first (e.g. N_TEST_FHE = 1)
+# Note that here the encryption and decryption is done behind the scene.
 N_TEST_FHE = 1
-y_pred = model.predict(X_test[:N_TEST_FHE], execute_in_fhe=True)
+y_pred_fhe = model.predict(X_test[:N_TEST_FHE], execute_in_fhe=True)
+
+# Assert that FHE predictions are the same as the clear predictions
+print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
+      f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
+
+# Output:
+#  1 examples over 1 have a FHE inference equal to the clear inference
 ```
 
 ## Visual comparison

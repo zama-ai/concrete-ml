@@ -66,38 +66,37 @@ from sklearn.model_selection import train_test_split
 
 from concrete.ml.sklearn import LogisticRegression
 
-# Create a synthetic dataset
-N_EXAMPLE_TOTAL = 100
-N_TEST = 20
-x, y = make_classification(n_samples=N_EXAMPLE_TOTAL, class_sep=2, n_features=4, random_state=42)
+# Create the data for classification
+x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+
+# Retrieve train and test sets
 X_train, X_test, y_train, y_test = train_test_split(
-    x, y, test_size=N_TEST / N_EXAMPLE_TOTAL, random_state=42
+    x, y, test_size=10, random_state=42
 )
 
-# Fix the quantization to 3 bits
-model = LogisticRegression(n_bits=3)
+# Fix the number of bits to used for quantization 
+model = LogisticRegression(n_bits=2)
 
 # Fit the model
 model.fit(X_train, y_train)
 
-# We run prediction on non-encrypted data as a reference
+# Run the predictions on non-encrypted data as a reference
 y_pred_clear = model.predict(X_test, execute_in_fhe=False)
 
-# We compile into an FHE model
+# Compile into an FHE model
 model.compile(x)
 
-# We then run the inference in FHE
+# Run the inference in FHE
 y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
 
 print("In clear  :", y_pred_clear)
 print("In FHE    :", y_pred_fhe)
-print("Comparison:", (y_pred_fhe == y_pred_clear))
+print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)}% similar")
 
 # Output:
-#   In clear  : [0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 0 0 1 1 1]
-#   In FHE    : [0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 0 0 1 1 1]
-#   Comparison: [ True  True  True  True  True  True  True  True  True  True  True  True
-#   True  True  True  True  True  True  True  True]
+#  In clear  : [0 0 0 1 0 1 0 1 1 1]
+#  In FHE    : [0 0 0 1 0 1 0 1 1 1]
+#  Comparison: 100% similar
 ```
 
 We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](linear.md), [tree-based models](tree.md) and [neural networks](quantized_neural_networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.

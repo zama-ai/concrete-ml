@@ -123,6 +123,8 @@ If you want to provide an integer implementation, you need to sub-class `Quantiz
 In the body of `q_impl`, in order to obtain quantized integer values you can use the `_prepare_inputs_with_constants` function as such:
 
 ```python
+from concrete.ml.quantization import QuantizedArray
+
 def q_impl(
     self,
     *q_inputs: QuantizedArray,
@@ -140,7 +142,7 @@ Now, `prepared_inputs` will contain one or more `QuantizedArray` of which the `q
 Once you implemented the required processing code on integers, the output of the `q_impl` function must be a
 single `QuantizedArray`. Most commonly, this is built using the dequantized results of the processing done in `q_impl`.
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 result = (
