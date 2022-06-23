@@ -269,8 +269,7 @@ docker_cv: docker_clean_volumes
 
 .PHONY: docs # Build docs
 
-# We check links before changing the admonitions, due to some priiledges issues with check_links
-docs: clean_docs check_links admonition_to_sphinx
+docs: clean_docs admonition_to_sphinx
 	@# Create _static if nothing is commited in it
 	mkdir -p docs/_static/
 	@# Generate the auto summary of documentations
@@ -278,6 +277,8 @@ docs: clean_docs check_links admonition_to_sphinx
 	poetry run sphinx-apidoc --implicit-namespaces -o docs/_apidoc $(CONCRETE_PACKAGE_PATH)
 	@# Docs
 	cd docs && poetry run "$(MAKE)" html SPHINXOPTS='-W --keep-going'
+	@# Check links
+	"$(MAKE)" check_links
 	@# Back to GitBook admonitions
 	"$(MAKE)" admonition_to_gitbook
 
@@ -579,6 +580,9 @@ fast_sanity_check:
 
 .PHONY: check_links # Check links in the documentation
 check_links:
+	@# Because of issues with priviledges and linkcheckmd
+	chmod +r docs/*.md
+
 	@# Remark that this target is not in PCC, because it needs the doc to be built
 	@# Mainly for web links
 	poetry run python -m linkcheckmd docs -local
