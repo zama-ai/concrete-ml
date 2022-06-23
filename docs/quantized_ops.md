@@ -13,15 +13,15 @@ Furthermore, as discussed in [the FHE constraints section](fhe_constraints.md), 
 
 Machine Learning computation graphs use floating point inputs and weights. To convert them to integer computations, we use [quantization](quantization.md).
 
-However, since we have a table lookup mechanism, it is possible to avoid the quantization of the entire graph. Indeed, the FHE datatype constraint requires that arithmetic operations, the first category in the list above, need to operate on integers. The most common arithmetic ONNX operations of use in machine learning are matrix multiplication, convolution, and addition of two tensors. All other ONNX operations, which implement uni-variate functions, need to have integer inputs and outputs to meet the FHE datatype constraint. But we observe that we can extend this rule to **sub-graphs of uni-variate ONNX operations**, meaning that the sub-graphs can have integer input and outputs, but their computations can be done in floating point. This is due to the float operation graph fusion in **Concrete-Numpy** as explained below.
+However, since we have a table lookup mechanism, it is possible to avoid the quantization of the entire graph. Indeed, the FHE datatype constraint requires that arithmetic operations, the first category in the list above, need to operate on integers. The most common arithmetic ONNX operations of use in machine learning are matrix multiplication, convolution, and addition of two tensors. All other ONNX operations, which implement univariate functions, need to have integer inputs and outputs to meet the FHE datatype constraint. But we observe that we can extend this rule to **sub-graphs of univariate ONNX operations**, meaning that the sub-graphs can have integer input and outputs, but their computations can be done in floating point. This is due to the float operation graph fusion in **Concrete-Numpy** as explained below.
 
-An opportunity to avoid un-necessary quantization, which induces accuracy loss, can be identified for the case of sub-graphs of float uni-variate operations.
+An opportunity to avoid un-necessary quantization, which induces accuracy loss, can be identified for the case of sub-graphs of float univariate operations.
 
 Let's examine the following operation graph:
 
 ![graph](../docs/figures/float_op_graph.png)
 
-The graph has a single input, which must be an encrypted integer tensor. Next, a series of uni-variate operations are applied. Finally, the result of this chain of uni-variate operations is fed into a matrix multiplication (MatMul). We observe that all the operations between the input and the MatMul operation can be fused into a single table lookup with integer inputs and outputs. Therefore the computation of these operations can be implemented in floating point.
+The graph has a single input, which must be an encrypted integer tensor. Next, a series of univariate operations are applied. Finally, the result of this chain of univariate operations is fed into a matrix multiplication (MatMul). We observe that all the operations between the input and the MatMul operation can be fused into a single table lookup with integer inputs and outputs. Therefore the computation of these operations can be implemented in floating point.
 
 ## Concrete-ML ONNX operation implementation
 
@@ -46,7 +46,7 @@ Depending on the position of the op in the graph and its inputs, the `QuantizedO
 
 ![quantized_op_float](../docs/figures/quantized_op_float.png)
 
-Many ONNX ops are trivially uni-variate, as they multiply variable inputs with constants, or apply uni-variate functions such as ReLU, Sigmoid, etc. The operations between the input and the MatMul in the graph above are of this type: subtraction, comparison, multiplication, etc. between inputs and constants.
+Many ONNX ops are trivially univariate, as they multiply variable inputs with constants, or apply univariate functions such as ReLU, Sigmoid, etc. The operations between the input and the MatMul in the graph above are of this type: subtraction, comparison, multiplication, etc. between inputs and constants.
 
 ### Operations that work on integers
 
@@ -93,7 +93,7 @@ When the op implements elementwise operations between the inputs and constants (
 the operation can be fused to a TLU. Thus, by default in `QuantizedOp` the `can_fuse` function returns `True`.
 
 When the op implements operations that mix the various scalars in the input encrypted tensor, the operation can not fuse,
-as table lookups are uni-variate. Thus operations such as `QuantizedGemm`, `QuantizedConv` return `False` in `can_fuse`.
+as table lookups are univariate. Thus operations such as `QuantizedGemm`, `QuantizedConv` return `False` in `can_fuse`.
 
 Some operations may be found in both settings above. A mechanism is implemented in **Concrete-ML** to determine if the inputs of a `QuantizedOp`
 are produced by a unique integer tensor. Thus, the `can_fuse` function of some `QuantizedOp` types (addition, subtraction) will allow fusion

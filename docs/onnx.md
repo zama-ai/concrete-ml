@@ -2,77 +2,6 @@
 
 Internally, **Concrete-ML** uses [ONNX](https://github.com/onnx/onnx) operators as intermediate representation (or IR) for manipulating machine learning models produced through export for [PyTorch](https://github.com/pytorch/pytorch), [Hummingbird](https://github.com/microsoft/hummingbird) and [skorch](https://github.com/skorch-dev/skorch). As ONNX is becoming the standard exchange format for neural networks, this allows **Concrete-ML** to be flexible while also making model representation manipulation quite easy. In addition, it allows for straight-forward mapping to NumPy operators, supported by **Concrete-Numpy** to use the **Concrete** stack FHE conversion capabilities.
 
-In this page we list the operators that are supported.
-
-## Ops supported for evaluation/NumPy conversion
-
-The following operators have some support for evaluation and conversion to an equivalent NumPy circuit.
-Do note that all operators may not be fully supported for conversion to a circuit executable in FHE. We sometimes implement only partially the operators, either because of some limits due to FHE or because we did not need more than special case for supporting e.g. PyTorch activations or scikit-learn models.
-
-<!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
-
-<!--- do not edit, auto generated part by `make supported_ops` -->
-
-- Abs
-- Acos
-- Acosh
-- Add
-- Asin
-- Asinh
-- Atan
-- Atanh
-- AveragePool
-- BatchNormalization
-- Cast
-- Celu
-- Clip
-- Constant
-- Conv
-- Cos
-- Cosh
-- Div
-- Elu
-- Equal
-- Erf
-- Exp
-- Flatten
-- Gemm
-- Greater
-- HardSigmoid
-- HardSwish
-- Identity
-- LeakyRelu
-- Less
-- Log
-- MatMul
-- Mul
-- Not
-- Or
-- PRelu
-- Pad
-- Pow
-- ReduceSum
-- Relu
-- Reshape
-- Round
-- Selu
-- Sigmoid
-- Sin
-- Sinh
-- Softplus
-- Sub
-- Tan
-- Tanh
-- ThresholdedRelu
-- Transpose
-- Where
-
-<!--- gen_supported_ops.py: inject supported operations for evaluation [END] -->
-
-## FIXME
-
-It was decided to use ONNX as the intermediate format to convert various ML models (including torch nn.Module and various sklearn models, among others) to NumPy. The reason here is that converting/interpreting torchscript and other representations would require a lot of effort while ONNX has tools readily available to easily manipulate the model's representation in Python. Additionally, JAX had an example of a lightweight interpreter to run ONNX models as NumPy code.
-
 ## Steps of the conversion and compilation of a torch model to NumPy via ONNX
 
 The diagram below gives an overview of the steps involved in the conversion of an ONNX graph to a FHE compatible format, i.e. a format that can  be compiled to FHE through **Concrete-Numpy**.
@@ -103,7 +32,7 @@ The `NumpyModule` stores the ONNX model that it interprets. The interpreter work
 Calibration is the process of executing the `NumpyModule` with a representative set of data, in floating point. It allows to compute statistics for all the intermediate tensors used in the network to determine quantization parameters.
 
 {% hint style='info' %}
-Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](onnx.md#ops-supported-for-evaluation-numpy-conversion).
+Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](compilation_onnx.md#ops-supported-for-evaluation-numpy-conversion).
 {% endhint %}
 
 ## Quantization

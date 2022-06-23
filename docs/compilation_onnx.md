@@ -87,6 +87,88 @@ Remark that this example shows that a data scientist may use Keras with **Concre
 
 ### Importing an already trained model (with quantized-aware training)
 
-{% hint style='info' %}
-FIXME: Andrei to add
-{% endhint %}
+While the example above shows how to import a floating point model for post-training quantization,
+**Concrete-ML** also provides an option to import quantization aware trained (QAT) models.
+
+QAT models contain quantizers in the ONNX graph. These quantizers ensure that the inputs
+to the Linear/Dense and Conv layers are quantized. Furthermore, since these QAT models
+have quantizers that are configured during training to a specific number of bits,
+we need to ensure that we import the ONNX graph with the same setting:
+
+<!--pytest-codeblocks:cont-->
+
+```python
+n_bits_qat = 3  # number of bits for weights and activations during training
+
+quantized_numpy_module = compile_onnx_model(
+    onnx_model,
+    inputset,
+    import_qat=True,
+    n_bits=n_bits_qat,
+)
+```
+
+## Ops supported for evaluation/NumPy conversion
+
+The following operators have some support for evaluation and conversion to an equivalent NumPy circuit.
+Do note that all operators may not be fully supported for conversion to a circuit executable in FHE. We sometimes implement only partially the operators, either because of some limits due to FHE or because we did not need more than special case for supporting e.g. PyTorch activations or scikit-learn models.
+
+<!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
+
+<!--- do not edit, auto generated part by `make supported_ops` -->
+
+- Abs
+- Acos
+- Acosh
+- Add
+- Asin
+- Asinh
+- Atan
+- Atanh
+- AveragePool
+- BatchNormalization
+- Cast
+- Celu
+- Clip
+- Constant
+- Conv
+- Cos
+- Cosh
+- Div
+- Elu
+- Equal
+- Erf
+- Exp
+- Flatten
+- Gemm
+- Greater
+- HardSigmoid
+- HardSwish
+- Identity
+- LeakyRelu
+- Less
+- Log
+- MatMul
+- Mul
+- Not
+- Or
+- PRelu
+- Pad
+- Pow
+- ReduceSum
+- Relu
+- Reshape
+- Round
+- Selu
+- Sigmoid
+- Sin
+- Sinh
+- Softplus
+- Sub
+- Tan
+- Tanh
+- ThresholdedRelu
+- Transpose
+- Where
+
+<!--- gen_supported_ops.py: inject supported operations for evaluation [END] -->

@@ -1,29 +1,141 @@
 # Torch support
 
+In addition to the built-in models, **Concrete-ML** supports generic machine learning models implemented
+with torch, or [stored as ONNX graphs](compilation_onnx.md). Generic model import allows the user
+to use custom model architectures that are not implemented by the built-in models.
+
+We show how to compile a simple torch model that implements a fully connected neural network with two hidden units. Due to its small size, making this model respect FHE constraints is relatively easy. Let's define the model architecture:
+
+```python
+from torch import nn
+import torch
+
+N_FEAT = 2
+class SimpleNet(nn.Module):
+    """Simple MLP with torch"""
+
+    def __init__(self, n_hidden=30):
+        super().__init__()
+        self.fc1 = nn.Linear(in_features=N_FEAT, out_features=n_hidden)
+        self.fc2 = nn.Linear(in_features=n_hidden, out_features=n_hidden)
+        self.fc3 = nn.Linear(in_features=n_hidden, out_features=2)
+
+
+    def forward(self, x):
+        """Forward pass."""
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+```
+
+Once the model is trained, we can import it in **Concrete-ML**, a process that applies quantization and performs the compilation to FHE. This is done through the `compile_torch_model` function. Note that we quantize this model using 3 bits for both weights and activations.
+
+{% hint style='info' %}
+In this usage of the `compile_torch_model` function, the quantization will be performed post-training. Thus the weights that were trained in floating point will become integer values.
+{% endhint %}
+
+<!--pytest-codeblocks:cont-->
+
+```python
+from concrete.ml.torch.compile import compile_torch_model
+import numpy
+torch_input = torch.randn(100, N_FEAT)
+torch_model = SimpleNet(30)
+quantized_numpy_module = compile_torch_model(
+    torch_model, # our model
+    torch_input, # a representative inputset to be used for both quantization and compilation
+    n_bits = 3,
+)
+```
+
+Now the model is ready to infer in FHE. To call the inference functions you first need to quantize the test data:
+
+<!--pytest-codeblocks:cont-->
+
+```python
+x_test = numpy.array([numpy.random.randn(N_FEAT)])
+x_test_quantized = quantized_numpy_module.quantize_input(x_test)
+```
+
+You can then call
+
+- `quantized_numpy_module.forward_and_dequant()` to compute predictions in the clear,
+  on quantized data and then de-quantize the result. The return value of this function contains
+  the dequantized (float) output of running the model in the clear. Calling the forward
+  function on the clear data is useful when debugging.
+  The results in FHE will be the same as those on clear quantized data.
+
+- `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to perform the FHE inference.
+  In this case, de-quantization is done in a second stage using
+  `quantized_numpy_module.dequantize_output()`.
+
+## Quantization aware training
+
+While the example above shows how to import a floating point model for post-training quantization,
+**Concrete-ML** also provides an option to import quantization aware trained (QAT) models.
+
+QAT models contain quantizers in the torch graph. These quantizers ensure that the inputs
+to the Linear/Dense and Conv layers are quantized. We do not currently include torch quantizers
+in **Concrete-ML**, you can either implement your own or use a 3rd party library such as
+[brevitas](https://github.com/Xilinx/brevitas)
+as is shown in the [custom models documentation](custom_models.md). Custom models can have a more generic
+architecture and training procedure than the **Concrete-ML** built-in models.
+
+Suppose that `n_bits_qat` is the bitwidth of activations and weights during the QAT process. To import
+a torch QAT network you can use the following library function:
+
+<!--pytest-codeblocks:cont-->
+
+```python
+n_bits_qat = 3
+
+quantized_numpy_module = compile_torch_model(
+    torch_model,
+    torch_input,
+    import_qat=True,
+    n_bits=n_bits_qat,
+)
+```
+
+## Operator support
+
 **Concrete-ML** supports a variety of torch operators that can be used to build fully connected
 or convolutional neural networks, with normalization and activation layers. Moreover, many
 element-wise operators are supported.
 
-Our torch conversion pipeline uses ONNX and an intermediate representation. We refer the user to [the Concrete-ML ONNX operator reference](onnx.md) for more information. We can also note that it is also possible to directly [compile ONNX models](compilation_onnx.md).
-
 ## List of supported torch operators
 
-The following operators in torch will be exported as **Concrete-ML** compatible ONNX operators:
+Univariate operators:
 
 - [`torch.abs`](https://pytorch.org/docs/stable/generated/torch.abs.html)
 - [`torch.clip`](https://pytorch.org/docs/stable/generated/torch.clip.html)
 - [`torch.exp`](https://pytorch.org/docs/stable/generated/torch.exp.html)
-- [`torch.nn.identity`](https://pytorch.org/docs/stable/generated/torch.nn.Identity.html)
 - [`torch.log`](https://pytorch.org/docs/stable/generated/torch.log.html)
+- [`torch.gt`](https://pytorch.org/docs/stable/generated/torch.gt.html)
+- [`torch.clamp`](https://pytorch.org/docs/stable/generated/torch.clamp.html)
+- [`torch.mul, torch.Tensor operator *`](https://pytorch.org/docs/stable/generated/torch.mul.html)
+- [`torch.div, torch.Tensor operator /`](https://pytorch.org/docs/stable/generated/torch.div.html)
+- [`torch.nn.identity`](https://pytorch.org/docs/stable/generated/torch.nn.Identity.html)
+
+Shape modifying operators:
+
 - [`torch.reshape`](https://pytorch.org/docs/stable/generated/torch.reshape.html)
 - [`torch.Tensor.view`](https://pytorch.org/docs/stable/generated/torch.Tensor.view.html#torch.Tensor.view)
+- [`torch.flatten`](https://pytorch.org/docs/stable/generated/torch.flatten.html)
+- [`torch.transpose`](https://pytorch.org/docs/stable/generated/torch.transpose.html)
 
 Operators that take an encrypted input and unencrypted constants:
 
-- [`torch.add`, torch.Tensor operator +](https://pytorch.org/docs/stable/generated/torch.Tensor.add.html)
 - [`torch.conv2d`, `torch.nn.Conv2D`](https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html)
 - [`torch.matmul`](https://pytorch.org/docs/stable/generated/torch.matmul.html)
 - [`torch.nn.Linear`](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
+
+Operators that can take both encrypted+unencrypted and encrypted+encrypted inputs:
+
+- [`torch.add, torch.Tensor operator +`](https://pytorch.org/docs/stable/generated/torch.Tensor.add.html)
+- [`torch.sub, torch.Tensor operator -`](https://pytorch.org/docs/stable/generated/torch.Tensor.sub.html)
 
 ## List of supported activations
 

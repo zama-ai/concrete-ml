@@ -558,12 +558,12 @@ determinism:
 
 .PHONY: supported_ops # Update docs with supported ops
 supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/onnx.md
+	poetry run python script/doc_utils/gen_supported_ops.py docs/compilation_onnx.md
 	"$(MAKE)" mdformat
 
 .PHONY: check_supported_ops # Check supported ops (for the doc)
 check_supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/onnx.md --check
+	poetry run python script/doc_utils/gen_supported_ops.py docs/compilation_onnx.md --check
 
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:

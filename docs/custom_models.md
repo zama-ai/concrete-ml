@@ -13,9 +13,9 @@ We generate a synthetic 2D dataset with a checkerboard grid pattern of 100 x 100
 
 ![test_set](../docs/figures/checkerboard_test_data.png)
 
-## Importing a torch model
+## A simple torch model
 
-First, we show how to compile a simple torch model that implements a fully connected neural network with two hidden units. Due to its small size, making this model respect FHE constraints is relatively easy. Let's define the model architecture:
+We first examine the simple torch model from [the torch support documentation](torch_support.md).
 
 ```python
 from torch import nn
@@ -41,49 +41,10 @@ class SimpleNet(nn.Module):
 
 ```
 
-Once the model is trained, we can import it in **Concrete-ML**, a process that applies quantization and performs the compilation to FHE. This is done through the `compile_torch_model` function. Note that we quantize this model using 3 bits for both weights and activations.
-
-{% hint style='info' %}
-In this usage of the `compile_torch_model` function, the quantization will be performed post-training. Thus the weights that were trained in floating point will become integer values.
-{% endhint %}
-
-<!--pytest-codeblocks:cont-->
-
-```python
-from concrete.ml.torch.compile import compile_torch_model
-import numpy
-torch_input = torch.randn(100, N_FEAT)
-torch_model = SimpleNet(30)
-quantized_numpy_module = compile_torch_model(
-    torch_model, # our model
-    torch_input, # a representative inputset to be used for both quantization and compilation
-    n_bits = 3,
-)
-```
-
-Now the model is ready to infer in FHE. To call the inference functions you first need to quantize the test data:
-
-<!--pytest-codeblocks:cont-->
-
-```python
-x_test = numpy.array([numpy.random.randn(N_FEAT)])
-x_test_quantized = quantized_numpy_module.quantize_input(x_test)
-```
-
-You can then call
-
-- `quantized_numpy_module.forward_and_dequant()` to compute predictions in the clear,
-  on quantized data and then de-quantize the result. The return value of this function contains
-  the dequantized (float) output of running the model in the clear. Calling the forward
-  function on the clear data is useful when debugging.
-  The results in FHE will be the same as those on clear quantized data.
-
-- `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to perform the FHE inference.
-  In this case, de-quantization is done in a second stage using
-  `quantized_numpy_module.dequantize_output()`.
-
-We trained this network for three different numbers of hidden layer neurons, quantized it and compiled it to FHE.
-We then used the [FHE assistant](fhe_assistant.md) to get the observed accumulator size. We report the mean accumulator size for 10 networks trained in each setting.
+We trained this network for three different numbers of hidden layer neurons, quantized it to
+3 bit weights and activations and compiled it to FHE.
+We then used the [FHE assistant](fhe_assistant.md) to get the observed accumulator size.
+We report the mean accumulator size for 10 networks trained in each setting.
 
 Results for the network in fp32:
 
