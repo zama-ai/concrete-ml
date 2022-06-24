@@ -14,6 +14,7 @@ from torch import nn
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
+    LogisticRegression,
     NeuralNetClassifier,
     NeuralNetRegressor,
     RandomForestClassifier,
@@ -98,9 +99,15 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
                 if y_train.ndim == 1:
                     y_train = y_train.reshape(-1, 1).astype(numpy.float32)
     elif model in [XGBClassifier, RandomForestClassifier]:
-        model_params = {"n_estimators": 5, "max_depth": 2}
+        model_params = {
+            "n_estimators": 5,
+            "max_depth": 2,
+            "random_state": numpy.random.randint(0, 2**15),
+        }
     elif model is DecisionTreeClassifier:
-        model_params = {"max_depth": 2}
+        model_params = {"max_depth": 2, "random_state": numpy.random.randint(0, 2**15)}
+    elif model in [LogisticRegression]:
+        model_params = {"random_state": numpy.random.randint(0, 2**15)}
     else:
         model_params = {}
 
