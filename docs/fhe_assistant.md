@@ -109,8 +109,8 @@ return %12
 Knowing that a linear/dense layer is implemented as a matrix multiplication, we determine which
 parts of the op-graph listing in the exception message above correspond to which layers:
 
-
 Layer weights initialization
+
 ```
 %0 = [[-1 -3] [ ... ] [-2  2]]        # ClearTensor<int3, shape=(120, 2)>
  %1 = [[ 1  3 -2 ...  1  2  0]]        # ClearTensor<int3, shape=(120, 120)>
@@ -118,6 +118,7 @@ Layer weights initialization
 ```
 
 Input processing and quantization
+
 ```
  %3 = _onnx__Gemm_0                    # EncryptedTensor<uint5, shape=(1, 2)>
  %4 = -15                              # ClearScalar<int5>
@@ -126,12 +127,14 @@ Input processing and quantization
 ```
 
 First dense layer and activation function
+
 ```
 %7 = matmul(%6, %2)                   # EncryptedTensor<int6, shape=(1, 120)>
 %8 = subgraph(%7)                     # EncryptedTensor<uint3, shape=(1, 120)>
 ```
 
 Second dense layer and activation function
+
 ```
 %9 = matmul(%8, %1)                   # EncryptedTensor<int9, shape=(1, 120)>
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only up to 8-bit integers are supported
@@ -139,6 +142,7 @@ Second dense layer and activation function
 ```
 
 Third dense layer and output quantization
+
 ```
 %11 = matmul(%10, %0)                  # EncryptedTensor<int8, shape=(1, 2)>
 %12 = subgraph(%11)                    # EncryptedTensor<uint5, shape=(1, 2)>
