@@ -46,7 +46,7 @@ class FC(tensorflow.keras.Model):
 
 
 n_bits = 6
-input_output_feature = 60
+input_output_feature = 2
 input_shape = (input_output_feature,)
 num_inputs = 1
 n_examples = 5000
