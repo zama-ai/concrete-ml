@@ -41,7 +41,8 @@ Quantization is the process of converting floating point weights, inputs and act
 
 Initializers (model trained parameters) are quantized according to `n_bits` and passed to the Post Training Quantization (PTQ) process.
 
-During the PTQ process, the ONNX model stored in the `NumpyModule` is interpreted and calibrated using `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary, which maps ONNX operators (eg, Gemm) to their quantized equivalent (eg, QuantizedGemm). Remark that for some ONNX operator, this quantized equivalence is only partial (FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/876).
+During the PTQ process, the ONNX model stored in the `NumpyModule` is interpreted and calibrated using `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary, which maps ONNX operators (eg, Gemm) to their quantized equivalent (eg, QuantizedGemm). For more information on implementing
+these operations, please see the [FHE compatible op-graph section](quantized_ops.md).
 
 Quantized operators are then used to create a `QuantizedModule` that, similarly to the `NumpyModule`, runs through the operators to perform the quantized inference with integers-only operations.
 

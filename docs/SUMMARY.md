@@ -27,7 +27,7 @@
 
 - [Torch support](torch_support.md)
 - [ONNX Support](onnx_support.md)
-- [FHE Assistant](fhe_assistant.md)
+- [Model Debugging and Optimization](fhe_assistant.md)
 - [FHE Friendly Models](fhe_friendly_models.md)
 - [Deep Learning Examples](dl_examples.md)
 

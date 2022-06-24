@@ -43,7 +43,7 @@ class SimpleNet(nn.Module):
 
 We trained this network for three different numbers of hidden layer neurons, quantized it to
 3 bit weights and activations and compiled it to FHE.
-We then used the [FHE assistant](fhe_assistant.md) to get the observed accumulator size.
+We then used the [Virtual Library](fhe_assistant.md) to get the observed accumulator size.
 We report the mean accumulator size for 10 networks trained in each setting.
 
 Results for the network in fp32:
