@@ -95,7 +95,3 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 #   Comparison: [ True  True  True  True  True  True  True  True  True  True  True  True
 #   True  True  True  True  True  True  True  True]
 ```
-
-## Deploy FHE models in a client/server setting
-
-Please refer to [the client server documentation](client_server.md)

@@ -18,7 +18,7 @@ FHE is a powerful cryptographic tool that allows cloud service providers to perf
 
 One of the main current difficulties is that some models currently do not work well due to the fact that **Concrete-Library** only supports 8 bits. Because of this, we sometimes have to quantize too much, which has a strong negative impact on certain models. Further, because **Concrete-Compiler** is also a work in progress, we have FHE programs which are sometimes too slow or they may require a massive amount of RAM: improvements on this front will come in future releases.
 
-Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see [examples](advanced_examples.md)).
+Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see [ML examples](ml_examples.md) and [ML examples](dl_examples.md)).
 
 ## Resources
 

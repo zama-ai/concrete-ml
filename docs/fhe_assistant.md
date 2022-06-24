@@ -8,7 +8,7 @@ FIXME: Andrei to update
 
 The Virtual Lib in **Concrete-ML** is a prototype that provides drop-in replacements for **Concrete-Numpy**, Compiler and Circuit that allow users to simulate what would happen when converting a model to FHE without the current bit width constraint, or to more quickly simulate the behavior with 8 bits or less as there are no FHE computations.
 
-In other words, you can use the compile functions from the **Concrete-ML** package by passing `use_virtual_lib = True` and using a `Configuration` with `enable_unsafe_features = True`. You will then get a simulated circuit that allows you to use more than the current 8 bits of precision allowed by the **Concrete** stack. It is also a faster way to measure the potential FHE accuracy with 8 bits or less. It is something we used for the red/blue contours in the [Classifier Comparison notebook](advanced_examples.md), as computing in FHE for the whole grid and all the classifiers would be very long.
+In other words, you can use the compile functions from the **Concrete-ML** package by passing `use_virtual_lib = True` and using a `Configuration` with `enable_unsafe_features = True`. You will then get a simulated circuit that allows you to use more than the current 8 bits of precision allowed by the **Concrete** stack. It is also a faster way to measure the potential FHE accuracy with 8 bits or less. It is something we used for the red/blue contours in the [Classifier Comparison notebook](ml_examples.md), as computing in FHE for the whole grid and all the classifiers would be very long.
 
 ## What should it be used for?
 

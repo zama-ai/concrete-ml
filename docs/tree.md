@@ -28,7 +28,7 @@ All of the **training process is handled by scikit-learn or XGBoost**. Therefore
 ## Example
 
 Here's an example of how to use this model in FHE on a popular dataset using some of scikit-learn's most popular preprocessing tools.
-A more complete example can be found in the [XGBClassifier notebook](advanced_examples.md).
+A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -114,7 +114,7 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 ## Visual comparison
 
 Using the above example, we can then plot how the model classifies the inputs and then compare those results with the XGBoost model executed in clear. A 6 bits model is also given in order to better understand the impact of quantization on classification.
-Similar plots can be found in the [Classifier Comparison notebook](advanced_examples.md).
+Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
 
 Let's plot the decision boundaries of both model.
 

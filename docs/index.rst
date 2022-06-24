@@ -24,7 +24,7 @@ A work in progress
 
 One of the main current difficulties is that some models currently do not work well due to the fact that **Concrete-Library** only supports 8 bits. Because of this, we sometimes have to quantize too much, which has a strong negative impact on certain models. Further, because **Concrete-Compiler** is also a work in progress, we have FHE programs which are sometimes too slow or they may require a massive amount of RAM: improvements on this front will come in future releases.
 
-Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see `examples <advanced_examples.md>`__).
+Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see `ML examples <ml_examples.md>`__ and `DL examples <dl_examples.md>`__).
 
 Resources
 ----------------------------------
@@ -55,7 +55,17 @@ Additionally, academic and white papers will be published, explaining interestin
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Converting ML models to FHE
+    :caption: Concrete-ML Model library
+
+    linear.md
+    tree.md
+    quantized_neural_networks.md
+    ml_examples.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Machine learning in FHE
 
     fhe_constraints.md
     quantization.md
@@ -65,12 +75,13 @@ Additionally, academic and white papers will be published, explaining interestin
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Concrete ML Model library
+    :caption: Deep learning in FHE
 
-    linear.md
-    tree.md
-    quantized_neural_networks.md
-    advanced_examples.md
+    torch_support.md
+    onnx_support.md
+    fhe_assistant.md
+    fhe_friendly_models.md
+    dl_examples.md
 
 .. toctree::
     :maxdepth: 0
@@ -83,25 +94,21 @@ Additionally, academic and white papers will be published, explaining interestin
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Building custom models
-
-    torch_support.md
-    compilation_onnx.md
-    fhe_assistant.md
-    custom_models.md
-
-.. toctree::
-    :maxdepth: 0
-    :hidden:
     :caption: Developper Guide
 
     project_setup.md
-    docker.md
+    docker_setup.md
     documenting.md
     debug_support_submit_issues.md
     releasing.md
     contributing.md
-    onnx.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Architecture
+
+    onnx_pipeline.md
     quantized_ops.md
     hummingbird_usage.md
     skorch_usage.md

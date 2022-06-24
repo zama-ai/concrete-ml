@@ -9,40 +9,45 @@
 - [Converting a simple model to FHE](simple_compilation.md)
 - [Deploying FHE models](client_server.md)
 
-## Converting ML models to FHE
+## Concrete-ML Model library
+
+- [Linear Models](linear.md)
+- [Tree-based Models](tree.md)
+- [Neural Networks](neural_network.md)
+- [Machine Learning Examples](ml_examples.md)
+
+## Machine Learning in FHE
 
 - [Constraints of FHE programs](fhe_constraints.md)
 - [Quantization](quantization.md)
 - [Pruning](pruning.md)
 - [Compilation](compilation.md)
 
-## Concrete ML Model library
-
-- [Linear models](linear.md)
-- [Tree-based models](tree.md)
-- [Neural Networks](neural_network.md)
-- [Advanced Examples](advanced_examples.md)
-
-## Pre post processing with Concrete-Numpy
-
-- [Concrete-Numpy Summation](concrete_numpy.md)
-- [Pandas](pandas.md)
-
-## Importing your custom models
+## Deep Learning in FHE
 
 - [Torch support](torch_support.md)
-- [Compiling ONNX models](compilation_onnx.md)
+- [ONNX Support](onnx_support.md)
 - [FHE Assistant](fhe_assistant.md)
-- [Developing custom models](custom_models.md)
+- [FHE Friendly Models](fhe_friendly_models.md)
+- [Deep Learning Examples](dl_examples.md)
+
+## Pre Post Processing
+
+- [Concrete-Numpy](concrete_numpy.md)
+- [Pandas](pandas.md)
 
 ## Developper Guide
 
 - [Set Up the Project](project_setup.md)
-- [Set Up Docker](docker.md)
+- [Set Up Docker](docker_setup.md)
 - [Document](documenting.md)
 - [Debug / Get Support / Submit Issues](debug_support_submit_issues.md)
 - [Create a Release on GitHub](releasing.md)
 - [Contribute](contributing.md)
-- [Our Use of ONNX](onnx.md)
+
+## Architecture
+
+- [ONNX Import Pipeline](onnx_pipeline.md)
+- [FHE compatible ML op-graphs](quantized_ops)
 - [HummingBird](hummingbird_usage.md)
 - [Skorch Usage](skorch_usage.md)

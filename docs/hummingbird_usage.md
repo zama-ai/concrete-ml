@@ -1,8 +1,6 @@
 # Hummingbird Usage
 
-## Why Hummingbird?
-
-Hummingbird contains an interesting feature for **Concrete-ML**: it converts many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) to tensor computations using a specific backend (torch, torchscript, ONNX and TVM).
+[Hummingbird](https://microsoft.github.io/hummingbird/) is a third party open-source library that converts machine learning models into tensor computations. Many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) are converted using a specific backend (torch, torchscript, ONNX and TVM).
 
 **Concrete-ML** allows the conversion of an ONNX inference to NumPy inference (note that NumPy is always our entry point to run models in FHE).
 

@@ -16,7 +16,7 @@ More specifically, for any models (except Quantized Neural Networks) :
 
 ## Example
 
-Here's an example using the `LogisticRegression` model on a simple classification problem. A more advanced example can be found in the [KaggleTitanic notebook](advanced_examples.md).
+Here's an example using the `LogisticRegression` model on a simple classification problem. A more advanced example can be found in the [KaggleTitanic notebook](ml_examples.md).
 
 ```python
 import numpy as np

@@ -59,7 +59,7 @@ print(circuit)
 
 At this stage, we have everything we need to deploy the model using `Client` and  `Server` from `concrete.numpy`. Please refer to the [**Concrete-Numpy** implementation](https://docs.zama.ai/concrete-numpy) for more information on the deployment.
 
-# Pre and post processing
+## Pre and post processing
 
 In theory, it is possible to combine **Concrete-Numpy** with **Concrete-ML** such that the server can apply some pre or post processing before or after the execution of the model on the data. However this brings some complexity has all operations must be done in the quantized realm.
 

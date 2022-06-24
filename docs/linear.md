@@ -25,7 +25,7 @@ All of the **training process is handled by scikit-learn**. Therefore, any users
 
 ## Example
 
-Here's an example of how to use this model in FHE on a simple dataset below. A more complete example can be found in the [LogisticRegression notebook](advanced_examples.md). Additionally, a similar example using some of scikit-learn's most popular preprocessing tools is available in the documentation about [tree models](tree.md).
+Here's an example of how to use this model in FHE on a simple dataset below. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md). Additionally, a similar example using some of scikit-learn's most popular preprocessing tools is available in the documentation about [tree models](tree.md).
 
 ```python
 import numpy
@@ -77,7 +77,7 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 ## Visual comparison
 
 Using the above example, we can then plot how the model classifies the inputs and then compare those results with a scikit-learn model executed in clear.
-The complete code can be found in the [LogisticRegression notebook](advanced_examples.md).
+The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
 
 Let's plot the decision boundaries of both model.
 

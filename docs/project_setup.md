@@ -2,9 +2,15 @@
 
 **Concrete-ML** is a `Python` library, so `Python` should be installed to develop **Concrete-ML**. `v3.8` and `v3.9` are the only supported versions. **Concrete-ML** also uses `Poetry` and `Make`.
 
+First of all, you need to `git clone` the project:
+
+```bash
+git clone https://github.com/zama-ai/concrete-ml
+```
+
 ## Automatically installing
 
-A simple way to have everything installed is to use the development Docker (see the [docker](docker.md) guide). However, we've also made that installing tools to work directly on Linux and macOS is simplified: you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
+A simple way to have everything installed is to use the development Docker (see the [docker setup](docker_setup.md) guide). However, we've also made that installing tools to work directly on Linux and macOS is simplified: you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
 
 {% hint style='danger' %}
 For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are/lack of a single package manager.
@@ -15,7 +21,7 @@ The first step is to [install Python](#installing-python) (as some of our dev to
 - jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
 - make [https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make)
 
-Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](docker.md).
+Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](docker_setup.md).
 {% endhint %}
 
 ## Manually installing

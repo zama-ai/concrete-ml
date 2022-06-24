@@ -1,7 +1,7 @@
 # Torch support
 
 In addition to the built-in models, **Concrete-ML** supports generic machine learning models implemented
-with torch, or [stored as ONNX graphs](compilation_onnx.md). Generic model import allows the user
+with torch, or [stored as ONNX graphs](onnx_support.md). Generic model import allows the user
 to use custom model architectures that are not implemented by the built-in models.
 
 We show how to compile a simple torch model that implements a fully connected neural network with two hidden units. Due to its small size, making this model respect FHE constraints is relatively easy. Let's define the model architecture:
@@ -80,7 +80,7 @@ QAT models contain quantizers in the torch graph. These quantizers ensure that t
 to the Linear/Dense and Conv layers are quantized. We do not currently include torch quantizers
 in **Concrete-ML**, you can either implement your own or use a 3rd party library such as
 [brevitas](https://github.com/Xilinx/brevitas)
-as is shown in the [custom models documentation](custom_models.md). Custom models can have a more generic
+as is shown in the [FHE-friendly models documentation](fhe_friendly_models.md). Custom models can have a more generic
 architecture and training procedure than the **Concrete-ML** built-in models.
 
 Suppose that `n_bits_qat` is the bitwidth of activations and weights during the QAT process. To import

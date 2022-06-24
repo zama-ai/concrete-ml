@@ -15,8 +15,8 @@ The FCNN models are built upon [skorch](https://skorch.readthedocs.io/en/stable/
 
 While `NeuralNetClassifier` and `NeuralNetClassifier` provide scikit-learn like models,
 their architecture is somewhat restricted in order to make training easy and robust. If you
-need more advanced models you can convert custom neural networks, as described in the [custom models
-documentation](custom_models.md).
+need more advanced models you can convert custom neural networks, as described in the [FHE-friendly models
+documentation](fhe_friendly_models.md).
 
 ## Usage
 
@@ -108,4 +108,4 @@ overflow errors. A value of 1 should be completely safe with respect to overflow
 
 ### Examples
 
-A similar example is given in the [classifier comparison notebook](advanced_examples.md).
+A similar example is given in the [classifier comparison notebook](ml_examples.md).

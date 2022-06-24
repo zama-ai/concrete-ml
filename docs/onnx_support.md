@@ -1,6 +1,6 @@
-# Compilation of ONNX Models
+# ONNX Support
 
-In addition to **Concrete-ML** models and to [custom models in torch](torch_support.md), it is also possible to directly compile ONNX models. This can be particularly appealing, notably to import models trained with Keras (see [in this subsection](compilation_onnx.md#post-training-quantization). It can also be interesting in the context of QAT (see [in this subsection](compilation_onnx.md#importing-an-already-trained-model-with-quantized-aware-training)), since lot of ONNX are available on the web.
+In addition to **Concrete-ML** models and to [custom models in torch](torch_support.md), it is also possible to directly compile ONNX models. This can be particularly appealing, notably to import models trained with Keras (see [in this subsection](onnx_support.md#post-training-quantization). It can also be interesting in the context of QAT (see [in this subsection](onnx_support.md#importing-an-already-trained-model-with-quantized-aware-training)), since lot of ONNX are available on the web.
 
 ## ONNX models
 

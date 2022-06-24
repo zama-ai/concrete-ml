@@ -1,4 +1,4 @@
-# Importing op-graphs from ONNX
+# ONNX Import Pipeline
 
 Internally, **Concrete-ML** uses [ONNX](https://github.com/onnx/onnx) operators as intermediate representation (or IR) for manipulating machine learning models produced through export for [PyTorch](https://github.com/pytorch/pytorch), [Hummingbird](https://github.com/microsoft/hummingbird) and [skorch](https://github.com/skorch-dev/skorch). As ONNX is becoming the standard exchange format for neural networks, this allows **Concrete-ML** to be flexible while also making model representation manipulation quite easy. In addition, it allows for straight-forward mapping to NumPy operators, supported by **Concrete-Numpy** to use the **Concrete** stack FHE conversion capabilities.
 
@@ -10,12 +10,12 @@ All **Concrete-ML** builtin models follow the same pattern for FHE conversion:
 
 1. The models are trained with sklearn or torch
 1. All models have a torch implementation for inference. This implementation is provided either by third-party tool such as [hummingbird](hummingbird_usage.md), or is implemented in our library
-1. The torch model is exported to ONNX. For more information on the use of ONNX in **Concrete-ML** see [here](onnx.md#steps-of-the-conversion-and-compilation-of-a-torch-model-to-numpy-via-onnx)
+1. The torch model is exported to ONNX. For more information on the use of ONNX in **Concrete-ML** see [here](onnx_pipeline.md#steps-of-the-conversion-and-compilation-of-a-torch-model-to-numpy-via-onnx)
 1. Our ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference numpy operations to them. This step produces a `NumpyModule`
 1. Quantization is performed on the [`NumpyModule`](_apidoc/concrete.ml.torch.html#concrete.ml.torch.numpy_module.NumpyModule), producing a  [`QuantizedModule`](_apidoc/concrete.ml.quantization.html#concrete.ml.quantization.quantized_module.QuantizedModule) . Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](_apidoc/concrete.ml.quantization.html#concrete.ml.quantization.base_quantized_op.QuantizedOp)  objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
 1. Once the `QuantizedModule` is built, we use **Concrete-Numpy** to trace the `._forward()` function of the `QuantizedModule`
 
-Moreover, by passing a user provided `nn.Module` to step 2 of the above process, **Concrete-ML** supports custom user models. See the associated [custom model documentation](custom_models.md) for instructions about working with such models.
+Moreover, by passing a user provided `nn.Module` to step 2 of the above process, **Concrete-ML** supports custom user models. See the associated [FHE-friendly model documentation](fhe_friendly_models.md) for instructions about working with such models.
 
 ![Torch compilation flow with ONNX](./_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
 
@@ -32,7 +32,7 @@ The `NumpyModule` stores the ONNX model that it interprets. The interpreter work
 Calibration is the process of executing the `NumpyModule` with a representative set of data, in floating point. It allows to compute statistics for all the intermediate tensors used in the network to determine quantization parameters.
 
 {% hint style='info' %}
-Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](compilation_onnx.md#ops-supported-for-evaluation-numpy-conversion).
+Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](onnx_support.md#ops-supported-for-evaluation-numpy-conversion).
 {% endhint %}
 
 ## Quantization

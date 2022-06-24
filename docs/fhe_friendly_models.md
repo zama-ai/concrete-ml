@@ -1,4 +1,4 @@
-# Developing Custom Models
+# FHE Friendly Models
 
 While **Concrete-ML** provides many built-in models, it is also possible to compile models with custom architecture, for which the user handles the training. In this usage scenario, the user is responsible for training a model that is compatible with [FHE constraints](fhe_constraints.md) and **Concrete-ML** will compile the trained model to FHE.
 
