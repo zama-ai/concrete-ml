@@ -1,12 +1,21 @@
 # FHE Constraints
 
-{% hint style='danger' %}
-FIXME: Benoit, to be refactorized/rewritten/completed a lot
-{% endhint %}
+## Overview
+
+**Concrete-ML** implements machine learning models which have inference functions expressed as FHE programs. These programs
+are implemented with **Concrete-Numpy**, as discussed in the introduction. While **Concrete-ML** built-in models
+are FHE compatible drop-in replacements for scikit-learn models, it is sometimes useful to understand the main steps of
+converting ML models to FHE.
+
+1. Training a machine learning model with low accumulator sizes. This is addressed by [pruning](pruning.md)
+1. Conversion of the machine learning model operations to integer computation, addressed by [quantization](quantization.md)
+1. Finally, compilation of the model's operation graph to machine code, through [compilation](compilation.md)
+
+## Integer computation in FHE
 
 With the current version of the framework, we cannot represent encrypted integers with more than 8 bits. While we are working on supporting larger integers, currently, whenever a floating point model needs to be processed in FHE, quantization is necessary.
 
-## What happens when encrypted computations produce values larger than 8 bits?
+### What happens when encrypted computations produce values larger than 8 bits?
 
 In this situation, you will get a compilation error. Here is an example:
 
@@ -42,7 +51,7 @@ You can determine the number of bits necessary to represent an integer value wit
 $n_{\mathsf{bits}}(x) = \mathsf{floor}(\mathsf{log}_2(x)) + 1$
 {% endhint %}
 
-## Can floating point computations be replaced by integer computations?
+### Can floating point computations be replaced by integer computations?
 
 While floating point values have 32 bits of precision, machine learning datasets have features that use only a limited range of values. For example, if a feature takes a value that is limited to the range \[1, 2), in floating point this value is represented as $2^0 * \mathsf{mantissa}$, where $\mathsf{mantissa}$ is a number between 1 and 2. Generic floating point representation can support exponents between -126 and 127, allocating 8 bits to store the exponent. In our case, a single exponent value of 0 is needed. Knowing that, for our range, the exponent can only take a single value out for 253 possible ones. We can thus save the 8 bits allocated to the exponent, reducing the bit width necessary[^2].
 
@@ -68,7 +77,7 @@ However, quantization and, especially, binarization, induce a loss in the accura
 
 The quantization of model parameters and model inputs is illustrated in the advanced examples for [Linear and Logistic Regressions](advanced_examples.md). Note that different quantization parameters are used for inputs and for model weights.
 
-## Limitations for FHE friendly neural networks
+### Limitations for FHE friendly neural networks
 
 Recent quantization literature usually aims to make use of dedicated machine learning accelerators in a mixed setting where a CPU or General Purpose GPU (GPGPU) is also available. Thus, in literature, some floating point computation is assumed to be acceptable. This approach allows us to reach performance similar to those achieved by floating point models. In this popular mixed float-int setting, the input is usually left in floating point. This is also true for the first and last layers, which have more impact on the resulting model accuracy than hidden layers.
 
