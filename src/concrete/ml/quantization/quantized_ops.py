@@ -3,7 +3,7 @@
 # pylint: disable=too-many-lines
 # FIXME: #1018
 
-from typing import Any, Dict, Optional, Set, Union
+from typing import Any, Dict, Optional, Sequence, Set, SupportsIndex, Union
 
 import numpy
 from concrete.onnx import conv as cnp_conv
@@ -1051,6 +1051,7 @@ class QuantizedFlatten(QuantizedOp):
         assert_true(len(q_inputs) == 1, "Flatten operator only takes a single input")
 
         axis = attrs["axis"]
+        newshape: Sequence[SupportsIndex]
         newshape = (
             *q_inputs[0].qvalues.shape[0:axis],
             numpy.prod(q_inputs[0].qvalues.shape[axis:]),

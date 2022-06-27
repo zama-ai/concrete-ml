@@ -1,7 +1,7 @@
 """ONNX ops implementation in python + numpy."""
 
 # pylint: disable=too-many-lines
-from typing import Optional, Tuple, Union
+from typing import Optional, Sequence, SupportsIndex, Tuple, Union
 
 import numpy
 import onnx
@@ -1049,6 +1049,7 @@ def numpy_flatten(x: numpy.ndarray, /, *, axis: int = 1) -> Tuple[numpy.ndarray]
     Returns:
         result: flattened tensor
     """
+    output_shape: Sequence[SupportsIndex]
     output_shape = (*x.shape[0:axis], numpy.prod(x.shape[axis:]))
 
     return (numpy.reshape(x, output_shape),)
