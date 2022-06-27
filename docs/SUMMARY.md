@@ -13,7 +13,7 @@
 
 - [Linear Models](linear.md)
 - [Tree-based Models](tree.md)
-- [Neural Networks](neural_network.md)
+- [Neural Networks](quantized_neural_networks.md)
 - [Machine Learning Examples](ml_examples.md)
 
 ## Machine Learning in FHE
@@ -48,6 +48,6 @@
 ## Architecture
 
 - [ONNX Import Pipeline](onnx_pipeline.md)
-- [FHE compatible ML op-graphs](quantized_ops)
+- [FHE compatible ML op-graphs](quantized_ops.md)
 - [HummingBird](hummingbird_usage.md)
 - [Skorch Usage](skorch_usage.md)
