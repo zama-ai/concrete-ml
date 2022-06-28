@@ -201,14 +201,15 @@ def get_parameters_glms(config):
 
 def get_config(args) -> Dict:
     """Fix the GLM parameters used for initialization, fitting, prediction and score evaluation."""
-    if args.n_bits is not None:
-        n_bits_list = [args.n_bits]
 
-    n_bits_list = [
-        {"net_inputs": 6, "op_inputs": 2, "op_weights": 2, "net_outputs": 6},
-        {"net_inputs": 6, "op_inputs": 3, "op_weights": 2, "net_outputs": 6},
-        {"net_inputs": 6, "op_inputs": 3, "op_weights": 3, "net_outputs": 6},
-    ]
+    if args.n_bits is not None:
+        n_bits_list = args.n_bits
+    else:
+        n_bits_list = [
+            {"net_inputs": 6, "op_inputs": 2, "op_weights": 2, "net_outputs": 6},
+            {"net_inputs": 6, "op_inputs": 3, "op_weights": 2, "net_outputs": 6},
+            {"net_inputs": 6, "op_inputs": 3, "op_weights": 3, "net_outputs": 6},
+        ]
 
     config = {
         "PoissonRegressor": {
@@ -387,7 +388,7 @@ def main():
                 print_configs.pop("n_bits_list")
                 print_configs = str(print_configs).replace("'", '"')
                 n_bits = str(n_bits).replace("'", '"')
-                print(f"--regressor {regressor} --n_bits '{n_bits}' --configs '{print_configs}'")
+                print(f"--regressors {regressor} --n_bits '{n_bits}' --configs '{print_configs}'")
         return
 
     number_of_test_cases = sum(
@@ -434,6 +435,11 @@ def main():
 
         # Compute the maximum number of PCA components possible for executing the model in FHE
         n_components = compute_number_of_components(n_bits)
+
+        # If the n_bits input is too high, the model could overflow the max precision bitdwith
+        # currently available
+        if n_components == 0:
+            raise ValueError(f"n_bits = {n_bits} is too high. Please lower its value(s).")
 
         # Let's instantiate the pipelines
         model_pca = Pipeline(
