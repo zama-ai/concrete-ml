@@ -25,9 +25,9 @@ class LogisticRegression(nn.Module):
 torch_model = LogisticRegression()
 ```
 
-```{warning}
+{% hint style='danger' %}
 Note that the architecture of the neural network passed to be compiled must respect some hard constraints given by FHE. Please read the our [detailed documentation](../howto/reduce_needed_precision.md) on these limitations.
-```
+{% endhint %}
 
 Once your model is trained, you can simply call the `compile_torch_model` function to execute the compilation.
 

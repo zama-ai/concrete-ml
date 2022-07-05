@@ -4,17 +4,17 @@ Internally, **Concrete-ML** uses [ONNX](https://github.com/onnx/onnx) operators 
 
 Here we list the operators that are supported as well as the operators that have a quantized version, which should allow you to perform automatic Post Training Quantization (PTQ) of your models.
 
-```{note}
+{% hint style='info' %}
 Please note that due to the current precision constraints from the **Concrete** stack, PTQ may produce circuits that have _worse_ accuracy than your original model.
-```
+{% endhint %}
 
 ## Ops supported for evaluation/NumPy conversion
 
 The following operators should be supported for evaluation and conversion to an equivalent NumPy circuit. As long as your model converts to an ONNX using these operators, it _should_ be convertible to an FHE equivalent.
 
-```{note}
+{% hint style='info' %}
 Do note that all operators may not be fully supported for conversion to a circuit executable in FHE. You will get error messages should you use such an operator in a circuit you are trying to convert to FHE.
-```
+{% endhint %}
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
 

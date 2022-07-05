@@ -78,7 +78,7 @@ Here is a simple example showing how to perform inference, starting from float v
 x_test_q = quantized_module.quantize_input(data)
 
 for i in range(x_test_q.shape[0]):
-    # Inputs must have size (1 x N) or (1 x C x H x W), we add the batch dimension with N=1    
+    # Inputs must have size (1 x N) or (1 x C x H x W), we add the batch dimension with N=1
     x_q = np.expand_dims(x_test_q[i, :], 0)
 
     # Execute the model in FHE
@@ -87,7 +87,7 @@ for i in range(x_test_q.shape[0]):
     # Dequantization is done in the clear
     output = quantized_module.dequantize_output(out_fhe)
 
-    # For classifiers with multi-class outputs, the arg max is done in the clear 
+    # For classifiers with multi-class outputs, the arg max is done in the clear
     y_pred = np.argmax(output, 1)
 ```
 
@@ -144,7 +144,7 @@ class QuantizedGemm(QuantizedOp):
         **attrs,
     ) -> QuantizedArray:
 
-        # ... 
+        # ...
 
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True

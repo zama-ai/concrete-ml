@@ -8,15 +8,15 @@ It was decided to use ONNX as the intermediate format to convert various ML mode
 
 In the diagram above, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the torch model as NumPy code without doing quantization.
 
-```{note}
+{% hint style='info' %}
 Note that if you keep the obtained `NumpyModule` without quantizing it with Post Training Quantization (PTQ), it is very likely that it won't be convertible to FHE since the **Concrete** stack requires operators to use integers for computations.
-```
+{% endhint %}
 
 The `NumpyModule` stores the ONNX model that it interprets. The interpreter works by going through the ONNX graph (which, by specification, is sorted in [topological order](https://en.wikipedia.org/wiki/Topological_sorting), allowing users to run through the graph without having to care for evaluation order) and storing the intermediate results as it goes. To execute a node, the interpreter feeds the required inputs - taken either from the model inputs or the intermediate results - to the NumPy implementation of each ONNX node.
 
-```{note}
+{% hint style='info' %}
 Do note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../../user/howto/onnx_supported_ops.md#ops-supported-for-evaluation-numpy-conversion).
-```
+{% endhint %}
 
 Initializers (ONNX's parameters) are quantized according to `n_bits` and passed to the Post Training Quantization (PTQ) process.
 

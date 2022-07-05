@@ -1,6 +1,6 @@
 # Set Up the Project
 
-```{note}
+{% hint style='info' %}
 You will need to first [install Python](#installing-python). This can be done automatically for Linux with the rest of the dependencies running the script indicated below with the `--linux-install-python` flag. If you want to install some of the dependencies manually, we detail the installations of [Poetry](#installing-poetry) and [Make](#installing-make).
 
 On Linux and macOS you will have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
@@ -10,26 +10,27 @@ It is strongly recommended to use the development Docker (see the [docker](../..
 For Windows see the Warning admonition below.
 
 The project targets Python 3.8 through 3.9 inclusive.
-```
+{% endhint %}
 
-```{warning}
+{% hint style='danger' %}
 For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are/lack of a single package manager.
 
 The first step is to [install Python](#installing-python) (as some of our dev tools depend on it), then [Poetry](#installing-poetry). In addition to installing Python, you are still going to need the following software available on path on Windows, as some of our basic dev tools depend on them:
+
 - git [https://gitforwindows.org/](https://gitforwindows.org/)
 - jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
 - make [https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make)
 
 Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](../../dev/howto/docker.md).
-```
+{% endhint %}
 
 ## Installing Python
 
 **Concrete ML** is a `Python` library, so `Python` should be installed to develop **Concrete ML**. `v3.8` and `v3.9` are the only supported versions.
 
-```{note}
+{% hint style='info' %}
 As stated [at the start of this document](#set-up-the-project), you can install Python 3.8 for Linux automatically if it's available in your distribution's apt repository using the ./script/make_utils/setup_os_deps.sh script.
-```
+{% endhint %}
 
 You can follow [this](https://realpython.com/installing-python/) guide to install it (alternatively, you can google `how to install Python 3.8 (or 3.9)`).
 
@@ -37,25 +38,25 @@ You can follow [this](https://realpython.com/installing-python/) guide to instal
 
 `Poetry` is our package manager. It drastically simplifies dependency and environment management.
 
-```{note}
+{% hint style='info' %}
 As stated [at the start of this document](#set-up-the-project), you can install Poetry for macOS and Linux automatically using the ./script/make_utils/setup_os_deps.sh script.
-```
+{% endhint %}
 
 You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
-```{WARNING}
+{% hint style='danger' %}
 As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires Poetry >= 1.2.
 
 At the time of writing (March 2022), there is only an alpha version of Poetry 1.2 that you can install. Use the official installer to install preview versions.
-```
+{% endhint %}
 
 ## Installing Make
 
 The dev tools use `make` to launch the various commands.
 
-```{note}
+{% hint style='info' %}
 As stated [at the start of this document](#set-up-the-project), you can install `make` for macOS and Linux automatically if it's available in your distribution's apt repository using the ./script/make_utils/setup_os_deps.sh script.
-```
+{% endhint %}
 
 On Linux, you can install `make` from your distribution's preferred package manager.
 
@@ -74,9 +75,9 @@ It is possible to install `gmake` as `make`. Check this [StackOverflow post](htt
 
 On Windows, check [this GitHub gist](https://gist.github.com/evanwill/0207876c3243bbb6863e65ec5dc3f058#make).
 
-```{hint}
+{% hint style='info' %}
 In the following sections, be sure to use the proper `make` tool for your system: `make`, `gmake`, or other.
-```
+{% endhint %}
 
 ## Cloning repository
 
@@ -88,9 +89,9 @@ Clone the code repository using the link for your favourite communication protoc
 
 We are going to make use of virtual environments. This helps to keep the project isolated from other `Python` projects in the system. The following commands will create a new virtual environment under the project directory and install dependencies to it.
 
-```{DANGER}
+{% hint style='danger' %}
 The following command will not work on Windows if you don't have Poetry >= 1.2.
-```
+{% endhint %}
 
 ```shell
 cd concrete-ml
