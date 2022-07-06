@@ -243,7 +243,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     default_configuration,
     use_virtual_lib,
     is_onnx,
-    check_r2_score,
     dump_onnx=False,
     expected_onnx_str=None,
 ):
@@ -367,26 +366,10 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             result = quantized_numpy_module.dequantize_output(q_result)
             results.append(result)
 
-        # Run the network through torch, using dynamic quantization
-        # This mode only quantizes the weights and keeps all activations in float32
-        # Our quantization approach quantizes the activations for some layers and fuses all other
-        # float32 computations to table lookups. Thus the outputs from torch and Concrete ML
-        # will not match, but they should be close
-        # see: https://pytorch.org/tutorials/recipes/recipes/dynamic_quantization.html
-
-        torch_quantized_model = torch.quantization.quantize_dynamic(
-            torch_model, {nn.Linear}, dtype=torch.qint8
-        )
-        torch_input = (torch.from_numpy(x).float() for x in x_test)
-        torch_input = tuple(list(torch_input))
-        torch_result = torch_quantized_model(*torch_input).numpy()
-
-        # Results to array and reshape to torch_result
-        results = numpy.array(results).reshape(torch_result.shape)
-
-        # Check that we have similar results between CML and torch in 8 bits
-        # Due to differences in quantization approach, we allow a lower R2 in the comparison
-        check_r2_score(results, torch_result, 0.9)
+        # FIXME implement a test specific to torch vs CML quantization and use it here #1248
+        # See commit 6c40a0c7c3765012766592a74db99430c5a373e5 for
+        # the implementation of dynamic quantization.
+        # (ref issues: #1230 #1218 #1147 #1073)
 
         onnx_model = quantized_numpy_module.onnx_model
 
@@ -428,7 +411,6 @@ def test_compile_torch_or_onnx_networks(
     default_configuration,
     use_virtual_lib,
     is_onnx,
-    check_r2_score,
     is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
@@ -447,7 +429,6 @@ def test_compile_torch_or_onnx_networks(
         default_configuration,
         use_virtual_lib,
         is_onnx,
-        check_r2_score,
     )
 
 
@@ -471,7 +452,6 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     default_configuration,
     use_virtual_lib,
     is_onnx,
-    check_r2_score,
     is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
@@ -490,7 +470,6 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         default_configuration,
         use_virtual_lib,
         is_onnx,
-        check_r2_score,
     )
 
 
@@ -555,7 +534,6 @@ def test_compile_torch_or_onnx_activations(
     default_configuration,
     use_virtual_lib,
     is_onnx,
-    check_r2_score,
     is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
@@ -574,7 +552,6 @@ def test_compile_torch_or_onnx_activations(
         default_configuration,
         use_virtual_lib,
         is_onnx,
-        check_r2_score,
     )
 
 
@@ -600,7 +577,6 @@ def test_compile_torch_qat(
     default_configuration,
     use_virtual_lib,
     is_vl_only_option,
-    check_r2_score,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -621,7 +597,6 @@ def test_compile_torch_qat(
         default_configuration,
         use_virtual_lib,
         is_onnx,
-        check_r2_score,
     )
 
 
@@ -657,7 +632,6 @@ def test_dump_torch_network(
     expected_onnx_str,
     activation_function,
     default_configuration,
-    check_r2_score,
 ):
     """This is a test which is equivalent to tests in test_dump_onnx.py, but for torch modules."""
     input_output_feature = 7
@@ -673,7 +647,6 @@ def test_dump_torch_network(
         default_configuration,
         use_virtual_lib,
         is_onnx,
-        check_r2_score,
         dump_onnx=True,
         expected_onnx_str=expected_onnx_str,
     )
