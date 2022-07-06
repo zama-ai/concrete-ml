@@ -253,11 +253,13 @@ jobs:
         run: |
           make determinism
 
+      # (Sphinx) docs will be available with CML 0.3.0+. For the moment, docs are only
+      # available with GitBook
       - name: Build docs
         id: cbd
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         run: |
-          make docs
+          exit 0
 
       - name: Generate release changelog
         id: changelog
@@ -275,7 +277,6 @@ jobs:
         id: conformance
         if: ${{ always() && !cancelled() }}
         env:
-          # Add anything here you want to stop the build, before pytest
           CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' && steps.de.outcome == 'success' }}
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
@@ -284,19 +285,21 @@ jobs:
           fi
 
       # Taring the docs allows for much faster upload speed (from ~3min worst case to ~2s best case)
-      - name: Tar docs artifacts
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-        run: |
-          cd docs/_build/html
-          tar -cvf docs.tar ./*
+      # (Sphinx) docs will be available with CML 0.3.0+. For the moment, docs are only
+      # available with GitBook
+      # - name: Tar docs artifacts
+      #   if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+      #   run: |
+      #     cd docs/_build/html
+      #     tar -cvf docs.tar ./*
 
       # Only upload docs once from reference build
-      - name: Archive docs artifacts
-        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
-        with:
-          name: html-docs
-          path: docs/_build/html/docs.tar
+      # - name: Archive docs artifacts
+      #   if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
+      #   uses: actions/upload-artifact@6673cd052c4cd6fcf4b4e6e60ea986c889389535
+      #   with:
+      #     name: html-docs
+      #     path: docs/_build/html/docs.tar
 
       - name: Upload changelog artifacts
         if: ${{ fromJSON(env.IS_REF_BUILD) && steps.changelog.outcome == 'success' && !cancelled() }}
@@ -513,92 +516,92 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  publish-docs:
-    needs: [build-linux]
+  # publish-docs:
+  #   needs: [build-linux]
 
-    outputs:
-      report: ${{ steps.report.outputs.report || 'Did not run.' }}
+  #   outputs:
+  #     report: ${{ steps.report.outputs.report || 'Did not run.' }}
 
-    runs-on: ubuntu-20.04
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  #   runs-on: ubuntu-20.04
+  #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
-    steps:
-      - name: Prepare docs push
-        id: docs-push-infos
-        run: |
-          if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
-             [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
-            REF_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///g')
-            echo "::set-output name=has-preprod::true"
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
-            echo "::set-output name=dest-dir::concrete-ml/${REF_NAME}"
-          else
-            echo "::set-output name=has-preprod::false"
-          fi
+  #   steps:
+  #     - name: Prepare docs push
+  #       id: docs-push-infos
+  #       run: |
+  #         if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
+  #            [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
+  #           REF_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///g')
+  #           echo "::set-output name=has-preprod::true"
+  #           echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
+  #           echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
+  #           echo "::set-output name=dest-dir::concrete-ml/${REF_NAME}"
+  #         else
+  #           echo "::set-output name=has-preprod::false"
+  #         fi
 
-      - name: Download Documentation
-        if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
-        id: download
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
-        with:
-          name: html-docs
+  #     - name: Download Documentation
+  #       if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
+  #       id: download
+  #       uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+  #       with:
+  #         name: html-docs
 
-      - name: Untar docs artifacts
-        id: untar
-        if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
-        run: |
-          tar -xvf docs.tar
-          rm docs.tar
+  #     - name: Untar docs artifacts
+  #       id: untar
+  #       if: ${{ fromJSON(steps.docs-push-infos.outputs.has-preprod) }}
+  #       run: |
+  #         tar -xvf docs.tar
+  #         rm docs.tar
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+  #     - name: Configure AWS credentials
+  #       uses: aws-actions/configure-aws-credentials@05b148adc31e091bafbaf404f745055d4d3bc9d2
+  #       with:
+  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Publish Documentation to S3
-        id: publish
-        if: ${{ steps.untar.outcome == 'success' && !cancelled() }}
-        env:
-          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
-          SOURCE_DIR: '.'
-          DEST_DIR: ${{ steps.docs-push-infos.outputs.dest-dir }}
-        run: |
-          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
+  #     - name: Publish Documentation to S3
+  #       id: publish
+  #       if: ${{ steps.untar.outcome == 'success' && !cancelled() }}
+  #       env:
+  #         AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
+  #         SOURCE_DIR: '.'
+  #         DEST_DIR: ${{ steps.docs-push-infos.outputs.dest-dir }}
+  #       run: |
+  #         aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
 
-      - name: Invalidate CloudFront Cache
-        if: ${{ steps.publish.outcome == 'success' }}
-        env:
-          SOURCE_PATH: "/${{ steps.docs-push-infos.outputs.dest-dir }}/*"
-          DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
-        run: |
-          aws cloudfront create-invalidation \
-          --distribution-id "${DISTRIBUTION_ID}" \
-          --paths "${SOURCE_PATH}"
+  #     - name: Invalidate CloudFront Cache
+  #       if: ${{ steps.publish.outcome == 'success' }}
+  #       env:
+  #         SOURCE_PATH: "/${{ steps.docs-push-infos.outputs.dest-dir }}/*"
+  #         DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
+  #       run: |
+  #         aws cloudfront create-invalidation \
+  #         --distribution-id "${DISTRIBUTION_ID}" \
+  #         --paths "${SOURCE_PATH}"
 
-      - name: Set notification report
-        id: report
-        if: ${{ always() }}
-        run: |
-          REPORT="Publishing documentation finished with status ${{ job.status }}. \
-          Pushed to preprod: ${{ steps.docs-push-infos.outputs.has-preprod }}"
-          echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+  #     - name: Set notification report
+  #       id: report
+  #       if: ${{ always() }}
+  #       run: |
+  #         REPORT="Publishing documentation finished with status ${{ job.status }}. \
+  #         Pushed to preprod: ${{ steps.docs-push-infos.outputs.has-preprod }}"
+  #         echo "${REPORT}"
+  #         echo "::set-output name=report::${REPORT}"
+  #         echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
 
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+  #     - name: Slack Notification
+  #       if: ${{ always() && !success() }}
+  #       continue-on-error: true
+  #       uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+  #       env:
+  #         SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+  #         SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+  #         SLACK_COLOR: ${{ job.status }}
+  #         SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
+  #         SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+  #         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   package-release:
     needs: [build-linux]
@@ -980,7 +983,7 @@ jobs:
         build-linux,
         stop-runner-linux,
         build-macos,
-        publish-docs,
+        # publish-docs,
         package-release,
       ]
 
@@ -1015,7 +1018,6 @@ jobs:
             - build-linux: ${{ needs.build-linux.result || 'Did not run.' }}\n\n\
             - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
             - build-macos: ${{ needs.build-macos.result || 'Did not run.' }}\n\n\
-            - publish-docs: ${{ needs.publish-docs.outputs.report || 'Did not run.' }}\n\n\
             - package-release: ${{ needs.package-release.outputs.report || 'Did not run.' }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
