@@ -12,7 +12,7 @@ RANDOMLY_SEED?=$$RANDOM
 
 .PHONY: setup_env # Set up the environment
 setup_env:
-	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
+	@# The keyring install is	 repo if needed
 	PIP_INDEX_URL=https://pypi.org/simple \
 	PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
 	poetry run python -m pip install keyring
@@ -114,15 +114,17 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses mdformat nbqa supported_ops
+# FIXME #1300, mdformat is removed temporarily because of issues with $$ and GitBook
+conformance: finalize_nb python_format licenses nbqa supported_ops
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
 	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
 
+# FIXME #1300, check_mdformat is removed temporarily because of issues with $$ and GitBook
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa check_supported_ops
+PCC_DEPS += check_version_coherence check_licenses  check_nbqa check_supported_ops
 PCC_DEPS += gitleaks
 
 # Not commented on purpose for make help, since internal
@@ -475,23 +477,25 @@ clean_local_git:
 	@git branch | grep -v "^*" | grep -v main | xargs echo "git branch -D "
 	@echo
 
-.PHONY: mdformat # Apply markdown formatting
+# FIXME #1300, check_mdformat is removed temporarily because of issues with $$ and GitBook
+# .PHONY: mdformat # Apply markdown formatting
 # Remark we need to remove .md's in venv
-mdformat:
-	@# grep -v "^\./\." is to avoid files in .hidden_directories
-	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat
+# mdformat:
+# 	@# grep -v "^\./\." is to avoid files in .hidden_directories
+# 	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat
 
-	@#Do ToC in the README
-	poetry run mdformat README.md
+# 	@#Do ToC in the README
+# 	poetry run mdformat README.md
 
-.PHONY: check_mdformat # Check markdown format
+# FIXME #1300, check_mdformat is removed temporarily because of issues with $$ and GitBook
+# .PHONY: check_mdformat # Check markdown format
 # Remark we need to remove .md's in venv
-check_mdformat:
-	@# grep -v "^\./\." is to avoid files in .hidden_directories
-	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat --check
+# check_mdformat:
+# 	@# grep -v "^\./\." is to avoid files in .hidden_directories
+# 	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat --check
 
-	@#Check ToC in the README
-	poetry run mdformat README.md --check
+# 	@#Check ToC in the README
+# 	poetry run mdformat README.md --check
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:
