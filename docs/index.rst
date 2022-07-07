@@ -12,19 +12,19 @@ FHE is a powerful cryptographic tool that allows cloud service providers to perf
 An easy to use tool for data scientists
 -----------------------------------------
 
-**Concrete-ML** aims to facilitate adoption of privacy preserving ML for users of popular machine learning frameworks by providing APIs which are as close as possible to what data scientists are already using. **Concrete-ML** mimics the APIs of scikit-learn and XGBoost for machine learning models (linear models and tree-based models) and of torch for deep learning models. We refer readers to `linear models <linear.md>`__, `tree-based models <tree.md>`__ and `neural networks <quantized_neural_networks.md>`__ documentations, which show how similar APIs are to their non-FHE counterparts.
+**Concrete-ML** aims to facilitate adoption of privacy preserving ML for users of popular machine learning frameworks by providing APIs which are as close as possible to what data scientists are already using. **Concrete-ML** mimics the APIs of scikit-learn and XGBoost for machine learning models (linear models and tree-based models) and of torch for deep learning models. We refer readers to `linear models <built-in-models/linear.md>`__, `tree-based models <built-in-models/tree.md>`__ and `neural networks <built-in-models/neural-networks.md>`__ documentations, which show how similar APIs are to their non-FHE counterparts.
 
 Concrete Stack
 ----------------------------------
 
-**Concrete-ML** is built on top of Zama’s **Concrete** stack. It uses `Concrete-Numpy <https://github.com/zama-ai/concrete-numpy>`__, which itself uses the `Concrete-Compiler <https://pypi.org/project/concrete-compiler>`__, which is based on the `Concrete-Library <https://docs.zama.ai/concrete/core-lib/main/>`__. We refer the reader to **Concrete-Numpy** `documentation <https://docs.zama.ai/concrete-numpy/stable/>`__ and, more generally, to the documentation of the whole **Concrete-Framework** for `more information <https://docs.zama.ai>`__ .
+**Concrete-ML** is built on top of Zama’s **Concrete** stack. It uses `Concrete-Numpy <https://github.com/zama-ai/concrete-numpy>`__, which itself uses the `Concrete-Compiler <https://pypi.org/project/concrete-compiler>`__, which is based on the `Concrete-Library <https://docs.zama.ai/concrete-core>`__. We refer the reader to **Concrete-Numpy** `documentation <https://docs.zama.ai/concrete-numpy>`__ and, more generally, to the documentation of the whole **Concrete-Framework** for `more information <https://docs.zama.ai>`__ .
 
 A work in progress
 ----------------------------------
 
 One of the main current difficulties is that some models currently do not work well due to the fact that **Concrete-Library** only supports 8 bits. Because of this, we sometimes have to quantize too much, which has a strong negative impact on certain models. Further, because **Concrete-Compiler** is also a work in progress, we have FHE programs which are sometimes too slow or they may require a massive amount of RAM: improvements on this front will come in future releases.
 
-Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see `ML examples <ml_examples.md>`__ and `DL examples <dl_examples.md>`__).
+Nevertheless, these restrictions, typical of a work-in-progress tool on a very recent topic such as FHE, do not prevent us to show very appealing examples (see `ML examples <built-in-models/ml_examples.md>`__ and `DL examples <deep-learning/fhe_friendly_models.md>`__).
 
 Resources
 ----------------------------------
@@ -40,78 +40,61 @@ Additionally, academic and white papers will be published, explaining interestin
     :maxdepth: 0
     :hidden:
 
-    self
+    README.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Introduction
+    :caption: Getting Started
 
-    pip_installing.md
-    docker_installing.md
-    simple_compilation.md
-    client_server.md
+    getting-started/pip_installing.md
+    getting-started/concrete_numpy.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Concrete-ML Model library
+    :caption: Built-in Models
 
-    linear.md
-    tree.md
-    quantized_neural_networks.md
-    ml_examples.md
-
-.. toctree::
-    :maxdepth: 0
-    :hidden:
-    :caption: Machine learning in FHE
-
-    fhe_constraints.md
-    quantization.md
-    pruning.md
-    compilation.md
+    built-in-models/linear.md
+    built-in-models/tree.md
+    built-in-models/neural-networks.md
+    built-in-models/pandas.md
+    built-in-models/ml_examples.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Deep learning in FHE
+    :caption: Deep Learning
 
-    torch_support.md
-    onnx_support.md
-    fhe_assistant.md
-    fhe_friendly_models.md
-    dl_examples.md
-
-.. toctree::
-    :maxdepth: 0
-    :hidden:
-    :caption: Pre post processing
-
-    concrete_numpy.md
-    pandas.md
+    deep-learning/torch_support.md
+    deep-learning/onnx_support.md
+    deep-learning/fhe_friendly_models.md
+    deep-learning/fhe_assistant.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Developper Guide
+    :caption:  Advanced topics
 
-    project_setup.md
-    docker_setup.md
-    documenting.md
-    debug_support_submit_issues.md
-    releasing.md
-    contributing.md
+    advanced-topics/quantization.md
+    advanced-topics/pruning.md
+    advanced-topics/client_server.md
+    advanced-topics/compilation.md
+    advanced-topics/onnx_pipeline.md
+    advanced-topics/fhe-op-graphs.md
+    advanced-topics/hummingbird_usage.md
+    advanced-topics/skorch_usage.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Architecture
+    :caption: Developer Guide
 
-    onnx_pipeline.md
-    quantized_ops.md
-    hummingbird_usage.md
-    skorch_usage.md
+    developer-guide/project_setup.md
+    developer-guide/docker_setup.md
+    developer-guide/documenting.md
+    developer-guide/debug_support_submit_issues.md
+    developer-guide/contributing.md
 
 .. toctree::
     :maxdepth: 0

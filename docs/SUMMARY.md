@@ -1,53 +1,47 @@
-# User Guide
+# Table of contents
 
-- [What is Concrete ML?](INTRO.md)
+- [What is Concrete ML?](README.md)
 
-## Introduction
+## Getting Started
 
-- [Installing the Python package](pip_installing.md)
-- [Working with Concrete ML through Docker](docker_installing.md)
-- [Converting a simple model to FHE](simple_compilation.md)
-- [Deploying FHE models](client_server.md)
+- [Installation](getting-started/pip_installing.md)
+- [Key Concepts](getting-started/concrete_numpy.md)
 
-## Concrete-ML Model library
+## Built-in Models
 
 - [Linear Models](linear.md)
 - [Tree-based Models](tree.md)
 - [Neural Networks](quantized_neural_networks.md)
 - [Machine Learning Examples](ml_examples.md)
 
-## Machine Learning in FHE
+## Deep Learning
 
-- [Constraints of FHE programs](fhe_constraints.md)
-- [Quantization](quantization.md)
-- [Pruning](pruning.md)
-- [Compilation](compilation.md)
+- [Using Torch](deep-learning/torch_support.md)
+- [Using ONNX](deep-learning/onnx_support.md)
+- [Examples](deep-learning/fhe_friendly_models.md)
+- [Debugging Models](deep-learning/fhe_assistant.md)
 
-## Deep Learning in FHE
+## Advanced topics
 
-- [Torch support](torch_support.md)
-- [ONNX Support](onnx_support.md)
-- [Model Debugging and Optimization](fhe_assistant.md)
-- [FHE Friendly Models](fhe_friendly_models.md)
-- [Deep Learning Examples](dl_examples.md)
+- [Quantization](advanced-topics/quantization.md)
+- [Pruning](advanced-topics/pruning.md)
+- [Production Deployment](advanced-topics/client_server.md)
+- [Compilation](advanced-topics/compilation.md)
+- [More about ONNX](advanced-topics/onnx_pipeline.md)
+- [FHE Op-graphs](advanced-topics/fhe-op-graphs.md)
+- [Using HummingBird](advanced-topics/hummingbird_usage.md)
+- [Using Skorch](advanced-topics/skorch_usage.md)
 
-## Pre Post Processing
+## Developer Guide
 
-- [Concrete-Numpy](concrete_numpy.md)
-- [Pandas](pandas.md)
+- [Set Up the Project](developer-guide/project_setup.md)
+- [Set Up Docker](developer-guide/docker_setup.md)
+- [Documentation](developer-guide/documenting.md)
+- [Support and Issues](developer-guide/debug_support_submit_issues.md)
+- [Contributing](developer-guide/contributing.md)
 
-## Developper Guide
 
-- [Set Up the Project](project_setup.md)
-- [Set Up Docker](docker_setup.md)
-- [Document](documenting.md)
-- [Debug / Get Support / Submit Issues](debug_support_submit_issues.md)
-- [Create a Release on GitHub](releasing.md)
-- [Contribute](contributing.md)
 
-## Architecture
 
-- [ONNX Import Pipeline](onnx_pipeline.md)
-- [FHE compatible ML op-graphs](quantized_ops.md)
-- [HummingBird](hummingbird_usage.md)
-- [Skorch Usage](skorch_usage.md)
+
+

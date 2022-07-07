@@ -127,15 +127,17 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses mdformat nbqa supported_ops
+# FIXME #1300, mdformat is removed temporarily because of issues with $$ and GitBook
+conformance: finalize_nb python_format licenses nbqa supported_ops
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
 	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
 
+# FIXME #1300, check_mdformat is removed temporarily because of issues with $$ and GitBook
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
-PCC_DEPS += check_version_coherence check_licenses check_mdformat check_nbqa check_supported_ops
+PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list
 PCC_DEPS += gitleaks
 
@@ -297,12 +299,14 @@ docs_and_open: docs open_docs
 .PHONY: admonition_to_gitbook # Change admonitions from sphinx-style to gitbook-style
 admonition_to_gitbook:
 	./script/make_utils/sphinx_gitbook_admonitions.sh
-	"$(MAKE)" mdformat
+# FIXME 1300
+#	"$(MAKE)" mdformat
 
 .PHONY: admonition_to_sphinx # Change admonitions from gitbook-style to sphinx-style
 admonition_to_sphinx:
 	./script/make_utils/sphinx_gitbook_admonitions.sh --gitbook_to_sphinx
-	"$(MAKE)" mdformat
+# FIXME 1300
+#	"$(MAKE)" mdformat
 
 .PHONY: pydocstyle # Launch syntax checker on source code documentation
 pydocstyle:
@@ -496,23 +500,25 @@ clean_local_git:
 	@git branch | grep -v "^*" | grep -v main | xargs echo "git branch -D "
 	@echo
 
-.PHONY: mdformat # Apply markdown formatting
+# FIXME #1300, check_mdformat is removed temporarily because of issues with $$ and GitBook
+# .PHONY: mdformat # Apply markdown formatting
 # Remark we need to remove .md's in venv
-mdformat:
-	@# grep -v "^\./\." is to avoid files in .hidden_directories
-	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat
+# mdformat:
+# 	@# grep -v "^\./\." is to avoid files in .hidden_directories
+# 	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat
 
-	@#Do ToC in the README
-	poetry run mdformat README.md
+# 	@#Do ToC in the README
+# 	poetry run mdformat README.md
 
-.PHONY: check_mdformat # Check markdown format
+# FIXME #1300, check_mdformat is removed temporarily because of issues with $$ and GitBook
+# .PHONY: check_mdformat # Check markdown format
 # Remark we need to remove .md's in venv
-check_mdformat:
-	@# grep -v "^\./\." is to avoid files in .hidden_directories
-	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat --check
+# check_mdformat:
+# 	@# grep -v "^\./\." is to avoid files in .hidden_directories
+# 	find . -type f -name "*.md" | grep -v "^\./\." | xargs poetry run mdformat --check
 
-	@#Check ToC in the README
-	poetry run mdformat README.md --check
+# 	@#Check ToC in the README
+# 	poetry run mdformat README.md --check
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:
@@ -559,12 +565,13 @@ determinism:
 
 .PHONY: supported_ops # Update docs with supported ops
 supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/onnx_support.md
-	"$(MAKE)" mdformat
+	poetry run python script/doc_utils/gen_supported_ops.py docs/deep-learning/onnx_support.md
+# FIXME 1300
+#	"$(MAKE)" mdformat
 
 .PHONY: check_supported_ops # Check supported ops (for the doc)
 check_supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/onnx_support.md --check
+	poetry run python script/doc_utils/gen_supported_ops.py docs/deep-learning/onnx_support.md --check
 
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:
@@ -582,6 +589,7 @@ fast_sanity_check:
 check_links:
 	@# Because of issues with priviledges and linkcheckmd
 	chmod +r docs/*.md
+	chmod +r docs/**/*.md
 
 	@# Remark that this target is not in PCC, because it needs the doc to be built
 	@# Mainly for web links

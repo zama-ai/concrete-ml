@@ -24,9 +24,9 @@ FIXME: to be updated with new links eg
 
 ## Links
 
-- [documentation](https://docs.zama.ai/concrete-ml/stable/)
+- [documentation](https://docs.zama.ai/concrete-ml/)
 - [community website](https://community.zama.ai/c/concrete-ml)
-- [demos](https://docs.zama.ai/concrete-ml/stable/user/advanced_examples/index.html)
+- [demos](https://docs.zama.ai/concrete-ml/advanced-examples/advanced_examples)
 
 ## For end users
 
@@ -40,7 +40,7 @@ To install **Concrete-ML** from PyPi, run the following:
 
 `pip install concrete-ml`
 
-You can find more detailed installation instructions in [installing.md](docs/nstalling.md)
+You can find more detailed installation instructions in [installing.md](docs/installing.md)
 
 ### Supported models.
 
