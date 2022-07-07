@@ -74,4 +74,4 @@ All of these issues are currently being addressed and significant improvements a
 
 ## Looking for support? Ask our team!
 
-![](https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FPOHdiNlVO9b56cX2325s%2Fuploads%2F6a08oHDGwZtK23zGi8ag%2FZama.jpg?alt=media%5C&token=23fd29db-af9e-47dc-b217-622c8a58abe3)
+![](.gitbook/assets/zama_robot_support.jpg)
