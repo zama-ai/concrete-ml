@@ -1,0 +1,66 @@
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+
+    README.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Getting Started
+
+    getting-started/pip_installing.md
+    getting-started/concrete_numpy.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Built-in Models
+
+    built-in-models/linear.md
+    built-in-models/tree.md
+    built-in-models/neural-networks.md
+    built-in-models/pandas.md
+    built-in-models/ml_examples.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Deep Learning
+
+    deep-learning/torch_support.md
+    deep-learning/onnx_support.md
+    deep-learning/fhe_friendly_models.md
+    deep-learning/fhe_assistant.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption:  Advanced topics
+
+    advanced-topics/quantization.md
+    advanced-topics/pruning.md
+    advanced-topics/client_server.md
+    advanced-topics/compilation.md
+    advanced-topics/onnx_pipeline.md
+    advanced-topics/fhe-op-graphs.md
+    advanced-topics/hummingbird_usage.md
+    advanced-topics/skorch_usage.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Developer Guide
+
+    developer-guide/project_setup.md
+    developer-guide/docker_setup.md
+    developer-guide/documenting.md
+    developer-guide/debug_support_submit_issues.md
+    developer-guide/contributing.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: API
+
+    API <_apidoc/modules.rst>

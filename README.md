@@ -24,9 +24,9 @@ FIXME: to be updated with new links eg
 
 ## Links
 
-- [documentation](https://docs.zama.ai/concrete-ml/)
+- [documentation](https://docs.zama.ai/concrete-ml)
 - [community website](https://community.zama.ai/c/concrete-ml)
-- [demos](https://docs.zama.ai/concrete-ml/advanced-examples/advanced_examples)
+- [demos](https://docs.zama.ai/concrete-ml/advanced-examples/advanced_examples.html)
 
 ## For end users
 

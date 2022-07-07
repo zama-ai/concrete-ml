@@ -1,6 +1,6 @@
 # What is Concrete ML?
 
-<mark style="background-color:yellow;"></mark>[<mark style="background-color:yellow;">⭐️ Star the repo on Github</mark>](https://github.com/zama-ai/concrete-ml) <mark style="background-color:yellow;">|</mark> [<mark style="background-color:yellow;">🗣</mark> <mark style="background-color:yellow;">Community support forum</mark>](https://community.zama.ai/c/concrete-ml/8) <mark style="background-color:yellow;">|</mark> [<mark style="background-color:yellow;">📁</mark> <mark style="background-color:yellow;">Contribute to the project</mark>](https://github.com/zama-ai/concrete-ml/blob/main/docs/dev/howto/contributing.md)<mark style="background-color:yellow;"></mark>
+[⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | [🗣 Community support forum](https://community.zama.ai/c/concrete-ml/8) | [📁 Contribute to the project](https://github.com/zama-ai/concrete-ml/blob/main/docs/dev/howto/contributing.md)
 
 ![](.gitbook/assets/zama_docs_intro.jpg)
 
@@ -85,6 +85,47 @@ All of these issues are currently being addressed and significant improvements a
 ## Looking for support? Ask our team!
 
 ![](figures/support_zama.jpg)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -50,6 +50,8 @@ myst_enable_extensions = [
     "dollarmath",
 ]
 
+source_suffix = [".rst", ".md"]
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
@@ -58,7 +60,6 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "SUMMARY.md",
-    "INTRO.md",
     "advanced_examples/*.ipynb",
 ]
 
@@ -124,6 +125,7 @@ html_context = {
     "versions_url": "#",
 }
 html_title = "%s Manual" % (project)
+html_show_sphinx = False
 
 # Uncomment for test
 # html_extra_path = ["versions.json", "alert.html"]
