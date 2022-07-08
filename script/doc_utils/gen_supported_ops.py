@@ -74,7 +74,7 @@ def main(file_to_update):
 
         assert (
             oldlines == newlines
-        ), "List of supported functions is not up to date. Please run `make supported_ops`."
+        ), "List of supported functions is not up to date. Please run `make supported_ops`. "
 
     else:
         with open(file_to_update, "w", encoding="utf-8") as file:
