@@ -7,6 +7,7 @@ import numpy
 import onnx
 import torch
 import torch.nn
+from concrete.numpy import univariate
 from scipy import special
 
 from ..common.debugging import assert_true
@@ -640,7 +641,7 @@ def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (special.erf(x),)  # pylint: disable=no-member
+    return (univariate(special.erf)(x),)  # pylint: disable=no-member
 
 
 def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:

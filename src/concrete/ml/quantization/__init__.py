@@ -13,6 +13,7 @@ from .quantized_ops import (
     QuantizedConv,
     QuantizedDiv,
     QuantizedElu,
+    QuantizedErf,
     QuantizedExp,
     QuantizedGemm,
     QuantizedGreater,

@@ -1201,3 +1201,9 @@ class QuantizedReduceSum(QuantizedOp):
             params=self.output_quant_params,
         )
         return output_qarray
+
+
+class QuantizedErf(QuantizedOp):
+    """Quantized erf op."""
+
+    _impl_for_op_named: str = "Erf"

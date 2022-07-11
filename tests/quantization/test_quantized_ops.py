@@ -22,6 +22,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedConv,
     QuantizedDiv,
     QuantizedElu,
+    QuantizedErf,
     QuantizedExp,
     QuantizedFlatten,
     QuantizedGemm,
@@ -87,8 +88,11 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
         QuantizedSelu,
         QuantizedCelu,
         QuantizedSoftplus,
+        QuantizedAbs,
+        QuantizedLog,
         QuantizedHardSwish,
         QuantizedRound,
+        QuantizedErf,
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -908,6 +912,7 @@ def test_all_ops_were_tested():
         QuantizedDiv: test_all_arith_ops,
         QuantizedPow: test_all_arith_ops,
         QuantizedReduceSum: test_reduce_sum,
+        QuantizedErf: test_univariate_ops_no_attrs,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (

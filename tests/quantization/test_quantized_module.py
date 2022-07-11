@@ -105,10 +105,10 @@ N_BITS_LIST = [
         pytest.param(nn.Softshrink, id="Softshrink"),
         pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
+        pytest.param(nn.GELU, id="GELU"),
         # Works but accuracy issues sometimes in compilation
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         # Works within the conversion but will not compile
-        # pytest.param(nn.GELU, id="GELU"),  # Missing Erf
         # FIXME, #335: still some issues with these activations
         #
         # Other problems, certainly related to tests:
