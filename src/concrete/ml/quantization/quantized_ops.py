@@ -1140,14 +1140,6 @@ class QuantizedReduceSum(QuantizedOp):
 
         assert_true(len(q_inputs) == 1, "ReduceSum only takes a single input")
 
-        assert_true(self.input_shapes is not None, "Calibrate needs to be called on the operator")
-
-        n_values = self.input_shapes[0][1]  # type: ignore
-        assert_true(
-            (n_values != 0) and (n_values & (n_values - 1) == 0),
-            "ReduceSum only handles N values with N a power of 2.",
-        )
-
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1162,6 +1154,12 @@ class QuantizedReduceSum(QuantizedOp):
         assert_true(
             len(input_qarray.shape) == 2,
             "ReduceSum currently only handles arrays of 2 dimensions",
+        )
+
+        n_values = input_qarray.shape[1]
+        assert_true(
+            (n_values != 0) and (n_values & (n_values - 1) == 0),
+            "ReduceSum only handles N values with N a power of 2.",
         )
 
         # Computing the total depth of the tree
@@ -1203,21 +1201,3 @@ class QuantizedReduceSum(QuantizedOp):
             params=self.output_quant_params,
         )
         return output_qarray
-
-    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
-        """Create corresponding QuantizedArray for the ReduceSum output.
-
-        Each inputs' shape need to be traced for the ReduceSum operator.
-
-        Args:
-            *inputs (numpy.ndarray): Calibration sample inputs.
-
-        Returns:
-            numpy.ndarray: the output values for the provided calibration samples.
-        """
-        # We need to trace the inputs' shapes in the class operator in order to apply the tree sum
-        # technique in the q_impl method. The reason is that it is currently not possible to execute
-        # a loop on an range based on an encrypted tensor's length.
-        self.input_shapes = tuple(input.shape for input in inputs)  # type: ignore
-
-        return super().calibrate(*inputs)
