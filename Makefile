@@ -127,7 +127,7 @@ flake8:
 python_linting: pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses nbqa mdformat supported_ops
+conformance: finalize_nb python_format licenses nbqa supported_ops mdformat
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
@@ -514,7 +514,7 @@ mdformat:
 # Remark we need to remove .md's in venv
 check_mdformat:
 	"$(MAKE)" mdformat
-	find docs -name "*.md" | xargs git diff
+	find docs -name "*.md" | xargs git diff --quiet
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:
@@ -562,10 +562,13 @@ determinism:
 .PHONY: supported_ops # Update docs with supported ops
 supported_ops:
 	poetry run python script/doc_utils/gen_supported_ops.py docs/deep-learning/onnx_support.md
+	"$(MAKE)" mdformat
 
 .PHONY: check_supported_ops # Check supported ops (for the doc)
 check_supported_ops:
-	poetry run python script/doc_utils/gen_supported_ops.py docs/deep-learning/onnx_support.md --check
+	poetry run python script/doc_utils/gen_supported_ops.py docs/deep-learning/onnx_support.md
+	"$(MAKE)" mdformat
+	git diff --quiet docs/deep-learning/onnx_support.md
 
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:
