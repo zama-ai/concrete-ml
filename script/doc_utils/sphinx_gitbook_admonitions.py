@@ -14,11 +14,13 @@ def process_file(file_str: str, args=None):
         file_str (str): the path to the file to process.
         args: the arguments of the call.
     """
+    verbose = False
 
     file_path = Path(file_str).resolve()
     file_path_output = Path(file_str).resolve()
 
-    print(f"Changing admonitions for {str(file_path)} into {str(file_path_output)}")
+    if verbose:
+        print(f"Changing admonitions for {str(file_path)} into {str(file_path_output)}")
 
     sphinx_to_gitbook_admonition = {"danger": "danger", "note": "info", "warning": "danger"}
 

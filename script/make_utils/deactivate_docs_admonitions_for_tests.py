@@ -13,8 +13,12 @@ def process_file(file_str: str):
     Args:
         file_str (str): the path to the file to process.
     """
+    verbose = False
     file_path = Path(file_str).resolve()
-    print(f"Removing admonitions for: {str(file_path)}")
+
+    if verbose:
+        print(f"Removing admonitions for: {str(file_path)}")
+
     file_content = None
     with open(file_path, "r", encoding="utf-8") as f:
         file_content = "".join(f.readlines())

@@ -15,11 +15,14 @@ def process_file(file_str: str, args=None):
         file_str (str): the path to the file to process.
         args: the arguments of the call.
     """
+    verbose = False
 
     file_path = Path(file_str).resolve()
     file_path_output = Path(file_str).resolve()
 
-    print(f"Fix double-dollar problems for {str(file_path)} into {str(file_path_output)}")
+    if verbose:
+        print(f"Fix double-dollar problems for {str(file_path)} into {str(file_path_output)}")
+
     processed_content = ""
 
     with open(file_path, "r", encoding="utf-8") as f:
