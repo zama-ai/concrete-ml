@@ -9,10 +9,10 @@
 
 ## Built-in Models
 
-- [Linear Models](linear.md)
-- [Tree-based Models](tree.md)
-- [Neural Networks](quantized_neural_networks.md)
-- [Machine Learning Examples](ml_examples.md)
+- [Linear Models](built-in-models/linear.md)
+- [Tree-based Models](built-in-models/tree.md)
+- [Neural Networks](built-in-models/neural-networks.md)
+- [Examples](built-in-models/ml_examples.md)
 
 ## Deep Learning
 

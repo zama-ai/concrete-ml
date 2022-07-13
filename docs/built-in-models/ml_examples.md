@@ -1,4 +1,4 @@
-# Additional Examples
+# Examples
 
 The following table summarizes the various examples in this section, along with their accuracies.
 
