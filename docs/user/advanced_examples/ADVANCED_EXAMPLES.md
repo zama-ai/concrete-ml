@@ -14,15 +14,15 @@ The following table summarizes the various examples in this section, along with 
 
 _A * means that FHE accuracy was calculated on a subset of the validation set._
 
-- [LinearRegression.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/LinearRegression.ipynb)
-- [LogisticRegression.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/LogisticRegression.ipynb)
-- [PoissonRegression.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/PoissonRegression.ipynb)
-- [DecisionTreeClassifier.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/DecisionTreeClassifier.ipynb)
-- [XGBClassifier.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/XGBClassifier.ipynb)
+- [LinearRegression.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/LinearRegression.ipynb)
+- [LogisticRegression.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/LogisticRegression.ipynb)
+- [PoissonRegression.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/PoissonRegression.ipynb)
+- [DecisionTreeClassifier.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/DecisionTreeClassifier.ipynb)
+- [XGBClassifier.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/XGBClassifier.ipynb)
 
 ## Comparison of classifiers
 
-- [ClassifierComparison.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/ClassifierComparison.ipynb)
+- [ClassifierComparison.ipynb](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/ClassifierComparison.ipynb)
 
 ## Deep learning
 
@@ -33,5 +33,5 @@ _A * means that FHE accuracy was calculated on a subset of the validation set._
 
 In this table, \*\* means that the accuracy is actually random-like, because the quantization we need to set to fullfill bitsize constraints is too strong.
 
-- [Fully Connected NN](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/FullyConnectedNeuralNetwork.ipynb)
-- [Convolutional NN](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced%5C_examples/ConvolutionalNeuralNetwork.ipynb)
+- [Fully Connected NN](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
+- [Convolutional NN](https://github.com/zama-ai/concrete-ml/tree/main/docs/user/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
