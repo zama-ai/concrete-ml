@@ -75,7 +75,8 @@ class OnDiskNetwork:
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
-def test_client_server_sklearn(default_configuration_no_jit, model, parameters, load_data):
+@pytest.mark.parametrize("p_error", [6.3342483999973e-05, 1e-04, None])
+def test_client_server_sklearn(default_configuration_no_jit, model, parameters, load_data, p_error):
     """Tests the encrypt decrypt api."""
 
     # Generate random data
@@ -119,7 +120,13 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
         model.fit(x_train, y_train)
 
     # Compile
-    fhe_circuit = model.compile(x_train, default_configuration_no_jit, show_mlir=True)
+    extra_params = {}
+    if p_error is not None:
+        extra_params["p_error"] = p_error
+
+    fhe_circuit = model.compile(
+        x_train, default_configuration_no_jit, **extra_params, show_mlir=True
+    )
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
 
@@ -144,7 +151,8 @@ class FC(nn.Module):
         return out
 
 
-def test_client_server_custom_model(default_configuration_no_jit):
+@pytest.mark.parametrize("p_error", [6.3342483999973e-05, 1e-04, None])
+def test_client_server_custom_model(default_configuration_no_jit, p_error):
     """Tests the client server custom model."""
 
     # Generate random data
@@ -153,12 +161,17 @@ def test_client_server_custom_model(default_configuration_no_jit):
     n_bits = 2
 
     # Get the quantized module from the model
+    extra_params = {}
+    if p_error is not None:
+        extra_params["p_error"] = p_error
+
     quantized_numpy_module = compile_torch_model(
         torch_model,
         x_train,
         configuration=default_configuration_no_jit,
         n_bits=n_bits,
         use_virtual_lib=False,
+        **extra_params,
     )
 
     client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration_no_jit)

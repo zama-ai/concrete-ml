@@ -10,6 +10,9 @@ from ..common.debugging import assert_true
 
 _VALID_ARG_CHARS = set(string.ascii_letters).union(str(i) for i in range(10)).union(("_",))
 
+# Default probability of success of PBS
+DEFAULT_P_ERROR_PBS = 6.3342483999973e-05
+
 
 def replace_invalid_arg_name_chars(arg_name: str) -> str:
     """Sanitize arg_name, replacing invalid chars by _.

@@ -9,7 +9,7 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
-from ..common.utils import generate_proxy_function
+from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
 from .base_quantized_op import QuantizedOp
 from .quantized_array import QuantizedArray, UniformQuantizer
 
@@ -295,21 +295,21 @@ class QuantizedModule:
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
+        p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
     ) -> Circuit:
         """Compile the forward function of the module.
 
         Args:
             q_inputs (Union[Tuple[numpy.ndarray, ...], numpy.ndarray]): Needed for tracing and
                 building the boundaries.
-            configuration (Optional[Configuration]): Configuration object
-                                                                            to use during
-                                                                            compilation
+            configuration (Optional[Configuration]): Configuration object to use during compilation
             compilation_artifacts (Optional[DebugArtifacts]): Artifacts object to fill during
             show_mlir (bool): if set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
                 or demo. Defaults to False.
             use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
                 Defaults to False.
+            p_error (Optional[float]): probability of error of a PBS.
 
         Returns:
             Circuit: the compiled Circuit.
@@ -351,6 +351,7 @@ class QuantizedModule:
             compilation_artifacts,
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
+            p_error=p_error,
         )
 
         self._is_compiled = True

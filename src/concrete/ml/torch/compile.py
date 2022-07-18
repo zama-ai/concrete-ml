@@ -10,7 +10,7 @@ from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
-from ..common.utils import get_onnx_opset_version
+from ..common.utils import DEFAULT_P_ERROR_PBS, get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedModule
 from . import NumpyModule
@@ -47,6 +47,7 @@ def _compile_torch_or_onnx_model(
     show_mlir: bool = False,
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
+    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -68,7 +69,8 @@ def _compile_torch_or_onnx_model(
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-            Defaults to False.
+            Defaults to False
+        p_error (Optional[float]): probability of error of a PBS
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -110,6 +112,7 @@ def _compile_torch_or_onnx_model(
         compilation_artifacts,
         show_mlir=show_mlir,
         use_virtual_lib=use_virtual_lib,
+        p_error=p_error,
     )
 
     quantized_module.onnx_model = onnx_model
@@ -126,6 +129,7 @@ def compile_torch_model(
     show_mlir: bool = False,
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
+    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -146,7 +150,8 @@ def compile_torch_model(
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-            Defaults to False.
+            Defaults to False
+        p_error (Optional[float]): probability of error of a PBS
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -160,6 +165,7 @@ def compile_torch_model(
         show_mlir=show_mlir,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
+        p_error=p_error,
     )
 
 
@@ -172,6 +178,7 @@ def compile_onnx_model(
     show_mlir: bool = False,
     n_bits=MAXIMUM_BIT_WIDTH,
     use_virtual_lib: bool = False,
+    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -193,6 +200,7 @@ def compile_onnx_model(
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False.
+        p_error (Optional[float]): probability of error of a PBS
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -214,4 +222,5 @@ def compile_onnx_model(
         show_mlir=show_mlir,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
+        p_error=p_error,
     )
