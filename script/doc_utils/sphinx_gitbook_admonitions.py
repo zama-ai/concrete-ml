@@ -22,10 +22,26 @@ def process_file(file_str: str, args=None):
     if verbose:
         print(f"Changing admonitions for {str(file_path)} into {str(file_path_output)}")
 
-    sphinx_to_gitbook_admonition = {"danger": "danger", "note": "info", "warning": "danger"}
+    # Available admonitions in GitBook: info, success, danger, warning
+    # Available admonitions in Sphinx:  attention, caution, danger, error, hint, important,
+    #                                   note, tip, warning
+    sphinx_to_gitbook_admonition = {
+        "attention": "warning",
+        "caution": "danger",
+        "danger": "danger",
+        "error": "danger",
+        "hint": "info",
+        "important": "info",
+        "note": "info",
+        "tip": "info",
+        "warning": "warning",
+    }
 
     gitbook_to_sphinx_admonition = {
-        value: key for key, value in sphinx_to_gitbook_admonition.items()
+        "info": "note",
+        "success": "hint",
+        "danger": "danger",
+        "warning": "warning",
     }
 
     admonition = ""
@@ -44,9 +60,9 @@ def process_file(file_str: str, args=None):
                     admonition = ""
                     processed_content += "```"
 
-                elif line.startswith("{% hint style='"):
+                elif line.startswith('{% hint style="'):
                     # Starting admonition
-                    admonition = line.replace("{% hint style='", "").replace("' %}", "")
+                    admonition = line.replace('{% hint style="', "").replace('" %}', "")
                     gitbook_admonition = gitbook_to_sphinx_admonition[admonition]
                     processed_content += "```{" + gitbook_admonition + "}"
 

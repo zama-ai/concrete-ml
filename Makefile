@@ -285,6 +285,8 @@ docs: clean_docs
 	cp -r docs docs-copy
 	@# Admonitions
 	./script/make_utils/sphinx_gitbook_admonitions.sh --gitbook_to_sphinx
+	@# Check that there is no more GitBook hint
+	! grep -r "hint style" docs-copy
 	@# Replace $$, $/$ and /$$ by $
 	./script/make_utils/fix_double_dollars_issues_with_mdformat.sh docs-copy --single_dollar
 	@# Docs
