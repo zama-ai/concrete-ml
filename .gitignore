@@ -140,7 +140,8 @@ progress.json
 docs/advanced_examples/local_datasets/
 
 # Kaggle submissions
-docs/advanced_examples/titanic_submission.csv
+docs/advanced_examples/titanic_submission_fhe.csv
+docs/advanced_examples/titanic_submission_xgb_clear.csv
 
 # Key cache
 ConcreteNumpyKeyCache
