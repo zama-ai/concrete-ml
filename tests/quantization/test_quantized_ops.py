@@ -27,14 +27,17 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedFlatten,
     QuantizedGemm,
     QuantizedGreater,
+    QuantizedGreaterOrEqual,
     QuantizedHardSigmoid,
     QuantizedHardSwish,
     QuantizedIdentity,
     QuantizedLeakyRelu,
     QuantizedLess,
+    QuantizedLessOrEqual,
     QuantizedLog,
     QuantizedMatMul,
     QuantizedMul,
+    QuantizedNot,
     QuantizedOp,
     QuantizedOr,
     QuantizedPad,
@@ -93,6 +96,7 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
         QuantizedHardSwish,
         QuantizedRound,
         QuantizedErf,
+        QuantizedNot,
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -734,7 +738,9 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     ],
 )
 @pytest.mark.parametrize("n_bits", [16])
-@pytest.mark.parametrize("comparator", [QuantizedGreater, QuantizedLess])
+@pytest.mark.parametrize(
+    "comparator", [QuantizedGreater, QuantizedGreaterOrEqual, QuantizedLess, QuantizedLessOrEqual]
+)
 def test_quantized_comparators_and_where(params, n_bits, comparator, check_r2_score):
     """Test a conditional pattern that is very common in quantization aware training."""
     values, threshold, val_if_true, val_if_false = params
@@ -893,6 +899,7 @@ def test_all_ops_were_tested():
         QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
         QuantizedIdentity: test_identity_op,
+        QuantizedNot: test_univariate_ops_no_attrs,
         QuantizedConv: test_quantized_conv,
         QuantizedReshape: test_quantized_reshape,
         QuantizedPRelu: test_quantized_prelu,
@@ -902,7 +909,9 @@ def test_all_ops_were_tested():
         QuantizedCast: test_quantized_comparators_and_where,
         QuantizedWhere: test_quantized_comparators_and_where,
         QuantizedGreater: test_quantized_comparators_and_where,
+        QuantizedGreaterOrEqual: test_quantized_comparators_and_where,
         QuantizedLess: test_quantized_comparators_and_where,
+        QuantizedLessOrEqual: test_quantized_comparators_and_where,
         QuantizedMul: test_all_arith_ops,
         QuantizedSub: test_all_arith_ops,
         QuantizedBatchNormalization: test_batch_normalization,

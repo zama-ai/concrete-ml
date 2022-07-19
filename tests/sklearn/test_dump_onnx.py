@@ -124,16 +124,16 @@ def test_dump(
   %onnx::Less_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %onnx::Reshape_8 = Less(%onnx::Less_7, %_operators.0.bias_1)
   %onnx::Reshape_9 = Constant[value = <Tensor>]()
-  %onnx::Cast_10 = Reshape(%onnx::Reshape_8, %onnx::Reshape_9)
+  %onnx::Cast_10 = Reshape[allowzero = 0](%onnx::Reshape_8, %onnx::Reshape_9)
   %onnx::Reshape_12 = MatMul(%_operators.0.weight_2, %onnx::Cast_10)
   %onnx::Reshape_13 = Constant[value = <Tensor>]()
-  %onnx::Equal_14 = Reshape(%onnx::Reshape_12, %onnx::Reshape_13)
+  %onnx::Equal_14 = Reshape[allowzero = 0](%onnx::Reshape_12, %onnx::Reshape_13)
   %onnx::Reshape_15 = Equal(%_operators.0.bias_2, %onnx::Equal_14)
   %onnx::Reshape_16 = Constant[value = <Tensor>]()
-  %onnx::Cast_17 = Reshape(%onnx::Reshape_15, %onnx::Reshape_16)
+  %onnx::Cast_17 = Reshape[allowzero = 0](%onnx::Reshape_15, %onnx::Reshape_16)
   %onnx::Reshape_19 = MatMul(%_operators.0.weight_3, %onnx::Cast_17)
   %onnx::Reshape_20 = Constant[value = <Tensor>]()
-  %x = Reshape(%onnx::Reshape_19, %onnx::Reshape_20)
+  %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
   return %x
 }""",
         GammaRegressor: """graph torch-jit-export (
@@ -181,20 +181,19 @@ def test_dump(
         DecisionTreeClassifier: """graph torch-jit-export (
   %input_0[DOUBLE, symx10]
 ) {
-  %onnx::Greater_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %onnx::Not_8 = Greater(%onnx::Greater_7, %_operators.0.bias_1)
-  %onnx::Reshape_9 = Not(%onnx::Not_8)
-  %onnx::Reshape_10 = Constant[value = <Tensor>]()
-  %onnx::Cast_11 = Reshape(%onnx::Reshape_9, %onnx::Reshape_10)
-  %onnx::Reshape_13 = MatMul(%_operators.0.weight_2, %onnx::Cast_11)
-  %onnx::Reshape_14 = Constant[value = <Tensor>]()
-  %onnx::Equal_15 = Reshape(%onnx::Reshape_13, %onnx::Reshape_14)
-  %onnx::Reshape_16 = Equal(%_operators.0.bias_2, %onnx::Equal_15)
-  %onnx::Reshape_17 = Constant[value = <Tensor>]()
-  %onnx::Cast_18 = Reshape(%onnx::Reshape_16, %onnx::Reshape_17)
-  %onnx::Reshape_20 = MatMul(%_operators.0.weight_3, %onnx::Cast_18)
-  %onnx::Reshape_21 = Constant[value = <Tensor>]()
-  %x = Reshape(%onnx::Reshape_20, %onnx::Reshape_21)
+  %onnx::LessOrEqual_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %onnx::Reshape_8 = LessOrEqual(%onnx::LessOrEqual_7, %_operators.0.bias_1)
+  %onnx::Reshape_9 = Constant[value = <Tensor>]()
+  %onnx::Cast_10 = Reshape[allowzero = 0](%onnx::Reshape_8, %onnx::Reshape_9)
+  %onnx::Reshape_12 = MatMul(%_operators.0.weight_2, %onnx::Cast_10)
+  %onnx::Reshape_13 = Constant[value = <Tensor>]()
+  %onnx::Equal_14 = Reshape[allowzero = 0](%onnx::Reshape_12, %onnx::Reshape_13)
+  %onnx::Reshape_15 = Equal(%_operators.0.bias_2, %onnx::Equal_14)
+  %onnx::Reshape_16 = Constant[value = <Tensor>]()
+  %onnx::Cast_17 = Reshape[allowzero = 0](%onnx::Reshape_15, %onnx::Reshape_16)
+  %onnx::Reshape_19 = MatMul(%_operators.0.weight_3, %onnx::Cast_17)
+  %onnx::Reshape_20 = Constant[value = <Tensor>]()
+  %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
   return %x
 }""",
         LinearSVR: """graph torch-jit-export (

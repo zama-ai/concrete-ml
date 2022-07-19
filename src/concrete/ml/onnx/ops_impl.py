@@ -706,7 +706,7 @@ def numpy_not(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.logical_not(x),)
+    return (numpy.logical_not(x).astype(numpy.float64),)
 
 
 def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -725,6 +725,22 @@ def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]
     return (numpy.greater(x, y).astype(numpy.float64),)
 
 
+def numpy_greater_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute greater or equal in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.greater_equal(x, y).astype(numpy.float64),)
+
+
 def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute less in numpy according to ONNX spec.
 
@@ -739,6 +755,22 @@ def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """
 
     return (numpy.less(x, y).astype(numpy.float64),)
+
+
+def numpy_less_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute less or equal in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return (numpy.less_equal(x, y).astype(numpy.float64),)
 
 
 def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:

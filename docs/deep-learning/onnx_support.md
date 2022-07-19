@@ -133,11 +133,13 @@ The following operators are supported for evaluation and conversion to an equiva
 - Flatten
 - Gemm
 - Greater
+- GreaterOrEqual
 - HardSigmoid
 - HardSwish
 - Identity
 - LeakyRelu
 - Less
+- LessOrEqual
 - Log
 - MatMul
 - Mul

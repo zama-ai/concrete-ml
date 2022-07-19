@@ -1,9 +1,6 @@
 """Update list of supported functions in the doc."""
 import argparse
-import tempfile
 from pathlib import Path
-
-import mdformat._cli as mdformat_cli
 
 from concrete.ml.onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
 
@@ -31,10 +28,13 @@ def main(file_to_update):
         if line.startswith(CONVERSION_OPS_BEGIN_HEADER):
             keep_line = False
             newlines.append(line)
+            newlines.append("\n")
             newlines.append("<!--- do not edit, auto generated part by `make supported_ops` -->\n")
+            newlines.append("\n")
             newlines.extend(f"- {op}\n" for op in supported_ops)
         elif line.startswith(CONVERSION_OPS_END_HEADER):
             keep_line = True
+            newlines.append("\n")
             newlines.append(line)
         elif line.startswith("<!---"):
             pass
@@ -47,26 +47,8 @@ def main(file_to_update):
             if keep_line:
                 newlines.append(line)
 
-    # We create a tempfile to format according to mdformat or we'll have issues with our tools
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", delete=False) as tmp_f:
-        tmp_file_path = Path(tmp_f.name)
-        tmp_f.writelines(newlines)
-
-    # Format with mdformat
-    exit_code = mdformat_cli.run([str(tmp_file_path)])
-
-    # Check formatting was ok
-    if exit_code != 0:
-        tmp_file_path.unlink(missing_ok=True)
-        raise RuntimeError(f"Unable to format {str(tmp_file_path)}")
-
-    # Get the formatted newlines
-    with open(tmp_file_path, "r", encoding="utf-8") as f:
-        newlines = f.readlines()
-
-    # Remove the tmp file
-    tmp_file_path.unlink(missing_ok=True)
-
+    # This code is seen as a duplicate with other scripts we have
+    # pylint: disable=duplicate-code
     if args.check:
 
         with open(file_to_update, "r", encoding="utf-8") as file:
@@ -75,6 +57,7 @@ def main(file_to_update):
         assert (
             oldlines == newlines
         ), "List of supported functions is not up to date. Please run `make supported_ops`. "
+    # pylint: disable=duplicate-code
 
     else:
         with open(file_to_update, "w", encoding="utf-8") as file:

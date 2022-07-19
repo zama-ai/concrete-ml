@@ -8,7 +8,8 @@ from concrete.numpy import MAXIMUM_BIT_WIDTH
 from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
-from ..onnx.convert import get_equivalent_numpy_forward
+from ..common.utils import get_onnx_opset_version
+from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import (
     cut_onnx_graph_after_node_name,
     keep_following_outputs_discard_others,
@@ -63,15 +64,33 @@ def tree_to_numpy(
     # Convert model to onnx using hummingbird
     if framework == "sklearn":
         onnx_model = hb_convert(
-            model, backend="onnx", test_input=x, extra_config={"tree_implementation": "gemm"}
+            model,
+            backend="onnx",
+            test_input=x,
+            extra_config={
+                "tree_implementation": "gemm",
+                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+            },
         ).model
     else:
         onnx_model = hb_convert(
             model,
             backend="onnx",
             test_input=x,
-            extra_config={"tree_implementation": "gemm", "n_features": x.shape[1]},
+            extra_config={
+                "tree_implementation": "gemm",
+                "n_features": x.shape[1],
+                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+            },
         ).model
+
+    # Make sure the onnx version returned by hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
+    onnx_version = get_onnx_opset_version(onnx_model)
+    assert_true(
+        onnx_version == OPSET_VERSION_FOR_ONNX_EXPORT,
+        f"The onnx version returned by Hummingbird is {onnx_version} "
+        f"instead of {OPSET_VERSION_FOR_ONNX_EXPORT}",
+    )
 
     # The tree returned by hummingbird has two outputs which is not supported currently by the
     # compiler (as it only returns one output). Here we explicitely only keep the output named

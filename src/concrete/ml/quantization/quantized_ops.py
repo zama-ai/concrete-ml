@@ -861,6 +861,30 @@ class QuantizedGreater(QuantizedOp):
         assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
 
 
+class QuantizedGreaterOrEqual(QuantizedOp):
+    """Comparison operator >=.
+
+    Only supports comparison with a constant.
+    """
+
+    _impl_for_op_named: str = "GreaterOrEqual"
+
+    # Since this op takes a single variable input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # We do not support testing a >= b where a,b are encrypted
+        # only comparing to a constant is supported
+        assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
+
+
 class QuantizedLess(QuantizedOp):
     """Comparison operator <.
 
@@ -881,6 +905,30 @@ class QuantizedLess(QuantizedOp):
         super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # We do not support testing a < b where a,b are encrypted
+        # only comparing to a constant is supported
+        assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
+
+
+class QuantizedLessOrEqual(QuantizedOp):
+    """Comparison operator <=.
+
+    Only supports comparison with a constant.
+    """
+
+    _impl_for_op_named: str = "LessOrEqual"
+
+    # Since this op takes a single variable input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # We do not support testing a <= b where a,b are encrypted
         # only comparing to a constant is supported
         assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
 
@@ -1207,3 +1255,9 @@ class QuantizedErf(QuantizedOp):
     """Quantized erf op."""
 
     _impl_for_op_named: str = "Erf"
+
+
+class QuantizedNot(QuantizedOp):
+    """Quantized Not op."""
+
+    _impl_for_op_named: str = "Not"
