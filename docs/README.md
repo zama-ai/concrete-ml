@@ -31,6 +31,9 @@ X_train, X_test, y_train, y_test = train_test_split(
 model = LogisticRegression(n_bits=3)
 model.fit(X_train, y_train)
 
+# We run prediction on non-encrypted data as a reference
+y_pred_clear = model.predict(X_test, execute_in_fhe=False)
+
 # Finally we compile and run inference on encrypted inputs!
 model.compile(x)
 y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
