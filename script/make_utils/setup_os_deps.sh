@@ -80,6 +80,17 @@ linux_install_actionlint () {
     return "${STATUS}"
 }
 
+linux_install_github_cli () {
+    # Installs github cli
+    # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+    echo "Installing github-CLI"
+    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+    chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+    apt update
+    apt install gh
+}
+
 OS_NAME=$(uname)
 
 if [[ "${OS_NAME}" == "Linux" ]]; then
@@ -128,7 +139,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
         pip install --no-cache-dir --upgrade pip && \
         pip install --no-cache-dir poetry && \
-        linux_install_gitleaks && linux_install_actionlint"
+        linux_install_gitleaks && linux_install_actionlint && linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"
 elif [[ "${OS_NAME}" == "Darwin" ]]; then
