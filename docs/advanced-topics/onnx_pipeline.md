@@ -85,5 +85,3 @@ onnx.save(onnx_model, "tmp.onnx")
 
 # And then visualize it with Netron
 ```
-
-

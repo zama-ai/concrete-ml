@@ -181,5 +181,3 @@ def q_impl(
         # an integer implementation follows, see Case 2
         # ....
 ```
-
-

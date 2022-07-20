@@ -27,5 +27,3 @@ Fixing some of the weights to 0 makes the network graph look more similar to the
 While pruning weights can reduce the prediction performance of the neural network, studies show that a high level of pruning (above 50% \[^1\]) can often be applied. See here how Concrete-ML uses pruning in [Fully Connected Neural Networks](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.qnn.NeuralNetClassifier).
 
 \[^1\]: Han, Song & Pool, Jeff & Tran, John & Dally, William. (2015). Learning both Weights and Connections for Efficient Neural Networks.
-
-

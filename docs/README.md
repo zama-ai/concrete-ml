@@ -85,5 +85,3 @@ All of these issues are currently being addressed and significant improvements a
 ## Looking for support? Ask our team!
 
 ![](figures/support_zama.jpg)
-
-

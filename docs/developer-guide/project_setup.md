@@ -192,5 +192,3 @@ make docker_start
 ```
 
 If the problem persists at this point, you should ask for help. We're here and ready to assist!
-
-

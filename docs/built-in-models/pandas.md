@@ -60,5 +60,3 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 # Output:
 #  1 examples over 1 have a FHE inference equal to the clear inference
 ```
-
-

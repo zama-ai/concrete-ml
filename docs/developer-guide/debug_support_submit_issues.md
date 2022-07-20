@@ -17,5 +17,3 @@ When submitting an issue ([here](https://github.com/zama-ai/concrete-ml/issues))
 - any workaround you have been able to find
 
 If you would like to contribute to project and send pull requests, take a look at the [contributor](contributing.md) guide.
-
-

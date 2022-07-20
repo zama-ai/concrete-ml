@@ -142,5 +142,3 @@ Concrete-ML supports a variety of torch operators that can be used to build full
 {% hint style="info" %}
 Note that the equivalent versions from `torch.functional` are also supported.
 {% endhint %}
-
-

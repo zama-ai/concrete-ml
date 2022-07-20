@@ -51,5 +51,3 @@ Alternatively, a shell can be lauched in Docker, with or without volumes:
 ```shell
 docker run --rm -it zamafhe/concrete-ml /bin/bash
 ```
-
-

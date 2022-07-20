@@ -251,5 +251,3 @@ In this table, \*\* means that the accuracy is actually random-like, because the
 - [FullyConnectedNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
 - [QuantizationAwareTraining.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb)
 - [ConvolutionalNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
-
-

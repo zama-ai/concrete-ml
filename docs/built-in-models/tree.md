@@ -105,5 +105,3 @@ Using the above example, we can then plot how the model classifies the inputs an
 This shows the impact of quantization over the decision boundaries in the FHE models, especially with the 3 bits model, where only three main decision boundaries can be observed. This results in a small decrease of accuracy of about 7% compared to the initial XGBoost classifier. Besides, using 6 bits of quantization makes the model reach 93% of accuracy, drastically reducing this difference to only 1.7%.
 
 In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, the impact of those artifacts is often minor when considering small tree-based models, making FHE models reach similar scores as their equivalent clear ones.
-
-

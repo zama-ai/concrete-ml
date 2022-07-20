@@ -41,5 +41,3 @@ onnx_model = convert(lr, backend="onnx", test_input=X).model
 In theory, the resulting `onnx_model` could be used directly within Concrete-ML's `get_equivalent_numpy_forward` method (as long as all operators present in the ONNX model are implemented in NumPy) and get the NumPy inference.
 
 In practice, there are some steps needed to clean the ONNX output and make the graph compatible with Concrete-ML, such as applying quantization where needed or deleting/replacing non-FHE friendly ONNX operators (such as _Softmax_ and _ArgMax)._
-
-

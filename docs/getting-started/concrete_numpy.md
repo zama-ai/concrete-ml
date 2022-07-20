@@ -136,5 +136,3 @@ where $$n_{\mathsf{max}} = 8$$ is the maximum precision allowed. For example, if
 Exceeding $$\Omega$$ dimensions in the input and weights, the risk of overflow increases quickly. It may happen that for some distributions of weights and values the computation does not overflow, but the risk increases rapidly with the number of dimensions.
 
 Currently, Concrete-ML computes the number of bits needed for the computation depending on the inputset calibration data and does not allow the overflow to happen, raising an exception as shown previously.
-
-

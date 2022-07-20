@@ -36,10 +36,8 @@ def process_file(file_str: str, args=None):
 
             processed_content += newline
 
-    processed_content += "\n"
-
     with open(file_path_output, "w", encoding="utf-8") as fout:
-        print(processed_content, file=fout)
+        print(processed_content, file=fout, end="")
 
     return True
 

@@ -28,5 +28,3 @@ If the check fails for a machine learning model, the user will need to tweak the
 ## Compilation to machine code
 
 Finally, the FHE compatible op-graph and the necessary cryptographic primitives from **Concrete-Framework** are converted to machine code.
-
-

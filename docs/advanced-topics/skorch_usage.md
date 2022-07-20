@@ -38,5 +38,3 @@ In practice, the distribution of the weights of a neural network is Gaussian, wi
 The pruning mechanism is already implemented in `SparseQuantNeuralNetImpl`, and the user only needs to determine the parameters listed above. They can be chosen in a way that is convenient, e.g. maximizing accuracy.
 
 Increasing `n_hidden_neurons_multiplier` can lead to improved performance, as long as the compiled NN does not exceed 8 bits of accumulator bitwidth.
-
-

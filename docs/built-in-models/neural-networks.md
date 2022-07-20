@@ -83,5 +83,3 @@ You can give weights to each class, to use in training. Note that this must be s
 ### Overflow errors
 
 The `n_hidden_neurons_multiplier` parameter influences training accuracy as it controls the number of non-zero neurons that are allowed in each layer. Increasing `n_hidden_neurons_multiplier` improves accuracy, but should take into account precision limitations to avoid overflow in the accumulator. The default value is a good compromise that avoids overflow, in most cases, but you may want to change the value of this parameter to reduce the breadth of the network if you have overflow errors. A value of 1 should be completely safe with respect to overflow.
-
-

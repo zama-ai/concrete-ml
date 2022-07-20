@@ -103,5 +103,3 @@ You can learn more about rebasing [here](https://git-scm.com/docs/git-rebase).
 Before any final release, Concrete-ML contributors go through a release candidate (RC) cycle. The idea is that once the codebase and documentations look ready for a release, you create an RC release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C&labels=%5C&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
 
 Once the last RC is deemed ready, open an issue with the release template using the last RC version from which you remove the `rc?` part (i.e. `v12.67.19` if your last RC version was `v12.67.19-rc4`) on [github](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C&labels=%5C&template=release.md).
-
-
