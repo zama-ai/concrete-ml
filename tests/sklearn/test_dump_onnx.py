@@ -118,7 +118,7 @@ def test_dump(
 ):
     """Tests dump."""
     expected_strings = {
-        XGBClassifier: """graph torch-jit-export (
+        XGBClassifier: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
   %onnx::Less_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -136,7 +136,7 @@ def test_dump(
   %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
   return %x
 }""",
-        GammaRegressor: """graph torch-jit-export (
+        GammaRegressor: """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
@@ -147,7 +147,7 @@ def test_dump(
   %6 = Exp(%onnx::Exp_5)
   return %6
 }""",
-        LinearRegression: """graph torch-jit-export (
+        LinearRegression: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x2]
@@ -157,7 +157,7 @@ def test_dump(
         """%_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        TweedieRegressor: """graph torch-jit-export (
+        TweedieRegressor: """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
@@ -167,7 +167,7 @@ def test_dump(
   %5 = Add(%linear.bias, %onnx::Add_4)
   return %5
 }""",
-        PoissonRegressor: """graph torch-jit-export (
+        PoissonRegressor: """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
@@ -178,7 +178,7 @@ def test_dump(
   %6 = Exp(%onnx::Exp_5)
   return %6
 }""",
-        DecisionTreeClassifier: """graph torch-jit-export (
+        DecisionTreeClassifier: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
   %onnx::LessOrEqual_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -196,7 +196,7 @@ def test_dump(
   %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
   return %x
 }""",
-        LinearSVR: """graph torch-jit-export (
+        LinearSVR: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -206,7 +206,7 @@ def test_dump(
         """%_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        LogisticRegression: """graph torch-jit-export (
+        LogisticRegression: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -217,7 +217,7 @@ def test_dump(
   %onnx::Sub_7 = Sigmoid(%onnx::Sigmoid_6)
   return %onnx::Sub_7
 }""",
-        LinearSVC: """graph torch-jit-export (
+        LinearSVC: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -229,7 +229,7 @@ def test_dump(
   return %onnx::Sub_7
 }""",
         RandomForestClassifier: "Not tested",
-        NeuralNetClassifier: """graph torch-jit-export (
+        NeuralNetClassifier: """graph torch_jit (
   %onnx::MatMul_0[FLOAT, 20]
 ) initializers (
   %features.fc0.bias[FLOAT, 80]
@@ -250,7 +250,7 @@ def test_dump(
   %18 = Selu(%input.7)
   return %18
 }""",
-        NeuralNetRegressor: """graph torch-jit-export (
+        NeuralNetRegressor: """graph torch_jit (
   %onnx::MatMul_0[FLOAT, 20]
 ) initializers (
   %features.fc0.bias[FLOAT, 20]

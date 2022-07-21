@@ -17,6 +17,7 @@ on:
         - LogisticRegression \n
         - PoissonRegression \n
         - QuantizationAwareTraining \n
+        - SentimentClassification \n
         - XGBClassifier \n
         "
         # --- refresh_notebooks_list.py: refresh list of notebooks currently available [END] ---

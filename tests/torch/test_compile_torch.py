@@ -601,7 +601,7 @@ def test_compile_torch_qat(
     [
         pytest.param(
             FC,
-            """graph torch-jit-export (
+            """graph torch_jit (
   %onnx::Gemm_0[FLOAT, 1x7]
 ) initializers (
   %fc1.weight[FLOAT, 7x7]

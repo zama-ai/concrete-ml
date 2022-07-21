@@ -86,6 +86,7 @@ types-paramiko = "^2.10.0"
 brevitas = "^0.7.1"
 requests = "^2.28.0"
 types-requests = "^2.28.0"
+transformers = "^4.20.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
