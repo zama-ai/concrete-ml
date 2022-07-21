@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Disable these errors, whose fix is boring and make the script unreadable
 #

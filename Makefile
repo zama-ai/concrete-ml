@@ -1,4 +1,4 @@
-SHELL:=/bin/bash
+SHELL:=$(shell /usr/bin/env which bash)
 
 DEV_DOCKER_IMG:=concrete-ml-dev
 DEV_DOCKERFILE:=docker/Dockerfile.dev

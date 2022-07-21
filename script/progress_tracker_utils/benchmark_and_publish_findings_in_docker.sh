@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Run benchmarks while logging the intermediate results
 # Publish findings in the progress tracker
