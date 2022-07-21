@@ -201,14 +201,39 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     with pytest.raises(Exception, match=err_msg):
         fhemodel_dev.save()
 
-    fhemodel_server = FHEModelServer(path_dir=network.server_dir.name)
-    fhemodel_server.load()
-
     fhemodel_client = FHEModelClient(
         path_dir=network.client_dir.name,
         key_dir=default_configuration_no_jit.insecure_key_cache_location,
     )
     fhemodel_client.load()
+
+    # Grab the model and save it again (feature to allow compilation on an adventurous OS)
+    client_model = fhemodel_client.model
+    client_model.fhe_circuit = model.fhe_circuit
+
+    network.cleanup()
+
+    # Create a new network
+    network = OnDiskNetwork()
+
+    # And try to save it again
+    fhemodel_dev_ = FHEModelDev(path_dir=network.dev_dir.name, model=client_model)
+    fhemodel_dev_.save()
+
+    # Send necessary files to server and client
+    network.dev_send_clientspecs_and_modelspecs_to_client()
+    network.dev_send_model_to_server()
+
+    # And try to load it again
+    fhemodel_client_ = FHEModelClient(
+        path_dir=network.client_dir.name,
+        key_dir=default_configuration_no_jit.insecure_key_cache_location,
+    )
+    fhemodel_client_.load()
+
+    # Now we can also load the server part
+    fhemodel_server = FHEModelServer(path_dir=network.server_dir.name)
+    fhemodel_server.load()
 
     # Make sure the client has the exact same quantization as the server
     qx_ref_model = model.quantize_input(x_train)

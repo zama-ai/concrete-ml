@@ -119,13 +119,18 @@ class FHEModelDev:
         Returns:
             dict: the cleaned dict
         """
+        key_to_delete = []
         for key, value in d.items():
-            if isinstance(value, list):
+            if isinstance(value, list) and len(value) > 0 and isinstance(value[0], dict):
                 d[key] = [self._clean_dict_types_for_json(v) for v in value]
             elif isinstance(value, dict):
                 d[key] = self._clean_dict_types_for_json(value)
             elif isinstance(value, (numpy.generic, numpy.ndarray)):
                 d[key] = d[key].tolist()
+            elif isinstance(value, (UniformQuantizer)):
+                key_to_delete.append(key)
+        for key in key_to_delete:
+            d.pop(key)
         return d
 
     def _export_model_to_json(self):

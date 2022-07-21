@@ -134,7 +134,16 @@ class QuantizedTorchEstimatorMixin:
         Returns:
             Circuit: the FHE circuit
         """
-        return self.quantized_module_.forward_fhe
+        return self.quantized_module_.fhe_circuit
+
+    @fhe_circuit.setter
+    def fhe_circuit(self, value: Circuit):
+        """Set the FHE circuit.
+
+        Args:
+            value (Circuit): the FHE circuit
+        """
+        self.quantized_module_.fhe_circuit = value
 
     @property
     def output_quantizers(self) -> List[QuantizedArray]:
@@ -809,6 +818,15 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             Circuit: the FHE circuit
         """
         return self.quantized_module_.forward_fhe
+
+    @fhe_circuit.setter
+    def fhe_circuit(self, value: Circuit):
+        """Set the FHE circuit.
+
+        Args:
+            value (Circuit): the FHE circuit
+        """
+        self.quantized_module_.forward_fhe = value
 
     @property
     def input_quantizers(self) -> List[QuantizedArray]:

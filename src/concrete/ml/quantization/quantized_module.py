@@ -74,6 +74,16 @@ class QuantizedModule:
         """
         return self.forward_fhe
 
+    @fhe_circuit.setter
+    def fhe_circuit(self, fhe_circuit: Circuit):
+        """Set the FHE circuit.
+
+        Args:
+            fhe_circuit (Circuit): the FHE circuit
+        """
+        self.forward_fhe = fhe_circuit
+        self._is_compiled = True
+
     @property
     def post_processing_params(self) -> Dict[str, Any]:
         """Get the post-processing parameters.
