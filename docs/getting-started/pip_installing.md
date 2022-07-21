@@ -13,6 +13,7 @@ Installing on Windows can be done using Docker or WSL. On WSL, Concrete-ML will 
 To install Concrete-ML from PyPi, run the following:
 
 ```shell
+pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
 
