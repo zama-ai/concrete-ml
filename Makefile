@@ -64,7 +64,7 @@ reinstall_env:
 	else \
 		VENV_PATH=$$(./script/make_utils/remove_venv.sh); \
 		SOURCE_VENV_PATH="$${VENV_PATH}$${VENV_SCRIPT_PATH}/activate"; \
-		python -m venv "$${VENV_PATH}"; \
+		python3 -m venv "$${VENV_PATH}"; \
 		source "$${SOURCE_VENV_PATH}"; \
 		"$(MAKE)" setup_env; \
 		echo "Source venv with:"; \
