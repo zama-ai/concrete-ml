@@ -52,18 +52,24 @@ from .ops_impl import (
     numpy_flatten,
     numpy_gemm,
     numpy_greater,
+    numpy_greater_float,
     numpy_greater_or_equal,
+    numpy_greater_or_equal_float,
     numpy_hardsigmoid,
     numpy_hardswish,
     numpy_identity,
     numpy_leakyrelu,
     numpy_less,
+    numpy_less_float,
     numpy_less_or_equal,
+    numpy_less_or_equal_float,
     numpy_log,
     numpy_matmul,
     numpy_mul,
     numpy_not,
+    numpy_not_float,
     numpy_or,
+    numpy_or_float,
     numpy_pad,
     numpy_pow,
     numpy_prelu,
@@ -132,17 +138,11 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Softplus": numpy_softplus,
     "Abs": numpy_abs,
     "Div": numpy_div,
-    "Or": numpy_or,
     "Mul": numpy_mul,
     "Sub": numpy_sub,
     "Log": numpy_log,
     "Exp": numpy_exp,
     "Equal": numpy_equal,
-    "Not": numpy_not,
-    "Greater": numpy_greater,
-    "GreaterOrEqual": numpy_greater_or_equal,
-    "Less": numpy_less,
-    "LessOrEqual": numpy_less_or_equal,
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Transpose": numpy_transpose,
@@ -160,6 +160,41 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "ReduceSum": numpy_reduce_sum,
 }
 
+# Creating the following dictionaries was introduced following the performance regression issues
+# observed in https://github.com/zama-ai/concrete-ml-internal/issues/1357.
+# Comparison operators from numpy return boolean values, which is a specific subtype of numpy
+# integer types. However, the problem lies in the fact that while this is the expected behavior for
+# tree-based models, QuantizedOps only handle float values in order to properly quantize. The
+# current solution therefore dissociates the numpy operators used in both cases.
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+
+# Comparison operators needed for QuantizedOps as they cast the boolean outputs into floats.
+ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
+    "Or": numpy_or_float,
+    "Not": numpy_not_float,
+    "Greater": numpy_greater_float,
+    "GreaterOrEqual": numpy_greater_or_equal_float,
+    "Less": numpy_less_float,
+    "LessOrEqual": numpy_less_or_equal_float,
+}
+
+# Comparison operators used in tree-based models as they keep the outputs' boolean dtype.
+ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
+    "Or": numpy_or,
+    "Not": numpy_not,
+    "Greater": numpy_greater,
+    "GreaterOrEqual": numpy_greater_or_equal,
+    "Less": numpy_less,
+    "LessOrEqual": numpy_less_or_equal,
+}
+
+# All numpy operators used in QuantizedOps
+ONNX_OPS_TO_NUMPY_IMPL.update(ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT)
+
+# All numpy operators used for tree-based models
+ONNX_OPS_TO_NUMPY_IMPL_BOOL = {**ONNX_OPS_TO_NUMPY_IMPL, **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL}
+
+
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
 
 
@@ -175,20 +210,15 @@ def get_attribute(attribute: onnx.AttributeProto) -> Any:
     return ATTR_GETTERS[attribute.type](attribute)
 
 
-# FIXME: force_int tag was added for forcing outputs to be integers in trees since some numpy
-# operators require integers and not floats. It will probably become useless when #1117
-# (https://github.com/zama-ai/concrete-ml-internal/issues/1117) is fixed.
 def execute_onnx_with_numpy(
     graph: onnx.GraphProto,
     *inputs: numpy.ndarray,
-    force_int=False,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
         *inputs: The inputs of the graph.
-        force_int (bool): Force outputs to become integers. Default to False.
 
     Returns:
         Tuple[numpy.ndarray]: The result of the graph's execution.
@@ -203,10 +233,7 @@ def execute_onnx_with_numpy(
     for node in graph.node:
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
-        outputs = ONNX_OPS_TO_NUMPY_IMPL[node.op_type](*curr_inputs, **attributes)
+        outputs = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type](*curr_inputs, **attributes)
 
-        # FIXME: To remove when #1117 is fixed.
-        if force_int:
-            outputs = tuple(output.astype(numpy.int64) for output in outputs)
         node_results.update(zip(node.output, outputs))
     return tuple(node_results[output.name] for output in graph.output)

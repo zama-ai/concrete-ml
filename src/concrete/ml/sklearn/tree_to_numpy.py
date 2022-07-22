@@ -178,7 +178,6 @@ def tree_to_numpy(
 
     simplify_onnx_model(onnx_model)
 
-    # FIXME: Remove force_int tag when #1117 is fixed.
-    _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model, force_int=True)
+    _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
 
     return (_tensor_tree_predict, [q_y.quantizer], onnx_model)

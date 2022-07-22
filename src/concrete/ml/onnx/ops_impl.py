@@ -13,6 +13,20 @@ from scipy import special
 from ..common.debugging import assert_true
 
 
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+# This function is only used for comparison operators that return boolean values by default.
+def cast_to_float(inputs):
+    """Cast values to floating points.
+
+    Args:
+        inputs (Tuple[numpy.ndarray]): The values to consider.
+
+    Returns:
+        Tuple[numpy.ndarray]: The float values.
+    """
+    return tuple(map(lambda x: x.astype(numpy.float64), inputs))
+
+
 def numpy_where_body(
     c: numpy.ndarray, t: numpy.ndarray, f: Union[numpy.ndarray, int], /
 ) -> numpy.ndarray:
@@ -706,7 +720,23 @@ def numpy_not(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.logical_not(x).astype(numpy.float64),)
+    return (numpy.logical_not(x),)
+
+
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+def numpy_not_float(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute not in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_not(x))
 
 
 def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -722,7 +752,24 @@ def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.greater(x, y).astype(numpy.float64),)
+    return (numpy.greater(x, y),)
+
+
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+def numpy_greater_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute greater in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_greater(x, y))
 
 
 def numpy_greater_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -738,7 +785,24 @@ def numpy_greater_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.greater_equal(x, y).astype(numpy.float64),)
+    return (numpy.greater_equal(x, y),)
+
+
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+def numpy_greater_or_equal_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute greater or equal in numpy according to ONNX specs and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_greater_or_equal(x, y))
 
 
 def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -754,7 +818,24 @@ def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.less(x, y).astype(numpy.float64),)
+    return (numpy.less(x, y),)
+
+
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+def numpy_less_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute less in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_less(x, y))
 
 
 def numpy_less_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -770,7 +851,24 @@ def numpy_less_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.nd
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    return (numpy.less_equal(x, y).astype(numpy.float64),)
+    return (numpy.less_equal(x, y),)
+
+
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+def numpy_less_or_equal_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute less or equal in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_less_or_equal(x, y))
 
 
 def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
@@ -1100,8 +1198,23 @@ def numpy_or(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-    # We need to cast to int64 because we do not handle Boolean in QuantizedArray or in CN
-    return (numpy.logical_or(a, b).astype(numpy.float64),)
+    return (numpy.logical_or(a, b),)
+
+
+# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+def numpy_or_float(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+    """Compute or in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
+
+    Args:
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return cast_to_float(numpy_or(a, b))
 
 
 def numpy_round(a: numpy.ndarray) -> Tuple[numpy.ndarray]:
