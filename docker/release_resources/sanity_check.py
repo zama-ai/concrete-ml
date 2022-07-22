@@ -150,6 +150,7 @@ def main(args):
 
     is_fast = args.fast
 
+    keyring_dir_as_str = None
     if is_fast:
         keyring_dir = Path.home().resolve() / "ConcreteNumpyKeyCache"
         keyring_dir.mkdir(parents=True, exist_ok=True)
