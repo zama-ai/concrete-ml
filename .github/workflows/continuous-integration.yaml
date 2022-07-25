@@ -19,7 +19,8 @@ concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
   # workflows already running on a PR or a merge e.g.
   group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
-  cancel-in-progress: true
+  # Cancel the previous build, except on main
+  cancel-in-progress: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
