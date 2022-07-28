@@ -6,6 +6,10 @@ DIR=$(dirname "$0")
 # shellcheck disable=SC1090,SC1091
 source "${DIR}/detect_docker.sh"
 
+print_time_execution() {
+    printf "Notebook %s executed in %02dh:%02dm:%02ds\n" "$1" $(($2/3600)) $(($2%3600/60)) $(($2%60))
+}
+
 WHAT_TO_DO="open"
 
 while [ -n "$1" ]
@@ -50,8 +54,11 @@ then
 
     for NOTEBOOK in ${LIST_OF_NOTEBOOKS}
     do
-        echo "Running ${NOTEBOOK}"
+        START=$(date +%s)
         jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"
+        END=$(date +%s)
+        TIME_EXEC=$((END-START))
+        print_time_execution "${NOTEBOOK}" ${TIME_EXEC}
     done
 
     # Then, one needs to sanitize the notebooks
@@ -63,7 +70,7 @@ then
     NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
     PIDS_TO_WATCH=""
 
-    # Run notebooks in sub processes
+    # Run notebooks in sub processes on the same machine 
     # shellcheck disable=SC2068
     for NOTEBOOK in ${NOTEBOOKS[@]}; do
         ( jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" ) &
@@ -84,11 +91,14 @@ then
     done
 
     exit "${STATUS}"
+
 elif [ "$WHAT_TO_DO" == "run_notebook" ]
 then
-    echo "Running ${NOTEBOOK}"
+    START=$(date +%s)
     jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"
-
+    END=$(date +%s)
+    TIME_EXEC=$((END-START))
+    print_time_execution "${NOTEBOOK}" ${TIME_EXEC}
     # Then, one needs to sanitize the notebooks
 fi
 

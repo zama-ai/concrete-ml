@@ -90,7 +90,7 @@ jobs:
 
       - name: Refresh Notebooks
         run: |
-          make jupyter_execute_parallel
+          make jupyter_execute
 
       - name: Open PR
         uses: peter-evans/create-pull-request@923ad837f191474af6b1721408744feb989a4c27

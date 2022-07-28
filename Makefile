@@ -336,7 +336,7 @@ pytest_nb:
 jupyter_open:
 	./script/make_utils/jupyter.sh --open
 
-.PHONY: jupyter_execute # Execute all jupyter notebooks and sanitize
+.PHONY: jupyter_execute # Execute all jupyter notebooks sequentially and sanitize
 jupyter_execute:
 	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks
 	"$(MAKE)" finalize_nb
@@ -346,7 +346,7 @@ jupyter_execute_one:
 	poetry run env ./script/make_utils/jupyter.sh --run_notebook "$${NOTEBOOK}"
 	"$(MAKE)" finalize_nb
 
-.PHONY: jupyter_execute_parallel # Execute all jupyter notebooks in parallel and sanitize
+.PHONY: jupyter_execute_parallel # Execute all jupyter notebooks in parallel (on the same machine) and sanitize
 jupyter_execute_parallel:
 	poetry run env ./script/make_utils/jupyter.sh --run_all_notebooks_parallel
 	"$(MAKE)" finalize_nb
