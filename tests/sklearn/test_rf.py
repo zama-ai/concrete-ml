@@ -1,4 +1,4 @@
-"""Tests for the xgboost."""
+"""Tests for the random forest."""
 
 import numpy
 import pytest
