@@ -1,10 +1,13 @@
 """torch compilation function."""
 
+import tempfile
+from pathlib import Path
 from typing import Optional, Tuple, Union
 
 import numpy
 import onnx
 import torch
+from brevitas.export import BrevitasONNXManager
 from concrete.numpy import MAXIMUM_BIT_WIDTH
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
@@ -224,3 +227,87 @@ def compile_onnx_model(
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
     )
+
+
+def compile_brevitas_qat_model(
+    torch_model: torch.nn.Module,
+    torch_inputset: Dataset,
+    n_bits: Union[int, dict],
+    configuration: Optional[Configuration] = None,
+    compilation_artifacts: Optional[DebugArtifacts] = None,
+    show_mlir: bool = False,
+    use_virtual_lib: bool = False,
+    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    output_onnx_file: Optional[str] = None,
+) -> QuantizedModule:
+    """Compile a Brevitas Quantization Aware Training model.
+
+    The torch_model parameter is a subclass of torch.nn.Module that uses quantized
+    operations from brevitas.qnn. The model is trained before calling this function. This
+    function compiles the trained model to FHE.
+
+    Args:
+        torch_model (torch.nn.Module): the model to quantize
+        torch_inputset (Dataset): the inputset, can contain either torch
+            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        n_bits (Union[int,dict]): the number of bits for the quantization
+        configuration (Configuration): Configuration object to use
+            during compilation
+        compilation_artifacts (DebugArtifacts): Artifacts object to fill
+            during compilation
+        show_mlir (bool): if set, the MLIR produced by the converter and which is going
+            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation,
+            defaults to False.
+        p_error (Optional[float]): probability of error of a PBS
+        output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
+            is generated
+
+    Returns:
+        QuantizedModule: The resulting compiled QuantizedModule.
+    """
+
+    inputset_as_numpy_tuple = (
+        tuple(convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in torch_inputset)
+        if isinstance(torch_inputset, tuple)
+        else (convert_torch_tensor_or_numpy_array_to_numpy_array(torch_inputset),)
+    )
+
+    dummy_input_for_tracing = tuple(
+        torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
+    )
+
+    output_onnx_file_path = Path(
+        tempfile.mkstemp(suffix=".onnx")[1]
+        if (use_tempfile := (output_onnx_file is None))
+        else output_onnx_file
+    )
+
+    BrevitasONNXManager.export(
+        torch_model,
+        input_shape=dummy_input_for_tracing[0].shape,
+        export_path=str(output_onnx_file_path),
+        keep_initializers_as_inputs=False,
+        opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
+    )
+
+    onnx_model = onnx.load(output_onnx_file_path)
+
+    # Compile using the ONNX conversion flow, in QAT mode
+    q_module_vl = compile_onnx_model(
+        onnx_model,
+        torch_inputset,
+        n_bits=n_bits,
+        import_qat=True,
+        compilation_artifacts=compilation_artifacts,
+        show_mlir=show_mlir,
+        use_virtual_lib=use_virtual_lib,
+        configuration=configuration,
+        p_error=p_error,
+    )
+
+    # Remove the tempfile if we used one
+    if use_tempfile:
+        output_onnx_file_path.unlink(missing_ok=True)
+
+    return q_module_vl

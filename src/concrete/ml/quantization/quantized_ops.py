@@ -10,7 +10,7 @@ from concrete.onnx import conv as cnp_conv
 
 from ..common.debugging import assert_true
 from .base_quantized_op import QuantizedOp
-from .quantized_array import QuantizationOptions, QuantizedArray
+from .quantized_array import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
 
 
 class QuantizedSigmoid(QuantizedOp):
@@ -240,7 +240,7 @@ class QuantizedGemm(QuantizedOp):
 
         if q_bias is not None:
             # The bias is handled as a float32 and will be fused
-            numpy_q_out = numpy_q_out + q_bias.values
+            numpy_q_out = numpy_q_out + q_bias
 
         # Return the float32 values, so that CN can fuse any following float32 operations
         # We also keep track of the scaling factor and zero-point, since these will be
@@ -447,9 +447,8 @@ class QuantizedReshape(QuantizedOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
-        # FIXME: Remove this cast when #1141 is fixed.
-        # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-        newshape = prepared_inputs[1].values.astype(numpy.int64)
+        newshape = prepared_inputs[1]
+        assert_true(numpy.issubdtype(newshape.dtype, numpy.integer))
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
@@ -562,7 +561,7 @@ class QuantizedConv(QuantizedOp):
         )
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[QuantizedArray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
+        q_bias: Optional[numpy.ndarray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
 
         # Prepare a constant tensor to compute the sum of the inputs
         q_weights_1 = numpy.ones_like(q_weights.qvalues)
@@ -633,7 +632,7 @@ class QuantizedConv(QuantizedOp):
         if q_bias is not None:
             # The bias addition is handled in float and will be fused into a TLU
             # Broadcast the rescaled biases to each channel
-            numpy_q_out = numpy_q_out + q_bias.values.reshape((1, -1, 1, 1))  # bias_part
+            numpy_q_out = numpy_q_out + q_bias.reshape((1, -1, 1, 1))  # bias_part
 
         # And return as a QuantizedArray initialized from the float32 data, keeping
         # track of the quantization parameters
@@ -783,6 +782,11 @@ class QuantizedPad(QuantizedOp):
         self.mode = attrs.get("mode", None)
         assert_true(
             self.mode == "constant", "Padding operator only supports padding with a constant"
+        )
+
+        assert_true(
+            self.constant_inputs is None or bool(numpy.all(self.constant_inputs[1] == 0)),
+            "Padding operator supported only with all pads at zero",
         )
 
     def can_fuse(self) -> bool:
@@ -1194,7 +1198,7 @@ class QuantizedReduceSum(QuantizedOp):
 
         axes = prepared_inputs[1]
         assert_true(
-            axes is not None and len(axes.values.shape) == 1 and axes.values[0] == 1,
+            axes is not None and len(axes.shape) == 1 and axes[0] == 1,
             "ReduceSum currently only handles summing over axis 1.",
         )
 
@@ -1261,3 +1265,166 @@ class QuantizedNot(QuantizedOp):
     """Quantized Not op."""
 
     _impl_for_op_named: str = "Not"
+
+
+class QuantizedBrevitasQuant(QuantizedOp):
+    """Brevitas uniform quantization with encrypted input."""
+
+    _impl_for_op_named: str = "onnx.brevitas.Quant"
+
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: Optional[QuantizationOptions] = None,
+        **attrs,
+    ) -> None:
+        """Construct the Brevitas quantization operator.
+
+        Args:
+            n_bits_output (int): Number of bits for the operator's quantization of outputs.
+                Not used, will be overridden by the bit_width in ONNX
+            int_input_names (Optional[Set[str]]): Names of input integer tensors. Default to None.
+            constant_inputs (Optional[Dict]): Input constant tensor.
+                scale (float): Quantizer scale
+                zero_point (float): Quantizer zero-point
+                bit_width (int): Number of bits of the integer representation
+            input_quant_opts (Optional[QuantizationOptions]): Options for the input quantizer.
+                Default to None.
+            attrs (dict):
+                rounding_mode (str): Rounding mode (default and only accepted option is "ROUND")
+                signed (int): Whether this op quantizes to signed integers (default 1),
+                narrow (int): Whether this op quantizes to a narrow range of integers
+                    e.g. [-2**n_bits-1 .. 2**n_bits-1] (default 0),
+        """
+
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        def check_float(v, err_msg):
+            assert_true(
+                isinstance(v, float)
+                or (isinstance(v, numpy.ndarray) and numpy.issubdtype(v.dtype, numpy.floating)),
+                err_msg,
+            )
+
+        assert_true(
+            attrs["rounding_mode"] == "ROUND",
+            "Only rounding quantization is supported for Brevitas",
+        )
+        assert_true(
+            attrs["signed"] >= 0 and attrs["signed"] <= 1,
+            "Signed flag in Brevitas quantizer must be 0/1",
+        )
+        assert_true(
+            attrs["narrow"] >= 0 and attrs["signed"] <= 1,
+            "Narrow range flag in Brevitas quantizer must be 0/1",
+        )
+
+        # To ensure de-quantization produces floats, the following parameters must be float.
+        # This should be default export setting in Brevitas
+        check_float(
+            constant_inputs is not None
+            and self.constant_inputs[self._params_name_to_input_idx["scale"]],
+            "Scale of Brevitas Quant op must be float",
+        )
+        check_float(
+            constant_inputs is not None
+            and self.constant_inputs[self._params_name_to_input_idx["zero_point"]],
+            "Zero Point of Brevitas Quant op must be float",
+        )
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Quantize values.
+
+        Args:
+            q_inputs: an encrypted integer tensor at index 0 and one constant shape at index 1
+            attrs: additional optional reshape options
+
+        Returns:
+            result (QuantizedArray): reshaped encrypted integer tensor
+        """
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=False
+        )
+
+        # Impose the number of bits that this op quantizes its inputs, to the value that
+        # was provided by Brevitas. This number of bits is normally
+        # different from the op's n_bits. The op will usually have an output number of bits
+        # that is suitable for network output, as the op could be the last op in the graph
+
+        # Thus, we enforce the QAT number of bits on this op's output
+        n_bits = prepared_inputs[3]
+
+        # Copy the quantization parameters that were used in training
+        quant_params = UniformQuantizationParameters()
+        quant_params.scale = prepared_inputs[1]
+        quant_params.zero_point = prepared_inputs[2]
+
+        assert_true(
+            self.attrs["signed"] == 1 and self.attrs["narrow"] == 0,
+            "Only signed wide range Brevitas quantization giving 0 offset is implemented for now",
+        )
+
+        # Currently we can not determine if symmetric quantization was used,
+        # we just assume the offset is 0, the offset is not used for clipping in QAT.
+        quant_params.offset = 0
+
+        # Set the QAT flag on the output of this operation, so that the
+        # following operation in the graph is aware of this flag and can
+        # just copy the quantization
+        options = self._get_output_quant_opts()
+        options.is_qat = True
+
+        f_outputs = self.call_impl(*prepared_inputs, **attrs)
+        res = QuantizedArray(
+            n_bits,
+            f_outputs,
+            value_is_float=True,
+            options=options,
+            stats=self.output_quant_stats,
+            params=quant_params,
+        )
+        return res
+
+
+class QuantizedTranspose(QuantizedOp):
+    """Transpose operator for quantized inputs.
+
+    This operator performs quantization, transposes the encrypted data, then
+    dequantizes again.
+    """
+
+    _impl_for_op_named: str = "Transpose"
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Reshape the input integer encrypted tensor.
+
+        Args:
+            q_inputs: an encrypted integer tensor at index 0 and one constant shape at index 1
+            attrs: additional optional reshape options
+
+        Returns:
+            result (QuantizedArray): reshaped encrypted integer tensor
+        """
+
+        # FIXME: Currently Transpose quantizes the inputs, but this is unnecessary if the reshape
+        # operation could be fused into a Gemm/Add/Conv that follows it. We should transpose
+        # here only if the transpose result is returned directly from the FHE program.
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        axes_permute = self.attrs["perm"]
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].quantizer.n_bits,
+            numpy.transpose(prepared_inputs[0].qvalues, axes_permute),
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )

@@ -9,7 +9,7 @@ import onnx
 import torch
 from onnx import checker
 
-from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy
+from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy, get_op_name
 
 OPSET_VERSION_FOR_ONNX_EXPORT = 14
 
@@ -87,7 +87,7 @@ def get_equivalent_numpy_forward(
     """
     if check_model:
         checker.check_model(onnx_model)
-    required_onnx_operators = set(node.op_type for node in onnx_model.graph.node)
+    required_onnx_operators = set(get_op_name(node) for node in onnx_model.graph.node)
     unsupported_operators = required_onnx_operators - IMPLEMENTED_ONNX_OPS
 
     if len(unsupported_operators) > 0:

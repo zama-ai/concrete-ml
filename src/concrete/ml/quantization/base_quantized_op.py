@@ -8,6 +8,7 @@ import numpy
 
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
+from ..onnx.ops_impl import ONNXMixedFunction
 from .quantized_array import (
     MinMaxQuantizationStats,
     QuantizationOptions,
@@ -66,6 +67,7 @@ class QuantizedOp(ABC):
     _params_that_are_onnx_inputs: Set[str] = set()
     _params_that_are_required_onnx_inputs: Set[str] = set()
     _has_attr: bool
+    _inputs_not_quantized: Set[str] = set()
 
     POSITIONAL_ARGUMENTS_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
 
@@ -123,7 +125,7 @@ class QuantizedOp(ABC):
                 )
             )
             == 0,
-            "Got the current invalid constant input names or indices: "
+            "Got invalid constant input names or indices: "
             f"{', '.join(sorted(invalid_input_names))}.\n"
             f"Valid input names: {(', '.join(sorted(self._params_that_are_onnx_inputs)))}.",
         )
@@ -179,7 +181,11 @@ class QuantizedOp(ABC):
     def _populate_op_input_infos(cls):
         # for mypy
         assert cls.impl is not None
-        impl_signature = signature(cls.impl)
+        if isinstance(cls.impl, ONNXMixedFunction):
+            impl_signature = signature(cls.impl.function)
+            cls._inputs_not_quantized = cls.impl.non_quant_params
+        else:
+            impl_signature = signature(cls.impl)
         impl_params = impl_signature.parameters
         cls._params_name_to_input_idx = dict(reversed(val) for val in enumerate(impl_params))
         cls._input_idx_to_params_name = dict(enumerate(impl_params))
@@ -198,6 +204,27 @@ class QuantizedOp(ABC):
             if param.kind == Parameter.KEYWORD_ONLY
         }
         cls._authorized_attr_names = set(cls._default_attrs.keys())
+
+    @classmethod
+    def must_quantize_input(cls, input_name_or_idx: int) -> bool:
+        """Determine if an input must be quantized.
+
+        Quantized ops and numpy onnx ops take inputs and attributes. Inputs can be either constant
+        or variable (encrypted). Note that this does not handle attributes, which are handled
+        by QuantizedOp classes separately in their constructor.
+
+        Args:
+            input_name_or_idx (int): Index of the input to check.
+
+        Returns:
+            result (bool): Whether the input must be quantized (must be a `QuantizedArray`) or
+                if it stays as a raw `numpy.array` read from ONNX.
+        """
+
+        # Operation parameters have names and indices, we only support indices here
+        assert_true(isinstance(input_name_or_idx, int))
+        input_name = cls._input_idx_to_params_name[input_name_or_idx]
+        return input_name not in cls._inputs_not_quantized
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
         """Execute the quantized forward.
@@ -264,9 +291,20 @@ class QuantizedOp(ABC):
         # are requested, use the QuantizedArray object. Finally, if running the graph and
         # the original float values are requested, then return the QuantizedArray.values
         for input_idx, constant_val in self.constant_inputs.items():
-            prepared_inputs[input_idx] = (
-                constant_val if not calibrate and quantize_actual_values else constant_val.values
-            )
+            # If calibrating or if a float input is required (for TLU fusion)
+            # an input that **must** be quantized will be stored in a QuantizedArray, we need
+            # to retrieve its .values to return the requested float values
+
+            # In all other cases we return a QuantizedArray or numpy.array. QuantizedArrays
+            # in this case are produced by other ops or inputs. numpy.arrays are produced
+            # by initializers
+            if calibrate or not quantize_actual_values:
+                if self.__class__.must_quantize_input(input_idx):
+                    prepared_inputs[input_idx] = constant_val.values
+                else:
+                    prepared_inputs[input_idx] = constant_val
+            else:
+                prepared_inputs[input_idx] = constant_val
 
         assert_true(
             num_onnx_inputs
@@ -310,11 +348,19 @@ class QuantizedOp(ABC):
                 # will produce numpy ops that will be fused to a TLU. Fusable ops will
                 # use the .values directly (see else branch below). We need the quantization
                 # stats to generate the quantization code, they can not be computed on the fly.
+
+                quant_params = None
+                if input_.quantizer.is_qat:
+                    # TODO: eliminate redundant TLU #992
+                    # see: https://github.com/zama-ai/concrete-ml-internal/issues/992
+                    quant_params = input_.quantizer.quant_params
+
                 new_input = QuantizedArray(
                     quant_opts.n_bits,
                     input_.values,
                     options=quant_opts,
                     stats=input_.quantizer.quant_stats,
+                    params=quant_params,
                 )
                 prepared_inputs[curr_input_fill_idx] = new_input
             else:
@@ -392,7 +438,10 @@ class QuantizedOp(ABC):
         assert self.impl is not None
         # mypy is not happy with __func__
         # self.impl will call impl with self as first parameter, so get the underlying __func__
-        impl_func = self.impl.__func__  # type: ignore
+        if isinstance(self.impl, ONNXMixedFunction):
+            impl_func = self.impl.function
+        else:
+            impl_func = self.impl.__func__  # type: ignore
         outputs = impl_func(*inputs) if not self._has_attr else impl_func(*inputs, **attrs)
         assert_true(
             isinstance(outputs, tuple),

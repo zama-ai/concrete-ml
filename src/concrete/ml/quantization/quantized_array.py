@@ -356,6 +356,10 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.scale is not None
 
         qvalues = numpy.rint(values / self.scale + self.zero_point)
+
+        # If the values are produced by a QAT layer, they should have values in the correct
+        # range. But we can't know if the QAT quantization was symmetric or not, so the offset
+        # is not set up properly. Thus, we don't clip for QAT values
         if not self.is_qat:
             qvalues = qvalues.clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
 

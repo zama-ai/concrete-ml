@@ -8,7 +8,7 @@ import onnx
 from onnx import numpy_helper
 
 from ..common.debugging import assert_true
-from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute
+from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_name
 from ..torch.numpy_module import NumpyModule
 from .base_quantized_op import DEFAULT_OUTPUT_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
 from .quantized_array import QuantizationOptions, QuantizedArray
@@ -171,7 +171,7 @@ class ONNXConverter:
         self.quant_params.update(
             (
                 onnx_init.name,
-                self._process_initializer(self.n_bits_weights, numpy_helper.to_array(onnx_init)),
+                numpy_helper.to_array(onnx_init),
             )
             for onnx_init in inits
         )
@@ -232,7 +232,8 @@ class ONNXConverter:
         }
 
         for node in graph.node:
-            op_type = node.op_type
+            op_type = get_op_name(node)
+
             attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
 
             # For now only single output nodes
@@ -244,32 +245,29 @@ class ONNXConverter:
                 # FIXME: Do not handle constants with QuantizedArray, use numpy.ndarray
                 # let the ops quantize their own inputs
                 constant_values = ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
-
-                # We only handle graphs that are full-floating point. In some cases, constants
-                # might be integers, such as tensor shapes. In this case, we just cast them to
-                # float, the operators that use these values will know that the values should be
-                # treated as integers.
-                # FIXME: Remove this when #1141 is fixed.
-                # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-                if isinstance(constant_values, numpy.ndarray):
-                    constant_values = constant_values.astype(numpy.float64)
-
-                node_results[output_name] = self._process_initializer(
-                    self.n_bits_weights,
-                    constant_values,
-                )
+                node_results[output_name] = constant_values
                 constants.add(output_name)
                 continue
+
+            quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
 
             # All inputs
             curr_inputs = {input_name: node_results[input_name] for input_name in node.input}
 
             # Constant inputs
-            curr_cst_inputs = {
-                input_idx: value
-                for input_idx, (input_name, value) in enumerate(curr_inputs.items())
-                if input_name in constants
-            }
+            curr_cst_inputs = {}
+            for input_idx, (input_name, value) in enumerate(curr_inputs.items()):
+                if not (input_name in self.quant_params or input_name in constants):
+                    continue
+
+                # Initializers are ndarray
+                assert isinstance(value, numpy.ndarray) or numpy.isscalar(value)
+
+                curr_cst_inputs[input_idx] = (
+                    value
+                    if not quantized_op_class.must_quantize_input(input_idx)
+                    else self._process_initializer(self.n_bits_weights, value)
+                )
 
             has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
 
@@ -297,7 +295,8 @@ class ONNXConverter:
                     *[tensor_int_producers.get(input_node, set()) for input_node in node.input]
                 )
 
-                quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
+                # Note that the output of a quantized op could be a network output
+                # Thus the quantized op outputs are quantized to the network output bitwidth
                 quantized_op_instance = quantized_op_class(
                     self.n_bits_net_outputs,
                     node_integer_inputs,
@@ -331,17 +330,12 @@ class ONNXConverter:
 
             # Otherwise use the original operator to operate on float values to do constant folding
             else:
-                # For mypy
-                assert_true(
-                    all(
-                        isinstance(key, int) and isinstance(val, QuantizedArray)
-                        for key, val in curr_cst_inputs.items()
-                    )
-                )
-                curr_q_cst_inputs = cast(Dict[int, QuantizedArray], curr_cst_inputs)
-
                 # Get the non quantized values
-                real_cst_inputs = (qarray.values for qarray in curr_q_cst_inputs.values())
+                real_cst_inputs = (
+                    input.values if isinstance(input, QuantizedArray) else input
+                    for input in curr_cst_inputs.values()
+                )
+
                 node_output = ONNX_OPS_TO_NUMPY_IMPL[op_type](*real_cst_inputs, **attributes)
                 assert_true(
                     (num_output := len(node_output)) == 1,
@@ -349,8 +343,7 @@ class ONNXConverter:
                     f"got {num_output} for op {op_type}",
                     RuntimeError,
                 )
-                q_node_output = self._process_initializer(self.n_bits_weights, node_output[0])
-                node_results[output_name] = q_node_output
+                node_results[output_name] = node_output[0]
                 constants.add(output_name)
 
     def quantize_module(self, *calibration_data: numpy.ndarray) -> QuantizedModule:
@@ -564,7 +557,7 @@ class PostTrainingQATImporter(ONNXConverter):
         layer_output = quantized_op.calibrate(*calibration_data)
         return layer_output
 
-    def _process_initializer(self, n_bits, values):
+    def _process_initializer(self, n_bits: int, values: numpy.ndarray):
         """Process an already quantized weight tensor.
 
         The values supplied are in floating point, but are discrete, in the sense

@@ -2,7 +2,7 @@
 import numpy
 import pytest
 
-from concrete.ml.onnx.ops_impl import numpy_gemm
+from concrete.ml.onnx.ops_impl import numpy_gemm, onnx_func_raw_args
 
 
 @pytest.mark.parametrize(
@@ -59,3 +59,19 @@ def test_numpy_gemm(alpha, beta, trans_a, size_a, trans_b, size_b):
         assert numpy.array_equal(
             got, expected
         ), f"expected {expected}, got {got}, abs diff is {numpy.abs(got - expected)}"
+
+
+def test_raw_argument_impl():
+    """Test ONNX implementation function semantics."""
+
+    with pytest.raises(AssertionError):
+
+        @onnx_func_raw_args("y")
+        def fake_numpy_impl(x):
+            return (x,)
+
+    @onnx_func_raw_args("x")
+    def fake_numpy_impl2(x):
+        return (x,)
+
+    assert isinstance(fake_numpy_impl2.__name__, str)

@@ -1,23 +1,30 @@
 Name, Version, License
 Pillow, 9.2.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
+brevitas, 0.7.2.dev1+g8cfb226, UNKNOWN
+coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.10.0, BSD-3
-concrete-numpy, 0.6.0rc7, BSD License
+concrete-numpy, 0.6.0rc9, BSD License
 cycler, 0.11.0, BSD License
+dependencies, 2.0.1, BSD License
 dill, 0.3.5.1, BSD License
 flatbuffers, 1.12, Apache Software License
-fonttools, 4.33.3, MIT License
+fonttools, 4.34.4, MIT License
+future-annotations, 1.0.0, MIT License
+humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.4, MIT License
 joblib, 1.1.0, BSD License
-kiwisolver, 1.4.3, BSD License
+kiwisolver, 1.4.4, BSD License
 loguru, 0.5.3, MIT License
 matplotlib, 3.5.2, Python Software Foundation License
-networkx, 2.8.4, BSD License
-numpy, 1.23.0, BSD License
+mpmath, 1.2.1, BSD License
+networkx, 2.8.5, BSD License
+numpy, 1.23.1, BSD License
 onnx, 1.12.0, Apache License v2.0
 onnxconverter-common, 1.9.0, MIT License
 onnxmltools, 1.11.1, Apache Software License
-onnxruntime, 1.11.1, MIT License
+onnxoptimizer, 0.2.7, Apache License v2.0
+onnxruntime, 1.12.0, MIT License
 packaging, 21.3, Apache Software License; BSD License
 protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.1, BSD License
@@ -26,12 +33,14 @@ pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.1.1, new BSD
 scipy, 1.8.1, BSD License
-setuptools-scm, 7.0.4, MIT License
+setuptools-scm, 7.0.5, MIT License
 six, 1.16.0, MIT License
 skl2onnx, 1.11.2, Apache Software License
 skorch, 0.11.0, new BSD 3-Clause
+sympy, 1.10.1, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.1.0, BSD License
+tokenize-rt, 4.2.1, MIT License
 tomli, 2.0.1, MIT License
 torch, 1.12.0, BSD License
 tqdm, 4.64.0, MIT License; Mozilla Public License 2.0 (MPL 2.0)

@@ -38,6 +38,7 @@ from .ops_impl import (
     numpy_atan,
     numpy_atanh,
     numpy_batchnorm,
+    numpy_brevitas_quant,
     numpy_cast,
     numpy_celu,
     numpy_clip,
@@ -158,6 +159,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Round": numpy_round,
     "Pow": numpy_pow,
     "ReduceSum": numpy_reduce_sum,
+    "onnx.brevitas.Quant": numpy_brevitas_quant,
 }
 
 # Creating the following dictionaries was introduced following the performance regression issues
@@ -208,6 +210,18 @@ def get_attribute(attribute: onnx.AttributeProto) -> Any:
         Any: The stored attribute value.
     """
     return ATTR_GETTERS[attribute.type](attribute)
+
+
+def get_op_name(node):
+    """Construct the qualified name of the ONNX operator.
+
+    Args:
+        node (Any): ONNX graph node
+
+    Returns:
+        result (str): qualified name
+    """
+    return node.domain + ("" if node.domain == "" else ".") + node.op_type
 
 
 def execute_onnx_with_numpy(

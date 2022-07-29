@@ -40,6 +40,10 @@ scikit-learn = "^1.1.0"
 torch = "^1.11.0"
 hummingbird-ml = {version="^0.4.4", extras = ["onnx"]}
 protobuf = "3.19.4"
+# FIXME: Update to remote brevitas repo after patches are merged
+# https://github.com/zama-ai/concrete-ml-internal/issues/1388
+brevitas = { git = "https://github.com/zama-ai/brevitas.git", branch = "master" }
+onnxoptimizer = "^0.2.7"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
@@ -83,7 +87,6 @@ sphinx-rtd-theme = "^1.0.0"
 boto3 = "^1.23.5"
 paramiko = "^2.11.0"
 types-paramiko = "^2.10.0"
-brevitas = "^0.7.1"
 requests = "^2.28.0"
 types-requests = "^2.28.0"
 transformers = "^4.20.1"

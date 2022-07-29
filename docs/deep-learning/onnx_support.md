@@ -163,5 +163,6 @@ The following operators are supported for evaluation and conversion to an equiva
 - ThresholdedRelu
 - Transpose
 - Where
+- onnx.brevitas.Quant
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [END] -->

@@ -1,7 +1,9 @@
 """Tests for the quantized ONNX ops."""
 
+# The test_all_ops_were_tested needs all the tests that it references to be in a single file
+# pylint: disable=too-many-lines
+
 from functools import partial
-from itertools import combinations
 from typing import Callable, Tuple, Union
 
 import numpy
@@ -16,6 +18,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedAdd,
     QuantizedAvgPool,
     QuantizedBatchNormalization,
+    QuantizedBrevitasQuant,
     QuantizedCast,
     QuantizedCelu,
     QuantizedClip,
@@ -52,6 +55,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedSoftplus,
     QuantizedSub,
     QuantizedTanh,
+    QuantizedTranspose,
     QuantizedWhere,
 )
 
@@ -191,35 +195,21 @@ def test_clip_op(
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
     q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
 
-    # This is to easily generate test cases, do not access private properties this way in production
-    # code. Class properties are not properly supported in python 3.8 so using this workaround
-    # instead.
-    input_combinations = combinations(
-        QuantizedClip._params_name_to_input_idx.keys(), 2  # pylint: disable=protected-access
-    )
+    q_cst_inputs = (numpy.asarray([inp_value]) for inp_value in cst_inputs)
+    quantized_op = QuantizedClip(n_bits, constant_inputs=dict(zip([1, 2], q_cst_inputs)))
+    expected_output = quantized_op.calibrate(values)
+    q_output = quantized_op(q_inputs)
+    qvalues = q_output.qvalues
 
-    for combination in input_combinations:
+    # Quantized values must be contained between 0 and 2**n_bits - 1.
+    assert numpy.max(qvalues) <= 2**n_bits - 1
+    assert numpy.min(qvalues) >= 0
 
-        # FIXME: Remove this cast when #1141 is fixed.
-        # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-        q_cst_inputs = (
-            QuantizedArray(n_bits, numpy.asarray([inp_value]).astype(numpy.float64))
-            for inp_value in cst_inputs
-        )
-        quantized_op = QuantizedClip(n_bits, constant_inputs=dict(zip(combination, q_cst_inputs)))
-        expected_output = quantized_op.calibrate(values)
-        q_output = quantized_op(q_inputs)
-        qvalues = q_output.qvalues
+    # Dequantized values must be close to original values
+    dequant_values = q_output.dequant()
 
-        # Quantized values must be contained between 0 and 2**n_bits - 1.
-        assert numpy.max(qvalues) <= 2**n_bits - 1
-        assert numpy.min(qvalues) >= 0
-
-        # Dequantized values must be close to original values
-        dequant_values = q_output.dequant()
-
-        # Check that all values are close
-        check_r2_score(dequant_values, expected_output)
+    # Check that all values are close
+    check_r2_score(dequant_values, expected_output)
 
 
 ARITH_N_BITS_LIST = [20, 16, 8]
@@ -391,11 +381,10 @@ def test_all_gemm_ops(
     # Quantize the inputs and weights
     q_inputs = QuantizedArray(n_bits, inputs)
     q_weights = QuantizedArray(n_bits, weights, is_signed=is_signed)
-    q_bias = QuantizedArray(n_bits, bias, is_signed=is_signed)
 
     # 1- Test our QuantizedGemm layer
     q_gemm = QuantizedGemm(
-        n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights, "c": q_bias}
+        n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights, "c": bias}
     )
 
     # Calibrate the Quantized layer
@@ -424,7 +413,7 @@ def test_all_gemm_ops(
     q_gemm = QuantizedGemm(
         n_bits,
         int_input_names={"0"},
-        constant_inputs={"b": q_weights, "c": q_bias},
+        constant_inputs={"b": q_weights, "c": bias},
         alpha=1,
         beta=0,
     )
@@ -490,13 +479,12 @@ def test_quantized_conv(params, n_bits, check_r2_score):
     # Create quantized data
     q_input = QuantizedArray(n_bits, net_input, is_signed=False)
     q_weights = QuantizedArray(n_bits, weights, is_signed=True)
-    q_bias = QuantizedArray(n_bits, biases, is_signed=True)
 
     # Create the operator, specifying weights & biases as constants
     q_op = QuantizedConv(
         n_bits,
         int_input_names={"0"},
-        constant_inputs={1: q_weights, 2: q_bias},
+        constant_inputs={1: q_weights, 2: biases},
         strides=strides,
         pads=pads,
         kernel_shape=(weights.shape[2], weights.shape[3]),
@@ -608,27 +596,25 @@ def test_quantized_pad():
     # This is currently the only supported mode
     data = numpy.random.uniform(size=(1, 1, 32, 32)) * 4
     q_data = QuantizedArray(2, data)
-    q_op = QuantizedPad(2, int_input_names={"0"}, constant_inputs=None, mode="constant")
 
-    # FIXME: Remove those casts when #1141 is fixed.
-    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-    pads = QuantizedArray(2, numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0]).astype(numpy.float64))
+    pads = numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0])
+    q_op = QuantizedPad(2, int_input_names={"0"}, constant_inputs={1: pads}, mode="constant")
+
     pad_value = QuantizedArray(2, numpy.asarray([0]).astype(numpy.float64))
 
-    q_op.calibrate(q_data.values, pads.values, pad_value.values)
+    q_op.calibrate(q_data.values, pad_value.values)
 
-    q_pad_output = q_op(q_data, pads, pad_value)
+    q_pad_output = q_op(q_data, pad_value)
     assert numpy.array_equal(q_pad_output.qvalues, q_data.qvalues)
 
     # Test that we can't actually pad an input tensor
     # this is not yet supported, this operation is only a stub for now
     # FIXME: Change this when we have a real solution for the Pad operator
     # see https://github.com/zama-ai/concrete-ml-internal/issues/747
-    # FIXME: Remove this cast when #1141 is fixed.
-    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-    pads_invalid = QuantizedArray(2, numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0]).astype(numpy.float64))
+
+    pads_invalid = numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0])
     with pytest.raises(AssertionError):
-        q_pad_output = q_op(q_data, pads_invalid, pad_value)
+        QuantizedPad(2, int_input_names={"0"}, constant_inputs={1: pads_invalid}, mode="constant")
 
     # Now check that we assert when a different padding mode is given
     with pytest.raises(AssertionError):
@@ -647,11 +633,10 @@ def test_quantized_reshape(shape):
 
     q_arr0 = QuantizedArray(n_bits_reshape, data)
 
-    new_shape = (num_values,)
-    new_shape_qarr = QuantizedArray(1, numpy.asarray(tuple(map(float, new_shape))))
+    new_shape = numpy.asarray((num_values,))
     reshape = QuantizedReshape(
         n_bits_reshape,
-        constant_inputs={1: new_shape_qarr},
+        constant_inputs={1: new_shape},
         input_quant_opts=q_arr0.quantizer.quant_options,
     )
 
@@ -661,10 +646,9 @@ def test_quantized_reshape(shape):
     assert q_reshaped.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(numpy.reshape(q_arr0.qvalues, new_shape) == q_reshaped.qvalues)
 
-    shape_qarr = QuantizedArray(1, numpy.asarray(tuple(map(float, shape))))
     reshape_back = QuantizedReshape(
         n_bits_reshape,
-        constant_inputs={1: shape_qarr},
+        constant_inputs={1: numpy.asarray(shape)},
         input_quant_opts=q_arr0.quantizer.quant_options,
     )
 
@@ -694,9 +678,7 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
     q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
 
-    # FIXME: Remove this cast when #1141 is fixed.
-    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-    q_cst_inputs = QuantizedArray(n_bits, numpy.asarray(slope).astype(numpy.float64))
+    q_cst_inputs = numpy.asarray(slope).astype(numpy.float64)
 
     quantized_op = QuantizedPRelu(n_bits, constant_inputs={"slope": q_cst_inputs})
     expected_output = quantized_op.calibrate(values)
@@ -827,7 +809,7 @@ def test_reduce_sum(n_values, n_bits):
     max_value = 2 ** (n_bits - 1)
 
     # Initialize the axes constant
-    axes = QuantizedArray(n_bits, numpy.array([1.0]))
+    axes = numpy.array([1])
     keepdims = 0
 
     # Instantiate the operator
@@ -853,7 +835,7 @@ def test_reduce_sum(n_values, n_bits):
     computed_sum = quantized_op(q_inputs).dequant()[0]
 
     # Compute the expected sum
-    expected_sum = quantized_op.call_impl(inputs, axes=axes.values, keepdims=keepdims)[0]
+    expected_sum = quantized_op.call_impl(inputs, axes=axes, keepdims=keepdims)[0]
 
     # Set the maximum error possible using the MSB-only algorithm. This max error is relevant only:
     # - if there is not quantization error
@@ -922,6 +904,8 @@ def test_all_ops_were_tested():
         QuantizedPow: test_all_arith_ops,
         QuantizedReduceSum: test_reduce_sum,
         QuantizedErf: test_univariate_ops_no_attrs,
+        QuantizedBrevitasQuant: test_brevitas_quant,
+        QuantizedTranspose: test_quantized_transpose,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
@@ -971,3 +955,65 @@ def test_quantized_flatten(input_shape, expected_shape, axis, is_signed):
 
     # Check that the output has the expected shape
     assert numpy.all(q_reshaped.qvalues.shape == expected_shape)
+
+
+def test_brevitas_quant(check_r2_score):
+    """Test the brevitas quantization op that produces a QuantizedArray."""
+
+    idx_name = {"scale": 1, "zero_point": 2, "bit_width": 3}
+
+    quant = QuantizedBrevitasQuant(
+        7,
+        constant_inputs={
+            idx_name["scale"]: numpy.random.uniform(0.1, 10),
+            idx_name["zero_point"]: float(numpy.random.randint(-10, 10)),
+            idx_name["bit_width"]: numpy.random.randint(2, 16),
+        },
+        rounding_mode="ROUND",
+        signed=1,
+        narrow=0,
+    )
+
+    cinp = {
+        1: 1.0,
+        2: 0.0,
+        3: 7,
+    }
+
+    with pytest.raises(AssertionError):
+        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="ROUND", signed=5, narrow=0)
+        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="FLOOR", signed=5, narrow=0)
+        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="ROUND", signed=1, narrow=1)
+
+    x = numpy.random.randn(100)
+    q_data = QuantizedArray(7, x, is_signed=True)
+
+    res_fp32 = quant.calibrate(x)
+    res_q = quant(q_data).dequant()
+
+    check_r2_score(res_fp32, res_q)
+
+
+@pytest.mark.parametrize(
+    "shape, axes", [pytest.param((10, 5), [1, 0]), pytest.param((10, 5, 2), [0, 2, 1])]
+)
+def test_quantized_transpose(shape, axes):
+    """Test quantized transpose."""
+
+    n_bits_transpose = MAXIMUM_BIT_WIDTH
+
+    num_values = numpy.prod(numpy.asarray(shape))
+    data = numpy.arange(num_values).astype(numpy.float32)
+    data = data.reshape(shape)
+
+    q_arr0 = QuantizedArray(n_bits_transpose, data)
+
+    transpose = QuantizedTranspose(
+        n_bits_transpose, input_quant_opts=q_arr0.quantizer.quant_options, perm=axes
+    )
+
+    q_transposed = transpose(q_arr0)
+
+    assert q_transposed.quantizer.zero_point == q_arr0.quantizer.zero_point
+    assert q_transposed.quantizer.scale == q_arr0.quantizer.scale
+    assert numpy.all(numpy.transpose(q_arr0.qvalues, axes) == q_transposed.qvalues)

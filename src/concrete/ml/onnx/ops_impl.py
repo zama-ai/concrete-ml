@@ -1,12 +1,14 @@
 """ONNX ops implementation in python + numpy."""
 
 # pylint: disable=too-many-lines
-from typing import Optional, Sequence, SupportsIndex, Tuple, Union
+from inspect import signature
+from typing import Optional, Sequence, Set, SupportsIndex, Tuple, Union
 
 import numpy
 import onnx
 import torch
 import torch.nn
+from brevitas.function import max_int, min_int
 from concrete.numpy import univariate
 from scipy import special
 
@@ -25,6 +27,80 @@ def cast_to_float(inputs):
         Tuple[numpy.ndarray]: The float values.
     """
     return tuple(map(lambda x: x.astype(numpy.float64), inputs))
+
+
+class ONNXMixedFunction:
+    """A mixed quantized-raw valued onnx function.
+
+    ONNX functions will take inputs which can be either quantized or float. Some functions
+    only take quantized inputs, but some functions take both types. For mixed functions
+    we need to tag the parameters that do not need quantization. Thus quantized ops
+    can know which inputs are not QuantizedArray and we avoid unnecessary wrapping of float
+    values as QuantizedArrays.
+    """
+
+    def __init__(self, function, non_quant_params: Set[str]):
+        """Create the mixed function and raw parameter list.
+
+        Args:
+            function (Any): function to be decorated
+            non_quant_params: Set[str]: set of parameters that will not be quantized (stored
+                as numpy.ndarray)
+        """
+
+        self.non_quant_params: Set[str] = non_quant_params
+        bad_non_quant_params = set(non_quant_params).difference(set(signature(function).parameters))
+        assert_true(
+            len(bad_non_quant_params) == 0,
+            f"ONNX function {function.__name__} tagged with invalid integer parameters: "
+            + ",".join(bad_non_quant_params),
+        )
+        self.function = function  # type: ignore
+
+    def __call__(self, *args, **kwargs):
+        """Call the wrapped numpy function.
+
+        Args:
+            args (tuple[Any]): function arguments
+            kwargs (dict[str, Any]): function key value arguments
+
+        Returns:
+            result (Any): result of calling the wrapped function on the input arguments
+        """
+        return self.function(*args, **kwargs)
+
+    @property
+    def __name__(self):
+        """Return the wrapped function name.
+
+        Returns:
+            result (str): name of the wrapped function
+        """
+        return self.function.__name__
+
+
+def onnx_func_raw_args(*args):
+    """Decorate a numpy onnx function to flag the raw/non quantized inputs.
+
+    Args:
+        *args (tuple[Any]): function argument names
+
+    Returns:
+        result (ONNXMixedFunction): wrapped numpy function with a list of mixed arguments
+    """
+
+    def decoration(function):
+        """Construct the mixed function class.
+
+        Args:
+            function (Any): function to be decorated
+
+        Returns:
+            result (ONNXMixedFunction): wrapped numpy function with a list of mixed arguments
+        """
+        return ONNXMixedFunction(function, set(args))
+
+    return decoration
 
 
 def numpy_where_body(
@@ -81,6 +157,7 @@ def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 # input, min and max are python built-in but we need to match the ONNX naming, ignore the lint
 # pylint: disable=redefined-builtin
+@onnx_func_raw_args("min", "max")
 def numpy_clip(a: numpy.ndarray, /, min=None, max=None) -> Tuple[numpy.ndarray]:
     """Compute clip in numpy according to ONNX spec.
 
@@ -135,6 +212,7 @@ def numpy_constant(**kwargs):
 # pylint: disable=invalid-name
 # 1 is technically an int but is accepted by mypy as a float (and it simplifies our life for
 # compilation) so instead of passing 1.0 by default 1 is passed
+@onnx_func_raw_args("c")
 def numpy_gemm(
     a: numpy.ndarray,
     b: numpy.ndarray,
@@ -625,6 +703,7 @@ def numpy_log(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.log(numpy.maximum(x, epsilon)),)
 
 
+@onnx_func_raw_args("slope")
 def numpy_prelu(x: numpy.ndarray, slope: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute prelu in numpy according to ONNX spec.
 
@@ -886,6 +965,7 @@ def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (x,)
 
 
+@onnx_func_raw_args("newshape")
 def numpy_reshape(
     x: numpy.ndarray, newshape: numpy.ndarray, /, *, allowzero=0
 ) -> Tuple[numpy.ndarray]:
@@ -903,9 +983,7 @@ def numpy_reshape(
     """
     assert_true(allowzero == 0, "Concrete ML currently only accepts numpy style reshape in ONNX")
 
-    # FIXME: Remove this cast when #1141 is fixed.
-    # (https://github.com/zama-ai/concrete-ml-internal/issues/1141)
-    return (numpy.reshape(x, newshape.astype(numpy.int64)),)
+    return (numpy.reshape(x, newshape),)
 
 
 def numpy_transpose(x: numpy.ndarray, /, *, perm=None) -> Tuple[numpy.ndarray]:
@@ -924,6 +1002,7 @@ def numpy_transpose(x: numpy.ndarray, /, *, perm=None) -> Tuple[numpy.ndarray]:
     return (numpy.transpose(x, axes=perm),)  # pragma: no cover
 
 
+@onnx_func_raw_args("b")
 def torch_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,
@@ -968,7 +1047,7 @@ def torch_conv(
     assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
     assert_true(
         bool(numpy.all(numpy.asarray(dilations) == 1)),
-        "The convolution operator in Concrete Numpy does not suppport dilation",
+        "The convolution operator in Concrete Numpy does not support dilation",
     )
 
     # For mypy
@@ -1047,6 +1126,7 @@ def torch_avgpool(
     return (res,)
 
 
+@onnx_func_raw_args("pads")
 def numpy_pad(
     data: numpy.ndarray,
     pads: numpy.ndarray,
@@ -1251,6 +1331,7 @@ def numpy_pow(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
 
 
 # pylint: disable=unused-argument
+@onnx_func_raw_args("axes")
 def numpy_reduce_sum(
     a: numpy.ndarray,
     /,
@@ -1296,3 +1377,53 @@ def numpy_reduce_sum(
     )
 
     return (numpy.sum(a, axis=1, keepdims=False),)
+
+
+@onnx_func_raw_args("scale", "zero_point", "bit_width")
+def numpy_brevitas_quant(
+    x: numpy.ndarray,
+    /,
+    scale: float,
+    zero_point: float,
+    bit_width: int,
+    *,
+    rounding_mode: str = "ROUND",
+    signed: int = 1,
+    narrow: int = 0,
+):
+    """Quantize according to Brevitas uniform quantization.
+
+    Args:
+        x (numpy.ndarray): Tensor to be quantized
+        scale (float): Quantizer scale
+        zero_point (float): Quantizer zero-point
+        bit_width (int): Number of bits of the integer representation
+        rounding_mode (str): Rounding mode (default and only accepted option is "ROUND")
+        signed (int): Whether this op quantizes to signed integers (default 1),
+        narrow (int): Whether this op quantizes to a narrow range of integers
+            e.g. [-2**n_bits-1 .. 2**n_bits-1] (default 0),
+
+    Returns:
+        result (numpy.ndarray): Tensor with float quantized values
+    """
+
+    assert_true(rounding_mode == "ROUND", "Only rounding quantization is supported for Brevitas")
+    assert_true(signed in (1, 0), "Signed flag in Brevitas quantizer must be 0/1")
+    assert_true(narrow in (1, 0), "Narrow range flag in Brevitas quantizer must be 0/1")
+
+    # Compute the re-scaled values
+    y = x / scale
+    y = y + zero_point
+
+    # Clip the values to the correct range
+    min_int_val = min_int(signed, narrow, bit_width)
+    max_int_val = max_int(signed, narrow, bit_width)
+    y = numpy.clip(y, min_int_val, max_int_val)
+
+    # Quantize to produce integers representing the float quantized values
+    y = numpy.rint(y)
+
+    # Compute quantized floating point values
+    y = (y - zero_point) * scale
+
+    return (y,)
