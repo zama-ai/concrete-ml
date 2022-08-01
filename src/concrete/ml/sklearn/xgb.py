@@ -4,19 +4,18 @@ import warnings
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy
-import sklearn
 import xgboost.sklearn
 
 from concrete.ml.quantization.quantized_array import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import QuantizedArray
-from .base import BaseTreeEstimatorMixin
+from .base import BaseTreeClassifierMixin
 
 
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name,too-many-instance-attributes
-class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
+class XGBClassifier(BaseTreeClassifierMixin):
     """Implements the XGBoost classifier."""
 
     sklearn_alg = xgboost.sklearn.XGBClassifier
@@ -83,7 +82,7 @@ class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
                 warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
                 n_jobs = 1  # pragma: no cover
 
-        BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
+        BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
 
         self.max_depth = max_depth
         self.learning_rate = learning_rate
@@ -117,7 +116,7 @@ class XGBClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
         self.verbosity = verbosity
         self.post_processing_params: Dict[str, Any] = {}
 
-    def update_post_processing_params(self):
+    def _update_post_processing_params(self):
         """Update the post processing params."""
         self.post_processing_params = {
             "n_classes_": self.n_classes_,

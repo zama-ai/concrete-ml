@@ -12,6 +12,7 @@ from ..quantization.quantized_array import UniformQuantizer
 from ..quantization.quantized_module import QuantizedModule
 from ..sklearn import (
     DecisionTreeClassifier,
+    DecisionTreeRegressor,
     ElasticNet,
     GammaRegressor,
     Lasso,
@@ -40,6 +41,7 @@ AVAILABLE_MODEL = [
     LinearSVC,
     LinearSVR,
     DecisionTreeClassifier,
+    DecisionTreeRegressor,
     NeuralNetClassifier,
     NeuralNetRegressor,
     TweedieRegressor,

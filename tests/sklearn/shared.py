@@ -7,6 +7,7 @@ from torch import nn
 
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
+    DecisionTreeRegressor,
     ElasticNet,
     GammaRegressor,
     Lasso,
@@ -32,6 +33,7 @@ regressor_models = [
     LinearSVR,
     PoissonRegressor,
     TweedieRegressor,
+    DecisionTreeRegressor,
     partial(
         NeuralNetRegressor,
         module__n_layers=3,

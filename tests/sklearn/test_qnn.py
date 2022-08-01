@@ -359,6 +359,10 @@ def test_custom_net_classifier(load_data):
 
         Minimal work is needed to implement training of a custom class."""
 
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            SKNeuralNetClassifier.__init__(self, *args, **kwargs)
+
         @property
         def base_estimator_type(self):
             return SKNeuralNetClassifier

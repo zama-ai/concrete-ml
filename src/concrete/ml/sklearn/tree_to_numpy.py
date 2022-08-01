@@ -1,5 +1,6 @@
 """Implements the conversion of a tree model to a numpy function."""
 import warnings
+from enum import Enum
 from typing import Callable, List, Optional, Tuple
 
 import numpy
@@ -30,10 +31,21 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 # pylint: disable=too-many-branches
 
 
+class Task(Enum):
+    """Task enumerate."""
+
+    CLASSIFICATION = "classification"
+    REGRESSION = "regression"
+
+
+EXPECTED_NUMBER_OF_OUTPUTS_PER_TASK = {Task.CLASSIFICATION: 2, Task.REGRESSION: 1}
+
+
 def tree_to_numpy(
     model: onnx.ModelProto,
     x: numpy.ndarray,
     framework: str,
+    task: Task,
     output_n_bits: Optional[int] = MAXIMUM_BIT_WIDTH,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
@@ -43,6 +55,7 @@ def tree_to_numpy(
         x (numpy.ndarray): The input data.
         framework (str): The framework from which the onnx_model is generated.
             (options: 'xgboost', 'sklearn')
+        task (Task): The task the model is solving
         output_n_bits (int): The number of bits of the output.
 
     Returns:
@@ -61,28 +74,19 @@ def tree_to_numpy(
     # Silence hummingbird warnings
     warnings.filterwarnings("ignore")
 
-    # Convert model to onnx using hummingbird
-    if framework == "sklearn":
-        onnx_model = hb_convert(
-            model,
-            backend="onnx",
-            test_input=x,
-            extra_config={
-                "tree_implementation": "gemm",
-                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
-            },
-        ).model
-    else:
-        onnx_model = hb_convert(
-            model,
-            backend="onnx",
-            test_input=x,
-            extra_config={
-                "tree_implementation": "gemm",
-                "n_features": x.shape[1],
-                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
-            },
-        ).model
+    extra_config = {
+        "tree_implementation": "gemm",
+        "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+    }
+    if framework != "sklearn":
+        extra_config["n_features"] = x.shape[1]
+
+    onnx_model = hb_convert(
+        model,
+        backend="onnx",
+        test_input=x,
+        extra_config=extra_config,
+    ).model
 
     # Make sure the onnx version returned by hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
@@ -102,8 +106,12 @@ def tree_to_numpy(
     # one-hot encoded vectors to indicate which class is predicted.
     # This is fine for now as we remove the argmax operator.
 
-    # Check we do have two outputs first
-    assert_true(len(onnx_model.graph.output) == 2)
+    # Check we do have the correct number of output for the given task
+    expected_number_of_outputs = EXPECTED_NUMBER_OF_OUTPUTS_PER_TASK[task]
+    assert_true(
+        len(onnx_model.graph.output) == expected_number_of_outputs,
+        on_error_msg=f"{len(onnx_model.graph.output)} != 2",
+    )
 
     output_to_follow = "variable"
     if framework == "xgboost":

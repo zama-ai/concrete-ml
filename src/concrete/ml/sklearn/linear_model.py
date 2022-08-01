@@ -1,6 +1,7 @@
 """Implement sklearn linear model."""
 import numpy
 import onnx
+import sklearn
 import sklearn.linear_model
 
 from ..common.check_inputs import check_array_and_assert

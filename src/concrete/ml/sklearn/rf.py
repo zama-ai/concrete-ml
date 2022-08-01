@@ -4,11 +4,11 @@ from typing import Any, Callable, List, Optional
 import sklearn.ensemble
 
 from ..quantization import QuantizedArray
-from .base import BaseTreeEstimatorMixin
+from .base import BaseTreeClassifierMixin
 
 
 # pylint: disable=too-many-instance-attributes
-class RandomForestClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
+class RandomForestClassifier(BaseTreeClassifierMixin):
     """Implements the RandomForest classifier."""
 
     sklearn_alg = sklearn.ensemble.RandomForestClassifier
@@ -49,7 +49,7 @@ class RandomForestClassifier(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixi
         """
 
         # FIXME #893
-        BaseTreeEstimatorMixin.__init__(self, n_bits=n_bits)
+        BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
         self.n_estimators = n_estimators
         self.bootstrap = bootstrap
         self.oob_score = oob_score

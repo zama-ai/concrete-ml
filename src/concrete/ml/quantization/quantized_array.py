@@ -303,6 +303,10 @@ class UniformQuantizationParameters:
                     ).astype(numpy.int64)
 
 
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1434
+# Change UniformQuantizer inheritance from UniformQuantizationParameters to composition.
+
+
 class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMaxQuantizationStats):
     """Uniform quantizer.
 

@@ -4,5 +4,5 @@ from .linear_model import ElasticNet, Lasso, LinearRegression, LogisticRegressio
 from .qnn import NeuralNetClassifier, NeuralNetRegressor
 from .rf import RandomForestClassifier
 from .svm import LinearSVC, LinearSVR
-from .tree import DecisionTreeClassifier
+from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .xgb import XGBClassifier

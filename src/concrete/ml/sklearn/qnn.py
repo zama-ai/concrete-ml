@@ -338,6 +338,10 @@ class NeuralNetClassifier(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
+        # It basically just sets quantized_module_ and _onnx_model_ to None
+        # It calls the init of QuantizedSkorchEstimatorMixin
+        super().__init__()
+
         # If no parameters are passed just returns
         # Used to load the model class from json
         if len(args) == 0 and len(kwargs) == 0:
@@ -358,7 +362,8 @@ class NeuralNetClassifier(
         kwargs.pop("n_bits", None)
 
         # Note that our default optimizer is Adam which was found to be more stable when pruning
-        super().__init__(
+        SKNeuralNetClassifier.__init__(
+            self,
             SparseQuantNeuralNetImpl,
             *args,
             criterion=criterion,
@@ -414,6 +419,7 @@ class NeuralNetRegressor(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
+        super().__init__()
         # If no parameters are passed just return
         # Used to load the model class from json
         if len(args) == 0 and len(kwargs) == 0:
@@ -422,7 +428,8 @@ class NeuralNetRegressor(
         kwargs.pop("n_bits", None)
 
         # Note that our default optimizer is Adam which was found to be more stable when pruning
-        super().__init__(
+        SKNeuralNetRegressor.__init__(
+            self,
             SparseQuantNeuralNetImpl,
             *args,
             optimizer=optimizer,

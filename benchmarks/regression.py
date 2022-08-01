@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 from concrete.ml.sklearn import (
+    DecisionTreeRegressor,
     ElasticNet,
     Lasso,
     LinearRegression,
@@ -50,7 +51,15 @@ dataset_versions = {
 }
 
 # Will contain all the regressors we can support
-possible_regressors = [NeuralNetRegressor, LinearRegression, LinearSVR, Lasso, Ridge, ElasticNet]
+possible_regressors = [
+    DecisionTreeRegressor,
+    NeuralNetRegressor,
+    LinearRegression,
+    LinearSVR,
+    Lasso,
+    Ridge,
+    ElasticNet,
+]
 regressors_string_to_class = {c.__name__: c for c in possible_regressors}
 
 benchmark_params = {
@@ -59,6 +68,7 @@ benchmark_params = {
     Lasso: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     Ridge: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     ElasticNet: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    DecisionTreeRegressor: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     NeuralNetRegressor: [
         # An FHE compatible config
         {
