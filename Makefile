@@ -590,9 +590,10 @@ check_links:
 	chmod +r docs/**/*.md
 
 	@# Remark that this target is not in PCC, because it needs the doc to be built
-	@# Mainly for web links
+	@# Mainly for web links and _api_doc (sphinx)
 	poetry run python -m linkcheckmd docs -local
 	poetry run python -m linkcheckmd README.md
+	poetry run python ./local_link_check.py
 
 	@# For weblinks and internal references
 	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it
