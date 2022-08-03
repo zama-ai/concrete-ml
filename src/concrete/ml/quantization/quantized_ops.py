@@ -427,6 +427,7 @@ class QuantizedReshape(QuantizedOp):
     """Quantized Reshape op."""
 
     _impl_for_op_named: str = "Reshape"
+    quantize_inputs_with_net_outputs_precision = True
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
         """Reshape the input integer encrypted tensor.
@@ -1080,6 +1081,7 @@ class QuantizedFlatten(QuantizedOp):
     """Quantized flatten for encrypted inputs."""
 
     _impl_for_op_named: str = "Flatten"
+    quantize_inputs_with_net_outputs_precision = True
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
         """Flatten the input integer encrypted tensor.
@@ -1135,6 +1137,7 @@ class QuantizedReduceSum(QuantizedOp):
     """ReduceSum with encrypted input."""
 
     _impl_for_op_named: str = "ReduceSum"
+    quantize_inputs_with_net_outputs_precision = True
 
     def __init__(
         self,
@@ -1397,6 +1400,7 @@ class QuantizedTranspose(QuantizedOp):
     """
 
     _impl_for_op_named: str = "Transpose"
+    quantize_inputs_with_net_outputs_precision = True
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
         """Reshape the input integer encrypted tensor.

@@ -1,7 +1,7 @@
 """Post Training Quantization methods."""
 
 from abc import abstractmethod
-from typing import Dict, Set, Tuple, Union, cast
+from typing import Dict, Set, Tuple, Type, Union, cast
 
 import numpy
 import onnx
@@ -149,13 +149,13 @@ class ONNXConverter:
 
     @abstractmethod
     def _get_input_quant_opts(
-        self, values: Tuple[numpy.ndarray], n_bits: int
+        self, values: Tuple[numpy.ndarray], quantized_op_class: Type["QuantizedOp"]
     ) -> QuantizationOptions:
         """Construct a quantization options set for the input of a layer.
 
         Args:
             values (Tuple[numpy.ndarray]): calibration data for this op
-            n_bits (int): number of bits for the operator's input quantizer
+            quantized_op_class (Type["QuantizedOp"]): The quantized operator's class
 
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
@@ -301,7 +301,7 @@ class ONNXConverter:
                     self.n_bits_net_outputs,
                     node_integer_inputs,
                     curr_cst_inputs,
-                    self._get_input_quant_opts(curr_calibration_data, self.n_bits_op_input_quant),
+                    self._get_input_quant_opts(curr_calibration_data, quantized_op_class),
                     **attributes,
                 )
 
@@ -476,20 +476,27 @@ class PostTrainingAffineQuantization(ONNXConverter):
             is_symmetric=is_symmetric,
         )
 
-    def _get_input_quant_opts(self, values: Tuple[numpy.ndarray], n_bits: int):
+    def _get_input_quant_opts(
+        self, values: Tuple[numpy.ndarray], quantized_op_class: Type["QuantizedOp"]
+    ):
         """Construct a quantization options set for the input of a layer.
 
         Inputs and activations require signed quantization.
 
         Args:
             values (Tuple[numpy.ndarray]): calibration data for this op
-            n_bits (int): number of bits for the operator's input quantizer
+            quantized_op_class (Type["QuantizedOp"]): The quantized operator's class
 
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
 
         is_signed = any(v.min() < 0 for v in values)
+
+        if quantized_op_class.quantize_inputs_with_net_outputs_precision:
+            n_bits = self.n_bits_net_outputs
+        else:
+            n_bits = self.n_bits_op_input_quant
 
         opts = QuantizationOptions(
             n_bits,
@@ -575,7 +582,9 @@ class PostTrainingQATImporter(ONNXConverter):
         """
         return QuantizedArray(n_bits, values, is_signed=True, is_symmetric=False, is_qat=True)
 
-    def _get_input_quant_opts(self, values: Tuple[numpy.ndarray], n_bits: int):
+    def _get_input_quant_opts(
+        self, values: Tuple[numpy.ndarray], quantized_op_class: Type["QuantizedOp"]
+    ):
         """Construct a quantization options set for the input of a layer of a QAT network.
 
         QAT networks require specific quantization for inputs to nodes that perform quantization
@@ -583,11 +592,15 @@ class PostTrainingQATImporter(ONNXConverter):
 
         Args:
             values (Tuple[numpy.ndarray]): calibration data for this op
-            n_bits (int): number of bits for the operator's input quantizer
+            quantized_op_class (Type["QuantizedOp"]): The quantized operator's class
 
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
+        if quantized_op_class.quantize_inputs_with_net_outputs_precision:
+            n_bits = self.n_bits_net_outputs
+        else:
+            n_bits = self.n_bits_op_input_quant
 
         opts = QuantizationOptions(n_bits, is_signed=True, is_qat=True)
         return opts

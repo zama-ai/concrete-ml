@@ -68,6 +68,7 @@ class QuantizedOp(ABC):
     _params_that_are_required_onnx_inputs: Set[str] = set()
     _has_attr: bool
     _inputs_not_quantized: Set[str] = set()
+    quantize_inputs_with_net_outputs_precision: bool = False
 
     POSITIONAL_ARGUMENTS_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
 
