@@ -160,7 +160,16 @@ def tree_to_numpy(
                 is_symmetric=is_symmetric,
                 **quant_args,
             )
-            # Make sure the zero_point is 0
+            # Make sure the zero_point is 0.
+            # This is important for the final summation to work.
+            # The problem comes from the GEMM approach in Hummingbird where the default value of
+            # rows in the matrix that selects the correct output in each tree is set to True when
+            # the node does not exist in the tree. So the same value as a selected node.
+            # For Hummingbird, this is not a problem as the values for nodes that do not exist
+            # are set to 0.
+            # Here, if we use asymmetric quantization, there is a risk that the zero_point is
+            # not 0. The matmul will then select values != 0 and sum them.
+            # The resulting value will be different from the expected terminal node value.
             assert_true(
                 q_y.quantizer.zero_point == 0,
                 "Zero point is not 0. Symmetric signed quantization must work.",
