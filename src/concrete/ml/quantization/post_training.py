@@ -446,10 +446,15 @@ class PostTrainingAffineQuantization(ONNXConverter):
         # Calibrate the output of the layer
         quantized_op.calibrate(*calibration_data)
 
+        # Some operators need to quantize their inputs using net_outputs instead of op_inputs in
+        # order to reduce the impact of quantization.
+        if quantized_op.quantize_inputs_with_net_outputs_precision:
+            n_bits = self.n_bits_net_outputs
+        else:
+            n_bits = self.n_bits_op_input_quant
+
         # Create new calibration data (output of the previous layer)
-        q_calibration_data = (
-            QuantizedArray(self.n_bits_op_input_quant, data) for data in calibration_data
-        )
+        q_calibration_data = (QuantizedArray(n_bits, data) for data in calibration_data)
 
         # Dequantize to have the value in clear and ready for next calibration
         return quantized_op(*q_calibration_data).dequant()
@@ -493,6 +498,8 @@ class PostTrainingAffineQuantization(ONNXConverter):
 
         is_signed = any(v.min() < 0 for v in values)
 
+        # Some operators need to quantize their inputs using net_outputs instead of op_inputs in
+        # order to reduce the impact of quantization.
         if quantized_op_class.quantize_inputs_with_net_outputs_precision:
             n_bits = self.n_bits_net_outputs
         else:
@@ -597,6 +604,9 @@ class PostTrainingQATImporter(ONNXConverter):
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
+
+        # Some operators need to quantize their inputs using net_outputs instead of op_inputs in
+        # order to reduce the impact of quantization.
         if quantized_op_class.quantize_inputs_with_net_outputs_precision:
             n_bits = self.n_bits_net_outputs
         else:
