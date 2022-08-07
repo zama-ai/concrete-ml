@@ -772,7 +772,7 @@ jobs:
 
       - name: Build concrete-ml Image
         if: ${{ success() && !cancelled() }}
-        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
+        uses: docker/build-push-action@c84f38281176d4c9cdb1626ffafcd6b3911b5d94
         with:
           context: .
           file: docker/Dockerfile.release
