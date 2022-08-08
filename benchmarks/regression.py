@@ -11,7 +11,14 @@ from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from concrete.ml.sklearn import LinearRegression, LinearSVR, NeuralNetRegressor
+from concrete.ml.sklearn import (
+    ElasticNet,
+    Lasso,
+    LinearRegression,
+    LinearSVR,
+    NeuralNetRegressor,
+    Ridge,
+)
 
 possible_datasets = [
     "pol",
@@ -43,12 +50,15 @@ dataset_versions = {
 }
 
 # Will contain all the regressors we can support
-possible_regressors = [NeuralNetRegressor, LinearRegression, LinearSVR]
+possible_regressors = [NeuralNetRegressor, LinearRegression, LinearSVR, Lasso, Ridge, ElasticNet]
 regressors_string_to_class = {c.__name__: c for c in possible_regressors}
 
 benchmark_params = {
     LinearRegression: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     LinearSVR: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    Lasso: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    Ridge: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    ElasticNet: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     NeuralNetRegressor: [
         # An FHE compatible config
         {

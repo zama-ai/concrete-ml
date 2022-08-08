@@ -906,6 +906,19 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # Fit the sklearn model
         self.sklearn_model.fit(X, y, *args, **kwargs)
 
+        # These models are not natively supported by Hummingbird
+        # The trick is to hide their type to Hummingbird
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1473
+        # Open PR to hummingbird to add support
+        if self.sklearn_alg in {
+            sklearn.linear_model.Lasso,
+            sklearn.linear_model.Ridge,
+            sklearn.linear_model.ElasticNet,
+        }:
+            self.sklearn_model.__class__ = sklearn.linear_model.LinearRegression
+            self.n_jobs = None
+            self.sklearn_model.n_jobs = None
+
         # Convert to onnx
         onnx_model = hb_convert(
             self.sklearn_model,

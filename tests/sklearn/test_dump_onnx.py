@@ -11,7 +11,9 @@ from sklearn.exceptions import ConvergenceWarning
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
+    ElasticNet,
     GammaRegressor,
+    Lasso,
     LinearRegression,
     LinearSVC,
     LinearSVR,
@@ -20,6 +22,7 @@ from concrete.ml.sklearn import (
     NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
+    Ridge,
     TweedieRegressor,
     XGBClassifier,
 )
@@ -96,7 +99,7 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
     onnx.save(onnx_model, "/tmp/" + model_name + ".onnx")
 
     # Remove initializers, since they change from one seed to the other
-    if model_name in ["DecisionTreeClassifier", "RandomForestClassifier", "XGBClassifier"]:
+    if model_name in {"DecisionTreeClassifier", "RandomForestClassifier", "XGBClassifier"}:
         while len(onnx_model.graph.initializer) > 0:
             del onnx_model.graph.initializer[0]
 
@@ -270,6 +273,36 @@ def test_dump(
   %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
   %18 = Selu(%input.7)
   return %18
+}""",
+        Ridge: """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1]"""
+        """(%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
+}""",
+        Lasso: """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1]"""
+        """(%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
+}""",
+        ElasticNet: """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1]"""
+        """(%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
 }""",
     }
 

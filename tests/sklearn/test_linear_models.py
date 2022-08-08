@@ -12,17 +12,23 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 from concrete.ml.sklearn import (
+    ElasticNet,
     GammaRegressor,
+    Lasso,
     LinearRegression,
     LinearSVC,
     LinearSVR,
     LogisticRegression,
     PoissonRegressor,
+    Ridge,
     TweedieRegressor,
 )
 
 regressor_models = [
     LinearRegression,
+    Lasso,
+    Ridge,
+    ElasticNet,
     LinearSVR,
     PoissonRegressor,
     GammaRegressor,

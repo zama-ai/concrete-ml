@@ -10,7 +10,14 @@ from .base import SklearnLinearModelMixin
 
 # pylint: disable=invalid-name,too-many-instance-attributes
 class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
-    """A linear regression model with FHE."""
+    """A linear regression model with FHE.
+
+    Arguments:
+        n_bits(int): default is 2.
+
+    For more details on LinearRegression please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html
+    """
 
     sklearn_alg = sklearn.linear_model.LinearRegression
 
@@ -24,6 +31,7 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         positive=False,
     ):
         # FIXME #893
+        # Figure out how to add scikit-learn documentation into our object
         self.n_bits = n_bits
         self.fit_intercept = fit_intercept
         self.normalize = normalize
@@ -34,8 +42,116 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         super().__init__(n_bits=n_bits)
 
 
+class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+    """An ElasticNet regression model with FHE.
+
+    Arguments:
+        n_bits(int): default is 2.
+
+    For more details on ElasticNet please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html
+    """
+
+    sklearn_alg = sklearn.linear_model.ElasticNet
+
+    def __init__(
+        self,
+        n_bits=2,
+        alpha=1.0,
+        l1_ratio=0.5,
+        fit_intercept=True,
+        normalize="deprecated",
+        copy_X=True,
+        positive=False,
+    ):
+        # FIXME #893
+        # Figure out how to add scikit-learn documentation into our object
+        self.n_bits = n_bits
+        self.alpha = alpha
+        self.l1_ratio = l1_ratio
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.copy_X = copy_X
+        self.positive = positive
+        self._onnx_model_ = None
+        super().__init__(n_bits=n_bits)
+
+
+class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+    """A Lasso regression model with FHE.
+
+    Arguments:
+        n_bits(int): default is 2.
+
+    For more details on Lasso please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html
+    """
+
+    sklearn_alg = sklearn.linear_model.Lasso
+
+    def __init__(
+        self,
+        n_bits=2,
+        alpha: float = 1.0,
+        fit_intercept=True,
+        normalize="deprecated",
+        copy_X=True,
+        positive=False,
+    ):
+        # FIXME #893
+        # Figure out how to add scikit-learn documentation into our object
+        self.n_bits = n_bits
+        self.alpha = alpha
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.copy_X = copy_X
+        self.positive = positive
+        self._onnx_model_ = None
+        super().__init__(n_bits=n_bits)
+
+
+class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+    """A Ridge regression model with FHE.
+
+    Arguments:
+        n_bits(int): default is 2.
+
+    For more details on Ridge please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html
+    """
+
+    sklearn_alg = sklearn.linear_model.Ridge
+
+    def __init__(
+        self,
+        n_bits=2,
+        alpha: float = 1.0,
+        fit_intercept=True,
+        normalize="deprecated",
+        copy_X=True,
+        positive=False,
+    ):
+        # FIXME #893
+        # Figure out how to add scikit-learn documentation into our object
+        self.n_bits = n_bits
+        self.alpha = alpha
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.copy_X = copy_X
+        self.positive = positive
+        self._onnx_model_ = None
+        super().__init__(n_bits=n_bits)
+
+
 class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
-    """A logistic regression model with FHE."""
+    """A logistic regression model with FHE.
+
+    Arguments:
+        n_bits(int): default is 2.
+
+    For more details on LogisticRegression please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
+    """
 
     sklearn_alg = sklearn.linear_model.LogisticRegression
     # pylint: disable=too-many-arguments
@@ -60,6 +176,7 @@ class LogisticRegression(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         l1_ratio=None,
     ):
         # FIXME #893
+        # Figure out how to add scikit-learn documentation into our object
         self.penalty = penalty
         self.dual = dual
         self.tol = tol

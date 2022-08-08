@@ -7,7 +7,9 @@ from torch import nn
 
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
+    ElasticNet,
     GammaRegressor,
+    Lasso,
     LinearRegression,
     LinearSVC,
     LinearSVR,
@@ -16,6 +18,7 @@ from concrete.ml.sklearn import (
     NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
+    Ridge,
     TweedieRegressor,
     XGBClassifier,
 )
@@ -23,6 +26,9 @@ from concrete.ml.sklearn import (
 regressor_models = [
     GammaRegressor,
     LinearRegression,
+    Lasso,
+    Ridge,
+    ElasticNet,
     LinearSVR,
     PoissonRegressor,
     TweedieRegressor,

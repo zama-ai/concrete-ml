@@ -47,6 +47,7 @@ You can find more detailed installation instructions in [pip_installing.md](docs
 Here is a list of ML algorithms currently supported in this library:
 
 - LinearRegression (sklearn)
+- Lasso, Ridge, ElasticNet (sklearn)
 - LogisticRegression (sklearn)
 - SVM - SVC and SVR (sklearn)
 - DecisionTreeClassifier (sklearn)
