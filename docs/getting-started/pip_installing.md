@@ -17,11 +17,7 @@ pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
 
-This will automatically install all dependencies, including concrete-numpy and Pygraphviz.
-
-{% hint style="warning" %}
-Pygraphviz requires Graphviz packages being installed on your OS, see [https://pygraphviz.github.io/documentation/stable/install.html](https://pygraphviz.github.io/documentation/stable/install.html)
-{% endhint %}
+This will automatically install all dependencies, notably concrete-numpy.
 
 ## Using Docker
 
