@@ -204,7 +204,7 @@ class QuantizedTorchEstimatorMixin:
         """Compile the model.
 
         Args:
-            X (numpy.ndarray): the unquantized dataset
+            X (numpy.ndarray): the dequantized dataset
             configuration (Optional[Configuration]): the options for
                 compilation
             compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill
@@ -579,7 +579,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         """Compile the model.
 
         Args:
-            X (numpy.ndarray): the unquantized dataset
+            X (numpy.ndarray): the dequantized dataset
             configuration (Optional[Configuration]): the options for
                 compilation
             compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill

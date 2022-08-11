@@ -2,8 +2,8 @@
 
 Protocols are used to mix type hinting with duck-typing.
 Indeed we don't always want to have an abstract parent class between all objects.
-We are more interested in the behaviour of such objects.
-Implementing a Protocol is a way to specify the behaviour of objects.
+We are more interested in the behavior of such objects.
+Implementing a Protocol is a way to specify the behavior of objects.
 
 To read more about Protocol please read: https://peps.python.org/pep-0544
 """
@@ -40,13 +40,13 @@ class Quantizer(Protocol):
         """
 
     def dequant(self, X: numpy.ndarray) -> numpy.ndarray:
-        """De-Quantize some values.
+        """Dequantize some values.
 
         Args:
-            X (numpy.ndarray): Values to unquantize
+            X (numpy.ndarray): Values to dequantize
 
         Returns: # noqa: DAR202
-            numpy.ndarray: Unquantized values
+            numpy.ndarray: Dequantized values
         """
 
 
@@ -98,7 +98,7 @@ class ConcreteBaseEstimatorProtocol(Protocol):
         """Compiles a model to a FHE Circuit.
 
         Args:
-            X (numpy.ndarray): the unquantized dataset
+            X (numpy.ndarray): the dequantized dataset
             configuration (Optional[Configuration]): the options for
                 compilation
             compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill

@@ -90,7 +90,7 @@ def test_model_compile_run_fhe(
     # Make sure we can predict over a single example in FHE.
     y_pred_fhe = model.predict(x[:1], execute_in_fhe=True)
 
-    # Check that the ouput shape is correct
+    # Check that the output shape is correct
     assert y_pred_fhe.shape == y_pred.shape
     assert numpy.array_equal(y_pred_fhe, y_pred)
 
