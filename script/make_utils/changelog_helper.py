@@ -82,7 +82,7 @@ def generate_changelog(repo: Repo, from_commit_excluded: str, to_commit_included
                 formatted_message = message.descriptions[0]
 
             # By default, feat(x): description shows up in changelog with the
-            # scope bolded, like:
+            # scope in bold, like:
             #
             # * **x**: description
             if config.get("changelog_scope") and message.scope:

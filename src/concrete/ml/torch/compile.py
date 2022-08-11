@@ -63,7 +63,7 @@ def _compile_torch_or_onnx_model(
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
-            in its computation graph and that Concrete ML should not re-quantize it.
+            in its computation graph and that Concrete ML should not requantize it.
         configuration (Configuration): Configuration object to use
             during compilation
         compilation_artifacts (DebugArtifacts): Artifacts object to fill
@@ -193,7 +193,7 @@ def compile_onnx_model(
         torch_inputset (Dataset): the inputset, can contain either torch
             tensors or numpy.ndarray, only datasets with a single input are supported for now.
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
-            in its computation graph and that Concrete ML should not re-quantize it.
+            in its computation graph and that Concrete ML should not requantize it.
         configuration (Configuration): Configuration object to use
             during compilation
         compilation_artifacts (DebugArtifacts): Artifacts object to fill

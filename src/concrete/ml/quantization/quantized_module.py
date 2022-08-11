@@ -334,8 +334,8 @@ class QuantizedModule:
                 "Mismatched dataset lengths",
             )
 
-        # concrete-numpy does not support variable *args-syle functions, so compile a proxy function
-        # dynamically with a suitable number of arguments
+        # concrete-numpy does not support variable *args-style functions, so compile a proxy
+        # function dynamically with a suitable number of arguments
         forward_proxy, orig_args_to_proxy_func_args = generate_proxy_function(
             self._forward, self.ordered_module_input_names
         )

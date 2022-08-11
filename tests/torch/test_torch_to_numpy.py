@@ -220,7 +220,7 @@ def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score)
     # Test: the output of the numpy model is the same as the torch model.
     assert numpy_predictions.shape == torch_predictions.shape
 
-    # Test: prediction from the numpy model are the same as the torh model.
+    # Test: prediction from the numpy model are the same as the torch model.
     check_r2_score(torch_predictions, numpy_predictions)
 
     # Test: dynamics between layers is working (quantized input and activations)
@@ -336,7 +336,7 @@ def test_torch_to_numpy_onnx_ops(model, input_shape, check_r2_score):
 
     # Test: the output of the numpy model is the same as the torch model.
     assert numpy_predictions.shape == torch_predictions.shape
-    # Test: prediction from the numpy model are the same as the torh model.
+    # Test: prediction from the numpy model are the same as the torch model.
     check_r2_score(torch_predictions, numpy_predictions)
 
     # Test: dynamics between layers is working (quantized input and activations)

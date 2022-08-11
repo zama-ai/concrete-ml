@@ -846,7 +846,7 @@ def test_reduce_sum(n_values, n_bits):
     max_error = (n_values // 2) * total_depth
 
     # Check if the error does not exceed the theoretical limit. An error term is added for
-    # handeling minor quantization artifacts.
+    # handling minor quantization artifacts.
     if n_values > 1:
         error = abs(expected_sum - computed_sum) / max_error
         assert (

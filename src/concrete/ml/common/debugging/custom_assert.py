@@ -13,7 +13,7 @@ def _custom_assert(
     Args:
         condition(bool): the condition. If False, raise AssertionError
         on_error_msg(str): optional message for precising the error, in case of error
-        error_type (Type[Exception]): the type of error to raise, if condition is not fullfilled.
+        error_type (Type[Exception]): the type of error to raise, if condition is not fulfilled.
             Default to AssertionError
 
     Raises:
@@ -33,7 +33,7 @@ def assert_true(
     Args:
         condition(bool): the condition. If False, raise AssertionError
         on_error_msg(str): optional message for precising the error, in case of error
-        error_type (Type[Exception]): the type of error to raise, if condition is not fullfilled.
+        error_type (Type[Exception]): the type of error to raise, if condition is not fulfilled.
             Default to AssertionError
 
     """
@@ -48,7 +48,7 @@ def assert_false(
     Args:
         condition(bool): the condition. If True, raise AssertionError
         on_error_msg(str): optional message for precising the error, in case of error
-        error_type (Type[Exception]): the type of error to raise, if condition is not fullfilled.
+        error_type (Type[Exception]): the type of error to raise, if condition is not fulfilled.
             Default to AssertionError
 
     """
@@ -60,7 +60,7 @@ def assert_not_reached(on_error_msg: str, error_type: Type[Exception] = Assertio
 
     Args:
         on_error_msg(str): message for precising the error
-        error_type (Type[Exception]): the type of error to raise, if condition is not fullfilled.
+        error_type (Type[Exception]): the type of error to raise, if condition is not fulfilled.
             Default to AssertionError
 
     """

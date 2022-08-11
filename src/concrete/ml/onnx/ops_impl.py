@@ -109,7 +109,7 @@ def numpy_where_body(
     """Compute the equivalent of numpy.where.
 
     This function is not mapped to any ONNX operator (as opposed to numpy_where). It is usable by
-    functions which are mapped to ONNX operators, eg numpy_div or numpy_where.
+    functions which are mapped to ONNX operators, e.g. numpy_div or numpy_where.
 
     Args:
         c (numpy.ndarray): Condition operand.
@@ -189,7 +189,7 @@ def numpy_clip(a: numpy.ndarray, /, min=None, max=None) -> Tuple[numpy.ndarray]:
 
 
 def numpy_constant(**kwargs):
-    """Return the constant passed as kwarg.
+    """Return the constant passed as a kwarg.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Constant-13
 
@@ -264,8 +264,8 @@ def numpy_gemm(
     #
     #       y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
     #
-    # in an efficient way, ie to make tracing directly optimized, without expecting any opt from the
-    # compiler here
+    # in an efficient way, i.e. to make tracing directly optimized, without expecting any opt from
+    # the compiler here
 
     y = numpy.matmul(a_prime, b_prime)
 
@@ -738,7 +738,7 @@ def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 
 def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
-    """Compute hardswitch in numpy according to ONNX spec.
+    """Compute hardswish in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#hardswish-14
 
@@ -1352,8 +1352,8 @@ def numpy_reduce_sum(
             [-r, r-1] where r = rank(data). Default to None.
         keepdims (int): Keep the reduced dimension or not, 1 means keeping the
             input dimension, 0 will reduce it along the given axis. Default to 1.
-        noop_with_empty_axes (int): Defines behaviour if 'axes' is empty or set to None.
-            Default behaviour with 0 is to reduce all axes. When axes is empty and this
+        noop_with_empty_axes (int): Defines behavior if 'axes' is empty or set to None.
+            Default behavior with 0 is to reduce all axes. When axes is empty and this
             attribute is set to true 1, input tensor will not be reduced, and the output
             tensor would be equivalent to input tensor. Default to 0.
 

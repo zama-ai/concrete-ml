@@ -26,7 +26,7 @@ def test_torch_matmul_virtual_lib(default_configuration):
     max_bit_width = virtual_fhe_circuit.graph.maximum_integer_bit_width()
     assert max_bit_width == 10
 
-    # Test to check that ones cancelling out give the expected bit width as well
+    # Test to check that canceling out ones give the expected bit width as well
     two_thousand_ones_and_a_thousand_minus_ones = numpy.ones((3000,), dtype=numpy.int64)
     two_thousand_ones_and_a_thousand_minus_ones[-1000:] = -1
 

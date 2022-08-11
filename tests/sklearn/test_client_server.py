@@ -180,7 +180,7 @@ def test_client_server_custom_model(default_configuration_no_jit, p_error):
 def client_server_simulation(x_train, x_test, model, default_configuration_no_jit):
     """Simulate the client server interaction."""
     # Model has been trained and compiled on the server.
-    # Now we use the fheapi to go into production.
+    # Now we use the fhe api to go into production.
 
     # Set up the fake network
     network = OnDiskNetwork()

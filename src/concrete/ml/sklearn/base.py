@@ -55,7 +55,7 @@ class QuantizedTorchEstimatorMixin:
         self,
     ):
         # The quantized module variable appends "_" so that it is not registered as a sklearn
-        # parameter. Only training parameters should register, to enable easy cloning of un-trained
+        # parameter. Only training parameters should register, to enable easy cloning of untrained
         # estimator
         self.quantized_module_ = None
         self._onnx_model_ = None
@@ -866,7 +866,7 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         return y_preds
 
 
-# pytlint: disable=invalid-name,too-many-instance-attributes
+# pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
     """A Mixin class for sklearn linear models with FHE."""
 

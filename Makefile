@@ -575,11 +575,11 @@ check_supported_ops:
 gitleaks:
 	gitleaks --source "$${PWD}" detect --redact -v
 
-.PHONY: sanity_check # Sanity checks, eg to check that a release is viable
+.PHONY: sanity_check # Sanity checks, e.g. to check that a release is viable
 sanity_check:
 	poetry run python ./docker/release_resources/sanity_check.py
 
-.PHONY: fast_sanity_check # Fast sanity checks, eg to check that a release is viable
+.PHONY: fast_sanity_check # Fast sanity checks, e.g. to check that a release is viable
 fast_sanity_check:
 	poetry run python ./docker/release_resources/sanity_check.py --fast
 

@@ -26,7 +26,7 @@ from concrete.ml.torch.compile import compile_onnx_model, compile_torch_model
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
 # Note that when comparing two predictions with few features the r2 score is brittle
-# thus we prefer to avoid values that are too low (eg. 1, 2)
+# thus we prefer to avoid values that are too low (e.g. 1, 2)
 INPUT_OUTPUT_FEATURE = [5, 10]
 
 

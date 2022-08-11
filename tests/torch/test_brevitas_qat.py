@@ -179,7 +179,7 @@ def test_brevitas_tinymnist_cnn(qat_bits):
 
         torch_acc = net.test_torch(test_dataloader)
 
-        # If torch_acc was zero, training was wrong and there were nans in the weights
+        # If torch_acc was zero, training was wrong and there were NaNs in the weights
         # Retrain while training is bad
         trained_ok = torch_acc > 0
 

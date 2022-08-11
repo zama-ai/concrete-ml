@@ -14,7 +14,7 @@ from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_f
 from ..onnx.onnx_model_manipulations import (
     cut_onnx_graph_after_node_name,
     keep_following_outputs_discard_others,
-    replace_uncessary_nodes_by_identity,
+    replace_unnecessary_nodes_by_identity,
     simplify_onnx_model,
 )
 from ..quantization import QuantizedArray
@@ -97,7 +97,7 @@ def tree_to_numpy(
     )
 
     # The tree returned by hummingbird has two outputs which is not supported currently by the
-    # compiler (as it only returns one output). Here we explicitely only keep the output named
+    # compiler (as it only returns one output). Here we explicitly only keep the output named
     # "variable", which after inspecting the hummingbird code is considered the canonical
     # output. This was causing issues as the virtual lib (correctly) returned both outputs which
     # the predict method did not expect as it was only getting one output from the compiler
@@ -132,7 +132,7 @@ def tree_to_numpy(
     # TODO remove Transpose from the list when #931 is done
     # TODO remove Gather from the list when #328 is done
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast", "Gather"]
-    replace_uncessary_nodes_by_identity(onnx_model, op_type_to_remove)
+    replace_unnecessary_nodes_by_identity(onnx_model, op_type_to_remove)
 
     # Modify onnx graph to fit in FHE
     for i, initializer in enumerate(onnx_model.graph.initializer):

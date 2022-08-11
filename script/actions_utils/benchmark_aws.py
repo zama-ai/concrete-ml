@@ -18,7 +18,7 @@ MAX_EXEC_TIME = 180  # minutes
 
 # Utils functions
 def check_if_command_running(out: ChannelFile):
-    """Chekc if the command is running"""
+    """Check if the command is running"""
     return not out.channel.exit_status_ready()
 
 

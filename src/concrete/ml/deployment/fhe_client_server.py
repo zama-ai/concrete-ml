@@ -256,7 +256,7 @@ class FHEModelClient:
         for quantizer_dict in serialized_processing["output_quantizers"]:
             self.model.output_quantizers.append(UniformQuantizer(**quantizer_dict))
 
-        # Load model params
+        # Load model parameters
         self.model.post_processing_params = serialized_processing["model_post_processing_params"]
 
     def generate_private_and_evaluation_keys(self, force=False):

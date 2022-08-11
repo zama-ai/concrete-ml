@@ -1,4 +1,4 @@
-"""Finalizer for Jupyter notebooks."""
+"""Finalize Jupyter notebooks."""
 import argparse
 import json
 from pathlib import Path

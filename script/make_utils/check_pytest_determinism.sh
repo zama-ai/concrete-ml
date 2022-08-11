@@ -40,7 +40,7 @@ set -e
 diff "${OUTPUT_DIRECTORY}/one.txt" "${OUTPUT_DIRECTORY}/two.txt" -I "passed in"
 echo "Successful determinism check"
 
-# Now, check --forcing_random_seed, ie check that one can reproduce conditions of a bug in a single file
+# Now, check --forcing_random_seed, i.e. check that one can reproduce conditions of a bug in a single file
 # and test without having to relaunch the full pytest, by just picking the right --forcing_random_seed
 
 LIST_FILES=$(grep "tests/seeding/test_seeding.py" "${OUTPUT_DIRECTORY}/one.txt")
@@ -60,7 +60,7 @@ do
 
     echo "poetry run pytest $x -xsvv $EXTRA_OPTION --randomly-dont-reset-seed --forcing_random_seed " "${LIST_SEED[WHICH]}"
 
-    # Only take lines after the header, ie after line with 'collecting'
+    # Only take lines after the header, i.e. after line with 'collecting'
     # SC2086 is about double quote to prevent globbing and word splitting, but here, it makes that we have
     # an empty arg in pytest, which is considered as "do pytest for all files"
     # shellcheck disable=SC2086

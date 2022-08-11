@@ -279,7 +279,7 @@ def check_is_good_execution_impl(
 ):
     """Run several times the check compiler_engine.encrypt_run_decrypt(*args) == function(*args).
     If always wrong, return an error. One can set the expected probability of success of one
-    execution and the number of tests, to finetune the probability of bad luck, ie that we run
+    execution and the number of tests, to fine-tune the probability of bad luck, i.e. that we run
     several times the check and always have a wrong result."""
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
 
@@ -438,7 +438,7 @@ def load_data():
         """Generate a random regression or classification problem.
 
         Sklearn's make_regression() method generates a random regression problem without any domain
-        restrictions. However, some models can only handle non negative or (stricly) positive target
+        restrictions. However, some models can only handle non negative or (strictly) positive target
         values. This function therefore adapts it in order to make it work for any tested regressors.
 
         For classifier, Sklearn's make_classification() method is directly called.
@@ -446,7 +446,7 @@ def load_data():
         Args:
             dataset (str, Callable): Either "classification" or "regression" generating synthetic
                 datasets or a callable for any other dataset generation.
-            strictly_positive (bool): If True, the regression data will be only composed of stricly
+            strictly_positive (bool): If True, the regression data will be only composed of strictly
                 positive values. It has no effect on classification problems. Default to False.
         """
 
@@ -458,7 +458,7 @@ def load_data():
         elif dataset == "regression":
             generated_regression = list(make_regression(*args, **kwargs))
 
-            # Some regressors can only handle positive target values, often stricly positive.
+            # Some regressors can only handle positive target values, often strictly positive.
             if strictly_positive:
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
 

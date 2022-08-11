@@ -202,7 +202,7 @@ class QuantizedGemm(QuantizedOp):
 
         p = weights_q_values.shape[0]
 
-        # Core matmul operation in full intergers with a shape change (INTEGERS)
+        # Core matmul operation in full integers with a shape change (INTEGERS)
         matmul = input_q_values @ weights_q_values
 
         # If the weights have symmetric quantization, their zero point will be 0
@@ -329,7 +329,7 @@ class QuantizedAdd(QuantizedOp):
         assert q_input_1.quantizer.scale is not None
         assert q_input_1.quantizer.zero_point is not None
 
-        # De-quantize with input params and re-quantize with output parameters
+        # Dequantize with input params and requantize with output parameters
         # This will use TLUs over each element of the two inputs
         # We do the dequantization directly, instead of q_inputs[0].dequant(),
         # So that we do not lose precision in the computation
@@ -354,7 +354,7 @@ class QuantizedAdd(QuantizedOp):
         elif self.b_sign == -1:
             sum_q = rescale_q0 + (-1) * rescale_q1
 
-        # But we would like the output to have n_bits, so we de-quantize
+        # But we would like the output to have n_bits, so we dequantize
         dequant_sum = self.output_quant_params.scale * sum_q
 
         # Return the raw float32 values without re-quantizing them to the new scale, as any
@@ -821,7 +821,7 @@ class QuantizedWhere(QuantizedOp):
         super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Remember that there are examples of where with more than 1 variable which are going to be
-        # well managed, thanks to fusing: eg,
+        # well managed, thanks to fusing:
         # Act(x) = (x < 3) ? x + 42 : x ^ 42 would perfectly fuse
         # But for this kind of example, we have int_input_names = {'x'} since they all depend only
         # on x
@@ -942,7 +942,7 @@ class QuantizedOr(QuantizedOp):
     """Or operator ||.
 
     This operation is not really working as a quantized operation. It just works when things got
-    fused, as in eg Act(x) = x || (x + 42))
+    fused, as in e.g. Act(x) = x || (x + 42))
     """
 
     _impl_for_op_named: str = "Or"
@@ -983,7 +983,7 @@ class QuantizedDiv(QuantizedOp):
     """Div operator /.
 
     This operation is not really working as a quantized operation. It just works when things got
-    fused, as in eg Act(x) = 1000 / (x + 42))
+    fused, as in e.g. Act(x) = 1000 / (x + 42))
     """
 
     _impl_for_op_named: str = "Div"
@@ -1163,8 +1163,8 @@ class QuantizedReduceSum(QuantizedOp):
             attrs (dict): RecuseSum options.
                 keepdims (int): Keep the reduced dimension or not, 1 means keeping the
                     input dimension, 0 will reduce it along the given axis. Default to 1.
-                noop_with_empty_axes (int): Defines behaviour if 'axes' is empty or set to None.
-                    Default behaviour with 0 is to reduce all axes. When axes is empty and this
+                noop_with_empty_axes (int): Defines behavior if 'axes' is empty or set to None.
+                    Default behavior with 0 is to reduce all axes. When axes is empty and this
                     attribute is set to true 1, input tensor will not be reduced, and the output
                     tensor would be equivalent to input tensor. Default to 0.
         """
@@ -1227,11 +1227,11 @@ class QuantizedReduceSum(QuantizedOp):
         # (floor division) the result by 2 (giving a precision of p). Multiplying this result by 2
         # later gives the original sum, minus a bit of error (0 or 1). We then do this step again
         # to each results until we get only one integer (MSB, for Most Valuable Bits), creating
-        # an inversed binary tree (for n_values a power of 2). Therefore, the final sum can be
+        # an inverted binary tree (for n_values a power of 2). Therefore, the final sum can be
         # found by computing MSB*(2**total_depth) = MSB*n_values. The total amount of error caused
         # by this technique can reach up to total_depth*(n_values)/2 and is independent of the
         # actual integers' precision. However, the method doesn't properly work with
-        # non-uniformally distributed input values, causing the MSB to vanish before the
+        # non-uniformly distributed input values, causing the MSB to vanish before the
         # reconstruction of the sum.
         for depth in range(total_depth, 0, -1):
             step = 2**depth
@@ -1324,7 +1324,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
             "Narrow range flag in Brevitas quantizer must be 0/1",
         )
 
-        # To ensure de-quantization produces floats, the following parameters must be float.
+        # To ensure dequantization produces floats, the following parameters must be float.
         # This should be default export setting in Brevitas
         check_float(
             constant_inputs is not None

@@ -134,7 +134,7 @@ def get_parameters_glms(config):
     create_target_values(data)
     train_data, test_data = get_train_test_data(data)
 
-    # GammaRegressor only handles stricly positive target values.
+    # GammaRegressor only handles strictly positive target values.
     gamma_mask_train = train_data["ClaimAmount"] > 0
     gamma_mask_test = test_data["ClaimAmount"] > 0
 
@@ -286,7 +286,7 @@ def score_estimator(
             "are ignored when computing the deviance score."
         )
 
-    # If all or at least 50% of the y_preds are non-positive, set this benchamrk as a failure.
+    # If all or at least 50% of the y_preds are non-positive, set this benchmark as a failure.
     if y_pred[mask].shape == (0,) or number_of_negative_values / mask.shape[0] > 0.5:
         return None
 
@@ -414,7 +414,7 @@ def main():
     )
     def perform_benchmark(parameters: Dict, n_bits: Union[Dict, int]) -> None:
         """
-        This is our main benchmark function. It gets the datas and trains the available GLM models
+        This is our main benchmark function. It gets the data and trains the available GLM models
         in four different ways:
         - using scikit-learn's model, in clear
         - using scikit-learn's model on PCA reduced features, in clear
@@ -436,7 +436,7 @@ def main():
         # Compute the maximum number of PCA components possible for executing the model in FHE
         n_components = compute_number_of_components(n_bits)
 
-        # If the n_bits input is too high, the model could overflow the max precision bitdwith
+        # If the n_bits input is too high, the model could overflow the max precision bitwidth
         # currently available
         if n_components == 0:
             raise ValueError(f"n_bits = {n_bits} is too high. Please lower its value(s).")

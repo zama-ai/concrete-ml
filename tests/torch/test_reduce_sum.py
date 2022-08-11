@@ -45,7 +45,7 @@ def get_numpy_input_and_inputset(n_values, max_value, n_samples=1, signed=False)
             low=min_value, high=max_value, size=(1, n_samples, n_values)
         ).astype(numpy.float64)
 
-    # Setting the inpuset with extreme values in order to make sure the scale and zero point values
+    # Setting the inputset with extreme values in order to make sure the scale and zero point values
     # will be computed correctly during the quantization and dequantization process (for inputs as
     # well as outputs)
     else:
@@ -199,7 +199,7 @@ def test_sum(n_values, n_bits, in_fhe, use_virtual_lib, default_configuration, i
     expected_sum = numpy.sum(numpy_input)
 
     # Check if the error does not exceed the theoretical limit. An error term is added for
-    # handeling minor quantization artifacts.
+    # handling minor quantization artifacts.
     if n_values > 1:
         error = abs(expected_sum - computed_sum[0]) / max_error
         assert (

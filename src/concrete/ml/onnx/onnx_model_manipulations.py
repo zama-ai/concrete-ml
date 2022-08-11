@@ -56,7 +56,7 @@ def remove_identity_nodes(onnx_model: onnx.ModelProto):
         onnx_model (onnx.ModelProto): the model for which we want to remove Identity nodes.
     """
 
-    # This is avery sub-optimal O(N^2) implementation that needs to be improved
+    # This is a very sub-optimal O(N^2) implementation that needs to be improved
     node_idx = 0
     while node_idx < len(onnx_model.graph.node):
         node = onnx_model.graph.node[node_idx]
@@ -110,8 +110,8 @@ def keep_following_outputs_discard_others(
     assert_true(set(output.name for output in graph_outputs) == outputs_to_keep_set)
 
 
-def replace_uncessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_to_replace: list):
-    """Replace unecessary nodes by Identity nodes.
+def replace_unnecessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_to_replace: list):
+    """Replace unnecessary nodes by Identity nodes.
 
     Args:
         onnx_model (onnx.ModelProto): the ONNX model to modify.

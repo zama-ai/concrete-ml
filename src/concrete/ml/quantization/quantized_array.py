@@ -142,7 +142,7 @@ class MinMaxQuantizationStats:
         self.rmax = numpy.max(values)
 
         # To find unique float values we need to round. We round to 2 decimal figures.
-        # Floating point innacuracies in computation can lead to differences in the last
+        # Floating point inaccuracies in computation can lead to differences in the last
         # decimal figures. We want to ignore such differences but also avoid
         # coalescing float values that should be distinct
         rvalues = numpy.round(values, decimals=2)
@@ -180,7 +180,7 @@ class UniformQuantizationParameters:
     """Quantization parameters for uniform quantization.
 
     This class stores the parameters used for quantizing real values to discrete integer values.
-    The parmeters are computed from quantization options and quantization statistics.
+    The parameters are computed from quantization options and quantization statistics.
     """
 
     scale: Optional[float] = None
@@ -373,7 +373,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         """Dequantize values.
 
         Args:
-            qvalues (numpy.ndarray): integer values to de-quantize
+            qvalues (numpy.ndarray): integer values to dequantize
 
         Returns:
             numpy.ndarray: Dequantized float values.
@@ -430,7 +430,7 @@ class QuantizedArray:
         # If no options were passed, create a default options structure with the required n_bits
         options = deepcopy(options) if options is not None else QuantizationOptions(n_bits)
 
-        # Override the options number of bits if an options struct was provided
+        # Override the options number of bits if an options structure was provided
         # with the number of bits specified by the caller.
         options.n_bits = n_bits
 
