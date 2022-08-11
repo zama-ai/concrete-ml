@@ -699,20 +699,20 @@ jobs:
           mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
           echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
 
-      - name: Download Documentation
-        if: ${{ success() && !cancelled() }}
-        id: download-docs
-        uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
-        with:
-          name: html-docs
-          path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+      # - name: Download Documentation
+      #   if: ${{ success() && !cancelled() }}
+      #   id: download-docs
+      #   uses: actions/download-artifact@fb598a63ae348fa914e94cd0ff38f362e927b741
+      #   with:
+      #     name: html-docs
+      #     path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
 
-      - name: Untar docs artifacts
-        if: ${{ success() && !cancelled() }}
-        run: |
-          cd ${{ steps.download-docs.outputs.download-path }}
-          tar -xvf docs.tar
-          rm docs.tar
+      # - name: Untar docs artifacts
+      #   if: ${{ success() && !cancelled() }}
+      #   run: |
+      #     cd ${{ steps.download-docs.outputs.download-path }}
+      #     tar -xvf docs.tar
+      #     rm docs.tar
 
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
@@ -858,8 +858,6 @@ jobs:
           RAW_CHANGELOG_DIR: ${{ steps.download-changelog.outputs.download-path }}
         run: |
           pushd "${RAW_DOCS_DIR}"
-          zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
-          tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
           # Remove the versions.json to avoid pushing it to S3 but have it in release artifacts
           rm versions.json
           popd
