@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+from pathlib import Path
 
 import numpy as np
 import py_progress_tracker as progress
@@ -139,7 +140,11 @@ def should_test_config_in_fhe(regressor, config, n_features, local_args):
     if os.environ.get("BENCHMARK_NO_FHE", "0") == "1":
         return False
 
-    if regressor is LinearRegression:
+    if regressor is DecisionTreeRegressor:
+        # FIXME: figure out what is okay
+        return True
+
+    if regressor in {LinearRegression, Ridge, Lasso, ElasticNet}:
 
         if config["n_bits"] == 2 and n_features <= 14:
             return True
@@ -180,18 +185,17 @@ def benchmark_generator(local_args):
 
 
 def benchmark_name_generator(dataset, regressor, config, joiner):
-    if regressor is LinearRegression:
-        config_str = f"_{config['n_bits']}"
-    elif regressor is LinearSVR:
+    if regressor in {LinearRegression, LinearSVR, Lasso, ElasticNet, Ridge, DecisionTreeRegressor}:
         config_str = f"_{config['n_bits']}"
     elif regressor is NeuralNetRegressor:
         config_str = f"_{config['module__n_a_bits']}_{config['module__n_accum_bits']}"
     else:
-        raise ValueError
+        raise ValueError(f"regressor of type: {regressor} is not supported")
 
     return regressor.__name__ + config_str + joiner + dataset
 
 
+# pylint: disable-next=too-many-branches
 def train_and_test_on_dataset(regressor, dataset, config, local_args):
 
     # Could be changed but not very useful
@@ -266,6 +270,18 @@ def train_and_test_on_dataset(regressor, dataset, config, local_args):
         # Compile and report compilation time
         t_start = time.time()
         forward_fhe = concrete_regressor.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
+
+        # Dump MLIR
+        if local_args.mlir_only:
+            mlirs_dir: Path = Path(__file__).parents[1] / "MLIRs"
+            benchmark_name = benchmark_name_generator(
+                dataset, concrete_regressor.__class__, config, "_"
+            )
+            mlirs_dir.mkdir(parents=True, exist_ok=True)
+            with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
+                file.write(forward_fhe.mlir)
+            return
+
         duration = time.time() - t_start
         progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
 
@@ -318,6 +334,7 @@ def train_and_test_on_dataset(regressor, dataset, config, local_args):
 def argument_manager():
     # Manage arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument("--mlir_only", type=int, help="Only dump MLIR (no inference)")
     parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
     parser.add_argument(
         "--datasets",

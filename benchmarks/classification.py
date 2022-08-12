@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+from pathlib import Path
 
 import numpy as np
 import py_progress_tracker as progress
@@ -287,6 +288,18 @@ def train_and_test_on_dataset(classifier, dataset, config, local_args):
         forward_fhe = concrete_classifier.compile(
             x_test_comp, configuration=BENCHMARK_CONFIGURATION
         )
+
+        # Dump MLIR
+        if local_args.mlir_only:
+            mlirs_dir: Path = Path(__file__).parents[1] / "MLIRs"
+            benchmark_name = benchmark_name_generator(
+                dataset, concrete_classifier.__class__, config, "_"
+            )
+            mlirs_dir.mkdir(parents=True, exist_ok=True)
+            with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
+                file.write(forward_fhe.mlir)
+            return
+
         duration = time.time() - t_start
         progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
 
@@ -375,6 +388,7 @@ def benchmark_name_generator(dataset, classifier, config, joiner):
 def argument_manager():
     # Manage arguments
     parser = argparse.ArgumentParser()
+    parser.add_argument("--mlir_only", type=int, help="Only dump MLIR (no inference)")
     parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
     parser.add_argument(
         "--datasets",

@@ -3,6 +3,7 @@ import json
 import math
 import random
 import time
+from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import numpy as np
@@ -321,6 +322,7 @@ def argument_manager():
     """Manage input arguments from the user."""
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--mlir_only", type=int, help="Only dump MLIR (no inference)")
     parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
     parser.add_argument(
         "--seed",
@@ -500,6 +502,15 @@ def main():
                 configuration=BENCHMARK_CONFIGURATION,
                 show_mlir=False,
             )
+
+            # Dump MLIR
+            if args.mlir_only:
+                mlirs_dir: Path = Path(__file__).parents[1] / "MLIRs"
+                benchmark_name = get_benchmark_id(model_pca["regressor"], n_bits)
+                mlirs_dir.mkdir(parents=True, exist_ok=True)
+                with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
+                    file.write(forward_fhe.mlir)
+                return
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current} seconds")
