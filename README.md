@@ -1,9 +1,5 @@
 # Concrete ML
 
-```{note}
-FIXME: to be updated with new links eg
-```
-
 **Concrete-ML** is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
 
 <!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=2 -->
