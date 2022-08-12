@@ -924,7 +924,7 @@ jobs:
           {
             echo "Docker Image: ${PRIVATE_RELEASE_IMG_GIT_TAG}";
             echo "pip: https://pypi.org/project/concrete-ml/${PROJECT_VERSION}";
-            echo "Documentation: https://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-ml/${PROJECT_VERSION}";
+            echo "Documentation: https://docs.zama.ai/concrete-ml";
             echo "";
           } >> "${RELEASE_BODY_FILE}"
           cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
