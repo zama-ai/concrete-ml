@@ -78,11 +78,6 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
-        # Sometimes, we hit "RuntimeWarning: overflow encountered in exp", which is not a problem
-        # for our test
-        if model_name == "NeuralNetRegressor":
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-
         model.fit(x, y)
 
     with warnings.catch_warnings():
