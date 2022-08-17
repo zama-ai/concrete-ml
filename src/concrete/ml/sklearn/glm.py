@@ -14,7 +14,7 @@ from ..common.debugging.custom_assert import assert_true
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
 from .base import SklearnLinearModelMixin
-from .torch_module import _LinearRegressionTorchModel
+from .torch_module import _GeneralizedLinearRegressionTorchModel
 
 
 # pylint: disable=too-many-instance-attributes
@@ -66,8 +66,10 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
         """
+        # GLMS don't handle the use of a sum workaround
+        kwargs.pop("use_sum_workaround", None)
 
-        # Copy X
+        # Copy X and check that is has a proper type
         X = copy.deepcopy(X)
         X, y = check_X_y_and_assert(X, y)
 
@@ -75,20 +77,15 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         params = self.get_params()
         params.pop("n_bits", None)
 
-        # Initialize a Sklearn generalized linear regressor model
+        # Initialize a sklearn generalized linear model
         # pylint: disable=attribute-defined-outside-init
         self.sklearn_model = self.sklearn_alg(**params)
 
-        # Train
+        # Fit the sklearn model
         self.sklearn_model.fit(X, y, *args, **kwargs)
 
         # Extract the weights
         weight = self.sklearn_model.coef_
-
-        # Store the weights in an attribute used for .predict()
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/445
-        # Improve the computation of number of outputs when refactoring is done, remove self.coef_
-        self.coef_ = self.sklearn_model.coef_
 
         # Extract the input and output sizes
         input_size = weight.shape[0]
@@ -99,11 +96,11 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         # converting a Sklearn model into an ONNX one, doesn't not support GLMs. Also, the Torch
         # module can be given to the NumpyModule class the same way it is done for its ONNX
         # equivalent, thus making the initial workflow still relevant.
-        torch_model = _LinearRegressionTorchModel(
+        torch_model = _GeneralizedLinearRegressionTorchModel(
             input_size=input_size,
             output_size=output_size,
             inverse_link=self._get_inverse_link(),
-            bias=self.fit_intercept,
+            use_bias=self.fit_intercept,
         )
 
         # Update the Torch model's weights and bias using the Sklearn model's one

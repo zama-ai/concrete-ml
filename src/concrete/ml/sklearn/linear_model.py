@@ -1,12 +1,20 @@
 """Implement sklearn linear model."""
+import copy
+from typing import Any
+
 import numpy
 import onnx
 import sklearn
 import sklearn.linear_model
+import torch
 
-from ..common.check_inputs import check_array_and_assert
+from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
+from ..common.debugging.custom_assert import assert_true
 from ..onnx.onnx_model_manipulations import clean_graph_after_sigmoid
+from ..quantization import PostTrainingAffineQuantization
+from ..torch import NumpyModule
 from .base import SklearnLinearModelMixin
+from .torch_module import _LinearRegressionTorchModel
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
@@ -15,6 +23,10 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
 
     Arguments:
         n_bits(int): default is 2.
+        use_sum_workaround (bool): indicate if the sum workaround should be used or not. This
+            feature is experimental and should be used carefully. Important note: it only works
+            for a LinearRegression model with N features, N a power of 2, for now. More
+            information available in the QuantizedReduceSum operator. Default to False.
 
     For more details on LinearRegression please refer to the scikit-learn documentation:
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html
@@ -25,6 +37,7 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     def __init__(
         self,
         n_bits=2,
+        use_sum_workaround=False,
         fit_intercept=True,
         normalize="deprecated",
         copy_X=True,
@@ -34,6 +47,7 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         # FIXME #893
         # Figure out how to add scikit-learn documentation into our object
         self.n_bits = n_bits
+        self.use_sum_workaround = use_sum_workaround
         self.fit_intercept = fit_intercept
         self.normalize = normalize
         self.copy_X = copy_X
@@ -41,6 +55,83 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.positive = positive
         self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
+
+    # pylint: disable=attribute-defined-outside-init
+    def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> Any:
+        """Fit the FHE linear model.
+
+        Args:
+            X : training data
+                By default, you should be able to pass:
+                * numpy arrays
+                * torch tensors
+                * pandas DataFrame or Series
+            y (numpy.ndarray): The target data.
+            *args: The arguments to pass to the sklearn linear model.
+            **kwargs: The keyword arguments to pass to the sklearn linear model.
+
+        Returns:
+            Any
+        """
+        if not self.use_sum_workaround:
+            return super().fit(X, y, *args, **kwargs)
+
+        # If the ReduceSum experimental workaround should be used in order to enable summing many
+        # integers without overflowing.
+
+        input_shape = X.shape[1] if len(X.shape) > 1 else X.shape[0]
+        target_number = y.shape[1] if len(y.shape) > 1 else 1
+
+        assert_true(
+            (input_shape != 0) and (input_shape & (input_shape - 1) == 0) and target_number == 1,
+            "The sum workaround currently only handles N features with N a power of 2 and "
+            f"single target values while {input_shape} features and {target_number} target(s)"
+            "were given.",
+        )
+
+        # Copy X
+        X = copy.deepcopy(X)
+
+        # LinearRegression handles multi-labels data
+        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
+
+        # Initialize the sklearn model
+        params = self.get_params()  # type: ignore
+        params.pop("n_bits", None)
+        params.pop("use_sum_workaround", None)
+        self.sklearn_model = self.sklearn_alg(**params)
+
+        # Fit the sklearn model
+        self.sklearn_model.fit(X, y, *args, **kwargs)
+
+        # Extract the weights
+        weights = torch.from_numpy(self.sklearn_model.coef_)
+        bias = torch.tensor(self.sklearn_model.intercept_)
+
+        # Initialize a Torch model that reproduces the proper inference using ReduceSum
+        torch_model = _LinearRegressionTorchModel(
+            weights=weights,
+            bias=bias,
+        )
+
+        # Create a NumpyModule from the Torch model
+        numpy_module = NumpyModule(torch_model, dummy_input=torch.from_numpy(X[:1]))
+        onnx_model = numpy_module.onnx_model
+
+        self._onnx_model_ = onnx_model
+
+        # Apply post-training quantization
+        post_training = PostTrainingAffineQuantization(
+            n_bits=self.n_bits, numpy_model=numpy_module, is_signed=True
+        )
+
+        # Calibrate and create quantize module
+        self.quantized_module_ = post_training.quantize_module(X)
+
+        return self
+
+
+# pylint: enable=attribute-defined-outside-init
 
 
 class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):

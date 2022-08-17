@@ -1134,7 +1134,10 @@ class QuantizedFlatten(QuantizedOp):
 
 
 class QuantizedReduceSum(QuantizedOp):
-    """ReduceSum with encrypted input."""
+    """ReduceSum with encrypted input.
+
+    This operator is currently an experimental feature.
+    """
 
     _impl_for_op_named: str = "ReduceSum"
     quantize_inputs_with_net_outputs_precision = True
@@ -1168,7 +1171,6 @@ class QuantizedReduceSum(QuantizedOp):
                     attribute is set to true 1, input tensor will not be reduced, and the output
                     tensor would be equivalent to input tensor. Default to 0.
         """
-
         super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # This attribute is truly set when calling the calibrate method
@@ -1179,7 +1181,8 @@ class QuantizedReduceSum(QuantizedOp):
         self.noop_with_empty_axes = attrs.get("noop_with_empty_axes", 0)
 
         assert_true(
-            self.keepdims == 0, "ReduceSum currently only outputs reduced dimension tensors."
+            self.keepdims == 1,
+            "ReduceSum currently only keeps the inputs' dimensions for its outputs.",
         )
 
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
@@ -1220,29 +1223,122 @@ class QuantizedReduceSum(QuantizedOp):
         # Computing the total depth of the tree
         total_depth = int(numpy.log2(n_values))
 
-        # Applying the tree sum technique with only one MSB.
-        # Since our accumulators have limited bitwidth, it is impossible to sum many integers of a
-        # certain precision (number of bits used) using numpy.sum() without overflowing. Therefore,
-        # the idea is first to sum all pairs of integers (precision: p + p = p+1) and then divide
-        # (floor division) the result by 2 (giving a precision of p). Multiplying this result by 2
-        # later gives the original sum, minus a bit of error (0 or 1). We then do this step again
-        # to each results until we get only one integer (MSB, for Most Valuable Bits), creating
-        # an inverted binary tree (for n_values a power of 2). Therefore, the final sum can be
-        # found by computing MSB*(2**total_depth) = MSB*n_values. The total amount of error caused
-        # by this technique can reach up to total_depth*(n_values)/2 and is independent of the
-        # actual integers' precision. However, the method doesn't properly work with
-        # non-uniformly distributed input values, causing the MSB to vanish before the
-        # reconstruction of the sum.
+        # Applying the tree sum technique, which enables summing N integers without overflowing.
+        # Since our accumulators have limited bitwidth (8 bits), it is impossible to sum too many
+        # integers of a certain precision (synonym for bitwidth) without overflowing. For instance,
+        # the sum numpy.sum([100, 60, 65, 59]) = 284 can't be executed in FHE as the bitwidth of
+        # 284 is 9 > 8. Let k be an unsigned integer, it is possible to compute it's precision p
+        # using floor(log2(k)) + 1, such that 2**(p-1) <= l < 2**p.
+
+        # Let's now define two unsigned integers of precision p, a and b. By definition, the most
+        # extreme reachable value is 2**p-1. The rest of this explanation will only consider worst
+        # case scenarios as we want to ensure the operator's proper execution at any time. Let's
+        # thus set a = b = 2**p-1.
+        # The workaround starts by summing inputs by pairs. Then, the results are divided by 2
+        # using the floor division in order to retrieve their quotients. Using the above notations,
+        # we first have c = a + b = 2*(2**p-1) = 2**(p+1)-2. Since 2**p <= c < 2**(p+1), we obtain
+        # that c is of precision p+1. Then, let d = floor(c/2) = floor(2**p-1) = 2**p-1 = a, making
+        # d of precision p. The maximum bitwidth reached along theses steps is therefore p+1,
+        # meaning that, currently, they can be executed in FHE without any issues as long as
+        # p+1 <= 8, which limits us to p <= 7.
+
+        # Additionally, since d is of precision p, it is possible to sum it with another integer of
+        # the same precision. In fact, more generally, we can apply the above steps to each pairs
+        # of inputs, repeat the process with their outputs and then continue as such until we get
+        # only one final integer (the sum's MSb, for Most Significant Bits). Considering that we
+        # currently force the number of inputs (n_values) to be a power of 2 as we can't properly
+        # handle other cases, this creates an inverted binary tree. Here's an example with
+        # n_values=4 and p=3, using unsigned integers:
+
+        # 0:   2   5 7   3
+        #       \ /   \ /      (addition)
+        #        7     10
+        #        |     |       (division)
+        # 1:     3     5
+        #         \   /        (addition)
+        #           8
+        #           |          (division)
+        # 2:        4
+
+        # In this case, the true sum is 17, which uses 5 bits. The workaround estimates this sum
+        # with 4, a p-bit integer, without having any accumulators reach values above 4 bits of
+        # precision.
+        # Let d be the tree's total depth, meaning d = log2(n_values), we can then use that final
+        # MSb m in order to approximate the true sum by computing m*(2**d) = m*n_values. The idea
+        # behind this is that the true sum got divided by 2 at each of the tree' levels (d times in
+        # total). In fact, this approximated sum is generally close to the true sum without exactly
+        # matching it. In the above example, the approximation gives 4*4=16, resulting in an error
+        # of 17-16=1. This is due to the fact that the division used in the process is the floor
+        # division, which can create an error of 1 when applied to odd integers each time it is
+        # called. More generally, the resulting sum exactly matches the true sum's p most
+        # significant bits.
+
+        # This error term (the division's remainder) is not accumulated during the process as it
+        # could easily make the accumulators exceed their p-bit precision, especially with large
+        # number of features. In fact, it is possible to exactly compute the maximum error reachable
+        # by the workaround. Let l be a tree's level (with l=0 the upper level, representing the
+        # inputs), the maximum amount of error accumulated in this level is the number of nodes
+        # n_values/(2**l) times the remainders' weight 2**(l-1). Summing this over all of the
+        # d levels, we get d*(n_values)/2.
+        # Let S be the true sum, the approximated sum will therefore end within the range
+        # [S - d*(n_values)/2, S]. It is important to note that this error term is of O(n*log(n))
+        # and is independent of the actual inputs' precision. This means that currently, the more
+        # features there are, the less precise the sum gets, no matter the input's precision.
+
+        # In fact, the integer sum is done over signed integers because of how QuantizedOps are
+        # built. This doesn't create any issues in most cases as it only applies an additional
+        # linear transformation on the inputs' values without truly affecting the true sum. However,
+        # we decided to use the numpy.rint operator
+        # (https://numpy.org/doc/stable/reference/generated/numpy.rint.html) combined to
+        # the true division instead of a single floor division in order to avoid problems with -1
+        # values. By construction, the floor division gives the same results as a true division
+        # followed by a floor operator. In particular, this means that -1//2 = -1, which is not
+        # adapted to this workaround and can lead to greater amount of errors. The main idea is
+        # that a -1 value can be kept along many steps without vanishing if it gets summed with
+        # zeros or small negative values. For example:
+
+        # Using the floor division :
+        # 0:  -1   0 0   0
+        #       \ /   \ /      (addition)
+        #       -1     0
+        #        |     |       (division)
+        # 1:    -1     0
+        #         \   /        (addition)
+        #          -1
+        #           |          (division)
+        # 2:       -1
+
+        # In this case, the sum is approximated to -1*4 = -4 while the true sum is only -1.
+        # More generally, an array with one -1 and (n-1) 0 would output -n while the true sum
+        # remains to -1.
+        # We therefore use numpy.rint's rounding properties, which rounds up .5 values to the
+        # nearest even integer. This not only enables -0.5 values to be rounded up to 0 instead of
+        # -1 but also partially compensates the global error by either "losing" or "earning"
+        # remainders for each odd sums. However, this is not the truly ideal. This makes the
+        # workaround less intuitive, as it increases the overall error range by 2 (compared to the
+        # floor division) and makes the accumulation of remainder errors less tractable. Also, all
+        # remainder losses or earnings are note equivalent between each tree levels, as they don't
+        # represent the same weights, making the notion of "average compensation" less viable. On
+        # the other hand, we empirically observed that the rint operator leads to more accurate
+        # results when used in practice with linear models. We therefore decided to keep it for now.
+
+        # Finally, the method currently doesn't properly work with normally distributed input
+        # values. This causes major issues with practical cases like LinearRegression models as the
+        # weights, inputs and weights*inputs (term by term multiplication) values are usually
+        # distributed in such a way. This however may be fixed with issue #1452, which suggests to
+        # replace the divisions by a calibration process using quantizers:
+        # https://github.com/zama-ai/concrete-ml-internal/issues/1452
+
         for depth in range(total_depth, 0, -1):
             step = 2**depth
             sum_arr = input_qarray[:, 0:step:2] + input_qarray[:, 1 : step + 1 : 2]
-            input_qarray = sum_arr // 2
+            input_qarray = numpy.rint(sum_arr / 2).astype(numpy.int64)
 
         # Dequantize the values to float
         quantizer = prepared_inputs[0].quantizer
-        scaled_msbs = quantizer.scale * (input_qarray[:, 0] + -(quantizer.zero_point))
+        scaled_msbs = quantizer.scale * (input_qarray + -(quantizer.zero_point))
 
-        # Reconstruct the total sum. We need to keep the same range between the dequantized
+        # Approximate the total sum. We need to keep the same range between the dequantized
         # values and the calibrated float computations
         # Note: 2**total_depth = n_values
         final_sum = scaled_msbs * n_values
@@ -1251,7 +1347,7 @@ class QuantizedReduceSum(QuantizedOp):
             self.n_bits,
             final_sum,
             value_is_float=True,
-            options=self.input_quant_opts,
+            options=self._get_output_quant_opts(),
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )

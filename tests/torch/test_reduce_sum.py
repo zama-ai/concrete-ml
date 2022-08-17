@@ -12,7 +12,7 @@ from concrete.ml.torch.numpy_module import NumpyModule
 class _TorchReduceSum(nn.Module):
     """Torch model to test ReduceSum."""
 
-    def __init__(self, dim=1, keepdim=False):
+    def __init__(self, dim=1, keepdim=True):
         super().__init__()
         self.dim = dim
         self.keepdim = keepdim
@@ -187,11 +187,12 @@ def test_sum(n_values, n_bits, in_fhe, use_virtual_lib, default_configuration, i
         configuration=default_configuration,
     )
 
-    # Set the maximum error possible using the MSB-only algorithm. This max error is relevant only:
+    # Set the maximum error potentially created by the workaround. This max error is relevant only:
     # - if there is not quantization error
     # - if n_values is a power of 2
-    # The idea is that for each depth d (from 1 to total_depth) of the "tree sum", we lose up to
-    # n_values//(2**depth) * 2**(depth-1), so a total of (n_value//2)*total_depth.
+    # The idea is that for each depth d (from 1 to total_depth) of the "tree sum", we lose or earn
+    # up to n_values//(2**depth) * 2**(depth-1), so a total of (n_value//2)*total_depth. More
+    # information in the QuantizedReduceSum operator.
     total_depth = int(numpy.log2(n_values))
     max_error = (n_values // 2) * total_depth
 
@@ -217,7 +218,7 @@ def generate_wrong_parameters_and_id():
     wrong_parameters = [
         {"n_values": 13},
         {"n_samples": 3},
-        {"keepdims": True},
+        {"keepdims": False},
         {"axes": 0},
         {"axes": [0, 1]},
         {"axes": None},
@@ -232,7 +233,7 @@ def generate_wrong_parameters_and_id():
             if (wrong_parameter_name not in ["n_samples"]) or in_fhe:
                 n_values = wrong_parameter.get("n_values", 2)
                 n_samples = wrong_parameter.get("n_samples", 1) if in_fhe else 1
-                keepdims = wrong_parameter.get("keepdims", False)
+                keepdims = wrong_parameter.get("keepdims", True)
                 one_dim = wrong_parameter.get("one_dim", False)
                 axes = wrong_parameter.get("axes", 1) if not one_dim else 0
 

@@ -201,6 +201,7 @@ rescale
 rescaled
 rescaling
 rint
+rint's
 rrelu
 rth
 runtime

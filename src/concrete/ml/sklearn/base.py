@@ -998,18 +998,16 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         Returns:
             Any
         """
-
         # Copy X
         X = copy.deepcopy(X)
 
-        # For LinearRegression, we can have multi-labels
+        # LinearRegression handles multi-labels data
         X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
 
-        # Train
-
-        # Initialize the model
+        # Initialize the sklearn model
         params = self.get_params()  # type: ignore
         params.pop("n_bits", None)
+        params.pop("use_sum_workaround", None)
         self.sklearn_model = self.sklearn_alg(**params)
 
         # Fit the sklearn model
@@ -1041,6 +1039,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         # Create NumpyModule from onnx model
         numpy_module = NumpyModule(onnx_model)
+
         self._onnx_model_ = onnx_model
 
         # Apply post-training quantization
@@ -1109,6 +1108,8 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             y (numpy.ndarray): The target data.
             random_state (Optional[Union[int, numpy.random.RandomState, None]]):
                 The random state. Defaults to None.
+            *args: The arguments to pass to the sklearn linear model.
+                or not (False). Default to False.
             *args: args for super().fit
             **kwargs: kwargs for super().fit
 
@@ -1116,9 +1117,9 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             Tuple[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression]:
                 The FHE and sklearn LinearRegression.
         """
-
         params = self.get_params()  # type: ignore
         params.pop("n_bits", None)
+        params.pop("use_sum_workaround", None)
 
         # Make sure the random_state is set or both algorithms will diverge
         # due to randomness in the training.
@@ -1136,7 +1137,9 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         # Train the FHE model
         self.set_params(n_bits=self.n_bits, **params)
+
         self.fit(X, y, *args, **kwargs)
+
         return self, sklearn_model
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:

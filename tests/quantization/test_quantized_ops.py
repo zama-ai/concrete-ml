@@ -810,7 +810,7 @@ def test_reduce_sum(n_values, n_bits):
 
     # Initialize the axes constant
     axes = numpy.array([1])
-    keepdims = 0
+    keepdims = 1
 
     # Instantiate the operator
     quantized_op = QuantizedReduceSum(n_bits, constant_inputs={"axes": axes}, keepdims=keepdims)
@@ -837,11 +837,12 @@ def test_reduce_sum(n_values, n_bits):
     # Compute the expected sum
     expected_sum = quantized_op.call_impl(inputs, axes=axes, keepdims=keepdims)[0]
 
-    # Set the maximum error possible using the MSB-only algorithm. This max error is relevant only:
+    # Set the maximum error potentially created by the workaround. This max error is relevant only:
     # - if there is not quantization error
     # - if n_values is a power of 2
-    # The idea is that for each depth d (from 1 to total_depth) of the "tree sum", we lose up to
-    # n_values//(2**depth) * 2**(depth-1), so a total of (n_value//2)*total_depth.
+    # The idea is that for each depth d (from 1 to total_depth) of the "tree sum", we lose or earn
+    # up to n_values//(2**depth) * 2**(depth-1), so a total of (n_value//2)*total_depth. More
+    # information in the QuantizedReduceSum operator.
     total_depth = int(numpy.log2(n_values))
     max_error = (n_values // 2) * total_depth
 

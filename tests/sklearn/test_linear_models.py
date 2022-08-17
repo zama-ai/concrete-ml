@@ -24,7 +24,7 @@ from concrete.ml.sklearn import (
     TweedieRegressor,
 )
 
-regressor_models = [
+regressor_model_classes = [
     LinearRegression,
     Lasso,
     Ridge,
@@ -34,62 +34,66 @@ regressor_models = [
     GammaRegressor,
     TweedieRegressor,
 ]
-classifier_models = [LogisticRegression, LinearSVC]
+
+classifier_model_classes = [LogisticRegression, LinearSVC]
 
 
-def get_datasets_regression(model):
+def get_datasets_regression(model_class):
     """Return tests to apply to a regression model."""
 
     regression_datasets = [
         pytest.param(
-            model,
+            model_class,
             {
                 "dataset": "regression",
-                "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+                "strictly_positive": model_class
+                in [GammaRegressor, PoissonRegressor, TweedieRegressor],
                 "n_features": 10,
             },
-            id=f"make_regression_features_10_{model.__name__}",
+            id=f"make_regression_features_10_{model_class.__name__}",
         ),
         pytest.param(
-            model,
+            model_class,
             {
                 "dataset": "regression",
-                "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+                "strictly_positive": model_class
+                in [GammaRegressor, PoissonRegressor, TweedieRegressor],
                 "n_features": 10,
                 "noise": 2,
             },
-            id=f"make_regression_features_10_noise_2_{model.__name__}",
+            id=f"make_regression_features_10_noise_2_{model_class.__name__}",
         ),
         pytest.param(
-            model,
+            model_class,
             {
                 "dataset": "regression",
-                "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+                "strictly_positive": model_class
+                in [GammaRegressor, PoissonRegressor, TweedieRegressor],
                 "n_features": 14,
                 "n_informative": 14,
             },
-            id=f"make_regression_features_14_informative_14_{model.__name__}",
+            id=f"make_regression_features_14_informative_14_{model_class.__name__}",
         ),
     ]
 
     # LinearSVR, PoissonRegressor, GammaRegressor and TweedieRegressor do not support multi targets
-    if model not in [LinearSVR, PoissonRegressor, GammaRegressor, TweedieRegressor]:
+    if model_class not in [LinearSVR, PoissonRegressor, GammaRegressor, TweedieRegressor]:
         regression_datasets += [
             pytest.param(
-                model,
+                model_class,
                 {
                     "dataset": "regression",
                     "n_features": 14,
                     "n_informative": 14,
                     "n_targets": 2,
                 },
-                id=f"make_regression_features_14_informative_14_targets_2_{model.__name__}",
+                id=f"make_regression_features_14_informative_14_targets_2_{model_class.__name__}",
             )
         ]
 
     # TweedieRegressor has some additional specific tests
-    if model == TweedieRegressor:
-        tweedie_parameters = {
+    if model_class == TweedieRegressor:
+        tweedie_data_parameters = {
             "dataset": "regression",
             "strictly_positive": True,
             "n_features": 10,
@@ -100,20 +104,23 @@ def get_datasets_regression(model):
         for link, power in zip(links, powers):
             regression_datasets += [
                 pytest.param(
-                    partial(model, link=link, power=power),
-                    tweedie_parameters,
-                    id=f"make_regression_features_10_{model.__name__}_link_{link}_power_{power}",
+                    partial(model_class, link=link, power=power),
+                    tweedie_data_parameters,
+                    id=(
+                        "make_regression_features_10"
+                        f"_{model_class.__name__}_link_{link}_power_{power}"
+                    ),
                 )
             ]
 
-    # if model == LinearSVR:
-    #     model = partial(model, dual=False, loss="squared_epsilon_insensitive")
+    # if model_class == LinearSVR:
+    #     model_class = partial(model_class, dual=False, loss="squared_epsilon_insensitive")
 
     #     regression_datasets += [
     #         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/420
     #         pytest.param(
     #             partial(
-    #                 model,
+    #                 model_class,
     #                 fit_intercept=False,
     #             ),
     #             {
@@ -121,12 +128,12 @@ def get_datasets_regression(model):
     #                 "n_features": 10,
     #                 "random_state": numpy.random.randint(0, 2**15),
     #             },
-    #             id=f"make_regression_fit_intercept_false_{model.__name__}",
+    #             id=f"make_regression_fit_intercept_false_{model_class.__name__}",
     #         ),
     #         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
     #         pytest.param(
     #             partial(
-    #                 model,
+    #                 model_class,
     #                 fit_intercept=True,
     #             ),
     #             {
@@ -134,12 +141,12 @@ def get_datasets_regression(model):
     #                 "n_features": 10,
     #                 "random_state": numpy.random.randint(0, 2**15)
     #             },
-    #             id=f"make_regression_fit_intercept_true_{model.__name__}",
+    #             id=f"make_regression_fit_intercept_true_{model_class.__name__}",
     #         ),
     #         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/421
     #         pytest.param(
     #             partial(
-    #                 model,
+    #                 model_class,
     #                 fit_intercept=True,
     #                 intercept_scaling=1000,
     #             ),
@@ -148,18 +155,21 @@ def get_datasets_regression(model):
     #                 "n_features": 10,
     #                 "random_state": numpy.random.randint(0, 2**15),
     #             },
-    #             id=f"make_regression_fit_intercept_true_intercept_scaling_1000_{model.__name__}",
+    #             id=(
+    #                 "make_regression_fit_intercept_true_intercept_scaling_1000_"
+    #                 f"{model_class.__name__}"
+    #             ),
     #         ),
     #     ]
 
     return regression_datasets
 
 
-def get_datasets_classification(model):
+def get_datasets_classification(model_class):
     """Return tests to apply to a classification model."""
     classifier_datasets = [
         pytest.param(
-            model,
+            model_class,
             {
                 "dataset": "classification",
                 "n_samples": 200,
@@ -167,10 +177,10 @@ def get_datasets_classification(model):
                 "n_features": 10,
                 "random_state": 42,
             },
-            id=f"make_classification_features_10_{model.__name__}",
+            id=f"make_classification_features_10_{model_class.__name__}",
         ),
         pytest.param(
-            model,
+            model_class,
             {
                 "dataset": "classification",
                 "n_samples": 200,
@@ -178,10 +188,10 @@ def get_datasets_classification(model):
                 "n_features": 14,
                 "random_state": 42,
             },
-            id=f"make_classification_features_14_informative_14_{model.__name__}",
+            id=f"make_classification_features_14_{model_class.__name__}",
         ),
         pytest.param(
-            model,
+            model_class,
             {
                 "dataset": "classification",
                 "n_samples": 200,
@@ -191,7 +201,7 @@ def get_datasets_classification(model):
                 "n_classes": 4,
                 "random_state": 42,
             },
-            id=f"make_classification_features_14_informative_14_classes_4_{model.__name__}",
+            id=f"make_classification_features_14_classes_4_{model_class.__name__}",
         ),
     ]
 
@@ -201,33 +211,56 @@ def get_datasets_classification(model):
 multiple_models_datasets: List[Any] = []
 models_datasets: List[Any] = []
 
-for regression_model in regressor_models:
+for regression_model in regressor_model_classes:
     datasets_regression = get_datasets_regression(regression_model)
     multiple_models_datasets += datasets_regression
     models_datasets.append(datasets_regression[0])
 
-for classifier_model in classifier_models:
+for classifier_model in classifier_model_classes:
     datasets_classification = get_datasets_classification(classifier_model)
     multiple_models_datasets += datasets_classification
     models_datasets.append(datasets_classification[0])
 
 
-@pytest.mark.parametrize("model, parameters", multiple_models_datasets)
+@pytest.mark.parametrize("model_class, data_parameters", multiple_models_datasets)
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("use_sum_workaround", [True, False])
 def test_linear_model_compile_run_fhe(
-    model, parameters, use_virtual_lib, load_data, default_configuration, is_vl_only_option
+    model_class,
+    data_parameters,
+    use_sum_workaround,
+    use_virtual_lib,
+    load_data,
+    default_configuration,
+    is_vl_only_option,
 ):
     """Tests the sklearn regressions."""
     if not use_virtual_lib and is_vl_only_option:
         print("Warning, skipping non VL tests")
         return
 
-    # Get the dataset
-    x, y = load_data(**parameters)
+    # If the ReduceSum workaround is used, it can only handle N features with N a power of 2 for
+    # now.
+    if use_sum_workaround:
+        n_features = 2 ** (int(numpy.floor(numpy.log2(data_parameters["n_features"]))) + 1)
+        data_parameters["n_features"] = n_features
 
-    # Here we fix n_bits = 2 to make sure the quantized model does not overflow during the
-    # compilation.
-    model = model(n_bits=2)
+    # Get the dataset
+    x, y = load_data(**data_parameters)
+
+    # If the LinearRegression model is tested with single target, we instantiate it using the
+    # use_sum_workaround parameter
+    if model_class == LinearRegression and len(y.shape) == 1:
+        model = model_class(n_bits=2, use_sum_workaround=use_sum_workaround)
+
+    # Else, if use_sum_workaround is set to False, instantiate the models normally
+    elif not use_sum_workaround:
+        model = model_class(n_bits=2)
+
+    # Else, skip the test as the sum workaround is not applicable to other models or
+    # LinearRegression with multi-targets.
+    else:
+        return
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -246,7 +279,13 @@ def test_linear_model_compile_run_fhe(
     assert y_pred_fhe.shape == y_pred.shape
 
 
-@pytest.mark.parametrize("model, parameters", multiple_models_datasets)
+# We currently don't want to check a LinearRegression model's R2 score using the sum workaround as
+# it still an experimental feature. This might change with the calibration technique developed in
+# https://github.com/zama-ai/concrete-ml-internal/issues/1452.
+# We therefore only make sure that use_sum_workaround set to False correctly does not change the
+# initial implementation.
+@pytest.mark.parametrize("use_sum_workaround", [False])
+@pytest.mark.parametrize("model_class, data_parameters", multiple_models_datasets)
 @pytest.mark.parametrize(
     "n_bits",
     [
@@ -255,9 +294,10 @@ def test_linear_model_compile_run_fhe(
     ],
 )
 def test_linear_model_quantization(
-    model,
-    parameters,
+    model_class,
+    data_parameters,
     n_bits,
+    use_sum_workaround,
     load_data,
     check_r2_score,
     check_accuracy,
@@ -265,23 +305,38 @@ def test_linear_model_quantization(
     """Tests the sklearn LinearModel quantization."""
 
     # Get the dataset
-    x, y = load_data(**parameters)
-    model = model(n_bits=n_bits)
+    x, y = load_data(**data_parameters)
+
+    # If the LinearRegression model is tested with single target, we instantiate it using the
+    # use_sum_workaround parameter
+    if model_class == LinearRegression and len(y.shape) == 1:
+        model = model_class(n_bits=n_bits, use_sum_workaround=use_sum_workaround)
+
+    # Else, if use_sum_workaround is set to False, instantiate the models normally
+    elif not use_sum_workaround:
+        model = model_class(n_bits=n_bits)
+
+    # Else, skip the test as the sum workaround is not applicable to other models or
+    # LinearRegression with multi-targets.
+    else:
+        return
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         params = {}
-        if model._estimator_type == "classifier":  # pylint: disable=protected-access
+        if model_class in classifier_model_classes:
             params["random_state"] = numpy.random.randint(0, 2**15)
             model.set_params(**params)
+
             # Random state should be taken from the class variable
             model, sklearn_model = model.fit_benchmark(x, y)
+
         # Random state should be taken from the method parameter
         model, sklearn_model = model.fit_benchmark(x, y, **params)
 
-    if model._estimator_type == "classifier":  # pylint: disable=protected-access
-        # Classification models
+    # If the model is a classifier
+    if model_class in classifier_model_classes:
 
         # Check that accuracies are similar
         y_pred_quantized = model.predict(x)
@@ -299,9 +354,9 @@ def test_linear_model_quantization(
             # Check that probabilities are similar
             y_pred_quantized = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
-    else:
-        # Regression models
 
+    # If the model is a regressor
+    else:
         # Check that class prediction are similar
         y_pred_quantized = model.predict(x)
         y_pred_sklearn = sklearn_model.predict(x)
@@ -309,18 +364,34 @@ def test_linear_model_quantization(
     check_r2_score(y_pred_sklearn, y_pred_quantized)
 
 
-@pytest.mark.parametrize("model, parameters", models_datasets)
-def test_pipeline_sklearn(model, parameters, load_data):
+@pytest.mark.parametrize("model_class, data_parameters", models_datasets)
+@pytest.mark.parametrize("use_sum_workaround", [True, False])
+def test_pipeline_sklearn(model_class, data_parameters, use_sum_workaround, load_data):
     """Tests that the linear models work well within sklearn pipelines."""
-    x, y = load_data(**parameters)
+    x, y = load_data(**data_parameters)
+
+    # If the LinearRegression model is tested with single target, we instantiate it using the
+    # use_sum_workaround parameter
+    if model_class == LinearRegression and len(y.shape) == 1:
+        model = model_class(n_bits=2, use_sum_workaround=use_sum_workaround)
+
+    # Else, if use_sum_workaround is set to False, instantiate the models normally
+    elif not use_sum_workaround:
+        model = model_class(n_bits=2)
+
+    # Else, skip the test as the sum workaround is not applicable to other models or
+    # LinearRegression with multi-targets.
+    else:
+        return
 
     pipe_cv = Pipeline(
         [
             ("pca", PCA(n_components=2)),
             ("scaler", StandardScaler()),
-            ("model", model()),
+            ("model", model),
         ]
     )
+
     # Do a grid search to find the best hyperparameters
     param_grid = {
         "model__n_bits": [2, 3],
@@ -330,4 +401,5 @@ def test_pipeline_sklearn(model, parameters, load_data):
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+
         grid_search.fit(x, y)

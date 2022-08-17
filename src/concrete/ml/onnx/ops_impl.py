@@ -1368,7 +1368,9 @@ def numpy_reduce_sum(
 
     assert_true(len(a.shape) == 2, "ReduceSum currently only handles arrays of 2 dimensions")
 
-    assert_true(keepdims == 0, "ReduceSum currently only outputs reduced dimension tensors.")
+    assert_true(
+        keepdims == 1, "ReduceSum currently only keeps the inputs' dimensions for its outputs."
+    )
 
     n_values = a.shape[1]
     assert_true(
@@ -1376,7 +1378,7 @@ def numpy_reduce_sum(
         "ReduceSum currently only handles N values with N a power of 2.",
     )
 
-    return (numpy.sum(a, axis=1, keepdims=False),)
+    return (numpy.sum(a, axis=1, keepdims=True),)
 
 
 @onnx_func_raw_args("scale", "zero_point", "bit_width")
