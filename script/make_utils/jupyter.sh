@@ -14,7 +14,7 @@ print_time_execution() {
 WHAT_TO_DO="open"
 
 # Create a list of notebooks with long execution times in order not to consider them when refreshing
-# all notebooks at the same time. 
+# all notebooks at the same time.
 LONG_EXECUTION_TIMES_NOTEBOOKS=(
     docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb
     docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb
@@ -67,7 +67,7 @@ then
 
     # Remove notebooks with long execution times
     for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
-    do  
+    do
         echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
 
         # shellcheck disable=SC2206
@@ -76,7 +76,7 @@ then
 
     # shellcheck disable=SC2068
     for NOTEBOOK in ${LIST_OF_NOTEBOOKS[@]}
-    do  
+    do
         echo "Refreshing ${NOTEBOOK}"
 
         START=$(date +%s)
@@ -98,7 +98,7 @@ then
     for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
     do
         echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
-    
+
         # shellcheck disable=SC2206
         LIST_OF_NOTEBOOKS=(${LIST_OF_NOTEBOOKS[@]/*${NOTEBOOK_TO_REMOVE}*/})
     done
