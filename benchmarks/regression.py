@@ -389,6 +389,11 @@ def argument_manager():
         action="store_true",
         help="just list the different tasks and stop",
     )
+    parser.add_argument(
+        "--short_list",
+        action="store_true",
+        help="just list the different tasks (one per model type) and stop",
+    )
 
     args = parser.parse_args()
 
@@ -416,13 +421,20 @@ def main():
 
     all_tasks = list(benchmark_generator(args))
 
-    if args.list:
+    if args.list or args.short_list:
+        already_done_models = {}
+
         for (dataset_i, regressor_i, config_i) in all_tasks:
             config_n = str(config_i).replace("'", '"')
-            print(
-                f"--regressors {regressor_i.__name__} --datasets {dataset_i}"
-                f" --configs '{config_n}'"
-            )
+            regressor_i_name = regressor_i.__name__
+
+            if not args.short_list or regressor_i_name not in already_done_models:
+                print(
+                    f"--regressors {regressor_i_name} --datasets {dataset_i}"
+                    f" --configs '{config_n}'"
+                )
+                already_done_models[regressor_i_name] = 1
+
         return
 
     print(f"Will perform benchmarks on {len(list(all_tasks))} test cases")

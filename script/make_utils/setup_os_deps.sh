@@ -135,8 +135,8 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
         wget && \
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
-        pip install --no-cache-dir --upgrade pip && \
-        pip install --no-cache-dir poetry && \
+        python3 -m pip install --no-cache-dir --upgrade pip && \
+        python3 -m pip install --no-cache-dir poetry && \
         linux_install_gitleaks && linux_install_actionlint && linux_install_github_cli"
     fi
     eval "${SETUP_CMD}"

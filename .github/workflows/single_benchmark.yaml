@@ -1,0 +1,178 @@
+# This workflow is called by new_generation_benchmarks.yaml
+name: Single benchmark
+on:
+  workflow_call:
+    inputs:
+      command:
+        type: string
+        required: true
+        description: "The command to launch the benchmark. (like: python3 benchmarks/classification.py --classifiers RandomForestClassifier --datasets credit-g --configs '{\\\"max_depth\\\": 3, \\\"n_estimators\\\": 10, \\\"n_bits\\\": 2}')"
+      git-ref:
+        description: "Repo reference (branch, tag or SHA)"
+        default: "main"
+        required: true
+        type: string
+    secrets:
+      ML_PROGRESS_TRACKER_TOKEN:
+        description: "ML progress tracker token"
+      ML_PROGRESS_TRACKER_URL:
+        description: "ML progress tracker url"
+      PIP_INDEX_URL:
+        description: "pip index url"
+      PIP_EXTRA_INDEX_URL:
+        description: "Internal repo url"
+      INTERNAL_PYPI_URL:
+        description: "Internal pypi url"
+      INTERNAL_REPO_URL:
+        description: "Internal repo url"
+      AWS_ACCESS_KEY_ID:
+        description: "AWS access key"
+      AWS_SECRET_ACCESS_KEY:
+        description: "AWS secret key"
+      AWS_REGION:
+        description: "AWS region"
+      BENCHMARKS_AWS_REGION:
+        description: "AWS region"
+      EC2_RUNNER_BOT_TOKEN:
+        description: "EC2 Runner bot token"
+      AWS_EC2_AMI:
+        description: "AWS EC2 AMI"
+      AWS_EC2_INSTANCE_TYPE:
+        description: "AWS EC2 Instance type"
+      AWS_EC2_SUBNET_ID:
+        description: "AWS EC2 Subnet id"
+      AWS_EC2_SECURITY_GROUP_ID:
+        description: "AWS EC2 security group id"
+      INTERNAL_PYPI_URL_FOR_MASK:
+        description: "Used for masking"
+      INTERNAL_REPO_URL_FOR_MASK:
+        description: "Used for masking"
+
+jobs:
+  start-ec2:
+    name: Start EC2
+    runs-on: ubuntu-20.04
+    outputs:
+      # Needed to shutdown the proper instance
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Start EC2 runner
+        id: start-ec2-runner
+        if: ${{ !cancelled() }}
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+
+  run-command:
+    name: Run benchmarks
+    runs-on: ${{ needs.start-ec2.outputs.label }}
+    needs: [start-ec2]
+    container:
+      image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+    steps:
+      - name: Add masks
+        id: masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Docker container related setup and git installation
+        id: docker-git-config
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
+
+      - name: Checkout Code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        with:
+          fetch-depth: 1
+          lfs: false
+          ref: ${{ github.event.inputs.git-ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
+      - name: Run the benchmark command
+        id: run-benchmark
+        run: |
+          source .venv/bin/activate
+          echo "${{ inputs.command }}"
+          eval "${{ inputs.command }}"
+
+      - name: Upload results
+        id: upload-results
+        run: |
+          curl \
+          -H "Authorization: Bearer ${{ secrets.ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d @progress.json \
+          -X POST "${{ secrets.ML_PROGRESS_TRACKER_URL }}"/measurement
+
+  shutdown-ec2:
+    name: Shutdown EC2
+    runs-on: ubuntu-20.04
+    needs: [start-ec2, run-command]
+    if: ${{ always() }}  # Always shutdown instances
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Shutdown EC2 runner
+        id: shutdown-ec2-runner
+        if: ${{ always() }}
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        with:
+          mode: stop
+          label: ${{ needs.start-ec2.outputs.label }}
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-instance-id: ${{ needs.start-ec2.outputs.instance-id }}

@@ -365,6 +365,11 @@ def argument_manager():
         action="store_true",
         help="just list the different tasks and stop",
     )
+    parser.add_argument(
+        "--short_list",
+        action="store_true",
+        help="just list the different tasks (one per model type) and stop",
+    )
 
     args = parser.parse_args()
 
@@ -383,14 +388,23 @@ def main():
 
     config = get_config(args)
 
-    if args.list:
+    if args.list or args.short_list:
+        already_done_models = {}
+
         for regressor in args.regressors:
             for n_bits in config[regressor]["n_bits_list"]:
                 print_configs = config[regressor].copy()
                 print_configs.pop("n_bits_list")
                 print_configs = str(print_configs).replace("'", '"')
                 n_bits = str(n_bits).replace("'", '"')
-                print(f"--regressors {regressor} --n_bits '{n_bits}' --configs '{print_configs}'")
+
+                if not args.short_list or regressor not in already_done_models:
+                    print(
+                        f"--regressors {regressor} --n_bits '{n_bits}' "
+                        f"--configs '{print_configs}'"
+                    )
+                    already_done_models[regressor] = 1
+
         return
 
     number_of_test_cases = sum(

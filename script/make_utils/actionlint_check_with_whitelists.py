@@ -10,16 +10,24 @@ whitelisted_pattern: Set[str] = {
     "matrix.runs_on",
     "matrix.python_version",
     "matrix: ${{ fromJSON(format('{{\"include\":{0}}}', "
-    + "needs.start-runner-linux.outputs.matrix)) }}",
+    "needs.start-runner-linux.outputs.matrix)) }}",
     "matrix: ${{ fromJSON(format('{{\"include\":{0}}}', "
-    + "needs.matrix-preparation.outputs.macos-matrix)) }}",
+    "needs.matrix-preparation.outputs.macos-matrix)) }}",
+    'when a reusable workflow is called with "uses", "strategy" is not available.'
+    ' only following keys are allowed: "name", "uses", "with", "secrets", "needs",'
+    ' "if", and "permissions" in job "run-job"',
+    '"secrets" section is scalar node but mapping node is expected',
+    "secrets: inherit",
+    "^~~~~~~",
+    "|",
+    "strategy:",
 }
 
 
 def main():
     """Do the test"""
     status = 0
-
+    bad_lines = []
     for line in sys.stdin:
         if line in whitelisted_lines:
             continue
@@ -34,10 +42,11 @@ def main():
         if is_bad_line:
             print("->", line)
             status = 1
+            bad_lines.append(line)
 
     if status:
-        print("Some non whitelisted errors, look at full log file")
-        raise ValueError
+        errors = "\n------\n".join(bad_lines)
+        raise ValueError("Some non whitelisted errors, look at full log file:" f"{errors}")
 
 
 if __name__ == "__main__":
