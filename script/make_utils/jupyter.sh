@@ -10,7 +10,17 @@ print_time_execution() {
     printf "Notebook %s executed in %02dh:%02dm:%02ds\n" "$1" $(($2/3600)) $(($2%3600/60)) $(($2%60))
 }
 
+
 WHAT_TO_DO="open"
+
+# Create a list of notebooks with long execution times in order not to consider them when refreshing
+# all notebooks at the same time. 
+LONG_EXECUTION_TIMES_NOTEBOOKS=(
+    docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb
+    docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb
+    docs/advanced_examples/ClassifierComparison.ipynb
+    docs/advanced_examples/GLMComparison.ipynb
+)
 
 while [ -n "$1" ]
 do
@@ -50,10 +60,25 @@ then
     fi
 elif [ "$WHAT_TO_DO" == "run_all_notebooks" ]
 then
-    LIST_OF_NOTEBOOKS=$(find docs -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints")
+    echo "Refreshing notebooks"
 
-    for NOTEBOOK in ${LIST_OF_NOTEBOOKS}
-    do
+    # shellcheck disable=SC2207
+    LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+
+    # Remove notebooks with long execution times
+    for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
+    do  
+        echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
+
+        # shellcheck disable=SC2206
+        LIST_OF_NOTEBOOKS=(${LIST_OF_NOTEBOOKS[@]/*${NOTEBOOK_TO_REMOVE}*/})
+    done
+
+    # shellcheck disable=SC2068
+    for NOTEBOOK in ${LIST_OF_NOTEBOOKS[@]}
+    do  
+        echo "Refreshing ${NOTEBOOK}"
+
         START=$(date +%s)
         jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"
         END=$(date +%s)
@@ -64,20 +89,31 @@ then
     # Then, one needs to sanitize the notebooks
 elif [ "$WHAT_TO_DO" == "run_all_notebooks_parallel" ]
 then
-    echo "Refreshing notebooks"
+    echo "Refreshing notebooks in parallel"
 
     # shellcheck disable=SC2207
-    NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+
+    # Remove notebooks with long execution times
+    for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
+    do
+        echo "${NOTEBOOK_TO_REMOVE} is skipped as its execution time is too long"
+    
+        # shellcheck disable=SC2206
+        LIST_OF_NOTEBOOKS=(${LIST_OF_NOTEBOOKS[@]/*${NOTEBOOK_TO_REMOVE}*/})
+    done
+
     PIDS_TO_WATCH=""
 
     # Run notebooks in sub processes on the same machine 
     # shellcheck disable=SC2068
-    for NOTEBOOK in ${NOTEBOOKS[@]}; do
+    for NOTEBOOK in ${LIST_OF_NOTEBOOKS[@]}
+    do
         ( jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}" ) &
         # store PID of process
         NOTEBOOK_PID="$!"
         PIDS_TO_WATCH+=" ${NOTEBOOK_PID}"
-        echo "Notebook ${NOTEBOOK} running with PID: ${NOTEBOOK_PID}"
+        echo "Notebook ${NOTEBOOK} refreshing with PID: ${NOTEBOOK_PID}"
     done
 
     STATUS=0
