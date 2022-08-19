@@ -430,6 +430,8 @@ def main():
             print("Start")
             time_current = time.time()
 
+        ids_to_convert_in_seconds = []
+
         regressor = parameters["regressor"]
         init_parameters = parameters["init_parameters"]
 
@@ -495,7 +497,11 @@ def main():
         x_train_subset_pca = model_pca["pca"].transform(
             model_pca["preprocessor"].transform(fit_parameters["X"].head(100))
         )
-        with progress.measure(id="fhe-compile-time", label="FHE Compile Time"):
+
+        fhe_compile_time_id = "fhe-compile-time"
+        ids_to_convert_in_seconds.append(fhe_compile_time_id)
+
+        with progress.measure(id=fhe_compile_time_id, label="FHE Compile Time"):
             forward_fhe = model_pca["regressor"].compile(  # pylint: disable=no-member
                 x_train_subset_pca,
                 use_virtual_lib=False,
@@ -517,7 +523,10 @@ def main():
             time_current = time.time()
             print("Key generation")
 
-        with progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time"):
+        fhe_keygen_time_id = "fhe-keygen-time"
+        ids_to_convert_in_seconds.append(fhe_keygen_time_id)
+
+        with progress.measure(id=fhe_keygen_time_id, label="FHE Key Generation Time"):
             forward_fhe.keygen()
 
         if args.verbose:
@@ -526,8 +535,10 @@ def main():
             print(f"Predict in FHE ({args.fhe_samples} samples)")
 
         # Compute the predictions in FHE and measure its running time (ms)
-        measure_id = "fhe-inference_time"
-        with progress.measure(id=measure_id, label="FHE Inference Time per sample"):
+        fhe_inference_time_id = "fhe-inference_time"
+        ids_to_convert_in_seconds.append(fhe_inference_time_id)
+
+        with progress.measure(id=fhe_inference_time_id, label="FHE Inference Time per sample"):
             fhe_predictions = model_pca.predict(x_test, execute_in_fhe=True)
 
         run_and_report_regression_metrics(y_test, fhe_predictions, "fhe", "FHE")
@@ -541,9 +552,9 @@ def main():
 
         # Modify the prediction running time to consider the number of samples
         if x_test.shape[0] > 0:
-            progress.state.MEASUREMENTS[measure_id][-1] /= x_test.shape[0]
+            progress.state.MEASUREMENTS[fhe_inference_time_id][-1] /= x_test.shape[0]
         else:
-            progress.state.MEASUREMENTS[measure_id][-1] = 0
+            progress.state.MEASUREMENTS[fhe_inference_time_id][-1] = 0
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
@@ -581,6 +592,10 @@ def main():
             label="Homomorphic Deviance Score",
             value=fhe_score,
         )
+
+        # Convert time values from milliseconds to seconds
+        for id_to_convert_in_seconds in ids_to_convert_in_seconds:
+            progress.state.MEASUREMENTS[id_to_convert_in_seconds][-1] /= 1000
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")
