@@ -48,6 +48,7 @@ Here is a list of ML algorithms currently supported in this library:
 - SVM - LinearSVC and LinearSVR (sklearn)
 - DecisionTreeClassifier (sklearn)
 - DecisionTreeRegressor (sklearn)
+- RandomForestClassifier (sklearn)
 - NeuralNetworkClassifier (skorch)
 - NeuralNetworkRegressor (skorch)
 - XGBoostClassifier (xgboost)
