@@ -188,6 +188,19 @@ pytest_one_single_cpu:
 	${PYTEST_OPTIONS} \
 	"$${TEST}" --randomly-seed=${RANDOMLY_SEED}
 
+.PHONY: pytest_macOS_for_GitHub # Run pytest with some coverage options which are removed
+# These options are removed since they look to fail on macOS for no obvious reason
+# (see https://github.com/zama-ai/concrete-ml-internal/issues/1554)
+pytest_macOS_for_GitHub:
+	poetry run pytest --durations=10 -svv \
+	--capture=tee-sys \
+	-n $$(./script/make_utils/ncpus.sh) \
+	--randomly-dont-reorganize \
+	--count=$(COUNT) \
+	--randomly-dont-reset-seed \
+	${PYTEST_OPTIONS}
+
+
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
 mypy:

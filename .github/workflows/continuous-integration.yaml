@@ -334,7 +334,7 @@ jobs:
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 60
+        timeout-minutes: 80
         run: |
           make pytest
 
@@ -447,7 +447,7 @@ jobs:
 
   build-macos:
     needs: [matrix-preparation]
-    timeout-minutes: 80
+    timeout-minutes: 240
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
 
     runs-on: ${{ matrix.runs_on }}
@@ -487,11 +487,12 @@ jobs:
           make setup_env
 
       # macOS builds are already long, so we decide not to use --weekly on them, it could be
-      # changed
+      # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
+      # slightly different way to launch pytest
       - name: PyTest Source Code
-        timeout-minutes: 80
+        timeout-minutes: 240
         run: |
-          make pytest
+          make pytest_macOS_for_GitHub
 
   weekly-pip-audit:
     if: ${{ github.event_name == 'schedule' }}
