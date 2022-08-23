@@ -17,6 +17,9 @@ rm -rf concrete-ml
 git clone https://github.com/zama-ai/concrete-ml
 ```
 
+Some tests require files tracked by git-lfs to be downloaded.
+To do so please follow the instructions on [git-lfs website](https://git-lfs.github.com/) then run  `git lfs pull`.
+
 ## Automatic installation
 
 A simple way to have everything installed is to use the development Docker (see the [docker setup](docker_setup.md) guide). On Linux and macOS you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
