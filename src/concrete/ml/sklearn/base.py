@@ -266,6 +266,7 @@ class QuantizedTorchEstimatorMixin:
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
         self.quantized_module_ = None
+        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
 
         # Call skorch fit that will train the network
         super().fit(X, y, **fit_params)
@@ -318,7 +319,6 @@ class QuantizedTorchEstimatorMixin:
             y_pred : numpy ndarray with predictions
 
         """
-
         # By default, just return the result of predict_proba
         # which for linear models with no non-linearity applied simply returns
         # the decision function value
@@ -339,7 +339,6 @@ class QuantizedTorchEstimatorMixin:
         Raises:
             ValueError: if the estimator was not yet trained or compiled
         """
-
         if execute_in_fhe:
             if self.quantized_module_ is None:
                 raise ValueError(
@@ -354,6 +353,7 @@ class QuantizedTorchEstimatorMixin:
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:
                 X = X.reshape((1, -1))
+            X = check_array_and_assert(X)
             y_pred = None
             for idx, x in enumerate(X):
                 q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)

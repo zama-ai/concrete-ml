@@ -44,7 +44,6 @@ def check_X_y_and_assert(X, y, *args, **kwargs):
 
     Returns:
         The converted and validated arrays
-
     """
     X, y = sklearn.utils.check_X_y(X, y, *args, **kwargs)
     assert_true(isinstance(X, numpy.ndarray), f"wrong type {type(X)}")
