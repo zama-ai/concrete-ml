@@ -85,7 +85,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
         "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
         "module__n_outputs": 2,
         "module__input_dim": 2,
-        "module__activation_function": nn.SELU,
+        "module__activation_function": nn.ReLU,
         "max_epochs": 10,
         "verbose": 0,
     }

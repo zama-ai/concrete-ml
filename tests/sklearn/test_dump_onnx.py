@@ -42,9 +42,10 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
         x, y = load_data(
             dataset="classification",
             n_samples=100,
-            n_features=20,
+            n_features=10,
             n_classes=2,
             n_informative=10,
+            n_redundant=0,
             random_state=numpy.random.randint(0, 2**15),
         )
         x = x.astype(numpy.float32)
@@ -53,8 +54,8 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
             dataset="regression",
             strictly_positive=False,
             n_samples=1000,
-            n_features=20,
-            n_informative=20,
+            n_features=10,
+            n_informative=10,
             n_targets=1,
             noise=2.0,
             random_state=numpy.random.randint(0, 2**15),
@@ -85,11 +86,6 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
         model.fit(x, y)
 
     with warnings.catch_warnings():
-        # Sometimes, we hit "RuntimeWarning: overflow encountered in exp", which is not a problem
-        # for our test
-        if model_name == "NeuralNetRegressor":
-            warnings.simplefilter("ignore", category=RuntimeWarning)
-
         # Use virtual lib to not have issues with precision
         model.compile(x, default_configuration, use_virtual_lib=True)
 
@@ -239,45 +235,45 @@ def test_dump(
 }""",
         RandomForestClassifier: "Not tested",
         NeuralNetClassifier: """graph torch_jit (
-  %onnx::MatMul_0[FLOAT, 20]
+  %onnx::MatMul_0[FLOAT, 10]
 ) initializers (
-  %features.fc0.bias[FLOAT, 80]
-  %features.fc1.bias[FLOAT, 80]
+  %features.fc0.bias[FLOAT, 40]
+  %features.fc1.bias[FLOAT, 40]
   %features.fc2.bias[FLOAT, 2]
-  %onnx::MatMul_19[FLOAT, 20x80]
-  %onnx::MatMul_20[FLOAT, 80x80]
-  %onnx::MatMul_21[FLOAT, 80x2]
+  %onnx::MatMul_19[FLOAT, 10x40]
+  %onnx::MatMul_20[FLOAT, 40x40]
+  %onnx::MatMul_21[FLOAT, 40x2]
 ) {
   %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
   %input = Add(%features.fc0.bias, %onnx::Add_8)
-  %onnx::MatMul_10 = Selu(%input)
+  %onnx::MatMul_10 = Relu(%input)
   %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
   %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
-  %onnx::MatMul_14 = Selu(%input.3)
+  %onnx::MatMul_14 = Relu(%input.3)
   %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
   %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
-  %18 = Selu(%input.7)
+  %18 = Relu(%input.7)
   return %18
 }""",
         NeuralNetRegressor: """graph torch_jit (
-  %onnx::MatMul_0[FLOAT, 20]
+  %onnx::MatMul_0[FLOAT, 10]
 ) initializers (
-  %features.fc0.bias[FLOAT, 20]
-  %features.fc1.bias[FLOAT, 20]
+  %features.fc0.bias[FLOAT, 10]
+  %features.fc1.bias[FLOAT, 10]
   %features.fc2.bias[FLOAT, 1]
-  %onnx::MatMul_19[FLOAT, 20x20]
-  %onnx::MatMul_20[FLOAT, 20x20]
-  %onnx::MatMul_21[FLOAT, 20x1]
+  %onnx::MatMul_19[FLOAT, 10x10]
+  %onnx::MatMul_20[FLOAT, 10x10]
+  %onnx::MatMul_21[FLOAT, 10x1]
 ) {
   %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
   %input = Add(%features.fc0.bias, %onnx::Add_8)
-  %onnx::MatMul_10 = Selu(%input)
+  %onnx::MatMul_10 = Relu(%input)
   %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
   %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
-  %onnx::MatMul_14 = Selu(%input.3)
+  %onnx::MatMul_14 = Relu(%input.3)
   %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
   %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
-  %18 = Selu(%input.7)
+  %18 = Relu(%input.7)
   return %18
 }""",
         Ridge: """graph torch_jit (

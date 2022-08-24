@@ -42,8 +42,8 @@ regressor_models = [
         module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time
         module__n_hidden_neurons_multiplier=1,
         module__n_outputs=1,
-        module__input_dim=20,
-        module__activation_function=nn.SELU,
+        module__input_dim=10,
+        module__activation_function=nn.ReLU,
         max_epochs=10,
         verbose=0,
     ),
@@ -62,8 +62,8 @@ classifier_models = [
         module__n_a_bits=2,
         module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time.
         module__n_outputs=2,
-        module__input_dim=20,
-        module__activation_function=nn.SELU,
+        module__input_dim=10,
+        module__activation_function=nn.ReLU,
         max_epochs=10,
         verbose=0,
     ),
