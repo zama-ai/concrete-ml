@@ -3,9 +3,9 @@
 set -e
 
 RANDOMLY_SEED=$RANDOM
-echo "Testing determinism with seed $RANDOMLY_SEED"
-
 OUTPUT_DIRECTORY=$(mktemp -d)
+
+echo "Testing determinism with seed $RANDOMLY_SEED in folder ${OUTPUT_DIRECTORY}"
 
 set +e
 
@@ -64,14 +64,16 @@ do
     # SC2086 is about double quote to prevent globbing and word splitting, but here, it makes that we have
     # an empty arg in pytest, which is considered as "do pytest for all files"
     # shellcheck disable=SC2086
-    poetry run pytest "$x" -xsvv $EXTRA_OPTION --randomly-dont-reset-seed --forcing_random_seed "${LIST_SEED[WHICH]}" | sed -n -e '/collecting/,$p' | grep -v collecting | grep -v "passed in" | grep -v "PASSED" >> "${OUTPUT_DIRECTORY}/three.txt"
+    poetry run pytest "$x" -xsvv $EXTRA_OPTION --randomly-dont-reset-seed --forcing_random_seed "${LIST_SEED[WHICH]}" | sed -n -e '/collecting/,$p' | grep -v collecting | grep -v "collected" | grep -v "passed in" | grep -v "PASSED" >> "${OUTPUT_DIRECTORY}/three.txt"
 
     ((WHICH+=1))
 done
 
 # Clean a bit one.txt
-sed -n -e '/collecting/,$p' "${OUTPUT_DIRECTORY}/one.txt" | grep -v collecting | grep -v "passed in" | grep -v "PASSED" | grep -v "Leaving directory" > "${OUTPUT_DIRECTORY}/one.modified.txt"
+sed -n -e '/collecting/,$p' "${OUTPUT_DIRECTORY}/one.txt" | grep -v collecting | grep -v "collected" | grep -v "passed in" | grep -v "PASSED" | grep -v "Leaving directory" > "${OUTPUT_DIRECTORY}/one.modified.txt"
 
 echo ""
-diff "${OUTPUT_DIRECTORY}/one.modified.txt" "${OUTPUT_DIRECTORY}/three.txt" --ignore-all-space --ignore-blank-lines --ignore-space-change
+echo "diff:"
+echo ""
+diff --color -u "${OUTPUT_DIRECTORY}/one.modified.txt" "${OUTPUT_DIRECTORY}/three.txt" --ignore-all-space --ignore-blank-lines --ignore-space-change
 echo "Successful --forcing_random_seed check"
