@@ -140,6 +140,23 @@ then
         exit 255
     fi
 
+    # And check with a white-list
+    # Brevitas has an "UNKNOWN" license, but is actually a BSD, so it is ignored in this test
+    LICENSES_WHITELIST="new BSD 3-Clause"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};3-Clause BSD License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD-3"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache License v2.0"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache Software License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache Software License; BSD License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Historical Permission Notice and Disclaimer (HPND)"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};MIT License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};MIT License; Mozilla Public License 2.0 (MPL 2.0)"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Other/Proprietary License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Python Software Foundation License"
+
+    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas
+
     deactivate
 
     if [ $CHECK -eq 1 ]
