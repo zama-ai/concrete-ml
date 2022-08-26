@@ -142,6 +142,7 @@ then
 
     # And check with a white-list
     # Brevitas has an "UNKNOWN" license, but is actually a BSD, so it is ignored in this test
+    # pkg-resources reports UNKNOWN due to a Ubuntu bug, but is Apache - ignore
     LICENSES_WHITELIST="new BSD 3-Clause"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};3-Clause BSD License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD License"
@@ -155,7 +156,7 @@ then
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Other/Proprietary License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Python Software Foundation License"
 
-    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas
+    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources
 
     deactivate
 

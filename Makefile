@@ -153,12 +153,15 @@ pcc_internal: $(PCC_DEPS)
 # --capture=tee-sys is to make that, in case of crash, we can search for "Forcing seed to" in stdout
 # to try to reproduce
 # --durations=10 is to show the 10 slowest tests
+# -n Const because most tests include parallel execution using all CPUs, too many 
+# parallel tests would lead to contention. Thus Const is set to something low and much lower than
+# num_cpus
 .PHONY: pytest # Run pytest
 pytest:
 	poetry run pytest --durations=10 -svv \
 	--capture=tee-sys \
 	--global-coverage-infos-json=global-coverage-infos.json \
-	-n $$(./script/make_utils/ncpus.sh) \
+	-n 4 \
 	--cov=$(SRC_DIR) --cov-fail-under=100 \
 	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered tests/ \

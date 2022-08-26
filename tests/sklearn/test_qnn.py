@@ -23,7 +23,7 @@ from concrete.ml.sklearn.qnn import (
     [3],
 )
 @pytest.mark.parametrize("n_bits_w_a", [16])
-@pytest.mark.parametrize("n_accum_bits", [32])
+@pytest.mark.parametrize("n_accum_bits", [40])
 @pytest.mark.parametrize(
     "activation_function",
     [

@@ -1,6 +1,7 @@
 """Module that contains base classes for our libraries estimators."""
 import copy
 import functools
+import tempfile
 
 # https://github.com/zama-ai/concrete-ml-internal/issues/942
 # Refactoring base.py. This file is more than 1000 lines.
@@ -8,12 +9,14 @@ import functools
 # pylint: disable=too-many-lines,invalid-name
 import warnings
 from abc import abstractmethod
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy
 import onnx
 import sklearn
 import torch
+from brevitas.export import BrevitasONNXManager
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.compiler import Compiler
@@ -28,7 +31,7 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import simplify_onnx_model
-from ..quantization import PostTrainingAffineQuantization, QuantizedArray
+from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedArray
 from ..torch import NumpyModule
 from .protocols import Quantizer
 from .tree_to_numpy import Task, tree_to_numpy
@@ -271,17 +274,40 @@ class QuantizedTorchEstimatorMixin:
         # Call skorch fit that will train the network
         super().fit(X, y, **fit_params)
 
+        # Export the brevitas model to ONNX
+        output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
+
+        BrevitasONNXManager.export(
+            self.base_module_to_compile,
+            input_shape=X[[0], ::].shape,
+            export_path=str(output_onnx_file_path),
+            keep_initializers_as_inputs=False,
+            opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
+        )
+
+        onnx_model = onnx.load(output_onnx_file_path)
+
+        output_onnx_file_path.unlink(missing_ok=True)
+
         # Create corresponding numpy model
-        numpy_model = NumpyModule(self.base_module_to_compile, torch.tensor(X[0, ::]))
+        numpy_model = NumpyModule(onnx_model, torch.tensor(X[[0], ::]))
 
         self._onnx_model_ = numpy_model.onnx_model
 
-        # Get the number of bits used in model creation (used to setup pruning)
+        # Set the quantization bits for import
+
+        # Note that the ONNXConverter will use a default value for network input bits
+        # Furthermore, Brevitas ONNX contains bitwidths in the ONNX file
+        # which override the bitwidth that we pass here
+
+        # Thus, this parameter, set by the inheriting classes, such as NeuralNetClassifier
+        # is only used to check consistency during import (onnx file vs import)
         n_bits = self.n_bits_quant
 
-        # Quantize with post-training static method, to have a model with integer weights
-        post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
-        self.quantized_module_ = post_training_quant.quantize_module(X)
+        # Import the quantization aware trained model
+        qat_model = PostTrainingQATImporter(n_bits, numpy_model, is_signed=True)
+
+        self.quantized_module_ = qat_model.quantize_module(X)
 
         # Set post-processing params
         self._update_post_processing_params()

@@ -1,5 +1,4 @@
 """Base Quantized Op class that implements quantization for a float numpy op."""
-from abc import ABC
 from copy import deepcopy
 from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
@@ -30,7 +29,7 @@ ONNX_OPS_TO_QUANTIZED_IMPL: Dict[str, Type["QuantizedOp"]] = {}
 DEFAULT_OUTPUT_BITS = 5
 
 
-class QuantizedOp(ABC):
+class QuantizedOp:
     """Base class for quantized ONNX ops implemented in numpy.
 
     Args:

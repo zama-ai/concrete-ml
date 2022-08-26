@@ -235,46 +235,86 @@ def test_dump(
 }""",
         RandomForestClassifier: "Not tested",
         NeuralNetClassifier: """graph torch_jit (
-  %onnx::MatMul_0[FLOAT, 10]
+  %inp.1[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 40]
   %features.fc1.bias[FLOAT, 40]
   %features.fc2.bias[FLOAT, 2]
-  %onnx::MatMul_19[FLOAT, 10x40]
-  %onnx::MatMul_20[FLOAT, 40x40]
-  %onnx::MatMul_21[FLOAT, 40x2]
+  %bit_width[FLOAT, scalar]
+  %scale[FLOAT, scalar]
+  %zero_point[FLOAT, scalar]
+  %bit_width.3[FLOAT, scalar]
+  %x[FLOAT, 40x10]
+  %scale.3[FLOAT, scalar]
+  %zero_point.3[FLOAT, scalar]
+  %bit_width.7[FLOAT, scalar]
+  %scale.7[FLOAT, scalar]
+  %zero_point.7[FLOAT, scalar]
+  %bit_width.11[FLOAT, scalar]
+  %x.3[FLOAT, 40x40]
+  %scale.11[FLOAT, scalar]
+  %zero_point.11[FLOAT, scalar]
+  %bit_width.15[FLOAT, scalar]
+  %scale.15[FLOAT, scalar]
+  %zero_point.15[FLOAT, scalar]
+  %bit_width.19[FLOAT, scalar]
+  %x.7[FLOAT, 2x40]
+  %scale.19[FLOAT, scalar]
+  %zero_point.19[FLOAT, scalar]
 ) {
-  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
-  %input = Add(%features.fc0.bias, %onnx::Add_8)
-  %onnx::MatMul_10 = Relu(%input)
-  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
-  %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
-  %onnx::MatMul_14 = Relu(%input.3)
-  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
-  %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
-  %18 = Relu(%input.7)
-  return %18
+  %onnx::Gemm_13 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %scale, %zero_point, %bit_width)
+  %onnx::Gemm_18 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
+  %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_13, %onnx::Gemm_18, %features.fc0.bias)
+  %inp = Relu(%input)
+  %onnx::Gemm_24 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp, %scale.7, %zero_point.7, %bit_width.7)
+  %onnx::Gemm_29 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
+  %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_24, %onnx::Gemm_29, %features.fc1.bias)
+  %inp.4 = Relu(%input.3)
+  %onnx::Gemm_35 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.4, %scale.15, %zero_point.15, %bit_width.15)
+  %onnx::Gemm_40 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
+  %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
+  return %41
 }""",
         NeuralNetRegressor: """graph torch_jit (
-  %onnx::MatMul_0[FLOAT, 10]
+  %inp.1[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 10]
   %features.fc1.bias[FLOAT, 10]
   %features.fc2.bias[FLOAT, 1]
-  %onnx::MatMul_19[FLOAT, 10x10]
-  %onnx::MatMul_20[FLOAT, 10x10]
-  %onnx::MatMul_21[FLOAT, 10x1]
+  %bit_width[FLOAT, scalar]
+  %scale[FLOAT, scalar]
+  %zero_point[FLOAT, scalar]
+  %bit_width.3[FLOAT, scalar]
+  %x[FLOAT, 10x10]
+  %scale.3[FLOAT, scalar]
+  %zero_point.3[FLOAT, scalar]
+  %bit_width.7[FLOAT, scalar]
+  %scale.7[FLOAT, scalar]
+  %zero_point.7[FLOAT, scalar]
+  %bit_width.11[FLOAT, scalar]
+  %x.3[FLOAT, 10x10]
+  %scale.11[FLOAT, scalar]
+  %zero_point.11[FLOAT, scalar]
+  %bit_width.15[FLOAT, scalar]
+  %scale.15[FLOAT, scalar]
+  %zero_point.15[FLOAT, scalar]
+  %bit_width.19[FLOAT, scalar]
+  %x.7[FLOAT, 1x10]
+  %scale.19[FLOAT, scalar]
+  %zero_point.19[FLOAT, scalar]
 ) {
-  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
-  %input = Add(%features.fc0.bias, %onnx::Add_8)
-  %onnx::MatMul_10 = Relu(%input)
-  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
-  %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
-  %onnx::MatMul_14 = Relu(%input.3)
-  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
-  %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
-  %18 = Relu(%input.7)
-  return %18
+  %onnx::Gemm_13 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %scale, %zero_point, %bit_width)
+  %onnx::Gemm_18 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
+  %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_13, %onnx::Gemm_18, %features.fc0.bias)
+  %inp = Relu(%input)
+  %onnx::Gemm_24 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp, %scale.7, %zero_point.7, %bit_width.7)
+  %onnx::Gemm_29 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
+  %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_24, %onnx::Gemm_29, %features.fc1.bias)
+  %inp.4 = Relu(%input.3)
+  %onnx::Gemm_35 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.4, %scale.15, %zero_point.15, %bit_width.15)
+  %onnx::Gemm_40 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
+  %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
+  return %41
 }""",
         Ridge: """graph torch_jit (
   %input_0[DOUBLE, symx10]

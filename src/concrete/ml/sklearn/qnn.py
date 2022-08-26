@@ -5,6 +5,7 @@
 
 from abc import abstractmethod
 
+import brevitas.nn as qnn
 import numpy
 import torch
 import torch.nn.utils.prune as pruning
@@ -92,10 +93,21 @@ class SparseQuantNeuralNetImpl(nn.Module):
             out_features = (
                 n_outputs if idx == n_layers - 1 else input_dim * n_hidden_neurons_multiplier
             )
+
+            quant_name = f"quant{idx}"
+            quantizer = qnn.QuantIdentity(bit_width=n_a_bits, return_quant_tensor=True)
+
             layer_name = f"fc{idx}"
-            layer = nn.Linear(in_features=in_features, out_features=out_features)
+            layer = qnn.QuantLinear(
+                in_features, out_features, True, weight_bit_width=n_w_bits, bias_quant=None
+            )
+
+            self.features.add_module(quant_name, quantizer)
             self.features.add_module(layer_name, layer)
-            self.features.add_module(f"act{idx}", activation_function())
+
+            if idx < n_layers - 1:
+                self.features.add_module(f"act{idx}", activation_function())
+
             in_features = out_features
 
         self.n_w_bits = n_w_bits
@@ -159,7 +171,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
         # Iterate over all layers that have weights (Linear ones)
         for layer in self.features:
-            if not isinstance(layer, nn.Linear):
+            if not isinstance(layer, nn.Linear) and not isinstance(layer, qnn.QuantLinear):
                 continue
 
             s = layer.weight.shape
@@ -321,7 +333,8 @@ class NeuralNetClassifier(
 
     This class wraps a quantized NN implemented using our Torch tools as a scikit-learn Estimator.
     It uses the skorch package to handle training and scikit-learn compatibility,
-    and adds quantization and compilation functionality.
+    and adds quantization and compilation functionality. The neural network implemented by this
+    class is a multi layer fully connected network trained with Quantization Aware Training (QAT).
 
     The datatypes that are allowed for prediction by this wrapper are more restricted than
     standard scikit-learn estimators as this class needs to predict in FHE and network inference
@@ -404,7 +417,8 @@ class NeuralNetRegressor(
 
     This class wraps a quantized NN implemented using our Torch tools as a scikit-learn Estimator.
     It uses the skorch package to handle training and scikit-learn compatibility,
-    and adds quantization and compilation functionality.
+    and adds quantization and compilation functionality. The neural network implemented by this
+    class is a multi layer fully connected network trained with Quantization Aware Training (QAT).
 
     The datatypes that are allowed for prediction by this wrapper are more restricted than
     standard scikit-learn estimators as this class needs to predict in FHE and network inference
