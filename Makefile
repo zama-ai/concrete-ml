@@ -340,7 +340,7 @@ pytest_nb:
 	if [[ "$${NOTEBOOKS}" != "" ]]; then \
 		echo "$${NOTEBOOKS}" | xargs poetry run pytest -svv \
 		--capture=tee-sys \
-		-n $$(./script/make_utils/ncpus.sh) \
+		-n0 \  # Needed to disable xdist, another solution would be to do `-p no:xdist`
 		--randomly-dont-reorganize \
 		--count=$(COUNT) \
 		--randomly-dont-reset-seed -Wignore --nbmake; \
