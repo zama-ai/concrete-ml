@@ -609,7 +609,7 @@ check_links:
 	@# Mainly for web links and _api_doc (sphinx)
 	poetry run python -m linkcheckmd docs -local
 	poetry run python -m linkcheckmd README.md
-	poetry run python ./local_link_check.py
+	poetry run python ./script/make_utils/local_link_check.py
 
 	@# For weblinks and internal references
 	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it

@@ -14,7 +14,18 @@ MARKDOWN_LINK_REGEX = re.compile(r"\[[^\]]*\]\(([^\)]*)\)")
 
 
 def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
-    errors: List[str] = list()
+    """Check the content of a markdown file for dead links.
+
+    This checks a mardown file for dead-links to local files.
+
+    Inputs:
+        content (str): The content of the file.
+        file_path (pathlib.Path): The path to the file.
+    Outputs:
+        List[str]: a list of errors (dead-links) found.
+
+    """
+    errors: List[str] = []
     links = MARKDOWN_LINK_REGEX.findall(content)
     for link in links:
         if link.startswith("http"):
@@ -48,8 +59,6 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
     return errors
 
 
-
-
 def is_relative_to(path: Path, other_path: Union[str, Path]) -> bool:
     """Implementation of is_relative_to
 
@@ -63,7 +72,12 @@ def is_relative_to(path: Path, other_path: Union[str, Path]) -> bool:
         return False
 
 
-if __name__ == "__main__":
+def main():
+    """Main function
+
+    Check all files (except those that match a pattern in .gitignore) for
+    dead links to local files.
+    """
     root = Path(".")
     errors: List[str] = []
 
@@ -71,8 +85,7 @@ if __name__ == "__main__":
     if gitignore_file.exists():
         with gitignore_file.open() as file:
             ignores = file.read().split("\n")
-            ignores = map(lambda elt: elt.split("#")[0].strip(), ignores)
-            ignores = [elt for elt in ignores if elt]
+            ignores = [elt for elt in map(lambda elt: elt.split("#")[0].strip(), ignores) if elt]
 
     for path in root.glob("**/*"):
         if (
@@ -82,9 +95,12 @@ if __name__ == "__main__":
         ):
             print(f"checking {path}")
             with path.open() as file:
-                content = file.read()
-            errors += check_content_for_dead_links(content, path)
+                file_content = file.read()
+            errors += check_content_for_dead_links(file_content, path)
 
     if errors:
         sys.exit("\n".join(errors))
 
+
+if __name__ == "__main__":
+    main()
