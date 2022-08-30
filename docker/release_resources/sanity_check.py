@@ -5,7 +5,6 @@ import shutil
 from pathlib import Path
 
 import numpy
-
 from concrete.numpy.compilation import configuration
 from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration

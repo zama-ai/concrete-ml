@@ -65,7 +65,7 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
       f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
 
 # Output:
-#  1 examples over 1 have a FHE inference equal to the clear inference
+#  3 examples over 3 have a FHE inference equal to the clear inference
 ```
 
 We can then plot how the model classifies the inputs and then compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
