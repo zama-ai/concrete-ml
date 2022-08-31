@@ -117,15 +117,15 @@ However, quantization and, especially, binarization, induce a loss in the accura
 
 The quantization of model parameters and model inputs is illustrated in the advanced examples for [Linear and Logistic Regressions](../built-in-models/ml_examples.md). Note that different quantization parameters are used for inputs and for model weights.
 
-### Limitations for FHE friendly neural networks
+### Limitations for FHE friendly models
 
 Recent quantization literature usually aims to make use of dedicated machine learning accelerators in a mixed setting where a CPU or General Purpose GPU (GPGPU) is also available. Thus, in literature, some floating point computation is assumed to be acceptable. This approach allows us to reach performance similar to those achieved by floating point models. In this popular mixed float-int setting, the input is usually left in floating point. This is also true for the first and last layers, which have more impact on the resulting model accuracy than hidden layers.
 
 However, in Concrete-ML, to respect FHE constraints, the inputs, the weights and the accumulator must all be represented with integers of a maximum of 8 bits.
 
-Thus, in Concrete-ML, we also quantize the input data and network output activations in the same way as the rest of the network: everything is quantized to a specific number of bits. It turns out that the number of bits used for the input or the output of any activation function is crucial to comply with the constraint on accumulator width.
+Thus, in Concrete-ML, we also quantize the input data and model output activations in the same way as the rest of the model: everything is quantized to a specific number of bits. It turns out that the number of bits used for the input or the output of any activation function is crucial to comply with the constraint on accumulator width.
 
-The core operations in neural networks are matrix multiplications (matmul) and convolutions, which both compute linear combinations of inputs (encrypted) and weights (in clear). The linear combination operation must be done such that the maximum value of its result requires at most 8 bits of precision.
+The core operations in several models (e.g., neural networks or linear models) are matrix multiplications (matmul) and convolutions, which both compute linear combinations of inputs (encrypted) and weights (in clear). The linear combination operation must be done such that the maximum value of its result requires at most 8 bits of precision.
 
 For example, if you quantize your input and weights with $$n_{\mathsf{weights}}$$, $$n_{\mathsf{inputs}}$$ bits of precision, one can compute the maximum dimensionality of the input and weights before the matmul/convolution result could exceed the 8 bits as such:
 

@@ -1,4 +1,4 @@
-# Using HummingBird
+# Using Hummingbird
 
 [Hummingbird](https://microsoft.github.io/hummingbird/) is a third party open-source library that converts machine learning models into tensor computations. Many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) are converted using a specific backend (torch, torchscript, ONNX and TVM).
 

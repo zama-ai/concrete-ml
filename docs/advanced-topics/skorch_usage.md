@@ -25,7 +25,7 @@ $$\mathsf{output}_{xy}^{k} = \sum_c^{N}\sum_j^{K_h}\sum_i^{K_w}w_{cji}^kx_{c,y+j
 
 where $$k$$ is the k-th filter of the convolutional layer and $$N$$, $$K_h$$ and $$K_w$$ are the number of input channels, the kernel height and the kernel width, respectively.
 
-Following the formulas for the resulting bit width of quantized linear combinations described [here](../getting-started/concrete_numpy.md#limitations-for-fhe-friendly-neural-networks),  it can be seen that the maximum dimensionality of the input and weights that can make the result exceed 8 bits:
+Following the formulas for the resulting bit width of quantized linear combinations described [here](../getting-started/concrete_numpy.md#limitations-for-fhe-friendly-models),  it can be seen that the maximum dimensionality of the input and weights that can make the result exceed 8 bits:
 
 $$\Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{weights}}} - 1)(2^{n_{\mathsf{inputs}}} - 1)} \right)$$
 

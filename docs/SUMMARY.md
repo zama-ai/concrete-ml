@@ -29,7 +29,7 @@
 - [Compilation](advanced-topics/compilation.md)
 - [More about ONNX](advanced-topics/onnx_pipeline.md)
 - [FHE Op-graphs](advanced-topics/fhe-op-graphs.md)
-- [Using HummingBird](advanced-topics/hummingbird_usage.md)
+- [Using Hummingbird](advanced-topics/hummingbird_usage.md)
 - [Using Skorch](advanced-topics/skorch_usage.md)
 
 ## Developer Guide
