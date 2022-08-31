@@ -1039,6 +1039,11 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # Fit the sklearn model
         self.sklearn_model.fit(X, y, *args, **kwargs)
 
+        # FIXME: Remove this when #1610 is done
+        # This workaround makes linear regressors be able to fit with fit_intercept set to False.
+        if not self.fit_intercept:
+            self.sklearn_model.intercept_ = numpy.array(self.sklearn_model.intercept_)
+
         # These models are not natively supported by Hummingbird
         # The trick is to hide their type to Hummingbird
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1473
