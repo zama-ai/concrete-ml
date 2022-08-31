@@ -24,6 +24,7 @@ from ..sklearn import (
     NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
+    RandomForestRegressor,
     Ridge,
     TweedieRegressor,
     XGBClassifier,
@@ -33,6 +34,7 @@ from ..version import __version__ as CML_VERSION
 
 AVAILABLE_MODEL = [
     RandomForestClassifier,
+    RandomForestRegressor,
     XGBClassifier,
     XGBRegressor,
     LinearRegression,

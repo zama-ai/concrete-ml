@@ -19,6 +19,7 @@ from concrete.ml.sklearn import (
     LinearRegression,
     LinearSVR,
     NeuralNetRegressor,
+    RandomForestRegressor,
     Ridge,
 )
 
@@ -54,6 +55,7 @@ dataset_versions = {
 # Will contain all the regressors we can support
 possible_regressors = [
     DecisionTreeRegressor,
+    RandomForestRegressor,
     NeuralNetRegressor,
     LinearRegression,
     LinearSVR,
@@ -70,6 +72,12 @@ benchmark_params = {
     Ridge: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     ElasticNet: [{"n_bits": n_bits} for n_bits in range(2, 11)],
     DecisionTreeRegressor: [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    RandomForestRegressor: [
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [3, 5, 15]
+        for n_estimators in [10, 20, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
     NeuralNetRegressor: [
         # An FHE compatible config
         {
@@ -169,6 +177,10 @@ def should_test_config_in_fhe(regressor, config, n_features, local_args):
             config["module__n_accum_bits"] <= 7
             and config["module__n_hidden_neurons_multiplier"] == 1
         )
+    if regressor is RandomForestRegressor:
+        if config["n_bits"] <= 7:
+            return True
+        return False
     raise ValueError(f"Regressor {str(regressor)} configurations not yet setup for FHE")
 
 

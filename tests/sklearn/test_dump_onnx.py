@@ -23,6 +23,7 @@ from concrete.ml.sklearn import (
     NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
+    RandomForestRegressor,
     Ridge,
     TweedieRegressor,
     XGBClassifier,
@@ -96,6 +97,7 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
         "DecisionTreeRegressor",
         "DecisionTreeClassifier",
         "RandomForestClassifier",
+        "RandomForestRegressor",
         "XGBClassifier",
     ]:
         while len(onnx_model.graph.initializer) > 0:
@@ -106,7 +108,7 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
     print(str_model)
 
     # Test equality when it does not depend on seeds
-    if model_name not in {"RandomForestClassifier"}:
+    if model_name not in {"RandomForestClassifier", "RandomForestRegressor"}:
         assert str_model == str_expected
 
 
@@ -255,6 +257,7 @@ def test_dump(
   return %onnx::Sub_7
 }""",
         RandomForestClassifier: "Not tested",
+        RandomForestRegressor: "Not tested",
         NeuralNetClassifier: """graph torch_jit (
   %inp.1[FLOAT, 1x10]
 ) initializers (

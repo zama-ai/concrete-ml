@@ -18,6 +18,7 @@ from concrete.ml.sklearn import (
     NeuralNetRegressor,
     PoissonRegressor,
     RandomForestClassifier,
+    RandomForestRegressor,
     Ridge,
     TweedieRegressor,
     XGBClassifier,
@@ -35,6 +36,7 @@ regressor_models = [
     PoissonRegressor,
     TweedieRegressor,
     DecisionTreeRegressor,
+    RandomForestRegressor,
     partial(
         NeuralNetRegressor,
         module__n_layers=3,
