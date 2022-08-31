@@ -12,7 +12,7 @@ import torch
 
 from sklearn.datasets import make_classification
 from sklearn.datasets import make_regression
-from concrete.numpy import MAXIMUM_BIT_WIDTH
+from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
 
 from concrete.numpy.compilation import (
     DebugArtifacts,
@@ -286,13 +286,13 @@ def check_is_good_execution_impl(
     # Allow tests to pass if cells of the output result are good at least once over the nb_tries
     # Enabled only when we have a circuit that's using the maximum possible bit width
     # >= if there are 8 bits signed integers
-    allow_relaxed_tests_passing = max_bit_width >= MAXIMUM_BIT_WIDTH
+    allow_relaxed_tests_passing = max_bit_width >= MAXIMUM_TLU_BIT_WIDTH
 
-    # For exactly MAXIMUM_BIT_WIDTH bits, we have not exactly 100%
+    # For exactly MAXIMUM_TLU_BIT_WIDTH bits, we have not exactly 100%
     # accuracy, so let's have more tries
     nb_tries = 10
 
-    if max_bit_width < MAXIMUM_BIT_WIDTH:
+    if max_bit_width < MAXIMUM_TLU_BIT_WIDTH:
         # Here, things are supposed to be more exact, so let's reduce nb_tries
         nb_tries = 3
 

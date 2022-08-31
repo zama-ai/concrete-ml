@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Tuple
 
 import numpy
 import onnx
-from concrete.numpy import MAXIMUM_BIT_WIDTH
+from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
 from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
@@ -46,7 +46,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     task: Task,
-    output_n_bits: Optional[int] = MAXIMUM_BIT_WIDTH,
+    output_n_bits: Optional[int] = MAXIMUM_TLU_BIT_WIDTH,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 

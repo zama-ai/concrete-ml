@@ -10,7 +10,7 @@ import numpy as np
 import pandas
 import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics, seed_everything
-from concrete.numpy import MAXIMUM_BIT_WIDTH
+from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA
@@ -253,7 +253,7 @@ def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
         n_bits_weights = n_bits["op_weights"]
 
     n_components = math.floor(
-        (2**MAXIMUM_BIT_WIDTH - 1) / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
+        (2**MAXIMUM_TLU_BIT_WIDTH - 1) / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
     )
     return n_components
 

@@ -8,7 +8,7 @@ import numpy
 import onnx
 import torch
 from brevitas.export import BrevitasONNXManager
-from concrete.numpy import MAXIMUM_BIT_WIDTH
+from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 
@@ -48,7 +48,7 @@ def _compile_torch_or_onnx_model(
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAXIMUM_BIT_WIDTH,
+    n_bits=MAXIMUM_TLU_BIT_WIDTH,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
 ) -> QuantizedModule:
@@ -130,7 +130,7 @@ def compile_torch_model(
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAXIMUM_BIT_WIDTH,
+    n_bits=MAXIMUM_TLU_BIT_WIDTH,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
 ) -> QuantizedModule:
@@ -179,7 +179,7 @@ def compile_onnx_model(
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAXIMUM_BIT_WIDTH,
+    n_bits=MAXIMUM_TLU_BIT_WIDTH,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
 ) -> QuantizedModule:

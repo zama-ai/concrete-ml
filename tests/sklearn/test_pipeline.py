@@ -4,7 +4,7 @@ from functools import partial
 
 import numpy
 import pytest
-from concrete.numpy import MAXIMUM_BIT_WIDTH
+from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
 from shared import classifiers, regressors
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
@@ -82,7 +82,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
         "module__n_layers": 3,
         "module__n_w_bits": 5,
         "module__n_a_bits": 5,
-        "module__n_accum_bits": 4 * MAXIMUM_BIT_WIDTH,
+        "module__n_accum_bits": 4 * MAXIMUM_TLU_BIT_WIDTH,
         "module__n_outputs": 2,
         "module__input_dim": 2,
         "module__activation_function": nn.ReLU,
