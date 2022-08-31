@@ -25,7 +25,7 @@ on:
 
 concurrency:
   group: ${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
