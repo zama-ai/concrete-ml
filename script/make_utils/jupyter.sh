@@ -19,7 +19,6 @@ LONG_EXECUTION_TIMES_NOTEBOOKS=(
     docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb
     docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb
     docs/advanced_examples/ClassifierComparison.ipynb
-    docs/advanced_examples/GLMComparison.ipynb
 )
 
 while [ -n "$1" ]
