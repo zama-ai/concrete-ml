@@ -80,9 +80,9 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
     )
     params = {
         "module__n_layers": 3,
-        "module__n_w_bits": 2,
-        "module__n_a_bits": 2,
-        "module__n_accum_bits": MAXIMUM_BIT_WIDTH,
+        "module__n_w_bits": 5,
+        "module__n_a_bits": 5,
+        "module__n_accum_bits": 4 * MAXIMUM_BIT_WIDTH,
         "module__n_outputs": 2,
         "module__input_dim": 2,
         "module__activation_function": nn.ReLU,
