@@ -3,8 +3,8 @@ Pillow, 9.2.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
 brevitas, 0.7.2.dev2+g3088901, UNKNOWN
 coloredlogs, 15.0.1, MIT License
-concrete-compiler, 0.15.0, BSD-3
-concrete-numpy, 0.6.0rc10, BSD License
+concrete-compiler, 0.18.0, BSD-3
+concrete-numpy, 0.8.0rc1, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.5.1, BSD License
