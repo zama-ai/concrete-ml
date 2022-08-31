@@ -1228,7 +1228,7 @@ class QuantizedReduceSum(QuantizedOp):
         # integers of a certain precision (synonym for bitwidth) without overflowing. For instance,
         # the sum numpy.sum([100, 60, 65, 59]) = 284 can't be executed in FHE as the bitwidth of
         # 284 is 9 > 8. Let k be an unsigned integer, it is possible to compute it's precision p
-        # using floor(log2(k)) + 1, such that 2**(p-1) <= l < 2**p.
+        # using floor(log2(k)) + 1, such that 2**(p-1) <= k < 2**p.
 
         # Let's now define two unsigned integers of precision p, a and b. By definition, the most
         # extreme reachable value is 2**p-1. The rest of this explanation will only consider worst
@@ -1238,7 +1238,7 @@ class QuantizedReduceSum(QuantizedOp):
         # using the floor division in order to retrieve their quotients. Using the above notations,
         # we first have c = a + b = 2*(2**p-1) = 2**(p+1)-2. Since 2**p <= c < 2**(p+1), we obtain
         # that c is of precision p+1. Then, let d = floor(c/2) = floor(2**p-1) = 2**p-1 = a, making
-        # d of precision p. The maximum bitwidth reached along theses steps is therefore p+1,
+        # d of precision p. The maximum bitwidth reached along these steps is therefore p+1,
         # meaning that, currently, they can be executed in FHE without any issues as long as
         # p+1 <= 8, which limits us to p <= 7.
 
@@ -1260,7 +1260,7 @@ class QuantizedReduceSum(QuantizedOp):
         #           |          (division)
         # 2:        4
 
-        # In this case, the true sum is 17, which uses 5 bits. The workaround estimates this sum
+        # In this case, the true sum is 17, which uses 5 bits. The workaround estimates sum // n
         # with 4, a p-bit integer, without having any accumulators reach values above 4 bits of
         # precision.
         # Let d be the tree's total depth, meaning d = log2(n_values), we can then use that final
@@ -1270,7 +1270,7 @@ class QuantizedReduceSum(QuantizedOp):
         # matching it. In the above example, the approximation gives 4*4=16, resulting in an error
         # of 17-16=1. This is due to the fact that the division used in the process is the floor
         # division, which can create an error of 1 when applied to odd integers each time it is
-        # called. More generally, the resulting sum exactly matches the true sum's p most
+        # called. More generally, the resulting sum approximates the true sum's p most
         # significant bits.
 
         # This error term (the division's remainder) is not accumulated during the process as it
@@ -1281,7 +1281,7 @@ class QuantizedReduceSum(QuantizedOp):
         # n_values/(2**l) times the remainders' weight 2**(l-1). Summing this over all of the
         # d levels, we get d*(n_values)/2.
         # Let S be the true sum, the approximated sum will therefore end within the range
-        # [S - d*(n_values)/2, S]. It is important to note that this error term is of O(n*log(n))
+        # [S - d*(n_values)/2, S]. It is important to not that this error term is of O(n*log(n))
         # and is independent of the actual inputs' precision. This means that currently, the more
         # features there are, the less precise the sum gets, no matter the input's precision.
 
@@ -1293,7 +1293,7 @@ class QuantizedReduceSum(QuantizedOp):
         # the true division instead of a single floor division in order to avoid problems with -1
         # values. By construction, the floor division gives the same results as a true division
         # followed by a floor operator. In particular, this means that -1//2 = -1, which is not
-        # adapted to this workaround and can lead to greater amount of errors. The main idea is
+        # adapted to this workaround and can lead to a greater amount of errors. The main idea is
         # that a -1 value can be kept along many steps without vanishing if it gets summed with
         # zeros or small negative values. For example:
 
@@ -1314,20 +1314,13 @@ class QuantizedReduceSum(QuantizedOp):
         # We therefore use numpy.rint's rounding properties, which rounds up .5 values to the
         # nearest even integer. This not only enables -0.5 values to be rounded up to 0 instead of
         # -1 but also partially compensates the global error by either "losing" or "earning"
-        # remainders for each odd sums. However, this is not the truly ideal. This makes the
+        # remainders for each odd sum. However, this is not truly ideal. This makes the
         # workaround less intuitive, as it increases the overall error range by 2 (compared to the
         # floor division) and makes the accumulation of remainder errors less tractable. Also, all
-        # remainder losses or earnings are note equivalent between each tree levels, as they don't
+        # remainder losses or earnings are not equivalent between each tree levels, as they don't
         # represent the same weights, making the notion of "average compensation" less viable. On
         # the other hand, we empirically observed that the rint operator leads to more accurate
         # results when used in practice with linear models. We therefore decided to keep it for now.
-
-        # Finally, the method currently doesn't properly work with normally distributed input
-        # values. This causes major issues with practical cases like LinearRegression models as the
-        # weights, inputs and weights*inputs (term by term multiplication) values are usually
-        # distributed in such a way. This however may be fixed with issue #1452, which suggests to
-        # replace the divisions by a calibration process using quantizers:
-        # https://github.com/zama-ai/concrete-ml-internal/issues/1452
 
         for depth in range(total_depth, 0, -1):
             step = 2**depth
