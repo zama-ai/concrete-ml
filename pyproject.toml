@@ -29,7 +29,7 @@ readme = "pypi_readme.md"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.10"
-concrete-numpy = {version = ">=0.5.0,<0.7.0"}
+concrete-numpy = "0.7.0"
 numpy = "^1.22.3"
 setuptools = "*"
 onnx = "^1.11.0"
