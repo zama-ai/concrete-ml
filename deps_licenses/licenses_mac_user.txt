@@ -21,7 +21,6 @@ onnxruntime, 1.11.1, MIT License
 packaging, 21.3, Apache Software License; BSD License
 protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.1, BSD License
-pygraphviz, 1.9, BSD License
 pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.1.1, new BSD

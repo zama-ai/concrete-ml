@@ -2,7 +2,7 @@ Name, Version, License
 Pillow, 9.2.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
 concrete-compiler, 0.10.0, BSD-3
-concrete-numpy, 0.6.0rc7, BSD License
+concrete-numpy, 0.6.0rc9, BSD License
 cycler, 0.11.0, BSD License
 dill, 0.3.5.1, BSD License
 flatbuffers, 1.12, Apache Software License
@@ -21,7 +21,6 @@ onnxruntime, 1.11.1, MIT License
 packaging, 21.3, Apache Software License; BSD License
 protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.1, BSD License
-pygraphviz, 1.9, BSD License
 pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.1.1, new BSD

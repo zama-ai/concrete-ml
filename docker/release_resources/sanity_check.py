@@ -6,8 +6,6 @@ from pathlib import Path
 
 import numpy
 
-# Check that concrete-numpy extra packages are installed in the docker image
-import pygraphviz
 from concrete.numpy.compilation import configuration
 from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
@@ -20,8 +18,6 @@ from concrete import ml
 from concrete.ml.sklearn import DecisionTreeClassifier as ConcreteDecisionTreeClassifier
 
 # pylint: enable=ungrouped-imports
-
-print("pygraphviz import check OK", pygraphviz.__version__)
 
 
 def ml_check(args, keyring_dir_as_str):
