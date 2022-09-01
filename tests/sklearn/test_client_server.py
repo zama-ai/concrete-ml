@@ -19,6 +19,7 @@ from concrete.ml.sklearn import (
     NeuralNetRegressor,
     RandomForestClassifier,
     XGBClassifier,
+    XGBRegressor,
 )
 from concrete.ml.torch.compile import compile_torch_model
 
@@ -99,7 +100,7 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
                 # Reshape y_train and y_test if 1d (regression for neural nets)
                 if y_train.ndim == 1:
                     y_train = y_train.reshape(-1, 1).astype(numpy.float32)
-    elif model in [XGBClassifier, RandomForestClassifier]:
+    elif model in [XGBClassifier, RandomForestClassifier, XGBRegressor]:
         model_params = {
             "n_estimators": 5,
             "max_depth": 2,

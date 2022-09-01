@@ -22,9 +22,11 @@ from concrete.ml.sklearn import (
     Ridge,
     TweedieRegressor,
     XGBClassifier,
+    XGBRegressor,
 )
 
 regressor_models = [
+    XGBRegressor,
     GammaRegressor,
     LinearRegression,
     Lasso,

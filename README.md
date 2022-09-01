@@ -52,6 +52,7 @@ Here is a list of ML algorithms currently supported in this library:
 - NeuralNetworkClassifier (skorch)
 - NeuralNetworkRegressor (skorch)
 - XGBoostClassifier (xgboost)
+- XGBoostRegressor (xgboost)
 
 Torch also has its own integration for custom models.
 

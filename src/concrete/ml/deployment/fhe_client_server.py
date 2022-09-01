@@ -27,12 +27,14 @@ from ..sklearn import (
     Ridge,
     TweedieRegressor,
     XGBClassifier,
+    XGBRegressor,
 )
 from ..version import __version__ as CML_VERSION
 
 AVAILABLE_MODEL = [
     RandomForestClassifier,
     XGBClassifier,
+    XGBRegressor,
     LinearRegression,
     Lasso,
     Ridge,

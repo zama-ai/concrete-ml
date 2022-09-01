@@ -26,6 +26,7 @@ from concrete.ml.sklearn import (
     Ridge,
     TweedieRegressor,
     XGBClassifier,
+    XGBRegressor,
 )
 
 
@@ -118,6 +119,31 @@ def test_dump(
 ):
     """Tests dump."""
     expected_strings = {
+        XGBRegressor: """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.base_prediction[INT64, 1]
+  %_operators.0.weight_1[INT64, 140x10]
+  %_operators.0.bias_1[INT64, 140x1]
+  %_operators.0.weight_2[INT64, 20x8x7]
+  %_operators.0.bias_2[INT64, 160x1]
+  %_operators.0.weight_3[INT64, 20x1x8]
+) {
+  %onnx::Less_8 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %onnx::Reshape_9 = Less(%onnx::Less_8, %_operators.0.bias_1)
+  %onnx::Reshape_10 = Constant[value = <Tensor>]()
+  %onnx::Cast_11 = Reshape[allowzero = 0](%onnx::Reshape_9, %onnx::Reshape_10)
+  %onnx::Reshape_13 = MatMul(%_operators.0.weight_2, %onnx::Cast_11)
+  %onnx::Reshape_14 = Constant[value = <Tensor>]()
+  %onnx::Equal_15 = Reshape[allowzero = 0](%onnx::Reshape_13, %onnx::Reshape_14)
+  %onnx::Reshape_16 = Equal(%_operators.0.bias_2, %onnx::Equal_15)
+  %onnx::Reshape_17 = Constant[value = <Tensor>]()
+  %onnx::Cast_18 = Reshape[allowzero = 0](%onnx::Reshape_16, %onnx::Reshape_17)
+  %onnx::Reshape_20 = MatMul(%_operators.0.weight_3, %onnx::Cast_18)
+  %onnx::Reshape_21 = Constant[value = <Tensor>]()
+  %x = Reshape[allowzero = 0](%onnx::Reshape_20, %onnx::Reshape_21)
+  return %x
+}""",
         XGBClassifier: """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
