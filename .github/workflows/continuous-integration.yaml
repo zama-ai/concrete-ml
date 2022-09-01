@@ -156,7 +156,7 @@ jobs:
   build-linux:
     needs: [start-runner-linux]
     # Hard to put a precise timeout, since for weekly, the build is really slower
-    timeout-minutes: 120
+    timeout-minutes: 180
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
     container:
@@ -334,14 +334,14 @@ jobs:
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 80
+        timeout-minutes: 140
         run: |
           make pytest
 
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 120
+        timeout-minutes: 160
         run: |
           make pytest PYTEST_OPTIONS=--weekly
 
