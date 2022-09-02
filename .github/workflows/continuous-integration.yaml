@@ -203,7 +203,7 @@ jobs:
   build-linux:
     needs: [start-runner-linux]
     # Hard to put a precise timeout, since for weekly, the build is really slower
-    timeout-minutes: 180
+    # FIXME  #1655 timeout-minutes: 180
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
     container:
@@ -381,14 +381,14 @@ jobs:
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 140
+        # FIXME  #1655 timeout-minutes: 140
         run: |
           make pytest
 
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 160
+        # FIXME  #1655 timeout-minutes: 160
         run: |
           make pytest PYTEST_OPTIONS=--weekly
 
@@ -407,7 +407,7 @@ jobs:
 
       - name: PyTest Notebooks
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 90
+        # FIXME  #1655 timeout-minutes: 90
         run: |
           make pytest_nb
 
@@ -512,7 +512,7 @@ jobs:
 
   build-macos:
     needs: [matrix-preparation]
-    timeout-minutes: 240
+    # FIXME  #1655 timeout-minutes: 240
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
 
     runs-on: ${{ matrix.runs_on }}
@@ -555,7 +555,7 @@ jobs:
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
       - name: PyTest Source Code
-        timeout-minutes: 240
+        # FIXME  #1655 timeout-minutes: 240
         run: |
           make pytest_macOS_for_GitHub
 
