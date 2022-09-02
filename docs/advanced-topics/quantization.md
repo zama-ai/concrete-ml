@@ -135,7 +135,7 @@ def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
 
 Intermediary values computed during model inference might need to be re-scaled into the quantized domain of a subsequent model operator. For example, the output of a convolution layer in a neural network might have values that are 8 bits wide, with the next convolutional layer requiring that its inputs are at most 2 bits wide. In the non-encrypted realm, this implies that we need to make use of floating point operations. To make this work with integers as required by FHE, Concrete-ML uses a table lookup (TLU), which is a [way to encode univariate functions in FHE](https://docs.zama.ai/concrete-numpy/tutorials/table_lookup). Table lookups are expensive in FHE, and so should only be used when necessary.
 
-The operations done by the activation function of a previous layer and additional re-scaling to the new quantized domain, which are all floating point operations, [can be fused to a single TLU](https://docs.zama.ai/concrete-numpy/tutorials/working_with_floating_points). Concrete-ML implements quantized operators that perform this fusion, significantly reducing the number of TLUs necessary to perform inference.
+The operations done by the activation function of a previous layer and additional re-scaling to the new quantized domain, which are all floating point operations, [can be fused to a single TLU](https://docs.zama.ai/concrete-numpy/tutorials/floating_points). Concrete-ML implements quantized operators that perform this fusion, significantly reducing the number of TLUs necessary to perform inference.
 
 There are 3 types of operators:
 
