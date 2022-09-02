@@ -1,6 +1,6 @@
 # Compilation
 
-Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/compiling_and_executing), and Concrete-ML hides away most of the complexity of this step. The entire compilation process is done by Concrete-Numpy.
+Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete-ML hides away most of the complexity of this step. The entire compilation process is done by Concrete-Numpy.
 
 From the perspective of the Concrete-ML user, the compilation process performed by Concrete-Numpy can be broken up into 3 steps:
 
@@ -12,7 +12,7 @@ Additionally, the [client/server API](client_server.md) packages the result of t
 
 ## **Concrete-Numpy** op-graphs and the Virtual Library
 
-The first step in the list above takes a python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/numpy_support) and transforms it into an executable operation graph. In this step all the floating point subgraphs in the op-graph are fused and converted to Table Lookup operations.
+The first step in the list above takes a python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph. In this step all the floating point subgraphs in the op-graph are fused and converted to Table Lookup operations.
 
 This enables to:
 

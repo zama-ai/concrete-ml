@@ -135,6 +135,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         pandoc \
         openssl \
         shellcheck \
+        texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-xetex lmodern \
         wget && \
         ${CLEAR_APT_LISTS:+$CLEAR_APT_LISTS} \
         pip install --no-cache-dir --upgrade pip && \
