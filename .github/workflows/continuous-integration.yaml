@@ -679,7 +679,7 @@ jobs:
       # remove graphviz installs which are only required for the actual package and not dev tools
       - name: Install dependencies
         run: |
-          sudo apt-get install --no-install-recommends -y graphviz*
+          sudo apt-get install --no-install-recommends -y graphviz* gnome-keyring
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
