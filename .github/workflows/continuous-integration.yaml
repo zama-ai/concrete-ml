@@ -584,7 +584,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install poetry
-          sudo apt update && sudo apt install -y
           make setup_env
 
       - name: Run pip-audit
@@ -742,12 +741,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Gnome keyring is required because of some environment issue in github actions
       # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1667
       # To be updated to only install required dependencies group with poetry 1.2 which
       # are only required for the actual package and not dev tools
       - name: Install dependencies
         run: |
-          sudo apt-get install --no-install-recommends -y
+          sudo apt-get install --no-install-recommends -y gnome-keyring
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env
