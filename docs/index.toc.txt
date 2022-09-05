@@ -46,6 +46,7 @@
     advanced-topics/fhe-op-graphs.md
     advanced-topics/hummingbird_usage.md
     advanced-topics/skorch_usage.md
+    advanced-topics/advanced_features.md
 
 .. toctree::
     :maxdepth: 0
