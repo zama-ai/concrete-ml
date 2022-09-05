@@ -235,20 +235,19 @@ def test_dump(
   %features.fc0.bias[FLOAT, 80]
   %features.fc1.bias[FLOAT, 80]
   %features.fc2.bias[FLOAT, 2]
-  %onnx::MatMul_19[FLOAT, 20x80]
-  %onnx::MatMul_20[FLOAT, 80x80]
-  %onnx::MatMul_21[FLOAT, 80x2]
+  %onnx::MatMul_18[FLOAT, 20x80]
+  %onnx::MatMul_19[FLOAT, 80x80]
+  %onnx::MatMul_20[FLOAT, 80x2]
 ) {
-  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
+  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_18)
   %input = Add(%features.fc0.bias, %onnx::Add_8)
   %onnx::MatMul_10 = Selu(%input)
-  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
+  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_19)
   %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
   %onnx::MatMul_14 = Selu(%input.3)
-  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
-  %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
-  %18 = Selu(%input.7)
-  return %18
+  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_20)
+  %17 = Add(%features.fc2.bias, %onnx::Add_16)
+  return %17
 }""",
         NeuralNetRegressor: """graph torch_jit (
   %onnx::MatMul_0[FLOAT, 20]
@@ -256,20 +255,19 @@ def test_dump(
   %features.fc0.bias[FLOAT, 20]
   %features.fc1.bias[FLOAT, 20]
   %features.fc2.bias[FLOAT, 1]
+  %onnx::MatMul_18[FLOAT, 20x20]
   %onnx::MatMul_19[FLOAT, 20x20]
-  %onnx::MatMul_20[FLOAT, 20x20]
-  %onnx::MatMul_21[FLOAT, 20x1]
+  %onnx::MatMul_20[FLOAT, 20x1]
 ) {
-  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_19)
+  %onnx::Add_8 = MatMul(%onnx::MatMul_0, %onnx::MatMul_18)
   %input = Add(%features.fc0.bias, %onnx::Add_8)
   %onnx::MatMul_10 = Selu(%input)
-  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_20)
+  %onnx::Add_12 = MatMul(%onnx::MatMul_10, %onnx::MatMul_19)
   %input.3 = Add(%features.fc1.bias, %onnx::Add_12)
   %onnx::MatMul_14 = Selu(%input.3)
-  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_21)
-  %input.7 = Add(%features.fc2.bias, %onnx::Add_16)
-  %18 = Selu(%input.7)
-  return %18
+  %onnx::Add_16 = MatMul(%onnx::MatMul_14, %onnx::MatMul_20)
+  %17 = Add(%features.fc2.bias, %onnx::Add_16)
+  return %17
 }""",
     }
 

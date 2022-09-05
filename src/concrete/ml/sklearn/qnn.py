@@ -95,7 +95,9 @@ class SparseQuantNeuralNetImpl(nn.Module):
             layer_name = f"fc{idx}"
             layer = nn.Linear(in_features=in_features, out_features=out_features)
             self.features.add_module(layer_name, layer)
-            self.features.add_module(f"act{idx}", activation_function())
+
+            if idx < n_layers - 1:
+                self.features.add_module(f"act{idx}", activation_function())
             in_features = out_features
 
         self.n_w_bits = n_w_bits
