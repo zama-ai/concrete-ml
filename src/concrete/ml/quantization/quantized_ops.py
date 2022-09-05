@@ -1405,11 +1405,11 @@ class QuantizedBrevitasQuant(QuantizedOp):
             "Only rounding quantization is supported for Brevitas",
         )
         assert_true(
-            attrs["signed"] >= 0 and attrs["signed"] <= 1,
+            int(attrs["signed"]) in {0, 1},
             "Signed flag in Brevitas quantizer must be 0/1",
         )
         assert_true(
-            attrs["narrow"] >= 0 and attrs["signed"] <= 1,
+            int(attrs["narrow"]) in {0, 1},
             "Narrow range flag in Brevitas quantizer must be 0/1",
         )
 
@@ -1454,10 +1454,15 @@ class QuantizedBrevitasQuant(QuantizedOp):
         quant_params.scale = prepared_inputs[1]
         quant_params.zero_point = prepared_inputs[2]
 
-        assert_true(
-            self.attrs["signed"] == 1 and self.attrs["narrow"] == 0,
-            "Only signed wide range Brevitas quantization giving 0 offset is implemented for now",
-        )
+        # FIXME: figure out if this check is needed
+        # the code seems to run with narrow == 1
+        # https://github.com/zama-ai/concrete-ml-internal/issues/1591
+        # assert_true(
+        #     self.attrs["signed"] == 1 and self.attrs["narrow"] == 0,
+        #     "Only signed wide range Brevitas quantization giving 0 offset "
+        #     "is implemented for now\n"
+        #     f"{self.attrs['signed']=} ?=1 , {self.attrs['narrow']=} ?=0",
+        # )
 
         # Currently we can not determine if symmetric quantization was used,
         # we just assume the offset is 0, the offset is not used for clipping in QAT.

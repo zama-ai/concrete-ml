@@ -213,7 +213,7 @@ def compile_onnx_model(
     assert_true(
         onnx_model_opset_version == OPSET_VERSION_FOR_ONNX_EXPORT,
         f"ONNX version must be {OPSET_VERSION_FOR_ONNX_EXPORT} "
-        + f"but it is {onnx_model_opset_version}",
+        f"but it is {onnx_model_opset_version}",
     )
 
     return _compile_torch_or_onnx_model(
@@ -283,15 +283,14 @@ def compile_brevitas_qat_model(
         else output_onnx_file
     )
 
-    BrevitasONNXManager.export(
+    # Brevitas to ONNX
+    onnx_model = BrevitasONNXManager.export(
         torch_model,
         input_shape=dummy_input_for_tracing[0].shape,
         export_path=str(output_onnx_file_path),
         keep_initializers_as_inputs=False,
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
     )
-
-    onnx_model = onnx.load(output_onnx_file_path)
 
     # Compile using the ONNX conversion flow, in QAT mode
     q_module_vl = compile_onnx_model(

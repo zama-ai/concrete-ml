@@ -53,7 +53,7 @@ class ONNXMixedFunction:
         assert_true(
             len(bad_non_quant_params) == 0,
             f"ONNX function {function.__name__} tagged with invalid integer parameters: "
-            + ",".join(bad_non_quant_params),
+            ",".join(bad_non_quant_params),
         )
         self.function = function  # type: ignore
 

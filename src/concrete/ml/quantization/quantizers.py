@@ -271,13 +271,16 @@ class UniformQuantizationParameters:
                     and stats.uvalues is not None
                     and stats.uvalues.size <= 2**options.n_bits
                 ):
+                    # FIXME: this crashes when a model is poorly trained
+                    # the code crashes later on without this check
+                    # https://github.com/zama-ai/concrete-ml-internal/issues/1620
                     assert_true(
                         len(stats.uvalues) > 1,
-                        "A single unique value was"
-                        "detected in a tensor of quantized values in a QAT import. Please check"
-                        "the stability thresholds.",
+                        "A single unique value was detected in a tensor of "
+                        "quantized values in a QAT import.\n"
+                        "Please check the stability thresholds.\n"
+                        "This can occur with a badly trained model.",
                     )
-
                     unique_scales = numpy.unique(numpy.diff(stats.uvalues))
                     self.scale = unique_scales[0]
 
