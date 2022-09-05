@@ -58,6 +58,7 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "SUMMARY.md",
+    "developer-guide/api.md",
     "advanced_examples/*.ipynb",
 ]
 

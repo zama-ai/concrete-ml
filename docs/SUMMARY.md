@@ -40,3 +40,4 @@
 - [Documentation](developer-guide/documenting.md)
 - [Support and Issues](developer-guide/debug_support_submit_issues.md)
 - [Contributing](developer-guide/contributing.md)
+- [API](developer-guide/api.md)
