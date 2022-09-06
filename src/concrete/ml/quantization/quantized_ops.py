@@ -10,7 +10,7 @@ from concrete.onnx import conv as cnp_conv
 
 from ..common.debugging import assert_true
 from .base_quantized_op import QuantizedOp
-from .quantized_array import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
+from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
 
 
 class QuantizedSigmoid(QuantizedOp):

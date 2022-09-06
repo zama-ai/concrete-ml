@@ -11,7 +11,7 @@ from concrete.numpy.compilation.configuration import Configuration
 from ..common.debugging import assert_true
 from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
 from .base_quantized_op import QuantizedOp
-from .quantized_array import QuantizedArray, UniformQuantizer
+from .quantizers import QuantizedArray, UniformQuantizer
 
 
 class QuantizedModule:

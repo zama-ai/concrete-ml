@@ -18,7 +18,7 @@ from ..onnx.onnx_model_manipulations import (
     simplify_onnx_model,
 )
 from ..quantization import QuantizedArray
-from ..quantization.quantized_array import UniformQuantizer
+from ..quantization.quantizers import UniformQuantizer
 
 # pylint: disable=wrong-import-position,wrong-import-order
 

@@ -8,7 +8,7 @@ import numpy
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
 from ..onnx.ops_impl import ONNXMixedFunction
-from .quantized_array import (
+from .quantizers import (
     MinMaxQuantizationStats,
     QuantizationOptions,
     QuantizedArray,

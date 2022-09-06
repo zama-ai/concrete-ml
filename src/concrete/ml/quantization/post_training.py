@@ -11,8 +11,8 @@ from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_name
 from ..torch.numpy_module import NumpyModule
 from .base_quantized_op import DEFAULT_OUTPUT_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
-from .quantized_array import QuantizationOptions, QuantizedArray
 from .quantized_module import QuantizedModule
+from .quantizers import QuantizationOptions, QuantizedArray
 
 
 class ONNXConverter:

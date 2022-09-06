@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy
 import xgboost.sklearn
 
-from concrete.ml.quantization.quantized_array import UniformQuantizer
+from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
 from ..quantization import QuantizedArray

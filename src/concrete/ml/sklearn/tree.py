@@ -4,7 +4,7 @@ from typing import Callable, Optional
 import sklearn
 from concrete.numpy.compilation.circuit import Circuit
 
-from ..quantization.quantized_array import QuantizedArray
+from ..quantization.quantizers import QuantizedArray
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
 

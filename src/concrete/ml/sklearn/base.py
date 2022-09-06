@@ -23,8 +23,8 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
-from concrete.ml.quantization.quantized_array import UniformQuantizer
 from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true

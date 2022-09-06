@@ -1,7 +1,6 @@
 """Modules for quantization."""
 from .base_quantized_op import QuantizedOp
 from .post_training import PostTrainingAffineQuantization, PostTrainingQATImporter
-from .quantized_array import QuantizedArray
 from .quantized_module import QuantizedModule
 from .quantized_ops import (
     QuantizedAbs,
@@ -42,3 +41,4 @@ from .quantized_ops import (
     QuantizedTanh,
     QuantizedWhere,
 )
+from .quantizers import QuantizedArray

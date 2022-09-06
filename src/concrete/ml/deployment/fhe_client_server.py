@@ -8,8 +8,8 @@ import concrete.numpy as cnp
 import numpy
 
 from ..common.debugging.custom_assert import assert_true
-from ..quantization.quantized_array import UniformQuantizer
 from ..quantization.quantized_module import QuantizedModule
+from ..quantization.quantizers import UniformQuantizer
 from ..sklearn import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,
