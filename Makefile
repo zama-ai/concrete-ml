@@ -336,13 +336,14 @@ finalize_nb:
 
 # A warning in a package unrelated to the project made pytest fail with notebooks
 # Run notebook tests without warnings as sources are already tested with warnings treated as errors
+# We need to disable xdist with -n0 to make sure to not have IPython port race conditions
 .PHONY: pytest_nb # Launch notebook tests
 pytest_nb:
 	NOTEBOOKS=$$(find docs -name "*.ipynb" | grep -v _build | grep -v .ipynb_checkpoints || true) && \
 	if [[ "$${NOTEBOOKS}" != "" ]]; then \
 		echo "$${NOTEBOOKS}" | xargs poetry run pytest -svv \
 		--capture=tee-sys \
-		-n0 \  # Needed to disable xdist, another solution would be to do `-p no:xdist`
+		-n0 \
 		--randomly-dont-reorganize \
 		--count=$(COUNT) \
 		--randomly-dont-reset-seed -Wignore --nbmake; \
