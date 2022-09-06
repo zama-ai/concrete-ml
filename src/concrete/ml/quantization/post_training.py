@@ -91,28 +91,28 @@ class ONNXConverter:
 
     @property
     def n_bits_net_inputs(self):
-        """Get the number of bits to use for the quantization of the last layer's output.
+        """Get the number of bits to use for the quantization of the first layer's output.
 
         Returns:
-            n_bits (int): number of bits for output quantization
+            n_bits (int): number of bits for input quantization
         """
         return self.n_bits["net_inputs"]
 
     @property
-    def n_bits_weights(self):
-        """Get the number of bits to use for the quantization of any constant (usually weights).
+    def n_bits_op_weights(self):
+        """Get the number of bits to use for the quantization of any constants (usually weights).
 
         Returns:
-            n_bits (int): number of bits for constants quantization
+            n_bits (int): number of bits for quantizing constants used by operators
         """
         return self.n_bits["op_weights"]
 
     @property
-    def n_bits_op_input_quant(self):
-        """Get the number of bits to use for the quantization of any constant (usually weights).
+    def n_bits_op_inputs(self):
+        """Get the number of bits to use for the quantization of any operators' inputs.
 
         Returns:
-            n_bits (int): number of bits for constants quantization
+            n_bits (int): number of bits for the quantization of the operators' inputs
         """
         return self.n_bits["op_inputs"]
 
@@ -266,7 +266,7 @@ class ONNXConverter:
                 curr_cst_inputs[input_idx] = (
                     value
                     if not quantized_op_class.must_quantize_input(input_idx)
-                    else self._process_initializer(self.n_bits_weights, value)
+                    else self._process_initializer(self.n_bits_op_weights, value)
                 )
 
             has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
@@ -451,7 +451,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         if quantized_op.quantize_inputs_with_net_outputs_precision:
             n_bits = self.n_bits_net_outputs
         else:
-            n_bits = self.n_bits_op_input_quant
+            n_bits = self.n_bits_op_inputs
 
         # Create new calibration data (output of the previous layer)
         q_calibration_data = (QuantizedArray(n_bits, data) for data in calibration_data)
@@ -503,7 +503,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         if quantized_op_class.quantize_inputs_with_net_outputs_precision:
             n_bits = self.n_bits_net_outputs
         else:
-            n_bits = self.n_bits_op_input_quant
+            n_bits = self.n_bits_op_inputs
 
         opts = QuantizationOptions(
             n_bits,
@@ -610,7 +610,7 @@ class PostTrainingQATImporter(ONNXConverter):
         if quantized_op_class.quantize_inputs_with_net_outputs_precision:
             n_bits = self.n_bits_net_outputs
         else:
-            n_bits = self.n_bits_op_input_quant
+            n_bits = self.n_bits_op_inputs
 
         opts = QuantizationOptions(n_bits, is_signed=True, is_qat=True)
         return opts
