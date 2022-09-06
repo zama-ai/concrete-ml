@@ -22,4 +22,4 @@ The encrypted result is then returned by the server to the client, which decrypt
 
 ## Example notebook
 
-For a complete example, see [this notebook](https://github.com/zama-ai/concrete-ml/tree/main/docs/advanced_examples/ClientServer.ipynb)
+For a complete example, see [this notebook](https://github.com/zama-ai/concrete-ml/tree/release/0.3.x/docs/advanced_examples/ClientServer.ipynb)
