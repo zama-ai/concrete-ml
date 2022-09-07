@@ -383,7 +383,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.zero_point is not None
         assert self.scale is not None
 
-        return self.scale * (qvalues + -(self.zero_point))
+        return self.scale * (qvalues + -(float(self.zero_point)))
 
 
 class QuantizedArray:
