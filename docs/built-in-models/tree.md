@@ -5,13 +5,16 @@ Concrete-ML provides several of the most popular tree models `classification` th
 |                                                  Concrete-ML                                                  |                                                                           scikit-learn                                                                           |
 | :-----------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [DecisionTreeClassifier](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.tree.DecisionTreeClassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
+|  [DecisionTreeRegressor](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.tree.DecisionTreeRegressor)  |      [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor)       |
 |  [RandomForestClassifier](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.rf.RandomForestClassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
+|   [RandomForestRegressor](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.rf.RandomForestRegressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
 In addition to our support for scikit-learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
 |                                        Concrete-ML                                         |                                                XGboost                                                 |
 | :----------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
 | [XGBClassifier](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.xgb.XGBClassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
+|  [XGBRegressor](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.xgb.XGBRegressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
 
 ## Example
 
