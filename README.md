@@ -1,34 +1,60 @@
-# Concrete ML
+<p align="center">
+<!-- product name logo -->
+  <img width=600 src="https://user-images.githubusercontent.com/5758427/188829741-8503b6c3-98ca-4285-9955-455508f50863.png">
+</p>
+<p align="center">
+<!-- Version badge using shields.io -->
+  <a href="https://github.com/zama-ai/concrete-ml/releases">
+    <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
+  </a>
+<!-- Link to docs badge using shields.io -->
+  <a href="https://docs.zama.ai/concrete-ml">
+    <img src="https://img.shields.io/badge/read-documentation-yellow?style=flat-square">
+  </a>
+<!-- Link to tutorials badge using shields.io -->
+  <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.3.x/docs/advanced_examples">
+    <img src="https://img.shields.io/badge/tutorials-and%20demos-orange?style=flat-square">
+  </a>
+<!-- Community forum badge using shields.io -->
+  <a href="https://community.zama.ai/c/concrete-ml">
+    <img src="https://img.shields.io/badge/community%20forum-online-brightgreen?style=flat-square">
+  </a>
+<!-- Open source badge using shields.io -->
+  <a href="https://docs.zama.ai/concrete-ml/developer-guide/contributing">
+    <img src="https://img.shields.io/badge/we're%20open%20source-contributing.md-blue?style=flat-square">
+  </a>
+<!-- Follow on twitter badge using shields.io -->
+  <a href="https://twitter.com/zama_fhe">
+    <img src="https://img.shields.io/twitter/follow/zama_fhe?color=blue&style=flat-square">
+  </a>
+</p>
 
-**Concrete-ML** is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
+**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
 
-<!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=2 -->
+## Main features.
 
-- [Links](#links)
-- [For end users](#for-end-users)
-  - [Installation.](#installation)
-  - [Supported models.](#supported-models)
-  - [Simple ML examples with scikit-learn.](#simple-ml-examples-with-scikit-learn)
-- [For developers](#for-developers)
-  - [Project setup.](#project-setup)
-  - [Documenting.](#documenting)
-  - [Developing.](#developing)
-  - [Contributing.](#contributing)
-- [License](#license)
+**Concrete-ML** allows data scientists to use models with APIs which are close to the frameworks they use, with additional options to run inferences in FHE.
 
-<!-- mdformat-toc end -->
+**Concrete-ML** features:
 
-## Links
+- built-in models, which are ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
+- support for customs models that can use quantization aware training. These are developed by the user using pytorch or keras/tensorflow and are imported into Concrete-ML through ONNX
 
-- [documentation](https://docs.zama.ai/concrete-ml)
-- [community website](https://community.zama.ai/c/concrete-ml)
-- [demos](https://docs.zama.ai/concrete-ml/built-in-models/ml_examples)
+## Installation.
 
-## For end users
+Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
 
-### Installation.
+|               OS / HW                | Available on Docker | Available on pip |
+| :----------------------------------: | :-----------------: | :--------------: |
+|                Linux                 |         Yes         |       Yes        |
+|               Windows                |         Yes         |  Not currently   |
+|     Windows Subsystem for Linux      |         Yes         |       Yes        |
+|            macOS (Intel)             |         Yes         |       Yes        |
+| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |  Not currently   |
 
-The preferred way to use **Concrete-ML** is through Docker. You can get our Docker image by pulling the latest Docker image:
+Only some versions of `python` are supported: today, this list is `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use python 3.7 which is a deprecated version and is not supported by Concrete-ML.
+
+To install with Docker is done as:
 
 `docker pull zamafhe/concrete-ml:latest`
 
@@ -38,25 +64,7 @@ To install **Concrete-ML** from PyPi, run the following:
 
 You can find more detailed installation instructions in [pip_installing.md](docs/getting-started/pip_installing.md)
 
-### Supported models.
-
-Here is a list of ML algorithms currently supported in this library:
-
-- LinearRegression (sklearn)
-- Lasso, Ridge, ElasticNet (sklearn)
-- LogisticRegression (sklearn)
-- SVM - LinearSVC and LinearSVR (sklearn)
-- DecisionTreeClassifier (sklearn)
-- DecisionTreeRegressor (sklearn)
-- RandomForestClassifier (sklearn)
-- NeuralNetworkClassifier (skorch)
-- NeuralNetworkRegressor (skorch)
-- XGBoostClassifier (xgboost)
-- XGBoostRegressor (xgboost)
-
-Torch also has its own integration for custom models.
-
-### Simple ML examples with scikit-learn.
+## Simple ML examples with scikit-learn.
 
 A simple example which is very close to scikit-learn is as follows, for a logistic regression :
 
@@ -100,23 +108,6 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 ```
 
 We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
-
-## For developers
-
-### Project setup.
-
-Installation steps are described in [project_setup.md](docs/developer-guide/project_setup.md).
-Information about how to use Docker for development are available in [docker_setup.md](docs/developer-guide/docker_setup.md).
-
-### Documenting.
-
-Some information about how to build the documentation of **Concrete-ML** are [available](docs/developer-guide/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
-
-### Developing.
-
-### Contributing.
-
-Information about how to contribute is available in [contributing.md](docs/developer-guide/contributing.md).
 
 ## License
 
