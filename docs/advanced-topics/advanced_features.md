@@ -2,7 +2,7 @@
 
 Concrete-ML offers some features for advanced users that we detail here.
 
-## Approximate Computations Using The `p_error` Parameter
+## Approximate computations using the `p_error` parameter
 
 In Concrete-ML, we make use of table lookup (TLU) to represent any non-linear operation (e.g. sigmoid). This TLU is then used to achieve a Programmable Bootstrapping (PBS) operation that will apply the non-linear operation in the cryptographic realm.
 
