@@ -36,7 +36,7 @@ To install **Concrete-ML** from PyPi, run the following:
 
 `pip install concrete-ml`
 
-You can find more detailed installation instructions in [installing.md](docs/developer-guide/installing.md)
+You can find more detailed installation instructions in [installing.md](docs/getting-started/pip_installing.md)
 
 ### Supported models.
 
