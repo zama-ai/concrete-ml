@@ -36,7 +36,7 @@ To install **Concrete-ML** from PyPi, run the following:
 
 `pip install concrete-ml`
 
-You can find more detailed installation instructions in [installing.md](docs/installing.md)
+You can find more detailed installation instructions in [installing.md](docs/developer-guide/installing.md)
 
 ### Supported models.
 
@@ -96,24 +96,24 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 #  Comparison: 100% similar
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](linear.md), [tree-based models](tree.md) and [neural networks](quantized_neural_networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
 
 ## For developers
 
 ### Project setup.
 
-Installation steps are described in [project_setup.md](docs/project_setup.md).
-Information about how to use Docker for development are available in [docker.md](docs/docker.md).
+Installation steps are described in [project_setup.md](docs/developer-guide/project_setup.md).
+Information about how to use Docker for development are available in [docker_setup.md](docs/developer-guide/docker_setup.md).
 
 ### Documenting.
 
-Some information about how to build the documentation of **Concrete-ML** are [available](docs/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
+Some information about how to build the documentation of **Concrete-ML** are [available](docs/developer-guide/documenting.md). Notably, our documentation is pushed to [https://docs.zama.ai/concrete-ml/](https://docs.zama.ai/concrete-ml/).
 
 ### Developing.
 
 ### Contributing.
 
-Information about how to contribute is available in [contributing.md](docs/contributing.md).
+Information about how to contribute is available in [contributing.md](docs/developer-guide/contributing.md).
 
 ## License
 
