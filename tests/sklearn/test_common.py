@@ -22,7 +22,7 @@ from concrete.ml.sklearn import DecisionTreeClassifier, RandomForestClassifier, 
     ],
 )
 @pytest.mark.parametrize(
-    "load_data",
+    "make_data",
     [
         pytest.param(
             lambda n_examples, n_features: (
@@ -32,12 +32,12 @@ from concrete.ml.sklearn import DecisionTreeClassifier, RandomForestClassifier, 
         ),
     ],
 )
-def test_random_state_fit_benchmark(load_data, alg):
+def test_random_state_fit_benchmark(make_data, alg):
     """Tests the random_state parameter."""
     random_state_constructor = numpy.random.randint(0, 2**15)
     random_state_user = numpy.random.randint(0, 2**15)
 
-    x, y = load_data(100, 10)
+    x, y = make_data(100, 10)
 
     # First case: user gives his own random_state
     model = alg(random_state=random_state_constructor)

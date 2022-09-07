@@ -132,7 +132,7 @@ def test_brevitas_tinymnist_cnn(qat_bits):
     x_all = numpy.expand_dims(x_all.reshape((-1, 8, 8)), 1)
 
     x_train, x_test, y_train, y_test = train_test_split(
-        x_all, y_all, test_size=0.25, shuffle=True, random_state=42
+        x_all, y_all, test_size=0.25, shuffle=True, random_state=numpy.random.randint(0, 2**15)
     )
 
     def train_one_epoch(net, optimizer, train_loader):

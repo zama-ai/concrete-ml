@@ -1,7 +1,6 @@
 """Common functions or lists for test files, which can't be put in fixtures."""
 from functools import partial
 
-import numpy
 import pytest
 from torch import nn
 
@@ -71,6 +70,7 @@ classifier_models = [
     ),
 ]
 
+# Get the datasets. The data generation is seeded in load_data.
 # Remark that NeuralNetClassifier is not here because it is particular model for us, needs much more
 # parameters
 classifiers = [
@@ -83,13 +83,13 @@ classifiers = [
             "n_classes": 2,  # qnns do not have multiclass yet
             "n_informative": 10,
             "n_redundant": 0,
-            "random_state": numpy.random.randint(0, 2**15),
         },
         id=model.__name__ if not isinstance(model, partial) else None,
     )
     for model in classifier_models
 ]
 
+# Get the datasets. The data generation is seeded in load_data.
 # Only LinearRegression supports multi targets
 # GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
 regressors = [
@@ -103,7 +103,6 @@ regressors = [
             "n_informative": 10,
             "n_targets": 2 if model == LinearRegression else 1,
             "noise": 0,
-            "random_state": numpy.random.randint(0, 2**15),
         },
         id=model.__name__ if not isinstance(model, partial) else None,
     )

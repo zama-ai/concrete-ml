@@ -449,14 +449,17 @@ def load_data():
             strictly_positive (bool): If True, the regression data will be only composed of strictly
                 positive values. It has no effect on classification problems. Default to False.
         """
+        # Create a random_state value in order to seed the data generation functions. This enables 
+        # all tests that use this fixture to be deterministic and thus reproducible.
+        random_state = numpy.random.randint(0, 2**15)
 
         # If the dataset should be generated for a classification problem.
         if dataset == "classification":
-            return make_classification(*args, **kwargs)
+            return make_classification(*args, **kwargs, random_state=random_state)
 
         # If the dataset should be generated for a regression problem.
         elif dataset == "regression":
-            generated_regression = list(make_regression(*args, **kwargs))
+            generated_regression = list(make_regression(*args, **kwargs, random_state=random_state))
 
             # Some regressors can only handle positive target values, often strictly positive.
             if strictly_positive:

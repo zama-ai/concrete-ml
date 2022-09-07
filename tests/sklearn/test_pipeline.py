@@ -45,6 +45,7 @@ def test_pipeline_classifiers_regressors(model, parameters, load_data):
         grid_search.fit(x, y)
 
 
+# Get the dataset. The data generation is seeded in load_data.
 qnn = [
     (
         {
@@ -56,7 +57,6 @@ qnn = [
             "n_informative": 5,
             "n_classes": 2,
             "class_sep": 2,
-            "random_state": 42,
         }
     )
 ]
@@ -76,7 +76,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
         x,
         y,
         test_size=0.25,
-        random_state=42,
+        random_state=numpy.random.randint(0, 2**15),
     )
     params = {
         "module__n_layers": 3,

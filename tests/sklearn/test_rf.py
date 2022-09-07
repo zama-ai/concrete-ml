@@ -25,13 +25,14 @@ PARAMS_RF = {
 @pytest.mark.parametrize("n_classes", [2, 4])
 def test_rf_hyperparameters(hyperparameters, n_classes, load_data, check_r2_score, check_accuracy):
     """Test that the hyperparameters are valid."""
+
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=100,
         n_features=10,
         n_informative=5,
         n_classes=n_classes,
-        random_state=numpy.random.randint(0, 2**15),
     )
     model = RandomForestClassifier(
         **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
@@ -42,6 +43,7 @@ def test_rf_hyperparameters(hyperparameters, n_classes, load_data, check_r2_scor
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
 
+# Get the dataset. The data generation is seeded in load_data.
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     "parameters",
@@ -53,7 +55,6 @@ def test_rf_hyperparameters(hyperparameters, n_classes, load_data, check_r2_scor
                 "n_samples": 1000,
                 "n_features": 100,
                 "n_classes": 2,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_classification",
         ),
@@ -126,12 +127,13 @@ def test_rf_classifier(
 
 def test_grid_search(load_data):
     """Tests random forest with the gridsearchCV from sklearn."""
+
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=1000,
         n_features=100,
         n_classes=2,
-        random_state=numpy.random.randint(0, 2**15),
     )
 
     param_grid = {

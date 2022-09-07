@@ -4,12 +4,11 @@ import random
 import numpy
 import pytest
 from sklearn import tree
-from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
-from concrete.ml.sklearn import DecisionTreeClassifier
+from concrete.ml.sklearn import DecisionTreeClassifier, DecisionTreeRegressor
 from concrete.ml.sklearn.qnn import NeuralNetClassifier
 
 
@@ -46,20 +45,51 @@ def test_seed_3(random_inputs):
     print("Random inputs", random_inputs)
 
 
+@pytest.mark.parametrize("n_targets", [2])
+@pytest.mark.parametrize("input_dim", [100])
+def test_seed_sklearn_regression(n_targets, input_dim, load_data, default_configuration):
+    """Test seeding of sklearn regression model"""
+
+    # Get the dataset. The data generation is seeded in load_data.
+    x, y = load_data(
+        dataset="regression",
+        n_samples=1000,
+        n_features=input_dim,
+        n_informative=input_dim,
+        n_targets=n_targets,
+    )
+
+    model = DecisionTreeRegressor(
+        n_bits=6, max_depth=7, random_state=numpy.random.randint(0, 2**15)
+    )
+    model, sklearn_model = model.fit_benchmark(x, y)
+
+    print("model", tree.plot_tree(model.sklearn_model), sklearn_model)
+
+    # Test the determinism of our package (even if the bitwidth may be too large)
+    try:
+        model.compile(x, configuration=default_configuration, show_mlir=True)
+    except RuntimeError as err:
+        print(err)
+    except AssertionError as err:
+        print(err)
+
+
 @pytest.mark.parametrize("n_classes", [2])
 @pytest.mark.parametrize("input_dim", [100])
-def test_seed_sklearn(n_classes, input_dim, default_configuration):
-    """Test seeding of sklearn function"""
-    # Get the dataset
-    x, y = make_classification(
-        1000,
+def test_seed_sklearn_classification(n_classes, input_dim, load_data, default_configuration):
+    """Test seeding of sklearn classification model"""
+
+    # Get the dataset. The data generation is seeded in load_data.
+    x, y = load_data(
+        dataset="classification",
+        n_samples=1000,
         n_features=input_dim,
         n_redundant=0,
         n_repeated=0,
         n_informative=input_dim,
         n_classes=n_classes,
         class_sep=2,
-        random_state=random.randint(0, 100),
     )
 
     model = DecisionTreeClassifier(
@@ -94,19 +124,23 @@ def test_seed_torch(
     activation_function,
     n_classes,
     input_dim,
+    load_data,
     default_configuration,
 ):
     """Test seeding of torch function"""
-    x, y = make_classification(
-        1000,
+
+    # Get the dataset. The data generation is seeded in load_data.
+    x, y = load_data(
+        dataset="classification",
+        n_samples=1000,
         n_features=input_dim,
         n_redundant=0,
         n_repeated=0,
         n_informative=input_dim,
         n_classes=n_classes,
         class_sep=2,
-        random_state=random.randint(0, 100),
     )
+
     x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
@@ -114,7 +148,7 @@ def test_seed_torch(
         x,
         y,
         test_size=0.95,
-        random_state=42,
+        random_state=numpy.random.randint(0, 2**15),
     )
 
     params = {

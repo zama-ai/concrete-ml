@@ -6,6 +6,7 @@ from sklearn.datasets import load_breast_cancer
 from concrete.ml.sklearn import DecisionTreeClassifier
 
 
+# Get the datasets. The data generation is seeded in load_data.
 @pytest.mark.parametrize(
     "parameters",
     [
@@ -19,7 +20,6 @@ from concrete.ml.sklearn import DecisionTreeClassifier
                 "n_samples": 100,
                 "n_features": 10,
                 "n_classes": 2,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_classification",
         ),
@@ -31,7 +31,6 @@ from concrete.ml.sklearn import DecisionTreeClassifier
                 "n_classes": 4,
                 "n_informative": 10,
                 "n_redundant": 0,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_classification_multiclass",
         ),
@@ -90,6 +89,8 @@ def test_decision_tree_hyperparameters(
     hyperparameters, n_classes, offset, load_data, check_accuracy, check_r2_score
 ):
     """Test that the hyperparameters are valid."""
+
+    # Get the datasets. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=1000,
@@ -97,7 +98,6 @@ def test_decision_tree_hyperparameters(
         n_informative=10,
         n_redundant=0,
         n_classes=n_classes,
-        random_state=numpy.random.randint(0, 2**15),
     )
     y += offset
     model = DecisionTreeClassifier(

@@ -46,13 +46,14 @@ def test_xgb_classifier_hyperparameters(
     hyperparameters, n_classes, load_data, check_r2_score, check_accuracy
 ):
     """Test that the hyperparameters are valid."""
+
+    # Get the datasets. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=100,
         n_features=10,
         n_informative=5,
         n_classes=n_classes,
-        random_state=numpy.random.randint(0, 2**15),
     )
     model = XGBClassifier(
         **hyperparameters,
@@ -66,6 +67,7 @@ def test_xgb_classifier_hyperparameters(
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
 
 
+# Get the datasets. The data generation is seeded in load_data.
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     "parameters",
@@ -77,7 +79,6 @@ def test_xgb_classifier_hyperparameters(
                 "n_samples": 1000,
                 "n_features": 100,
                 "n_classes": 2,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_classification",
         ),
@@ -89,7 +90,6 @@ def test_xgb_classifier_hyperparameters(
                 "n_classes": 4,
                 "n_informative": 100,
                 "n_redundant": 0,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_multiclassification",
         ),
@@ -165,12 +165,13 @@ def test_xgb_classifier(
 
 def test_xgb_classifier_grid_search(load_data):
     """Tests xgboost with the gridsearchCV from sklearn."""
+
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=1000,
         n_features=100,
         n_classes=2,
-        random_state=numpy.random.randint(0, 2**15),
     )
 
     param_grid = {
@@ -203,12 +204,13 @@ def test_xgb_classifier_grid_search(load_data):
 )
 def test_xgb_regressor_hyperparameters(hyperparameters, load_data, check_r2_score):
     """Test that the hyperparameters are valid."""
+
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="regression",
         n_samples=100,
         n_features=10,
         n_informative=5,
-        random_state=numpy.random.randint(0, 2**15),
     )
     model = XGBRegressor(
         **hyperparameters,
@@ -221,6 +223,7 @@ def test_xgb_regressor_hyperparameters(hyperparameters, load_data, check_r2_scor
     check_r2_score(model.predict(x), sklearn_model.predict(x))
 
 
+# Get the datasets. The data generation is seeded in load_data.
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
     "parameters",
@@ -231,7 +234,6 @@ def test_xgb_regressor_hyperparameters(hyperparameters, load_data, check_r2_scor
                 "dataset": "regression",
                 "n_samples": 1000,
                 "n_features": 100,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_regression",
         ),
@@ -241,7 +243,6 @@ def test_xgb_regressor_hyperparameters(hyperparameters, load_data, check_r2_scor
                 "n_samples": 1000,
                 "n_features": 100,
                 "n_informative": 100,
-                "random_state": numpy.random.randint(0, 2**15),
             },
             id="make_other_regression",
         ),
@@ -317,11 +318,12 @@ def test_xgb_regressor(
 
 def test_xgb_regressor_grid_search(load_data):
     """Tests xgboost with the gridsearchCV from sklearn."""
+
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="regression",
         n_samples=1000,
         n_features=100,
-        random_state=numpy.random.randint(0, 2**15),
     )
 
     param_grid = {

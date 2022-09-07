@@ -38,6 +38,7 @@ regressor_model_classes = [
 classifier_model_classes = [LogisticRegression, LinearSVC]
 
 
+# Get the datasets. The data generation is seeded in load_data.
 def get_datasets_regression(model_class):
     """Return tests to apply to a regression model."""
 
@@ -170,7 +171,6 @@ def get_datasets_classification(model_class):
                 "n_samples": 200,
                 "class_sep": 2,
                 "n_features": 10,
-                "random_state": 42,
             },
             id=f"make_classification_features_10_{model_class.__name__}",
         ),
@@ -181,7 +181,6 @@ def get_datasets_classification(model_class):
                 "n_samples": 200,
                 "class_sep": 2,
                 "n_features": 14,
-                "random_state": 42,
             },
             id=f"make_classification_features_14_{model_class.__name__}",
         ),
@@ -194,7 +193,6 @@ def get_datasets_classification(model_class):
                 "n_clusters_per_class": 1,
                 "class_sep": 2,
                 "n_classes": 4,
-                "random_state": 42,
             },
             id=f"make_classification_features_14_classes_4_{model_class.__name__}",
         ),

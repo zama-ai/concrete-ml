@@ -38,7 +38,7 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
     else:
         model_name = model.__name__
 
-    # Get the data
+    # Get the dataset. The data generation is seeded in load_data.
     if model_name == "NeuralNetClassifier":
         x, y = load_data(
             dataset="classification",
@@ -47,9 +47,10 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
             n_classes=2,
             n_informative=10,
             n_redundant=0,
-            random_state=numpy.random.randint(0, 2**15),
         )
         x = x.astype(numpy.float32)
+
+    # Get the dataset. The data generation is seeded in load_data.
     elif model_name == "NeuralNetRegressor":
         x, y = load_data(
             dataset="regression",
@@ -59,7 +60,6 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
             n_informative=10,
             n_targets=1,
             noise=2.0,
-            random_state=numpy.random.randint(0, 2**15),
         )
         x = x.astype(numpy.float32)
         y = y.reshape(-1, 1).astype(numpy.float32)

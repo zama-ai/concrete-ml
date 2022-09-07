@@ -8,6 +8,7 @@ from sklearn.exceptions import ConvergenceWarning
 from concrete.ml.sklearn import DecisionTreeRegressor
 
 
+# Get the datasets. The data generation is seeded in load_data.
 def get_datasets_regression(model):
     """Return tests to apply to a regression model."""
 

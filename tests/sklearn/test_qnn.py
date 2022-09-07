@@ -50,7 +50,7 @@ def test_nn_models_quant(
 ):
     """Test the correctness of the results of quantized NN classifiers through the sklearn
     wrapper."""
-
+    # Get the dataset. The data generation is seeded in load_data.
     if model == NeuralNetClassifier:
         x, y = load_data(
             dataset="classification",
@@ -61,8 +61,9 @@ def test_nn_models_quant(
             n_informative=input_dim,
             n_classes=n_outputs,
             class_sep=2,
-            random_state=42,
         )
+
+    # Get the dataset. The data generation is seeded in load_data.
     elif model == NeuralNetRegressor:
         x, y, _ = load_data(
             dataset="regression",
@@ -71,7 +72,6 @@ def test_nn_models_quant(
             n_informative=input_dim,
             n_targets=n_outputs,
             noise=2,
-            random_state=42,
             coef=True,
         )
         if y.ndim == 1:
@@ -87,7 +87,7 @@ def test_nn_models_quant(
         x,
         y,
         test_size=0.25,
-        random_state=42,
+        random_state=numpy.random.randint(0, 2**15),
     )
 
     params = {
@@ -152,6 +152,7 @@ def test_parameter_validation(model, load_data):
         "verbose": 0,
     }
 
+    # Get the dataset. The data generation is seeded in load_data.
     if model == NeuralNetClassifier:
         x, y = load_data(
             dataset="classification",
@@ -162,8 +163,9 @@ def test_parameter_validation(model, load_data):
             n_informative=10,
             n_classes=2,
             class_sep=2,
-            random_state=42,
         )
+
+    # Get the dataset. The data generation is seeded in load_data.
     elif model == NeuralNetRegressor:
         x, y, _ = load_data(
             dataset="regression",
@@ -171,7 +173,6 @@ def test_parameter_validation(model, load_data):
             n_features=10,
             n_informative=10,
             noise=2,
-            random_state=42,
             coef=True,
         )
     else:
@@ -228,6 +229,7 @@ def test_compile_and_calib(
 
     n_features = 10
 
+    # Get the dataset. The data generation is seeded in load_data.
     if model == NeuralNetClassifier:
         x, y = load_data(
             dataset="classification",
@@ -238,8 +240,9 @@ def test_compile_and_calib(
             n_informative=n_features,
             n_classes=2,
             class_sep=2,
-            random_state=42,
         )
+
+    # Get the dataset. The data generation is seeded in load_data.
     elif model == NeuralNetRegressor:
         x, y, _ = load_data(
             dataset="regression",
@@ -248,7 +251,6 @@ def test_compile_and_calib(
             n_informative=n_features,
             n_targets=2,
             noise=2,
-            random_state=42,
             coef=True,
         )
         if y.ndim == 1:
@@ -264,7 +266,7 @@ def test_compile_and_calib(
         x,
         y,
         test_size=0.25,
-        random_state=42,
+        random_state=numpy.random.randint(0, 2**15),
     )
 
     # Compute mean/stdev on training set and normalize both train and test sets with them
@@ -378,6 +380,7 @@ def test_custom_net_classifier(load_data):
 
     clf = MiniCustomNeuralNetClassifier(MiniNet, **params)
 
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=1000,
@@ -387,7 +390,6 @@ def test_custom_net_classifier(load_data):
         n_informative=2,
         n_classes=2,
         class_sep=2,
-        random_state=42,
     )
 
     x = x.astype(numpy.float32)
@@ -397,7 +399,7 @@ def test_custom_net_classifier(load_data):
         x,
         y,
         test_size=0.25,
-        random_state=42,
+        random_state=numpy.random.randint(0, 2**15),
     )
 
     # Compute mean/stdev on training set and normalize both train and test sets with them

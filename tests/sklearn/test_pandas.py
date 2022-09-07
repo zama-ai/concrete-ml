@@ -50,6 +50,7 @@ def test_pandas(model, parameters, load_data):
 def test_pandas_qnn(load_data):
     """Tests with pandas"""
 
+    # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
         dataset="classification",
         n_samples=1000,
@@ -59,7 +60,6 @@ def test_pandas_qnn(load_data):
         n_informative=5,
         n_classes=2,
         class_sep=2,
-        random_state=42,
     )
     x = x.astype(numpy.float32)
 
