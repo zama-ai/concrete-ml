@@ -31,3 +31,28 @@ for statistics, official_name in [
 ]:
     individual = [user[statistics] for user in dic["directory_items"]]
     print(f"    {official_name}: {sum(individual)}")
+
+# For dump in Excel
+print("\nDump in Excel (community): \n")
+
+for statistics, _ in [
+    ("topic_count", "Topics created"),
+    ("post_count", "Posts created"),
+    ("likes_received", "Likes received"),
+    ("solutions", "Solutions"),
+]:
+    individual = [user[statistics] for user in dic["directory_items"]]
+    print(f"{sum(individual)} \t ", end="")
+
+print()
+
+for statistics, _ in [
+    ("topic_count", "Topics created"),
+    ("post_count", "Posts created"),
+    ("likes_received", "Likes received"),
+    ("solutions", "Solutions"),
+]:
+    individual = [user[statistics] for user in dic["directory_items"]]
+    print("0 \t ", end="")
+
+print()

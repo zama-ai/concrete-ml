@@ -12,7 +12,7 @@
 set -e
 
 # Things you may want to change
-FROM_WHEN="2022-04-01"
+FROM_WHEN="2022-07-01"
 LIST_OF_REPOSITORIES=(concrete-ml-internal
                       concrete-ml)
 
@@ -20,6 +20,7 @@ LIST_OF_REPOSITORIES=(concrete-ml-internal
 # larger size
 NO_LIMIT=999
 SUMMARY_FILE="$PWD/summary.txt"
+TABLE_FILE="$PWD/table.txt"
 CREATED_WHEN_OPTION='--search created:>='${FROM_WHEN}
 CLOSED_WHEN_OPTION='--search closed:>='${FROM_WHEN}
 NO_LIMIT_OPTION='-L '$NO_LIMIT
@@ -34,9 +35,11 @@ function measure()
     REPO_NAME="$1"
     TEMP_DIR="$2"
     SUMMARY_FILE="$3"
+    TABLE_FILE="$4"
 
     OLD_PWD="$PWD"
     cd "$TEMP_DIR"
+    echo "Getting statistics for $REPO_NAME repository"
     git clone https://github.com/zama-ai/$REPO_NAME 2>&1 | grep Cloning
     cd $REPO_NAME
 
@@ -81,17 +84,22 @@ function measure()
     echo >> "$SUMMARY_FILE"
 
     cd "$OLD_PWD"
+
+    # Make summary for a table dump
+    #       Closed issues | Created issues | Close PR | Created PR | Commits | Stars | Forks
+    echo -e $NB_CLOSED_ISSUES' \t '$NB_CREATED_ISSUES' \t '$NB_CLOSED_PR' \t '$NB_CREATED_PR' \t '$NB_COMMITS_TOTAL' \t '$NB_STARS' \t '$NB_FORKS >> "$TABLE_FILE"
 }
 
 # Main
 echo "" > "$SUMMARY_FILE"
+echo "" > "$TABLE_FILE"
 
 rm -rf $TEMP_DIR
 mkdir $TEMP_DIR
 
 for REPOSITORIES in "${LIST_OF_REPOSITORIES[@]}"
 do
-    measure $REPOSITORIES $TEMP_DIR $SUMMARY_FILE
+    measure $REPOSITORIES $TEMP_DIR $SUMMARY_FILE $TABLE_FILE
 done
 
 rm -rf $TEMP_DIR
@@ -103,4 +111,12 @@ python3 script/other/community_stats.py >> "$SUMMARY_FILE"
 echo >> "$SUMMARY_FILE"
 
 cat "$SUMMARY_FILE"
+
+echo "Dump in Excel (repositories):"
+cat "$TABLE_FILE"
+echo
+
 echo "Successful end"
+
+
+
