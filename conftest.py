@@ -10,18 +10,11 @@ import numpy
 import pytest
 import torch
 
-from sklearn.datasets import make_classification
-from sklearn.datasets import make_regression
 from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
-
-from concrete.numpy.compilation import (
-    DebugArtifacts,
-    Configuration,
-    Compiler,
-    EncryptionStatus,
-    Circuit,
-    configuration,
-)
+from concrete.numpy.compilation import (Circuit, Compiler, Configuration,
+                                        DebugArtifacts, EncryptionStatus,
+                                        configuration)
+from sklearn.datasets import make_classification, make_regression
 
 
 def pytest_addoption(parser):

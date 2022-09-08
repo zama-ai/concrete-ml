@@ -28,6 +28,7 @@ setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
 	PIP_INDEX_URL=https://pypi.org/simple \
 	PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+	poetry run python --version
 	poetry run python -m pip install keyring
 	poetry run python -m pip install -U pip wheel
 
@@ -161,6 +162,7 @@ pcc_internal: $(PCC_DEPS)
 # num_cpus
 .PHONY: pytest # Run pytest
 pytest:
+	poetry run pytest --version
 	poetry run pytest --durations=10 -svv \
 	--capture=tee-sys \
 	--global-coverage-infos-json=global-coverage-infos.json \
@@ -704,4 +706,4 @@ check_forbidden_words:
 
 .PHONY: update_dependabot_prs # Update all dependabot PRs on origin
 update_dependabot_prs:
-	./script/make_utils/update_dependabot_prs.sh
+	/bin/bash ./script/make_utils/update_dependabot_prs.sh

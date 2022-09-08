@@ -295,7 +295,7 @@ class QuantizedTorchEstimatorMixin:
 
         onnx_model = onnx.load(output_onnx_file_path)
 
-        output_onnx_file_path.unlink(missing_ok=True)
+        output_onnx_file_path.unlink()
 
         # Create corresponding numpy model
         numpy_model = NumpyModule(onnx_model, torch.tensor(X[[0], ::]))
@@ -672,8 +672,9 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             len(output_graph) == 1,
             "graph has too many outputs",
         )
+        dtype_output = output_graph[0].output.dtype
         assert_true(
-            isinstance(dtype_output := output_graph[0].output.dtype, Integer),
+            isinstance(dtype_output, Integer),
             f"output is {dtype_output} but an Integer is expected.",
         )
 

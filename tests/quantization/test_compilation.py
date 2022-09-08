@@ -405,7 +405,6 @@ def test_post_training_quantization_constant_folding():
     # that depends on a variable input
     assert len(post_training_quant.quant_ops_dict) == 1
     assert model_output_name in post_training_quant.quant_ops_dict
-    assert isinstance(
-        q_gemm := post_training_quant.quant_ops_dict[model_output_name][1], QuantizedGemm
-    )
+    q_gemm = post_training_quant.quant_ops_dict[model_output_name][1]
+    assert isinstance(q_gemm, QuantizedGemm)
     assert numpy.array_equal(q_gemm.constant_inputs[1].values, expected_constant)

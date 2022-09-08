@@ -4,10 +4,11 @@
 
 # FIXME: #1018
 
-from typing import Any, Dict, Optional, Sequence, Set, SupportsIndex, Union
+from typing import Any, Dict, Optional, Sequence, Set, Union
 
 import numpy
 from concrete.onnx import conv as cnp_conv
+from typing_extensions import SupportsIndex
 
 from ..common.debugging import assert_true
 from ..onnx.onnx_impl_utils import (

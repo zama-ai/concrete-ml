@@ -103,10 +103,10 @@ jobs:
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            LINUX_PYTHON_VERSIONS="3.8 3.9"
+            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9"
             MACOS_PYTHON_VERSIONS="3.9"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
-            LINUX_PYTHON_VERSIONS="3.8 3.9"
+            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "push_to_main" ]]; then
             LINUX_PYTHON_VERSIONS="3.8"
@@ -356,6 +356,13 @@ jobs:
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
           python-version: ${{ matrix.python_version }}
+
+      - name: Check python3 version
+        env:
+          SYSTEM_VERSION_COMPAT: 0
+        run: |
+          which python3
+          which pip3
 
       - name: Install dependencies
         id: install-deps
@@ -649,12 +656,23 @@ jobs:
         with:
           python-version: ${{ matrix.python_version }}
 
+      - name: Check python3 version
+        env:
+          SYSTEM_VERSION_COMPAT: 0
+        run: |
+          which python3
+          which pip3
+          sw_vers
+
       - name: Install dependencies
         id: install-deps
         env:
-           SYSTEM_VERSION_COMPAT: 0
+          SYSTEM_VERSION_COMPAT: 0
         run: |
           ./script/make_utils/setup_os_deps.sh
+
+          which python3
+          which pip3
 
           PATH="/usr/local/opt/make/libexec/gnubin:$PATH"
           echo "PATH=${PATH}" >> "$GITHUB_ENV"
@@ -696,8 +714,19 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Check python3 version
+        env:
+          SYSTEM_VERSION_COMPAT: 0
+        run: |
+          which python3
+          which pip3
+
       - name: Set up env
         run: |
+
+          which python3
+          which pip3
+
           python -m pip install --upgrade pip
           python -m pip install poetry
           make setup_env

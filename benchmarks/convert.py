@@ -9,7 +9,17 @@ import json
 import math
 import subprocess
 import sys
-from importlib.metadata import version
+
+try:  # 3.8 and above
+    # pylint: disable-next=no-name-in-module
+    from importlib.metadata import version
+except ImportError:  # 3.7 and below
+    # pylint: disable-next=no-name-in-module
+    from importlib_metadata import version
+
+    # Running inspect.getsource(version_1) == inspect.getsource(version_2) returns True
+    # with version_1 and version_2 being the version function imported from each module
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 

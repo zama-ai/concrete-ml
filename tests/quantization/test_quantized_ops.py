@@ -833,10 +833,10 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
     "n_values, n_bits",
     [
         pytest.param(
-            n_values := 2**power_n_values,
+            2**power_n_values,
             n_bits,
             id=(
-                f"reduce_sum_{n_values}_values"  # pylint: disable=undefined-variable
+                f"reduce_sum_{2**power_n_values}_values"  # pylint: disable=undefined-variable
                 f"_{n_bits}_bits_in_FHE_(VL)"
             ),
         )

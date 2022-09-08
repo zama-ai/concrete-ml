@@ -77,9 +77,9 @@ class QuantizedOp:
     def __init__(
         self,
         n_bits_output: int,
-        int_input_names: Set[str] = None,
+        int_input_names: Optional[Set[str]] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
+        input_quant_opts: Optional[QuantizationOptions] = None,
         **attrs,
     ) -> None:
         self.n_bits = n_bits_output
@@ -121,13 +121,9 @@ class QuantizedOp:
             )
             # Ignore type here as mypy has a hard time understanding what's happening.
 
+        invalid_input_names = constant_inputs_per_name.keys() - self._params_that_are_onnx_inputs
         assert_true(
-            len(
-                invalid_input_names := (
-                    constant_inputs_per_name.keys() - self._params_that_are_onnx_inputs
-                )
-            )
-            == 0,
+            len(invalid_input_names) == 0,
             "Got invalid constant input names or indices: "
             f"{', '.join(sorted(invalid_input_names))}.\n"
             f"Valid input names: {(', '.join(sorted(self._params_that_are_onnx_inputs)))}.",
@@ -138,9 +134,9 @@ class QuantizedOp:
             self._params_name_to_input_idx[input_name]: constant_value
             for input_name, constant_value in constant_inputs_per_name.items()
         }
-
+        unknown_attrs = attrs.keys() - self._authorized_attr_names
         assert_true(
-            len(unknown_attrs := (attrs.keys() - self._authorized_attr_names)) == 0,
+            len(unknown_attrs) == 0,
             f"Got the following unknown attributes: {', '.join(sorted(unknown_attrs))}. "
             + (
                 f"Accepted attributes: {', '.join(sorted(self._authorized_attr_names))}."
@@ -167,9 +163,11 @@ class QuantizedOp:
     # Register node to our internal categories
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
+        if cls.__name__ == "QuantizedOpUnivariateOfEncrypted":
+            return
         ALL_QUANTIZED_OPS.add(cls)
-
-        if (op_name := cls._impl_for_op_named) is not None:
+        op_name = cls._impl_for_op_named
+        if (op_name) is not None:
             ONNX_OPS_TO_QUANTIZED_IMPL[op_name] = cls
             candidate_impl = ONNX_OPS_TO_NUMPY_IMPL.get(op_name, None)
             cls.impl = candidate_impl if candidate_impl is not None else cls.impl
@@ -203,7 +201,7 @@ class QuantizedOp:
         else:
             impl_signature = signature(cls.impl)
         impl_params = impl_signature.parameters
-        cls._params_name_to_input_idx = dict(reversed(val) for val in enumerate(impl_params))
+        cls._params_name_to_input_idx = {val: index for index, val in enumerate(impl_params)}
         cls._input_idx_to_params_name = dict(enumerate(impl_params))
         cls._params_that_are_onnx_inputs = {
             param.name
@@ -322,10 +320,9 @@ class QuantizedOp:
             else:
                 prepared_inputs[input_idx] = constant_val
 
+        num_inputs = len(inputs)
         assert_true(
-            num_onnx_inputs
-            >= (num_inputs := len(inputs)) + num_provided_constants
-            >= num_required_onnx_inputs,
+            num_onnx_inputs >= (num_inputs) + num_provided_constants >= num_required_onnx_inputs,
             f"This operator has {num_onnx_inputs} ONNX inputs, and {num_provided_constants} "
             "constants were already provided when instantiating the class. "
             f"Got a call with {num_inputs} inputs and constants while the call expects between "
@@ -448,7 +445,9 @@ class QuantizedOp:
             params=self.output_quant_params,
         )
 
-    def call_impl(self, *inputs: numpy.ndarray, **attrs) -> numpy.ndarray:
+    def call_impl(
+        self, *inputs: Union[numpy.ndarray, QuantizedArray, None], **attrs
+    ) -> numpy.ndarray:
         """Call self.impl to centralize mypy bug workaround.
 
         Args:
@@ -472,8 +471,9 @@ class QuantizedOp:
             isinstance(outputs, tuple),
             f"The output of {impl_func.__name__} needs to be a tuple. Got {outputs}",
         )
+        num_outputs = len(outputs)
         assert_true(
-            (num_outputs := len(outputs)) == 1,
+            (num_outputs) == 1,
             f"Currently only single output ops are supported, got {num_outputs} outputs.",
         )
 
@@ -510,7 +510,7 @@ class QuantizedOp:
         return output_quant_opts
 
 
-class QuantizedOpUnivariateOfEncrypted:
+class QuantizedOpUnivariateOfEncrypted(QuantizedOp):
     """An univariate operator of an encrypted value.
 
     This operation is not really operating as a quantized operation. It is useful when the
@@ -520,9 +520,9 @@ class QuantizedOpUnivariateOfEncrypted:
     def __init__(
         self,
         n_bits_output: int,
-        int_input_names: Set[str] = None,
+        int_input_names: Optional[Set[str]] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
+        input_quant_opts: Optional[QuantizationOptions] = None,
         **attrs,
     ) -> None:
         # Disable mypy which is failing for mixins

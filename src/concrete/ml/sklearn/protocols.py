@@ -10,7 +10,7 @@ To read more about Protocol please read: https://peps.python.org/pep-0544
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy
 import onnx
@@ -18,6 +18,7 @@ import sklearn
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.configuration import Configuration
+from typing_extensions import Protocol
 
 # Disable pylint invalid name since scikit learn uses "X" as variable name for data
 # pylint: disable=invalid-name

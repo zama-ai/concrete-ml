@@ -39,7 +39,8 @@ def remove_unused_constant_nodes(onnx_model: onnx.ModelProto):
                 constants_to_remove.pop(input_)
 
     for graph_output in onnx_model.graph.output:
-        if (graph_output_name := graph_output.name) in constants_to_remove:
+        graph_output_name = graph_output.name
+        if graph_output_name in constants_to_remove:
             # If we find a constant that is used, then it is not a constant to remove anymore
             constants_to_remove.pop(graph_output_name)
 
