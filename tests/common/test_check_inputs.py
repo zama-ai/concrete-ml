@@ -16,7 +16,7 @@ y_clean = [numpy.array([1.0, 2.0]), numpy.array([0, 10])]
 @pytest.mark.parametrize("x", x_with_nans)
 def test_check_array_and_assert_nan(x):
     """Checks that with an input containing a Nan the function raises an error"""
-    with pytest.raises(ValueError, match=r"Input contains NaN\."):
+    with pytest.raises(ValueError, match=r"Input .*contains NaN.*"):
         check_array_and_assert(x)
 
 
@@ -31,7 +31,7 @@ def test_check_array_and_assert_clean(x):
 @pytest.mark.parametrize("y", y_clean)
 def test_check_x_y_and_assert_nan_clean(x, y):
     """Checks that if X contains a Nan the function raises an error"""
-    with pytest.raises(ValueError, match=r"Input X contains NaN\."):
+    with pytest.raises(ValueError, match=r"Input .*contains NaN.*"):
         check_X_y_and_assert(x, y)
 
 
@@ -39,7 +39,7 @@ def test_check_x_y_and_assert_nan_clean(x, y):
 @pytest.mark.parametrize("y", y_with_nans)
 def test_check_x_y_and_assert_clean_nan(x, y):
     """Checks that if y contains a Nan the function raises an error"""
-    with pytest.raises(ValueError, match=r"Input y contains NaN\."):
+    with pytest.raises(ValueError, match=r"Input .*contains NaN.*"):
         check_X_y_and_assert(x, y)
 
 
@@ -47,7 +47,7 @@ def test_check_x_y_and_assert_clean_nan(x, y):
 @pytest.mark.parametrize("y", y_with_nans)
 def test_check_x_y_and_assert_nan_nan(x, y):
     """Checks that if X and y contain Nan values the function raises an error"""
-    with pytest.raises(ValueError, match=r"Input X contains NaN\."):
+    with pytest.raises(ValueError, match=r"Input .*contains NaN.*"):
         check_X_y_and_assert(x, y)
 
 

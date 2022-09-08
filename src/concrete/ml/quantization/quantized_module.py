@@ -66,8 +66,9 @@ class QuantizedModule:
         self.ordered_module_input_names = tuple(ordered_module_input_names)
         self.ordered_module_output_names = tuple(ordered_module_output_names)
 
+        num_outputs = len(self.ordered_module_output_names)
         assert_true(
-            (num_outputs := len(self.ordered_module_output_names)) == 1,
+            (num_outputs) == 1,
             f"{QuantizedModule.__class__.__name__} only supports a single output for now, "
             f"got {num_outputs}",
         )
@@ -188,15 +189,13 @@ class QuantizedModule:
             (numpy.ndarray): Predictions of the quantized model
         """
         # Make sure that the input is quantized
+        invalid_inputs = tuple(
+            (idx, qvalue)
+            for idx, qvalue in enumerate(qvalues)
+            if not issubclass(qvalue.dtype.type, numpy.integer)
+        )
         assert_true(
-            len(
-                invalid_inputs := tuple(
-                    (idx, qvalue)
-                    for idx, qvalue in enumerate(qvalues)
-                    if not issubclass(qvalue.dtype.type, numpy.integer)
-                )
-            )
-            == 0,
+            len(invalid_inputs) == 0,
             f"Inputs: {', '.join(f'#{val[0]} ({val[1].dtype})' for val in invalid_inputs)} are not "
             "integer types. Make sure you quantize your input before calling forward.",
             ValueError,
@@ -215,8 +214,10 @@ class QuantizedModule:
 
         """
 
+        n_qinputs = len(self.input_quantizers)
+        n_qvalues = len(qvalues) == n_qinputs
         assert_true(
-            (n_qvalues := len(qvalues)) == (n_qinputs := len(self.input_quantizers)),
+            n_qvalues,
             f"Got {n_qvalues} inputs, expected {n_qinputs}",
             TypeError,
         )
@@ -288,9 +289,10 @@ class QuantizedModule:
         Returns:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.uint32) values.
         """
-
+        n_qinputs = len(self.input_quantizers)
+        n_values = len(values) == n_qinputs
         assert_true(
-            (n_values := len(values)) == (n_qinputs := len(self.input_quantizers)),
+            n_values,
             f"Got {n_values} inputs, expected {n_qinputs}",
             TypeError,
         )
@@ -330,8 +332,10 @@ class QuantizedModule:
         Args:
             *input_q_params (UniformQuantizer): The quantizer(s) for the module.
         """
+        n_inputs = len(self.ordered_module_input_names)
+        n_values = len(input_q_params)
         assert_true(
-            (n_values := len(input_q_params)) == (n_inputs := len(self.ordered_module_input_names)),
+            n_values == n_inputs,
             f"Got {n_values} inputs, expected {n_inputs}",
             TypeError,
         )

@@ -132,11 +132,11 @@ def generate_test_sum_cases():
     # One test in FHE
     tests_cases.append(
         pytest.param(
-            n_values := 2 ** (numpy.random.randint(8)),
-            n_bits := 4,
-            in_fhe := True,
-            use_virtual_lib := False,
-            id=generate_sum_id(n_values, n_bits, in_fhe, use_virtual_lib),
+            2 ** (numpy.random.randint(8)),
+            4,
+            True,
+            False,
+            id=generate_sum_id(2 ** (numpy.random.randint(8)), 4, True, False),
         )
     )
 
@@ -146,11 +146,11 @@ def generate_test_sum_cases():
             for power_n_values in range(8):
                 tests_cases.append(
                     pytest.param(
-                        n_values := 2**power_n_values,
+                        2**power_n_values,
                         n_bits,
                         in_fhe,
-                        use_virtual_lib := True,
-                        id=generate_sum_id(n_values, n_bits, in_fhe, use_virtual_lib),
+                        True,
+                        id=generate_sum_id(2**power_n_values, n_bits, in_fhe, True),
                     )
                 )
     return tests_cases

@@ -25,7 +25,7 @@ def get_equivalent_numpy_forward_and_onnx_model(
         torch_module (torch.nn.Module): the torch Module for which to get the equivalent numpy
             forward.
         dummy_input (Union[torch.Tensor, Tuple[torch.Tensor, ...]]): dummy inputs for ONNX export.
-        output_onnx_file (Optional[Union[Path, str]], optional): Path to save the ONNX file to. Will
+        output_onnx_file (Optional[Union[Path, str]]): Path to save the ONNX file to. Will
             use a temp file if not provided.
             Defaults to None.
 
@@ -36,10 +36,9 @@ def get_equivalent_numpy_forward_and_onnx_model(
     """
 
     output_onnx_file_path = Path(
-        tempfile.mkstemp(suffix=".onnx")[1]
-        if (use_tempfile := (output_onnx_file is None))
-        else output_onnx_file
+        tempfile.mkstemp(suffix=".onnx")[1] if output_onnx_file is None else output_onnx_file
     )
+    use_tempfile: bool = output_onnx_file is None
 
     torch.onnx.export(
         torch_module,
@@ -52,7 +51,7 @@ def get_equivalent_numpy_forward_and_onnx_model(
 
     # Remove the tempfile if we used one
     if use_tempfile:
-        output_onnx_file_path.unlink(missing_ok=True)
+        output_onnx_file_path.unlink()
 
     # The model was checked just above
     equivalent_numpy_forward = get_equivalent_numpy_forward(

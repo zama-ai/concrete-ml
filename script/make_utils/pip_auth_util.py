@@ -75,7 +75,8 @@ def main(args):
     """Entry point."""
 
     parsed_url = urlparse(args.get_credentials_for)
-    get_credentials_for = netloc if (netloc := parsed_url.netloc) != "" else parsed_url.path
+    netloc = parsed_url.netloc
+    get_credentials_for = netloc if netloc != "" else parsed_url.path
     source_order = get_credentials_source_order(args.check_netrc_first)
     for source in source_order:
         get_credentials_func = METHOD_TO_FUNC[source]

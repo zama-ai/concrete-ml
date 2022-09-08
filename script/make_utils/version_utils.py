@@ -35,11 +35,11 @@ def islatest(args):
 
             # Keep versions that are not release candidate
             all_non_prerelease_version_infos = [
-                version_info
+                VersionInfo.parse(version_str)
                 for version_str in all_versions_str
                 if VersionInfo.isvalid(version_str)
-                and (version_info := VersionInfo.parse(version_str))
-                and version_info.prerelease is None
+                and VersionInfo.parse(version_str)
+                and VersionInfo.parse(version_str).prerelease is None
             ]
 
             all_non_prerelease_version_infos.append(new_version_info)
@@ -200,7 +200,8 @@ def check_version(args):
             "Re-run make set-version"
         )
     # Now version_str_set len == 1
-    if not VersionInfo.isvalid((version := next(iter(version_str_set)))):
+    version = next(iter(version_str_set))
+    if not VersionInfo.isvalid(version):
         raise RuntimeError(f"Unable to validate version: {version}")
 
     print(f"Found version {version} in all processed locations.")

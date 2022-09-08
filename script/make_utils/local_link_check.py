@@ -85,7 +85,7 @@ def main():
 
     gitignore_file = root / ".gitignore"
     if gitignore_file.exists():
-        with gitignore_file.open() as file:
+        with gitignore_file.open(encoding="UTF-8") as file:
             ignores = file.read().split("\n")
             ignores = [elt for elt in map(lambda elt: elt.split("#")[0].strip(), ignores) if elt]
 

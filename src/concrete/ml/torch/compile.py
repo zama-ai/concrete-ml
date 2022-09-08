@@ -238,7 +238,7 @@ def compile_brevitas_qat_model(
     show_mlir: bool = False,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
-    output_onnx_file: Optional[str] = None,
+    output_onnx_file: Union[Path, str] = None,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
@@ -278,10 +278,10 @@ def compile_brevitas_qat_model(
     )
 
     output_onnx_file_path = Path(
-        tempfile.mkstemp(suffix=".onnx")[1]
-        if (use_tempfile := (output_onnx_file is None))
-        else output_onnx_file
+        tempfile.mkstemp(suffix=".onnx")[1] if output_onnx_file is None else output_onnx_file
     )
+
+    use_tempfile: bool = output_onnx_file is None
 
     # Brevitas to ONNX
     onnx_model = BrevitasONNXManager.export(
@@ -307,6 +307,6 @@ def compile_brevitas_qat_model(
 
     # Remove the tempfile if we used one
     if use_tempfile:
-        output_onnx_file_path.unlink(missing_ok=True)
+        output_onnx_file_path.unlink()
 
     return q_module_vl

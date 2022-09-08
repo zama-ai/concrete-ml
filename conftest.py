@@ -9,19 +9,11 @@ from typing import Any, Callable, Iterable, Optional, Union
 import numpy
 import pytest
 import torch
-
-from sklearn.datasets import make_classification
-from sklearn.datasets import make_regression
+from concrete.numpy.compilation import (Circuit, Compiler, Configuration,
+                                        DebugArtifacts, EncryptionStatus,
+                                        configuration)
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
-
-from concrete.numpy.compilation import (
-    DebugArtifacts,
-    Configuration,
-    Compiler,
-    EncryptionStatus,
-    Circuit,
-    configuration,
-)
+from sklearn.datasets import make_classification, make_regression
 
 
 def pytest_addoption(parser):

@@ -261,7 +261,7 @@ def test_raises(padding, groups, gather_slice):
     elif gather_slice:
         error_msg_pattern = (
             "The following ONNX operators are required to convert the torch model to numpy but are"
-            " not currently implemented: Gather, Slice\\..*"
+            " not currently implemented: Gather, Slice*"
         )
 
     with pytest.raises(

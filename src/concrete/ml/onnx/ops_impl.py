@@ -2,7 +2,7 @@
 
 # pylint: disable=too-many-lines
 from inspect import signature
-from typing import Optional, Sequence, Set, SupportsIndex, Tuple, Union
+from typing import Optional, Sequence, Set, Tuple, Union
 
 import numpy
 import onnx
@@ -10,6 +10,7 @@ from brevitas.function import max_int, min_int
 from concrete.numpy import univariate
 from concrete.onnx import conv as cnp_conv
 from scipy import special
+from typing_extensions import SupportsIndex
 
 from ..common.debugging import assert_true
 from .onnx_impl_utils import (
@@ -108,7 +109,9 @@ def onnx_func_raw_args(*args):
 
 
 def numpy_where_body(
-    c: numpy.ndarray, t: numpy.ndarray, f: Union[numpy.ndarray, int], /
+    c: numpy.ndarray,
+    t: numpy.ndarray,
+    f: Union[numpy.ndarray, int],
 ) -> numpy.ndarray:
     """Compute the equivalent of numpy.where.
 
@@ -131,7 +134,11 @@ def numpy_where_body(
     return c * t + (1.0 - c) * f
 
 
-def numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_where(
+    c: numpy.ndarray,
+    t: numpy.ndarray,
+    f: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute the equivalent of numpy.where.
 
     Args:
@@ -146,7 +153,10 @@ def numpy_where(c: numpy.ndarray, t: numpy.ndarray, f: numpy.ndarray, /) -> Tupl
     return (numpy_where_body(c, t, f),)
 
 
-def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_add(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute add in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Add-13
@@ -164,7 +174,7 @@ def numpy_add(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 # input, min and max are python built-in but we need to match the ONNX naming, ignore the lint
 # pylint: disable=redefined-builtin
 @onnx_func_raw_args("min", "max")
-def numpy_clip(a: numpy.ndarray, /, min=None, max=None) -> Tuple[numpy.ndarray]:
+def numpy_clip(a: numpy.ndarray, min=None, max=None) -> Tuple[numpy.ndarray]:
     """Compute clip in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Clip-13
@@ -222,7 +232,6 @@ def numpy_constant(**kwargs):
 def numpy_gemm(
     a: numpy.ndarray,
     b: numpy.ndarray,
-    /,
     c: Optional[numpy.ndarray] = None,
     *,
     alpha: float = 1,
@@ -287,7 +296,10 @@ def numpy_gemm(
     return (y,)
 
 
-def numpy_matmul(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_matmul(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute matmul in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#MatMul-13
@@ -302,7 +314,9 @@ def numpy_matmul(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.matmul(a, b),)
 
 
-def numpy_relu(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_relu(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute relu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Relu-14
@@ -316,7 +330,9 @@ def numpy_relu(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.maximum(x, 0),)
 
 
-def numpy_sigmoid(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_sigmoid(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute sigmoid in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sigmoid-13
@@ -353,7 +369,9 @@ def numpy_softmax(x, axis=1, keepdims=True):
     return (x,)
 
 
-def numpy_cos(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_cos(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute cos in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Cos-7
@@ -367,7 +385,9 @@ def numpy_cos(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.cos(x),)  # pragma: no cover
 
 
-def numpy_cosh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_cosh(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute cosh in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Cosh-9
@@ -381,7 +401,9 @@ def numpy_cosh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.cosh(x),)  # pragma: no cover
 
 
-def numpy_sin(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_sin(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute sin in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sin-7
@@ -395,7 +417,9 @@ def numpy_sin(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.sin(x),)  # pragma: no cover
 
 
-def numpy_sinh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_sinh(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute sinh in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sinh-9
@@ -409,7 +433,9 @@ def numpy_sinh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.sinh(x),)  # pragma: no cover
 
 
-def numpy_tan(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_tan(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute tan in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Tan-7
@@ -423,7 +449,9 @@ def numpy_tan(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.tan(x),)  # pragma: no cover
 
 
-def numpy_tanh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_tanh(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute tanh in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Tanh-13
@@ -437,7 +465,9 @@ def numpy_tanh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.tanh(x),)
 
 
-def numpy_acos(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_acos(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute acos in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Acos-7
@@ -451,7 +481,9 @@ def numpy_acos(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.arccos(x),)  # pragma: no cover
 
 
-def numpy_acosh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_acosh(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute acosh in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Acosh-9
@@ -465,7 +497,9 @@ def numpy_acosh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.arccosh(x),)  # pragma: no cover
 
 
-def numpy_asin(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_asin(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute asin in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Asin-7
@@ -479,7 +513,9 @@ def numpy_asin(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.arcsin(x),)  # pragma: no cover
 
 
-def numpy_asinh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_asinh(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute sinh in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Asinh-9
@@ -493,7 +529,9 @@ def numpy_asinh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.arcsinh(x),)  # pragma: no cover
 
 
-def numpy_atan(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_atan(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute atan in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Atan-7
@@ -507,7 +545,9 @@ def numpy_atan(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.arctan(x),)  # pragma: no cover
 
 
-def numpy_atanh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_atanh(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute atanh in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Atanh-9
@@ -521,7 +561,7 @@ def numpy_atanh(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.arctanh(x),)  # pragma: no cover
 
 
-def numpy_elu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
+def numpy_elu(x: numpy.ndarray, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
     """Compute elu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Elu-6
@@ -539,7 +579,6 @@ def numpy_elu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
 
 def numpy_selu(
     x: numpy.ndarray,
-    /,
     *,
     alpha: float = 1.6732632423543772848170429916717,
     gamma: float = 1.0507009873554804934193349852946,
@@ -560,7 +599,7 @@ def numpy_selu(
     return numpy_where(x > 0, gamma * x, (gamma * alpha) * (numpy.exp(x) - 1))
 
 
-def numpy_celu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
+def numpy_celu(x: numpy.ndarray, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
     """Compute celu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Celu-12
@@ -576,7 +615,7 @@ def numpy_celu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]
     return (numpy.maximum(0, x) + numpy.minimum(0, alpha * (numpy.exp(x / alpha) - 1)),)
 
 
-def numpy_leakyrelu(x: numpy.ndarray, /, *, alpha: float = 0.01) -> Tuple[numpy.ndarray]:
+def numpy_leakyrelu(x: numpy.ndarray, *, alpha: float = 0.01) -> Tuple[numpy.ndarray]:
     """Compute leakyrelu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LeakyRelu-6
@@ -592,7 +631,7 @@ def numpy_leakyrelu(x: numpy.ndarray, /, *, alpha: float = 0.01) -> Tuple[numpy.
     return numpy_where(x > 0, x, alpha * x)
 
 
-def numpy_thresholdedrelu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
+def numpy_thresholdedrelu(x: numpy.ndarray, *, alpha: float = 1) -> Tuple[numpy.ndarray]:
     """Compute thresholdedrelu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#ThresholdedRelu-10
@@ -612,7 +651,7 @@ def numpy_thresholdedrelu(x: numpy.ndarray, /, *, alpha: float = 1) -> Tuple[num
 
 
 def numpy_hardsigmoid(
-    x: numpy.ndarray, /, *, alpha: float = 0.2, beta: float = 0.5
+    x: numpy.ndarray, *, alpha: float = 0.2, beta: float = 0.5
 ) -> Tuple[numpy.ndarray]:
     """Compute hardsigmoid in numpy according to ONNX spec.
 
@@ -630,7 +669,9 @@ def numpy_hardsigmoid(
     return (numpy.maximum(0, numpy.minimum(1, alpha * x + beta)),)
 
 
-def numpy_softplus(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_softplus(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute softplus in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Softplus-1
@@ -645,7 +686,9 @@ def numpy_softplus(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.log(numpy.exp(x) + 1),)
 
 
-def numpy_abs(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_abs(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute abs in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Abs-13
@@ -660,7 +703,10 @@ def numpy_abs(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.abs(x),)
 
 
-def numpy_div(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_div(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute div in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Div-14
@@ -681,7 +727,10 @@ def numpy_div(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (ans,)
 
 
-def numpy_mul(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_mul(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute mul in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Mul-14
@@ -697,7 +746,10 @@ def numpy_mul(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (a * b,)
 
 
-def numpy_sub(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_sub(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute sub in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sub-14
@@ -713,7 +765,9 @@ def numpy_sub(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (a - b,)
 
 
-def numpy_log(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_log(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute log in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Log-13
@@ -733,7 +787,10 @@ def numpy_log(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 
 @onnx_func_raw_args("slope")
-def numpy_prelu(x: numpy.ndarray, slope: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_prelu(
+    x: numpy.ndarray,
+    slope: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute prelu in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#prelu-16
@@ -751,7 +808,9 @@ def numpy_prelu(x: numpy.ndarray, slope: numpy.ndarray, /) -> Tuple[numpy.ndarra
     return (a + b,)
 
 
-def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_erf(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute erf in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Erf-13
@@ -766,7 +825,9 @@ def numpy_erf(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (univariate(special.erf)(x),)  # pylint: disable=no-member
 
 
-def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_hardswish(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute hardswish in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#hardswish-14
@@ -785,7 +846,9 @@ def numpy_hardswish(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (r,)
 
 
-def numpy_exp(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_exp(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute exponential in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Exp-13
@@ -800,7 +863,10 @@ def numpy_exp(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.exp(x),)
 
 
-def numpy_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_equal(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute equal in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
@@ -816,7 +882,9 @@ def numpy_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (numpy.equal(x, y),)
 
 
-def numpy_not(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_not(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute not in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
@@ -832,7 +900,9 @@ def numpy_not(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
-def numpy_not_float(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_not_float(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute not in numpy according to ONNX spec and cast outputs to floats.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
@@ -847,7 +917,10 @@ def numpy_not_float(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return cast_to_float(numpy_not(x))
 
 
-def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_greater(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute greater in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
@@ -864,7 +937,10 @@ def numpy_greater(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
-def numpy_greater_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_greater_float(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute greater in numpy according to ONNX spec and cast outputs to floats.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
@@ -880,7 +956,10 @@ def numpy_greater_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.nd
     return cast_to_float(numpy_greater(x, y))
 
 
-def numpy_greater_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_greater_or_equal(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute greater or equal in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
@@ -897,7 +976,10 @@ def numpy_greater_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
-def numpy_greater_or_equal_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_greater_or_equal_float(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute greater or equal in numpy according to ONNX specs and cast outputs to floats.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
@@ -913,7 +995,10 @@ def numpy_greater_or_equal_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple
     return cast_to_float(numpy_greater_or_equal(x, y))
 
 
-def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_less(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute less in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
@@ -930,7 +1015,10 @@ def numpy_less(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
-def numpy_less_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_less_float(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute less in numpy according to ONNX spec and cast outputs to floats.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
@@ -946,7 +1034,10 @@ def numpy_less_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarr
     return cast_to_float(numpy_less(x, y))
 
 
-def numpy_less_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_less_or_equal(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute less or equal in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
@@ -963,7 +1054,10 @@ def numpy_less_or_equal(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.nd
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
-def numpy_less_or_equal_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_less_or_equal_float(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute less or equal in numpy according to ONNX spec and cast outputs to floats.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
@@ -979,7 +1073,9 @@ def numpy_less_or_equal_float(x: numpy.ndarray, y: numpy.ndarray, /) -> Tuple[nu
     return cast_to_float(numpy_less_or_equal(x, y))
 
 
-def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_identity(
+    x: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute identity in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Identity-14
@@ -996,7 +1092,7 @@ def numpy_identity(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 @onnx_func_raw_args("newshape")
 def numpy_reshape(
-    x: numpy.ndarray, newshape: numpy.ndarray, /, *, allowzero=0
+    x: numpy.ndarray, newshape: numpy.ndarray, *, allowzero=0
 ) -> Tuple[numpy.ndarray]:
     """Compute reshape in numpy according to ONNX spec.
 
@@ -1015,7 +1111,7 @@ def numpy_reshape(
     return (numpy.reshape(x, newshape),)
 
 
-def numpy_transpose(x: numpy.ndarray, /, *, perm=None) -> Tuple[numpy.ndarray]:
+def numpy_transpose(x: numpy.ndarray, *, perm=None) -> Tuple[numpy.ndarray]:
     """Transpose in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Transpose-13
@@ -1036,7 +1132,6 @@ def numpy_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,
     b: numpy.ndarray,
-    /,
     *,
     dilations: Tuple[int, ...],
     group: int = 1,
@@ -1088,7 +1183,6 @@ def numpy_conv(
 
 def numpy_avgpool(
     x: numpy.ndarray,
-    /,
     *,
     ceil_mode: int,
     kernel_shape: Tuple[int, ...],
@@ -1159,7 +1253,6 @@ def numpy_pad(
     data: numpy.ndarray,
     pads: numpy.ndarray,
     constant_value: Union[numpy.ndarray, None] = None,
-    /,
     *,
     mode: str,
 ) -> Tuple[numpy.ndarray]:
@@ -1186,7 +1279,7 @@ def numpy_pad(
     return (data,)
 
 
-def numpy_cast(data: numpy.ndarray, /, *, to: int) -> Tuple[numpy.ndarray]:
+def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     """Execute ONNX cast in Numpy.
 
     Supports only booleans for now, which are converted to integers.
@@ -1210,7 +1303,6 @@ def numpy_batchnorm(
     bias: numpy.ndarray,
     input_mean: numpy.ndarray,
     input_var: numpy.ndarray,
-    /,
     *,
     epsilon=1e-05,
     momentum=0.9,  # pylint: disable=unused-argument
@@ -1276,7 +1368,7 @@ def numpy_batchnorm(
     return (y,)
 
 
-def numpy_flatten(x: numpy.ndarray, /, *, axis: int = 1) -> Tuple[numpy.ndarray]:
+def numpy_flatten(x: numpy.ndarray, *, axis: int = 1) -> Tuple[numpy.ndarray]:
     """Flatten a tensor into a 2d array.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Flatten-13.
@@ -1294,7 +1386,10 @@ def numpy_flatten(x: numpy.ndarray, /, *, axis: int = 1) -> Tuple[numpy.ndarray]
     return (numpy.reshape(x, output_shape),)
 
 
-def numpy_or(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_or(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute or in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
@@ -1310,7 +1405,10 @@ def numpy_or(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
-def numpy_or_float(a: numpy.ndarray, b: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
+def numpy_or_float(
+    a: numpy.ndarray,
+    b: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
     """Compute or in numpy according to ONNX spec and cast outputs to floats.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
@@ -1362,7 +1460,6 @@ def numpy_pow(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
 @onnx_func_raw_args("axes")
 def numpy_reduce_sum(
     a: numpy.ndarray,
-    /,
     axes: Optional[numpy.ndarray] = None,
     *,
     keepdims: int = 1,
@@ -1412,7 +1509,6 @@ def numpy_reduce_sum(
 @onnx_func_raw_args("scale", "zero_point", "bit_width")
 def numpy_brevitas_quant(
     x: numpy.ndarray,
-    /,
     scale: float,
     zero_point: float,
     bit_width: int,

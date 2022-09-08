@@ -98,8 +98,8 @@ def test_pandas_qnn(load_data):
 @pytest.mark.parametrize(
     "bad_value, expected_error",
     [
-        (numpy.nan, "Input X contains NaN."),
-        (None, "Input X contains NaN."),
+        (numpy.nan, "Input contains NaN*"),
+        (None, "Input contains NaN*"),
         ("this", "could not convert string to float: 'this'"),
     ],
 )

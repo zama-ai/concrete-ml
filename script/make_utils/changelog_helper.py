@@ -133,11 +133,11 @@ def main(args):
     if args.from_ref is None:
         tags_by_name = {strip_leading_v(tag.name): tag for tag in repo.tags}
         all_release_version_infos = {
-            version_info: tags_by_name[tag_name]
+            VersionInfo.parse(tag_name): tags_by_name[tag_name]
             for tag_name in tags_by_name
             if VersionInfo.isvalid(tag_name)
-            and (version_info := VersionInfo.parse(tag_name))
-            and version_info.prerelease is None
+            and VersionInfo.parse(tag_name)
+            and VersionInfo.parse(tag_name).prerelease is None
         }
         log_msg(f"All release versions {all_release_version_infos}")
 

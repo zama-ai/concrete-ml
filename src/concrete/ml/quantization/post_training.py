@@ -155,7 +155,9 @@ class ONNXConverter:
         """
 
     @abstractmethod
-    def _process_initializer(self, n_bits: int, values: numpy.ndarray) -> QuantizedArray:
+    def _process_initializer(
+        self, n_bits: int, values: Union[numpy.ndarray, QuantizedArray]
+    ) -> QuantizedArray:
         """Transform a constant tensor according to the model conversion mode.
 
         The values supplied are floating point values that will be quantized.
@@ -358,8 +360,9 @@ class ONNXConverter:
                 )
 
                 node_output = ONNX_OPS_TO_NUMPY_IMPL[op_type](*real_cst_inputs, **attributes)
+                num_output = len(node_output)
                 assert_true(
-                    (num_output := len(node_output)) == 1,
+                    (num_output) == 1,
                     f"Currently {self.__class__.__name__} can only manage single output operator, "
                     f"got {num_output} for op {op_type}",
                     RuntimeError,
@@ -480,7 +483,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         # Dequantize to have the value in clear and ready for next calibration
         return quantized_op(*q_calibration_data).dequant()
 
-    def _process_initializer(self, n_bits: int, values: numpy.ndarray):
+    def _process_initializer(self, n_bits: int, values: Union[numpy.ndarray, QuantizedArray]):
         """Quantize a network constant tensor (a weights tensor).
 
         The values supplied are floating point values that will be quantized.
@@ -492,7 +495,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         Returns:
             QuantizedArray: a quantized tensor with integer values on n_bits bits
         """
-
+        assert isinstance(values, (numpy.ndarray, float))
         is_signed = is_symmetric = self._check_distribution_is_symmetric_around_zero(values)
 
         return QuantizedArray(
@@ -592,7 +595,7 @@ class PostTrainingQATImporter(ONNXConverter):
         layer_output = quantized_op.calibrate(*calibration_data)
         return layer_output
 
-    def _process_initializer(self, n_bits: int, values: numpy.ndarray):
+    def _process_initializer(self, n_bits: int, values: Union[numpy.ndarray, QuantizedArray]):
         """Process an already quantized weight tensor.
 
         The values supplied are in floating point, but are discrete, in the sense
@@ -608,6 +611,7 @@ class PostTrainingQATImporter(ONNXConverter):
             QuantizedArray: a quantized tensor with integer values on n_bits bits and with alpha as
                 the scaling factor.
         """
+        assert isinstance(values, (numpy.ndarray, float))
         return QuantizedArray(n_bits, values, is_signed=True, is_symmetric=False, is_qat=True)
 
     def _get_input_quant_opts(
