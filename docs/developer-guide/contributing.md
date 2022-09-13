@@ -5,7 +5,7 @@ There are two ways to contribute to Concrete-ML:
 - You can open issues to report bugs and typos and to suggest ideas.
 - You can ask to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai). Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do!
 
-## Creating a new branch
+## 1. Creating a new branch
 
 Concrete-ML uses a consistent branch naming scheme, and you are expected to follow it as well. Here is the format, along with some examples:
 
@@ -20,9 +20,9 @@ git checkout -b feat/explicit-tlu_11
 git checkout -b fix/tracing_indexing_42
 ```
 
-## Before committing
+## 2. Before committing
 
-### Conformance
+### 2.1 Conformance
 
 Each commit to Concrete-ML should conform to the standards of the project. You can let the development tools fix some issues automatically with the following command:
 
@@ -36,7 +36,7 @@ Conformance can be checked using the following command:
 make pcc
 ```
 
-### Testing
+### 2.2 Testing
 
 Your code must be well documented, containing tests and not breaking other tests:
 
@@ -50,7 +50,7 @@ If your coverage is below 100%, you should write more tests and then create the 
 
 There may be cases where covering your code is not possible (an exception that cannot be triggered in normal execution circumstances). In those cases, you may be allowed to disable coverage for some specific lines. This should be the exception rather than the rule, and reviewers will ask why some lines are not covered. If it appears they can be covered, then the PR won't be accepted in that state.
 
-## Committing
+## 3. Committing
 
 Concrete-ML uses a consistent commit naming scheme, and you are expected to follow it as well (the CI will make sure you do). The accepted format can be printed to your terminal by running:
 
@@ -68,7 +68,7 @@ git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
 
 To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
 
-## Rebasing
+## 4. Rebasing
 
 You should rebase on top of the `main` branch before you create your pull request. Merge commits are not allowed, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
 
@@ -98,7 +98,7 @@ git push --force
 
 You can learn more about rebasing [here](https://git-scm.com/docs/git-rebase).
 
-## Releases
+## 5. Releases
 
 Before any final release, Concrete-ML contributors go through a release candidate (RC) cycle. The idea is that once the codebase and documentations look ready for a release, you create an RC release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C&labels=%5C&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
 
