@@ -1,5 +1,6 @@
 """Tests for the FHE sklearn compatible NNs."""
 from copy import deepcopy
+from itertools import product
 
 import numpy
 import pytest
@@ -76,11 +77,8 @@ def test_nn_models_quant(
         )
         if y.ndim == 1:
             y = numpy.expand_dims(y, 1)
-        y = y.astype(numpy.float32)
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
-
-    x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -121,16 +119,18 @@ def test_nn_models_quant(
 
     if model._estimator_type == "classifier":  # pylint: disable=protected-access
         # Classification models
+        # We need to cast to float32 for the skorch model
+        # If we run through concrete it's done under the hood
 
-        y_pred_sk = sklearn_classifier.predict(x_test)
+        y_pred_sk = sklearn_classifier.predict(x_test.astype(numpy.float32))
         y_pred = concrete_classifier.predict(x_test)
         check_accuracy(y_pred_sk, y_pred)
 
-        y_pred_sk = sklearn_classifier.predict_proba(x_test)
+        y_pred_sk = sklearn_classifier.predict_proba(x_test.astype(numpy.float32))
         y_pred = concrete_classifier.predict_proba(x_test)
     else:
         # Regression models
-        y_pred_sk = sklearn_classifier.predict(x_test)
+        y_pred_sk = sklearn_classifier.predict(x_test.astype(numpy.float32))
         y_pred = concrete_classifier.predict(x_test)
 
     check_r2_score(y_pred_sk, y_pred)
@@ -177,8 +177,6 @@ def test_parameter_validation(model, load_data):
         )
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
-
-    x = x.astype(numpy.float32)
 
     invalid_params_and_exception_pattern = {
         ("module__n_layers", 0, ".* number of layers.*"),
@@ -255,11 +253,8 @@ def test_compile_and_calib(
         )
         if y.ndim == 1:
             y = numpy.expand_dims(y, 1)
-        y = y.astype(numpy.float32)
     else:
         raise ValueError(f"Data generator not implemented for {str(model)}")
-
-    x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -310,6 +305,19 @@ def test_compile_and_calib(
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Train the model
+    # Needed for coverage
+    if model == NeuralNetClassifier:
+        for x_d_type, y_d_type in product(
+            [numpy.float32, numpy.float64], [numpy.float32, numpy.float64]
+        ):
+            clf.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
+    elif model == NeuralNetRegressor:
+        for x_d_type, y_d_type in product(
+            [numpy.float32, numpy.float64], [numpy.int32, numpy.int64]
+        ):
+            clf.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
+
+    # Train normally
     clf.fit(x_train, y_train)
 
     # Predicting with a model that is not compiled should fail
@@ -374,6 +382,23 @@ def test_custom_net_classifier(load_data):
             """Return the number of quantization bits"""
             return 2
 
+        def fit(self, X, y, **fit_params):
+            # We probably can't handle all cases since per Skorch documentation they handle:
+            #  * numpy arrays
+            #  * torch tensors
+            #  * pandas DataFrame or Series
+            #  * scipy sparse CSR matrices
+            #  * a dictionary of the former three
+            #  * a list/tuple of the former three
+            #  * a Dataset
+            # which is a bit much since they don't necessarily
+            # have the same interfaces to handle types
+            if isinstance(X, numpy.ndarray) and (X.dtype != numpy.float32):
+                X = X.astype(numpy.float32)
+            if isinstance(y, numpy.ndarray) and (y.dtype != numpy.int64):
+                y = y.astype(numpy.int64)
+            return super().fit(X, y, **fit_params)
+
         def predict(self, X, execute_in_fhe=False):
             # We just need to do argmax on the predicted probabilities
             return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
@@ -391,8 +416,6 @@ def test_custom_net_classifier(load_data):
         n_classes=2,
         class_sep=2,
     )
-
-    x = x.astype(numpy.float32)
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(

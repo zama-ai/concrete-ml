@@ -409,6 +409,22 @@ class NeuralNetClassifier(
         # We just need to do argmax on the predicted probabilities
         return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
 
+    def fit(self, X, y, **fit_params):
+        # We probably can't handle all cases since per Skorch documentation they handle:
+        #  * numpy arrays
+        #  * torch tensors
+        #  * pandas DataFrame or Series
+        #  * scipy sparse CSR matrices
+        #  * a dictionary of the former three
+        #  * a list/tuple of the former three
+        #  * a Dataset
+        # which is a bit much since they don't necessarily have the same interfaces to handle types
+        if isinstance(X, numpy.ndarray) and (X.dtype != numpy.float32):
+            X = X.astype(numpy.float32)
+        if isinstance(y, numpy.ndarray) and (y.dtype != numpy.int64):
+            y = y.astype(numpy.int64)
+        return super().fit(X, y, **fit_params)
+
 
 class NeuralNetRegressor(
     FixedTypeSkorchNeuralNet, QuantizedSkorchEstimatorMixin, SKNeuralNetRegressor
@@ -453,3 +469,19 @@ class NeuralNetRegressor(
     @property
     def base_estimator_type(self):
         return SKNeuralNetRegressor
+
+    def fit(self, X, y, **fit_params):
+        # We probably can't handle all cases since per Skorch documentation they handle:
+        #  * numpy arrays
+        #  * torch tensors
+        #  * pandas DataFrame or Series
+        #  * scipy sparse CSR matrices
+        #  * a dictionary of the former three
+        #  * a list/tuple of the former three
+        #  * a Dataset
+        # which is a bit much since they don't necessarily have the same interfaces to handle types
+        if isinstance(X, numpy.ndarray) and (X.dtype != numpy.float32):
+            X = X.astype(numpy.float32)
+        if isinstance(y, numpy.ndarray) and (y.dtype != numpy.float32):
+            y = y.astype(numpy.float32)
+        return super().fit(X, y, **fit_params)
