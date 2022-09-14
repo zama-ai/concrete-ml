@@ -36,7 +36,7 @@ def main():
         element = {"label": f"ml_bench_{now}_{index}", "index": index, "command": command}
         result.append(element)
 
-    # Print to stdout to put in env var
+    # Print to stdout to put in environment variable
     print(json.dumps(result))
 
 

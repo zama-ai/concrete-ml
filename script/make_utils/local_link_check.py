@@ -16,7 +16,7 @@ MARKDOWN_LINK_REGEX = re.compile(r"\[[^\]]*\]\(([^\)]*)\)")
 def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
     """Check the content of a markdown file for dead links.
 
-    This checks a mardown file for dead-links to local files.
+    This checks a markdown file for dead-links to local files.
 
     Inputs:
         content (str): The content of the file.

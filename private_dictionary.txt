@@ -81,6 +81,7 @@ gaël
 gemm
 gitbook
 github
+gitignore
 gitpython
 glm
 glu
@@ -176,6 +177,7 @@ py
 pylintrc
 pyproject
 pytest
+pytorch
 qat
 qnn
 qnns
@@ -253,6 +255,7 @@ vectorize
 vl
 xgb
 xgboost
+yaml
 yurchak
 zama
 zeropoint
