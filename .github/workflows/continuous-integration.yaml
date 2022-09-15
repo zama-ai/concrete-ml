@@ -20,6 +20,26 @@ on:
         options:
           - weekly
           - pr
+          - release
+          - push_to_main
+          - push_to_release
+
+      use_default_python_versions:
+        description: "Whether or not to use the following specified python versions"
+        required: true
+        type: boolean
+        default: false
+
+      linux_python_versions:
+        description: "Space separated list of python versions (3.7 3.8, 3.9, 3.10 are supported) to launch on linux"
+        required: true
+        type: string
+        default: "3.8 3.9"
+      macos_python_versions:
+        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos"
+        required: true
+        type: string
+        default: "3.8 3.9"
 
   schedule:
     # * is a special character in YAML so you have to quote this string
@@ -37,7 +57,7 @@ concurrency:
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
-  IS_WEEKLY: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+  IS_WEEKLY: ${{ github.event_name == 'schedule' }}
   IS_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
@@ -62,7 +82,8 @@ jobs:
         id: set-matrix
         run: |
           echo "${{ github.event_name }}"
-          BUILD_TYPE=
+
+          # Manage build type that will condition the rest of the CI
           if [[ "${IS_PR}" == "true" ]]; then
             BUILD_TYPE="pr"
           elif [[ "${IS_WEEKLY}" == "true" ]]; then
@@ -79,12 +100,42 @@ jobs:
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1
           fi
-          echo "${BUILD_TYPE}"
+
+          # Manage python versions
+          if [[ "${{ github.event.inputs.use_default_python_versions }}" == "false" ]]; then
+            LINUX_PYTHON_VERSIONS="${{ github.event.inputs.linux_python_versions }}"
+            MACOS_PYTHON_VERSIONS="${{ github.event.inputs.macos_python_versions }}"
+          elif [[ "${BUILD_TYPE}" == "pr" ]]; then
+            LINUX_PYTHON_VERSIONS="3.8"
+            MACOS_PYTHON_VERSIONS=""
+          elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
+            LINUX_PYTHON_VERSIONS="3.8 3.9"
+            MACOS_PYTHON_VERSIONS="3.8 3.9"
+          elif [[ "${BUILD_TYPE}" == "release" ]]; then
+            LINUX_PYTHON_VERSIONS="3.8 3.9"
+            MACOS_PYTHON_VERSIONS=""
+          elif [[ "${BUILD_TYPE}" == "push_to_main" ]]; then
+            LINUX_PYTHON_VERSIONS="3.8"
+            MACOS_PYTHON_VERSIONS=""
+          elif [[ "${BUILD_TYPE}" == "push_to_release" ]]; then
+            LINUX_PYTHON_VERSIONS="3.8"
+            MACOS_PYTHON_VERSIONS=""
+          else
+            echo "Unknown BUILD_TYPE! Aborting"
+            exit 1
+          fi
+          
+          echo "LINUX_PYTHON_VERSIONS: ${LINUX_PYTHON_VERSIONS}"
+          echo "MACOS_PYTHON_VERSIONS: ${MACOS_PYTHON_VERSIONS}"
+          echo "BUILD_TYPE: ${BUILD_TYPE}"
+
           MATRIX_JSON=$(mktemp --suffix=.json)
           echo "Prepared build matrix:"
           python3 ./script/actions_utils/generate_test_matrix.py \
             --output-json "${MATRIX_JSON}" \
-            --build-type "${BUILD_TYPE}"
+            --linux-python-versions ${LINUX_PYTHON_VERSIONS} \
+            --macos-python-versions ${MACOS_PYTHON_VERSIONS}
+
           LINUX_MATRIX=$(jq -rc '. | map(select(.os_kind=="linux"))' "${MATRIX_JSON}")
           MACOS_MATRIX=$(jq -rc '. | map(select(.os_kind=="macos"))' "${MATRIX_JSON}")
 

@@ -1,101 +1,95 @@
 """Script to generate custom GitHub actions test matrices."""
 
 import argparse
-import itertools
+import enum
 import json
 from pathlib import Path
 
-WEEKLY = "weekly"
-RELEASE = "release"
-PR = "pr"
-PUSH_TO_MAIN = "push_to_main"
-PUSH_TO_RELEASE = "push_to_release"
 
-LINUX = "linux"
-MACOS = "macos"
+class EnumEncoder(json.JSONEncoder):
+    """JSON encoder for python enumerates"""
 
-OSES = {LINUX, MACOS}
+    def default(self, o):
+        if isinstance(o, enum.Enum):
+            return o.value
+        return json.JSONEncoder.default(self, o)
 
-PR_OSES = {LINUX: "ubuntu-20.04"}
-PR_PYTHON_VERSIONS = ["3.8"]
-PR_CONF = {"os": PR_OSES, "python": PR_PYTHON_VERSIONS}
 
-PUSH_TO_MAIN_OSES = {LINUX: "ubuntu-20.04"}
-PUSH_TO_MAIN_PYTHON_VERSIONS = ["3.8"]
-PUSH_TO_MAIN_CONF = {"os": PUSH_TO_MAIN_OSES, "python": PUSH_TO_MAIN_PYTHON_VERSIONS}
+class PythonVersion(enum.Enum):
+    """Enumerate for python versions"""
 
-PUSH_TO_RELEASE_OSES = {LINUX: "ubuntu-20.04"}
-PUSH_TO_RELEASE_PYTHON_VERSIONS = ["3.8"]
-PUSH_TO_RELEASE_CONF = {"os": PUSH_TO_RELEASE_OSES, "python": PUSH_TO_RELEASE_PYTHON_VERSIONS}
+    V_3_7 = "3.7"
+    V_3_8 = "3.8"
+    V_3_9 = "3.9"
+    V_3_10 = "3.10"
 
-WEEKLY_OSES = {
-    LINUX: "ubuntu-20.04",
-    MACOS: "macos-12",
-}
-WEEKLY_PYTHON_VERSIONS = ["3.8", "3.9"]  # FIXME: soon 3.7 + 3.10
-WEEKLY_CONF = {"os": WEEKLY_OSES, "python": WEEKLY_PYTHON_VERSIONS}
 
-# The OSes here are to indicate the OSes used for runners during release
-RELEASE_OSES = {
-    LINUX: "ubuntu-20.04",
-    # TODO
-    # Re-enable macOS for release once we have the duration of the tests
-    # MACOS: "macos-10.15",
-}
-# The python versions will be used to build packages during release
-RELEASE_PYTHON_VERSIONS = ["3.8", "3.9"]  # FIXME: soon 3.7 + 3.10
-RELEASE_CONF = {"os": RELEASE_OSES, "python": RELEASE_PYTHON_VERSIONS}
+class OS(enum.Enum):
+    """Enumerate for OS"""
 
-CONFIGURATIONS = {
-    PR: PR_CONF,
-    WEEKLY: WEEKLY_CONF,
-    RELEASE: RELEASE_CONF,
-    PUSH_TO_MAIN: PUSH_TO_MAIN_CONF,
-    PUSH_TO_RELEASE: PUSH_TO_RELEASE_CONF,
+    LINUX = "linux"
+    MACOS = "macos"
+
+
+OS_VERSIONS = {
+    OS.LINUX: "ubuntu-20.04",
+    OS.MACOS: "macos-12",
 }
 
 
 def main(args):
-    """Entry point."""
-
-    matrix_conf = CONFIGURATIONS[args.build_type]
-
+    """Entry point to generate CI test matrix."""
     github_action_matrix = []
 
-    for (os_kind, os_name), python_version in itertools.product(
-        matrix_conf["os"].items(), matrix_conf["python"]
-    ):
+    for python_version in args.linux_python_versions:
         github_action_matrix.append(
             {
-                "os_kind": os_kind,
-                "runs_on": os_name,
+                "os_kind": OS.LINUX,
+                "runs_on": OS_VERSIONS[OS.LINUX],
+                "python_version": python_version,
+            }
+        )
+    for python_version in args.macos_python_versions:
+        github_action_matrix.append(
+            {
+                "os_kind": OS.MACOS,
+                "runs_on": OS_VERSIONS[OS.MACOS],
                 "python_version": python_version,
             }
         )
 
-    print(json.dumps(github_action_matrix, indent=4))
+    print(json.dumps(github_action_matrix, indent=4, cls=EnumEncoder))
 
-    output_json_path = Path(args.output_json).resolve()
+    output_json_path = args.output_json.resolve()
 
     with open(output_json_path, "w", encoding="utf-8") as f:
-        json.dump(github_action_matrix, f)
+        json.dump(github_action_matrix, f, cls=EnumEncoder)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Generate GHA test matrices", allow_abbrev=False)
-
     parser.add_argument(
-        "--build-type",
-        type=str,
+        "--macos-python-versions",
+        dest="macos_python_versions",
+        nargs="*",
         required=True,
-        choices=[WEEKLY, RELEASE, PR, PUSH_TO_MAIN, PUSH_TO_RELEASE],
-        help="The type of build for which the matrix generation is required",
+        type=PythonVersion,
+        default=[],
+        choices=set(PythonVersion) - {PythonVersion.V_3_7},
+        help="Python versions to use on mac systems",
     )
-
     parser.add_argument(
-        "--output-json", type=str, required=True, help="Where to output the matrix as json data"
+        "--linux-python-versions",
+        dest="linux_python_versions",
+        nargs="*",
+        required=True,
+        type=PythonVersion,
+        default=[],
+        choices=set(PythonVersion),
+        help="Python versions to use on linux systems",
     )
-
+    parser.add_argument(
+        "--output-json", type=Path, required=True, help="Where to output the matrix as json data"
+    )
     cli_args = parser.parse_args()
-
     main(cli_args)
