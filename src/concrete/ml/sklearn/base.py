@@ -791,6 +791,10 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
 
         # Register the number of classes
         self.n_classes_ = len(self.classes_)
+
+        # Make sure y contains at least two classes.
+        assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
+
         self.class_mapping_ = None
         if not numpy.array_equal(numpy.arange(len(self.classes_)), self.classes_):
             self.class_mapping_ = dict(enumerate(self.classes_))

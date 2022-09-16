@@ -3,7 +3,7 @@ import numpy
 import pytest
 from sklearn.datasets import load_breast_cancer
 
-from concrete.ml.sklearn import DecisionTreeClassifier
+from concrete.ml.sklearn import DecisionTreeClassifier, RandomForestClassifier, XGBClassifier
 
 
 # Get the datasets. The data generation is seeded in load_data.
@@ -108,3 +108,17 @@ def test_decision_tree_hyperparameters(
     # Make sure that model.predict is the same as sklearn_model.predict
     check_accuracy(model.predict(x), sklearn_model.predict(x))
     check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
+
+
+@pytest.mark.parametrize("model", [XGBClassifier, RandomForestClassifier, DecisionTreeClassifier])
+def test_one_class_edge_case(model):
+    """Test the assertion for one class in y."""
+
+    model = model()
+    x = numpy.random.randint(0, 64, size=(100, 10))
+    y = numpy.random.randint(0, 1, size=(100))
+
+    assert len(numpy.unique(y)) == 1, "Wrong numpy randint generation for y."
+
+    with pytest.raises(AssertionError, match="You must provide at least 2 classes in y."):
+        model.fit(x, y)
