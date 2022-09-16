@@ -1,4 +1,6 @@
 
+The only place we can say we/our is in a blog post written by a named author. Anything signed Zama should not use we/our. So, no "We" or "Our" in our documentation.
+
 Let's use following conventions for the docs. If a new convention needs to be decided, let's agree and then add it here.
 
 terms:
