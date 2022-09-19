@@ -3,13 +3,24 @@ The only place we can say we/our is in a blog post written by a named author. An
 
 Let's use following conventions for the docs. If a new convention needs to be decided, let's agree and then add it here.
 
+style:
+    1. The documentation can address the user directly e.g. "you can find out more at ..", but this
+        style should not be abused, do not be too colloquial !
+    2. The documentation should not refer to its writers or to Concrete-ML developers/Zama as "we",
+        and thus it should not use "our" either.
+        
 terms:
 
-    bit width
-    inputset
-    codebase
-    Machine Learning or machine learning, depends on the context
-    google is a verb ("you can google" but not "you can Google")
+    1. Use hyphenated versions for portmanteaus, unless the term is in the dictionary e.g.
+        - bit-width [not: bitwidth, bit width]
+        - input-set, data-set
+        - database, codebase is fine (not data-base, code-base)
+        - de-quantize/re-quantize
+    
+    2. "a FHE program" not "an FHE program"
+    
+    - Machine Learning or machine learning, depends on the context
+    - google is a verb ("you can google" but not "you can Google") : but try to avoid this
 
 Programs:
 
