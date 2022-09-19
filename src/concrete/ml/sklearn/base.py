@@ -705,7 +705,7 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
         # Tree ensemble inference to numpy
         self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
             self.sklearn_model,
-            qX,
+            qX[:1],
             framework=self.framework,
             output_n_bits=self.n_bits,
             task=Task.REGRESSION,
@@ -823,7 +823,7 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         # Tree ensemble inference to numpy
         self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
             self.sklearn_model,
-            qX,
+            qX[:1],
             framework=self.framework,
             output_n_bits=self.n_bits,
             task=Task.CLASSIFICATION,
@@ -858,7 +858,6 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
-
         X = check_array_and_assert(X)
 
         # mypy
