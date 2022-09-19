@@ -30,15 +30,17 @@ class ONNXConverter:
 
     Arguments:
         n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
-            a dictionary with "net_inputs", "op_inputs", "op_weights", "net_outputs" keys, with
-            a bitwidth for each of these elements. When using a single value for n_bits,
-            it is assigned to "op_inputs" and "op_weights" bits and a default value is
-            assigned to the number of output bits. This default is a compromise between model
-            accuracy and runtime performance in FHE. Output bits give the precision of
-            the final network output, while "net_input" bits give the precision of quantization
-            of network inputs. "op_inputs" and "op_weights" control the quantization for the
-            inputs and weights of all layers.
-        numpy_model (NumpyModule): Model in numpy.
+            a dictionary with the following keys :
+            - "op_inputs" and "op_weights" (mandatory)
+            - "net_inputs" and "net_outputs" (optional, default to 5 bits).
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_weights" bits. The maximum between this value and a default value (5) is then
+            assigned to the number of "net_inputs" "net_outputs". This default value is a compromise
+            between model accuracy and runtime performance in FHE. "net_outputs" gives the precision
+            of the final network's outputs, while "net_inputs" gives the precision of the network's
+            inputs. "op_inputs" and "op_weights" both control the quantization for inputs and
+            weights of all layers.
+        y_model (NumpyModule): Model in numpy.
         is_signed (bool): Whether the weights of the layers can be signed. Currently, only the
             weights can be signed.
     """
@@ -51,31 +53,49 @@ class ONNXConverter:
 
     def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule, is_signed: bool = False):
         self.quant_ops_dict = {}
+
         assert_true(
             isinstance(n_bits, int)
             or (
                 isinstance(n_bits, Dict)
-                and n_bits.keys() == {"net_inputs", "op_weights", "net_outputs", "op_inputs"}
+                and set(n_bits.keys()).issubset(
+                    {"net_inputs", "op_weights", "net_outputs", "op_inputs"}
+                )
+                and {"op_weights", "op_inputs"}.issubset(set(n_bits.keys()))
             ),
-            "Invalid n_bits, either pass an integer or a dictionary containing integer values for"
-            " the `net_inputs`, `op_weights`, `net_outputs`, `op_inputs` keys",
+            "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
+            "the following keys:\n"
+            "- `op_weights` and `op_inputs` (mandatory)\n"
+            f"- `net_outputs` and `net_inputs` (optional, default to {DEFAULT_OUTPUT_BITS} bits)",
         )
 
-        # If a single integer is passed, use a default value for output bits
+        # If a single integer is passed, we use a default value for the model's input and
+        # output bits
         if isinstance(n_bits, int):
-            n_bits = {
+            n_bits_dict = {
                 "net_inputs": max(DEFAULT_OUTPUT_BITS, n_bits),
                 "op_weights": n_bits,
                 "op_inputs": n_bits,
                 "net_outputs": max(DEFAULT_OUTPUT_BITS, n_bits),
             }
 
+        # If net_inputs or net_outputs are not given, we consider a default value
+        elif isinstance(n_bits, Dict):
+            n_bits_dict = {
+                "net_inputs": DEFAULT_OUTPUT_BITS,
+                "net_outputs": max(DEFAULT_OUTPUT_BITS, n_bits["op_inputs"]),
+            }
+
+            n_bits_dict.update(n_bits)
+
         assert_true(
-            n_bits["net_outputs"] >= n_bits["op_inputs"],
-            "Using fewer bits to represent the net outputs than the op inputs is not recommended",
+            n_bits_dict["net_outputs"] >= n_bits_dict["op_inputs"],
+            "Using fewer bits to represent the net outputs than the op inputs is not recommended. "
+            f"Got net_outputs: {n_bits_dict['net_outputs']} and op_inputs: "
+            f"{n_bits_dict['op_inputs']}",
         )
 
-        self.n_bits = n_bits
+        self.n_bits = n_bits_dict
         self.quant_params = {}
         self.numpy_model = numpy_model
         self.is_signed = is_signed
