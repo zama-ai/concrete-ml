@@ -487,7 +487,6 @@ def main():
                     f"--classifiers {classifier_i_name} --datasets {dataset_i} "
                     f"--configs '{config_n}'"
                 )
-
                 already_done_models[classifier_i_name] = 1
 
         return
