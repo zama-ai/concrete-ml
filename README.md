@@ -52,15 +52,18 @@ Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
 |            macOS (Intel)             |         Yes         |       Yes        |
 | macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |  Not currently   |
 
-Only some versions of `python` are supported: today, this list is `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use python 3.7 which is a deprecated version and is not supported by Concrete-ML.
+Also, only some versions of `python` are supported: in the current release, these are `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use python 3.7 which is a deprecated version and is not supported by Concrete-ML.
 
-To install with Docker is done as:
+To install with Docker, pull the `concrete-ml` image as follows:
 
 `docker pull zamafhe/concrete-ml:latest`
 
 To install **Concrete-ML** from PyPi, run the following:
 
-`pip install concrete-ml`
+```
+pip install -U pip wheel setuptools
+pip install concrete-ml
+```
 
 You can find more detailed installation instructions in [pip_installing.md](docs/getting-started/pip_installing.md)
 

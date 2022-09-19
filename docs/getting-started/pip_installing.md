@@ -14,9 +14,9 @@ Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
 |            macOS (Intel)             |         Yes         |       Yes        |
 | macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |  Not currently   |
 
-Also, only some versions of `python` are supported: today, this list is `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use python 3.7 which is a deprecated version and is not supported by Concrete-ML.
+Also, only some versions of `python` are supported: in the current release, these are `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use python 3.7 which is a deprecated version and is not supported by Concrete-ML.
 
-Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Numpy and Concrete-Compiler),support for more platforms will be added in the future.
+Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Numpy and Concrete-Compiler), support for more platforms will be added in the future.
 
 ## Using PyPi
 
@@ -39,12 +39,12 @@ This will automatically install all dependencies, notably concrete-numpy.
 
 ## Using Docker
 
-Concrete-ml can be installed using Docker by either pulling the latest image or a specific version:
+Concrete-ML can be installed using Docker by either pulling the latest image or a specific version:
 
 ```shell
 docker pull zamafhe/concrete-ml:latest
 # or
-docker pull zamafhe/concrete-ml:v0.3.0
+docker pull zamafhe/concrete-ml:v0.4.0
 ```
 
 The image can be used with Docker volumes, [see the Docker documentation here](https://docs.docker.com/storage/volumes/).
