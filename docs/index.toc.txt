@@ -10,7 +10,7 @@
     :caption: Getting Started
 
     getting-started/pip_installing.md
-    getting-started/concrete_numpy.md
+    getting-started/concepts.md
 
 .. toctree::
     :maxdepth: 0

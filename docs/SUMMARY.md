@@ -5,7 +5,7 @@
 ## Getting Started
 
 - [Installation](getting-started/pip_installing.md)
-- [Key Concepts](getting-started/concrete_numpy.md)
+- [Key Concepts](getting-started/concepts.md)
 
 ## Built-in Models
 

@@ -1,6 +1,6 @@
 # Pruning
 
-Pruning is a method to reduce neural network complexity, usually applied in order reduce the computation cost or memory size. Pruning is used in Concrete-ML to control the size of accumulators in neural networks, thus making them FHE compatible. See [here](../getting-started/concrete_numpy.md#limitations-for-fhe-friendly-models) for an explanation of the accumulator bitwidth constraints.
+Pruning is a method to reduce neural network complexity, usually applied in order reduce the computation cost or memory size. Pruning is used in Concrete-ML to control the size of accumulators in neural networks, thus making them FHE compatible. See [here](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints) for an explanation of the accumulator bit-width constraints.
 
 In neural networks, a neuron computes a linear combination of inputs and learned weights, then applies an activation function.
 
