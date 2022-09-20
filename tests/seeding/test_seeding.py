@@ -13,7 +13,7 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier
 
 
 def test_seed_1():
-    """Test python and numpy seeding"""
+    """Test python and numpy seeding."""
 
     # Python random
     for _ in range(10):
@@ -26,7 +26,7 @@ def test_seed_1():
 
 
 def test_seed_2():
-    """Test python and numpy seeding"""
+    """Test python and numpy seeding."""
 
     # Python random
     for _ in range(20):
@@ -40,15 +40,17 @@ def test_seed_2():
 
 @pytest.mark.parametrize("random_inputs", [numpy.random.randint(0, 2**15, size=20)])
 def test_seed_3(random_inputs):
-    """Test python and numpy seeding for pytest parameters"""
+    """Test python and numpy seeding for pytest parameters."""
 
     print("Random inputs", random_inputs)
 
 
 @pytest.mark.parametrize("n_targets", [2])
 @pytest.mark.parametrize("input_dim", [100])
-def test_seed_sklearn_regression(n_targets, input_dim, load_data, default_configuration):
-    """Test seeding of sklearn regression model"""
+def test_seed_sklearn_regression_decision_tree(
+    n_targets, input_dim, load_data, default_configuration
+):
+    """Test seeding of sklearn regression model using a DecisionTreeRegressor."""
 
     # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
@@ -77,8 +79,10 @@ def test_seed_sklearn_regression(n_targets, input_dim, load_data, default_config
 
 @pytest.mark.parametrize("n_classes", [2])
 @pytest.mark.parametrize("input_dim", [100])
-def test_seed_sklearn_classification(n_classes, input_dim, load_data, default_configuration):
-    """Test seeding of sklearn classification model"""
+def test_seed_sklearn_classification_decision_tree(
+    n_classes, input_dim, load_data, default_configuration
+):
+    """Test seeding of sklearn classification model using a DecisionTreeClassifier."""
 
     # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
@@ -117,7 +121,7 @@ def test_seed_sklearn_classification(n_classes, input_dim, load_data, default_co
 @pytest.mark.parametrize("n_accum_bits", [32])
 @pytest.mark.parametrize("activation_function", [pytest.param(nn.ReLU)])
 @pytest.mark.parametrize("input_dim", [10])
-def test_seed_torch(
+def test_seed_torch_neural_net_classifier(
     n_layers,
     n_bits_w_a,
     n_accum_bits,
@@ -127,7 +131,7 @@ def test_seed_torch(
     load_data,
     default_configuration,
 ):
-    """Test seeding of torch function"""
+    """Test seeding of torch function using a NeuralNetClassifier."""
 
     # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
