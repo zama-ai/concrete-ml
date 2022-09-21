@@ -24,20 +24,14 @@ on:
           - push_to_main
           - push_to_release
 
-      use_default_python_versions:
-        description: "Whether or not to use the following specified python versions"
-        required: true
-        type: boolean
-        default: false
-
       linux_python_versions:
         description: "Space separated list of python versions (3.7 3.8, 3.9, 3.10 are supported) to launch on linux"
-        required: true
+        required: false
         type: string
         default: "3.8 3.9"
       macos_python_versions:
         description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on macos"
-        required: true
+        required: false
         type: string
         default: "3.8 3.9"
 
@@ -102,7 +96,7 @@ jobs:
           fi
 
           # Manage python versions
-          if [[ "${{ github.event.inputs.use_default_python_versions }}" == "false" ]]; then
+          if [[ "${IS_WORKFLOW_DISPATCH}" == "true" ]]; then
             LINUX_PYTHON_VERSIONS="${{ github.event.inputs.linux_python_versions }}"
             MACOS_PYTHON_VERSIONS="${{ github.event.inputs.macos_python_versions }}"
           elif [[ "${BUILD_TYPE}" == "pr" ]]; then
