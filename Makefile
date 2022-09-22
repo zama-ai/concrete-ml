@@ -610,7 +610,13 @@ check_links:
 	@# Remark that this target is not in PCC, because it needs the doc to be built
 	@# Mainly for web links and _api_doc (sphinx)
 	poetry run python -m linkcheckmd docs -local
-	poetry run python -m linkcheckmd README.md
+
+	@# FIX #1810: before release, make this back, when
+	@#  https://github.com/zama-ai/concrete-ml-showcase-internal
+	@#  https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe
+	@# are public
+	@# poetry run python -m linkcheckmd README.md
+
 	poetry run python ./script/make_utils/local_link_check.py
 
 	@# For weblinks and internal references

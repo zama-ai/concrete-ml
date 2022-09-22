@@ -29,11 +29,11 @@
   </a>
 </p>
 
-**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
+**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
 
 ## Main features.
 
-**Concrete-ML** allows data scientists to use models with APIs which are close to the frameworks they use, with additional options to run inferences in FHE.
+Data scientists can use models with APIs which are close to the frameworks they use, with additional options to run inferences in FHE.
 
 **Concrete-ML** features:
 
@@ -47,16 +47,20 @@ Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
 |               OS / HW                | Available on Docker | Available on pip |
 | :----------------------------------: | :-----------------: | :--------------: |
 |                Linux                 |         Yes         |       Yes        |
-|               Windows                |         Yes         |  Not currently   |
+|               Windows                |         Yes         |  Coming soon     |
 |     Windows Subsystem for Linux      |         Yes         |       Yes        |
 |            macOS (Intel)             |         Yes         |       Yes        |
-| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |  Not currently   |
+| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |  Coming soon     |
 
-Also, only some versions of `python` are supported: in the current release, these are `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use python 3.7 which is a deprecated version and is not supported by Concrete-ML.
+Note: **Concrete-ML** only supports Python `3.8` and `3.9`. Platforms like [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use Python `3.7` which is a deprecated version and is not currently supported in Concrete-ML.
+
+### Docker.
 
 To install with Docker, pull the `concrete-ml` image as follows:
 
 `docker pull zamafhe/concrete-ml:latest`
+
+### Pip.
 
 To install **Concrete-ML** from PyPi, run the following:
 
@@ -65,9 +69,9 @@ pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
 
-You can find more detailed installation instructions in [pip_installing.md](docs/getting-started/pip_installing.md)
+You can find more detailed installation instructions in [this part of the documentation](docs/getting-started/pip_installing.md)
 
-## Simple ML examples with scikit-learn.
+## A simple Concrete-ML example with scikit-learn.
 
 A simple example which is very close to scikit-learn is as follows, for a logistic regression :
 
@@ -112,6 +116,22 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 
 We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
 
-## License
+
+## Online demos and tutorials.
+
+- [sentiment-analysis-with-transformers](https://github.com/zama-ai/concrete-ml-showcase-internal/tree/main/sentiment-analysis-with-transformers): an Hugging Face application, which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available [here](https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe).
+ - [titanic](https://github.com/zama-ai/concrete-ml-showcase-internal/tree/main/titanic): a notebook, where we give a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Done with XGBoost from Concrete-ML. It comes as a companion of our notebook on [Kaggle](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
+- [MNIST](https://github.com/zama-ai/concrete-ml-showcase-internal/tree/main/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of our package) and its corresponding use in Concrete-ML.
+
+More generally, [Concrete-ML Showcase](https://github.com/zama-ai/concrete-ml-showcase-internal) is a curated list of awesome projects using Concrete-ML that we are currently gathering, feel free to add yours!
+
+## Need support?
+
+<a target="_blank" href="https://community.zama.ai">
+  <img src="https://user-images.githubusercontent.com/5758427/191792238-b132e413-05f9-4fee-bee3-1371f3d81c28.png">
+</a>
+
+
+## License.
 
 This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.
