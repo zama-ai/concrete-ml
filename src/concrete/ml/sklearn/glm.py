@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import copy
 from abc import abstractmethod
-from typing import Callable, Union
+from typing import Union
 
 import numpy
 import sklearn
@@ -14,7 +14,7 @@ from ..common.debugging.custom_assert import assert_true
 from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
 from .base import SklearnLinearModelMixin
-from .torch_module import _GeneralizedLinearRegressionTorchModel
+from .torch_module import _LinearRegressionTorchModel
 
 
 # pylint: disable=too-many-instance-attributes
@@ -57,8 +57,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         """Fit the GLM regression quantized model.
 
         Args:
-            X : training data
-                By default, you should be able to pass:
+            X : The training data, which can be:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
@@ -96,10 +95,9 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         # converting a Sklearn model into an ONNX one, doesn't not support GLMs. Also, the Torch
         # module can be given to the NumpyModule class the same way it is done for its ONNX
         # equivalent, thus making the initial workflow still relevant.
-        torch_model = _GeneralizedLinearRegressionTorchModel(
+        torch_model = _LinearRegressionTorchModel(
             input_size=input_size,
             output_size=output_size,
-            inverse_link=self._get_inverse_link(),
             use_bias=self.fit_intercept,
         )
 
@@ -125,9 +123,51 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
         # pylint: enable=attribute-defined-outside-init
 
+    def post_processing(
+        self, y_preds: numpy.ndarray, already_dequantized: bool = False
+    ) -> numpy.ndarray:
+        """Post-processing the predictions.
+
+        Args:
+            y_preds (numpy.ndarray): The predictions to post-process.
+            already_dequantized (bool): Wether the inputs were already dequantized or not. Default
+                to False.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
+        """
+        # If y_preds were already dequantized previously, there is no need to do so once again.
+        # This step is necessary for the client-server workflow as the post_processing method
+        # is directly called on the quantized outputs, contrary to the base class' predict method.
+        if not already_dequantized:
+            y_preds = self.quantized_module_.dequantize_output(y_preds)
+
+        return self._inverse_link(y_preds)
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict on user data.
+
+        Predict on user data using either the quantized clear model, implemented with tensors, or,
+        if execute_in_fhe is set, using the compiled FHE circuit.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            execute_in_fhe (bool): Whether to execute the inference in FHE. Default to False.
+
+        Returns:
+            numpy.ndarray: The model's predictions.
+        """
+        y_preds = super().predict(X, execute_in_fhe=execute_in_fhe)
+        y_preds = self.post_processing(y_preds, already_dequantized=True)
+        return y_preds
+
     @abstractmethod
-    def _get_inverse_link(self):
-        """Get the inverse link function used in the inference."""
+    def _inverse_link(self, y_preds):
+        """Apply the link function's inverse on the inputs.
+
+        Args:
+            y_preds (numpy.ndarray): The input data.
+        """
 
 
 # pylint: enable=too-many-instance-attributes
@@ -159,13 +199,18 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
             verbose=verbose,
         )
 
-    def _get_inverse_link(self) -> Callable:
-        """Get the inverse link function used in the inference.
+    def _inverse_link(self, y_preds) -> numpy.ndarray:
+        """Apply the link function's inverse on the inputs.
+
+        PoissonRegressor uses the exponential function.
+
+        Args:
+            y_preds (numpy.ndarray): The input data.
 
         Returns:
-            The inverse of the link function as a Callable.
+            The model's final predictions.
         """
-        return torch.exp
+        return numpy.exp(y_preds)
 
 
 class GammaRegressor(_GeneralizedLinearRegressor):
@@ -194,13 +239,18 @@ class GammaRegressor(_GeneralizedLinearRegressor):
             verbose=verbose,
         )
 
-    def _get_inverse_link(self) -> Callable:
-        """Get the inverse link function used in the inference.
+    def _inverse_link(self, y_preds) -> numpy.ndarray:
+        """Apply the link function's inverse on the inputs.
+
+        GammaRegressor uses the exponential function.
+
+        Args:
+            y_preds (numpy.ndarray): The input data.
 
         Returns:
-            The inverse of the link function as a Callable.
+            The model's final predictions.
         """
-        return torch.exp
+        return numpy.exp(y_preds)
 
 
 class TweedieRegressor(_GeneralizedLinearRegressor):
@@ -239,25 +289,28 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         self.power = power
         self.link = link
 
-    def _get_inverse_link(self) -> Callable:
-        """Return the inverse link function used in the inference.
+    def _inverse_link(self, y_preds) -> numpy.ndarray:
+        """Apply the link function's inverse on the inputs.
 
-        This function is either the identity or the exponential.
+        TweedieRegressor uses either the identity or the exponential function.
+
+        Args:
+            y_preds (numpy.ndarray): The input data.
 
         Returns:
-            The inverse of the link function as a Callable.
+            The model's final predictions.
         """
 
         if self.link == "auto":
 
             # Identity link
             if self.power <= 0:
-                return lambda x: x
+                return y_preds
 
             # Log link
-            return torch.exp
+            return numpy.exp(y_preds)
 
         if self.link == "log":
-            return torch.exp
+            return numpy.exp(y_preds)
 
-        return lambda x: x
+        return y_preds

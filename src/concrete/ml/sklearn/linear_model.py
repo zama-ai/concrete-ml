@@ -14,7 +14,7 @@ from ..onnx.onnx_model_manipulations import clean_graph_after_sigmoid
 from ..quantization import PostTrainingAffineQuantization
 from ..torch import NumpyModule
 from .base import SklearnLinearModelMixin
-from .torch_module import _LinearRegressionTorchModel
+from .torch_module import _CustomLinearRegressionTorchModel
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
@@ -109,7 +109,7 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         bias = torch.tensor(self.sklearn_model.intercept_)
 
         # Initialize a Torch model that reproduces the proper inference using ReduceSum
-        torch_model = _LinearRegressionTorchModel(
+        torch_model = _CustomLinearRegressionTorchModel(
             weights=weights,
             bias=bias,
         )

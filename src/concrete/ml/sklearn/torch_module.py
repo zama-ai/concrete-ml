@@ -1,25 +1,17 @@
 """Implement torch module."""
 from __future__ import annotations
 
-from typing import Callable
-
 import torch
 from torch import nn
 
 
-class _GeneralizedLinearRegressionTorchModel(nn.Module):
-    """A Torch module with one linear layer and a given activation function.
-
-    This module is used for converting scikit-learn GLM models on Tweedie distributions (Normal,
-    Poisson, Gamma and Inverse Gaussian distributions) into a Torch module without using the
-    Hummingbird library.
-    """
+class _LinearRegressionTorchModel(nn.Module):
+    """A Torch module with one linear layer."""
 
     def __init__(
         self,
         input_size: int,
         output_size: int,
-        inverse_link: Callable,
         use_bias: bool = True,
     ):
         """Initialize the module.
@@ -27,18 +19,14 @@ class _GeneralizedLinearRegressionTorchModel(nn.Module):
         Args:
             input_size (int): Size of each input sample.
             output_size (int): Size of each output sample.
-            inverse_link (Callable): Inverse link function used in the inference.
             use_bias (bool): If set to False, the linear layer will not learn a bias term.
                 Default to True.
         """
         super().__init__()
         self.linear = nn.Linear(input_size, output_size, bias=use_bias)
-        self.inverse_link = inverse_link
 
     def forward(self, x: torch.Tensor):
-        """Compute the inference.
-
-        The computed expression is y = inverse_link(X @ w + b).
+        """Compute a linear inference.
 
         Args:
             x (torch.tensor): The input data.
@@ -46,12 +34,10 @@ class _GeneralizedLinearRegressionTorchModel(nn.Module):
         Returns:
             torch.Tensor: The predictions.
         """
-        y_pred = self.linear(x)
-        y_pred = self.inverse_link(y_pred)
-        return y_pred
+        return self.linear(x)
 
 
-class _LinearRegressionTorchModel(nn.Module):
+class _CustomLinearRegressionTorchModel(nn.Module):
     """A Torch module with only one custom linear layer.
 
     This module is used for applying the ReduceSum workaround to linear models.

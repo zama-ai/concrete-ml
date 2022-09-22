@@ -168,12 +168,11 @@ def test_dump(
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_7[DOUBLE, 10x1]
+  %onnx::MatMul_6[DOUBLE, 10x1]
 ) {
-  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_7)
-  %onnx::Exp_5 = Add(%linear.bias, %onnx::Add_4)
-  %6 = Exp(%onnx::Exp_5)
-  return %6
+  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
+  %5 = Add(%linear.bias, %onnx::Add_4)
+  return %5
 }""",
         LinearRegression: """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -199,12 +198,11 @@ def test_dump(
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_7[DOUBLE, 10x1]
+  %onnx::MatMul_6[DOUBLE, 10x1]
 ) {
-  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_7)
-  %onnx::Exp_5 = Add(%linear.bias, %onnx::Add_4)
-  %6 = Exp(%onnx::Exp_5)
-  return %6
+  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
+  %5 = Add(%linear.bias, %onnx::Add_4)
+  return %5
 }""",
         DecisionTreeClassifier: """graph torch_jit (
   %input_0[DOUBLE, symx10]
