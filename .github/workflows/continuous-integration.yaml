@@ -205,6 +205,18 @@ jobs:
           ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py37"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Python version", "Value": "3.7"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
 
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
@@ -217,6 +229,18 @@ jobs:
           ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py38"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Python version", "Value": "3.8"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
 
       - name: Start EC2 runner python 39
         id: start-ec2-runner-39
@@ -229,6 +253,18 @@ jobs:
           ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py39"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Python version", "Value": "3.9"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
 
       - name: Start EC2 runner python 310
         id: start-ec2-runner-310
@@ -241,6 +277,18 @@ jobs:
           ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py310"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Python version", "Value": "3.10"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
 
 
       - name: Update Linux runs_on Matrix

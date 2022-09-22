@@ -82,6 +82,20 @@ jobs:
           ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-benchmark-ec2-github-runner"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Python version", "Value": "3.9"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Command", "Value": "${{ inputs.command }}"},
+              {"Key": "TargetGitRef", "Value": "${{ github.event.inputs.git-ref }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
 
   run-command:
     name: Run benchmarks
