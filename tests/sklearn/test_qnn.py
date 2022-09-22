@@ -438,7 +438,7 @@ def test_custom_net_classifier(load_data):
     # This will clone the skorch estimator
     pipe_cv = Pipeline(
         [
-            ("pca", PCA(n_components=2)),
+            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("net", MiniCustomNeuralNetClassifier(MiniNet, **params)),
         ]

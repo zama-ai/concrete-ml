@@ -34,14 +34,16 @@ from concrete.ml.sklearn.xgb import XGBClassifier
 X, y = load_breast_cancer(return_X_y=True)
 
 # Split the train and test set
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=8)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 # Define our model
 model = XGBClassifier(n_jobs=1, n_bits=3)
 
 # Define the pipeline
 # We will normalize the data and apply a PCA before fitting the model
-pipeline = Pipeline([("standard_scaler", StandardScaler()), ("pca", PCA()), ("model", model)])
+pipeline = Pipeline(
+    [("standard_scaler", StandardScaler()), ("pca", PCA(random_state=0)), ("model", model)]
+)
 
 # Define the parameters to tune
 param_grid = {

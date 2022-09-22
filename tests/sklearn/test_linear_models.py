@@ -390,7 +390,7 @@ def test_pipeline_sklearn(
     # sum workaround
     pipe_cv = Pipeline(
         [
-            ("pca", PCA(n_components=2)),
+            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("model", model_class(**model_hyperparameters)),
         ]

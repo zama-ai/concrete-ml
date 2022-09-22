@@ -28,7 +28,7 @@ def test_pipeline_classifiers_regressors(model, parameters, load_data):
 
     pipe_cv = Pipeline(
         [
-            ("pca", PCA(n_components=2)),
+            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("model", model()),
         ]
@@ -92,7 +92,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
 
     pipe = Pipeline(
         [
-            ("pca", PCA(n_components=2)),
+            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("net", NeuralNetClassifier(**params)),
         ]
@@ -103,7 +103,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
 
     pipe_cv = Pipeline(
         [
-            ("pca", PCA(n_components=2)),
+            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("net", NeuralNetClassifier(**params)),
         ]

@@ -463,7 +463,14 @@ def main():
         model_pca = Pipeline(
             [
                 ("preprocessor", preprocessor),
-                ("pca", PCA(n_components=n_components, whiten=True)),
+                (
+                    "pca",
+                    PCA(
+                        n_components=n_components,
+                        whiten=True,
+                        random_state=random.randint(0, 2**32 - 1),
+                    ),
+                ),
                 ("regressor", regressor(n_bits=n_bits, **init_parameters)),
             ]
         )
