@@ -207,9 +207,9 @@ def get_config(args) -> Dict:
         n_bits_list = args.n_bits
     else:
         n_bits_list = [
-            {"net_inputs": 6, "op_inputs": 2, "op_weights": 2, "net_outputs": 6},
-            {"net_inputs": 6, "op_inputs": 3, "op_weights": 2, "net_outputs": 6},
-            {"net_inputs": 6, "op_inputs": 3, "op_weights": 3, "net_outputs": 6},
+            {"model_inputs": 6, "op_inputs": 2, "op_weights": 2, "model_outputs": 6},
+            {"model_inputs": 6, "op_inputs": 3, "op_weights": 2, "model_outputs": 6},
+            {"model_inputs": 6, "op_inputs": 3, "op_weights": 3, "model_outputs": 6},
         ]
 
     config = {

@@ -69,8 +69,8 @@ N_BITS_LIST = [
     20,
     16,
     8,
-    {"net_inputs": 8, "op_weights": 8, "op_inputs": 8, "net_outputs": 8},
-    {"net_inputs": 12, "op_weights": 15, "op_inputs": 15, "net_outputs": 16},
+    {"model_inputs": 8, "op_weights": 8, "op_inputs": 8, "model_outputs": 8},
+    {"model_inputs": 12, "op_weights": 15, "op_inputs": 15, "model_outputs": 16},
 ]
 
 

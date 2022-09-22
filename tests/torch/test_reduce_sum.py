@@ -71,10 +71,10 @@ def execute_reduce_sum(
     if in_fhe:
         if isinstance(n_bits, int):
             n_bits_dict = {
-                "net_inputs": n_bits,
+                "model_inputs": n_bits,
                 "op_weights": n_bits,
                 "op_inputs": n_bits,
-                "net_outputs": n_bits,
+                "model_outputs": n_bits,
             }
 
         # Compile the torch model

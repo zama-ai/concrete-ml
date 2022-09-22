@@ -4,7 +4,7 @@ import pytest
 import torch
 from torch import nn
 
-from concrete.ml.quantization.base_quantized_op import DEFAULT_OUTPUT_BITS
+from concrete.ml.quantization.base_quantized_op import DEFAULT_MODEL_BITS
 from concrete.ml.quantization.post_training import ONNXConverter
 from concrete.ml.torch.numpy_module import NumpyModule
 
@@ -26,8 +26,8 @@ n_bits_correct = [
     pytest.param(
         8,
         {
-            "net_inputs": 8,
-            "net_outputs": 8,
+            "model_inputs": 8,
+            "model_outputs": 8,
             "op_inputs": 8,
             "op_weights": 8,
         },
@@ -36,8 +36,8 @@ n_bits_correct = [
     pytest.param(
         3,
         {
-            "net_inputs": DEFAULT_OUTPUT_BITS,
-            "net_outputs": DEFAULT_OUTPUT_BITS,
+            "model_inputs": DEFAULT_MODEL_BITS,
+            "model_outputs": DEFAULT_MODEL_BITS,
             "op_inputs": 3,
             "op_weights": 3,
         },
@@ -49,8 +49,8 @@ n_bits_correct = [
             "op_weights": 3,
         },
         {
-            "net_inputs": DEFAULT_OUTPUT_BITS,
-            "net_outputs": DEFAULT_OUTPUT_BITS,
+            "model_inputs": DEFAULT_MODEL_BITS,
+            "model_outputs": DEFAULT_MODEL_BITS,
             "op_inputs": 2,
             "op_weights": 3,
         },
@@ -62,8 +62,8 @@ n_bits_correct = [
             "op_weights": 8,
         },
         {
-            "net_inputs": DEFAULT_OUTPUT_BITS,
-            "net_outputs": 7,
+            "model_inputs": DEFAULT_MODEL_BITS,
+            "model_outputs": 7,
             "op_inputs": 7,
             "op_weights": 8,
         },
@@ -71,42 +71,42 @@ n_bits_correct = [
     ),
     pytest.param(
         {
-            "net_inputs": 2,
+            "model_inputs": 2,
             "op_inputs": 3,
             "op_weights": 4,
         },
         {
-            "net_inputs": 2,
-            "net_outputs": DEFAULT_OUTPUT_BITS,
+            "model_inputs": 2,
+            "model_outputs": DEFAULT_MODEL_BITS,
             "op_inputs": 3,
             "op_weights": 4,
         },
-        id="n_bits_dict_no_net_outputs",
+        id="n_bits_dict_no_model_outputs",
     ),
     pytest.param(
         {
-            "net_outputs": 7,
+            "model_outputs": 7,
             "op_inputs": 6,
             "op_weights": 8,
         },
         {
-            "net_inputs": DEFAULT_OUTPUT_BITS,
-            "net_outputs": 7,
+            "model_inputs": DEFAULT_MODEL_BITS,
+            "model_outputs": 7,
             "op_inputs": 6,
             "op_weights": 8,
         },
-        id="n_bits_dict_no_net_inputs",
+        id="n_bits_dict_no_model_inputs",
     ),
     pytest.param(
         {
-            "net_inputs": 7,
-            "net_outputs": 6,
+            "model_inputs": 7,
+            "model_outputs": 6,
             "op_inputs": 5,
             "op_weights": 8,
         },
         {
-            "net_inputs": 7,
-            "net_outputs": 6,
+            "model_inputs": 7,
+            "model_outputs": 6,
             "op_inputs": 5,
             "op_weights": 8,
         },
@@ -114,14 +114,14 @@ n_bits_correct = [
     ),
     pytest.param(
         {
-            "net_inputs": 1,
-            "net_outputs": 3,
+            "model_inputs": 1,
+            "model_outputs": 3,
             "op_inputs": 2,
             "op_weights": 4,
         },
         {
-            "net_inputs": 1,
-            "net_outputs": 3,
+            "model_inputs": 1,
+            "model_outputs": 3,
             "op_inputs": 2,
             "op_weights": 4,
         },
@@ -136,8 +136,8 @@ def test_n_bits(n_bits_test, n_bits_true):
     onnx_converter = ONNXConverter(n_bits=n_bits_test, numpy_model=numpy_module)
 
     assert (
-        onnx_converter.n_bits_net_outputs == n_bits_true["net_outputs"]
-        and onnx_converter.n_bits_net_inputs == n_bits_true["net_inputs"]
+        onnx_converter.n_bits_model_outputs == n_bits_true["model_outputs"]
+        and onnx_converter.n_bits_model_inputs == n_bits_true["model_inputs"]
         and onnx_converter.n_bits_op_inputs == n_bits_true["op_inputs"]
         and onnx_converter.n_bits_op_weights == n_bits_true["op_weights"]
     )
@@ -163,7 +163,7 @@ n_bits_only_op = [
     pytest.param(
         {
             "net": 8,
-            "net_outputs": 8,
+            "model_outputs": 8,
             "op_inputs": 8,
             "op_weights": 8,
         },
@@ -185,12 +185,12 @@ def test_n_bits_only_op(n_bits):
 n_bits_wrong_key = [
     pytest.param(
         {
-            "net_inputs": 8,
-            "net_outputs": 3,
+            "model_inputs": 8,
+            "model_outputs": 3,
             "op_inputs": 8,
             "op_weights": 8,
         },
-        id="n_bits_larger_op_inputs_than_net_outputs",
+        id="n_bits_larger_op_inputs_than_model_outputs",
     ),
 ]
 
@@ -201,7 +201,8 @@ def test_n_bits_wrong_key(n_bits):
     with pytest.raises(
         AssertionError,
         match=(
-            r"Using fewer bits to represent the net outputs than the op inputs is not recommended."
+            r"Using fewer bits to represent the model_outputs than the op inputs is not "
+            r"recommended."
         ),
     ):
         ONNXConverter(n_bits=n_bits, numpy_model=numpy_module)

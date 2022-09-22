@@ -272,7 +272,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     # FHE vs Quantized are not done in the test anymore (see issue #177)
     if not use_virtual_lib:
         n_bits = (
-            {"net_inputs": 2, "net_outputs": 2, "op_inputs": 2, "op_weights": 2}
+            {"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2}
             if qat_bits == 0
             else qat_bits
         )
@@ -331,10 +331,10 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             n_bits = 16
         else:
             n_bits = {
-                "net_inputs": 16,
+                "model_inputs": 16,
                 "op_weights": qat_bits,
                 "op_inputs": qat_bits,
-                "net_outputs": 16,
+                "model_outputs": 16,
             }
 
         # Compile with higher quantization bitwidth
@@ -683,10 +683,10 @@ def test_pretrained_mnist_qat(default_configuration, check_accuracy):
 
     # Compile to Concrete ML with the Virtual Library, with a high bitwidth
     n_bits = {
-        "net_inputs": 16,
+        "model_inputs": 16,
         "op_weights": 2,
         "op_inputs": 2,
-        "net_outputs": 16,
+        "model_outputs": 16,
     }
 
     quantized_numpy_module = compile_onnx_model(
@@ -727,10 +727,10 @@ def test_pretrained_mnist_qat(default_configuration, check_accuracy):
 
     # Compile to Concrete ML with the Virtual Library with an FHE compatible bitwidth
     n_bits = {
-        "net_inputs": 7,
+        "model_inputs": 7,
         "op_weights": 2,
         "op_inputs": 2,
-        "net_outputs": 7,
+        "model_outputs": 7,
     }
 
     quantized_numpy_module = compile_onnx_model(

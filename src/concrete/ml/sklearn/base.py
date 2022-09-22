@@ -909,13 +909,13 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             n_bits (int, Dict): Number of bits to quantize the model. If an int is passed
                 for n_bits, the value will be used for activation,
                 inputs and weights. If a dict is passed, then it should
-                contain  "net_inputs", "op_inputs", "op_weights" and
-                "net_outputs" keys with corresponding number of
+                contain  "model_inputs", "op_inputs", "op_weights" and
+                "model_outputs" keys with corresponding number of
                 quantization bits for:
-                    - net_inputs : number of bits for model input
+                    - model_inputs : number of bits for model input
                     - op_inputs : number of bits to quantize layer input values
                     - op_weights: learned parameters or constants in the network
-                    - net_outputs: final model output quantization bits
+                    - model_outputs: final model output quantization bits
                 Default to 2.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.

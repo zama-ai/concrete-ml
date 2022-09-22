@@ -19,14 +19,14 @@ ALL_QUANTIZED_OPS: Set[Type] = set()
 
 ONNX_OPS_TO_QUANTIZED_IMPL: Dict[str, Type["QuantizedOp"]] = {}
 
-# This constant determines the number of bits for the quantization of output values
+# This constant determines the number of bits for the quantization of input and output values
 # of an ML model. This is not necessarily the maximum bitwidth in the network, as Gemm/Conv ops
 # have output bitwidth that is related to their weights and inputs.
 # Run time in FHE is strongly impacted by the number of bits, with increases of 5-20x for
-# each additional bit. However, strong quantization of the output can negatively impact accuracy.
-# This value is chosen as a compromise between run time and model accuracy. This default value
-# is used only if the user does not specifically specify a value for output bitwidth
-DEFAULT_OUTPUT_BITS = 5
+# each additional bit. However, strong quantization of inputs and outputs can negatively impact
+# accuracy. This value is chosen as a compromise between run time and model accuracy. This default
+# value is used only if the user does not specifically specify a value for input or output bitwidth.
+DEFAULT_MODEL_BITS = 5
 
 
 class QuantizedOp:
@@ -67,7 +67,7 @@ class QuantizedOp:
     _params_that_are_required_onnx_inputs: Set[str] = set()
     _has_attr: bool
     _inputs_not_quantized: Set[str] = set()
-    quantize_inputs_with_net_outputs_precision: bool = False
+    quantize_inputs_with_model_outputs_precision: bool = False
 
     POSITIONAL_ARGUMENTS_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
 

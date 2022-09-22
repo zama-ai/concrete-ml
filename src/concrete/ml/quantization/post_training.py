@@ -10,7 +10,7 @@ from onnx import numpy_helper
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_name
 from ..torch.numpy_module import NumpyModule
-from .base_quantized_op import DEFAULT_OUTPUT_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
+from .base_quantized_op import DEFAULT_MODEL_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
 from .quantized_module import QuantizedModule
 from .quantizers import QuantizationOptions, QuantizedArray
 
@@ -32,14 +32,14 @@ class ONNXConverter:
         n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
             a dictionary with the following keys :
             - "op_inputs" and "op_weights" (mandatory)
-            - "net_inputs" and "net_outputs" (optional, default to 5 bits).
+            - "model_inputs" and "model_outputs" (optional, default to 5 bits).
             When using a single integer for n_bits, its value is assigned to "op_inputs" and
             "op_weights" bits. The maximum between this value and a default value (5) is then
-            assigned to the number of "net_inputs" "net_outputs". This default value is a compromise
-            between model accuracy and runtime performance in FHE. "net_outputs" gives the precision
-            of the final network's outputs, while "net_inputs" gives the precision of the network's
-            inputs. "op_inputs" and "op_weights" both control the quantization for inputs and
-            weights of all layers.
+            assigned to the number of "model_inputs" "model_outputs". This default value is a
+            compromise between model accuracy and runtime performance in FHE. "model_outputs" gives
+            the precision of the final network's outputs, while "model_inputs" gives the precision
+            of the network's inputs. "op_inputs" and "op_weights" both control the quantization for
+            inputs and weights of all layers.
         y_model (NumpyModule): Model in numpy.
         is_signed (bool): Whether the weights of the layers can be signed. Currently, only the
             weights can be signed.
@@ -59,39 +59,40 @@ class ONNXConverter:
             or (
                 isinstance(n_bits, Dict)
                 and set(n_bits.keys()).issubset(
-                    {"net_inputs", "op_weights", "net_outputs", "op_inputs"}
+                    {"model_inputs", "op_weights", "model_outputs", "op_inputs"}
                 )
                 and {"op_weights", "op_inputs"}.issubset(set(n_bits.keys()))
             ),
             "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
             "the following keys:\n"
             "- `op_weights` and `op_inputs` (mandatory)\n"
-            f"- `net_outputs` and `net_inputs` (optional, default to {DEFAULT_OUTPUT_BITS} bits)",
+            f"- `model_outputs` and `model_inputs` (optional, default to {DEFAULT_MODEL_BITS} "
+            "bits)",
         )
 
         # If a single integer is passed, we use a default value for the model's input and
         # output bits
         if isinstance(n_bits, int):
             n_bits_dict = {
-                "net_inputs": max(DEFAULT_OUTPUT_BITS, n_bits),
+                "model_inputs": max(DEFAULT_MODEL_BITS, n_bits),
                 "op_weights": n_bits,
                 "op_inputs": n_bits,
-                "net_outputs": max(DEFAULT_OUTPUT_BITS, n_bits),
+                "model_outputs": max(DEFAULT_MODEL_BITS, n_bits),
             }
 
-        # If net_inputs or net_outputs are not given, we consider a default value
+        # If model_inputs or model_outputs are not given, we consider a default value
         elif isinstance(n_bits, Dict):
             n_bits_dict = {
-                "net_inputs": DEFAULT_OUTPUT_BITS,
-                "net_outputs": max(DEFAULT_OUTPUT_BITS, n_bits["op_inputs"]),
+                "model_inputs": DEFAULT_MODEL_BITS,
+                "model_outputs": max(DEFAULT_MODEL_BITS, n_bits["op_inputs"]),
             }
 
             n_bits_dict.update(n_bits)
 
         assert_true(
-            n_bits_dict["net_outputs"] >= n_bits_dict["op_inputs"],
-            "Using fewer bits to represent the net outputs than the op inputs is not recommended. "
-            f"Got net_outputs: {n_bits_dict['net_outputs']} and op_inputs: "
+            n_bits_dict["model_outputs"] >= n_bits_dict["op_inputs"],
+            "Using fewer bits to represent the model_outputs than the op inputs is not "
+            f"recommended. Got model_outputs: {n_bits_dict['model_outputs']} and op_inputs: "
             f"{n_bits_dict['op_inputs']}",
         )
 
@@ -101,22 +102,22 @@ class ONNXConverter:
         self.is_signed = is_signed
 
     @property
-    def n_bits_net_outputs(self):
+    def n_bits_model_outputs(self):
         """Get the number of bits to use for the quantization of the last layer's output.
 
         Returns:
             n_bits (int): number of bits for output quantization
         """
-        return self.n_bits["net_outputs"]
+        return self.n_bits["model_outputs"]
 
     @property
-    def n_bits_net_inputs(self):
+    def n_bits_model_inputs(self):
         """Get the number of bits to use for the quantization of the first layer's output.
 
         Returns:
             n_bits (int): number of bits for input quantization
         """
-        return self.n_bits["net_inputs"]
+        return self.n_bits["model_inputs"]
 
     @property
     def n_bits_op_weights(self):
@@ -318,7 +319,7 @@ class ONNXConverter:
                 # Note that the output of a quantized op could be a network output
                 # Thus the quantized op outputs are quantized to the network output bitwidth
                 quantized_op_instance = quantized_op_class(
-                    self.n_bits_net_outputs,
+                    self.n_bits_model_outputs,
                     node_integer_inputs,
                     curr_cst_inputs,
                     self._get_input_quant_opts(curr_calibration_data, quantized_op_class),
@@ -392,7 +393,7 @@ class ONNXConverter:
         )
 
         q_input = tuple(
-            QuantizedArray(self.n_bits_net_inputs, val, is_signed=False).quantizer
+            QuantizedArray(self.n_bits_model_inputs, val, is_signed=False).quantizer
             for val in calibration_data
         )
 
@@ -416,13 +417,13 @@ class PostTrainingAffineQuantization(ONNXConverter):
         n_bits (int, Dict):             Number of bits to quantize the model. If an int is passed
                                         for n_bits, the value will be used for activation,
                                         inputs and weights. If a dict is passed, then it should
-                                        contain  "net_inputs", "op_inputs", "op_weights" and
-                                        "net_outputs" keys with corresponding number of
+                                        contain  "model_inputs", "op_inputs", "op_weights" and
+                                        "model_outputs" keys with corresponding number of
                                         quantization bits for:
-                                        - net_inputs : number of bits for model input
+                                        - model_inputs : number of bits for model input
                                         - op_inputs : number of bits to quantize layer input values
                                         - op_weights: learned parameters or constants in the network
-                                        - net_outputs: final model output quantization bits
+                                        - model_outputs: final model output quantization bits
         numpy_model (NumpyModule):      Model in numpy.
         is_signed:                      Whether the weights of the layers can be signed.
                                         Currently, only the weights can be signed.
@@ -466,10 +467,10 @@ class PostTrainingAffineQuantization(ONNXConverter):
         # Calibrate the output of the layer
         quantized_op.calibrate(*calibration_data)
 
-        # Some operators need to quantize their inputs using net_outputs instead of op_inputs in
+        # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
         # order to reduce the impact of quantization.
-        if quantized_op.quantize_inputs_with_net_outputs_precision:
-            n_bits = self.n_bits_net_outputs
+        if quantized_op.quantize_inputs_with_model_outputs_precision:
+            n_bits = self.n_bits_model_outputs
         else:
             n_bits = self.n_bits_op_inputs
 
@@ -518,10 +519,10 @@ class PostTrainingAffineQuantization(ONNXConverter):
 
         is_signed = any(v.min() < 0 for v in values)
 
-        # Some operators need to quantize their inputs using net_outputs instead of op_inputs in
+        # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
         # order to reduce the impact of quantization.
-        if quantized_op_class.quantize_inputs_with_net_outputs_precision:
-            n_bits = self.n_bits_net_outputs
+        if quantized_op_class.quantize_inputs_with_model_outputs_precision:
+            n_bits = self.n_bits_model_outputs
         else:
             n_bits = self.n_bits_op_inputs
 
@@ -625,10 +626,10 @@ class PostTrainingQATImporter(ONNXConverter):
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
 
-        # Some operators need to quantize their inputs using net_outputs instead of op_inputs in
+        # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
         # order to reduce the impact of quantization.
-        if quantized_op_class.quantize_inputs_with_net_outputs_precision:
-            n_bits = self.n_bits_net_outputs
+        if quantized_op_class.quantize_inputs_with_model_outputs_precision:
+            n_bits = self.n_bits_model_outputs
         else:
             n_bits = self.n_bits_op_inputs
 
