@@ -35,7 +35,9 @@ class Quantizer(Protocol):
         Args:
             values (numpy.ndarray): Values to quantize
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             numpy.ndarray: The quantized values
         """
 
@@ -45,7 +47,9 @@ class Quantizer(Protocol):
         Args:
             X (numpy.ndarray): Values to dequantize
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             numpy.ndarray: Dequantized values
         """
 
@@ -72,7 +76,9 @@ class ConcreteBaseEstimatorProtocol(Protocol):
     def onnx_model(self) -> onnx.ModelProto:
         """onnx_model.
 
-        Results: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Results:
             onnx.ModelProto
         """
 
@@ -82,7 +88,9 @@ class ConcreteBaseEstimatorProtocol(Protocol):
         Args:
             y_preds (numpy.ndarray): predicted values by model (clear-quantized)
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             numpy.ndarray: the post-processed predictions
         """
 
@@ -108,8 +116,9 @@ class ConcreteBaseEstimatorProtocol(Protocol):
                 bitwidths
             p_error (float): probability of error of a PBS
 
+        .. # noqa: DAR202
 
-        Returns: # noqa: DAR202
+        Returns:
             Circuit: the compiled Circuit.
         """
 
@@ -130,8 +139,10 @@ class ConcreteBaseEstimatorProtocol(Protocol):
             y (numpy.ndarray): labels associated with training data
             **fit_params: additional parameters that can be used during training
 
-        Returns: # noqa: DAR202
-            ConcreteBaseEstimatorProto: the trained estimator
+        .. # noqa: DAR202
+
+        Returns:
+            ConcreteBaseEstimatorProtocol: the trained estimator
         """
 
     def fit_benchmark(
@@ -153,7 +164,9 @@ class ConcreteBaseEstimatorProtocol(Protocol):
             *args: The arguments to pass to the underlying model.
             **kwargs: The keyword arguments to pass to the underlying model.
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             self: self fitted
             model: underlying estimator
         """
@@ -169,7 +182,9 @@ class ConcreteBaseClassifierProtocol(ConcreteBaseEstimatorProtocol, Protocol):
             X (numpy.ndarray): Features
             execute_in_fhe (bool): Whether the inference should be done in fhe or not.
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             numpy.ndarray
 
         """
@@ -181,7 +196,9 @@ class ConcreteBaseClassifierProtocol(ConcreteBaseEstimatorProtocol, Protocol):
             X (numpy.ndarray): Features
             execute_in_fhe (bool): Whether the inference should be done in fhe or not.
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             numpy.ndarray
 
         """
@@ -197,7 +214,9 @@ class ConcreteBaseRegressorProtocol(ConcreteBaseEstimatorProtocol, Protocol):
             X (numpy.ndarray): Features
             execute_in_fhe (bool): Whether the inference should be done in fhe or not.
 
-        Returns: # noqa: DAR202
+        .. # noqa: DAR202
+
+        Returns:
             numpy.ndarray
 
         """

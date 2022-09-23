@@ -2,18 +2,18 @@
 
 Concrete-ML provides several of the most popular linear models for `regression` or `classification` that can be found in [Scikit-learn](https://scikit-learn.org/stable/):
 
-|                                                  Concrete-ML                                                  |                                                                         scikit-learn                                                                         |
-| :-----------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
-|   [LinearRegression](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.linear_model.LinearRegression)   |    [LinearRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression)    |
-| [LogisticRegression](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.linear_model.LogisticRegression) | [LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression) |
-|              [LinearSVC](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.svm.LinearSVC)               |                       [LinearSVC](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC)                        |
-|              [LinearSVR](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.svm.LinearSVR)               |                       [LinearSVR](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR)                        |
-|       [PoissonRegressor](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.glm.PoissonRegressor)        |    [PoissonRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html#sklearn.linear_model.PoissonRegressor)    |
-|       [TweedieRegressor](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.glm.TweedieRegressor)        |    [TweedieRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html#sklearn.linear_model.TweedieRegressor)    |
-|         [GammaRegressor](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.glm.GammaRegressor)          |       [GammaRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html#sklearn.linear_model.GammaRegressor)       |
-|              [Lasso](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.linear_model.Lasso)              |                    [Lasso](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso)                     |
-|              [Ridge](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.linear_model.Ridge)              |                    [Ridge](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge)                     |
-|         [ElasticNet](../_apidoc/concrete.ml.sklearn.html#concrete.ml.sklearn.linear_model.ElasticNet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
+|                                                Concrete-ML                                                |                                                                         scikit-learn                                                                         |
+| :-------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|   [LinearRegression](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-linearregression)   |    [LinearRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression)    |
+| [LogisticRegression](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-logisticregression) | [LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression) |
+|              [LinearSVC](../developer-guide/api/concrete.ml.sklearn.svm.md#class-linearsvc)               |                       [LinearSVC](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html#sklearn.svm.LinearSVC)                        |
+|              [LinearSVR](../developer-guide/api/concrete.ml.sklearn.svm.md#class-linearsvr)               |                       [LinearSVR](https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html#sklearn.svm.LinearSVR)                        |
+|       [PoissonRegressor](../developer-guide/api/concrete.ml.sklearn.glm.md#class-poissonregressor)        |    [PoissonRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html#sklearn.linear_model.PoissonRegressor)    |
+|       [TweedieRegressor](../developer-guide/api/concrete.ml.sklearn.glm.md#class-tweedieregressor)        |    [TweedieRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html#sklearn.linear_model.TweedieRegressor)    |
+|         [GammaRegressor](../developer-guide/api/concrete.ml.sklearn.glm.md#class-gammaregressor)          |       [GammaRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html#sklearn.linear_model.GammaRegressor)       |
+|              [Lasso](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-lasso)              |                    [Lasso](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html#sklearn.linear_model.Lasso)                     |
+|              [Ridge](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-ridge)              |                    [Ridge](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge)                     |
+|         [ElasticNet](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-elasticnet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
 
 Using these models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists that are used to this framework to get started with Concrete ML.
 
@@ -57,11 +57,7 @@ y_pred_clear = model.predict(X_test)
 model.compile(X_train)
 
 # Perform the inference in FHE
-# The inference in FHE can sometimes be quite long.
-# Since no vectorization is applied in the `.predict` method
-# we can easily wrap the inference in a tqdm progress bar without performance loss.
 # Note that here the encryption and decryption is done behind the scene.
-# Warning: this will take a while.
 # It is recommended to run this with a very small batch of
 # examples first (e.g. N_TEST_FHE = 3)
 N_TEST_FHE = 3
@@ -78,7 +74,7 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  3 examples over 3 have a FHE inference equal to the clear inference
 ```
 
-We can then plot how the model classifies the inputs and then compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
+We can then plot the decision boundary of the classifier and then compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ![Plaintext model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundarires](../figures/logistic_regression_fhe.png)
 

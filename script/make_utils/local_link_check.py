@@ -28,6 +28,8 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
     errors: List[str] = []
     links = MARKDOWN_LINK_REGEX.findall(content)
     for link in links:
+        link = link.replace(r"\_", "_")  # for gitbook
+
         if link.startswith("http"):
             # This means this is a reference to a website
             continue

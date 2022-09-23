@@ -1,12 +1,17 @@
 # Using ONNX
 
-In addition to Concrete-ML models and to [custom models in torch](torch_support.md), it is also possible to directly compile [ONNX](https://onnx.ai/) models. This can be particularly appealing, notably to import models trained with Keras (see [in this subsection](onnx_support.md#post-training-quantization). It can also be interesting in the context of QAT (see [in this subsection](onnx_support.md#importing-an-existing-model-trained-with-qat)), since lot of ONNX are available on the web.
+In addition to Concrete-ML models and to [custom models in torch](torch_support.md), it is also possible to directly compile [ONNX](https://onnx.ai/) models. This can be particularly appealing, notably to import models trained with Keras.
 
-ONNX models can be compiled by performing post-training quantization (PTQ) or by directly importing models that are already quantized with quantization aware learning (QAT).
+ONNX models can be compiled by directly importing models that are already quantized with quantization aware learning (QAT).
+or by performing post-training quantization (PTQ) with Concrete-ML.
 
-## Post training quantization
+## Simple Example
 
-The following example shows how to compile an ONNX model using post-training quantization. The model was initially tained using Keras, before being exported to ONNX. The training code is not shown here.
+The following example shows how to compile an ONNX model using post-training quantization. The model was initially trained using Keras, before being exported to ONNX. The training code is not shown here.
+
+{% hint style="warning" %}
+This example uses Post-Training Quantization, i.e. the quantization is not performed during training. Thus this model would not have good performance in FHE. Quantization Aware Training (QAT) should be added by the model developer and importing QAT ONNX models can be done [as shown below](#quantization-aware-training).
+{% endhint %}
 
 ```python
 import numpy
@@ -83,7 +88,7 @@ print("Equality:           ", numpy.sum(y_clear == y_fhe), "over", numpy.size(y_
 While Keras was used in this example, it is not officially supported, as additional work is needed to test all of Keras' types of layer and models.
 {% endhint %}
 
-## Importing an existing model trained with QAT
+## Quantization Aware Training
 
 QAT models contain quantizers in the ONNX graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized. Since these QAT models have quantizers that are configured during training to a specific number of bits, the ONNX graph will need to be imported using the same settings:
 

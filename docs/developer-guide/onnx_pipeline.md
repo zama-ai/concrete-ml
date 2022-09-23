@@ -11,10 +11,10 @@ The diagram below gives an overview of the steps involved in the conversion of a
 All Concrete-ML builtin models follow the same pattern for FHE conversion:
 
 1. The models are trained with sklearn or torch
-1. All models have a torch implementation for inference. This implementation is provided either by third-party tool such as [hummingbird](hummingbird_usage.md), or is implemented in Concrete-ML.
+1. All models have a torch implementation for inference. This implementation is provided either by third-party tool such as [hummingbird](../developer-guide/external_libraries.md#hummingbird), or is implemented in Concrete-ML.
 1. The torch model is exported to ONNX. For more information on the use of ONNX in Concrete-ML see [here](onnx_pipeline.md#torch-to-numpy-conversion-using-onnx)
 1. The Concrete-ML ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference numpy operations to them. This step produces a `NumpyModule`
-1. Quantization is performed on the [`NumpyModule`](../_apidoc/concrete.ml.torch.html#concrete.ml.torch.numpy_module.NumpyModule), producing a [`QuantizedModule`](../_apidoc/concrete.ml.quantization.html#concrete.ml.quantization.quantized_module.QuantizedModule) . Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](../_apidoc/concrete.ml.quantization.html#concrete.ml.quantization.base_quantized_op.QuantizedOp) objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
+1. Quantization is performed on the [`NumpyModule`](../developer-guide/api/concrete.ml.torch.numpy_module.md#class-numpymodule), producing a [`QuantizedModule`](../developer-guide/api/concrete.ml.quantization.quantized_module.md#class-quantizedmodule) . Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](../developer-guide/api/concrete.ml.quantization.base_quantized_op.md#class-quantizedop) objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
 1. Once the `QuantizedModule` is built, Concrete-Numpy is used to trace the `._forward()` function of the `QuantizedModule`
 
 Moreover, by passing a user provided `nn.Module` to step 2 of the above process, Concrete-ML supports custom user models. See the associated [FHE-friendly model documentation](../deep-learning/fhe_friendly_models.md) for instructions about working with such models.
@@ -24,30 +24,8 @@ Moreover, by passing a user provided `nn.Module` to step 2 of the above process,
 Once an ONNX model is imported, it is converted to a `NumpyModule`, then to a `QuantizedModule` and, finally, to an FHE circuit. However, as the diagram shows, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the torch model as NumPy code without doing quantization.
 
 {% hint style="info" %}
-Note that if you keep the obtained `NumpyModule` without quantizing it with Post Training Quantization (PTQ), it will not be convertible to FHE since the Concrete stack requires operators to use integers for computations.
-{% endhint %}
-
-The `NumpyModule` stores the ONNX model that it interprets. The interpreter works by going through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting), and storing the intermediate results as it goes. To execute a node, the interpreter feeds the required inputs - taken either from the model inputs or the intermediate results - to the NumPy implementation of each ONNX node.
-
-## Calibration
-
-Calibration is the process of executing the `NumpyModule` with a representative set of data, in floating point. It allows to compute statistics for all the intermediate tensors used in the network to determine quantization parameters.
-
-{% hint style="info" %}
 Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../deep-learning/onnx_support.md#supported-operators).
 {% endhint %}
-
-## Quantization
-
-Quantization is the process of converting floating point weights, inputs and activations to integer, according to the quantization parameters computed during Calibration.
-
-Initializers (model trained parameters) are quantized according to `n_bits` and passed to the Post Training Quantization (PTQ) process.
-
-During the PTQ process, the ONNX model stored in the `NumpyModule` is interpreted and calibrated using `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary, which maps ONNX operators (e.g. Gemm) to their quantized equivalent (e.g. QuantizedGemm). For more information on implementing these operations, please see the [FHE compatible op-graph section](fhe-op-graphs.md).
-
-Quantized operators are then used to create a `QuantizedModule` that, similarly to the `NumpyModule`, runs through the operators to perform the quantized inference with integers-only operations.
-
-That `QuantizedModule` is then compilable to FHE if the intermediate values conform to the 8 bits precision limit of the Concrete stack.
 
 ## Inspecting the ONNX models
 

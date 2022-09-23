@@ -5,20 +5,21 @@ brevitas, 0.7.2.dev2+g3088901, UNKNOWN
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.18.0, BSD-3
 concrete-numpy, 0.8.0rc1, BSD License
+contourpy, 1.0.5, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.5.1, BSD License
 flatbuffers, 1.12, Apache Software License
-fonttools, 4.37.1, MIT License
+fonttools, 4.37.3, MIT License
 future-annotations, 1.0.0, MIT License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.4, MIT License
-joblib, 1.1.0, BSD License
+joblib, 1.2.0, BSD License
 kiwisolver, 1.4.4, BSD License
-matplotlib, 3.5.3, Python Software Foundation License
+matplotlib, 3.6.0, Python Software Foundation License
 mpmath, 1.2.1, BSD License
 networkx, 2.8.6, BSD License
-numpy, 1.23.2, BSD License
+numpy, 1.23.3, BSD License
 onnx, 1.12.0, Apache License v2.0
 onnxconverter-common, 1.12.2, MIT License
 onnxmltools, 1.11.1, Apache Software License
@@ -31,7 +32,7 @@ pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.1.2, BSD License
 scipy, 1.9.1, BSD License
-setuptools-scm, 6.4.2, MIT License
+setuptools-scm, 7.0.5, MIT License
 six, 1.16.0, MIT License
 skl2onnx, 1.12, Apache Software License
 skorch, 0.11.0, new BSD 3-Clause

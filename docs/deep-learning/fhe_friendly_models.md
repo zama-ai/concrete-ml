@@ -1,10 +1,20 @@
-# Examples
+# Step-by-step guide
 
-This section includes a complete example of a neural network in Torch, as well as links to additional examples.
+This section includes a complete example of converting a neural network to Quantization Aware Training.
+This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic dataset. You can
+find the demo of the final network in the  [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb).
 
-## Post-training quantization
+## Summary
+
+1. [Building a standard baseline torch model](#baseline-model)
+1. [Adding pruning to make learning more robust](#pruning-using-torch)
+1. [Converting to Quantization Aware Training with Brevitas](#quantization-aware-training-qat)
+
+## Baseline model
 
 In this example, we will train a fully-connected neural network on a synthetic 2D dataset with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
+
+In PyTorch, using standard layers, this network would look as follows:
 
 ```python
 from torch import nn
@@ -29,7 +39,9 @@ class SimpleNet(nn.Module):
         return x
 ```
 
-This network was trained using different numbers neurons in the hidden layers, and quantized using 3-bits weights and activations. The mean accumulator size shown below was extracted using the [Virtual Library](fhe_assistant.md).
+Once trained, this network can be imported using the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) function. This function uses simple post-training quantization.
+
+The network was trained using different numbers neurons in the hidden layers, and quantized using 3-bits weights and activations. The mean accumulator size shown below was extracted using the [Virtual Library](fhe_assistant.md).
 
 | neurons               | 10     | 30     | 100    |
 | --------------------- | ------ | ------ | ------ |
@@ -222,8 +234,8 @@ Training this network with 30 non-zero neurons out of 100 total gives good accur
 
 | non-zero neurons             | 30    |
 | ---------------------------- | ----- |
-| 3bit accuracy brevitas       | 94.4% |
-| 3bit accuracy in Concrete-ML | 91.8% |
+| 3bit accuracy brevitas       | 95.4% |
+| 3bit accuracy in Concrete-ML | 92.4% |
 | accumulator size             | 7     |
 
 {% hint style="info" %}
@@ -233,21 +245,3 @@ The torch QAT training loop is the same as the standard floating point training 
 {% hint style="info" %}
 Quantization Aware Training is somewhat slower thant normal training. QAT introduces quantization during both the forward and backward passes. The quantization process is inefficient on GPUs as its computational intensity is low with respect to data transfer time.
 {% endhint %}
-
-## Additional examples
-
-The following table summarizes the examples in this section.
-
-| Model                  | Dataset                                                                                       | Metric   | Clear | Quantized | FHE   |
-| ---------------------- | --------------------------------------------------------------------------------------------- | -------- | ----- | --------- | ----- |
-| Fully Connected NN     | [Iris](https://www.openml.org/d/61)                                                           | accuracy | 0.947 | 0.895     | 0.895 |
-| QAT Fully Connected NN | Synthetic (Checkerboard)                                                                      | accuracy | 0.95  | 0.92      | 0.92  |
-| Convolutional NN       | [Digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html) | accuracy | 0.90  | \*\*      | \*\*  |
-
-In this table, \*\* means that the accuracy is actually random-like, because the quantization we need to set to fullfil bitwidth constraints is too strong.
-
-### Examples
-
-- [FullyConnectedNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
-- [QuantizationAwareTraining.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb)
-- [ConvolutionalNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)

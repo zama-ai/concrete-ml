@@ -60,6 +60,7 @@ exclude_patterns = [
     "SUMMARY.md",
     "developer-guide/api.md",
     "advanced_examples/*.ipynb",
+    "developer-guide/api/*.md"
 ]
 
 # Group member variables and methods separately (not alphabetically)

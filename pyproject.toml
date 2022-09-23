@@ -91,6 +91,7 @@ requests = "^2.28.0"
 types-requests = "^2.28.0"
 transformers = "^4.20.1"
 pdoc3 = "^0.10.0"
+lazydocs = "^0.4.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

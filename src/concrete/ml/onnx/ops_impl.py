@@ -119,9 +119,11 @@ def numpy_where_body(
     Returns:
         numpy.ndarray: numpy.where(c, t, f)
 
+    """
+
     # FIXME: can it be improved with a native numpy.where in Concrete Numpy?
     # https://github.com/zama-ai/concrete-numpy-internal/issues/1429
-    """
+
     return c * t + (1.0 - c) * f
 
 

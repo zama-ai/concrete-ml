@@ -1,4 +1,15 @@
-# Compilation
+# Compilation and Simulation
+
+Compilation of a model produces machine-code that executes the model on encrypted data. In some cases,
+notably in the client/server setting, the compilation can be done by the server when loading the model
+for serving.
+
+As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation
+mode, using an execution mode named the _Virtual Library_. Since, by default, the cryptographic
+parameters are chosen such that the results obtained in FHE are the same as those on clear data, the
+_Virtual Library_ allows you to benchmark models quickly during development.
+
+## Compilation
 
 Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete-ML hides away most of the complexity of this step. The entire compilation process is done by Concrete-Numpy.
 
@@ -10,9 +21,75 @@ From the perspective of the Concrete-ML user, the compilation process performed 
 
 Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows to deploy the encrypted circuit to a server and to perform key generation, encryption and decryption on the client side.
 
+## Simulation with the Virtual Library
+
+The first step in the list above takes a python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph.
+
+The result of this single step of the compilation pipeline allows to:
+
+- execute the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but is much faster than executing in FHE. This mode is useful for debugging. This is called the Virtual Library.
+- verify the maximum bit-width of the op-graph, to determine FHE compatibility, without actually compiling the circuit to machine code.
+
+Enabling _Virtual Library_ execution requires the definition of a compilation `Configuration`. As simulation
+does not execute in FHE, this can be considered _unsafe_:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+    COMPIL_CONFIG_VL = Configuration(
+        dump_artifacts_on_unexpected_failures=False,
+        enable_unsafe_features=True,  # This is for our tests in Virtual Library only
+    )
+```
+
+Next, the following code use the simulation mode for built-in models:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+    clf.compile(
+        X_train,
+        use_virtual_lib=True,
+        configuration=COMPIL_CONFIG_VL,
+    )
+```
+
+And finally, for custom models, it is possible to enable simulation using the following syntax:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+    quantized_numpy_module = compile_torch_model(
+        torch_model,  # our model
+        X_train,  # a representative inputset to be used for both quantization and compilation
+        n_bits={"net_inputs": 5, "op_inputs": 3, "op_weights": 3, "net_outputs": 5},
+        import_qat=is_qat,  # signal to the conversion function whether the network is QAT
+        use_virtual_lib=True,
+        configuration=COMPIL_CONFIG_VL,
+    )
+```
+
+Obtaining the simulated predictions of the models using the _Virtual Library_ has the same syntax as
+execution in FHE:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+    Z = clf.predict_proba(X, execute_in_fhe=True)
+```
+
+Moreover, the maximum accumulator bit-width is determined as follows:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+    bitwidth = clf.quantized_module_.forward_fhe.graph.maximum_integer_bit_width()
+```
+
 ## A simple Concrete-Numpy example
 
-Here is an toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts, we recommend using the [built-in models](../built-in-models/linear.md) which provide linear regression out of the box.
+While Concrete-ML hides away all the Concrete-Numpy code that performs model inference, it can
+be useful to understand how Concrete-Numpy code works. Here is an toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts, we recommend using the [built-in models](../built-in-models/linear.md) which provide linear regression out of the box.
 
 ```python
 import numpy
@@ -54,22 +131,3 @@ print(circuit)
 # %4 = add(%3, %0)           # EncryptedScalar<uint4>
 # return %4
 ```
-
-## Concrete-Numpy op-graphs and the Virtual Library
-
-The first step in the list above takes a python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph. In this step all the floating point subgraphs in the op-graph are fused and converted to Table Lookup operations.
-
-This enables to:
-
-- execute the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but is much faster than executing in FHE. This mode is useful for debugging. This is called the Virtual Library.
-- verify the maximum bitwidth of the op-graph, to determine FHE compatibility, without actually compiling the circuit to machine code. This feature is available through Concrete-Numpy and is part of the overall [FHE Assistant](../deep-learning/fhe_assistant.md).
-
-## Bitwidth compatibility verification
-
-The second step of compilation checks that the maximum bitwidth encountered anywhere in the circuit is valid.
-
-If the check fails for a machine learning model, the user will need to tweak the available [quantization](quantization.md), [pruning](pruning.md) and model hyperparameters in order to obtain FHE compatibility. The Virtual Library is useful in this setting, as described in the [debugging models section.](../deep-learning/fhe_assistant.md)
-
-## Compilation to machine code
-
-Finally, the FHE compatible op-graph and the necessary cryptographic primitives from **Concrete-Framework** are converted to machine code.

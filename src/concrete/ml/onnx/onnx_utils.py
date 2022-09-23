@@ -1,3 +1,7 @@
+"""Utils to interpret an ONNX model with numpy."""
+# Utils to interpret an ONNX model with numpy.
+
+
 # Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +25,7 @@
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
 
-"""Utils to interpret an ONNX model with numpy."""
+
 from typing import Any, Callable, Dict, Tuple
 
 import numpy

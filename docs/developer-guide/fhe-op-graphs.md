@@ -9,7 +9,7 @@ Concrete, the underlying implementation of TFHE that powers Concrete-ML, enables
 - **arithmetic operations**: \_\_ addition of two encrypted values and multiplication of encrypted values with clear scalars. These are used for example in dot-products, matrix multiplication (linear layers), and convolution
 - **table lookup operations (TLU)**: using an encrypted value as an index, return the value of a lookup table at that index. This is implemented using Programmable Bootstrapping (PBS). This operation is used to perform any non-linear computation such as activation functions, quantization, normalization
 
-Since machine learning models use floating point inputs and weights, they first need to be converted to integer using [quantization](quantization.md).
+Since machine learning models use floating point inputs and weights, they first need to be converted to integer using [quantization](../advanced-topics/quantization.md).
 
 Alternatively, it is possible to use a table lookup to avoid the quantization of the entire graph, by converting floating-point ONNX subgraphs into lambdas, and computing their corresponding lookup tables to be evaluated directly in FHE. This operator fusion technique only requires the input and output of the lambdas to be integers.
 

@@ -11,6 +11,7 @@
 
     getting-started/pip_installing.md
     getting-started/concepts.md
+    getting-started/cloud.md
 
 .. toctree::
     :maxdepth: 0
@@ -30,6 +31,7 @@
 
     deep-learning/torch_support.md
     deep-learning/onnx_support.md
+    deep-learning/examples.md
     deep-learning/fhe_friendly_models.md
     deep-learning/fhe_assistant.md
 
@@ -40,24 +42,32 @@
 
     advanced-topics/quantization.md
     advanced-topics/pruning.md
-    advanced-topics/client_server.md
     advanced-topics/compilation.md
-    advanced-topics/onnx_pipeline.md
-    advanced-topics/fhe-op-graphs.md
-    advanced-topics/hummingbird_usage.md
-    advanced-topics/skorch_usage.md
+    advanced-topics/client_server.md
     advanced-topics/advanced_features.md
 
 .. toctree::
     :maxdepth: 0
     :hidden:
-    :caption: Developer Guide
+    :caption: Developer - Workflow
 
+    developer-guide/workflow/README.md
     developer-guide/project_setup.md
     developer-guide/docker_setup.md
     developer-guide/documenting.md
     developer-guide/debug_support_submit_issues.md
     developer-guide/contributing.md
+
+.. toctree::
+    :maxdepth: 0
+    :hidden:
+    :caption: Developer - Inner Workings
+
+    developer-guide/inner-workings/README.md
+    developer-guide/onnx_pipeline.md
+    developer-guide/quantization_internal.md
+    developer-guide/fhe-op-graphs.md
+    developer-guide/external_libraries.md
 
 .. toctree::
     :maxdepth: 0
