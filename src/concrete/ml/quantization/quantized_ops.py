@@ -1179,7 +1179,7 @@ class QuantizedReduceSum(QuantizedOp):
         # Retrieve and set the ONNX parameters
         self.keepdims = attrs.get("keepdims", 1)
         self.noop_with_empty_axes = attrs.get("noop_with_empty_axes", 0)
-
+        self.quantizers_: list = []
         assert_true(
             self.keepdims == 1,
             "ReduceSum currently only keeps the inputs' dimensions for its outputs.",
@@ -1321,20 +1321,32 @@ class QuantizedReduceSum(QuantizedOp):
         # represent the same weights, making the notion of "average compensation" less viable. On
         # the other hand, we empirically observed that the rint operator leads to more accurate
         # results when used in practice with linear models. We therefore decided to keep it for now.
-
-        for depth in range(total_depth, 0, -1):
+        for i, depth in enumerate(range(total_depth, 0, -1)):
             step = 2**depth
             sum_arr = input_qarray[:, 0:step:2] + input_qarray[:, 1 : step + 1 : 2]
-            input_qarray = numpy.rint(sum_arr / 2).astype(numpy.int64)
+            if len(self.quantizers_) < total_depth:
+                # Compute calibration constants
+                quantizer_ = QuantizedArray(n_bits=self.n_bits, values=sum_arr.astype(float))
+                self.quantizers_.append(quantizer_)
 
-        # Dequantize the values to float
-        quantizer = prepared_inputs[0].quantizer
-        scaled_msbs = quantizer.scale * (input_qarray + -(quantizer.zero_point))
+            # Apply calibration
+            input_qarray = self.quantizers_[i].update_values(sum_arr)
 
         # Approximate the total sum. We need to keep the same range between the dequantized
         # values and the calibrated float computations
         # Note: 2**total_depth = n_values
-        final_sum = scaled_msbs * n_values
+        for depth, quantizer_ in enumerate(self.quantizers_[::-1]):
+            input_qarray = quantizer_.quantizer.scale * (
+                input_qarray - quantizer_.quantizer.zero_point * 2**depth
+            )
+
+        # Dequantize the values to float
+        input_quantizer = prepared_inputs[0].quantizer
+        scaled_msbs = input_quantizer.scale * (
+            input_qarray + -(2**total_depth * input_quantizer.zero_point)
+        )
+
+        final_sum = scaled_msbs
 
         output_qarray = QuantizedArray(
             self.n_bits,
