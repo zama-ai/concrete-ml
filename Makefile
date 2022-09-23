@@ -611,10 +611,8 @@ check_links:
 	@# Mainly for web links and _api_doc (sphinx)
 	poetry run python -m linkcheckmd docs -local
 
-	@# FIX #1810: before release, make this back, when
-	@#  https://github.com/zama-ai/concrete-ml-showcase-internal
-	@#  https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe
-	@# are public
+	@# FIXME: #1810
+	@# Make it back when zama-fhe/client_sentiment_fhe is public
 	@# poetry run python -m linkcheckmd README.md
 
 	poetry run python ./script/make_utils/local_link_check.py
@@ -628,6 +626,7 @@ check_links:
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
+	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe: currently private
 
 	@# !! GITBOOK Note !!
 	@# we ignore links to .md files -> in Gitbook .md files are linked between themselves
@@ -642,6 +641,7 @@ check_links:
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
+		--ignore-url=https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe \
 		--ignore-url='concrete[A-z0-9_\.]+\.md'
 
 .PHONY: actionlint # Linter for our github actions

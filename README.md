@@ -119,11 +119,9 @@ We explain this in more detail in the documentation, and show how we have tried 
 
 ## Online demos and tutorials.
 
-- [sentiment-analysis-with-transformers](https://github.com/zama-ai/concrete-ml-showcase-internal/tree/main/sentiment-analysis-with-transformers): an Hugging Face application, which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available [here](https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe).
- - [titanic](https://github.com/zama-ai/concrete-ml-showcase-internal/tree/main/titanic): a notebook, where we give a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Done with XGBoost from Concrete-ML. It comes as a companion of our notebook on [Kaggle](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
-- [MNIST](https://github.com/zama-ai/concrete-ml-showcase-internal/tree/main/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of our package) and its corresponding use in Concrete-ML.
+- [MNIST](use_case_examples/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of our package) and its corresponding use in Concrete-ML.
 
-More generally, [Concrete-ML Showcase](https://github.com/zama-ai/concrete-ml-showcase-internal) is a curated list of awesome projects using Concrete-ML that we are currently gathering, feel free to add yours!
+More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 
 ## Need support?
 

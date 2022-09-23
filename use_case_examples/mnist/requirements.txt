@@ -1,0 +1,8 @@
+concrete-ml==0.3.0
+jupyter==1.0.0
+brevitas==0.7.1
+torchvision==0.13.1
+torch==1.12.1
+torchsummary==1.5.1
+onnx==1.12.0
+onnxoptimizer==0.3.1
