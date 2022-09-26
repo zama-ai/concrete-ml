@@ -1,10 +1,10 @@
 """Test tree regressor"""
 import warnings
+from typing import Any, List
 
 import numpy
 import pytest
 from sklearn.exceptions import ConvergenceWarning
-from typing import Any, List
 
 from concrete.ml.sklearn import DecisionTreeRegressor, RandomForestRegressor, XGBRegressor
 
@@ -84,12 +84,22 @@ def test_model_compile_run_fhe(
 
     # Here we fix n_bits = 2 to make sure the quantized model does not overflow during the
     # compilation.
-    model = model(n_bits=2)
+    model_instantiated = model(n_bits=2)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model, _ = model.fit_benchmark(x, y)
+
+        if model is XGBRegressor and "n_targets" in parameters and parameters["n_targets"] > 1:
+            # XGBRegressor doesn't work with n_targets > 1
+            with pytest.raises(AssertionError) as excinfo:
+                # Random state should be taken from the method parameter
+                model_instantiated.fit_benchmark(x, y)
+
+            assert "n_targets = 1 is the only supported case" in str(excinfo.value)
+            return
+
+        model, _ = model_instantiated.fit_benchmark(x, y)
 
     y_pred = model.predict(x[:1])
 
@@ -123,14 +133,23 @@ def test_model_quantization(
 
     # Get the dataset
     x, y = load_data(**parameters)
-    model = model(n_bits=n_bits)
+    model_instantiated = model(n_bits=n_bits)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         params = {}
-        # Random state should be taken from the method parameter
-        model, sklearn_model = model.fit_benchmark(x, y, **params)
+
+        if model is XGBRegressor and "n_targets" in parameters and parameters["n_targets"] > 1:
+            # XGBRegressor doesn't work with n_targets > 1
+            with pytest.raises(AssertionError) as excinfo:
+                # Random state should be taken from the method parameter
+                model_instantiated.fit_benchmark(x, y, **params)
+
+            assert "n_targets = 1 is the only supported case" in str(excinfo.value)
+            return
+
+        model, sklearn_model = model_instantiated.fit_benchmark(x, y, **params)
 
     y_pred_sklearn = model.predict(x)
     y_pred_quantized = sklearn_model.predict(x)

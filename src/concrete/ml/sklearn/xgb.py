@@ -310,3 +310,28 @@ class XGBRegressor(BaseTreeRegressorMixin):
         assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
 
         return y_preds
+
+    def fit(self, X, y, **kwargs) -> Any:
+        """Fit the tree-based estimator.
+
+        Args:
+            X : training data
+                By default, you should be able to pass:
+                * numpy arrays
+                * torch tensors
+                * pandas DataFrame or Series
+            y (numpy.ndarray): The target data.
+            **kwargs: args for super().fit
+
+        Returns:
+            Any: The fitted model.
+        """
+
+        # HummingBird doesn't manage correctly n_targets > 1
+        assert_true(
+            len(y.shape) == 1 or y.shape[1] == 1, "n_targets = 1 is the only supported case"
+        )
+
+        # Call super's fit that will train the network
+        super().fit(X, y, **kwargs)
+        return self
