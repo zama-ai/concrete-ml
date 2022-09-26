@@ -2,7 +2,7 @@
 
 This section includes a complete example of converting a neural network to Quantization Aware Training.
 This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can
-find the demo of the final network in the  [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb).
+find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world dataset please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
 
 For a more formal description of the usage of Brevitas to build FHE compatible neural networks,
 please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
@@ -70,7 +70,7 @@ However, in a typical setting, the weights will not all have the maximum or mini
 
 This can be leveraged to train network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../advanced-topics/pruning.md), where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) out of the box.
 
-The following code shows how to use pruning in our previous example:
+The following code shows how to use pruning in the previous example:
 
 <!--pytest-codeblocks:cont-->
 

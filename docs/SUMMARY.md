@@ -13,14 +13,15 @@
 - [Linear Models](built-in-models/linear.md)
 - [Tree-based Models](built-in-models/tree.md)
 - [Neural Networks](built-in-models/neural-networks.md)
-- [Examples](built-in-models/ml_examples.md)
+- [Pandas](built-in-models/pandas.md)
+- [Built-in Model Examples](built-in-models/ml_examples.md)
 
 ## Deep Learning
 
 - [Using Torch](deep-learning/torch_support.md)
 - [Using ONNX](deep-learning/onnx_support.md)
 - [Step-by-step guide](deep-learning/fhe_friendly_models.md)
-- [Examples](deep-learning/examples.md)
+- [Deep Learning Examples](deep-learning/examples.md)
 - [Debugging Models](deep-learning/fhe_assistant.md)
 
 ## Advanced topics

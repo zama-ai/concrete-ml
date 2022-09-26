@@ -67,6 +67,14 @@ Finally, in Concrete-ML there is currently no support for pre-processing model i
 
 All of these issues are currently being addressed and significant improvements are expected to be released in the coming months.
 
+## Online demos and tutorials.
+
+Various tutorials are proposed for the [built-in models](built-in-models/ml_examples.md) and for [deep learning](deep-learning/examples.md). In addition, we also list standalone use-cases:
+
+- [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/README.md): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
+
+More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
+
 ## Additional resources
 
 - [Concrete-ML community support](https://community.zama.ai/c/concrete-ml/8)

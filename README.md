@@ -29,7 +29,7 @@
   </a>
 </p>
 
-**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Particular care was given to the simplicity of our Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, our APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by our users.
+**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Particular care was given to the simplicity of the Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, the APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by the users.
 
 ## Main features.
 
@@ -114,11 +114,13 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 #  Comparison: 100% similar
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar the APIs are to their non-FHE counterparts.
 
 ## Online demos and tutorials.
 
-- [MNIST](use_case_examples/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of our package) and its corresponding use in Concrete-ML.
+Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, we also list standalone use-cases:
+
+- [MNIST](use_case_examples/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 

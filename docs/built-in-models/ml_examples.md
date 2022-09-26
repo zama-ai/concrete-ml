@@ -1,4 +1,4 @@
-# Examples
+# Built-in Model Examples
 
 The following table summarizes the various examples in this section, along with their accuracies.
 
