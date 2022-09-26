@@ -22,12 +22,14 @@ class TinyCNN(nn.Module):
     should help keep the accumulator bit width low.
     """
 
-    def __init__(self, n_classes) -> None:
+    def __init__(self, n_classes, n_bits, n_active) -> None:
         """Construct the CNN with a configurable number of classes."""
         super().__init__()
 
-        a_bits = 3
-        w_bits = 3
+        a_bits = n_bits
+        w_bits = n_bits
+
+        self.n_active = n_active
 
         # This network has a total complexity of 1216 MAC
         self.quant1 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
@@ -46,7 +48,6 @@ class TinyCNN(nn.Module):
         """Enables or removes pruning."""
 
         # Maximum number of active neurons (i.e. corresponding weight != 0)
-        n_active = 10
 
         # Go through all the convolution layers
         for layer in (self.conv1, self.conv2, self.conv3):
@@ -58,12 +59,12 @@ class TinyCNN(nn.Module):
 
             # The number of input neurons (fan-in) is the product of
             # the kernel width x height x inChannels.
-            if layer_size[1] > n_active:
+            if layer_size[1] > self.n_active:
                 if enable:
                     # This will create a forward hook to create a mask tensor that is multiplied
                     # with the weights during forward. The mask will contain 0s or 1s
                     prune.l1_unstructured(
-                        layer, "weight", (layer_size[1] - n_active) * layer_size[0]
+                        layer, "weight", (layer_size[1] - self.n_active) * layer_size[0]
                     )
                 else:
                     # When disabling pruning, the mask is multiplied with the weights
@@ -121,7 +122,7 @@ class TinyCNN(nn.Module):
 
 
 @pytest.mark.parametrize("qat_bits", [3, 7])
-def test_brevitas_tinymnist_cnn(qat_bits):
+def test_brevitas_tinymnist_cnn(qat_bits):  # pylint: disable=too-many-statements
     """Train, execute and test a QAT CNN on a small version of MNIST."""
 
     # And some helpers for visualization.
@@ -164,10 +165,11 @@ def test_brevitas_tinymnist_cnn(qat_bits):
 
     while not trained_ok:
         # Create the tiny CNN module with 10 output classes
-        net = TinyCNN(10)
+        net = TinyCNN(10, qat_bits, 5 if qat_bits <= 3 else 20)
 
         # Train a single epoch to have a fast test, accuracy should still be the same VL vs torch
-        n_epochs = 1
+        # But train 3 epochs for the VL test to check that training works well
+        n_epochs = 1 if qat_bits <= 3 else 3
 
         # Train the network with Adam, output the test set accuracy every epoch
         optimizer = torch.optim.Adam(net.parameters())
@@ -252,12 +254,14 @@ def test_brevitas_tinymnist_cnn(qat_bits):
         q_module_vl,
         test_dataloader,
         use_fhe=False,
-        use_vl=False,
+        use_vl=True,
     )
 
-    # Accept, at most, 5 pct points accuracy difference. This can be due to the 7b input
-    # output quantization. VL accuracy can be larger than fp32 accuracy though.
-    assert vl_acc - torch_acc >= -0.05
-
-    # Make sure this network can compile to FHE if qat_bits is less than 3
-    assert qat_bits > 3 or accum_bits <= 8
+    if qat_bits <= 3:
+        # Make sure this network can compile to FHE if qat_bits is less than 3
+        assert accum_bits <= 8
+    else:
+        # Accept, at most, 5 pct points accuracy difference. This can be due to the 7b input
+        # output quantization. VL accuracy can be larger than fp32 accuracy though.
+        assert vl_acc - torch_acc >= -0.05
+        assert vl_acc > 0.2
