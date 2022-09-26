@@ -15,11 +15,7 @@ WHAT_TO_DO="open"
 
 # Create a list of notebooks with long execution times in order not to consider them when refreshing
 # all notebooks at the same time.
-LONG_EXECUTION_TIMES_NOTEBOOKS=(
-    docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb
-    docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb
-    docs/advanced_examples/ClassifierComparison.ipynb
-)
+LONG_EXECUTION_TIMES_NOTEBOOKS=()
 
 while [ -n "$1" ]
 do
