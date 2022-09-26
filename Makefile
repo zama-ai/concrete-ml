@@ -200,7 +200,7 @@ pytest_one_single_cpu:
 pytest_macOS_for_GitHub:
 	poetry run pytest --durations=10 -svv \
 	--capture=tee-sys \
-	-n $$(./script/make_utils/ncpus.sh) \
+	-n 4 \
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \

@@ -104,7 +104,7 @@ jobs:
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
             LINUX_PYTHON_VERSIONS="3.8 3.9"
-            MACOS_PYTHON_VERSIONS="3.8 3.9"
+            MACOS_PYTHON_VERSIONS="3.9"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
             LINUX_PYTHON_VERSIONS="3.8 3.9"
             MACOS_PYTHON_VERSIONS=""
