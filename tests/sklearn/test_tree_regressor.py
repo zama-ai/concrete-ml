@@ -4,8 +4,9 @@ import warnings
 import numpy
 import pytest
 from sklearn.exceptions import ConvergenceWarning
+from typing import Any, List
 
-from concrete.ml.sklearn import DecisionTreeRegressor
+from concrete.ml.sklearn import DecisionTreeRegressor, RandomForestRegressor, XGBRegressor
 
 
 # Get the datasets. The data generation is seeded in load_data.
@@ -57,8 +58,15 @@ def get_datasets_regression(model):
     return regression_datasets
 
 
-multiple_models_datasets = get_datasets_regression(DecisionTreeRegressor)
-models_datasets = [multiple_models_datasets[0]]
+regressor_model_classes = [DecisionTreeRegressor, RandomForestRegressor, XGBRegressor]
+
+multiple_models_datasets: List[Any] = []
+models_datasets: List[Any] = []
+
+for regression_model in regressor_model_classes:
+    datasets_regression = get_datasets_regression(regression_model)
+    multiple_models_datasets += datasets_regression
+    models_datasets.append(datasets_regression[0])
 
 
 @pytest.mark.parametrize("model, parameters", multiple_models_datasets)
