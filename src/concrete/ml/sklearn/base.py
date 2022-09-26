@@ -30,7 +30,11 @@ from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
-from ..onnx.onnx_model_manipulations import simplify_onnx_model
+from ..onnx.onnx_model_manipulations import clean_graph_after_node, remove_node_types
+
+# The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
+# here in order to avoid duplicating them.
+from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedArray
 from ..torch import NumpyModule
 from .protocols import Quantizer
@@ -175,23 +179,27 @@ class QuantizedTorchEstimatorMixin:
             numpy.ndarray: the post-processed output
         """
         y_preds = self.quantized_module_.dequantize_output(y_preds)
+
         if self.post_processing_params["post_processing_function_name"] == "softmax":
             # Get dim argument
             dim = self.post_processing_params["post_processing_function_keywords"]["dim"]
 
             # Apply softmax to the output
-            y_preds = numpy.exp(y_preds)
-            y_preds /= y_preds.sum(axis=dim, keepdims=True)
+            y_preds = numpy_softmax(y_preds, axis=dim)[0]
+
         elif "sigmoid" in self.post_processing_params["post_processing_function_name"]:
             # Transform in a 2d array where [p, 1-p] is the output
             y_preds = numpy.concatenate((y_preds, 1 - y_preds), axis=1)  # pragma: no cover
+
         elif self.post_processing_params["post_processing_function_name"] == "_identity":
             pass
+
         else:
             raise ValueError(
                 "Unknown post-processing function "
                 f"{self.post_processing_params['post_processing_function_name']}"
             )  # pragma: no cover
+
         # To match torch softmax we need to cast to float32
         return y_preds.astype(numpy.float32)
 
@@ -1061,7 +1069,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             self.sklearn_model.n_jobs = None
 
         # Convert to onnx
-        onnx_model = hb_convert(
+        self._onnx_model_ = hb_convert(
             self.sklearn_model,
             backend="onnx",
             test_input=X,
@@ -1069,12 +1077,10 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         ).model
 
         # Remove Cast nodes
-        onnx_model = self.clean_graph(onnx_model)
+        self.clean_graph()
 
         # Create NumpyModule from onnx model
-        numpy_module = NumpyModule(onnx_model)
-
-        self._onnx_model_ = onnx_model
+        numpy_module = NumpyModule(self._onnx_model_)
 
         # Apply post-training quantization
         post_training = PostTrainingAffineQuantization(
@@ -1086,46 +1092,13 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         return self
 
-    # clean_graph is used by inheritance and the calling self is needed.
-    # pylint does not see it and complains that clean_graph should use @staticmethod
-    # thus we need to ignore the warning.
-    # pylint: disable=no-self-use
-
-    def clean_graph(self, onnx_model: onnx.ModelProto):
+    def clean_graph(self):
         """Clean the graph of the onnx model.
 
-        This will remove the Cast node in the onnx.graph since they
-        have no use in the quantized/FHE model.
-
-        Args:
-            onnx_model (onnx.ModelProto): the onnx model
-
-        Returns:
-            onnx.ModelProto: the cleaned onnx model
+        This will remove the Cast node in the model's onnx.graph since they have no use in
+        quantized or FHE models.
         """
-        op_type_to_remove = {"Cast", "Softmax", "ArgMax"}
-
-        # Remove the input and output nodes
-        for node_index, node in enumerate(onnx_model.graph.node):
-            if node.op_type in op_type_to_remove:
-                if node.op_type == "Cast":
-                    assert_true(len(node.attribute) == 1, "Cast node has more than one attribute")
-                    node_attribute = node.attribute[0]
-                    assert_true(
-                        (node_attribute.name == "to") & (node_attribute.i == onnx.TensorProto.FLOAT)
-                    )
-                new_node = onnx.helper.make_node(
-                    "Identity",
-                    inputs=[str(node.input[0])],
-                    outputs=node.output,
-                )
-                # Update current node with new_node
-                onnx_model.graph.node[node_index].CopyFrom(new_node)
-
-        simplify_onnx_model(onnx_model)
-        return onnx_model
-
-    # pylint: enable=no-self-use
+        remove_node_types(onnx_model=self._onnx_model_, op_types_to_remove=["Cast"])
 
     def fit_benchmark(
         self,
@@ -1269,3 +1242,95 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         )
 
         return circuit
+
+
+class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
+    """A Mixin class for sklearn linear classifiers with FHE."""
+
+    def clean_graph(self):
+        """Clean the graph of the onnx model.
+
+        Any operators following gemm, including the sigmoid, softmax and argmax operators, are
+        removed from the graph. They will be executed in clear in the post-processing method.
+        """
+        clean_graph_after_node(self._onnx_model_, node_name="Gemm_2")
+        super().clean_graph()
+
+    def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict confidence scores for samples.
+
+        Args:
+            X (numpy.ndarray): Samples to predict.
+            execute_in_fhe (bool): If True, the inference will be executed in FHE. Default to False.
+
+        Returns:
+            numpy.ndarray: Confidence scores for samples.
+        """
+        y_preds = super().predict(X, execute_in_fhe=execute_in_fhe)
+        return y_preds
+
+    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict class probabilities for samples.
+
+        Args:
+            X (numpy.ndarray): Samples to predict.
+            execute_in_fhe (bool): If True, the inference will be executed in FHE. Default to False.
+
+        Returns:
+            numpy.ndarray: Class probabilities for samples.
+        """
+        y_preds = self.decision_function(X, execute_in_fhe=execute_in_fhe)
+        y_preds = self.post_processing(y_preds, already_dequantized=True)
+        return y_preds
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict on user data.
+
+        Predict on user data using either the quantized clear model, implemented with tensors, or,
+        if execute_in_fhe is set, using the compiled FHE circuit.
+
+        Args:
+            X (numpy.ndarray): Samples to predict.
+            execute_in_fhe (bool): If True, the inference will be executed in FHE. Default to False.
+
+        Returns:
+            numpy.ndarray: The prediction as ordinals.
+        """
+        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+        y_preds = numpy.argmax(y_preds, axis=1)
+        return y_preds
+
+    def post_processing(self, y_preds: numpy.ndarray, already_dequantized: bool = False):
+        """Post-processing the predictions.
+
+        This step may include a dequantization of the inputs if not done previously, in particular
+        within the client-server workflow.
+
+        Args:
+            y_preds (numpy.ndarray): The predictions to post-process.
+            already_dequantized (bool): Wether the inputs were already dequantized or not. Default
+                to False.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
+        """
+        # If y_preds were already dequantized previously, there is no need to do so once again.
+        # This step is necessary for the client-server workflow as the post_processing method
+        # is directly called on the quantized outputs, contrary to the base class' predict method.
+        if not already_dequantized:
+            y_preds = super().post_processing(y_preds)
+
+        # If the predictions only has one dimension (i.e. binary classification problem), apply the
+        # sigmoid operator
+        if y_preds.shape[1] == 1:
+            y_preds = numpy_sigmoid(y_preds)[0]
+
+            # Transform in a 2d array where [1-p, p] is the output as scikit-learn only outputs 1
+            # value when considering 2 classes
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+
+        # Else, apply the softmax operator
+        else:
+            y_preds = numpy_softmax(y_preds)[0]
+
+        return y_preds

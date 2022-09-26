@@ -326,6 +326,29 @@ def numpy_sigmoid(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     return (1.0 / (1.0 + numpy.exp(-x)),)
 
 
+def numpy_softmax(x, axis=1, keepdims=True):
+    """Compute softmax in numpy according to ONNX spec.
+
+    Softmax is currently not supported in FHE.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#softmax-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        axis (None, int, tuple of ints): Axis or axes along which a softmax's sum is performed. If
+            None, it will sum all of the elements of the input array.  If axis is negative it counts
+            from the last to the first axis. Default to 1.
+        keepdims (bool): If True, the axes which are reduced along the sum are left in the result as
+            dimensions with size one. Default to True.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    x = numpy.exp(x)
+    x /= numpy.sum(x, axis=axis, keepdims=keepdims)
+    return (x,)
+
+
 def numpy_cos(x: numpy.ndarray, /) -> Tuple[numpy.ndarray]:
     """Compute cos in numpy according to ONNX spec.
 

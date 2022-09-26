@@ -12,10 +12,9 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.utils import get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import (
-    cut_onnx_graph_after_node_name,
+    clean_graph_after_node,
     keep_following_outputs_discard_others,
-    replace_unnecessary_nodes_by_identity,
-    simplify_onnx_model,
+    remove_node_types,
 )
 from ..quantization import QuantizedArray
 from ..quantization.quantizers import UniformQuantizer
@@ -113,26 +112,30 @@ def tree_to_numpy(
         on_error_msg=f"{len(onnx_model.graph.output)} != 2",
     )
 
-    output_to_follow = "variable"
+    # If the framework used is XGBoost, remove all the ONNX graph's nodes that follow the last
+    # MatMul operator
     if framework == "xgboost":
         # Find Reshape node after last MatMul node
         # (last MatMul node takes an input with "weight_3" in the name)
         node_cut_id = ""
         for node in onnx_model.graph.node:
             if node_cut_id != "" and node.op_type == "Reshape" and node_cut_id in node.input:
-                cut_node_name = node.name
+                node_name_to_cut = node.name
                 break
 
             if len(node.input) > 0 and "weight_3" in node.input[0] and node.op_type == "MatMul":
                 node_cut_id = node.output[0]
 
-        output_to_follow = cut_onnx_graph_after_node_name(onnx_model, cut_node_name)
-    keep_following_outputs_discard_others(onnx_model, (output_to_follow,))
+        clean_graph_after_node(onnx_model=onnx_model, node_name=node_name_to_cut)
+
+    # Else, keep track of the last output
+    else:
+        keep_following_outputs_discard_others(onnx_model, ("variable",))
 
     # TODO remove Transpose from the list when #931 is done
-    # TODO remove Gather from the list when #328 is done
+    # TODO remove Gather from the list when #345 is done
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast", "Gather"]
-    replace_unnecessary_nodes_by_identity(onnx_model, op_type_to_remove)
+    remove_node_types(onnx_model, op_type_to_remove)
 
     # Modify onnx graph to fit in FHE
     for i, initializer in enumerate(onnx_model.graph.initializer):
@@ -192,8 +195,6 @@ def tree_to_numpy(
                 init_tensor = numpy.floor(init_tensor)
         new_initializer = numpy_helper.from_array(init_tensor.astype(int), initializer.name)
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
-
-    simplify_onnx_model(onnx_model)
 
     _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
 

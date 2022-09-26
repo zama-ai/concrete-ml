@@ -1,7 +1,7 @@
 """Some code to manipulate models."""
 
 from copy import deepcopy
-from typing import Iterable
+from typing import Iterable, List
 
 import onnx
 
@@ -110,12 +110,12 @@ def keep_following_outputs_discard_others(
     assert_true(set(output.name for output in graph_outputs) == outputs_to_keep_set)
 
 
-def replace_unnecessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_to_replace: list):
-    """Replace unnecessary nodes by Identity nodes.
+def remove_node_types(onnx_model: onnx.ModelProto, op_types_to_remove: List[str]):
+    """Remove unnecessary nodes from the ONNX graph.
 
     Args:
-        onnx_model (onnx.ModelProto): the ONNX model to modify.
-        op_type_to_replace (list): the op_type of the nodes to be replaced by Identity nodes.
+        onnx_model (onnx.ModelProto): The ONNX model to modify.
+        op_types_to_remove (List[str]): The node types to remove from the graph.
 
     Raises:
         ValueError: Wrong replacement by an Identity node.
@@ -128,12 +128,14 @@ def replace_unnecessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_t
     for initializer in onnx_model.graph.initializer:
         op_type_inputs[initializer.name] = "Constant"
 
-    # Replace not needed ops by Identity
+    # Replace the nodes to remove by Identity nodes
     for node_index, node in enumerate(onnx_model.graph.node):
         # Save op_type for each node
         for output in node.output:
             op_type_inputs[output] = node.op_type
-        if node.op_type in op_type_to_replace:
+
+        # If the current node type needs to be removed
+        if node.op_type in op_types_to_remove:
 
             # Find the non-constant input
             non_constant_input = None
@@ -147,76 +149,53 @@ def replace_unnecessary_nodes_by_identity(onnx_model: onnx.ModelProto, op_type_t
                 raise ValueError(
                     f"Trying to apply identity over a constant input." f"Node: {node.op_type}"
                 )  # pragma: no cover
-            # Create a Identity node
+
+            # Create an Identity node
             new_node = onnx.helper.make_node(
                 "Identity",
                 inputs=[str(non_constant_input)],
                 outputs=node.output,
             )
-            # Update current node with new_node
+
+            # Update the current node with the new Identity node
             onnx_model.graph.node[node_index].CopyFrom(new_node)
 
-
-def cut_onnx_graph_after_node_name(onnx_model: onnx.ModelProto, node_name: str) -> str:
-    """Cut the graph after the node with the given name.
-
-    Args:
-        onnx_model (onnx.ModelProto): the ONNX model to modify.
-        node_name (str): the name of the node after which the graph will be cut.
-            (node_name is included in the new graph)
-
-    Returns:
-        str: the name of the output to keep
-    """
-    nodes_to_remove = []
-    cut_node_reached = False
-    for node in onnx_model.graph.node:
-        if cut_node_reached:
-            nodes_to_remove.append(node)
-        if node.name == node_name:
-            cut_node_reached = True
-            # Create output node
-            onnx_model.graph.output[0].CopyFrom(
-                onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
-            )
-            output_to_follow = onnx_model.graph.output[0].name
-
-    # Remove nodes
-    for node in nodes_to_remove:
-        onnx_model.graph.node.remove(node)
-
-    return output_to_follow
+    # Remove Constant and Identity nodes from the graph
+    simplify_onnx_model(onnx_model)
 
 
-def clean_graph_after_sigmoid(onnx_model: onnx.ModelProto):
-    """Clean the graph of the onnx model, by removing nodes after the sigmoid.
+def clean_graph_after_node(onnx_model: onnx.ModelProto, node_name: str):
+    """Clean the graph of the onnx model by removing nodes after the given node name.
 
     Args:
-        onnx_model (onnx.ModelProto): the onnx model
-
-    Returns:
-        onnx.ModelProto: the cleaned onnx model
+        onnx_model (onnx.ModelProto): The onnx model.
+        node_name (str): The node's name whose following nodes will be removed.
     """
     nodes_to_remove = []
     output_to_follow = "variable"
-    # Find nodes to remove (after the sigmoid)
-    sigmoid_reached = False
-    for node in onnx_model.graph.node:
-        if sigmoid_reached:
-            nodes_to_remove.append(node)
-        if node.op_type == "Sigmoid":
-            sigmoid_reached = True
-            # Create output node
+    op_reached = False
 
+    # Find nodes to remove
+    for node in onnx_model.graph.node:
+
+        # If the operator has previously been reached, store the node
+        if op_reached:
+            nodes_to_remove.append(node)
+
+        # ELse, if the current node represents the operator, retrieve its output node
+        elif node.name == node_name:
+            op_reached = True
+
+            # Create output node
             onnx_model.graph.output[0].CopyFrom(
                 onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
             )
             output_to_follow = node.output[0]
 
-    if sigmoid_reached:
-        # Remove nodes
+    # Once the graph has been covered and a operator was found, remove its its following nodes
+    if op_reached:
         for node in nodes_to_remove:
             onnx_model.graph.node.remove(node)
 
+    # Keep the output node
     keep_following_outputs_discard_others(onnx_model, [output_to_follow])
-    return onnx_model

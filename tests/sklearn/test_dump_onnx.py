@@ -240,8 +240,7 @@ def test_dump(
 ) {
   %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, """
         """%_operators.0.coefficients, %_operators.0.intercepts)
-  %onnx::Sub_7 = Sigmoid(%onnx::Sigmoid_6)
-  return %onnx::Sub_7
+  return %onnx::Sigmoid_6
 }""",
         LinearSVC: """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -251,8 +250,7 @@ def test_dump(
 ) {
   %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, """
         """%_operators.0.coefficients, %_operators.0.intercepts)
-  %onnx::Sub_7 = Sigmoid(%onnx::Sigmoid_6)
-  return %onnx::Sub_7
+  return %onnx::Sigmoid_6
 }""",
         RandomForestClassifier: "Not tested",
         RandomForestRegressor: "Not tested",

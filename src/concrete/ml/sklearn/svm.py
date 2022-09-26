@@ -1,21 +1,16 @@
 """Implement Support Vector Machine."""
-import numpy
-import onnx
 import sklearn.linear_model
 
-from ..common.check_inputs import check_array_and_assert
-from ..onnx.onnx_model_manipulations import clean_graph_after_sigmoid
-from .base import SklearnLinearModelMixin
+from .base import SklearnLinearClassifierMixin, SklearnLinearModelMixin
 
 
-# pylint does not like sklearn uppercase namings
-# pylint: disable=invalid-name,too-many-instance-attributes,super-init-not-called
+# pylint: disable=invalid-name,too-many-instance-attributes
 class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """A Regression Support Vector Machine (SVM)."""
 
     sklearn_alg = sklearn.svm.LinearSVR
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits=2,
@@ -30,6 +25,7 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         random_state=None,
         max_iter=1000,
     ):
+        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.epsilon = epsilon
         self.tol = tol
         self.C = C
@@ -44,15 +40,13 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self._onnx = None
         super().__init__(n_bits=n_bits)
 
-    # pylint: enable=too-many-arguments
 
-
-class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
+class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
     """A Classification Support Vector Machine (SVM)."""
 
     sklearn_alg = sklearn.svm.LinearSVC
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits=2,
@@ -86,60 +80,5 @@ class LinearSVC(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
         self._onnx = None
         super().__init__(n_bits=n_bits)
 
-    # pylint: enable=too-many-arguments
 
-    def clean_graph(self, onnx_model: onnx.ModelProto):
-        """Clean the graph of the onnx model.
-
-        Args:
-            onnx_model (onnx.ModelProto): the onnx model
-
-        Returns:
-            onnx.ModelProto: the cleaned onnx model
-        """
-        onnx_model = clean_graph_after_sigmoid(onnx_model)
-        return super().clean_graph(onnx_model)
-
-    def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict confidence scores for samples.
-
-        Args:
-            X: samples to predict
-            execute_in_fhe: if True, the model will be executed in FHE mode
-
-        Returns:
-            numpy.ndarray: confidence scores for samples
-        """
-        y_preds = super().predict(X, execute_in_fhe)
-        return y_preds
-
-    def post_processing(
-        self, y_preds: numpy.ndarray, already_dequantized: bool = False
-    ) -> numpy.ndarray:
-        if not already_dequantized:
-            y_preds = super().post_processing(y_preds)
-        if y_preds.shape[1] == 1:
-            # Sigmoid already applied in the graph
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-        return y_preds
-
-    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict class probabilities for samples.
-
-        Args:
-            X: samples to predict
-            execute_in_fhe: if True, the model will be executed in FHE mode
-
-        Returns:
-            numpy.ndarray: class probabilities for samples
-        """
-        X = check_array_and_assert(X)
-        y_preds = self.decision_function(X, execute_in_fhe)
-        y_preds = self.post_processing(y_preds, already_dequantized=True)
-        return y_preds
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        X = check_array_and_assert(X)
-        y_preds = self.predict_proba(X, execute_in_fhe)
-        y_preds = numpy.argmax(y_preds, axis=1)
-        return y_preds
+# pylint: enable=invalid-name,too-many-instance-attributes

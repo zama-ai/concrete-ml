@@ -343,24 +343,24 @@ def test_linear_model_quantization(
         y_pred_sklearn = sklearn_model.predict(x)
         check_accuracy(y_pred_sklearn, y_pred_quantized)
 
-        if isinstance(model, LinearSVC):  # pylint: disable=no-else-return
-            # Test disabled as it our version of decision_function is not
-            # the same as sklearn (TODO issue #494)
-            # LinearSVC does not implement predict_proba
-            # y_pred_quantized = model.decision_function(x)
-            # y_pred_sklearn = sklearn_model.decision_function(x)
-            return
+        # If the model is a LinearSVC model, compute its predicted confidence score
+        # This is done separately as scikit-learn doesn't provide a predict_proba method for
+        # LinearSVC models
+        if isinstance(model, LinearSVC):
+            y_pred_quantized = model.decision_function(x)
+            y_pred_sklearn = sklearn_model.decision_function(x)
+
+        # Else, compute the model's predicted probabilities
         else:
-            # Check that probabilities are similar
             y_pred_quantized = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
 
-    # If the model is a regressor
+    # If the model is a regressor, compute its predictions
     else:
-        # Check that class prediction are similar
         y_pred_quantized = model.predict(x)
         y_pred_sklearn = sklearn_model.predict(x)
 
+    # Check that predictions, probabilities or confidence scores are similar using the R2 score
     check_r2_score(y_pred_sklearn, y_pred_quantized)
 
 

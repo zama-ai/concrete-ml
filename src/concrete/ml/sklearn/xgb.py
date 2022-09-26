@@ -9,6 +9,10 @@ import xgboost.sklearn
 from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
+
+# The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
+# here in order to avoid duplicating them.
+from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from ..quantization import QuantizedArray
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
@@ -154,14 +158,20 @@ class XGBClassifier(BaseTreeClassifierMixin):
         y_preds = numpy.sum(y_preds, axis=2)
         assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
 
+        # If this binary classification problem
         if self.n_classes_ == 2:
-            # Apply sigmoid (since xgboost output only 1 value when self.n_classes_ = 2
-            y_preds = 1.0 / (1.0 + numpy.exp(-y_preds))
+            # Apply sigmoid
+            y_preds = numpy_sigmoid(y_preds)[0]
+
+            # Transform in a 2d array where [1-p, p] is the output as XGBoost only outputs 1 value
+            # when considering 2 classes
             y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+
+        # Else, it's a multi-class classification problem
         else:
-            # Otherwise we simply apply softmax
-            y_preds = numpy.exp(y_preds)
-            y_preds = y_preds / numpy.sum(y_preds, axis=1, keepdims=True)
+            # Apply softmax
+            y_preds = numpy_softmax(y_preds)[0]
+
         return y_preds
 
 
