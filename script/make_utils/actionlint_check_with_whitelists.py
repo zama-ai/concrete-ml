@@ -9,6 +9,8 @@ whitelisted_lines: Set[str] = set()
 whitelisted_pattern: Set[str] = {
     "matrix.runs_on",
     "matrix.python_version",
+    'invalid value "choice"',
+    "",
     "matrix: ${{ fromJSON(format('{{\"include\":{0}}}', "
     "needs.start-runner-linux.outputs.matrix)) }}",
     "matrix: ${{ fromJSON(format('{{\"include\":{0}}}', "

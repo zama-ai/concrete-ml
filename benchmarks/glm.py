@@ -361,7 +361,7 @@ def argument_manager():
         "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
     )
     parser.add_argument(
-        "--list",
+        "--long_list",
         action="store_true",
         help="just list the different tasks and stop",
     )
@@ -388,7 +388,7 @@ def main():
 
     config = get_config(args)
 
-    if args.list or args.short_list:
+    if args.long_list or args.short_list:
         already_done_models = {}
 
         for regressor in args.regressors:

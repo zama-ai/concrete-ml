@@ -12,6 +12,16 @@ on:
         default: "main"
         required: true
         type: string
+      instance_type:
+        description: Instance type on which to launch benchmarks
+        default: "c5.4xlarge"
+        type: choice
+        options:
+          - "c5.large"
+          - "c5.xlarge"
+          - "c5.2xlarge"
+          - "c5.4xlarge"
+          - "c5.12xlarge"
     secrets:
       NEW_ML_PROGRESS_TRACKER_TOKEN:
         description: "ML progress tracker token"
@@ -79,7 +89,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          ec2-instance-type: ${{ github.event.inputs.instance_type }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
           aws-resource-tags: >
@@ -92,7 +102,7 @@ jobs:
               {"Key": "GitHash", "Value": "${{ github.sha }}"},
               {"Key": "RefName", "Value": "${{ github.ref_name }}"},
               {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Command", "Value": "${{ inputs.command }}"},
+              {"Key": "Command", "Value": "${{ github.event.inputs.command }}"},
               {"Key": "TargetGitRef", "Value": "${{ github.event.inputs.git-ref }}"},
               {"Key": "Team", "Value": "CML"}
             ]

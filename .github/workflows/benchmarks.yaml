@@ -1,235 +1,139 @@
-name: Benchmarks
+name: Benchmark CML
+
 on:
   workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Repo reference (branch, tag or SHA)
+        default: "main"
+        required: true
+        type: string
+      list:
+        description: Which kind of list to consider
+        default: "short"
+        type: choice
+        options:
+          - "long"
+          - "short"
+      classification:
+        description: Whether to launch classification benchmarks or not
+        default: true
+        type: boolean
+      regression:
+        description: Whether to launch regression benchmarks or not
+        default: true
+        type: boolean
+      glm:
+        description: Whether to launch glm benchmarks or not
+        default: true
+        type: boolean
+      instance_type:
+        description: Instance type on which to launch benchmarks
+        default: "c5.4xlarge"
+        type: choice
+        options:
+          - "c5.large"
+          - "c5.xlarge"
+          - "c5.2xlarge"
+          - "c5.4xlarge"
+          - "c5.12xlarge"
+  # FIXME: Add recurrent launching
+  # https://github.com/zama-ai/concrete-ml-internal/issues/1851
 
-  schedule:
-    # * is a special character in YAML so you have to quote this string
-    # At 22:00 every day
-    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
-    - cron: '0 22 * * *'
-
+# Global environnement variables
 env:
+  # Github action url (used by slack notification)
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
+# Jobs
 jobs:
-  should-run-benchmarks:
+  prepare-scripts:
+    name: Prepare scripts to launch on individual AWS instances
     runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: ubuntu:20.04
     outputs:
-      should-run: ${{ steps.should-run.outputs.value || 'false' }}
-    steps:
-      - name: Check Benchmarks should run
-        id: should-run
-        run: |
-          if [[ "${{ secrets.BENCHMARKS_ENABLED }}" == "BENCHMARKS_PREFIX_ENABLED" ]]; then
-            echo "::set-output name=value::true"
-          else
-            echo "::set-output name=value::false"
-          fi
-
-  # We need a self hosted runner as github actions limits their runners' use to 6h
-  start-self-hosted-runner:
-    runs-on: ubuntu-20.04
-    needs: [should-run-benchmarks]
-    if: ${{ needs.should-run-benchmarks.outputs.should-run == 'true' }}
-    outputs:
-      label-intel: ${{ steps.start-ec2-runner-intel.outputs.label }}
-      ec2-instance-id-intel: ${{ steps.start-ec2-runner-intel.outputs.ec2-instance-id || '' }}
-      label-amd: ${{ steps.start-ec2-runner-amd.outputs.label }}
-      ec2-instance-id-amd: ${{ steps.start-ec2-runner-amd.outputs.ec2-instance-id || '' }}
-
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Start EC2 runner intel
-        id: start-ec2-runner-intel
-        if: ${{ !cancelled() }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
-        with:
-          mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.BENCHMARKS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.BENCHMARKS_EC2_INSTANCE_TYPE }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.BENCHMARKS_EC2_SECURITY_GROUP_ID }}
-
-      - name: Start EC2 runner amd
-        id: start-ec2-runner-amd
-        if: ${{ !cancelled() }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
-        with:
-          mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.BENCHMARKS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.BENCHMARKS_EC2_INSTANCE_TYPE }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.BENCHMARKS_EC2_SECURITY_GROUP_ID }}
-
-  run-benchmarks:
-    needs: [start-self-hosted-runner]
-    timeout-minutes: 1380
-    name: Run Benchmarks on EC2 and Publish Results to Progress Tracker
-    runs-on: ${{ matrix.runs-on }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - instance-id: 'BENCHMARKS_EC2_INTEL_INSTANCE_ID'
-            machine-name: 'AWS (c5.2xlarge)'
-            machine-vcpu: '8'
-            machine-os: 'Ubuntu 20.04'
-            benchmark-samples: '5'
-            artifact-name: 'c5.2xlarge'
-            runs-on: ${{ needs.start-self-hosted-runner.outputs.label-intel }}
-          - instance-id: 'BENCHMARKS_EC2_AMD_INSTANCE_ID'
-            machine-name: 'AWS (c5a.2xlarge)'
-            machine-vcpu: '8'
-            machine-os: 'Ubuntu 20.04'
-            benchmark-samples: '5'
-            artifact-name: 'c5a.2xlarge'
-            runs-on: ${{ needs.start-self-hosted-runner.outputs.label-amd }}
+      commands: ${{ steps.prepare-commands.outputs.commands }}
+      length: ${{ steps.prepare-commands.outputs.length }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
-
     steps:
       - name: Add masks
         run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+      - name: Docker container related setup and git installation
+        id: docker-git-config
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+      # We don't need to specify the git-ref here since he are just generating the cli arguments 
+      - name: Checkout code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+
+      - name: Set up Python
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.BENCHMARKS_AWS_REGION }}
+          python-version: "3.9"
 
-      - name: Write SSH Key To A File
-        env:
-          SSH_KEY: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
+      - name: Install dependencies
+        id: install-deps
         run: |
-          touch ~/ssh-key
-          chmod 0600 ~/ssh-key
-          echo "${SSH_KEY}" > ~/ssh-key && chmod 0400 ~/ssh-key
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
 
-      - name: Set Instance ID in env
-        env:
-          INSTANCE_ID: ${{ secrets[matrix.instance-id] }}
+      - name: Prepare scripts to launch on individual AWS instances
+        id: prepare-commands
         run: |
-          echo "INSTANCE_ID=${INSTANCE_ID}" >> "$GITHUB_ENV"
+          source .venv/bin/activate
+          export LIST="${{ github.event.inputs.list }}"
+          export CLASSIFICATION="${{ github.event.inputs.classification }}"
+          export REGRESSION="${{ github.event.inputs.regression }}"
+          export GLM="${{ github.event.inputs.glm }}"
+          COMMANDS=$(python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regresssion ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }})
+          export COMMANDS
+          LENGTH=$(echo "${COMMANDS}" | jq '. | length')
+          echo "${COMMANDS}"
+          echo "${LENGTH}"
+          echo "::set-output name=commands::${COMMANDS}"
+          echo "::set-output name=length::${LENGTH}"
 
-      - name: Start EC2 Instance
-        run: |
-          aws ec2 start-instances --instance-ids "${INSTANCE_ID}"
+  run-job:
+    needs: [prepare-scripts]
+    secrets: inherit
+    strategy:
+      matrix:
+        index: ${{ fromJson(needs.prepare-scripts.outputs.commands) }}
+      max-parallel: ${{ fromJson(needs.prepare-scripts.outputs.length) }}
+    uses: ./.github/workflows/single_benchmark.yaml
+    with:
+      command: ${{ matrix.index.command }}
+      git-ref: ${{ github.event.inputs.git-ref }}
+      instance_type: ${{ github.event.inputs.instance_type }}
 
-      # Export INSTANCE_ID so that's it's available in bash -c sub shell
-      - name: Wait For The EC2 Instance To Get An IP Address
-        run: |
-          export INSTANCE_ID="${INSTANCE_ID}"
-          # shellcheck disable=SC2016,2026
-          timeout 180 bash -c 'until [[ $(aws ec2 describe-instances --instance-ids "${INSTANCE_ID}" --query "Reservations[].Instances[].PublicIpAddress" --output text) != "" ]]; do sleep 1; done'
-
-      - name: Get Public IP Address of EC2 Instance
-        id: public-ip
-        run: |
-          PUBLIC_IP="$(aws ec2 describe-instances --region eu-west-3 --instance-ids "${INSTANCE_ID}" --query "Reservations[].Instances[].PublicIpAddress" --output text)"
-          echo "::add-mask::${PUBLIC_IP}"
-          echo "::set-output name=value::${PUBLIC_IP}"
-
-      - name: Wait For The EC2 Instance To Accept SSH Connections
-        run: timeout 180 bash -c 'until nc -z ${{ steps.public-ip.outputs.value }} 22; do sleep 1; done'
-
-      - name: Connect To EC2 Instance, Perform Benchmarks, Publish Results
-        uses: appleboy/ssh-action@f9010ff7f1bbd7db1a0b4bab661437550cea20c0
-        with:
-          host: ${{ steps.public-ip.outputs.value }}
-          username: ${{ secrets.BENCHMARKS_EC2_USERNAME }}
-          key: ${{ secrets.BENCHMARKS_EC2_SSH_KEY }}
-          command_timeout: 1380m
-          script: |
-            cd ~/project
-            git clean -dfx
-            git remote update
-            echo "Resetting to ${{ github.sha }}"
-            git reset --hard ${{ github.sha }}
-            echo "Current rev:"
-            git rev-parse HEAD
-
-            rm -rf .env
-            touch .env
-            chmod 0600 .env
-            echo 'export PIP_INDEX_URL="${{ env.PIP_INDEX_URL }}"' >> .env
-            echo 'export PIP_EXTRA_INDEX_URL="${{ env.PIP_EXTRA_INDEX_URL }}"' >> .env
-            echo 'export PROGRESS_SAMPLES="${{ matrix.benchmark-samples }}"' >> .env
-            echo 'export PROGRESS_MACHINE_NAME="${{ matrix.machine-name }}"' >> .env
-            echo 'export PROGRESS_MACHINE_VCPU="${{ matrix.machine-vcpu }}"' >> .env
-            echo 'export PROGRESS_MACHINE_OS="${{ matrix.machine-os }}"' >> .env
-            echo 'export ML_PROGRESS_TRACKER_URL="${{ secrets.ML_PROGRESS_TRACKER_URL }}"' >> .env
-            echo 'export ML_PROGRESS_TRACKER_TOKEN="${{ secrets.ML_PROGRESS_TRACKER_TOKEN }}"' >> .env
-
-            make docker_publish_measurements
-            rm -rf .env
-            docker system prune -f
-
-      - name: Copy EC2 Instance ML Logs
-        run: scp -o StrictHostKeyChecking=no -i ~/ssh-key ${{ secrets.BENCHMARKS_EC2_USERNAME }}@${{ steps.public-ip.outputs.value }}:project/logs/latest.ml.log latest.ml.log
-
-      - name: Stop EC2 Instance
-        if: ${{ always() }}
-        run: |
-          aws ec2 stop-instances --instance-ids "${INSTANCE_ID}"
-
-      - name: Upload Logs of EC2 Instance
-        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
-        with:
-          name: ${{ matrix.artifact-name }}
-          path: latest.*.log
-
-      - name: Send Slack Notification
+  slack-notification:
+    runs-on: ubuntu-20.04
+    needs: [run-job]
+    steps:
+      - name: Slack Notification
         if: ${{ always() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Publishing benchmarks finished with status ${{ job.status }} \
-            (${{ env.ACTION_RUN_URL }})"
+          SLACK_COLOR: ${{ needs.run-job.result }}
+          SLACK_MESSAGE: "Benchmark action: (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-job.result }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  stop-self-hosted-linux:
-    name: Stop EC2 runner
-    needs: [run-benchmarks, start-self-hosted-runner]
-    runs-on: ubuntu-20.04
-    if: ${{ always() && (needs.start-self-hosted-runner.result != 'skipped') }}
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop EC2 runner intel
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
-        if: ${{ needs.start-self-hosted-runner.outputs.ec2-instance-id-intel }}
-        with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-self-hosted-runner.outputs.label-intel }}
-          ec2-instance-id: ${{ needs.start-self-hosted-runner.outputs.ec2-instance-id-intel }}
-          mode: stop
-
-      - name: Stop EC2 runner amd
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
-        if: ${{ needs.start-self-hosted-runner.outputs.ec2-instance-id-amd }}
-        with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-self-hosted-runner.outputs.label-amd }}
-          ec2-instance-id: ${{ needs.start-self-hosted-runner.outputs.ec2-instance-id-amd }}
-          mode: stop

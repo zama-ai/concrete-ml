@@ -1,10 +1,16 @@
+import argparse
+import os
 import random
+import time
 from functools import partial
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Tuple
 
 import concrete.numpy as cnp
 import numpy as np
 import py_progress_tracker as progress
 import torch
+from sklearn.datasets import fetch_openml
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -12,6 +18,232 @@ from sklearn.metrics import (
     mean_squared_error,
     r2_score,
 )
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from sklearn.utils.class_weight import compute_class_weight
+
+# Just for the linter to be happy
+try:
+    from concrete.ml.sklearn import (
+        DecisionTreeClassifier,
+        DecisionTreeRegressor,
+        ElasticNet,
+        Lasso,
+        LinearRegression,
+        LinearSVC,
+        LinearSVR,
+        LogisticRegression,
+        NeuralNetClassifier,
+        NeuralNetRegressor,
+        RandomForestClassifier,
+        RandomForestRegressor,
+        Ridge,
+        XGBClassifier,
+        XGBRegressor,
+    )
+except ImportError as exception:
+    print(exception)
+
+# Hack to import all models currently implemented in CML
+# (but that might not be implemented in targeted version)
+# FIXME: Add list of models as txt somewhere
+# Since we can make no assumption about which models are
+# imported and that one model not existing would cause the
+# whole suite to crash we dynamically import our models
+# https://github.com/zama-ai/concrete-ml-internal/issues/1852
+
+# Classification imports
+CLASSIFIERS = []
+CLASSIFIERS_NAMES = [
+    "DecisionTreeClassifier",
+    "LinearSVC",
+    "LogisticRegression",
+    "NeuralNetClassifier",
+    "RandomForestClassifier",
+    "XGBClassifier",
+]
+for model_name in CLASSIFIERS_NAMES:
+    try:
+        model = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
+        globals()[model_name] = model
+        CLASSIFIERS.append(model)
+    except ImportError as exception:
+        print(exception)
+
+CLASSIFIERS_STRING_TO_CLASS = {c.__name__: c for c in CLASSIFIERS}
+
+# Regressors imports
+REGRESSORS = []
+REGRESSORS_NAMES = [
+    "DecisionTreeRegressor",
+    "LinearSVR",
+    "LinearRegression",
+    "ElasticNet",
+    "Lasso",
+    "Ridge",
+    "NeuralNetRegressor",
+    "RandomForestRegressor",
+    "XGBRegressor",
+]
+for model_name in REGRESSORS_NAMES:
+    try:
+        model_class = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
+        globals()[model_name] = model_class
+        REGRESSORS.append(model_class)
+    except ImportError as exception:
+        print(exception)
+        print(f"model: {model_name} could not be imported.")
+
+REGRESSORS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS}
+MODELS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS + CLASSIFIERS}
+
+NN_BENCHMARK_PARMAMS = (
+    [
+        # An FHE compatible config
+        {
+            "module__n_layers": 3,
+            "module__n_w_bits": 2,
+            "module__n_a_bits": 2,
+            "module__n_accum_bits": 7,
+            "module__n_hidden_neurons_multiplier": 1,
+            "max_epochs": 200,
+            "verbose": 0,
+            "lr": 0.001,
+        }
+    ]
+    + [
+        # Pruned configurations that have approx. the same number of active neurons as the
+        # FHE compatible config. This evaluates the accuracy that can be attained
+        # for different accumulator bitwidths
+        {
+            "module__n_layers": 3,
+            "module__n_w_bits": n_b,
+            "module__n_a_bits": n_b,
+            "module__n_accum_bits": n_b_acc,
+            "module__n_hidden_neurons_multiplier": 4,
+            "max_epochs": 200,
+            "verbose": 0,
+            "lr": 0.001,
+        }
+        for (n_b, n_b_acc) in [
+            (2, 7),
+            (3, 11),
+            (4, 12),
+            (5, 14),
+            (6, 16),
+            (7, 18),
+            (8, 20),
+            (9, 22),
+            (10, 24),
+        ]
+    ]
+    + [
+        # Configs with all neurons active, to evaluate the accuracy of quantization of weights
+        # and biases only
+        {
+            "module__n_layers": 3,
+            "module__n_w_bits": n_b,
+            "module__n_a_bits": n_b,
+            "module__n_accum_bits": 32,
+            "module__n_hidden_neurons_multiplier": 4,
+            "max_epochs": 200,
+            "verbose": 0,
+            "lr": 0.001,
+        }
+        for n_b in range(2, 10)
+    ]
+)
+BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
+    "XGBClassifier": [
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [1, 3, 5, 7]
+        for n_estimators in [10, 20, 30, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
+    "XGBRegressor": [
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [1, 3, 5, 7]
+        for n_estimators in [10, 20, 30, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
+    "RandomForestClassifier": [
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [3, 5, 15]
+        for n_estimators in [10, 20, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
+    "RandomForestRegressor": [
+        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+        for max_depth in [3, 5, 15]
+        for n_estimators in [10, 20, 50]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
+    # Benchmark different depths of the quantized decision tree
+    "DecisionTreeClassifier": [
+        {"max_depth": max_depth, "n_bits": n_bits}
+        for max_depth in [1, 3, 5, 7, None]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
+    "DecisionTreeRegressor": [
+        {"max_depth": max_depth, "n_bits": n_bits}
+        for max_depth in [1, 3, 5, 7, None]
+        for n_bits in [2, 3, 4, 6, 7, 16]
+    ],
+    "LinearSVC": [{"n_bits": 2}],
+    "LinearSVR": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "LogisticRegression": [{"n_bits": 2}],
+    "LinearRegression": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "Lasso": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "Ridge": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "ElasticNet": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "NeuralNetClassifier": NN_BENCHMARK_PARMAMS,
+    "NeuralNetRegressor": NN_BENCHMARK_PARMAMS,
+}
+
+REGRESSION_DATASETS = [
+    "pol",
+    "house_16H",
+    "tecator",
+    "boston",
+    "socmob",
+    "wine_quality",
+    "abalone",
+    "us_crime",
+    "Brazilian_houses",
+    "Moneyball",
+    "SAT11-HAND-runtime-regression",
+    "Santander_transaction_value",
+    "house_prices_nominal",
+    "Yolanda",
+    "house_sales",
+    "Buzzinsocialmedia_Twitter",
+]
+CLASSIFICATION_DATASETS = [
+    "credit-g",
+    "blood-transfusion-service-center",
+    "wilt",
+    "tic-tac-toe",
+    "kr-vs-kp",
+    "qsar-biodeg",
+    "wdbc",
+    "steel-plates-fault",
+    "diabetes",
+    "ilpd",
+    "phoneme",
+    "spambase",
+    "climate-model-simulation-crashes",
+]
+DATASET_VERSIONS = {
+    "wilt": 2,
+    "abalone": 5,
+    "us_crime": 2,
+    "Brazilian_houses": 4,
+    "Moneyball": 2,
+    "Yolanda": 2,
+    "quake": 2,
+    "house_sales": 3,
+}
+
 
 # This is only for benchmarks to speed up compilation times
 BENCHMARK_CONFIGURATION = cnp.Configuration(
@@ -76,3 +308,498 @@ def seed_everything(seed):
     seed += 1
     torch.use_deterministic_algorithms(True)
     return seed
+
+
+# pylint: disable-next=too-many-return-statements, too-many-branches, redefined-outer-name
+def should_test_config_in_fhe(
+    model: type, config: Dict[str, Any], n_features: int, local_args: argparse.Namespace
+) -> bool:
+    """Determine whether a benchmark config for a classifier should be tested in FHE"""
+    if local_args.execute_in_fhe != "auto":
+        return local_args.execute_in_fhe
+
+    assert config is not None
+
+    # System override to disable FHE benchmarks (useful for debugging)
+    if os.environ.get("BENCHMARK_NO_FHE", "0") == "1":
+        return False
+
+    if model in {DecisionTreeClassifier, DecisionTreeRegressor}:
+        # Only small trees should be compiled to FHE
+        if "max_depth" in config and config["max_depth"] is not None and config["n_bits"] <= 7:
+            return True
+        return False
+
+    if model is NeuralNetClassifier:
+        # For NNs only 7 bit accumulators with few neurons should be compiled to FHE
+        return (
+            config["module__n_accum_bits"] <= 7
+            and config["module__n_hidden_neurons_multiplier"] == 1
+        )
+
+    if model in {
+        LogisticRegression,
+        LinearRegression,
+        Lasso,
+        ElasticNet,
+        Ridge,
+        LinearSVC,
+        LinearSVR,
+    }:
+        if config["n_bits"] <= 2 and n_features <= 14:
+            return True
+        if config["n_bits"] == 3 and n_features <= 2:
+            return True
+
+    if model in {XGBClassifier, XGBRegressor, RandomForestClassifier, RandomForestRegressor}:
+        if config["n_bits"] <= 7:
+            return True
+        return False
+
+    if model in {NeuralNetRegressor, NeuralNetClassifier}:
+        # For NNs only 7 bit accumulators with few neurons should be compiled to FHE
+        return (
+            config["module__n_accum_bits"] <= 7
+            and config["module__n_hidden_neurons_multiplier"] == 1
+        )
+
+    raise ValueError(f"Classifier {str(model)} configurations not yet setup for FHE")
+
+
+# pylint: disable-next=too-many-branches
+def train_and_test_regressor(
+    regressor: type, dataset: str, config: Dict[str, Any], local_args: argparse.Namespace
+):
+    # Could be changed but not very useful
+    size_of_compilation_dataset = 1000
+
+    if local_args.verbose:
+        print("Start")
+        time_current = time.time()
+
+    version = DATASET_VERSIONS.get(dataset, "active")
+    X, y = fetch_openml(name=dataset, version=version, as_frame=False, cache=True, return_X_y=True)
+    if y.ndim == 1:
+        y = np.expand_dims(y, 1)
+
+    if regressor is NeuralNetRegressor:
+        # Cast to a type that works for both sklearn and Torch
+        X = X.astype(np.float32)
+        y = y.astype(np.float32)
+
+    # Split it into train/test and sort the sets for nicer visualization
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+
+    if regressor is NeuralNetRegressor:
+        normalizer = StandardScaler()
+        # Compute mean/stdev on training set and normalize both train and test sets with them
+        x_train = normalizer.fit_transform(x_train)
+        x_test = normalizer.transform(x_test)
+
+        config["module__input_dim"] = x_train.shape[1]
+        config["module__n_outputs"] = y_train.shape[1] if y_train.ndim == 2 else 1
+
+    concrete_regressor = regressor(**config)
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Fit")
+
+    # We call fit_benchmark to both fit our Concrete ML regressors but also to return the sklearn
+    # one that we would use if we were not using FHE. This regressor will be our baseline
+    concrete_regressor, sklearn_regressor = concrete_regressor.fit_benchmark(x_train, y_train)
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Predict with scikit-learn")
+
+    # Predict with the sklearn regressor and compute goodness of fit
+    y_pred_sklearn = sklearn_regressor.predict(x_test)
+    run_and_report_regression_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Predict in clear")
+
+    # Now predict with our regressor and report its goodness of fit
+    y_pred_q = concrete_regressor.predict(x_test, execute_in_fhe=False)
+    run_and_report_regression_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
+
+    n_features = X.shape[1] if X.ndim == 2 else 1
+
+    if should_test_config_in_fhe(regressor, config, n_features, local_args):
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Compile")
+
+        x_test_comp = x_test[0:size_of_compilation_dataset, :]
+
+        # Compile and report compilation time
+        t_start = time.time()
+        forward_fhe = concrete_regressor.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
+
+        # Dump MLIR
+        if local_args.mlir_only:
+            mlirs_dir: Path = Path(__file__).parents[1] / "MLIRs"
+            benchmark_name = benchmark_name_generator(
+                dataset, concrete_regressor.__class__, config, "_"
+            )
+            mlirs_dir.mkdir(parents=True, exist_ok=True)
+            with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
+                file.write(forward_fhe.mlir)
+            return
+
+        duration = time.time() - t_start
+        progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Key generation")
+
+        t_start = time.time()
+        forward_fhe.keygen()
+        duration = time.time() - t_start
+        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print(f"Predict in FHE ({local_args.fhe_samples} samples)")
+
+        # To keep the test short and to fit in RAM we limit the number of test samples
+        x_test = x_test[0 : local_args.fhe_samples, :]
+        y_test = y_test[0 : local_args.fhe_samples]
+
+        # Now predict with our regressor and report its goodness of fit. We also measure
+        # execution time per test sample
+        t_start = time.time()
+        y_pred_c = concrete_regressor.predict(x_test, execute_in_fhe=True)
+        duration = time.time() - t_start
+
+        run_and_report_regression_metrics(y_test, y_pred_c, "fhe", "FHE")
+
+        run_and_report_regression_metrics(
+            y_test,
+            y_pred_q[0 : local_args.fhe_samples],
+            "quant-clear-fhe-set",
+            "Quantized Clear on FHE set",
+        )
+
+        progress.measure(
+            id="fhe-inference_time",
+            label="FHE Inference Time per sample",
+            value=duration / x_test.shape[0] if x_test.shape[0] > 0 else 0,
+        )
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("End")
+
+
+def train_and_test_classifier(
+    classifier: type, dataset: str, config: Dict[str, Any], local_args: argparse.Namespace
+):
+    """
+    Train and test a classifier on a dataset
+
+    This function trains a classifier type (caller must pass a class name) on an OpenML dataset
+    identified by its name.
+    """
+
+    # Could be changed but not very useful
+    size_of_compilation_dataset = 1000
+
+    if local_args.verbose:
+        print("Start")
+        time_current = time.time()
+
+    # Sometimes we want a specific version of a dataset, otherwise just get the 'active' one
+    version = DATASET_VERSIONS.get(dataset, "active")
+    x_all, y_all = fetch_openml(
+        name=dataset, version=version, as_frame=False, cache=True, return_X_y=True
+    )
+
+    # The OpenML datasets have target variables that might not be integers (for classification
+    # integers would represent class ids). Mostly the targets are strings which we do not support.
+    # We use an ordinal encoder to encode strings to integers
+    if not y_all.dtype == np.int32:
+        enc = OrdinalEncoder()
+        y_all = [[y] for y in y_all]
+        enc.fit(y_all)
+        y_all = enc.transform(y_all).astype(np.int64)
+        y_all = np.squeeze(y_all)
+
+    normalizer = StandardScaler()
+
+    # Cast to a type that works for both sklearn and Torch
+    x_all = x_all.astype(np.float32)
+
+    # Perform a classic test-train split (deterministic by fixing the seed)
+    x_train, x_test, y_train, y_test = train_test_split(
+        x_all, y_all, test_size=0.15, random_state=42, shuffle=True, stratify=y_all
+    )
+
+    pct_pos_test = np.max(np.bincount(y_test)) / y_test.size
+    progress.measure(
+        id="majority-class-percentage",
+        label="Majority Class Percentage",
+        value=pct_pos_test,
+    )
+
+    # Compute mean/stdev on training set and normalize both train and test sets with them
+    x_train = normalizer.fit_transform(x_train)
+    x_test = normalizer.transform(x_test)
+
+    # Now instantiate the classifier, provide it with a custom configuration if we specify one
+    # FIXME: these parameters could be inferred from the data given to .fit
+    # see https://github.com/zama-ai/concrete-ml-internal/issues/325
+
+    if classifier is NeuralNetClassifier:
+        classes = np.unique(y_all)
+        config["module__input_dim"] = x_train.shape[1]
+        config["module__n_outputs"] = len(classes)
+        config["criterion__weight"] = compute_class_weight("balanced", classes=classes, y=y_train)
+
+    concrete_classifier = classifier(**config)
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Fit")
+
+    # Concrete ML classifiers follow the sklearn Estimator API but train differently than those
+    # from sklearn. Our classifiers must work with quantized data or must determine data quantizers
+    # after training the underlying sklearn classifier.
+    # We call fit_benchmark to both fit our Concrete ML classifiers but also to return the sklearn
+    # one that we would use if we were not using FHE. This classifier will be our baseline
+    concrete_classifier, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Predict with scikit-learn")
+
+    # Predict with the sklearn classifier and compute accuracy. Although some datasets might be
+    # imbalanced, we are not interested in the best metric for the case, but we want to measure
+    # the difference in accuracy between the sklearn classifier and ours
+    y_pred_sklearn = sklearn_classifier.predict(x_test)
+    run_and_report_classification_metrics(y_test, y_pred_sklearn, "sklearn", "Sklearn")
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("Predict in clear")
+
+    # Now predict with our classifier and report its accuracy
+    y_pred_q = concrete_classifier.predict(x_test, execute_in_fhe=False)
+    run_and_report_classification_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
+
+    n_features = x_train.shape[1] if x_train.ndim == 2 else 1
+
+    if should_test_config_in_fhe(classifier, config, n_features, local_args):
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Compile")
+
+        x_test_comp = x_test[0:size_of_compilation_dataset, :]
+
+        # Compile and report compilation time
+        t_start = time.time()
+        forward_fhe = concrete_classifier.compile(
+            x_test_comp, configuration=BENCHMARK_CONFIGURATION
+        )
+
+        # Dump MLIR
+        if local_args.mlir_only:
+            mlirs_dir: Path = Path(__file__).parents[1] / "MLIRs"
+            benchmark_name = benchmark_name_generator(
+                dataset, concrete_classifier.__class__, config, "_"
+            )
+            mlirs_dir.mkdir(parents=True, exist_ok=True)
+            with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
+                file.write(forward_fhe.mlir)
+            return
+
+        duration = time.time() - t_start
+        progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print("Key generation")
+
+        t_start = time.time()
+        forward_fhe.keygen()
+        duration = time.time() - t_start
+        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
+
+        if local_args.verbose:
+            print(f"  -- Done in {time.time() - time_current} seconds")
+            time_current = time.time()
+            print(f"Predict in FHE ({local_args.fhe_samples} samples)")
+
+        # To keep the test short and to fit in RAM we limit the number of test samples
+        x_test = x_test[0 : local_args.fhe_samples, :]
+        y_test = y_test[0 : local_args.fhe_samples]
+
+        # Now predict with our classifier and report its accuracy. We also measure
+        # execution time per test sample
+        t_start = time.time()
+        y_pred_c = concrete_classifier.predict(x_test, execute_in_fhe=True)
+        duration = time.time() - t_start
+
+        run_and_report_classification_metrics(y_test, y_pred_c, "fhe", "FHE")
+
+        run_and_report_classification_metrics(
+            y_test,
+            y_pred_q[0 : local_args.fhe_samples],
+            "quant-clear-fhe-set",
+            "Quantized Clear on FHE set",
+        )
+
+        progress.measure(
+            id="fhe-inference_time",
+            label="FHE Inference Time per sample",
+            value=duration / x_test.shape[0] if x_test.shape[0] > 0 else 0,
+        )
+
+    if local_args.verbose:
+        print(f"  -- Done in {time.time() - time_current} seconds")
+        time_current = time.time()
+        print("End")
+
+
+# pylint: disable-next=redefined-outer-name
+def benchmark_generator(local_args) -> Iterator[Tuple[str, type, Dict[str, Any]]]:
+    """Generates all elements to test.
+
+    local_args must have classification_datasets and classifiers as attributes.
+    """
+    for dataset in local_args.datasets:
+        for model_class_ in local_args.models:
+            if local_args.configs is None:
+                for config in BENCHMARK_PARAMS[model_class_.__name__]:
+                    yield (dataset, model_class_, config)
+            else:
+                for config in local_args.configs:
+                    yield (dataset, model_class_, config)
+
+
+# pylint: disable-next=redefined-outer-name
+def benchmark_name_generator(
+    dataset_name: str, model: type, config: Dict[str, Any], joiner: str = "_"
+) -> str:
+    """Turns a combination of dataset + model + hyper-parameters and returns a string"""
+    if model in {
+        LinearSVR,
+        LinearSVC,
+        LogisticRegression,
+        LinearRegression,
+        Lasso,
+        ElasticNet,
+        Ridge,
+        DecisionTreeRegressor,
+    }:
+        config_str = f"_{config['n_bits']}"
+
+    elif model is NeuralNetRegressor:
+        config_str = f"_{config['module__n_a_bits']}_{config['module__n_accum_bits']}"
+
+    elif model is NeuralNetClassifier:
+        config_str = f"_{config['module__n_w_bits']}_{config['module__n_accum_bits']}"
+
+    elif model in {DecisionTreeRegressor, DecisionTreeClassifier}:
+        if config["max_depth"] is not None:
+            config_str = f"_{config['max_depth']}_{config['n_bits']}"
+        else:
+            config_str = ""
+
+    elif model in {XGBClassifier, XGBRegressor}:
+        if config["max_depth"] is not None:
+            config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
+        else:
+            config_str = f"_{config['n_estimators']}_{config['n_bits']}"
+
+    elif model in {RandomForestRegressor, RandomForestClassifier}:
+        if config["max_depth"] is not None:
+            config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
+        else:
+            config_str = f"_{config['n_estimators']}_{config['n_bits']}"
+
+    # We remove underscores to make sure to not have any conflict when splitting
+    return model.__name__.replace("_", "-") + config_str + joiner + dataset_name.replace("_", "-")
+
+
+# FIXME: Add tests:
+# - Bijection between both functions
+# - The functions support all models
+# pylint: disable-next=too-many-branches, redefined-outer-name
+def benchmark_name_to_config(
+    benchmark_name: str, joiner: str = "_"
+) -> Tuple[str, str, Dict[str, Any]]:
+    """Convert a benchmark name to each part"""
+    splitted = benchmark_name.split(joiner)
+    model_name = splitted[0]
+    dataset_name = splitted[-1]
+    config_str = splitted[1:-1]
+    config_dict = {}
+    model = MODELS_STRING_TO_CLASS[model_name]
+
+    if model in {
+        LinearRegression,
+        LinearSVR,
+        Lasso,
+        ElasticNet,
+        Ridge,
+        LinearSVC,
+        LogisticRegression,
+    }:
+        config_dict["n_bits"] = int(config_str[0])
+
+    elif model is NeuralNetRegressor:
+        config_dict["module__n_a_bits"] = int(config_str[0])
+        config_dict["module__n_accum_bits"] = int(config_str[1])
+
+    elif model is NeuralNetClassifier:
+        config_dict["module__n_w_bits"] = int(config_str[0])
+        config_dict["module__n_accum_bits"] = int(config_str[1])
+
+    elif model in {DecisionTreeClassifier, DecisionTreeRegressor}:
+        if len(config_str) == 2:
+            config_dict["max_depth"] = int(config_str[0])
+            config_dict["n_bits"] = int(config_str[1])
+        elif len(config_str) != 0:
+            raise ValueError
+
+    elif model in {XGBClassifier, XGBRegressor}:
+        if len(config_str) == 3:
+            config_dict["max_depth"] = int(config_str[0])
+            config_dict["n_estimators"] = int(config_str[1])
+            config_dict["n_bits"] = int(config_str[2])
+        elif len(config_str) == 2:
+            config_dict["n_estimators"] = int(config_str[0])
+            config_dict["n_bits"] = int(config_str[1])
+        else:
+            raise ValueError
+
+    elif model in {RandomForestClassifier, RandomForestRegressor}:
+        if len(config_str) == 3:
+            config_dict["max_depth"] = int(config_str[0])
+            config_dict["n_estimators"] = int(config_str[1])
+            config_dict["n_bits"] = int(config_str[2])
+        elif len(config_str) == 2:
+            config_dict["n_estimators"] = int(config_str[0])
+            config_dict["n_bits"] = int(config_str[1])
+        else:
+            raise ValueError
+
+    return model_name, dataset_name, config_dict
