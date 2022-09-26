@@ -23,7 +23,7 @@ You can see some examples of the model development workflow [here](../built-in-m
 
 You can see an example of the model deployment workflow [here](https://github.com/zama-ai/concrete-ml/blob/release/0.3.x/docs/advanced_examples/ClientServer.ipynb).
 
-## Cryptography Concepts
+## Cryptography concepts
 
 Concrete-ML and Concrete-Numpy are tools that hide away the details of the underlying cryptography scheme, TFHE. However, some cryptography concepts are still useful when using these two tool-kits:
 

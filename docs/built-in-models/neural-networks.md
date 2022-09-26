@@ -62,7 +62,7 @@ The figure above shows, on the right, the Concrete-ML neural network, trained wi
 
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
-- `n_accum_bits` (default 8): maximum accumulator bit width that is desired. The implementation will attempt to keep accumulators under this bitwidth through [pruning](../advanced-topics/pruning.md), i.e. setting some weights to zero
+- `n_accum_bits` (default 8): maximum accumulator bit width that is desired. The implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md), i.e. setting some weights to zero
 
 ### Training parameters (from Skorch)
 

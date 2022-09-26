@@ -2,9 +2,9 @@
 
 This section provides a set of tools and guidelines to help users build optimized FHE compatible models.
 
-## Virtual Lib
+## Virtual library
 
-The Virtual Lib in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler that allow users to simulate what would happen when converting a model to FHE without the current bit width constraint, as well as quickly simulating the behavior with 8 bits or less without actually doing the FHE computations.
+The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler that allow users to simulate what would happen when converting a model to FHE without the current bit width constraint, as well as quickly simulating the behavior with 8 bits or less without actually doing the FHE computations.
 
 The Virtual Lib can be useful when developing and iterating on an ML model implementation. For example, you can check that your model is compatible in terms of operands (all integers) with the Virtual Lib compilation. Then, you can check how many bits your ML model would require, which can give you hints as to how it should be modified if you want to compile it to an actual FHE Circuit (not a simulated one) that only supports 8 bits of integer precision.
 
@@ -158,7 +158,7 @@ except RuntimeError as err:
 
 In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). Programmable bootstrapping is a powerful technique, but will require significantly more compute resources and thus time than more simpler encrypted operations such matrix multiplications, convolution or additions.
 
-Furthermore, the cost of a PBS will depend on the bitwidth of the compiled circuit. Every additional bit in the maximum bitwidth raises the complexity of the PBS by a significant factor. It thus may be of interest to the model developer to determine the bitwidth of the circuit and the number of PBS it performs.
+Furthermore, the cost of a PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It thus may be of interest to the model developer to determine the bit-width of the circuit and the number of PBS it performs.
 
 This can be done by inspecting the MLIR code produced by the compiler:
 
@@ -222,7 +222,7 @@ return %11 : tensor<1x2x!FHE.eint<8>>
 
 We notice that we have calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus PBS is applied 104 times.
 
-Getting the bitwidth of the circuit is then simply:
+Getting the bit-width of the circuit is then simply:
 
 <!--pytest-codeblocks:cont-->
 

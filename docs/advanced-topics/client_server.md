@@ -8,7 +8,7 @@ The training of the model and its compilation to FHE are performed on a developm
 
 - `client.json`; contains the secure cryptographic parameters needed for the client to generate the private and evaluation keys
 - `server.json`; contains the compiled model. This file is sufficient to run the model on a server.
-- `serialized_processing.json`; contains the metadata about the pre and post processing, such as quantization parameters to quantize the input and dequantize the output.
+- `serialized_processing.json`; contains the metadata about the pre and post processing, such as quantization parameters to quantize the input and de-quantize the output.
 
 The compiled model (`server.zip`) is deployed to a server and the cryptographic parameters (`client.zip`) along with the model meta data (`serialized_processing.json`) are shared with the clients.
 

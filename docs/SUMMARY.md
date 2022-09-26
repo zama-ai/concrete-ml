@@ -1,4 +1,4 @@
-# Table of contents
+# Table of Contents
 
 - [What is Concrete ML?](README.md)
 

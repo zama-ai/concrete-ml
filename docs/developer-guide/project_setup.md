@@ -36,7 +36,7 @@ The first step is to [install Python](project_setup.md#python) (as some of our d
 Development on Windows only works with the Docker environment. Follow [this link to setup the Docker environment](docker_setup.md).
 {% endhint %}
 
-## Manual Installation
+## Manual installation
 
 ### Python
 

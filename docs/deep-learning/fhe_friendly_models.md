@@ -1,8 +1,11 @@
 # Step-by-step guide
 
 This section includes a complete example of converting a neural network to Quantization Aware Training.
-This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic dataset. You can
+This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can
 find the demo of the final network in the  [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb).
+
+For a more formal description of the usage of Brevitas to build FHE compatible neural networks,
+please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 
 ## Summary
 
@@ -12,7 +15,7 @@ find the demo of the final network in the  [custom-model with quantization aware
 
 ## Baseline model
 
-In this example, we will train a fully-connected neural network on a synthetic 2D dataset with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
+In this example, we will train a fully-connected neural network on a synthetic 2D data-set with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
 
 In PyTorch, using standard layers, this network would look as follows:
 
@@ -52,7 +55,7 @@ The network was trained using different numbers neurons in the hidden layers, an
 This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE compatible (accumulator \< 8 bits), it is sometimes preferable to have lower accumulator size in order for the inference time to be faster.
 
 {% hint style="info" %}
-The accumulator size is determined by **Concrete Numpy** as being the maximum bitwidth encountered anywhere in the encrypted circuit
+The accumulator size is determined by **Concrete Numpy** as being the maximum bit-width encountered anywhere in the encrypted circuit
 {% endhint %}
 
 ### Pruning using Torch
@@ -101,7 +104,7 @@ Results with `PrunedSimpleNet`, a pruned version of the `SimpleNet` with 100 neu
 
 This shows that the fp32 accuracy has been improved while maintaining constant mean accumulator size.
 
-When pruning a larger neural network during training, it is easier to obtain a low a bitwidth accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar smaller network.
+When pruning a larger neural network during training, it is easier to obtain a low a bit-width accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar smaller network.
 
 ## Quantization-aware training (QAT)
 

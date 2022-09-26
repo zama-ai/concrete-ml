@@ -18,7 +18,7 @@ In addition to our support for scikit-learn, Concrete-ML also supports [XGBoost]
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular dataset using some of scikit-learn's preprocessing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's preprocessing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -30,7 +30,7 @@ from sklearn.preprocessing import StandardScaler
 from concrete.ml.sklearn.xgb import XGBClassifier
 
 
-# Get dataset and split into train and test
+# Get data-set and split into train and test
 X, y = load_breast_cancer(return_X_y=True)
 
 # Split the train and test set
@@ -111,6 +111,6 @@ This graph shows the impact of quantization over the decision boundaries in the 
 
 In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, as the quantization is done individually on each input feature, the artifacts are minor when considering small tree-based models with 5-6 bits quantization. Thus FHE tree-based models reach similar scores as their equivalent floating point ones.
 
-The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` dataset.
+The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 
 ![XGBoost n_bits comparison](../figures/XGBClassifier_nbits.png)

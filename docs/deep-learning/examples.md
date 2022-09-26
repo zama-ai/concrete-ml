@@ -1,4 +1,4 @@
-# Deep Learning examples
+# Deep Learning Examples
 
 ## Summary
 

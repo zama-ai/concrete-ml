@@ -1,4 +1,4 @@
-# Quantization tools
+# Quantization Tools
 
 ## Quantizing data
 

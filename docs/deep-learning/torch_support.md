@@ -46,7 +46,7 @@ torch_input = torch.randn(100, N_FEAT)
 torch_model = QATSimpleNet(30)
 quantized_numpy_module = compile_brevitas_qat_model(
     torch_model, # our model
-    torch_input, # a representative inputset to be used for both quantization and compilation
+    torch_input, # a representative input-set to be used for both quantization and compilation
     n_bits = n_bits,
 )
 
@@ -63,17 +63,17 @@ x_test_quantized = quantized_numpy_module.quantize_input(x_test)
 
 and the encrypted inference run using either:
 
-- `quantized_numpy_module.forward_and_dequant()` to compute predictions in the clear, on quantized data and then dequantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the forward function on the clear data is useful when debugging. The results in FHE will be the same as those on clear quantized data.
+- `quantized_numpy_module.forward_and_dequant()` to compute predictions in the clear, on quantized data and then de-quantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the forward function on the clear data is useful when debugging. The results in FHE will be the same as those on clear quantized data.
 - `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to perform the FHE inference. In this case, dequantization is done in a second stage using `quantized_numpy_module.dequantize_output()`.
 
-## Generic Quantization Aware Training Import
+## Generic quantization aware training import
 
 While the example above shows how to import a Brevitas/torch model, Concrete-ML also provides an option to import generic quantization aware trained (QAT) models implemented either in
 torch or through ONNX.
 
 QAT models contain quantizers in the torch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
-Suppose that `n_bits_qat` is the bitwidth of activations and weights during the QAT process. To import a torch QAT network you can use the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) library function, passing `import_qat=True`:
+Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a torch QAT network you can use the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) library function, passing `import_qat=True`:
 
 <!--pytest-codeblocks:skip-->
 

@@ -62,7 +62,7 @@ should be less than 8. Through experimentation it was determined that in many ca
 
 {% hint style="info" %}
 Tree-based model can control directly the accumulator bit-width used. However, if 6 or 7 bits are
-not sufficient to obtain good accuracy on your dataset, one option is to use an ensemble
+not sufficient to obtain good accuracy on your data-set, one option is to use an ensemble
 model (RandomForest or XGBoost) and increase the number of trees in the ensemble. This, however, will
 have a detrimental impact on FHE execution speed.
 {% endhint %}
@@ -84,7 +84,7 @@ quantization parameters to maximize accuracy can only be done through experiment
 
 ### Quantizing model inputs and outputs
 
-The models implemented in Concrete-ML provide features to let the user quantize the input data and dequantize the output data.
+The models implemented in Concrete-ML provide features to let the user quantize the input data and de-quantize the output data.
 
 In a client/server setting, the client is responsible for quantizing inputs before sending them encrypted to the server, but also for  de-quantizing the encrypted integer results received from the server. See the [Production Deployment](../advanced-topics/client_server.md) section for more details.
 

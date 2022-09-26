@@ -61,7 +61,7 @@ And finally, for custom models, it is possible to enable simulation using the fo
 ```python
     quantized_numpy_module = compile_torch_model(
         torch_model,  # our model
-        X_train,  # a representative inputset to be used for both quantization and compilation
+        X_train,  # a representative input-set to be used for both quantization and compilation
         n_bits={"net_inputs": 5, "op_inputs": 3, "op_weights": 3, "net_outputs": 5},
         import_qat=is_qat,  # signal to the conversion function whether the network is QAT
         use_virtual_lib=True,
@@ -107,13 +107,13 @@ b = 2
 def linear_model(x):
     return w @ x + b
 
-# A representative inputset is needed to compile the function
+# A representative input-set is needed to compile the function
 # (used for tracing)
 n_bits_input = 2
 inputset = numpy.arange(0, 2**n_bits_input).reshape(-1, 1)
 circuit = linear_model.compile(inputset)
 
-# Use the API to get the maximum bitwidth in the circuit
+# Use the API to get the maximum bit-width in the circuit
 max_bitwidth = circuit.graph.maximum_integer_bit_width()
 print("Max bitwidth = ", max_bitwidth)
 # Max bitwidth =  4

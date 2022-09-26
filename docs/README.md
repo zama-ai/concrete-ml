@@ -18,7 +18,7 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from concrete.ml.sklearn import LogisticRegression
 
-# Lets create a synthetic dataset
+# Lets create a synthetic data-set
 N_EXAMPLE_TOTAL = 100
 N_TEST = 20
 x, y = make_classification(n_samples=N_EXAMPLE_TOTAL,
@@ -53,7 +53,7 @@ This example shows the typical flow of a Concrete-ML model:
 - The quantized model is compiled to an FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled
 - Inference can then be done on encrypted data. The above example shows encrypted inference in the model development phase. Alternatively, in deployment in a client/server setting, the data is encrypted by the client, processed securely by the server and then decrypted by the client.
 
-## Current Limitations
+## Current limitations
 
 To make a model work with FHE, the only constrain is to make it run within the supported precision limitations of Concrete-ML (currently 8-bit integers).
 

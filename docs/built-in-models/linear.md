@@ -21,7 +21,7 @@ Models are also compatible with some of scikit-learn's main worflows, such as `P
 
 ## Example
 
-Here's an example of how to use this model in FHE on a simple dataset below. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
+Here's an example of how to use this model in FHE on a simple data-set below. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ```python
 import numpy

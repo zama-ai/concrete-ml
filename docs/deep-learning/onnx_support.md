@@ -5,7 +5,7 @@ In addition to Concrete-ML models and to [custom models in torch](torch_support.
 ONNX models can be compiled by directly importing models that are already quantized with quantization aware learning (QAT).
 or by performing post-training quantization (PTQ) with Concrete-ML.
 
-## Simple Example
+## Simple example
 
 The following example shows how to compile an ONNX model using post-training quantization. The model was initially trained using Keras, before being exported to ONNX. The training code is not shown here.
 
