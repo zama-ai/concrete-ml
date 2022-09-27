@@ -47,10 +47,10 @@ Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
 |               OS / HW                | Available on Docker | Available on pip |
 | :----------------------------------: | :-----------------: | :--------------: |
 |                Linux                 |         Yes         |       Yes        |
-|               Windows                |         Yes         |  Coming soon     |
+|               Windows                |         Yes         |   Coming soon    |
 |     Windows Subsystem for Linux      |         Yes         |       Yes        |
 |            macOS (Intel)             |         Yes         |       Yes        |
-| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |  Coming soon     |
+| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |   Coming soon    |
 
 Note: **Concrete-ML** only supports Python `3.8` and `3.9`. Platforms like [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use Python `3.7` which is a deprecated version and is not currently supported in Concrete-ML.
 
@@ -116,7 +116,6 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 
 We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar our APIs are to their non-FHE counterparts.
 
-
 ## Online demos and tutorials.
 
 - [MNIST](use_case_examples/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of our package) and its corresponding use in Concrete-ML.
@@ -128,7 +127,6 @@ More generally, if you have built awesome projects using Concrete-ML, feel free 
 <a target="_blank" href="https://community.zama.ai">
   <img src="https://user-images.githubusercontent.com/5758427/191792238-b132e413-05f9-4fee-bee3-1371f3d81c28.png">
 </a>
-
 
 ## License.
 

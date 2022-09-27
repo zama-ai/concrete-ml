@@ -78,21 +78,26 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
         test_size=0.25,
         random_state=numpy.random.randint(0, 2**15),
     )
+
+    # PCA will reduce dataset dimensionality to this number of features
+    # When the number is too low, separability could be impacted
+
+    n_dims = 5
     params = {
         "module__n_layers": 3,
         "module__n_w_bits": 5,
         "module__n_a_bits": 5,
         "module__n_accum_bits": 4 * MAXIMUM_TLU_BIT_WIDTH,
         "module__n_outputs": 2,
-        "module__input_dim": 2,
+        "module__input_dim": n_dims,
         "module__activation_function": nn.ReLU,
-        "max_epochs": 10,
+        "max_epochs": 20,
         "verbose": 0,
     }
 
     pipe = Pipeline(
         [
-            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
+            ("pca", PCA(n_components=n_dims, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("net", NeuralNetClassifier(**params)),
         ]
@@ -103,7 +108,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
 
     pipe_cv = Pipeline(
         [
-            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
+            ("pca", PCA(n_components=n_dims, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
             ("net", NeuralNetClassifier(**params)),
         ]
