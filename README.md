@@ -29,20 +29,20 @@
   </a>
 </p>
 
-**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Particular care was given to the simplicity of the Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, the APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by the users.
+Concrete-ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Particular care was given to the simplicity of the Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, the APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by the users.
 
 ## Main features.
 
 Data scientists can use models with APIs which are close to the frameworks they use, with additional options to run inferences in FHE.
 
-**Concrete-ML** features:
+Concrete-ML features:
 
 - built-in models, which are ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
 - support for customs models that can use quantization aware training. These are developed by the user using pytorch or keras/tensorflow and are imported into Concrete-ML through ONNX
 
 ## Installation.
 
-Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
+Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 
 |               OS / HW                | Available on Docker | Available on pip |
 | :----------------------------------: | :-----------------: | :--------------: |
@@ -52,7 +52,7 @@ Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
 |            macOS (Intel)             |         Yes         |       Yes        |
 | macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |   Coming soon    |
 
-Note: **Concrete-ML** only supports Python `3.8` and `3.9`. Platforms like [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use Python `3.7` which is a deprecated version and is not currently supported in Concrete-ML.
+Note: Concrete-ML only supports Python `3.8` and `3.9`. Platforms like [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use Python `3.7` which is a deprecated version and is not currently supported in Concrete-ML.
 
 ### Docker.
 
@@ -62,7 +62,7 @@ To install with Docker, pull the `concrete-ml` image as follows:
 
 ### Pip.
 
-To install **Concrete-ML** from PyPi, run the following:
+To install Concrete-ML from PyPi, run the following:
 
 ```
 pip install -U pip wheel setuptools
@@ -114,7 +114,7 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 #  Comparison: 100% similar
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of **Concrete-ML**. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar the APIs are to their non-FHE counterparts.
+We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of Concrete-ML. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar the APIs are to their non-FHE counterparts.
 
 ## Online demos and tutorials.
 

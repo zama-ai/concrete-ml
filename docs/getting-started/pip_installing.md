@@ -4,7 +4,7 @@
 Please not that not all hardware/OS combinations are supported. Determine your platform, OS version and python version before referencing the table below.
 {% endhint %}
 
-Depending on your OS, **Concrete-ML** may be installed with Docker or with pip:
+Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 
 |               OS / HW                | Available on Docker | Available on pip |
 | :----------------------------------: | :-----------------: | :--------------: |

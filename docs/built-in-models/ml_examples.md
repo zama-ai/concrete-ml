@@ -14,7 +14,7 @@ The following table summarizes the various examples in this section, along with 
 
 _A * means that FHE accuracy was calculated on a subset of the validation set._
 
-## **Concrete-ML** models
+## Concrete-ML models
 
 - [LinearRegression.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LinearRegression.ipynb)
 - [LogisticRegression.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LogisticRegression.ipynb)
