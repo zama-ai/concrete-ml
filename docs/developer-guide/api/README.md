@@ -14,14 +14,14 @@
 - [`concrete.ml.onnx`](./concrete.ml.onnx.md#module-concretemlonnx): ONNX module.
 - [`concrete.ml.onnx.convert`](./concrete.ml.onnx.convert.md#module-concretemlonnxconvert): ONNX conversion related code.
 - [`concrete.ml.onnx.onnx_model_manipulations`](./concrete.ml.onnx.onnx_model_manipulations.md#module-concretemlonnxonnx_model_manipulations): Some code to manipulate models.
-- [`concrete.ml.onnx.onnx_utils`](./concrete.ml.onnx.onnx_utils.md#module-concretemlonnxonnx_utils): Utils to interpret an ONNX model with numpy.
-- [`concrete.ml.onnx.ops_impl`](./concrete.ml.onnx.ops_impl.md#module-concretemlonnxops_impl): ONNX ops implementation in python + numpy.
+- [`concrete.ml.onnx.onnx_utils`](./concrete.ml.onnx.onnx_utils.md#module-concretemlonnxonnx_utils): Utils to interpret an ONNX model with NumPy.
+- [`concrete.ml.onnx.ops_impl`](./concrete.ml.onnx.ops_impl.md#module-concretemlonnxops_impl): ONNX ops implementation in Python + NumPy.
 - [`concrete.ml.quantization`](./concrete.ml.quantization.md#module-concretemlquantization): Modules for quantization.
-- [`concrete.ml.quantization.base_quantized_op`](./concrete.ml.quantization.base_quantized_op.md#module-concretemlquantizationbase_quantized_op): Base Quantized Op class that implements quantization for a float numpy op.
+- [`concrete.ml.quantization.base_quantized_op`](./concrete.ml.quantization.base_quantized_op.md#module-concretemlquantizationbase_quantized_op): Base Quantized Op class that implements quantization for a float NumPy op.
 - [`concrete.ml.quantization.post_training`](./concrete.ml.quantization.post_training.md#module-concretemlquantizationpost_training): Post Training Quantization methods.
 - [`concrete.ml.quantization.quantized_module`](./concrete.ml.quantization.quantized_module.md#module-concretemlquantizationquantized_module): QuantizedModule API.
 - [`concrete.ml.quantization.quantized_ops`](./concrete.ml.quantization.quantized_ops.md#module-concretemlquantizationquantized_ops): Quantized versions of the ONNX operators for post training quantization.
-- [`concrete.ml.quantization.quantizers`](./concrete.ml.quantization.quantizers.md#module-concretemlquantizationquantizers): Quantization utilities for a numpy array/tensor.
+- [`concrete.ml.quantization.quantizers`](./concrete.ml.quantization.quantizers.md#module-concretemlquantizationquantizers): Quantization utilities for a NumPy array/tensor.
 - [`concrete.ml.sklearn`](./concrete.ml.sklearn.md#module-concretemlsklearn): Import sklearn models.
 - [`concrete.ml.sklearn.base`](./concrete.ml.sklearn.base.md#module-concretemlsklearnbase): Module that contains base classes for our libraries estimators.
 - [`concrete.ml.sklearn.glm`](./concrete.ml.sklearn.glm.md#module-concretemlsklearnglm): Implement sklearn's Generalized Linear Models (GLM).
@@ -32,11 +32,11 @@
 - [`concrete.ml.sklearn.svm`](./concrete.ml.sklearn.svm.md#module-concretemlsklearnsvm): Implement Support Vector Machine.
 - [`concrete.ml.sklearn.torch_module`](./concrete.ml.sklearn.torch_module.md#module-concretemlsklearntorch_module): Implement torch module.
 - [`concrete.ml.sklearn.tree`](./concrete.ml.sklearn.tree.md#module-concretemlsklearntree): Implement the sklearn tree models.
-- [`concrete.ml.sklearn.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#module-concretemlsklearntree_to_numpy): Implements the conversion of a tree model to a numpy function.
+- [`concrete.ml.sklearn.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#module-concretemlsklearntree_to_numpy): Implements the conversion of a tree model to a NumPy function.
 - [`concrete.ml.sklearn.xgb`](./concrete.ml.sklearn.xgb.md#module-concretemlsklearnxgb): Implements XGBoost models.
-- [`concrete.ml.torch`](./concrete.ml.torch.md#module-concretemltorch): Modules for torch to numpy conversion.
+- [`concrete.ml.torch`](./concrete.ml.torch.md#module-concretemltorch): Modules for torch to NumPy conversion.
 - [`concrete.ml.torch.compile`](./concrete.ml.torch.compile.md#module-concretemltorchcompile): torch compilation function.
-- [`concrete.ml.torch.numpy_module`](./concrete.ml.torch.numpy_module.md#module-concretemltorchnumpy_module): A torch to numpy module.
+- [`concrete.ml.torch.numpy_module`](./concrete.ml.torch.numpy_module.md#module-concretemltorchnumpy_module): A torch to NumPy module.
 - [`concrete.ml.version`](./concrete.ml.version.md#module-concretemlversion): File to manage the version of the package.
 
 ## Classes
@@ -45,7 +45,7 @@
 - [`fhe_client_server.FHEModelDev`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev): Dev API to save the model and then load and run the FHE circuit.
 - [`fhe_client_server.FHEModelServer`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver): Server API to load and run the FHE circuit.
 - [`ops_impl.ONNXMixedFunction`](./concrete.ml.onnx.ops_impl.md#class-onnxmixedfunction): A mixed quantized-raw valued onnx function.
-- [`base_quantized_op.QuantizedOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedop): Base class for quantized ONNX ops implemented in numpy.
+- [`base_quantized_op.QuantizedOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedop): Base class for quantized ONNX ops implemented in NumPy.
 - [`post_training.ONNXConverter`](./concrete.ml.quantization.post_training.md#class-onnxconverter): Base ONNX to Concrete ML computation graph conversion class.
 - [`post_training.PostTrainingAffineQuantization`](./concrete.ml.quantization.post_training.md#class-posttrainingaffinequantization): Post-training Affine Quantization.
 - [`post_training.PostTrainingQATImporter`](./concrete.ml.quantization.post_training.md#class-posttrainingqatimporter): Converter of Quantization Aware Training networks.
@@ -128,7 +128,7 @@
 - [`tree_to_numpy.Task`](./concrete.ml.sklearn.tree_to_numpy.md#class-task): Task enumerate.
 - [`xgb.XGBClassifier`](./concrete.ml.sklearn.xgb.md#class-xgbclassifier): Implements the XGBoost classifier.
 - [`xgb.XGBRegressor`](./concrete.ml.sklearn.xgb.md#class-xgbregressor): Implements the XGBoost regressor.
-- [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
+- [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to NumPy module.
 
 ## Functions
 
@@ -140,8 +140,8 @@
 - [`utils.generate_proxy_function`](./concrete.ml.common.utils.md#function-generate_proxy_function): Generate a proxy function for a function accepting only \*args type arguments.
 - [`utils.get_onnx_opset_version`](./concrete.ml.common.utils.md#function-get_onnx_opset_version): Return the ONNX opset_version.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
-- [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
-- [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the numpy equivalent forward of the provided torch Module.
+- [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the NumPy equivalent forward of the provided ONNX model.
+- [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the NumPy equivalent forward of the provided torch Module.
 - [`onnx_model_manipulations.clean_graph_after_sigmoid`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_sigmoid): Clean the graph of the onnx model, by removing nodes after the sigmoid.
 - [`onnx_model_manipulations.cut_onnx_graph_after_node_name`](./concrete.ml.onnx.onnx_model_manipulations.md#function-cut_onnx_graph_after_node_name): Cut the graph after the node with the given name.
 - [`onnx_model_manipulations.keep_following_outputs_discard_others`](./concrete.ml.onnx.onnx_model_manipulations.md#function-keep_following_outputs_discard_others): Keep the outputs given in outputs_to_keep and remove the others from the model.
@@ -153,65 +153,65 @@
 - [`onnx_utils.get_attribute`](./concrete.ml.onnx.onnx_utils.md#function-get_attribute): Get the attribute from an ONNX AttributeProto.
 - [`onnx_utils.get_op_name`](./concrete.ml.onnx.onnx_utils.md#function-get_op_name): Construct the qualified name of the ONNX operator.
 - [`ops_impl.cast_to_float`](./concrete.ml.onnx.ops_impl.md#function-cast_to_float): Cast values to floating points.
-- [`ops_impl.numpy_abs`](./concrete.ml.onnx.ops_impl.md#function-numpy_abs): Compute abs in numpy according to ONNX spec.
-- [`ops_impl.numpy_acos`](./concrete.ml.onnx.ops_impl.md#function-numpy_acos): Compute acos in numpy according to ONNX spec.
-- [`ops_impl.numpy_acosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_acosh): Compute acosh in numpy according to ONNX spec.
-- [`ops_impl.numpy_add`](./concrete.ml.onnx.ops_impl.md#function-numpy_add): Compute add in numpy according to ONNX spec.
-- [`ops_impl.numpy_asin`](./concrete.ml.onnx.ops_impl.md#function-numpy_asin): Compute asin in numpy according to ONNX spec.
-- [`ops_impl.numpy_asinh`](./concrete.ml.onnx.ops_impl.md#function-numpy_asinh): Compute sinh in numpy according to ONNX spec.
-- [`ops_impl.numpy_atan`](./concrete.ml.onnx.ops_impl.md#function-numpy_atan): Compute atan in numpy according to ONNX spec.
-- [`ops_impl.numpy_atanh`](./concrete.ml.onnx.ops_impl.md#function-numpy_atanh): Compute atanh in numpy according to ONNX spec.
+- [`ops_impl.numpy_abs`](./concrete.ml.onnx.ops_impl.md#function-numpy_abs): Compute abs in NumPy according to ONNX spec.
+- [`ops_impl.numpy_acos`](./concrete.ml.onnx.ops_impl.md#function-numpy_acos): Compute acos in NumPy according to ONNX spec.
+- [`ops_impl.numpy_acosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_acosh): Compute acosh in NumPy according to ONNX spec.
+- [`ops_impl.numpy_add`](./concrete.ml.onnx.ops_impl.md#function-numpy_add): Compute add in NumPy according to ONNX spec.
+- [`ops_impl.numpy_asin`](./concrete.ml.onnx.ops_impl.md#function-numpy_asin): Compute asin in NumPy according to ONNX spec.
+- [`ops_impl.numpy_asinh`](./concrete.ml.onnx.ops_impl.md#function-numpy_asinh): Compute sinh in NumPy according to ONNX spec.
+- [`ops_impl.numpy_atan`](./concrete.ml.onnx.ops_impl.md#function-numpy_atan): Compute atan in NumPy according to ONNX spec.
+- [`ops_impl.numpy_atanh`](./concrete.ml.onnx.ops_impl.md#function-numpy_atanh): Compute atanh in NumPy according to ONNX spec.
 - [`ops_impl.numpy_batchnorm`](./concrete.ml.onnx.ops_impl.md#function-numpy_batchnorm): Compute the batch normalization of the input tensor.
 - [`ops_impl.numpy_cast`](./concrete.ml.onnx.ops_impl.md#function-numpy_cast): Execute ONNX cast in Numpy.
-- [`ops_impl.numpy_celu`](./concrete.ml.onnx.ops_impl.md#function-numpy_celu): Compute celu in numpy according to ONNX spec.
+- [`ops_impl.numpy_celu`](./concrete.ml.onnx.ops_impl.md#function-numpy_celu): Compute celu in NumPy according to ONNX spec.
 - [`ops_impl.numpy_constant`](./concrete.ml.onnx.ops_impl.md#function-numpy_constant): Return the constant passed as a kwarg.
-- [`ops_impl.numpy_cos`](./concrete.ml.onnx.ops_impl.md#function-numpy_cos): Compute cos in numpy according to ONNX spec.
-- [`ops_impl.numpy_cosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_cosh): Compute cosh in numpy according to ONNX spec.
-- [`ops_impl.numpy_div`](./concrete.ml.onnx.ops_impl.md#function-numpy_div): Compute div in numpy according to ONNX spec.
-- [`ops_impl.numpy_elu`](./concrete.ml.onnx.ops_impl.md#function-numpy_elu): Compute elu in numpy according to ONNX spec.
-- [`ops_impl.numpy_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_equal): Compute equal in numpy according to ONNX spec.
-- [`ops_impl.numpy_erf`](./concrete.ml.onnx.ops_impl.md#function-numpy_erf): Compute erf in numpy according to ONNX spec.
-- [`ops_impl.numpy_exp`](./concrete.ml.onnx.ops_impl.md#function-numpy_exp): Compute exponential in numpy according to ONNX spec.
+- [`ops_impl.numpy_cos`](./concrete.ml.onnx.ops_impl.md#function-numpy_cos): Compute cos in NumPy according to ONNX spec.
+- [`ops_impl.numpy_cosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_cosh): Compute cosh in NumPy according to ONNX spec.
+- [`ops_impl.numpy_div`](./concrete.ml.onnx.ops_impl.md#function-numpy_div): Compute div in NumPy according to ONNX spec.
+- [`ops_impl.numpy_elu`](./concrete.ml.onnx.ops_impl.md#function-numpy_elu): Compute elu in NumPy according to ONNX spec.
+- [`ops_impl.numpy_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_equal): Compute equal in NumPy according to ONNX spec.
+- [`ops_impl.numpy_erf`](./concrete.ml.onnx.ops_impl.md#function-numpy_erf): Compute erf in NumPy according to ONNX spec.
+- [`ops_impl.numpy_exp`](./concrete.ml.onnx.ops_impl.md#function-numpy_exp): Compute exponential in NumPy according to ONNX spec.
 - [`ops_impl.numpy_flatten`](./concrete.ml.onnx.ops_impl.md#function-numpy_flatten): Flatten a tensor into a 2d array.
-- [`ops_impl.numpy_greater`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater): Compute greater in numpy according to ONNX spec.
-- [`ops_impl.numpy_greater_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_float): Compute greater in numpy according to ONNX spec and cast outputs to floats.
-- [`ops_impl.numpy_greater_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal): Compute greater or equal in numpy according to ONNX spec.
-- [`ops_impl.numpy_greater_or_equal_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal_float): Compute greater or equal in numpy according to ONNX specs and cast outputs to floats.
-- [`ops_impl.numpy_hardsigmoid`](./concrete.ml.onnx.ops_impl.md#function-numpy_hardsigmoid): Compute hardsigmoid in numpy according to ONNX spec.
-- [`ops_impl.numpy_hardswish`](./concrete.ml.onnx.ops_impl.md#function-numpy_hardswish): Compute hardswish in numpy according to ONNX spec.
-- [`ops_impl.numpy_identity`](./concrete.ml.onnx.ops_impl.md#function-numpy_identity): Compute identity in numpy according to ONNX spec.
-- [`ops_impl.numpy_leakyrelu`](./concrete.ml.onnx.ops_impl.md#function-numpy_leakyrelu): Compute leakyrelu in numpy according to ONNX spec.
-- [`ops_impl.numpy_less`](./concrete.ml.onnx.ops_impl.md#function-numpy_less): Compute less in numpy according to ONNX spec.
-- [`ops_impl.numpy_less_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_float): Compute less in numpy according to ONNX spec and cast outputs to floats.
-- [`ops_impl.numpy_less_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_or_equal): Compute less or equal in numpy according to ONNX spec.
-- [`ops_impl.numpy_less_or_equal_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_or_equal_float): Compute less or equal in numpy according to ONNX spec and cast outputs to floats.
-- [`ops_impl.numpy_log`](./concrete.ml.onnx.ops_impl.md#function-numpy_log): Compute log in numpy according to ONNX spec.
-- [`ops_impl.numpy_matmul`](./concrete.ml.onnx.ops_impl.md#function-numpy_matmul): Compute matmul in numpy according to ONNX spec.
-- [`ops_impl.numpy_mul`](./concrete.ml.onnx.ops_impl.md#function-numpy_mul): Compute mul in numpy according to ONNX spec.
-- [`ops_impl.numpy_not`](./concrete.ml.onnx.ops_impl.md#function-numpy_not): Compute not in numpy according to ONNX spec.
-- [`ops_impl.numpy_not_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_not_float): Compute not in numpy according to ONNX spec and cast outputs to floats.
-- [`ops_impl.numpy_or`](./concrete.ml.onnx.ops_impl.md#function-numpy_or): Compute or in numpy according to ONNX spec.
-- [`ops_impl.numpy_or_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_or_float): Compute or in numpy according to ONNX spec and cast outputs to floats.
-- [`ops_impl.numpy_pow`](./concrete.ml.onnx.ops_impl.md#function-numpy_pow): Compute pow in numpy according to ONNX spec.
-- [`ops_impl.numpy_relu`](./concrete.ml.onnx.ops_impl.md#function-numpy_relu): Compute relu in numpy according to ONNX spec.
-- [`ops_impl.numpy_round`](./concrete.ml.onnx.ops_impl.md#function-numpy_round): Compute round in numpy according to ONNX spec.
-- [`ops_impl.numpy_selu`](./concrete.ml.onnx.ops_impl.md#function-numpy_selu): Compute selu in numpy according to ONNX spec.
-- [`ops_impl.numpy_sigmoid`](./concrete.ml.onnx.ops_impl.md#function-numpy_sigmoid): Compute sigmoid in numpy according to ONNX spec.
-- [`ops_impl.numpy_sin`](./concrete.ml.onnx.ops_impl.md#function-numpy_sin): Compute sin in numpy according to ONNX spec.
-- [`ops_impl.numpy_sinh`](./concrete.ml.onnx.ops_impl.md#function-numpy_sinh): Compute sinh in numpy according to ONNX spec.
-- [`ops_impl.numpy_softplus`](./concrete.ml.onnx.ops_impl.md#function-numpy_softplus): Compute softplus in numpy according to ONNX spec.
-- [`ops_impl.numpy_sub`](./concrete.ml.onnx.ops_impl.md#function-numpy_sub): Compute sub in numpy according to ONNX spec.
-- [`ops_impl.numpy_tan`](./concrete.ml.onnx.ops_impl.md#function-numpy_tan): Compute tan in numpy according to ONNX spec.
-- [`ops_impl.numpy_tanh`](./concrete.ml.onnx.ops_impl.md#function-numpy_tanh): Compute tanh in numpy according to ONNX spec.
-- [`ops_impl.numpy_thresholdedrelu`](./concrete.ml.onnx.ops_impl.md#function-numpy_thresholdedrelu): Compute thresholdedrelu in numpy according to ONNX spec.
-- [`ops_impl.numpy_transpose`](./concrete.ml.onnx.ops_impl.md#function-numpy_transpose): Transpose in numpy according to ONNX spec.
+- [`ops_impl.numpy_greater`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater): Compute greater in NumPy according to ONNX spec.
+- [`ops_impl.numpy_greater_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_float): Compute greater in NumPy according to ONNX spec and cast outputs to floats.
+- [`ops_impl.numpy_greater_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal): Compute greater or equal in NumPy according to ONNX spec.
+- [`ops_impl.numpy_greater_or_equal_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal_float): Compute greater or equal in NumPy according to ONNX specs and cast outputs to floats.
+- [`ops_impl.numpy_hardsigmoid`](./concrete.ml.onnx.ops_impl.md#function-numpy_hardsigmoid): Compute hardsigmoid in NumPy according to ONNX spec.
+- [`ops_impl.numpy_hardswish`](./concrete.ml.onnx.ops_impl.md#function-numpy_hardswish): Compute hardswish in NumPy according to ONNX spec.
+- [`ops_impl.numpy_identity`](./concrete.ml.onnx.ops_impl.md#function-numpy_identity): Compute identity in NumPy according to ONNX spec.
+- [`ops_impl.numpy_leakyrelu`](./concrete.ml.onnx.ops_impl.md#function-numpy_leakyrelu): Compute leakyrelu in NumPy according to ONNX spec.
+- [`ops_impl.numpy_less`](./concrete.ml.onnx.ops_impl.md#function-numpy_less): Compute less in NumPy according to ONNX spec.
+- [`ops_impl.numpy_less_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_float): Compute less in NumPy according to ONNX spec and cast outputs to floats.
+- [`ops_impl.numpy_less_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_or_equal): Compute less or equal in NumPy according to ONNX spec.
+- [`ops_impl.numpy_less_or_equal_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_or_equal_float): Compute less or equal in NumPy according to ONNX spec and cast outputs to floats.
+- [`ops_impl.numpy_log`](./concrete.ml.onnx.ops_impl.md#function-numpy_log): Compute log in NumPy according to ONNX spec.
+- [`ops_impl.numpy_matmul`](./concrete.ml.onnx.ops_impl.md#function-numpy_matmul): Compute matmul in NumPy according to ONNX spec.
+- [`ops_impl.numpy_mul`](./concrete.ml.onnx.ops_impl.md#function-numpy_mul): Compute mul in NumPy according to ONNX spec.
+- [`ops_impl.numpy_not`](./concrete.ml.onnx.ops_impl.md#function-numpy_not): Compute not in NumPy according to ONNX spec.
+- [`ops_impl.numpy_not_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_not_float): Compute not in NumPy according to ONNX spec and cast outputs to floats.
+- [`ops_impl.numpy_or`](./concrete.ml.onnx.ops_impl.md#function-numpy_or): Compute or in NumPy according to ONNX spec.
+- [`ops_impl.numpy_or_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_or_float): Compute or in NumPy according to ONNX spec and cast outputs to floats.
+- [`ops_impl.numpy_pow`](./concrete.ml.onnx.ops_impl.md#function-numpy_pow): Compute pow in NumPy according to ONNX spec.
+- [`ops_impl.numpy_relu`](./concrete.ml.onnx.ops_impl.md#function-numpy_relu): Compute relu in NumPy according to ONNX spec.
+- [`ops_impl.numpy_round`](./concrete.ml.onnx.ops_impl.md#function-numpy_round): Compute round in NumPy according to ONNX spec.
+- [`ops_impl.numpy_selu`](./concrete.ml.onnx.ops_impl.md#function-numpy_selu): Compute selu in NumPy according to ONNX spec.
+- [`ops_impl.numpy_sigmoid`](./concrete.ml.onnx.ops_impl.md#function-numpy_sigmoid): Compute sigmoid in NumPy according to ONNX spec.
+- [`ops_impl.numpy_sin`](./concrete.ml.onnx.ops_impl.md#function-numpy_sin): Compute sin in NumPy according to ONNX spec.
+- [`ops_impl.numpy_sinh`](./concrete.ml.onnx.ops_impl.md#function-numpy_sinh): Compute sinh in NumPy according to ONNX spec.
+- [`ops_impl.numpy_softplus`](./concrete.ml.onnx.ops_impl.md#function-numpy_softplus): Compute softplus in NumPy according to ONNX spec.
+- [`ops_impl.numpy_sub`](./concrete.ml.onnx.ops_impl.md#function-numpy_sub): Compute sub in NumPy according to ONNX spec.
+- [`ops_impl.numpy_tan`](./concrete.ml.onnx.ops_impl.md#function-numpy_tan): Compute tan in NumPy according to ONNX spec.
+- [`ops_impl.numpy_tanh`](./concrete.ml.onnx.ops_impl.md#function-numpy_tanh): Compute tanh in NumPy according to ONNX spec.
+- [`ops_impl.numpy_thresholdedrelu`](./concrete.ml.onnx.ops_impl.md#function-numpy_thresholdedrelu): Compute thresholdedrelu in NumPy according to ONNX spec.
+- [`ops_impl.numpy_transpose`](./concrete.ml.onnx.ops_impl.md#function-numpy_transpose): Transpose in NumPy according to ONNX spec.
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
-- [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
+- [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a NumPy onnx function to flag the raw/non quantized inputs.
 - [`ops_impl.torch_avgpool`](./concrete.ml.onnx.ops_impl.md#function-torch_avgpool): Compute Average Pooling using Torch.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
-- [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a numpy functions using Hummingbird.
+- [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a NumPy functions using Hummingbird.
 - [`compile.compile_brevitas_qat_model`](./concrete.ml.torch.compile.md#function-compile_brevitas_qat_model): Compile a Brevitas Quantization Aware Training model.
-- [`compile.compile_onnx_model`](./concrete.ml.torch.compile.md#function-compile_onnx_model): Compile a torch module into an FHE equivalent.
-- [`compile.compile_torch_model`](./concrete.ml.torch.compile.md#function-compile_torch_model): Compile a torch module into an FHE equivalent.
-- [`compile.convert_torch_tensor_or_numpy_array_to_numpy_array`](./concrete.ml.torch.compile.md#function-convert_torch_tensor_or_numpy_array_to_numpy_array): Convert a torch tensor or a numpy array to a numpy array.
+- [`compile.compile_onnx_model`](./concrete.ml.torch.compile.md#function-compile_onnx_model): Compile a torch module into a FHE equivalent.
+- [`compile.compile_torch_model`](./concrete.ml.torch.compile.md#function-compile_torch_model): Compile a torch module into a FHE equivalent.
+- [`compile.convert_torch_tensor_or_numpy_array_to_numpy_array`](./concrete.ml.torch.compile.md#function-convert_torch_tensor_or_numpy_array_to_numpy_array): Convert a torch tensor or a NumPy array to a NumPy array.

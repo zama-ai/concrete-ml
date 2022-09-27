@@ -23,7 +23,7 @@ Additionally, the [client/server API](client_server.md) packages the result of t
 
 ## Simulation with the Virtual Library
 
-The first step in the list above takes a python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph.
+The first step in the list above takes a Python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph.
 
 The result of this single step of the compilation pipeline allows to:
 
@@ -83,7 +83,7 @@ Moreover, the maximum accumulator bit-width is determined as follows:
 <!--pytest-codeblocks:skip-->
 
 ```python
-    bitwidth = clf.quantized_module_.forward_fhe.graph.maximum_integer_bit_width()
+    bit_width = clf.quantized_module_.forward_fhe.graph.maximum_integer_bit_width()
 ```
 
 ## A simple Concrete-Numpy example
@@ -114,9 +114,9 @@ inputset = numpy.arange(0, 2**n_bits_input).reshape(-1, 1)
 circuit = linear_model.compile(inputset)
 
 # Use the API to get the maximum bit-width in the circuit
-max_bitwidth = circuit.graph.maximum_integer_bit_width()
-print("Max bitwidth = ", max_bitwidth)
-# Max bitwidth =  4
+max_bit_width = circuit.graph.maximum_integer_bit_width()
+print("Max bit_width = ", max_bit_width)
+# Max bit_width =  4
 
 # Test our FHE inference
 circuit.encrypt_run_decrypt(numpy.array([3]))

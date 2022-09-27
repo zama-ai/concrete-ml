@@ -41,7 +41,7 @@ Convert the tree inference to a numpy functions using Hummingbird.
 
 **Returns:**
 
-- <b>`Tuple[Callable, List[QuantizedArray], onnx.ModelProto]`</b>:  A tuple with a function that takes a  numpy array and returns a numpy array, QuantizedArray object to quantize and dequantize  the output of the tree, and the ONNX model.
+- <b>`Tuple[Callable, List[QuantizedArray], onnx.ModelProto]`</b>:  A tuple with a function that takes a  numpy array and returns a numpy array, QuantizedArray object to quantize and de-quantize  the output of the tree, and the ONNX model.
 
 ______________________________________________________________________
 

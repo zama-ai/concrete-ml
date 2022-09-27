@@ -5,7 +5,7 @@ In addition to the built-in models, Concrete-ML supports generic machine learnin
 As [Quantization Aware Training (QAT)](../advanced-topics/quantization.md) is the most appropriate method of training
 neural networks that are compatible with [FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), Concrete-ML works with [Brevitas](../developer-guide/external_libraries.md#brevitas), a library providing QAT support for PyTorch.
 
-The following example uses a simple QAT torch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy.
+The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy.
 
 ```python
 import brevitas.nn as qnn
@@ -68,12 +68,12 @@ and the encrypted inference run using either:
 
 ## Generic quantization aware training import
 
-While the example above shows how to import a Brevitas/torch model, Concrete-ML also provides an option to import generic quantization aware trained (QAT) models implemented either in
-torch or through ONNX.
+While the example above shows how to import a Brevitas/PyTorch model, Concrete-ML also provides an option to import generic quantization aware trained (QAT) models implemented either in
+PyTorch or through ONNX.
 
-QAT models contain quantizers in the torch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
+QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
-Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a torch QAT network you can use the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) library function, passing `import_qat=True`:
+Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a PyTorch QAT network you can use the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) library function, passing `import_qat=True`:
 
 <!--pytest-codeblocks:skip-->
 
@@ -97,7 +97,7 @@ When importing QAT models using this generic pipeline, a representative calibrat
 
 ## Supported Operators and Activations
 
-Concrete-ML supports a variety of torch operators that can be used to build fully connected or convolutional neural networks, with normalization and activation layers. Moreover, many element-wise operators are supported.
+Concrete-ML supports a variety of PyTorch operators that can be used to build fully connected or convolutional neural networks, with normalization and activation layers. Moreover, many element-wise operators are supported.
 
 ### Operators
 

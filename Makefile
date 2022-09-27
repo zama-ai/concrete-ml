@@ -140,7 +140,7 @@ pcc:
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
-PCC_DEPS += gitleaks
+PCC_DEPS += check_forbidden_words gitleaks
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -685,3 +685,9 @@ actionlint:
 .PHONY: download_datasets # Download datasets used in jupyter notebooks
 download_datasets:
 	poetry run env ./script/kaggle_utils/download_datasets.sh
+
+.PHONY: check_forbidden_words # Check forbidden words
+check_forbidden_words:
+	./script/make_utils/check_forbidden_words.sh
+
+

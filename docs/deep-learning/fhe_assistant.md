@@ -4,11 +4,11 @@ This section provides a set of tools and guidelines to help users build optimize
 
 ## Virtual library
 
-The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler that allow users to simulate what would happen when converting a model to FHE without the current bit width constraint, as well as quickly simulating the behavior with 8 bits or less without actually doing the FHE computations.
+The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler that allow users to simulate what would happen when converting a model to FHE without the current bit-width constraint, as well as quickly simulating the behavior with 8 bits or less without actually doing the FHE computations.
 
 The Virtual Lib can be useful when developing and iterating on an ML model implementation. For example, you can check that your model is compatible in terms of operands (all integers) with the Virtual Lib compilation. Then, you can check how many bits your ML model would require, which can give you hints as to how it should be modified if you want to compile it to an actual FHE Circuit (not a simulated one) that only supports 8 bits of integer precision.
 
-The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution, thus allowing for faster iterations, debugging and FHE simulation, regardless of the bit width used. This was for example used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
+The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution, thus allowing for faster iterations, debugging and FHE simulation, regardless of the bit-width used. This was for example used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
 The following example shows how to use the Virtual Lib in Concrete-ML. Simply add `use_virtual_lib = True` and `enable_unsafe_features = True` in a `Configuration`. The result of the compilation will then be a simulated circuit that allows for more precision or simulated FHE execution.
 
@@ -47,7 +47,7 @@ from concrete.ml.torch.compile import compile_torch_model
 
 N_FEAT = 2
 class SimpleNet(nn.Module):
-    """Simple MLP with torch"""
+    """Simple MLP with PyTorch"""
 
     def __init__(self, n_hidden=30):
         super().__init__()

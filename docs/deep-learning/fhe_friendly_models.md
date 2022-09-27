@@ -2,14 +2,14 @@
 
 This section includes a complete example of converting a neural network to Quantization Aware Training.
 This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can
-find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world dataset please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
+find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world data-set please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
 
 For a more formal description of the usage of Brevitas to build FHE compatible neural networks,
 please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 
 ## Summary
 
-1. [Building a standard baseline torch model](#baseline-model)
+1. [Building a standard baseline PyTorch model](#baseline-model)
 1. [Adding pruning to make learning more robust](#pruning-using-torch)
 1. [Converting to Quantization Aware Training with Brevitas](#quantization-aware-training-qat)
 
@@ -25,7 +25,7 @@ import torch
 
 N_FEAT = 2
 class SimpleNet(nn.Module):
-    """Simple MLP with torch"""
+    """Simple MLP with PyTorch"""
 
     def __init__(self, n_hidden=30):
         super().__init__()
@@ -78,7 +78,7 @@ The following code shows how to use pruning in the previous example:
 import torch.nn.utils.prune as prune
 
 class PrunedSimpleNet(SimpleNet):
-    """Simple MLP with torch"""
+    """Simple MLP with PyTorch"""
 
     def prune(self, max_non_zero, enable):
         # Linear layer weight has dimensions NumOutputs x NumInputs
@@ -242,7 +242,7 @@ Training this network with 30 non-zero neurons out of 100 total gives good accur
 | accumulator size             | 7     |
 
 {% hint style="info" %}
-The torch QAT training loop is the same as the standard floating point training loop, but hyperparameters such as learning rate might need to be adjusted.
+The PyTorch QAT training loop is the same as the standard floating point training loop, but hyperparameters such as learning rate might need to be adjusted.
 {% endhint %}
 
 {% hint style="info" %}

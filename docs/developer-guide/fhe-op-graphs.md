@@ -1,6 +1,6 @@
 # FHE Op-graphs
 
-The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to an FHE compatible Concrete-ML op-graph. This section describes the implementation of the operations in the Concrete-ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
+The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to a FHE compatible Concrete-ML op-graph. This section describes the implementation of the operations in the Concrete-ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
 
 ## Float vs. quantized operations
 
@@ -28,7 +28,7 @@ There are two modes of creation of a single table lookup for a chain of ONNX ope
 
 Thus, `QuantizedOp` instances may need to quantize their inputs or the result of their computation, depending on their position in the graph.
 
-The `QuantizedOp` class provides a generic implementation of an ONNX operation, including quantization of inputs and outputs, with the computation implemented in numpy in `ops_impl.py`. It is possible to picture at the architecture of the `QuantizedOp` as the following structure:
+The `QuantizedOp` class provides a generic implementation of an ONNX operation, including quantization of inputs and outputs, with the computation implemented in NumPy in `ops_impl.py`. It is possible to picture at the architecture of the `QuantizedOp` as the following structure:
 
 ![](../.gitbook/assets/image_4.png)
 
@@ -64,7 +64,7 @@ To chain the operation types described above, following the ONNX graph, Concrete
 
 ![](../.gitbook/assets/image_6.png)
 
-The red contours show the groups of elementary Concrete Numpy instructions that will be converted to TLUs.
+The red contours show the groups of elementary Concrete-Numpy instructions that will be converted to TLUs.
 
 Note that the input is slightly different from the `QuantizedOp`. Since the encrypted function takes integers as inputs, the input needs to be dequantized first.
 

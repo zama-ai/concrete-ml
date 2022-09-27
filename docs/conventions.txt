@@ -27,7 +27,7 @@ Programs:
     Jupyter
     NumPy but "Concrete Numpy"
     Concrete-ML in text but Concrete ML in titles, same Concrete-anything; concrete-ml when in command line
-    **Concrete[- ]Something** with **
+    Concrete[- ]Something without **
     pytest except when title where it is capitalized
     Python
     torch (for the code) and PyTorch (for the product)

@@ -63,7 +63,7 @@ e.g.
 ```shell
 git commit -m "feat: implement bounds checking"
 git commit -m "feat(debugging): add an helper function to draw intermediate representation"
-git commit -m "fix(tracing): fix a bug that crashed pytorch tracer"
+git commit -m "fix(tracing): fix a bug that crashed PyTorch tracer"
 ```
 
 To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step, and rejected if they don't follow the rules.

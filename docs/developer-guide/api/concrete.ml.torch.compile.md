@@ -54,7 +54,7 @@ compile_torch_model(
 ) → QuantizedModule
 ```
 
-Compile a torch module into an FHE equivalent.
+Compile a torch module into a FHE equivalent.
 
 Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Numpy
 
@@ -94,7 +94,7 @@ compile_onnx_model(
 ) → QuantizedModule
 ```
 
-Compile a torch module into an FHE equivalent.
+Compile a torch module into a FHE equivalent.
 
 Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Numpy
 
@@ -102,7 +102,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 - <b>`onnx_model`</b> (onnx.ModelProto):  the model to quantize
 - <b>`torch_inputset`</b> (Dataset):  the inputset, can contain either torch  tensors or numpy.ndarray, only datasets with a single input are supported for now.
-- <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not requantize it.
+- <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not re-quantize it.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo

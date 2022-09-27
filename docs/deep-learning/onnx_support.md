@@ -58,7 +58,7 @@ keras_model.build((None,) + input_shape)
 keras_model.compute_output_shape(input_shape=(None, input_output_feature))
 
 # Create random input
-inputset = numpy.random.uniform(-100, 100, size=(n_examples, *input_shape))
+input_set = numpy.random.uniform(-100, 100, size=(n_examples, *input_shape))
 
 # Convert to ONNX
 tf2onnx.convert.from_keras(keras_model, opset=14, output_path="tmp.model.onnx")
@@ -68,7 +68,7 @@ onnx.checker.check_model(onnx_model)
 
 # Compile
 quantized_numpy_module = compile_onnx_model(
-    onnx_model, inputset, n_bits=2
+    onnx_model, input_set, n_bits=2
 )
 
 # Create test data from the same distribution and quantize using
@@ -99,7 +99,7 @@ n_bits_qat = 3  # number of bits for weights and activations during training
 
 quantized_numpy_module = compile_onnx_model(
     onnx_model,
-    inputset,
+    input_set,
     import_qat=True,
     n_bits=n_bits_qat,
 )

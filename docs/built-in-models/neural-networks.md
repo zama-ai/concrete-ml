@@ -62,7 +62,7 @@ The figure above shows, on the right, the Concrete-ML neural network, trained wi
 
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
-- `n_accum_bits` (default 8): maximum accumulator bit width that is desired. The implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md), i.e. setting some weights to zero
+- `n_accum_bits` (default 8): maximum accumulator bit-width that is desired. The implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md), i.e. setting some weights to zero
 
 ### Training parameters (from Skorch)
 
@@ -78,7 +78,7 @@ The figure above shows, on the right, the Concrete-ML neural network, trained wi
 
 ### Network input/output
 
-When you have training data in the form of a Numpy array, and targets in a Numpy 1d array, you can set:
+When you have training data in the form of a NumPy array, and targets in a NumPy 1d array, you can set:
 
 <!--pytest-codeblocks:skip-->
 
@@ -90,7 +90,7 @@ When you have training data in the form of a Numpy array, and targets in a Numpy
 
 ### Class weights
 
-You can give weights to each class, to use in training. Note that this must be supported by the underlying torch loss function.
+You can give weights to each class, to use in training. Note that this must be supported by the underlying PyTorch loss function.
 
 <!--pytest-codeblocks:skip-->
 

@@ -4,7 +4,7 @@
 
 # <kbd>module</kbd> `concrete.ml.onnx.ops_impl`
 
-ONNX ops implementation in python + numpy.
+ONNX ops implementation in Python + NumPy.
 
 ______________________________________________________________________
 

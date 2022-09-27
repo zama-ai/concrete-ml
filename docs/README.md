@@ -50,7 +50,7 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 This example shows the typical flow of a Concrete-ML model:
 
 - The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete-ML quantizes the model to use only integers during inference
-- The quantized model is compiled to an FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled
+- The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled
 - Inference can then be done on encrypted data. The above example shows encrypted inference in the model development phase. Alternatively, in deployment in a client/server setting, the data is encrypted by the client, processed securely by the server and then decrypted by the client.
 
 ## Current limitations
@@ -61,7 +61,7 @@ Concrete-ML is built on top of Zama’s Concrete framework. It uses [Concrete-Nu
 
 As Concrete-ML only supports 8-bit encrypted integer arithmetic, machine learning models are required to be quantized, which sometimes leads to loss of accuracy versus the original model operating on plaintext.
 
-Additionally, Concrete-ML currently only supports FHE _inference_. On the other hand, training has to be done on unencrypted data, producing a model which is then converted to an FHE equivalent that can perform encrypted inference, i.e. prediction over encrypted data.
+Additionally, Concrete-ML currently only supports FHE _inference_. On the other hand, training has to be done on unencrypted data, producing a model which is then converted to a FHE equivalent that can perform encrypted inference, i.e. prediction over encrypted data.
 
 Finally, in Concrete-ML there is currently no support for pre-processing model inputs and for post-processing model outputs. These processing stages may involve text to numerical feature transformation, dimensionality reduction, KNN or clustering, featurization, normalization, and mixing of results of ensemble models.
 
@@ -71,7 +71,7 @@ All of these issues are currently being addressed and significant improvements a
 
 Various tutorials are proposed for the [built-in models](built-in-models/ml_examples.md) and for [deep learning](deep-learning/examples.md). In addition, we also list standalone use-cases:
 
-- [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/README.md): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
+- [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/README.md): a Python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
 - [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available here(FIXME add link to https ://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis when it's online).
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
