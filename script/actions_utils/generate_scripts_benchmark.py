@@ -4,6 +4,19 @@ import datetime
 import json
 import subprocess
 
+MAX_VALUE = 100
+MIN_VALUE = 0
+
+
+def int_range(x: str) -> int:
+    """Cast string to int and raises an error if not in range."""
+    x_int = int(x)
+    if x_int > MAX_VALUE:
+        raise ValueError(f"{x_int} > {MAX_VALUE}")
+    if x_int < MIN_VALUE:
+        raise ValueError(f"{x_int} < {MIN_VALUE}")
+    return x_int
+
 
 def main():
     """Generate the list of commands to be launched.
@@ -15,6 +28,7 @@ def main():
     parser.add_argument("--classification", dest="classification", choices=["true", "false"])
     parser.add_argument("--regression", dest="regression", choices=["true", "false"])
     parser.add_argument("--glm", dest="glm", choices=["true", "false"])
+    parser.add_argument("--fhe_samples", dest="fhe_samples", type=int_range, default=100)
 
     args = parser.parse_args()
 
@@ -42,7 +56,7 @@ def main():
         script_commands = [
             elt.replace('"', '\\"')  # Needed to escape " when calling eval
             for elt in subprocess.check_output(
-                f"{command_start} {list_arg}",
+                f"{command_start} {list_arg} --fhe_samples {args.fhe_samples}",
                 shell=True,
             )
             .decode("utf-8")
