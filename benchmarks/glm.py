@@ -10,7 +10,12 @@ import numpy as np
 import pandas
 import py_progress_tracker as progress
 from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics, seed_everything
-from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+
+try:
+    from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+except ImportError:  # For backward compatibility purposes
+    from concrete.numpy import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
+
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA

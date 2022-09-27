@@ -11,65 +11,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
-
-def parse_args(name):
-    """Parse experiment name.
-
-    For now we put hyper-parameters in the experiment name.
-    So this function helps extract this information.
-    This needs to be extended for all CML models.
-    """
-    splitted = name.split("_")
-    model_name = splitted[0]
-    dataset_name = splitted[-1]
-    parsed_args = list(map(str, splitted[1:-1]))
-    args = {}
-
-    # Parse model_kwargs
-    if model_name == "RandomForestClassifier":
-        assert len(parsed_args) == 3, len(parsed_args)
-        args = {
-            "max_depth": parsed_args[0],
-            "n_estimators": parsed_args[1],
-            "n_bits": parsed_args[2],
-        }
-
-    elif model_name == "DecisionTreeClassifier":
-        if len(parsed_args) == 2:
-            args = {"max_depth": parsed_args[0], "n_bits": parsed_args[1]}
-        elif len(parsed_args) == 0:
-            args = {"max_depth": "default", "n_bits": "default"}
-        else:
-            raise ValueError(len(parsed_args))
-
-    elif model_name == "XGBClassifier":
-        assert len(parsed_args) == 3, len(parsed_args)
-        args = {
-            "max_depth": parsed_args[0],
-            "n_estimators": parsed_args[1],
-            "n_bits": parsed_args[2],
-        }
-    elif model_name == "LinearSVC":
-        assert len(parsed_args) == 1
-        args = {"n_bits": parsed_args[0]}
-
-    elif model_name == "LogisticRegression":
-        assert len(parsed_args) == 1
-        args = {"n_bits": parsed_args[0]}
-
-    elif model_name == "NeuralNetClassifier":
-        assert len(parsed_args) == 2, len(parsed_args)
-        args = {"n_w_bits": parsed_args[0], "n_accum_bits": parsed_args[1], "n_bits": "default"}
-    # Bold assumption here
-    elif len(parsed_args) == 1:
-        args = {"n_bits": parsed_args[0]}
-    else:
-        assert len(parsed_args) == 0, parsed_args
-    # FIXME: add regression models too here
-    # Seems like there will be some issues because we have underscores in some dataset names
-    # https://github.com/zama-ai/concrete-ml-internal/issues/1788
-
-    return model_name, dataset_name, args
+from common import benchmark_name_to_config
 
 
 def is_git_diff(path: Union[None, Path, str]) -> bool:
@@ -155,7 +97,7 @@ def convert_to_new_postgres(source: Path, target: Path, path_to_repository: Path
     # Create experiments
     experiments = []
     for experiment_name, experiment_values in progress["targets"].items():
-        model_name, dataset_name, hyper_args = parse_args(experiment_name)
+        model_name, dataset_name, hyper_args = benchmark_name_to_config(experiment_name)
         experiment_representation = {}
         experiment_representation["experiment_name"] = experiment_name
         experiment_representation["experiment_metadata"] = {

@@ -96,11 +96,8 @@ jobs:
         id: prepare-commands
         run: |
           source .venv/bin/activate
-          export LIST="${{ github.event.inputs.list }}"
-          export CLASSIFICATION="${{ github.event.inputs.classification }}"
-          export REGRESSION="${{ github.event.inputs.regression }}"
-          export GLM="${{ github.event.inputs.glm }}"
-          COMMANDS=$(python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }})
+          python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }} > commands.json
+          COMMANDS=$(<commands.json)
           export COMMANDS
           LENGTH=$(echo "${COMMANDS}" | jq '. | length')
           echo "${COMMANDS}"
@@ -112,6 +109,8 @@ jobs:
     needs: [prepare-scripts]
     secrets: inherit
     strategy:
+      # To avoid stopping all workflows if one fails
+      fail-fast: false
       matrix:
         index: ${{ fromJson(needs.prepare-scripts.outputs.commands) }}
       max-parallel: ${{ fromJson(needs.prepare-scripts.outputs.length) }}

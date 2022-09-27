@@ -90,7 +90,7 @@ def argument_manager():
     if args.models is None:  # Default to all models
         args.models = CLASSIFIERS
     else:  # Cast from string to class
-        args.models = [CLASSIFIERS_STRING_TO_CLASS[c] for c in args.classifiers]
+        args.models = [CLASSIFIERS_STRING_TO_CLASS[c] for c in args.models]
 
     return args
 

@@ -22,28 +22,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
-# Just for the linter to be happy
-try:
-    from concrete.ml.sklearn import (
-        DecisionTreeClassifier,
-        DecisionTreeRegressor,
-        ElasticNet,
-        Lasso,
-        LinearRegression,
-        LinearSVC,
-        LinearSVR,
-        LogisticRegression,
-        NeuralNetClassifier,
-        NeuralNetRegressor,
-        RandomForestClassifier,
-        RandomForestRegressor,
-        Ridge,
-        XGBClassifier,
-        XGBRegressor,
-    )
-except ImportError as exception:
-    print(exception)
-
 # Hack to import all models currently implemented in CML
 # (but that might not be implemented in targeted version)
 # FIXME: Add list of models as txt somewhere
@@ -64,9 +42,9 @@ CLASSIFIERS_NAMES = [
 ]
 for model_name in CLASSIFIERS_NAMES:
     try:
-        model = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
-        globals()[model_name] = model
-        CLASSIFIERS.append(model)
+        model_class = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
+        globals()[model_name] = model_class
+        CLASSIFIERS.append(model_class)
     except ImportError as exception:
         print(exception)
 
@@ -91,6 +69,9 @@ for model_name in REGRESSORS_NAMES:
         globals()[model_name] = model_class
         REGRESSORS.append(model_class)
     except ImportError as exception:
+        print(exception)
+        print(f"model: {model_name} could not be imported.")
+    except AttributeError as exception:
         print(exception)
         print(f"model: {model_name} could not be imported.")
 
@@ -318,52 +299,51 @@ def should_test_config_in_fhe(
     if local_args.execute_in_fhe != "auto":
         return local_args.execute_in_fhe
 
+    model_name = model.__name__
     assert config is not None
 
     # System override to disable FHE benchmarks (useful for debugging)
     if os.environ.get("BENCHMARK_NO_FHE", "0") == "1":
         return False
 
-    if model in {DecisionTreeClassifier, DecisionTreeRegressor}:
+    if model_name in {"DecisionTreeClassifier", "DecisionTreeRegressor"}:
         # Only small trees should be compiled to FHE
         if "max_depth" in config and config["max_depth"] is not None and config["n_bits"] <= 7:
             return True
         return False
 
-    if model is NeuralNetClassifier:
-        # For NNs only 7 bit accumulators with few neurons should be compiled to FHE
-        return (
-            config["module__n_accum_bits"] <= 7
-            and config["module__n_hidden_neurons_multiplier"] == 1
-        )
-
-    if model in {
-        LogisticRegression,
-        LinearRegression,
-        Lasso,
-        ElasticNet,
-        Ridge,
-        LinearSVC,
-        LinearSVR,
+    if model_name in {
+        "LogisticRegression",
+        "LinearRegression",
+        "Lasso",
+        "ElasticNet",
+        "Ridge",
+        "LinearSVC",
+        "LinearSVR",
     }:
         if config["n_bits"] <= 2 and n_features <= 14:
             return True
         if config["n_bits"] == 3 and n_features <= 2:
             return True
 
-    if model in {XGBClassifier, XGBRegressor, RandomForestClassifier, RandomForestRegressor}:
+    if model_name in {
+        "XGBClassifier",
+        "XGBRegressor",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+    }:
         if config["n_bits"] <= 7:
             return True
         return False
 
-    if model in {NeuralNetRegressor, NeuralNetClassifier}:
+    if model_name in {"NeuralNetRegressor", "NeuralNetClassifier"}:
         # For NNs only 7 bit accumulators with few neurons should be compiled to FHE
         return (
             config["module__n_accum_bits"] <= 7
             and config["module__n_hidden_neurons_multiplier"] == 1
         )
 
-    raise ValueError(f"Classifier {str(model)} configurations not yet setup for FHE")
+    raise ValueError(f"Classifier {str(model_name)} configurations not yet setup for FHE")
 
 
 # pylint: disable-next=too-many-branches
@@ -382,7 +362,7 @@ def train_and_test_regressor(
     if y.ndim == 1:
         y = np.expand_dims(y, 1)
 
-    if regressor is NeuralNetRegressor:
+    if regressor.__name__ == "NeuralNetRegressor":
         # Cast to a type that works for both sklearn and Torch
         X = X.astype(np.float32)
         y = y.astype(np.float32)
@@ -390,7 +370,7 @@ def train_and_test_regressor(
     # Split it into train/test and sort the sets for nicer visualization
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
-    if regressor is NeuralNetRegressor:
+    if regressor.__name__ == "NeuralNetRegressor":
         normalizer = StandardScaler()
         # Compute mean/stdev on training set and normalize both train and test sets with them
         x_train = normalizer.fit_transform(x_train)
@@ -561,7 +541,7 @@ def train_and_test_classifier(
     # FIXME: these parameters could be inferred from the data given to .fit
     # see https://github.com/zama-ai/concrete-ml-internal/issues/325
 
-    if classifier is NeuralNetClassifier:
+    if classifier.__name__ == "NeuralNetClassifier":
         classes = np.unique(y_all)
         config["module__input_dim"] = x_train.shape[1]
         config["module__n_outputs"] = len(classes)
@@ -699,37 +679,36 @@ def benchmark_name_generator(
     dataset_name: str, model: type, config: Dict[str, Any], joiner: str = "_"
 ) -> str:
     """Turns a combination of dataset + model + hyper-parameters and returns a string"""
-    if model in {
-        LinearSVR,
-        LinearSVC,
-        LogisticRegression,
-        LinearRegression,
-        Lasso,
-        ElasticNet,
-        Ridge,
-        DecisionTreeRegressor,
+    if model.__name__ in {
+        "LinearSVR",
+        "LinearSVC",
+        "LogisticRegression",
+        "LinearRegression",
+        "Lasso",
+        "ElasticNet",
+        "Ridge",
     }:
         config_str = f"_{config['n_bits']}"
 
-    elif model is NeuralNetRegressor:
+    elif model.__name__ == "NeuralNetRegressor":
         config_str = f"_{config['module__n_a_bits']}_{config['module__n_accum_bits']}"
 
-    elif model is NeuralNetClassifier:
+    elif model.__name__ == "NeuralNetClassifier":
         config_str = f"_{config['module__n_w_bits']}_{config['module__n_accum_bits']}"
 
-    elif model in {DecisionTreeRegressor, DecisionTreeClassifier}:
+    elif model.__name__ in {"DecisionTreeRegressor", "DecisionTreeClassifier"}:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_bits']}"
         else:
-            config_str = ""
+            config_str = f"_{config['n_bits']}"
 
-    elif model in {XGBClassifier, XGBRegressor}:
+    elif model.__name__ in {"XGBClassifier", "XGBRegressor"}:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
         else:
             config_str = f"_{config['n_estimators']}_{config['n_bits']}"
 
-    elif model in {RandomForestRegressor, RandomForestClassifier}:
+    elif model.__name__ in {"RandomForestRegressor", "RandomForestClassifier"}:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
         else:
@@ -742,6 +721,7 @@ def benchmark_name_generator(
 # FIXME: Add tests:
 # - Bijection between both functions
 # - The functions support all models
+# https://github.com/zama-ai/concrete-ml-internal/issues/1866
 # pylint: disable-next=too-many-branches, redefined-outer-name
 def benchmark_name_to_config(
     benchmark_name: str, joiner: str = "_"
@@ -752,35 +732,39 @@ def benchmark_name_to_config(
     dataset_name = splitted[-1]
     config_str = splitted[1:-1]
     config_dict = {}
-    model = MODELS_STRING_TO_CLASS[model_name]
 
-    if model in {
-        LinearRegression,
-        LinearSVR,
-        Lasso,
-        ElasticNet,
-        Ridge,
-        LinearSVC,
-        LogisticRegression,
+    if model_name in {
+        "LinearRegression",
+        "LinearSVR",
+        "Lasso",
+        "ElasticNet",
+        "Ridge",
+        "LinearSVC",
+        "LogisticRegression",
     }:
         config_dict["n_bits"] = int(config_str[0])
 
-    elif model is NeuralNetRegressor:
+    elif model_name == "NeuralNetRegressor":
         config_dict["module__n_a_bits"] = int(config_str[0])
         config_dict["module__n_accum_bits"] = int(config_str[1])
 
-    elif model is NeuralNetClassifier:
+    elif "model_name" == "NeuralNetClassifier":
         config_dict["module__n_w_bits"] = int(config_str[0])
         config_dict["module__n_accum_bits"] = int(config_str[1])
 
-    elif model in {DecisionTreeClassifier, DecisionTreeRegressor}:
+    elif model_name in {"DecisionTreeClassifier", "DecisionTreeRegressor"}:
         if len(config_str) == 2:
             config_dict["max_depth"] = int(config_str[0])
             config_dict["n_bits"] = int(config_str[1])
-        elif len(config_str) != 0:
-            raise ValueError
+        elif len(config_str) == 1:
+            config_dict["n_bits"] = int(config_str[0])
+        else:
+            raise ValueError(
+                f"{benchmark_name} couldn't be parsed\n"
+                f"{config_str} does not match any know configuration"
+            )
 
-    elif model in {XGBClassifier, XGBRegressor}:
+    elif model_name in {"XGBClassifier", "XGBRegressor"}:
         if len(config_str) == 3:
             config_dict["max_depth"] = int(config_str[0])
             config_dict["n_estimators"] = int(config_str[1])
@@ -789,9 +773,12 @@ def benchmark_name_to_config(
             config_dict["n_estimators"] = int(config_str[0])
             config_dict["n_bits"] = int(config_str[1])
         else:
-            raise ValueError
+            raise ValueError(
+                f"{benchmark_name} couldn't be parsed\n"
+                f"{config_str} does not match any know configuration"
+            )
 
-    elif model in {RandomForestClassifier, RandomForestRegressor}:
+    elif model_name in {"RandomForestClassifier", "RandomForestRegressor"}:
         if len(config_str) == 3:
             config_dict["max_depth"] = int(config_str[0])
             config_dict["n_estimators"] = int(config_str[1])
@@ -800,6 +787,9 @@ def benchmark_name_to_config(
             config_dict["n_estimators"] = int(config_str[0])
             config_dict["n_bits"] = int(config_str[1])
         else:
-            raise ValueError
+            raise ValueError(
+                f"{benchmark_name} couldn't be parsed\n"
+                f"{config_str} does not match any know configuration"
+            )
 
     return model_name, dataset_name, config_dict
