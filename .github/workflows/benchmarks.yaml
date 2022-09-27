@@ -100,7 +100,7 @@ jobs:
           export CLASSIFICATION="${{ github.event.inputs.classification }}"
           export REGRESSION="${{ github.event.inputs.regression }}"
           export GLM="${{ github.event.inputs.glm }}"
-          COMMANDS=$(python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regresssion ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }})
+          COMMANDS=$(python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }})
           export COMMANDS
           LENGTH=$(echo "${COMMANDS}" | jq '. | length')
           echo "${COMMANDS}"

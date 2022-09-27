@@ -15,13 +15,7 @@ on:
       instance_type:
         description: Instance type on which to launch benchmarks
         default: "c5.4xlarge"
-        type: choice
-        options:
-          - "c5.large"
-          - "c5.xlarge"
-          - "c5.2xlarge"
-          - "c5.4xlarge"
-          - "c5.12xlarge"
+        type: string
     secrets:
       NEW_ML_PROGRESS_TRACKER_TOKEN:
         description: "ML progress tracker token"
@@ -102,7 +96,6 @@ jobs:
               {"Key": "GitHash", "Value": "${{ github.sha }}"},
               {"Key": "RefName", "Value": "${{ github.ref_name }}"},
               {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Command", "Value": "${{ github.event.inputs.command }}"},
               {"Key": "TargetGitRef", "Value": "${{ github.event.inputs.git-ref }}"},
               {"Key": "Team", "Value": "CML"}
             ]
