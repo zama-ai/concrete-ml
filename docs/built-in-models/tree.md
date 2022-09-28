@@ -1,6 +1,6 @@
 # Tree-based Models
 
-Concrete-ML provides several of the most popular tree models `classification` that can be found in [Scikit-learn](https://scikit-learn.org/stable/):
+Concrete-ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-learn](https://scikit-learn.org/stable/):
 
 |                                                Concrete-ML                                                |                                                                           scikit-learn                                                                           |
 | :-------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
@@ -18,7 +18,7 @@ In addition to support for scikit-learn, Concrete-ML also supports [XGBoost](htt
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's preprocessing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer

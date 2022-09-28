@@ -242,7 +242,7 @@ Training this network with 30 non-zero neurons out of 100 total gives good accur
 | accumulator size             | 7     |
 
 {% hint style="info" %}
-The PyTorch QAT training loop is the same as the standard floating point training loop, but hyperparameters such as learning rate might need to be adjusted.
+The PyTorch QAT training loop is the same as the standard floating point training loop, but hyper-parameters such as learning rate might need to be adjusted.
 {% endhint %}
 
 {% hint style="info" %}

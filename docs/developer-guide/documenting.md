@@ -25,5 +25,5 @@ make open_docs
 To build and open the docs at the same time, use:
 
 ```shell
-make docs_and_open_docs
+make docs_and_open
 ```

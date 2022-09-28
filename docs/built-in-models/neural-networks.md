@@ -69,11 +69,12 @@ The figure above shows, on the right, the Concrete-ML neural network, trained wi
 - `max_epochs`: The number of epochs to train the network (default 10),
 - `verbose`: Whether to log loss/metrics during training (default: False)
 - `lr`: Learning rate (default 0.001)
-- Other parameters from skorch are in the [Skorch documentation](https://skorch.readthedocs.io/en/stable/classifier.html)
+
+Other parameters from skorch are in the [Skorch documentation](https://skorch.readthedocs.io/en/stable/classifier.html)
 
 ### Advanced parameters
 
-- `module__n_hidden_neurons_multiplier`: The number of hidden neurons will be automatically set proportional to the dimensionality of the input (i.e. the vlaue for `module__input_dim`). This parameter controls the proportionality factor, and is by default set to 4. This value gives good accuracy while avoiding accumulator overflow. See the [pruning](../advanced-topics/pruning.md)
+- `module__n_hidden_neurons_multiplier`: The number of hidden neurons will be automatically set proportional to the dimensionality of the input (i.e. the value for `module__input_dim`). This parameter controls the proportionality factor, and is by default set to 4. This value gives good accuracy while avoiding accumulator overflow. See the [pruning](../advanced-topics/pruning.md)
   and [quantization](../advanced-topics/quantization.md) sections for more info.
 
 ### Network input/output

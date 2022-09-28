@@ -2,7 +2,7 @@
 
 ## Hummingbird
 
-[Hummingbird](https://microsoft.github.io/hummingbird/) is a third party open-source library that converts machine learning models into tensor computations. Many algorithms (see [supported algorithms](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)) are converted using a specific backend (PyTorch, torchscript, ONNX and TVM).
+[Hummingbird](https://microsoft.github.io/hummingbird/) is a third party open-source library that converts machine learning models into tensor computations, and it can export these models to ONNX. The list of supported models can be found in [the Hummingbird documentation](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)).
 
 Concrete-ML allows the conversion of an ONNX inference to NumPy inference (note that NumPy is always the entry point to run models in FHE with Concrete ML).
 
@@ -72,7 +72,7 @@ The _"mixed integer"_ network design is defined as:
   (e.g. using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
 - PyTorch floating point versions of univariate functions can be used. E.g. `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`. See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
 
-The \_"mixed integer" mode used in Concrete-ML neural networks is based on the
+The _"mixed integer"_ mode used in Concrete-ML neural networks is based on the
 [_"integer only"_ Brevitas quantization](https://github.com/Xilinx/brevitas#low-precision-integer-only-lenet),
 that makes both weights and activations representable as integers during training. However,
 through the use of lookup tables in Concrete-ML, floating point univariate PyTorch functions are supported.

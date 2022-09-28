@@ -13,8 +13,8 @@ import torch.nn as nn
 import torch
 
 N_FEAT = 12
-
 n_bits = 3
+
 class QATSimpleNet(nn.Module):
     def __init__(self, n_hidden):
         super().__init__()
@@ -42,6 +42,7 @@ Once the model is trained, calling the [`compile_brevitas_qat_model`](../develop
 ```python
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 import numpy
+
 torch_input = torch.randn(100, N_FEAT)
 torch_model = QATSimpleNet(30)
 quantized_numpy_module = compile_brevitas_qat_model(
@@ -69,7 +70,7 @@ and the encrypted inference run using either:
 ## Generic quantization aware training import
 
 While the example above shows how to import a Brevitas/PyTorch model, Concrete-ML also provides an option to import generic quantization aware trained (QAT) models implemented either in
-PyTorch or through ONNX.
+PyTorch or through ONNX. Interestingly, deep learning models made with TensorFlow or Keras should be usable, by preliminary converting them to ONNX.
 
 QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 

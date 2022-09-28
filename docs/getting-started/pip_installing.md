@@ -1,7 +1,7 @@
 # Installation
 
 {% hint style="danger" %}
-Please not that not all hardware/OS combinations are supported. Determine your platform, OS version and Python version before referencing the table below.
+Please note that not all hardware/OS combinations are supported. Determine your platform, OS version and Python version before referencing the table below.
 {% endhint %}
 
 Depending on your OS, Concrete-ML may be installed with Docker or with pip:
@@ -35,7 +35,7 @@ pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
 
-This will automatically install all dependencies, notably concrete-numpy.
+This will automatically install all dependencies, notably Concrete-Numpy.
 
 ## Using Docker
 

@@ -19,12 +19,10 @@ from sklearn.model_selection import train_test_split
 from concrete.ml.sklearn import LogisticRegression
 
 # Lets create a synthetic data-set
-N_EXAMPLE_TOTAL = 100
-N_TEST = 20
-x, y = make_classification(n_samples=N_EXAMPLE_TOTAL,
+x, y = make_classification(n_samples=100,
     class_sep=2, n_features=4, random_state=42)
 X_train, X_test, y_train, y_test = train_test_split(
-    x, y, test_size=N_TEST / N_EXAMPLE_TOTAL, random_state=42
+    x, y, test_size=0.2, random_state=42
 )
 
 # Now we train in plaintext using quantization
@@ -40,6 +38,7 @@ y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
 print("In clear  :", y_pred_clear)
 print("In FHE    :", y_pred_fhe)
 print("Comparison:", (y_pred_fhe == y_pred_clear))
+
 # Output:
 #   In clear  : [0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 0 0 1 1 1]
 #   In FHE    : [0 1 0 1 0 1 0 1 1 1 0 1 1 0 1 0 0 1 1 1]
@@ -51,15 +50,11 @@ This example shows the typical flow of a Concrete-ML model:
 
 - The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete-ML quantizes the model to use only integers during inference
 - The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled
-- Inference can then be done on encrypted data. The above example shows encrypted inference in the model development phase. Alternatively, in deployment in a client/server setting, the data is encrypted by the client, processed securely by the server and then decrypted by the client.
+- Inference can then be done on encrypted data. The above example shows encrypted inference in the model development phase. Alternatively, in [deployment](getting-started/cloud.md) in a client/server setting, the data is encrypted by the client, processed securely by the server and then decrypted by the client.
 
 ## Current limitations
 
-To make a model work with FHE, the only constrain is to make it run within the supported precision limitations of Concrete-ML (currently 8-bit integers).
-
-Concrete-ML is built on top of Zama’s Concrete framework. It uses [Concrete-Numpy](https://github.com/zama-ai/concrete-numpy), which itself uses the [Concrete-Compiler](https://pypi.org/project/concrete-compiler) and the [Concrete-Library](https://docs.zama.ai/concrete). To use these libraries directly, refer to the [Concrete-Numpy](https://docs.zama.ai/concrete-numpy/) and [Concrete-Framework](https://docs.zama.ai/concrete) documentations.
-
-As Concrete-ML only supports 8-bit encrypted integer arithmetic, machine learning models are required to be quantized, which sometimes leads to loss of accuracy versus the original model operating on plaintext.
+To make a model work with FHE, the only constrain is to make it run within the supported precision limitations of Concrete-ML (currently 8-bit integers). Thus, machine learning models are required to be quantized, which sometimes leads to loss of accuracy versus the original model operating on plaintext.
 
 Additionally, Concrete-ML currently only supports FHE _inference_. On the other hand, training has to be done on unencrypted data, producing a model which is then converted to a FHE equivalent that can perform encrypted inference, i.e. prediction over encrypted data.
 
@@ -67,12 +62,16 @@ Finally, in Concrete-ML there is currently no support for pre-processing model i
 
 All of these issues are currently being addressed and significant improvements are expected to be released in the coming months.
 
+## Concrete Stack
+
+Concrete-ML is built on top of Zama's Concrete framework. It uses [Concrete-Numpy](https://github.com/zama-ai/concrete-numpy), which itself uses the [Concrete-Compiler](https://pypi.org/project/concrete-compiler) and the [Concrete-Library](https://docs.zama.ai/concrete). To use these libraries directly, refer to the [Concrete-Numpy](https://docs.zama.ai/concrete-numpy/) and [Concrete-Framework](https://docs.zama.ai/concrete) documentations.
+
 ## Online demos and tutorials.
 
 Various tutorials are proposed for the [built-in models](built-in-models/ml_examples.md) and for [deep learning](deep-learning/examples.md). In addition, we also list standalone use-cases:
 
 - [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/README.md): a Python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
-- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available [here](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis).
+- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE. The corresponding application is directly available [here](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis).
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 

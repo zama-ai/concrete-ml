@@ -3,7 +3,8 @@
 There are two ways to contribute to Concrete-ML:
 
 - You can open issues to report bugs and typos and to suggest ideas.
-- You can ask to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai). Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do!
+- You can ask to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai). Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do.
+- You can also provide new tutorials or use-cases, showing what can be done with the library. The more examples we have, the better and clearer it is for the other users.
 
 ## 1. Creating a new branch
 

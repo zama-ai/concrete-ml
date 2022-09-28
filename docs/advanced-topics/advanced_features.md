@@ -13,9 +13,9 @@ In Concrete-ML, the result of the TLU operation is obtained with a specific erro
 DEFAULT_P_ERROR_PBS = 6.3342483999973e-05
 ```
 
-A single PBS operation has `1 - DEFAULT_P_ERROR_PBS = 99.9936657516%` chances of being correct. This number plays a role in the cryptographic parameters. As such, the lower the `p_error` the more constraining they will become. This has an impact on the both the key generation and, more importantly, on the Fully Homomorphic Encryption (FHE) execution time.
+A single PBS operation has `1 - DEFAULT_P_ERROR_PBS = 99.9936657516%` chances of being correct. This number plays a role in the cryptographic parameters. As such, the lower the `p_error` the more constraining they will become. This has an impact on the both the key generation and, more importantly, on the FHE execution time.
 
-This number is set by default to be relatively low such that any user can build deep circuits without being impacted by this noise as [described in the concepts section](../getting-started/concepts.md#cryptography-concepts). However, there might be use cases and specific circuits where the gaussian noise can increase without being too dramatic for the circuit accuracy. In that case, increasing the `p_error` can be relevant as it will reduce the execution time in FHE.
+This number is set by default to be relatively low such that any user can build deep circuits without being impacted by this noise as [described in the concepts section](../getting-started/concepts.md#cryptography-concepts). However, there might be use cases and specific circuits where the Gaussian noise can increase without being too dramatic for the circuit accuracy. In that case, increasing the `p_error` can be relevant as it will reduce the execution time in FHE.
 
 Here is a visualization of the effect of the `p_error` over a simple linear regression with a `p_error = 0.1` vs the default `p_error` value:
 

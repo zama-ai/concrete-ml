@@ -51,7 +51,6 @@
     :hidden:
     :caption: Developer - Workflow
 
-    developer-guide/workflow/README.md
     developer-guide/project_setup.md
     developer-guide/docker_setup.md
     developer-guide/documenting.md
@@ -63,7 +62,6 @@
     :hidden:
     :caption: Developer - Inner Workings
 
-    developer-guide/inner-workings/README.md
     developer-guide/onnx_pipeline.md
     developer-guide/quantization_internal.md
     developer-guide/fhe-op-graphs.md

@@ -1,6 +1,6 @@
 # Support and Issues
 
-Concrete-ML is currently in beta, and thus may contains bugs or suboptimal APIs.
+Concrete-ML is a constant work-in-progress, and thus may contains bugs or suboptimal APIs.
 
 Before opening an issue or asking for support, please read this documentation to understand common issues and limitations of Concrete-ML. You can also check the [outstanding issues on github](https://github.com/zama-ai/concrete-ml/issues).
 

@@ -22,7 +22,7 @@ To do so please follow the instructions on [git-lfs website](https://git-lfs.git
 
 ## Automatic installation
 
-A simple way to have everything installed is to use the development Docker (see the [docker setup](docker_setup.md) guide). On Linux and macOS you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
+A simple way to have everything installed is to use the development Docker (see the [Docker setup](docker_setup.md) guide). On Linux and macOS you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first check the content of the file to check what it will do).
 
 {% hint style="danger" %}
 For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are/lack of a single package manager.
@@ -48,8 +48,6 @@ To manually install Python, you can follow [this](https://realpython.com/install
 
 {% hint style="danger" %}
 As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires Poetry >= 1.2.
-
-At the time of writing (June 2022), there is only an alpha version of Poetry 1.2 that you can install. Use the official installer to install preview versions.
 {% endhint %}
 
 ### Make
@@ -63,8 +61,10 @@ On macOS, you can install a more recent version of `make` via brew:
 ```shell
 # check for gmake
 which gmake
+
 # If you don't have it, it will error out, install gmake
 brew install make
+
 # recheck, now you should have gmake
 which gmake
 ```

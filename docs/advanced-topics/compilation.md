@@ -7,7 +7,7 @@ for serving.
 As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation
 mode, using an execution mode named the _Virtual Library_. Since, by default, the cryptographic
 parameters are chosen such that the results obtained in FHE are the same as those on clear data, the
-_Virtual Library_ allows you to benchmark models quickly during development.
+Virtual Library allows you to benchmark models quickly during development.
 
 ## Compilation
 
@@ -27,10 +27,10 @@ The first step in the list above takes a Python function implemented using the C
 
 The result of this single step of the compilation pipeline allows to:
 
-- execute the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but is much faster than executing in FHE. This mode is useful for debugging. This is called the Virtual Library.
+- execute the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate hyper-parameters. This mode is called the Virtual Library.
 - verify the maximum bit-width of the op-graph, to determine FHE compatibility, without actually compiling the circuit to machine code.
 
-Enabling _Virtual Library_ execution requires the definition of a compilation `Configuration`. As simulation
+Enabling Virtual Library execution requires the definition of a compilation `Configuration`. As simulation
 does not execute in FHE, this can be considered _unsafe_:
 
 <!--pytest-codeblocks:skip-->
@@ -69,7 +69,7 @@ And finally, for custom models, it is possible to enable simulation using the fo
     )
 ```
 
-Obtaining the simulated predictions of the models using the _Virtual Library_ has the same syntax as
+Obtaining the simulated predictions of the models using the Virtual Library has the same syntax as
 execution in FHE:
 
 <!--pytest-codeblocks:skip-->

@@ -8,11 +8,11 @@ As ONNX is becoming the standard exchange format for neural networks, this allow
 
 The diagram below gives an overview of the steps involved in the conversion of an ONNX graph to a FHE compatible format, i.e. a format that can be compiled to FHE through Concrete-Numpy.
 
-All Concrete-ML builtin models follow the same pattern for FHE conversion:
+All Concrete-ML built-in models follow the same pattern for FHE conversion:
 
 1. The models are trained with sklearn or PyTorch
-1. All models have a PyTorch implementation for inference. This implementation is provided either by third-party tool such as [hummingbird](../developer-guide/external_libraries.md#hummingbird), or is implemented in Concrete-ML.
-1. The PyTorch model is exported to ONNX. For more information on the use of ONNX in Concrete-ML see [here](onnx_pipeline.md#torch-to-numpy-conversion-using-onnx)
+1. All models have a PyTorch implementation for inference. This implementation is provided either by third-party tool such as [Hummingbird](../developer-guide/external_libraries.md#hummingbird), or is implemented in Concrete-ML.
+1. The PyTorch model is exported to ONNX. For more information on the use of ONNX in Concrete-ML, see [here](onnx_pipeline.md#torch-to-numpy-conversion-using-onnx)
 1. The Concrete-ML ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference NumPy operations to them. This step produces a `NumpyModule`
 1. Quantization is performed on the [`NumpyModule`](../developer-guide/api/concrete.ml.torch.numpy_module.md#class-numpymodule), producing a [`QuantizedModule`](../developer-guide/api/concrete.ml.quantization.quantized_module.md#class-quantizedmodule) . Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](../developer-guide/api/concrete.ml.quantization.base_quantized_op.md#class-quantizedop) objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
 1. Once the `QuantizedModule` is built, Concrete-Numpy is used to trace the `._forward()` function of the `QuantizedModule`

@@ -30,6 +30,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
     forbidden_word_list = [
         ("Concrete-ml", []),
         ("Concrete-Ml", []),
+        ("Concrete ML", []),
         ("pytorch", []),
         ("bitwidth", []),
         ("bit width", []),
@@ -47,6 +48,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("Pytest", []),
         ("python", []),
         ("HummingBird", []),
+        ("hummingbird", ["from hummingbird import", "import hummingbird", "from hummingbird."]),
         ("MacOS", []),
         ("macos", []),
         ("MacOs", []),
@@ -59,6 +61,22 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("docker", []),
         ("poetry", []),
         ("Make", []),
+        ("brevitas", ["import brevitas", "from brevitas", "bit accuracy brevitas"]),
+        ("concrete-numpy", []),
+        ("tool-kit", []),
+        ("tool-kits", []),
+        ("preprocessing", []),
+        ("preprocess", []),
+        ("keras", []),
+        ("tensorflow", ["= tensorflow."]),
+        ("Tensorflow", []),
+        ("gauss", []),
+        ("gaussian", []),
+        ("netron", []),
+        ("information are", []),
+        ("builtin", []),
+        ("hyper parameters", []),
+        ("hyperparameters", []),
     ]
     # For later
     #   "We" or "Our", or more generally, passive form
@@ -91,6 +109,9 @@ def process_file(file_str: str, do_open_problematic_files=False):
                     f" {forbidden_word}.",
                     f" {forbidden_word},",
                     f" {forbidden_word}:",
+                    f"({forbidden_word} ",
+                    f"[{forbidden_word} ",
+                    f"[{forbidden_word}]",
                 ]:
 
                     local_check = check_forbidden_construction(
