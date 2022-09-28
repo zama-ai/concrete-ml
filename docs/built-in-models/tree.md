@@ -9,7 +9,7 @@ Concrete-ML provides several of the most popular tree models `classification` th
 |  [RandomForestClassifier](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestclassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
 |   [RandomForestRegressor](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
-In addition to our support for scikit-learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
+In addition to support for scikit-learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
 |                                      Concrete-ML                                       |                                                XGboost                                                 |
 | :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |

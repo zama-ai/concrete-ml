@@ -29,7 +29,7 @@
   </a>
 </p>
 
-Concrete-ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Particular care was given to the simplicity of the Python package in order to make it usable by any data scientist, even those without prior cryptography knowledge. Notably, the APIs are as close as possible to scikit-learn and torch APIs to simplify adoption by the users.
+**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete-ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete-ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 
 ## Main features.
 
@@ -114,13 +114,15 @@ print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)
 #  Comparison: 100% similar
 ```
 
-We explain this in more detail in the documentation, and show how we have tried to mimic scikit-learn and torch APIs, to ease the adoption of Concrete-ML. We refer the reader to [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentations, which show how similar the APIs are to their non-FHE counterparts.
+This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md). Concrete-ML built-in models
+have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete-ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in
+models.
 
 ## Online demos and tutorials.
 
-Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, we also list standalone use-cases:
+Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, several complete use-cases are explored:
 
-- [MNIST](use_case_examples/mnist): a python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
+- [MNIST](use_case_examples/mnist):a python script and notebook showing quantization-aware training following FHE constraints. The model is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete-ML.
 - [Encrypted sentiment analysis](use_case_examples/encrypted_sentiment_analysis): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available here(FIXME add link to https ://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis when it's online).
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!

@@ -28,7 +28,7 @@ There are two modes of creation of a single table lookup for a chain of ONNX ope
 
 Thus, `QuantizedOp` instances may need to quantize their inputs or the result of their computation, depending on their position in the graph.
 
-The `QuantizedOp` class provides a generic implementation of an ONNX operation, including quantization of inputs and outputs, with the computation implemented in numpy in `ops_impl.py`. We can picture at the architecture of the `QuantizedOp` as the following structure:
+The `QuantizedOp` class provides a generic implementation of an ONNX operation, including quantization of inputs and outputs, with the computation implemented in numpy in `ops_impl.py`. It is possible to picture at the architecture of the `QuantizedOp` as the following structure:
 
 ![](../.gitbook/assets/image_4.png)
 

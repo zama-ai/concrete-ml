@@ -24,7 +24,7 @@ and are decrypted before de-quantization.
 
 ## Basics of quantization
 
-Let $$[\alpha, \beta ]$$ be the range of our value to quantize where $$\alpha$$ is the minimum and $$\beta$$ is the maximum. To quantize a range with floating point values (in $$\mathbb{R}$$) to integer values (in $$\mathbb{Z}$$), we first need to choose the data type that is going to be used. Concrete, the framework used by Concrete-ML, is currently limited to 8-bit integers, so this will be the value used in this example. Knowing the number of bits that can be used for a value in the range $$[\alpha, \beta ]$$, we can compute the `scale` $$S$$ of the quantization:
+Let $$[\alpha, \beta ]$$ be the range of a value to quantize where $$\alpha$$ is the minimum and $$\beta$$ is the maximum. To quantize a range of floating point values (in $$\mathbb{R}$$) to integer values (in $$\mathbb{Z}$$),  the first step is to choose the data type that is going to be used. Concrete, the framework used by Concrete-ML, is currently limited to 8-bit integers, so this will be the value used in this example. Knowing the number of bits that can be used for a value in the range $$[\alpha, \beta ]$$, the `scale` $$S$$ can be computed :
 
 $$S = \frac{\beta - \alpha}{2^n - 1}$$
 

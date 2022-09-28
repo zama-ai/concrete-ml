@@ -27,7 +27,7 @@ A simple way to have everything installed is to use the development Docker (see 
 {% hint style="danger" %}
 For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are/lack of a single package manager.
 
-The first step is to [install Python](project_setup.md#python) (as some of our dev tools depend on it), then [Poetry](project_setup.md#poetry). In addition to installing Python, you are still going to need the following software available on path on Windows, as some of our basic dev tools depend on them:
+The first step is to [install Python](project_setup.md#python) (as some of the dev tools depend on it), then [Poetry](project_setup.md#poetry). In addition to installing Python, you are still going to need the following software available on path on Windows, as some of the basic dev tools depend on them:
 
 - git [https://gitforwindows.org/](https://gitforwindows.org/)
 - jq [https://github.com/stedolan/jq/releases](https://github.com/stedolan/jq/releases)
@@ -114,7 +114,7 @@ source .venv/Scripts/activate
 
 Docker automatically creates and sources a venv in ~/dev_venv/
 
-The venv persists thanks to volumes. We also create a volume for ~/.cache to speed up later reinstallations. You can check which Docker volumes exist with:
+The venv persists thanks to volumes. It also creates a volume for ~/.cache to speed up later reinstallations. You can check which Docker volumes exist with:
 
 ```shell
 docker volume ls
@@ -165,7 +165,7 @@ rm -rf .venv
 make setup_env
 ```
 
-At this point, you should consider using Docker as nobody will have the exact same setup as you. If, however, you need to develop on your OS directly, you can ask us for help but may not get a solution right away.
+At this point, you should consider using Docker as nobody will have the exact same setup as you. If, however, you need to develop on your OS directly, you can [ask Zama for help](../README.md#looking-for-support-ask-our-team).
 
 #### In Docker
 

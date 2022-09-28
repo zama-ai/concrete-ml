@@ -35,7 +35,7 @@ class QATSimpleNet(nn.Module):
 
 ```
 
-Once the model is trained, calling the [`compile_brevitas_qat_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compilebrevitasqatmodel) from Concrete-ML will automatically perform conversion and compilation of a quantization aware trained network. Here, we use a 3-bit quantization for both the weights and activations.
+Once the model is trained, calling the [`compile_brevitas_qat_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compilebrevitasqatmodel) from Concrete-ML will automatically perform conversion and compilation of a quantization aware trained network. Here, 3-bit quantization is used for both the weights and activations.
 
 <!--pytest-codeblocks:cont-->
 

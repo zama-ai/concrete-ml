@@ -15,7 +15,7 @@ please see the [Brevitas usage reference](../developer-guide/external_libraries.
 
 ## Baseline model
 
-In this example, we will train a fully-connected neural network on a synthetic 2D data-set with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
+This example shows how to train a fully-connected neural network on a synthetic 2D data-set with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
 
 In PyTorch, using standard layers, this network would look as follows:
 

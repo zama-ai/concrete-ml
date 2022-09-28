@@ -248,8 +248,6 @@ def test_brevitas_tinymnist_cnn(qat_bits):  # pylint: disable=too-many-statement
         use_virtual_lib=True,
     )
 
-    accum_bits = q_module_vl.forward_fhe.graph.maximum_integer_bit_width()
-
     vl_acc = test_with_concrete(
         q_module_vl,
         test_dataloader,
@@ -257,11 +255,6 @@ def test_brevitas_tinymnist_cnn(qat_bits):  # pylint: disable=too-many-statement
         use_vl=True,
     )
 
-    if qat_bits <= 3:
-        # Make sure this network can compile to FHE if qat_bits is less than 3
-        assert accum_bits <= 8
-    else:
-        # Accept, at most, 5 pct points accuracy difference. This can be due to the 7b input
-        # output quantization. VL accuracy can be larger than fp32 accuracy though.
-        assert vl_acc - torch_acc >= -0.05
-        assert vl_acc > 0.2
+    # Accept, at most, 5 pct points accuracy difference. This can be due to the 7b input
+    # output quantization. VL accuracy can be larger than fp32 accuracy though.
+    assert vl_acc - torch_acc >= -0.05
