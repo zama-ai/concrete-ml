@@ -442,15 +442,12 @@ set_version:
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
 	fi && \
-	STASH_COUNT="$$(git stash list | wc -l)" && \
-	git stash && \
 	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}" && \
-	git add -u && \
-	git commit -m "chore: bump version to $${VERSION}" && \
-	NEW_STASH_COUNT="$$(git stash list | wc -l)" && \
-	if [[ "$$NEW_STASH_COUNT" != "$$STASH_COUNT" ]]; then \
-		git stash pop; \
-	fi
+	echo && \
+	echo && \
+	echo "Please do something like:" && \
+	echo "git commit -m \"chore: bump version to $${VERSION}\"" && \
+	echo
 
 .PHONY: set_version_and_push # Generate a new version number, update all files with it accordingly and push them
 set_version_and_push: set_version
