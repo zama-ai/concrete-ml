@@ -22,7 +22,7 @@ To use to type hint a quantizer.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequant`
 
@@ -36,7 +36,9 @@ Dequantize some values.
 
 - <b>`X`</b> (numpy.ndarray):  Values to dequantize
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`numpy.ndarray`</b>:  Dequantized values
 
@@ -56,13 +58,15 @@ Quantize some values.
 
 - <b>`values`</b> (numpy.ndarray):  Values to quantize
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`numpy.ndarray`</b>:  The quantized values
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ConcreteBaseEstimatorProtocol`
 
@@ -74,7 +78,9 @@ ______________________________________________________________________
 
 onnx_model.
 
-Results: # noqa: DAR202  onnx.ModelProto
+.. # noqa: DAR202
+
+Results:  onnx.ModelProto
 
 ______________________________________________________________________
 
@@ -84,7 +90,7 @@ Quantize input function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -110,13 +116,15 @@ Compiles a model to a FHE Circuit.
 - <b>`use_virtual_lib`</b> (bool):  whether to compile using the virtual library that allows higher  bitwidths
 - <b>`p_error`</b> (float):  probability of error of a PBS
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`Circuit`</b>:  the compiled Circuit.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -132,13 +140,15 @@ Initialize and fit the module.
 - <b>`y`</b> (numpy.ndarray):  labels associated with training data
 - <b>`**fit_params`</b>:  additional parameters that can be used during training
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
 
-- <b>`ConcreteBaseEstimatorProto`</b>:  the trained estimator
+**Returns:**
+
+- <b>`ConcreteBaseEstimatorProtocol`</b>:  the trained estimator
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -162,14 +172,16 @@ This function returns both the quantized estimator (itself), but also a wrapper 
 - <b>`*args`</b>:  The arguments to pass to the underlying model.
 - <b>`**kwargs`</b>:  The keyword arguments to pass to the underlying model.
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`self`</b>:  self fitted
 - <b>`model`</b>:  underlying estimator
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -183,13 +195,15 @@ Post-process models predictions.
 
 - <b>`y_preds`</b> (numpy.ndarray):  predicted values by model (clear-quantized)
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`numpy.ndarray`</b>:  the post-processed predictions
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ConcreteBaseClassifierProtocol`
 
@@ -201,7 +215,9 @@ ______________________________________________________________________
 
 onnx_model.
 
-Results: # noqa: DAR202  onnx.ModelProto
+.. # noqa: DAR202
+
+Results:  onnx.ModelProto
 
 ______________________________________________________________________
 
@@ -211,7 +227,7 @@ Quantize input function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -237,13 +253,15 @@ Compiles a model to a FHE Circuit.
 - <b>`use_virtual_lib`</b> (bool):  whether to compile using the virtual library that allows higher  bitwidths
 - <b>`p_error`</b> (float):  probability of error of a PBS
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`Circuit`</b>:  the compiled Circuit.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -259,13 +277,15 @@ Initialize and fit the module.
 - <b>`y`</b> (numpy.ndarray):  labels associated with training data
 - <b>`**fit_params`</b>:  additional parameters that can be used during training
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
 
-- <b>`ConcreteBaseEstimatorProto`</b>:  the trained estimator
+**Returns:**
+
+- <b>`ConcreteBaseEstimatorProtocol`</b>:  the trained estimator
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -289,14 +309,16 @@ This function returns both the quantized estimator (itself), but also a wrapper 
 - <b>`*args`</b>:  The arguments to pass to the underlying model.
 - <b>`**kwargs`</b>:  The keyword arguments to pass to the underlying model.
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`self`</b>:  self fitted
 - <b>`model`</b>:  underlying estimator
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -310,13 +332,15 @@ Post-process models predictions.
 
 - <b>`y_preds`</b> (numpy.ndarray):  predicted values by model (clear-quantized)
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`numpy.ndarray`</b>:  the post-processed predictions
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -331,11 +355,14 @@ Predicts for each sample the class with highest probability.
 - <b>`X`</b> (numpy.ndarray):  Features
 - <b>`execute_in_fhe`</b> (bool):  Whether the inference should be done in fhe or not.
 
-Returns: # noqa: DAR202 numpy.ndarray
+.. # noqa: DAR202
+
+**Returns:**
+numpy.ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L192"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -350,11 +377,14 @@ Predicts for each sample the probability of each class.
 - <b>`X`</b> (numpy.ndarray):  Features
 - <b>`execute_in_fhe`</b> (bool):  Whether the inference should be done in fhe or not.
 
-Returns: # noqa: DAR202 numpy.ndarray
+.. # noqa: DAR202
+
+**Returns:**
+numpy.ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ConcreteBaseRegressorProtocol`
 
@@ -366,7 +396,9 @@ ______________________________________________________________________
 
 onnx_model.
 
-Results: # noqa: DAR202  onnx.ModelProto
+.. # noqa: DAR202
+
+Results:  onnx.ModelProto
 
 ______________________________________________________________________
 
@@ -376,7 +408,7 @@ Quantize input function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -402,13 +434,15 @@ Compiles a model to a FHE Circuit.
 - <b>`use_virtual_lib`</b> (bool):  whether to compile using the virtual library that allows higher  bitwidths
 - <b>`p_error`</b> (float):  probability of error of a PBS
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`Circuit`</b>:  the compiled Circuit.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -424,13 +458,15 @@ Initialize and fit the module.
 - <b>`y`</b> (numpy.ndarray):  labels associated with training data
 - <b>`**fit_params`</b>:  additional parameters that can be used during training
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
 
-- <b>`ConcreteBaseEstimatorProto`</b>:  the trained estimator
+**Returns:**
+
+- <b>`ConcreteBaseEstimatorProtocol`</b>:  the trained estimator
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L148"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -454,14 +490,16 @@ This function returns both the quantized estimator (itself), but also a wrapper 
 - <b>`*args`</b>:  The arguments to pass to the underlying model.
 - <b>`**kwargs`</b>:  The keyword arguments to pass to the underlying model.
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`self`</b>:  self fitted
 - <b>`model`</b>:  underlying estimator
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -475,13 +513,15 @@ Post-process models predictions.
 
 - <b>`y_preds`</b> (numpy.ndarray):  predicted values by model (clear-quantized)
 
-Returns: # noqa: DAR202
+.. # noqa: DAR202
+
+**Returns:**
 
 - <b>`numpy.ndarray`</b>:  the post-processed predictions
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/protocols.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -496,4 +536,7 @@ Predicts for each sample the expected value.
 - <b>`X`</b> (numpy.ndarray):  Features
 - <b>`execute_in_fhe`</b> (bool):  Whether the inference should be done in fhe or not.
 
-Returns: # noqa: DAR202 numpy.ndarray
+.. # noqa: DAR202
+
+**Returns:**
+numpy.ndarray

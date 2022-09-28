@@ -78,21 +78,18 @@ ______________________________________________________________________
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_model_manipulations.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `replace_unnecessary_nodes_by_identity`
+## <kbd>function</kbd> `remove_node_types`
 
 ```python
-replace_unnecessary_nodes_by_identity(
-    onnx_model: ModelProto,
-    op_type_to_replace: list
-)
+remove_node_types(onnx_model: ModelProto, op_types_to_remove: List[str])
 ```
 
-Replace unnecessary nodes by Identity nodes.
+Remove unnecessary nodes from the ONNX graph.
 
 **Args:**
 
-- <b>`onnx_model`</b> (onnx.ModelProto):  the ONNX model to modify.
-- <b>`op_type_to_replace`</b> (list):  the op_type of the nodes to be replaced by Identity nodes.
+- <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model to modify.
+- <b>`op_types_to_remove`</b> (List\[str\]):  The node types to remove from the graph.
 
 **Raises:**
 
@@ -100,41 +97,17 @@ Replace unnecessary nodes by Identity nodes.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_model_manipulations.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_model_manipulations.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `cut_onnx_graph_after_node_name`
+## <kbd>function</kbd> `clean_graph_after_node`
 
 ```python
-cut_onnx_graph_after_node_name(onnx_model: ModelProto, node_name: str) → str
+clean_graph_after_node(onnx_model: ModelProto, node_name: str)
 ```
 
-Cut the graph after the node with the given name.
+Clean the graph of the onnx model by removing nodes after the given node name.
 
 **Args:**
 
-- <b>`onnx_model`</b> (onnx.ModelProto):  the ONNX model to modify.
-- <b>`node_name`</b> (str):  the name of the node after which the graph will be cut.  (node_name is included in the new graph)
-
-**Returns:**
-
-- <b>`str`</b>:  the name of the output to keep
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_model_manipulations.py#L191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `clean_graph_after_sigmoid`
-
-```python
-clean_graph_after_sigmoid(onnx_model: ModelProto)
-```
-
-Clean the graph of the onnx model, by removing nodes after the sigmoid.
-
-**Args:**
-
-- <b>`onnx_model`</b> (onnx.ModelProto):  the onnx model
-
-**Returns:**
-
-- <b>`onnx.ModelProto`</b>:  the cleaned onnx model
+- <b>`onnx_model`</b> (onnx.ModelProto):  The onnx model.
+- <b>`node_name`</b> (str):  The node's name whose following nodes will be removed.

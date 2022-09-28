@@ -18,7 +18,7 @@ ______________________________________________________________________
 
 Sparse Quantized Neural Network classifier.
 
-This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bit-width and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
+This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bitwidth and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
@@ -46,13 +46,13 @@ Sparse Quantized Neural Network constructor.
 - <b>`n_outputs`</b>:  Number of output classes or regression targets
 - <b>`n_w_bits`</b>:  Number of weight bits
 - <b>`n_a_bits`</b>:  Number of activation and input bits
-- <b>`n_accum_bits`</b>:  Maximal allowed bit-width of intermediate accumulators
-- <b>`n_hidden_neurons_multiplier`</b>:  A factor that is multiplied by the maximal number of  active (non-zero weight) neurons for every layer. The maximal number of neurons in  the worst case scenario is:  2^n_max-1  max_active_neurons(n_max, n_w, n_a) = floor(---------------------)  (2^n_w-1)\*(2^n_a-1) )  The worst case scenario for the bit-width of the accumulator is when all weights and  activations are maximum simultaneously. We set, for each layer, the total number of  neurons to be:  n_hidden_neurons_multiplier * max_active_neurons(n_accum_bits, n_w_bits, n_a_bits)  Through experiments, for typical distributions of weights and activations,  the default value for n_hidden_neurons_multiplier, 4, is safe to avoid overflow.
+- <b>`n_accum_bits`</b>:  Maximal allowed bitwidth of intermediate accumulators
+- <b>`n_hidden_neurons_multiplier`</b>:  A factor that is multiplied by the maximal number of  active (non-zero weight) neurons for every layer. The maximal number of neurons in  the worst case scenario is:  2^n_max-1  max_active_neurons(n_max, n_w, n_a) = floor(---------------------)  (2^n_w-1)\*(2^n_a-1) )  The worst case scenario for the bitwidth of the accumulator is when all weights and  activations are maximum simultaneously. We set, for each layer, the total number of  neurons to be:  n_hidden_neurons_multiplier * max_active_neurons(n_accum_bits, n_w_bits, n_a_bits)  Through experiments, for typical distributions of weights and activations,  the default value for n_hidden_neurons_multiplier, 4, is safe to avoid overflow.
 - <b>`activation_function`</b>:  a torch class that is used to construct activation functions in  the network (e.g. torch.ReLU, torch.SELU, torch.Sigmoid, etc)
 
 **Raises:**
 
-- <b>`ValueError`</b>:  if the parameters have invalid values or the computed accumulator bit-width  is zero
+- <b>`ValueError`</b>:  if the parameters have invalid values or the computed accumulator bitwidth  is zero
 
 ______________________________________________________________________
 
