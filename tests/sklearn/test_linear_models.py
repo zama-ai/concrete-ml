@@ -99,10 +99,10 @@ def get_datasets_regression(model_class):
             "strictly_positive": True,
             "n_features": 10,
         }
-        links = ["auto", "auto", "log", "identity"]
-        powers = [0.0, 2.8, 1.0, 0.0]
 
-        for link, power in zip(links, powers):
+        links_powers = [("auto", 0.0), ("auto", 2.8), ("log", 1.0), ("identity", 0.0)]
+
+        for link, power in links_powers:
             regression_datasets += [
                 pytest.param(
                     partial(model_class, link=link, power=power),
