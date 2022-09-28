@@ -29,7 +29,7 @@
   </a>
 </p>
 
-**Concrete-ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete-ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete-ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+Concrete-ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete-ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete-ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 
 ## Main features.
 
