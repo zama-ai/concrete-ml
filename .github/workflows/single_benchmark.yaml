@@ -177,7 +177,7 @@ jobs:
         id: convert-output
         run: |
           source ./cml_to_install/.venv/bin/activate
-          python ./cml_to_run/benchmarks/convert.py --source ./cml_to_run/progress.json --target ./converted.json --path_to_repository ./cml_to_install
+          python ./cml_to_run/benchmarks/convert.py --source ./cml_to_run/progress.json --target ./converted.json --path_to_repository ./cml_to_install --machine_name "${{ github.event.inputs.instance_type }}"
           cat ./converted.json | jq
 
       - name: Upload results

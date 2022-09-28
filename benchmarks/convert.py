@@ -9,7 +9,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from common import benchmark_name_to_config
 
@@ -67,7 +67,9 @@ def find_element_in_zip(elements: List[Tuple[str, Any]], key: str) -> Any:
     raise ValueError(f"Couldn't find key {key} in {[key for key, _ in elements]}")
 
 
-def convert_to_new_postgres(source: Path, target: Path, path_to_repository: Path):
+def convert_to_new_postgres(
+    source: Path, target: Path, path_to_repository: Path, machine_name: Optional[str] = None
+):
     """Convert json file generated via python-progress-tracker to new format."""
     # Load from direct result of script
     assert source.exists(), source
@@ -86,7 +88,7 @@ def convert_to_new_postgres(source: Path, target: Path, path_to_repository: Path
 
     # Create machine
     session_data["machine"] = {
-        "machine_name": progress["machine"]["name"],
+        "machine_name": progress["machine"]["name"] if machine_name is None else machine_name,
         "machine_specs": {
             "cpu": find_element_in_zip(progress["machine"]["specs"], "CPU"),
             "ram": find_element_in_zip(progress["machine"]["specs"], "RAM"),
@@ -149,9 +151,19 @@ def main():
         default=Path("./"),
         help="Path to repository used to run the benchmark",
     )
+    parser.add_argument(
+        "--machine_name",
+        dest="machine_name",
+        type=str,
+        default=None,
+        help="Overwrite machine_name (default is None)",
+    )
     args = parser.parse_args(sys.argv[1:])
     convert_to_new_postgres(
-        source=args.source, target=args.target, path_to_repository=args.path_to_repository
+        source=args.source,
+        target=args.target,
+        path_to_repository=args.path_to_repository,
+        machine_name=args.machine_name,
     )
 
 
