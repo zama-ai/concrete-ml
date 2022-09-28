@@ -72,7 +72,7 @@ All of these issues are currently being addressed and significant improvements a
 Various tutorials are proposed for the [built-in models](built-in-models/ml_examples.md) and for [deep learning](deep-learning/examples.md). In addition, we also list standalone use-cases:
 
 - [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/README.md): a Python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
-- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available here(FIXME add link to https ://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis when it's online).
+- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE! The corresponding application is directly available [here](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis).
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 

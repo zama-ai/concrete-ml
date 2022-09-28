@@ -628,7 +628,7 @@ check_links:
 	poetry run python -m linkcheckmd docs -local
 
 	@# FIXME: #1810
-	@# Make it back when zama-fhe/client_sentiment_fhe is public
+	@# Make it back when zama-fhe/encrypted_sentiment_analysis is public
 	@# poetry run python -m linkcheckmd README.md
 
 	poetry run python ./script/make_utils/local_link_check.py
@@ -642,7 +642,7 @@ check_links:
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
-	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe: currently private
+	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis: currently private
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal: because some files are only
 	@#		private at this time
 	poetry run linkchecker docs --check-extern \
@@ -652,7 +652,7 @@ check_links:
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
-		--ignore-url=https://huggingface.co/spaces/zama-fhe/client_sentiment_fhe \
+		--ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal
 
 .PHONY: check_links_after_release # Check links in the documentation as if we were users
