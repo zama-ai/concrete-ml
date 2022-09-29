@@ -51,12 +51,12 @@ def main():
     # Get all commands to benchmark each models using python benchmarks/BENCHMARK_FILE
     commands = []
     for script in scripts:
-        command_start = f"python3 benchmarks/{script}.py"
+        command_start = f"python3 benchmarks/{script}.py --fhe_samples {args.fhe_samples}"
         now = datetime.datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
         script_commands = [
             elt.replace('"', '\\"')  # Needed to escape " when calling eval
             for elt in subprocess.check_output(
-                f"{command_start} {list_arg} --fhe_samples {args.fhe_samples}",
+                f"{command_start} {list_arg}",
                 shell=True,
             )
             .decode("utf-8")

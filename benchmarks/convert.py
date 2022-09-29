@@ -6,6 +6,7 @@
 import argparse
 import datetime
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -113,6 +114,8 @@ def convert_to_new_postgres(
         experiment_representation["metrics"] = []
         if "measurements" in experiment_values:
             for metric_name, metric_value in experiment_values["measurements"].items():
+                if math.isnan(metric_value):  # Nan
+                    metric_value = None
                 experiment_representation["metrics"].append(
                     {"metric_name": metric_name, "value": metric_value}
                 )
