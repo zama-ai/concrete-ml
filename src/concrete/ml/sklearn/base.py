@@ -524,6 +524,20 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             qX[:, i] = q_x_.quant(X[:, i])
         return qX.astype(numpy.int32)
 
+    def dequantize_output(self, y_preds: numpy.ndarray):
+        """Dequantize the integer predictions.
+
+        Args:
+            y_preds (numpy.ndarray): the predictions
+
+        Returns:
+            the dequantized predictions
+        """
+        # mypy
+        assert self.output_quantizers is not None
+        y_preds = self.output_quantizers[0].dequant(y_preds)
+        return y_preds
+
     def _update_post_processing_params(self):
         """Update the post processing parameters."""
         self.post_processing_params = {}
@@ -729,9 +743,7 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
-        # mypy
-        assert self.output_quantizers is not None
-        y_preds = self.output_quantizers[0].dequant(y_preds)
+        y_preds = self.dequantize_output(y_preds)
 
         # Sum all tree outputs.
         # FIXME Remove this once #451 is done :
@@ -887,9 +899,7 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
-        # mypy
-        assert self.output_quantizers is not None
-        y_preds = self.output_quantizers[0].dequant(y_preds)
+        y_preds = self.dequantize_output(y_preds)
 
         # Sum all tree outputs.
         # FIXME Remove this once #451 is done :

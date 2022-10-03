@@ -298,17 +298,17 @@ class FHEModelClient:
         serialized_enc_qx = self.client.specs.serialize_public_args(enc_qx)
         return serialized_enc_qx
 
-    def deserialize_decrypt_dequantize(
+    def deserialize_decrypt(
         self, serialized_encrypted_quantized_result: cnp.PublicArguments
     ) -> numpy.ndarray:
-        """Deserialize, decrypt and dequantize the values.
+        """Deserialize and decrypt the values.
 
         Args:
             serialized_encrypted_quantized_result (cnp.PublicArguments): the serialized, encrypted
                 and quantized result
 
         Returns:
-            numpy.ndarray: the decrypted, dequantized values
+            numpy.ndarray: the decrypted and desarialized values
         """
         # Unserialize the encrypted values
         unserialized_encrypted_quantized_result = self.client.specs.unserialize_public_result(
@@ -319,10 +319,27 @@ class FHEModelClient:
         unserialized_decrypted_quantized_result = self.client.decrypt(
             unserialized_encrypted_quantized_result
         )
+        return unserialized_decrypted_quantized_result
+
+    def deserialize_decrypt_dequantize(
+        self, serialized_encrypted_quantized_result: cnp.PublicArguments
+    ) -> numpy.ndarray:
+        """Deserialize, decrypt and dequantize the values.
+
+        Args:
+            serialized_encrypted_quantized_result (cnp.PublicArguments): the serialized, encrypted
+                and quantized result
+
+        Returns:
+            numpy.ndarray: the decrypted (dequantized) values
+        """
+        # Decrypt and desarialize the values
+        unserialized_decrypted_quantized_result = self.deserialize_decrypt(
+            serialized_encrypted_quantized_result
+        )
 
         # Dequantize the values and apply the model post processing
         unserialized_decrypted_dequantized_result = self.model.post_processing(
             unserialized_decrypted_quantized_result
         )
-
         return unserialized_decrypted_dequantized_result

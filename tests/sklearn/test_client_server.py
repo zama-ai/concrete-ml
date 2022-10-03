@@ -262,26 +262,20 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     # Back to the client
 
     # Decrypt and dequantize the result
-    y_pred_on_client = fhemodel_client.deserialize_decrypt_dequantize(serialized_result)
+    y_pred_on_client_quantized = fhemodel_client.deserialize_decrypt(serialized_result)
+    y_pred_on_client_dequantized = fhemodel_client.deserialize_decrypt_dequantize(serialized_result)
 
     # Get the y_pred_model_server_clear
 
     # Predict based on the model we are testing
-    if hasattr(model, "_estimator_type"):
-        if model._estimator_type == "classifier":  # pylint: disable=protected-access
-            y_pred_model_server_ds = model.predict_proba(x_test, execute_in_fhe=True)
-        else:
-            y_pred_model_server_ds = model.predict(x_test, execute_in_fhe=True)
-    else:
-        qtest = model.quantize_input(x_test)
-        y_pred_model_server_ds = model.forward_fhe.encrypt_run_decrypt(qtest)
-        y_pred_model_server_ds = model.dequantize_output(y_pred_model_server_ds)
+    qtest = model.quantize_input(x_test)
+    y_pred_model_server_ds_quantized = model.fhe_circuit.encrypt_run_decrypt(qtest)
+    y_pred_model_server_ds_dequantized = model.post_processing(y_pred_model_server_ds_quantized)
 
-    # Round to 5th decimal place (torch and numpy mismatch)
-    y_pred_model_server_ds = numpy.round(y_pred_model_server_ds, (5))
-    y_pred_on_client = numpy.round(y_pred_on_client, (5))
-
-    numpy.testing.assert_array_equal(y_pred_on_client, y_pred_model_server_ds)
+    numpy.testing.assert_array_equal(y_pred_on_client_quantized, y_pred_model_server_ds_quantized)
+    numpy.testing.assert_array_equal(
+        y_pred_on_client_dequantized, y_pred_model_server_ds_dequantized
+    )
 
     # Clean up
     network.cleanup()
