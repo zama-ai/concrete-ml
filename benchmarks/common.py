@@ -1,10 +1,11 @@
 import argparse
+import math
 import os
 import random
 import time
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple, Union
 
 import concrete.numpy as cnp
 import numpy as np
@@ -21,6 +22,11 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
+
+try:
+    from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+except ImportError:  # For backward compatibility purposes
+    from concrete.numpy import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
 
 # Hack to import all models currently implemented in CML
 # (but that might not be implemented in targeted version)
@@ -45,9 +51,8 @@ for model_name in CLASSIFIERS_NAMES:
         model_class = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
         globals()[model_name] = model_class
         CLASSIFIERS.append(model_class)
-    except ImportError as exception:
+    except (ImportError, AttributeError) as exception:
         print(exception)
-
 CLASSIFIERS_STRING_TO_CLASS = {c.__name__: c for c in CLASSIFIERS}
 
 # Regressors imports
@@ -68,15 +73,29 @@ for model_name in REGRESSORS_NAMES:
         model_class = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
         globals()[model_name] = model_class
         REGRESSORS.append(model_class)
-    except ImportError as exception:
+    except (ImportError, AttributeError) as exception:
         print(exception)
         print(f"model: {model_name} could not be imported.")
-    except AttributeError as exception:
-        print(exception)
-        print(f"model: {model_name} could not be imported.")
-
 REGRESSORS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS}
-MODELS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS + CLASSIFIERS}
+
+# GLMs imports
+GLMS = []
+GLMS_NAMES = [
+    "PoissonRegressor",
+    "GammaRegressor",
+    "TweedieRegressor",
+]
+for model_name in GLMS_NAMES:
+    try:
+        model_class = getattr(__import__("concrete.ml.sklearn", fromlist=[model_name]), model_name)
+        globals()[model_name] = model_class
+        GLMS.append(model_class)
+    except (ImportError, AttributeError) as exception:
+        print(exception)
+        print(f"model: {model_name} could not be imported.")
+GLMS_STRING_TO_CLASS = {c.__name__: c for c in GLMS}
+
+MODELS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS + CLASSIFIERS + GLMS}
 
 NN_BENCHMARK_PARMAMS = (
     [
@@ -637,11 +656,28 @@ def benchmark_generator(local_args) -> Iterator[Tuple[str, type, Dict[str, Any]]
                     yield (dataset, model_class_, config)
 
 
-# pylint: disable-next=redefined-outer-name
+# For GLMs
+def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
+    """Computes the maximum number of PCA components possible for executing a model in FHE."""
+    if isinstance(n_bits, int):
+        n_bits_inputs = n_bits
+        n_bits_weights = n_bits
+    else:
+        n_bits_inputs = n_bits["op_inputs"]
+        n_bits_weights = n_bits["op_weights"]
+
+    n_components = math.floor(
+        (2**MAXIMUM_TLU_BIT_WIDTH - 1) / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
+    )
+    return n_components
+
+
+# pylint: disable-next=redefined-outer-name,too-many-branches
 def benchmark_name_generator(
     dataset_name: str, model: type, config: Dict[str, Any], joiner: str = "_"
 ) -> str:
     """Turns a combination of dataset + model + hyper-parameters and returns a string"""
+    assert isinstance(model, type), f"Wrong type: {type(model)} - {model}"
     if model.__name__ in {
         "LinearSVR",
         "LinearSVC",
@@ -676,6 +712,18 @@ def benchmark_name_generator(
             config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
         else:
             config_str = f"_{config['n_estimators']}_{config['n_bits']}"
+
+    # GLMs
+    elif model.__name__ in {"PoissonRegressor", "GammaRegressor", "TweedieRegressor"}:
+        if isinstance(config["n_bits"], int):
+            n_bits_inputs = config["n_bits"]
+            n_bits_weights = config["n_bits"]
+        else:
+            n_bits_inputs = config["n_bits"]["op_inputs"]
+            n_bits_weights = config["n_bits"]["op_weights"]
+
+        pca_n_components = compute_number_of_components(config["n_bits"])
+        config_str = f"_{n_bits_inputs}_{n_bits_weights}_{pca_n_components}"
 
     # We remove underscores to make sure to not have any conflict when splitting
     return model.__name__.replace("_", "-") + config_str + joiner + dataset_name.replace("_", "-")
@@ -749,6 +797,17 @@ def benchmark_name_to_config(
         elif len(config_str) == 2:
             config_dict["n_estimators"] = int(config_str[0])
             config_dict["n_bits"] = int(config_str[1])
+        else:
+            raise ValueError(
+                f"{benchmark_name} couldn't be parsed\n"
+                f"{config_str} does not match any know configuration"
+            )
+    # GLMs
+    elif model_name in {"PoissonRegressor", "GammaRegressor", "TweedieRegressor"}:
+        if len(config_str) == 3:
+            config_dict["n_bits_inputs"] = int(config_str[0])
+            config_dict["n_bits_weights"] = int(config_str[1])
+            config_dict["pca_n_components"] = int(config_str[2])
         else:
             raise ValueError(
                 f"{benchmark_name} couldn't be parsed\n"

@@ -1,21 +1,21 @@
 import argparse
 import json
-import math
 import random
 import time
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import numpy as np
 import pandas
 import py_progress_tracker as progress
-from common import BENCHMARK_CONFIGURATION, run_and_report_regression_metrics, seed_everything
-
-try:
-    from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
-except ImportError:  # For backward compatibility purposes
-    from concrete.numpy import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
-
+from common import (
+    BENCHMARK_CONFIGURATION,
+    GLMS_STRING_TO_CLASS,
+    benchmark_name_generator,
+    compute_number_of_components,
+    run_and_report_regression_metrics,
+    seed_everything,
+)
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import fetch_openml
 from sklearn.decomposition import PCA
@@ -29,15 +29,10 @@ from sklearn.preprocessing import (
     StandardScaler,
 )
 
-from concrete.ml.sklearn import GammaRegressor, PoissonRegressor, TweedieRegressor
-
-glm_regressors = [GammaRegressor, PoissonRegressor, TweedieRegressor]
-glm_regressors_string_to_class = {c.__name__: c for c in glm_regressors}
-
 
 # pylint: disable=redefined-outer-name
-def get_data() -> pandas.DataFrame:
-    """Fetch, merge and clean the desired datasets."""
+def get_data() -> Tuple[pandas.DataFrame, str]:
+    """Fetch, merge and clean the GLM dataset."""
 
     # Getting the original data set containing the risk features
     # Link: https://www.openml.org/d/41214
@@ -48,7 +43,7 @@ def get_data() -> pandas.DataFrame:
     # Getting the data set containing claims amount
     # Link: https://www.openml.org/d/41215
     claims_data, _ = fetch_openml(
-        data_id=41215, as_frame=True, cache=True, data_home="~/.cache/sklean", return_X_y=True
+        data_id=41215, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
     )
 
     # Set IDpol as index
@@ -76,7 +71,7 @@ def get_data() -> pandas.DataFrame:
     data["Exposure"] = data["Exposure"].clip(upper=1)
     data["ClaimAmount"] = data["ClaimAmount"].clip(upper=200000)
 
-    return data
+    return data, "freMTPL2freq"
 
 
 def create_target_values(data: pandas.DataFrame) -> None:
@@ -134,9 +129,9 @@ def get_train_test_data(data: pandas.DataFrame) -> Tuple[pandas.DataFrame, panda
     return train_data, test_data
 
 
-def get_parameters_glms(config):
+def get_parameters_glms(config: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     # Fetching the data and initializing the parameters
-    data = get_data()
+    data, dataset_name = get_data()
     create_target_values(data)
     train_data, test_data = get_train_test_data(data)
 
@@ -146,7 +141,8 @@ def get_parameters_glms(config):
 
     parameters_glms = {
         "PoissonRegressor": {
-            "regressor": PoissonRegressor,
+            "regressor": GLMS_STRING_TO_CLASS["PoissonRegressor"],
+            "dataset_name": dataset_name,
             "init_parameters": {
                 "alpha": config["PoissonRegressor"]["alpha"],
                 "max_iter": config["PoissonRegressor"]["max_iter"],
@@ -164,7 +160,8 @@ def get_parameters_glms(config):
             },
         },
         "GammaRegressor": {
-            "regressor": GammaRegressor,
+            "regressor": GLMS_STRING_TO_CLASS["GammaRegressor"],
+            "dataset_name": dataset_name,
             "init_parameters": {
                 "alpha": config["GammaRegressor"]["alpha"],
                 "max_iter": config["GammaRegressor"]["max_iter"],
@@ -182,7 +179,8 @@ def get_parameters_glms(config):
             },
         },
         "TweedieRegressor": {
-            "regressor": TweedieRegressor,
+            "regressor": GLMS_STRING_TO_CLASS["TweedieRegressor"],
+            "dataset_name": dataset_name,
             "init_parameters": {
                 "power": config["TweedieRegressor"]["power"],
                 "alpha": config["TweedieRegressor"]["alpha"],
@@ -205,12 +203,12 @@ def get_parameters_glms(config):
     return parameters_glms
 
 
-def get_config(args) -> Dict:
+def get_config(args: argparse.Namespace) -> Dict[str, Any]:
     """Fix the GLM parameters used for initialization, fitting, prediction and score evaluation."""
 
     if args.n_bits is not None:
         n_bits_list = args.n_bits
-    else:
+    else:  # Default
         n_bits_list = [
             {"model_inputs": 6, "op_inputs": 2, "op_weights": 2, "model_outputs": 6},
             {"model_inputs": 6, "op_inputs": 3, "op_weights": 2, "model_outputs": 6},
@@ -246,21 +244,6 @@ def get_config(args) -> Dict:
             config[regressor].update(args.configs[i])
 
     return config
-
-
-def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
-    """Computes the maximum number of PCA components possible for executing a model in FHE."""
-    if isinstance(n_bits, int):
-        n_bits_inputs = n_bits
-        n_bits_weights = n_bits
-    else:
-        n_bits_inputs = n_bits["op_inputs"]
-        n_bits_weights = n_bits["op_weights"]
-
-    n_components = math.floor(
-        (2**MAXIMUM_TLU_BIT_WIDTH - 1) / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
-    )
-    return n_components
 
 
 def score_estimator(
@@ -306,24 +289,7 @@ def score_estimator(
     )
 
 
-def get_benchmark_id(regressor, n_bits) -> str:
-    """Create the suffix for benchmark ids."""
-    if isinstance(n_bits, int):
-        n_bits_inputs = n_bits
-        n_bits_weights = n_bits
-    else:
-        n_bits_inputs = n_bits["op_inputs"]
-        n_bits_weights = n_bits["op_weights"]
-
-    pca_n_components = compute_number_of_components(n_bits)
-
-    return (
-        f"{regressor}_n_bits_i_{n_bits_inputs}_n_bits_w_{n_bits_weights}_"
-        f"n_compotent_{pca_n_components}"
-    )
-
-
-def argument_manager():
+def argument_manager() -> argparse.Namespace:
     """Manage input arguments from the user."""
 
     parser = argparse.ArgumentParser()
@@ -337,7 +303,7 @@ def argument_manager():
     )
     parser.add_argument(
         "--regressors",
-        choices=glm_regressors_string_to_class.keys(),
+        choices=GLMS_STRING_TO_CLASS.keys(),
         nargs="+",
         default=None,
         help="regressors(s) to use",
@@ -379,7 +345,7 @@ def argument_manager():
     args = parser.parse_args()
 
     if args.regressors is None:
-        args.regressors = glm_regressors_string_to_class.keys()
+        args.regressors = GLMS_STRING_TO_CLASS.keys()
 
     return args
 
@@ -393,6 +359,7 @@ def main():
 
     config = get_config(args)
 
+    # Generate list of commands
     if args.long_list or args.short_list:
         already_done_models = {}
 
@@ -424,7 +391,11 @@ def main():
     @progress.track(
         [
             {
-                "id": get_benchmark_id(regressor, n_bits),
+                "id": benchmark_name_generator(
+                    model=GLMS_STRING_TO_CLASS[regressor],
+                    dataset_name=parameters_glms[regressor]["dataset_name"],
+                    config={"n_bits": n_bits},
+                ),
                 "name": regressor + "_" + str(n_bits),
                 "parameters": {"parameters": parameters_glms[regressor], "n_bits": n_bits},
                 "samples": args.model_samples,
@@ -448,6 +419,7 @@ def main():
         if args.verbose:
             print("Start")
             time_current = time.time()
+        dataset_name = parameters["dataset_name"]
 
         ids_to_convert_in_seconds = []
 
@@ -538,7 +510,11 @@ def main():
             # Dump MLIR
             if args.mlir_only:
                 mlirs_dir: Path = Path(__file__).parents[1] / "MLIRs"
-                benchmark_name = get_benchmark_id(model_pca["regressor"], n_bits)
+                benchmark_name = benchmark_name_generator(
+                    dataset_name=dataset_name,
+                    model=model_pca["regressor"],
+                    config={"n_bits": n_bits},
+                )
                 mlirs_dir.mkdir(parents=True, exist_ok=True)
                 with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
                     file.write(forward_fhe.mlir)
