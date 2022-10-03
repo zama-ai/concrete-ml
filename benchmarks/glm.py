@@ -406,7 +406,7 @@ def main():
                 if not args.short_list or regressor not in already_done_models:
                     print(
                         f"--regressors {regressor} --n_bits '{n_bits}' "
-                        f"--configs '{print_configs}'"
+                        f"--configs '{print_configs}' --fhe_samples {args.fhe_samples}"
                     )
                     already_done_models[regressor] = 1
 

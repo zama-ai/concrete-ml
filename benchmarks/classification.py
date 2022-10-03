@@ -114,7 +114,10 @@ def main():
             model_name_i = model_class_i.__name__
 
             if not args.short_list or model_name_i not in already_done_models:
-                print(f"--models {model_name_i} --datasets {dataset_i} " f"--configs '{config_n}'")
+                print(
+                    f"--models {model_name_i} --datasets {dataset_i} "
+                    f"--configs '{config_n}' --fhe_samples {args.fhe_samples}"
+                )
                 already_done_models[model_name_i] = 1
         return
 

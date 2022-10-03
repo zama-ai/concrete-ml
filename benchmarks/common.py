@@ -108,13 +108,6 @@ NN_BENCHMARK_PARMAMS = (
         }
         for (n_b, n_b_acc) in [
             (2, 7),
-            (3, 11),
-            (4, 12),
-            (5, 14),
-            (6, 16),
-            (7, 18),
-            (8, 20),
-            (9, 22),
             (10, 24),
         ]
     ]
@@ -131,49 +124,45 @@ NN_BENCHMARK_PARMAMS = (
             "verbose": 0,
             "lr": 0.001,
         }
-        for n_b in range(2, 10)
+        for n_b in [2, 3, 10]
     ]
 )
 BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
     "XGBClassifier": [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [1, 3, 5, 7]
-        for n_estimators in [10, 20, 30, 50]
-        for n_bits in [2, 3, 4, 6, 7, 16]
+        for max_depth in [6]
+        for n_estimators in [100]
+        for n_bits in [2, 6]
     ],
     "XGBRegressor": [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [1, 3, 5, 7]
-        for n_estimators in [10, 20, 30, 50]
-        for n_bits in [2, 3, 4, 6, 7, 16]
+        for max_depth in [6]
+        for n_estimators in [100]
+        for n_bits in [2, 6]
     ],
     "RandomForestClassifier": [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [3, 5, 15]
-        for n_estimators in [10, 20, 50]
-        for n_bits in [2, 3, 4, 6, 7, 16]
+        for max_depth in [10]
+        for n_estimators in [100]
+        for n_bits in [2, 6]
     ],
     "RandomForestRegressor": [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [3, 5, 15]
-        for n_estimators in [10, 20, 50]
-        for n_bits in [2, 3, 4, 6, 7, 16]
+        for max_depth in [10]
+        for n_estimators in [100]
+        for n_bits in [2, 6]
     ],
     # Benchmark different depths of the quantized decision tree
     "DecisionTreeClassifier": [
-        {"max_depth": max_depth, "n_bits": n_bits}
-        for max_depth in [1, 3, 5, 7, None]
-        for n_bits in [2, 3, 4, 6, 7, 16]
+        {"max_depth": max_depth, "n_bits": n_bits} for max_depth in [5, 10] for n_bits in [2, 6]
     ],
     "DecisionTreeRegressor": [
-        {"max_depth": max_depth, "n_bits": n_bits}
-        for max_depth in [1, 3, 5, 7, None]
-        for n_bits in [2, 3, 4, 6, 7, 16]
+        {"max_depth": max_depth, "n_bits": n_bits} for max_depth in [5, 10] for n_bits in [2, 6]
     ],
     "LinearSVC": [{"n_bits": 2}],
     "LinearSVR": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "LogisticRegression": [{"n_bits": 2}],
-    "LinearRegression": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "LinearRegression": [{"n_bits": n_bits, "use_sum_workaround": True} for n_bits in range(2, 11)],
     "Lasso": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "Ridge": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "ElasticNet": [{"n_bits": n_bits} for n_bits in range(2, 11)],
@@ -182,38 +171,9 @@ BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
 }
 
 REGRESSION_DATASETS = [
-    "pol",
-    "house_16H",
-    "tecator",
-    "boston",
-    "socmob",
-    "wine_quality",
-    "abalone",
-    "us_crime",
-    "Brazilian_houses",
-    "Moneyball",
-    "SAT11-HAND-runtime-regression",
-    "Santander_transaction_value",
-    "house_prices_nominal",
-    "Yolanda",
-    "house_sales",
-    "Buzzinsocialmedia_Twitter",
+    "one-hundred-plants-margin",
 ]
-CLASSIFICATION_DATASETS = [
-    "credit-g",
-    "blood-transfusion-service-center",
-    "wilt",
-    "tic-tac-toe",
-    "kr-vs-kp",
-    "qsar-biodeg",
-    "wdbc",
-    "steel-plates-fault",
-    "diabetes",
-    "ilpd",
-    "phoneme",
-    "spambase",
-    "climate-model-simulation-crashes",
-]
+CLASSIFICATION_DATASETS = ["CreditCardFraudDetection"]
 DATASET_VERSIONS = {
     "wilt": 2,
     "abalone": 5,
@@ -314,7 +274,6 @@ def should_test_config_in_fhe(
 
     if model_name in {
         "LogisticRegression",
-        "LinearRegression",
         "Lasso",
         "ElasticNet",
         "Ridge",
@@ -324,6 +283,10 @@ def should_test_config_in_fhe(
         if config["n_bits"] <= 2 and n_features <= 14:
             return True
         if config["n_bits"] == 3 and n_features <= 2:
+            return True
+
+    if model_name == "LinearRegression":
+        if config["n_bits"] <= 3:
             return True
 
     if model_name in {
