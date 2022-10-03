@@ -120,9 +120,10 @@ jobs:
       max-parallel: ${{ fromJson(needs.prepare-scripts.outputs.length) }}
     uses: ./.github/workflows/single_benchmark.yaml
     with:
-      command: ${{ matrix.index.command }}
       git-ref: ${{ github.event.inputs.git-ref }}
       instance_type: ${{ github.event.inputs.instance_type }}
+      command: ${{ matrix.index.command }}
+      time-to-wait: ${{ matrix.index.time_to_wait }}
 
   slack-notification:
     runs-on: ubuntu-20.04

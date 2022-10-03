@@ -67,7 +67,12 @@ def main():
 
     result = []
     for index, command in enumerate(commands):
-        element = {"label": f"ml_bench_{now}_{index}", "index": index, "command": command}
+        element = {
+            "label": f"ml_bench_{now}_{index}",
+            "index": index,
+            "command": command,
+            "time_to_wait": f"{index}s",  # We might want to decrease or change this in the future
+        }
         result.append(element)
 
     # Print to stdout to put in environment variable
