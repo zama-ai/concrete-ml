@@ -52,6 +52,10 @@ on:
       INTERNAL_REPO_URL_FOR_MASK:
         description: "Used for masking"
 
+env:
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+
 jobs:
   start-ec2:
     name: Start EC2
@@ -148,9 +152,11 @@ jobs:
         id: install-deps
         run: |
           cd ./cml_to_install
+          # The python-dev version should be in sync with the one from the previous step
+          apt-get install --no-install-recommends -y gnome-keyring
+          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3.9-dev
           ./script/make_utils/setup_os_deps.sh
           # Needed for some reason
-          apt install graphviz*
           make setup_env
           source ./.venv/bin/activate
           python -m pip show concrete-numpy

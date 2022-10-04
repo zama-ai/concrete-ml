@@ -44,6 +44,8 @@ on:
 env:
   # Github action url (used by slack notification)
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
 
 # Jobs
 jobs:
@@ -89,6 +91,8 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
+          apt-get install --no-install-recommends -y gnome-keyring
+          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
