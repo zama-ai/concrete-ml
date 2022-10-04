@@ -119,8 +119,8 @@ have APIs that are almost identical to their scikit-learn counterparts. It is al
 models.
 
 ## Documentation.
-Full, comprehensive documentation is available here: [https://docs.zama.ai/concrete-ml](https://docs.zama.ai/concrete-ml).
 
+Full, comprehensive documentation is available here: [https://docs.zama.ai/concrete-ml](https://docs.zama.ai/concrete-ml).
 
 ## Online demos and tutorials.
 

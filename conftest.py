@@ -104,6 +104,7 @@ def monkeypatched_compilation_configuration_init_for_codeblocks(
     self.enable_unsafe_features = True  # This is for our tests only, never use that in prod
     self.treat_warnings_as_errors = True
     self.use_insecure_key_cache = True  # This is for our tests only, never use that in prod
+    self.insecure_key_cache_location = "ConcreteNumpyKeyCache"
 
 
 def pytest_sessionstart(session: pytest.Session):
@@ -123,7 +124,7 @@ def pytest_sessionstart(session: pytest.Session):
     keyring_dir.mkdir(parents=True, exist_ok=True)
     keyring_dir_as_str = str(keyring_dir)
     print(f"Using {keyring_dir_as_str} as key cache dir")
-    configuration._INSECURE_KEY_CACHE_DIR = keyring_dir_as_str  # pylint: disable=protected-access
+    configuration.insecure_key_cache_location = keyring_dir_as_str
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disable=unused-argument
@@ -449,7 +450,7 @@ def load_data():
             strictly_positive (bool): If True, the regression data will be only composed of strictly
                 positive values. It has no effect on classification problems. Default to False.
         """
-        # Create a random_state value in order to seed the data generation functions. This enables 
+        # Create a random_state value in order to seed the data generation functions. This enables
         # all tests that use this fixture to be deterministic and thus reproducible.
         random_state = numpy.random.randint(0, 2**15)
 
