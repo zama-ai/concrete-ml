@@ -4,13 +4,13 @@ PyYAML, 6.0, MIT License
 brevitas, 0.7.2.dev2+g3088901, UNKNOWN
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.19.0, BSD-3
-concrete-numpy, 0.8.0rc2, BSD License
+concrete-numpy, 0.8.0, BSD License
 contourpy, 1.0.5, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.5.1, BSD License
 flatbuffers, 1.12, Apache Software License
-fonttools, 4.37.3, MIT License
+fonttools, 4.37.4, MIT License
 future-annotations, 1.0.0, MIT License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.4, MIT License
@@ -18,7 +18,7 @@ joblib, 1.2.0, BSD License
 kiwisolver, 1.4.4, BSD License
 matplotlib, 3.6.0, Python Software Foundation License
 mpmath, 1.2.1, BSD License
-networkx, 2.8.6, BSD License
+networkx, 2.8.7, BSD License
 numpy, 1.23.3, BSD License
 onnx, 1.12.0, Apache License v2.0
 onnxconverter-common, 1.12.2, MIT License
@@ -39,7 +39,7 @@ skorch, 0.11.0, new BSD 3-Clause
 sympy, 1.11.1, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.1.0, BSD License
-tokenize-rt, 4.2.1, MIT License
+tokenize-rt, 5.0.0, MIT License
 tomli, 2.0.1, MIT License
 torch, 1.12.1, BSD License
 tqdm, 4.64.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
