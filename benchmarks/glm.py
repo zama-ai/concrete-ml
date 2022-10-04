@@ -209,11 +209,22 @@ def get_config(args: argparse.Namespace) -> Dict[str, Any]:
     if args.n_bits is not None:
         n_bits_list = args.n_bits
     else:  # Default
-        n_bits_list = [
-            {"model_inputs": 6, "op_inputs": 2, "op_weights": 2, "model_outputs": 6},
-            {"model_inputs": 6, "op_inputs": 3, "op_weights": 2, "model_outputs": 6},
-            {"model_inputs": 6, "op_inputs": 3, "op_weights": 3, "model_outputs": 6},
-        ]
+        try:  # For backward compatibility
+            # pylint: disable-next=unused-import,import-outside-toplevel
+            # flake8: noqa: F401,C0415
+            from concrete.ml.quantization.base_quantized_op import DEFAULT_MODEL_BITS
+
+            n_bits_list = [
+                {"model_inputs": 6, "op_inputs": 2, "op_weights": 2, "model_outputs": 6},
+                {"model_inputs": 6, "op_inputs": 3, "op_weights": 2, "model_outputs": 6},
+                {"model_inputs": 6, "op_inputs": 3, "op_weights": 3, "model_outputs": 6},
+            ]
+        except (ImportError, AttributeError):
+            n_bits_list = [
+                {"net_inputs": 6, "op_inputs": 2, "op_weights": 2, "net_outputs": 6},
+                {"net_inputs": 6, "op_inputs": 3, "op_weights": 2, "net_outputs": 6},
+                {"net_inputs": 6, "op_inputs": 3, "op_weights": 3, "net_outputs": 6},
+            ]
 
     config = {
         "PoissonRegressor": {
@@ -367,7 +378,7 @@ def main():
             for n_bits in config[regressor]["n_bits_list"]:
                 print_configs = config[regressor].copy()
                 print_configs.pop("n_bits_list")
-                print_configs = str(print_configs).replace("'", '"')
+                print_configs = json.dumps(print_configs).replace("'", '"')
                 n_bits = str(n_bits).replace("'", '"')
 
                 if not args.short_list or regressor not in already_done_models:

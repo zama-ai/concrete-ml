@@ -1,4 +1,5 @@
 import argparse
+import inspect
 import math
 import os
 import random
@@ -146,6 +147,17 @@ NN_BENCHMARK_PARMAMS = (
         for n_b in [2, 3, 10]
     ]
 )
+
+LINEAR_REGRESSION_ARGUMENTS = [
+    {"n_bits": n_bits, "use_sum_workaround": True} for n_bits in range(2, 11)
+]
+# Backward compatibility
+if ("LinearRegression" in CLASSIFIERS) and (
+    "use_sum_workaround"
+    not in inspect.signature(CLASSIFIERS_STRING_TO_CLASS["LinearRegression"]).parameters
+):
+    LINEAR_REGRESSION_ARGUMENTS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
+
 BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
     "XGBClassifier": [
         {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
@@ -181,7 +193,7 @@ BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
     "LinearSVC": [{"n_bits": 2}],
     "LinearSVR": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "LogisticRegression": [{"n_bits": 2}],
-    "LinearRegression": [{"n_bits": n_bits, "use_sum_workaround": True} for n_bits in range(2, 11)],
+    "LinearRegression": LINEAR_REGRESSION_ARGUMENTS,
     "Lasso": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "Ridge": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "ElasticNet": [{"n_bits": n_bits} for n_bits in range(2, 11)],

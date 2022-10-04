@@ -110,7 +110,7 @@ def main():
     if args.long_list or args.short_list:
         already_done_models = {}
         for (dataset_i, model_class_i, config_i) in all_classification_tasks:
-            config_n = str(config_i).replace("'", '"')
+            config_n = json.dumps(config_i).replace("'", '"')
             model_name_i = model_class_i.__name__
 
             if not args.short_list or model_name_i not in already_done_models:
