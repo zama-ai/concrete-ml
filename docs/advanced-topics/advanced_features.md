@@ -22,3 +22,16 @@ Here is a visualization of the effect of the `p_error` over a simple linear regr
 ![Impact of p_error in a Linear Regression](../figures/p_error_linear_regression.png)
 
 The execution for the two models are 336 ms per example for the standard `p_error` and 253 ms per example for a `p_error = 0.1` (on a 8 cores Intel CPU machine). Obviously, this speed up is very dependent on the model complexity. To obtain a speedup while maintaining good accuracy it is possible to search for a good value of `p_error`. Currently no heuristic has been proposed to find a good value a-priori.
+
+Users have the possibility to change this `p_error` on their will within the `compile` function available in each of the models. Here is an example:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+from concrete.ml.sklearn import XGBoostClassifier
+clf = XGBoostClassifier()
+clf.fit(X_train, y_train)
+
+# Here comes the p_error parameter
+clf.compile(X_train, p_error = 0.1)
+```
