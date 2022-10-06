@@ -4,7 +4,6 @@ import math
 import os
 import random
 import time
-from functools import partial
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple, Union
 
@@ -244,7 +243,7 @@ def run_and_report_classification_metrics(y_gt, y_pred, metric_id_prefix, metric
 
     metric_info = [
         (accuracy_score, "acc", "Accuracy"),
-        (partial(f1_score, average="weighted"), "f1", "F1Score"),
+        (f1_score, "f1", "F1Score"),
         (matthews_corrcoef, "mcc", "MCC"),
     ]
     for (metric, metric_id, metric_label) in metric_info:
