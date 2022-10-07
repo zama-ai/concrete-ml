@@ -9,6 +9,7 @@ import json
 import math
 import subprocess
 import sys
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -106,6 +107,8 @@ def convert_to_new_postgres(
         experiment_representation["experiment_metadata"] = {
             "model_name": model_name,
             "dataset_name": dataset_name,
+            "cml_version": version("concrete-ml"),
+            "cnp_version": version("concrete-numpy"),
         }
         experiment_representation["experiment_metadata"].update(hyper_args)
         experiment_representation["git_hash"] = current_git_hash
