@@ -441,8 +441,7 @@ jobs:
           echo "::set-output name=changelog-file::${CHANGELOG_FILE}"
           poetry run python ./script/make_utils/changelog_helper.py \
           --to-ref "${GIT_TAG}" \
-          --to-ref-must-have-tag \
-          --ancestor-must-have-tag > "${CHANGELOG_FILE}"
+          --to-ref-must-have-tag > "${CHANGELOG_FILE}"
 
       - name: Stop if previous steps failed
         id: conformance
