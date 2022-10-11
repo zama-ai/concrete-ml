@@ -19,6 +19,7 @@ on:
         - QuantizationAwareTraining \n
         - SentimentClassification \n
         - XGBClassifier \n
+        - XGBRegressor \n
         "
         # --- refresh_notebooks_list.py: refresh list of notebooks currently available [END] ---
         required: true
