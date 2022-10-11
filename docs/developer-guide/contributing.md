@@ -1,6 +1,6 @@
 # Contributing
 
-There are two ways to contribute to Concrete-ML:
+There are three ways to contribute to Concrete-ML:
 
 - You can open issues to report bugs and typos and to suggest ideas.
 - You can ask to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai). Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do.
@@ -67,11 +67,11 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed PyTorch tracer"
 ```
 
-To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step, and rejected if they don't follow the rules.
+To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step and are rejected if they don't follow the rules.
 
 ## 4. Rebasing
 
-You should rebase on top of the `main` branch before you create your pull request. Merge commits are not allowed, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if some conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
+You should rebase on top of the `main` branch before you create your pull request. Merge commits are not allowed, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
 
 ```shell
 # fetch the list of active remote branches

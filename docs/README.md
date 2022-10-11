@@ -2,7 +2,7 @@
 
 [⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | [🗣 Community support forum](https://community.zama.ai/c/concrete-ml/8) | [📁 Contribute to the project](https://github.com/zama-ai/concrete-ml/blob/main/docs/dev/howto/contributing.md)
 
-![](.gitbook/assets/zama_docs_intro.jpg)
+![](.gitbook/assets/3.png)
 
 Concrete-ML is an open-source privacy-preserving machine learning inference framework based on fully homomorphic encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from Scikit-learn and PyTorch (see how it looks for [linear models](built-in-models/linear.md), [tree-based models](built-in-models/tree.md) and [neural networks](built-in-models/neural-networks.md)).
 
@@ -48,17 +48,17 @@ print("Comparison:", (y_pred_fhe == y_pred_clear))
 
 This example shows the typical flow of a Concrete-ML model:
 
-- The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete-ML quantizes the model to use only integers during inference
-- The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled
+- The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete-ML quantizes the model to use only integers during inference.
+- The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled.
 - Inference can then be done on encrypted data. The above example shows encrypted inference in the model development phase. Alternatively, in [deployment](getting-started/cloud.md) in a client/server setting, the data is encrypted by the client, processed securely by the server and then decrypted by the client.
 
 ## Current limitations
 
-To make a model work with FHE, the only constrain is to make it run within the supported precision limitations of Concrete-ML (currently 8-bit integers). Thus, machine learning models are required to be quantized, which sometimes leads to loss of accuracy versus the original model operating on plaintext.
+To make a model work with FHE, the only constraint is to make it run within the supported precision limitations of Concrete-ML (currently 8-bit integers). Thus, machine learning models are required to be quantized, which sometimes leads to a loss of accuracy versus the original model operating on plaintext.
 
 Additionally, Concrete-ML currently only supports FHE _inference_. On the other hand, training has to be done on unencrypted data, producing a model which is then converted to a FHE equivalent that can perform encrypted inference, i.e. prediction over encrypted data.
 
-Finally, in Concrete-ML there is currently no support for pre-processing model inputs and for post-processing model outputs. These processing stages may involve text to numerical feature transformation, dimensionality reduction, KNN or clustering, featurization, normalization, and mixing of results of ensemble models.
+Finally, in Concrete-ML there is currently no support for pre-processing model inputs and for post-processing model outputs. These processing stages may involve text to numerical feature transformation, dimensionality reduction, KNN or clustering, featurization, normalization, and the mixing of results of ensemble models.
 
 All of these issues are currently being addressed and significant improvements are expected to be released in the coming months.
 
@@ -70,17 +70,19 @@ Concrete-ML is built on top of Zama's Concrete framework. It uses [Concrete-Nump
 
 Various tutorials are proposed for the [built-in models](built-in-models/ml_examples.md) and for [deep learning](deep-learning/examples.md). In addition, we also list standalone use-cases:
 
-- [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/README.md): a Python and notebook showing a quantization-aware training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
-- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral. Of course, in FHE. The corresponding application is directly available [here](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis).
+- [MNIST](https://github.com/zama-ai/concrete-ml-internal/blob/main/use%5C_case%5C_examples/mnist/README.md): a Python and notebook showing a Quantization Aware Training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
+- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/blob/main/use%5C_case%5C_examples/encrypted%5C_sentiment%5C_analysis/README.md): a gradio demo, which predicts if a tweet / short message is positive, negative or neutral. Of course, this is completed using FHE. The corresponding application is directly available \[FIXME\] https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis.
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 
 ## Additional resources
 
-- [Concrete-ML community support](https://community.zama.ai/c/concrete-ml/8)
+- [Dedicated Concrete-ML community support](https://community.zama.ai/c/concrete-ml/8)
 - [Zama's blog](https://www.zama.ai/blog)
 - [FHE.org community](https://fhe.org)
 
 ## Looking for support? Ask our team!
 
-![](figures/support_zama.jpg)
+- Support forum: [https://community.zama.ai](https://community.zama.ai) (we answer in less than 24 hours).
+- Live discussion on the FHE.org discord server: [https://discord.fhe.org](https://discord.fhe.org) (inside the #**concrete** channel).
+- Do you have a question about Zama? You can write us on [Twitter](https://twitter.com/zama%5C_fhe) or send us an email at: **hello@zama.ai**

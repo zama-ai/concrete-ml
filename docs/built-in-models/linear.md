@@ -15,9 +15,9 @@ Concrete-ML provides several of the most popular linear models for `regression` 
 |              [Ridge](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-ridge)              |                    [Ridge](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge)                     |
 |         [ElasticNet](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-elasticnet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
 
-Using these models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists that are used to this framework to get started with Concrete-ML.
+Using these models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists who are used to this framework to get started with Concrete-ML.
 
-Models are also compatible with some of scikit-learn's main worflows, such as `Pipeline()` or `GridSearch()`.
+Models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` or `GridSearch()`.
 
 ## Example
 
@@ -78,6 +78,6 @@ We can then plot the decision boundary of the classifier and then compare those 
 
 ![Plaintext model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundarires](../figures/logistic_regression_fhe.png)
 
-We can clearly observe the impact of quantization over the decision boundaries in the FHE model, breaking the initial lines into broken lines with steps. However, this does not change the overall score as both models output the same accuracy (90%).
+We can clearly observe the impact of quantization over the decision boundaries in the FHE model, separating the initial lines into broken lines with steps. However, this does not change the overall score as both models output the same accuracy (90%).
 
-In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, the impact of those artifacts is often minor when considering linear models, making FHE models reach similar scores as their equivalent clear ones.
+In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, the impact of those artifacts is often minor when considering linear models as FHE models reach similar scores as their equivalent clear ones.

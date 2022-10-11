@@ -2,9 +2,9 @@
 
 ## Quantizing data
 
-Concrete-ML has support for quantized ML models and also provides quantization tools for Quantization Aware Training and Post-Training quantization. The core of this functionality is the conversion of floating point values to integers, and back. This is done using `QuantizedArray` in `concrete.ml.quantization`.
+Concrete-ML has support for quantized ML models and also provides quantization tools for Quantization Aware Training and Post-Training Quantization. The core of this functionality is the conversion of floating point values to integers and back. This is done using `QuantizedArray` in `concrete.ml.quantization`.
 
-The [`QuantizedArray`](../developer-guide/api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized.
+The [`QuantizedArray`](../developer-guide/api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
 
 - `n_bits` that defines the precision of the quantization
 - `values` are floating point values that will be converted to integers
@@ -54,8 +54,7 @@ print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 # q_A.quantizer.zero_point =  0
 ```
 
-In the following example, showing the de-quantization of model outputs, the
-`QuantizedArray` class is used in a different way. Here it uses pre-quantized integer values and having the `scale` and `zero-point` set explicitly. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the `forward_fhe.encrypt_run_decrypt(..)` call.
+In the following example, showing the de-quantization of model outputs, the `QuantizedArray` class is used in a different way. Here it uses pre-quantized integer values and has the `scale` and `zero-point` set explicitly. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the `forward_fhe.encrypt_run_decrypt(..)` call.
 
 ```python
 import numpy
@@ -78,31 +77,21 @@ def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
 
 Machine learning models are implemented with a diverse set of operations, such as convolution, linear transformations, activation functions and element-wise operations. When working with quantized values, these operations cannot be carried out in an equivalent way as for floating point values. With quantization, it is necessary to re-scale the input and output values of each operation to fit in the quantization domain.
 
-In Concrete-ML, the quantized equivalent of a scikit-learn model or a PyTorch `nn.Module`, is the `QuantizedModule`. Note that
-only inference is implemented in the `QuantizedModule`, and it is built through a conversion of the
-inference function of the corresponding scikit-learn or PyTorch module.
+In Concrete-ML, the quantized equivalent of a scikit-learn model or a PyTorch `nn.Module` is the `QuantizedModule`. Note that only inference is implemented in the `QuantizedModule`, and it is built through a conversion of the inference function of the corresponding scikit-learn or PyTorch module.
 
-Built-in neural networks expose the `quantized_module` member, while a `QuantizedModule` is also
-the result of the compilation of custom models through `compile_torch_model` and `compile_brevitas_qat_model`.
+Built-in neural networks expose the `quantized_module` member, while a `QuantizedModule` is also the result of the compilation of custom models through `compile_torch_model` and `compile_brevitas_qat_model`.
 
-The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary, maps ONNX floating point operators (e.g. Gemm) to their quantized equivalent (e.g. QuantizedGemm). For more information on implementing these operations, please see the [FHE compatible op-graph section](../developer-guide/fhe-op-graphs.md).
+The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary maps ONNX floating point operators (e.g. Gemm) to their quantized equivalent (e.g. QuantizedGemm). For more information on implementing these operations, please see the [FHE compatible op-graph section](fhe-op-graphs.md).
 
-The computation graph is taken from the corresponding floating point ONNX graph exported from scikit-learn
-[using HummingBird](../developer-guide/external_libraries.md#hummingbird), or from the ONNX graph exported by PyTorch.
-Calibration is used to obtain quantized parameters for the operations in the `QuantizedModule`.
-Parameters are also determined for the quantization of inputs during model deployment.
+The computation graph is taken from the corresponding floating point ONNX graph exported from scikit-learn [using HummingBird](external_libraries.md#hummingbird), or from the ONNX graph exported by PyTorch. Calibration is used to obtain quantized parameters for the operations in the `QuantizedModule`. Parameters are also determined for the quantization of inputs during model deployment.
 
 {% hint style="info" %}
-Calibration is the process of determining the typical distributions of values encountered for the
-intermediate values of a model during inference.
+Calibration is the process of determining the typical distributions of values encountered for the intermediate values of a model during inference.
 
-To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting), and stores the intermediate results as it goes. The statistics of these values determine quantization
-parameters.
+To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
 {% endhint %}
 
-That `QuantizedModule` generates the Concrete-Numpy function that is compiled to FHE. The compilation
-will succeed if the intermediate values conform to the 8 bits precision limit of the Concrete stack.
-See [the compilation section](../advanced-topics/compilation.md) for details.
+That `QuantizedModule` generates the Concrete-Numpy function that is compiled to FHE. The compilation will succeed if the intermediate values conform to the 8-bits precision limit of the Concrete stack. See [the compilation section](../advanced-topics/compilation.md) for details.
 
 ## Resources
 

@@ -16,7 +16,7 @@ Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 
 Also, only some versions of `python` are supported: in the current release, these are `3.8` and `3.9`. Please note that, at the time of this Concrete-ML version release, [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use Python 3.7 which is a deprecated version and is not supported by Concrete-ML.
 
-Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Numpy and Concrete-Compiler), support for more platforms will be added in the future.
+Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Numpy and Concrete-Compiler). Support for more platforms will be added in the future.
 
 ## Using PyPi
 

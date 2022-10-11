@@ -48,8 +48,8 @@ model.compile(X_train.to_numpy())
 
 # Perform the inference in FHE
 # Warning: this will take a while. It is recommended to run this with a very small batch of
-# example first (e.g. N_TEST_FHE = 1)
-# Note that here the encryption and decryption is done behind the scene.
+# examples first (e.g. N_TEST_FHE = 1)
+# Note that here the encryption and decryption is done behind the scenes.
 N_TEST_FHE = 1
 y_pred_fhe = model.predict(X_test.head(N_TEST_FHE), execute_in_fhe=True)
 

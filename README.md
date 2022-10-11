@@ -98,7 +98,7 @@ model.fit(X_train, y_train)
 # Run the predictions on non-encrypted data as a reference
 y_pred_clear = model.predict(X_test, execute_in_fhe=False)
 
-# Compile into an FHE model
+# Compile into a FHE model
 model.compile(x)
 
 # Run the inference in FHE

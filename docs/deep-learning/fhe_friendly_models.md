@@ -1,11 +1,8 @@
-# Step-by-step guide
+# Step-by-Step Guide
 
-This section includes a complete example of converting a neural network to Quantization Aware Training.
-This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can
-find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world data-set please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
+This section includes a complete example of converting a neural network to Quantization Aware Training (QAT). This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world data-set, please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use%5C_case%5C_examples/mnist/mnist%5C_in%5C_fhe.ipynb).
 
-For a more formal description of the usage of Brevitas to build FHE compatible neural networks,
-please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
+For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 
 ## Summary
 
@@ -42,9 +39,9 @@ class SimpleNet(nn.Module):
         return x
 ```
 
-Once trained, this network can be imported using the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) function. This function uses simple post-training quantization.
+Once trained, this network can be imported using the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_torch_model) function. This function uses simple Post-Training Quantization.
 
-The network was trained using different numbers neurons in the hidden layers, and quantized using 3-bits weights and activations. The mean accumulator size shown below was extracted using the [Virtual Library](fhe_assistant.md).
+The network was trained using different numbers of neurons in the hidden layers, and quantized using 3-bits weights and activations. The mean accumulator size shown below was extracted using the [Virtual Library](fhe_assistant.md).
 
 | neurons               | 10     | 30     | 100    |
 | --------------------- | ------ | ------ | ------ |
@@ -52,10 +49,10 @@ The network was trained using different numbers neurons in the hidden layers, an
 | 3bit accuracy         | 56.44% | 55.54% | 56.50% |
 | mean accumulator size | 6.6    | 6.9    | 7.4    |
 
-This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE compatible (accumulator \< 8 bits), it is sometimes preferable to have lower accumulator size in order for the inference time to be faster.
+This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 8 bits), it is sometimes preferable to have a lower accumulator size in order for the inference time to be faster.
 
 {% hint style="info" %}
-The accumulator size is determined by **Concrete Numpy** as being the maximum bit-width encountered anywhere in the encrypted circuit
+The accumulator size is determined by Concrete-Numpy as being the maximum bit-width encountered anywhere in the encrypted circuit
 {% endhint %}
 
 ### Pruning using Torch
@@ -66,9 +63,9 @@ To understand how to overcome this limitation, consider a scenario where 2 bits 
 
 By default, Concrete-ML uses symmetric quantization for model weights, with values in the interval $$\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$$. For example, for $$n_{bits}=2$$ the possible values are $$[-2, -1, 0, 1]$$, for $$n_{bits}=3$$ the values can be $$[-4,-3,-2,-1,0,1,2,3]$$.
 
-However, in a typical setting, the weights will not all have the maximum or minimum value (e.g. $$-2^{n_{bits}-1}$$). Instead, weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
+However, in a typical setting, the weights will not all have the maximum or minimum values (e.g. $$-2^{n_{bits}-1}$$). Instead, weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
 
-This can be leveraged to train network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../advanced-topics/pruning.md), where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) out of the box.
+This can be leveraged to train a network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../advanced-topics/pruning.md), where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) out of the box.
 
 The following code shows how to use pruning in the previous example:
 
@@ -94,7 +91,7 @@ class PrunedSimpleNet(SimpleNet):
                     prune.remove(layer, "weight")
 ```
 
-Results with `PrunedSimpleNet`, a pruned version of the `SimpleNet` with 100 neurons on the hidden layers are given below:
+Results with `PrunedSimpleNet`, a pruned version of the `SimpleNet` with 100 neurons on the hidden layers, are given below:
 
 | non-zero neurons      | 10     | 30     |
 | --------------------- | ------ | ------ |
@@ -104,16 +101,16 @@ Results with `PrunedSimpleNet`, a pruned version of the `SimpleNet` with 100 neu
 
 This shows that the fp32 accuracy has been improved while maintaining constant mean accumulator size.
 
-When pruning a larger neural network during training, it is easier to obtain a low a bit-width accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar smaller network.
+When pruning a larger neural network during training, it is easier to obtain a low bit-width accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar smaller network.
 
-## Quantization-aware training (QAT)
+## Quantization Aware Training
 
-While pruning helps maintain the post-quantization level of accuracy in low-precision settings, it does not help maintain accuracy when quantizing from floating point models. The best way to guarantee accuracy is to use quantization-aware training (read more in the [quantization documentation](../advanced-topics/quantization.md)).
+While pruning helps maintain the post-quantization level of accuracy in low-precision settings, it does not help maintain accuracy when quantizing from floating point models. The best way to guarantee accuracy is to use QAT (read more in the [quantization documentation](../advanced-topics/quantization.md)).
 
 In this example, QAT is done using [Brevitas](https://github.com/Xilinx/brevitas), changing `Linear` layers to `QuantLinear` and adding quantizers on the inputs of linear layers using `QuantIdentity.`
 
 {% hint style="info" %}
-The quantization-aware training (QAT) import tool in Concrete-ML is a work in progress. While it has been tested with some networks built with Brevitas, it is possible to use other tools to obtain QAT networks.
+The QAT import tool in Concrete-ML is a work in progress. While it has been tested with some networks built with Brevitas, it is possible to use other tools to obtain QAT networks.
 {% endhint %}
 
 <!--pytest-codeblocks:cont-->
@@ -233,7 +230,7 @@ class QATPrunedSimpleNet(nn.Module):
                     prune.remove(layer, "weight")
 ```
 
-Training this network with 30 non-zero neurons out of 100 total gives good accuracy while being FHE compatible (accumulator size \< 8 bits).
+Training this network with 30 out of 100 total non-zero neurons gives good accuracy while being FHE-compatible (accumulator size \< 8 bits).
 
 | non-zero neurons             | 30    |
 | ---------------------------- | ----- |
@@ -246,5 +243,5 @@ The PyTorch QAT training loop is the same as the standard floating point trainin
 {% endhint %}
 
 {% hint style="info" %}
-Quantization Aware Training is somewhat slower thant normal training. QAT introduces quantization during both the forward and backward passes. The quantization process is inefficient on GPUs as its computational intensity is low with respect to data transfer time.
+Quantization Aware Training is somewhat slower than normal training. QAT introduces quantization during both the forward and backward passes. The quantization process is inefficient on GPUs as its computational intensity is low with respect to data transfer time.
 {% endhint %}

@@ -20,7 +20,7 @@
 
 - [Using Torch](deep-learning/torch_support.md)
 - [Using ONNX](deep-learning/onnx_support.md)
-- [Step-by-step guide](deep-learning/fhe_friendly_models.md)
+- [Step-by-Step Guide](deep-learning/fhe_friendly_models.md)
 - [Deep Learning Examples](deep-learning/examples.md)
 - [Debugging Models](deep-learning/fhe_assistant.md)
 

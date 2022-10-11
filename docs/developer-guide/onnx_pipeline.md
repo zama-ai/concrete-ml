@@ -1,8 +1,8 @@
-# More about ONNX
+# Importing ONNX
 
 Internally, Concrete-ML uses [ONNX](https://github.com/onnx/onnx) operators as intermediate representation (or IR) for manipulating machine learning models produced through export for [PyTorch](https://github.com/pytorch/pytorch), [Hummingbird](https://github.com/microsoft/hummingbird) and [skorch](https://github.com/skorch-dev/skorch).
 
-As ONNX is becoming the standard exchange format for neural networks, this allows Concrete-ML to be flexible while also making model representation manipulation quite easy. In addition, it allows for straight-forward mapping to NumPy operators, supported by Concrete-Numpy to use the Concrete stack FHE conversion capabilities.
+As ONNX is becoming the standard exchange format for neural networks, this allows Concrete-ML to be flexible while also making model representation manipulation quite easy. In addition, it allows for straight-forward mapping to NumPy operators, supported by Concrete-Numpy to use Concrete stack's FHE conversion capabilities.
 
 ## Torch to NumPy conversion using ONNX
 
@@ -11,11 +11,11 @@ The diagram below gives an overview of the steps involved in the conversion of a
 All Concrete-ML built-in models follow the same pattern for FHE conversion:
 
 1. The models are trained with sklearn or PyTorch
-1. All models have a PyTorch implementation for inference. This implementation is provided either by third-party tool such as [Hummingbird](../developer-guide/external_libraries.md#hummingbird), or is implemented in Concrete-ML.
-1. The PyTorch model is exported to ONNX. For more information on the use of ONNX in Concrete-ML, see [here](onnx_pipeline.md#torch-to-numpy-conversion-using-onnx)
-1. The Concrete-ML ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference NumPy operations to them. This step produces a `NumpyModule`
+1. All models have a PyTorch implementation for inference. This implementation is provided either by a third-party tool such as [Hummingbird](external_libraries.md#hummingbird) or implemented directly in Concrete-ML.
+1. The PyTorch model is exported to ONNX. For more information on the use of ONNX in Concrete-ML, see [here](onnx_pipeline.md#torch-to-numpy-conversion-using-onnx).
+1. The Concrete-ML ONNX parser checks that all the operations in the ONNX graph are supported and assigns reference NumPy operations to them. This step produces a `NumpyModule`.
 1. Quantization is performed on the [`NumpyModule`](../developer-guide/api/concrete.ml.torch.numpy_module.md#class-numpymodule), producing a [`QuantizedModule`](../developer-guide/api/concrete.ml.quantization.quantized_module.md#class-quantizedmodule) . Two steps are performed: calibration and assignment of equivalent [`QuantizedOp`](../developer-guide/api/concrete.ml.quantization.base_quantized_op.md#class-quantizedop) objects to each ONNX operation. The `QuantizedModule` class is the quantized counterpart of the `NumpyModule`.
-1. Once the `QuantizedModule` is built, Concrete-Numpy is used to trace the `._forward()` function of the `QuantizedModule`
+1. Once the `QuantizedModule` is built, Concrete-Numpy is used to trace the `._forward()` function of the `QuantizedModule`.
 
 Moreover, by passing a user provided `nn.Module` to step 2 of the above process, Concrete-ML supports custom user models. See the associated [FHE-friendly model documentation](../deep-learning/fhe_friendly_models.md) for instructions about working with such models.
 
@@ -29,7 +29,7 @@ Note that the `NumpyModule` interpreter currently [supports the following ONNX o
 
 ## Inspecting the ONNX models
 
-In order to better understand how Concrete-ML works under the hood, it is possible to access each model in their ONNX format and then either either print it or visualize it by importing the associated file in [Netron](https://netron.app). For example, with `LogisticRegression`:
+In order to better understand how Concrete-ML works under the hood, it is possible to access each model in their ONNX format and then either print it or visualize it by importing the associated file in [Netron](https://netron.app). For example, with `LogisticRegression`:
 
 ```python
 import onnx

@@ -1,16 +1,13 @@
 # Pruning
 
-Pruning is a method to reduce neural network complexity, usually applied in order to reduce the computation cost or memory size. Pruning is used in Concrete-ML to control the size of accumulators in neural networks, thus making them FHE compatible. See [here](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints) for an explanation of the accumulator bit-width constraints.
+Pruning is a method to reduce neural network complexity, usually applied in order to reduce the computation cost or memory size. Pruning is used in Concrete-ML to control the size of accumulators in neural networks, thus making them FHE-compatible. See [here](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints) for an explanation of accumulator bit-width constraints.
 
 ## Overview of pruning in Concrete-ML
 
-Pruning is used in Concrete-ML for neural networks:
+Pruning is used in Concrete-ML for two types of neural networks:
 
-1. Built-in [neural networks](../built-in-models/neural-networks.md) include a pruning mechanism that can be parametrized by the user. The
-   pruning type is based on L1-norm. To comply with FHE constraints, Concrete-ML uses _unstructured_ pruning
-   , as the aim is not to eliminate neurons or convolutional filters completely, but to decrease their accumulator bit-width.
-1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented
-   with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) (e.g.L1-Unstructured) to good effect.
+1. Built-in [neural networks](../built-in-models/neural-networks.md) include a pruning mechanism that can be parameterized by the user. The pruning type is based on L1-norm. To comply with FHE constraints, Concrete-ML uses _unstructured_ pruning, as the aim is not to eliminate neurons or convolutional filters completely, but to decrease their accumulator bit-width.
+1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) (e.g.L1-Unstructured) to good effect.
 
 ## Basics of pruning
 

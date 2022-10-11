@@ -1,14 +1,14 @@
 # Debugging Models
 
-This section provides a set of tools and guidelines to help users build optimized FHE compatible models.
+This section provides a set of tools and guidelines to help users build optimized FHE-compatible models.
 
 ## Virtual library
 
-The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler that allow users to simulate what would happen when converting a model to FHE without the current bit-width constraint, as well as quickly simulating the behavior with 8 bits or less without actually doing the FHE computations.
+The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler, allowing users to simulate what would happen when converting a model to FHE without the current bit-width constraint. Additionally, it quickly simulates the behavior with 8 bits or less without actually doing the FHE computations.
 
 The Virtual Lib can be useful when developing and iterating on an ML model implementation. For example, you can check that your model is compatible in terms of operands (all integers) with the Virtual Lib compilation. Then, you can check how many bits your ML model would require, which can give you hints as to how it should be modified if you want to compile it to an actual FHE Circuit (not a simulated one) that only supports 8 bits of integer precision.
 
-The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution, thus allowing for faster iterations, debugging and FHE simulation, regardless of the bit-width used. This was for example used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
+The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution, thus allowing for faster iterations, debugging and FHE simulation, regardless of the bit-width used. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
 The following example shows how to use the Virtual Lib in Concrete-ML. Simply add `use_virtual_lib = True` and `enable_unsafe_features = True` in a `Configuration`. The result of the compilation will then be a simulated circuit that allows for more precision or simulated FHE execution.
 
@@ -36,7 +36,7 @@ y_preds_clear = concrete_clf.predict(X)
 
 ## Compilation debugging
 
-The following example produces a neural network that is not FHE compatible:
+The following example produces a neural network that is not FHE-compatible:
 
 ```python
 import numpy
@@ -96,7 +96,7 @@ Upon execution, the compiler will raise the following error:
 return %12
 ```
 
-Knowing that a linear/dense layer is implemented as a matrix multiplication, it can determined which parts of the op-graph listing in the exception message above correspond to which layers:
+Knowing that a linear/dense layer is implemented as a matrix multiplication, it can determine which parts of the op-graph listing in the exception message above correspond to which layers.
 
 Layer weights initialization:
 
@@ -138,7 +138,7 @@ Third dense layer and output quantization:
 return %12
 ```
 
-We can see here that the error is in the second layer. Reducing the number of neurons in this layer will resolve the error and make the network FHE compatible:
+We can see here that the error is in the second layer. Reducing the number of neurons in this layer will resolve the error and make the network FHE-compatible:
 
 <!--pytest-codeblocks:cont-->
 
@@ -156,9 +156,9 @@ except RuntimeError as err:
 
 ## Complexity analysis
 
-In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). Programmable bootstrapping is a powerful technique, but will require significantly more compute resources and thus time than more simpler encrypted operations such matrix multiplications, convolution or additions.
+In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, than simpler encrypted operations such matrix multiplications, convolution or additions.
 
-Furthermore, the cost of a PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It thus may be of interest to the model developer to determine the bit-width of the circuit and the number of PBS it performs.
+Furthermore, the cost of PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It may be of interest to the model developer, then, to determine the bit-width of the circuit and the amount of PBS it performs.
 
 This can be done by inspecting the MLIR code produced by the compiler:
 
@@ -220,7 +220,7 @@ except RuntimeError as err:
 return %11 : tensor<1x2x!FHE.eint<8>>
 ```
 
-There are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus PBS is applied 104 times.
+There are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.
 
 Getting the bit-width of the circuit is then simply:
 

@@ -2,7 +2,7 @@
 
 ## Hummingbird
 
-[Hummingbird](https://microsoft.github.io/hummingbird/) is a third party open-source library that converts machine learning models into tensor computations, and it can export these models to ONNX. The list of supported models can be found in [the Hummingbird documentation](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html)).
+[Hummingbird](https://microsoft.github.io/hummingbird/) is a third-party, open-source library that converts machine learning models into tensor computations, and it can export these models to ONNX. The list of supported models can be found in [the Hummingbird documentation](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html).
 
 Concrete-ML allows the conversion of an ONNX inference to NumPy inference (note that NumPy is always the entry point to run models in FHE with Concrete ML).
 
@@ -59,32 +59,22 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
 ## Brevitas
 
-[Brevitas](https://github.com/Xilinx/brevitas) is a quantization aware learning toolkit built on top
-of PyTorch. It provides quantization layers that are one-to-one equivalents to PyTorch layers, but
-also contain operations that perform the quantization during training.
+[Brevitas](https://github.com/Xilinx/brevitas) is a quantization aware learning toolkit built on top of PyTorch. It provides quantization layers that are one-to-one equivalents to PyTorch layers, but also contain operations that perform the quantization during training.
 
-While Brevitas provides many types of quantization, for Concrete-ML, a custom
-_"mixed integer"_ quantization
-applies. This _"mixed integer"_ quantization is much simpler than the _"integer only"_ mode of Brevitas.
-The _"mixed integer"_ network design is defined as:
+While Brevitas provides many types of quantization, for Concrete-ML, a custom _"mixed integer"_ quantization applies. This _"mixed integer"_ quantization is much simpler than the _"integer only"_ mode of Brevitas. The _"mixed integer"_ network design is defined as:
 
 - all weights and activations of convolutional, linear and pooling layers must be quantized
   (e.g. using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
 - PyTorch floating point versions of univariate functions can be used. E.g. `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`. See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
 
-The _"mixed integer"_ mode used in Concrete-ML neural networks is based on the
-[_"integer only"_ Brevitas quantization](https://github.com/Xilinx/brevitas#low-precision-integer-only-lenet),
-that makes both weights and activations representable as integers during training. However,
-through the use of lookup tables in Concrete-ML, floating point univariate PyTorch functions are supported.
+The _"mixed integer"_ mode used in Concrete-ML neural networks is based on the [_"integer only"_ Brevitas quantization](https://github.com/Xilinx/brevitas#low-precision-integer-only-lenet) that makes both weights and activations representable as integers during training. However, through the use of lookup tables in Concrete-ML, floating point univariate PyTorch functions are supported.
 
-For _"mixed integer"_ quantization to work, the first layer of a Brevitas `nn.Module` must be a
-`QuantIdentity` layer. However, you can then use functions such as `torch.sigmoid` on the result of
-such a quantizing operation.
-
-<!--pytest-codeblocks:skip-->
+For _"mixed integer"_ quantization to work, the first layer of a Brevitas `nn.Module` must be a `QuantIdentity` layer. However, you can then use functions such as `torch.sigmoid` on the result of such a quantizing operation.
 
 ```python
-class QATnetwork(nnl.Module):
+import torch.nn as nn
+
+class QATnetwork(nn.Module):
     def __init__(self):
         super(QATnetwork, self).__init__()
         self.quant_inp = qnn.QuantIdentity(

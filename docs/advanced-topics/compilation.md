@@ -1,13 +1,8 @@
-# Compilation and Simulation
+# Compilation
 
-Compilation of a model produces machine-code that executes the model on encrypted data. In some cases,
-notably in the client/server setting, the compilation can be done by the server when loading the model
-for serving.
+Compilation of a model produces machine code that executes the model on encrypted data. In some cases, notably in the client/server setting, the compilation can be done by the server when loading the model for serving.
 
-As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation
-mode, using an execution mode named the _Virtual Library_. Since, by default, the cryptographic
-parameters are chosen such that the results obtained in FHE are the same as those on clear data, the
-Virtual Library allows you to benchmark models quickly during development.
+As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation mode, using an execution mode named the _Virtual Library_. Since, by default, the cryptographic parameters are chosen such that the results obtained in FHE are the same as those on clear data, the Virtual Library allows you to benchmark models quickly during development.
 
 ## Compilation
 
@@ -19,19 +14,18 @@ From the perspective of the Concrete-ML user, the compilation process performed 
 1. checking that the op-graph is FHE compatible
 1. producing machine code for the op-graph. This step automatically determines cryptographic parameters
 
-Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows to deploy the encrypted circuit to a server and to perform key generation, encryption and decryption on the client side.
+Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server and key generation, encryption and decryption on the client side.
 
 ## Simulation with the Virtual Library
 
 The first step in the list above takes a Python function implemented using the Concrete-Numpy [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph.
 
-The result of this single step of the compilation pipeline allows to:
+The result of this single step of the compilation pipeline allows the:
 
-- execute the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate hyper-parameters. This mode is called the Virtual Library.
-- verify the maximum bit-width of the op-graph, to determine FHE compatibility, without actually compiling the circuit to machine code.
+- execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but it is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate hyper-parameters. This mode is called the Virtual Library.
+- verification of the maximum bit-width of the op-graph, to determine FHE compatibility, without actually compiling the circuit to machine code.
 
-Enabling Virtual Library execution requires the definition of a compilation `Configuration`. As simulation
-does not execute in FHE, this can be considered _unsafe_:
+Enabling Virtual Library execution requires the definition of a compilation `Configuration`. As simulation does not execute in FHE, this can be considered _unsafe_:
 
 <!--pytest-codeblocks:skip-->
 
@@ -42,7 +36,7 @@ does not execute in FHE, this can be considered _unsafe_:
     )
 ```
 
-Next, the following code use the simulation mode for built-in models:
+Next, the following code uses the simulation mode for built-in models:
 
 <!--pytest-codeblocks:skip-->
 
@@ -69,8 +63,7 @@ And finally, for custom models, it is possible to enable simulation using the fo
     )
 ```
 
-Obtaining the simulated predictions of the models using the Virtual Library has the same syntax as
-execution in FHE:
+Obtaining the simulated predictions of the models using the Virtual Library has the same syntax as execution in FHE:
 
 <!--pytest-codeblocks:skip-->
 
@@ -88,8 +81,7 @@ Moreover, the maximum accumulator bit-width is determined as follows:
 
 ## A simple Concrete-Numpy example
 
-While Concrete-ML hides away all the Concrete-Numpy code that performs model inference, it can
-be useful to understand how Concrete-Numpy code works. Here is an toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts, we recommend using the [built-in models](../built-in-models/linear.md) which provide linear regression out of the box.
+While Concrete-ML hides away all the Concrete-Numpy code that performs model inference, it can be useful to understand how Concrete-Numpy code works. Here is an toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
 
 ```python
 import numpy

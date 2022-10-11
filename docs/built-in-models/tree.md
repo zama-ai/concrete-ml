@@ -103,13 +103,13 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have a FHE inference equal to the clear inference
 ```
 
-Using the above example, we can then plot how the model classifies the inputs and then compare those results with the XGBoost model executed in clear. A 6 bits model is also given in order to better understand the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
+Using the above example, we can then plot how the model classifies the inputs and then compare those results with the XGBoost model executed in clear. A 6-bits model is also given in order to better understand the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
 
 ![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 
-This graph shows the impact of quantization over the decision boundaries in the Concrete-ML FHE decision tree models. In the 3 bits model, only a rough, highly discrete decision function is observed. This results in a small decrease of accuracy of about 7% compared to the initial XGBoost classifier. Besides, using 6 bits of quantization makes the model reach 93% of accuracy, drastically reducing this difference to only 1.7 percentage points.
+This graph shows the impact of quantization over the decision boundaries in the Concrete-ML FHE decision tree models. In the 3-bits model, only a rough, highly-discrete decision function is observed. This results in a small decrease of accuracy of about 7% compared to the initial XGBoost classifier. Besides, using 6-bits of quantization makes the model reach 93% accuracy, drastically reducing this difference to only 1.7 percentage points.
 
-In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, as the quantization is done individually on each input feature, the artifacts are minor when considering small tree-based models with 5-6 bits quantization. Thus FHE tree-based models reach similar scores as their equivalent floating point ones.
+In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, as the quantization is done individually on each input feature, the artifacts are minor when considering small tree-based models with 5-6 bits quantization. Thus, FHE tree-based models reach similar scores as their equivalent floating point ones.
 
 The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 

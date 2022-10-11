@@ -2,9 +2,9 @@
 
 ## Summary
 
-The following table summarizes the examples in this section.
+The following table summarizes the examples in this section:
 
-| Model                  | Dataset                                                                                       | Metric   | Floating Point | Simulation | FHE  |
+| Model                  | Data-set                                                                                      | Metric   | Floating Point | Simulation | FHE  |
 | ---------------------- | --------------------------------------------------------------------------------------------- | -------- | -------------- | ---------- | ---- |
 | Fully Connected NN     | [Iris](https://www.openml.org/d/61)                                                           | accuracy | 0.95           | 0.94       | 0.94 |
 | QAT Fully Connected NN | Synthetic (Checkerboard)                                                                      | accuracy | 0.95           | 0.92       | 0.92 |
