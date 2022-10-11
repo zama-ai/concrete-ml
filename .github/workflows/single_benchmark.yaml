@@ -3,10 +3,10 @@ name: Single benchmark
 on:
   workflow_call:
     inputs:
-      command:
+      commands:
         type: string
         required: true
-        description: "The command to launch the benchmark. (like: python3 benchmarks/classification.py --classifiers RandomForestClassifier --datasets credit-g --configs '{\\\"max_depth\\\": 3, \\\"n_estimators\\\": 10, \\\"n_bits\\\": 2}')"
+        description: "The list of commands to launch the benchmark. (like: python3 benchmarks/classification.py --classifiers RandomForestClassifier --datasets credit-g --configs '{\\\"max_depth\\\": 3, \\\"n_estimators\\\": 10, \\\"n_bits\\\": 2}')"
       git-ref:
         description: "Repo reference (branch, tag or SHA)"
         default: "main"
@@ -147,6 +147,7 @@ jobs:
           ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
           apt update && apt install git git-lfs -y
+          apt -y install sudo
 
       # Install specific version
       - name: Checkout CML to install
@@ -169,6 +170,7 @@ jobs:
           # The python-dev version should be in sync with the one from the previous step
           apt-get install --no-install-recommends -y gnome-keyring
           apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3.9-dev
+          apt-mark hold docker.io
           ./script/make_utils/setup_os_deps.sh
           # Needed for some reason
           make setup_env
@@ -191,12 +193,13 @@ jobs:
         # https://docs.github.com/en/actions/hosting-your-own-runners/about-self-hosted-runners#usage-limits
         timeout-minutes: 48960
         id: run-benchmark
+        shell: bash
         run: |
           source ./cml_to_install/.venv/bin/activate
           cd ./cml_to_run
 
-          echo "${{ inputs.command }}"
-          eval "${{ inputs.command }}"
+          printf '%s' '${{ inputs.commands }}' >> commands.json
+          python ./script/actions_utils/run_commands.py --file commands.json
 
       - name: Convert progress.json
         id: convert-output

@@ -3,9 +3,11 @@ import argparse
 import datetime
 import json
 import subprocess
+from typing import List
 
 MAX_VALUE = 100
 MIN_VALUE = 0
+MAX_NUMBER_OF_JOBS = 200  # Theoreticall limit is 256
 
 
 def int_range(x: str) -> int:
@@ -16,6 +18,24 @@ def int_range(x: str) -> int:
     if x_int < MIN_VALUE:
         raise ValueError(f"{x_int} < {MIN_VALUE}")
     return x_int
+
+
+def batchify_commands(
+    commands: List[str], max_number_of_jobs: int = MAX_NUMBER_OF_JOBS
+) -> List[List]:
+    """Make batches of elements such"""
+    number_of_jobs = len(commands)
+
+    # Easy packing (1 by 1 packing)
+    if number_of_jobs <= max_number_of_jobs:
+        return [[elt] for elt in commands]
+
+    # Harder packing
+    new_commands: List[List[str]] = [[] for _ in range(max_number_of_jobs)]
+    for index, command in enumerate(commands):
+        new_commands[index % max_number_of_jobs].append(command)
+
+    return new_commands
 
 
 def main():
@@ -65,12 +85,15 @@ def main():
         ]
         commands += [f"{command_start} {elt}" for elt in script_commands]
 
+    # Batchify everything
+    batched_commands = batchify_commands(commands)
+
     result = []
-    for index, command in enumerate(commands):
+    for index, commands in enumerate(batched_commands):
         element = {
             "label": f"ml_bench_{now}_{index}",
             "index": index,
-            "command": command,
+            "commands": commands,
             "time_to_wait": f"{index}s",  # We might want to decrease or change this in the future
         }
         result.append(element)
