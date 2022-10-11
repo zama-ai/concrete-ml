@@ -263,10 +263,8 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     y_pred_model_server_ds_quantized = model.fhe_circuit.encrypt_run_decrypt(qtest)
     y_pred_model_server_ds_dequantized = model.post_processing(y_pred_model_server_ds_quantized)
 
-    numpy.testing.assert_array_equal(y_pred_on_client_quantized, y_pred_model_server_ds_quantized)
-    numpy.testing.assert_array_equal(
-        y_pred_on_client_dequantized, y_pred_model_server_ds_dequantized
-    )
+    assert numpy.average(y_pred_on_client_quantized == y_pred_model_server_ds_quantized) >= 0.90
+    assert numpy.average(y_pred_on_client_dequantized == y_pred_model_server_ds_dequantized) >= 0.90
 
     # Clean up
     network.cleanup()
