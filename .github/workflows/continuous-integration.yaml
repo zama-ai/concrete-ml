@@ -838,42 +838,73 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
-  package-release:
+  start-package-release-runner:
     needs: [build-linux]
-    timeout-minutes: 30
+    name: Start package-release runner
+    runs-on: ubuntu-20.04
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id || '' }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Start EC2 runner python
+        id: start-ec2-runner
+        if: ${{ !cancelled() }}
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-package-release-ec2-github-runner"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
+
+  package-release:
+    needs: [start-package-release-runner]
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
-
     name: Package and artifacts release
-    runs-on: ubuntu-20.04
-
+    runs-on: ${{ needs.start-package-release-runner.outputs.label }}
     env:
       PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-ml
       PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-ml
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
-
     steps:
       - name: Add masks
         run: |
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
-      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+      - name: Checkout code
+        uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
         with:
           fetch-depth: 0
 
-      # Gnome keyring is required because of some environment issue in github actions
-      # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1667
-      # To be updated to only install required dependencies group with poetry 1.2 which
-      # are only required for the actual package and not dev tools
       - name: Install dependencies
         run: |
-          sudo apt-get install --no-install-recommends -y gnome-keyring
-          python -m pip install --upgrade pip
-          python -m pip install poetry
+          sudo apt update
+          # We need to freeze docker.io because its update requires user input
+          sudo apt-mark hold docker.io
+          sudo ./script/make_utils/setup_os_deps.sh --linux-install-python
           make setup_env
 
       - name: Set tag in env
@@ -1216,6 +1247,28 @@ jobs:
           SLACK_MESSAGE: "${{ env.REPORT }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+  stop-package-release-runner:
+    name: Stop EC2 runner
+    needs: [start-package-release-runner, package-release]
+    runs-on: ubuntu-20.04
+    if: ${{ always() && (needs.start-package-release-runner.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        if: ${{ always() && needs.start-package-release-runner.outputs.ec2-instance-id }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-package-release-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-package-release-runner.outputs.ec2-instance-id }}
+          mode: stop
 
   send-report:
     if: ${{ always() }}

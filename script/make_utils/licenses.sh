@@ -101,7 +101,7 @@ then
         python -m pip install -U --force-reinstall setuptools
     fi
 
-    poetry install --no-dev
+    poetry install --only main
     python -m pip install -U --pre "${CN_VERSION}"
     python -m pip install pip-licenses
 
