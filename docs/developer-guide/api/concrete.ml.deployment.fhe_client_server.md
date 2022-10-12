@@ -135,6 +135,28 @@ ______________________________________________________________________
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/fhe_client_server.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+### <kbd>method</kbd> `deserialize_decrypt`
+
+```python
+deserialize_decrypt(
+    serialized_encrypted_quantized_result: PublicArguments
+) → ndarray
+```
+
+Deserialize and decrypt the values.
+
+**Args:**
+
+- <b>`serialized_encrypted_quantized_result`</b> (cnp.PublicArguments):  the serialized, encrypted  and quantized result
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  the decrypted and desarialized values
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/fhe_client_server.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ### <kbd>method</kbd> `deserialize_decrypt_dequantize`
 
 ```python
@@ -151,7 +173,7 @@ Deserialize, decrypt and dequantize the values.
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  the decrypted, dequantized values
+- <b>`numpy.ndarray`</b>:  the decrypted (dequantized) values
 
 ______________________________________________________________________
 
