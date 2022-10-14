@@ -139,8 +139,8 @@ jobs:
           echo "macOS Matrix:"
           echo "${MACOS_MATRIX}" | jq '.'
 
-          echo "::set-output name=linux-matrix::${LINUX_MATRIX}"
-          echo "::set-output name=macos-matrix::${MACOS_MATRIX}"
+          echo "linux-matrix=${LINUX_MATRIX}" >> $GITHUB_OUTPUT
+          echo "macos-matrix=${MACOS_MATRIX}" >> $GITHUB_OUTPUT
 
           NEEDS_LINUX_37_RUNNER=$(echo "${LINUX_MATRIX}" | \
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.7")) | length > 0')
@@ -163,10 +163,10 @@ jobs:
           echo "Needs Linux 3.10 runner:"
           echo "${NEEDS_LINUX_310_RUNNER}"
 
-          echo "::set-output name=needs-37-linux-runner::${NEEDS_LINUX_37_RUNNER}"
-          echo "::set-output name=needs-38-linux-runner::${NEEDS_LINUX_38_RUNNER}"
-          echo "::set-output name=needs-39-linux-runner::${NEEDS_LINUX_39_RUNNER}"
-          echo "::set-output name=needs-310-linux-runner::${NEEDS_LINUX_310_RUNNER}"
+          echo "needs-37-linux-runner=${NEEDS_LINUX_37_RUNNER}" >> $GITHUB_OUTPUT
+          echo "needs-38-linux-runner=${NEEDS_LINUX_38_RUNNER}" >> $GITHUB_OUTPUT
+          echo "needs-39-linux-runner=${NEEDS_LINUX_39_RUNNER}" >> $GITHUB_OUTPUT
+          echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
 
   start-runner-linux:
     needs: [matrix-preparation]
@@ -308,7 +308,7 @@ jobs:
           echo "Updated matrix:"
           echo "${MATRIX}"
 
-          echo "::set-output name=linux-matrix::${MATRIX}"
+          echo "linux-matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   build-linux:
     needs: [start-runner-linux]
@@ -438,7 +438,7 @@ jobs:
         run: |
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
           CHANGELOG_FILE="CHANGELOG_${GIT_TAG}.md"
-          echo "::set-output name=changelog-file::${CHANGELOG_FILE}"
+          echo "changelog-file=${CHANGELOG_FILE}" >> $GITHUB_OUTPUT
           poetry run python ./script/make_utils/changelog_helper.py \
           --to-ref "${GIT_TAG}" \
           --to-ref-must-have-tag > "${CHANGELOG_FILE}"
@@ -736,7 +736,7 @@ jobs:
           REPORT="${REPORT//'%'/'%25'}"
           REPORT="${REPORT//$'\n'/'%0A'}"
           REPORT="${REPORT//$'\r'/'%0D'}"
-          echo "::set-output name=report::${REPORT}"
+          echo "report=${REPORT}" >> $GITHUB_OUTPUT
 
       - name: Slack Notification
         if: ${{ always() && !success() }}
@@ -767,12 +767,12 @@ jobs:
           if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
              [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
             REF_NAME=$(echo "${{ github.ref }}" | sed 's/refs\/heads\///g')
-            echo "::set-output name=has-preprod::true"
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
-            echo "::set-output name=dest-dir::concrete-ml/${REF_NAME}"
+            echo "has-preprod=true" >> $GITHUB_OUTPUT
+            echo "aws-bucket=${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}" >> $GITHUB_OUTPUT
+            echo "aws-distribution=${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}" >> $GITHUB_OUTPUT
+            echo "dest-dir=concrete-ml/${REF_NAME}" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=has-preprod::false"
+            echo "has-preprod=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Download Documentation
@@ -823,7 +823,7 @@ jobs:
           REPORT="Publishing documentation finished with status ${{ job.status }}. \
           Pushed to preprod: ${{ steps.docs-push-infos.outputs.has-preprod }}"
           echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
+          echo "report=${REPORT}" >> $GITHUB_ENV
           echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
 
       - name: Slack Notification
@@ -898,6 +898,9 @@ jobs:
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
         with:
           fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Install dependencies
         run: |
@@ -1075,15 +1078,15 @@ jobs:
           if [[ "${IS_PRERELEASE}" == "true" ]]; then
             if [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }} != "" ]] && \
               [[ ${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }} != "" ]]; then
-              echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}"
-              echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}"
+              echo "aws-bucket=${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_BUCKET_NAME }}" >> $GITHUB_OUTPUT
+              echo "aws-distribution=${{ secrets.AWS_REPO_PREPROD_DOCUMENTATION_DISTRIBUTION_ID }}" >> $GITHUB_OUTPUT
             else
               echo "No preprod buckets for prerelease!"
               exit 1
             fi
           else
-            echo "::set-output name=aws-bucket::${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}"
-            echo "::set-output name=aws-distribution::${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}"
+            echo "aws-bucket=${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}" >> $GITHUB_OUTPUT
+            echo "aws-distribution=${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Configure AWS credentials
@@ -1233,8 +1236,8 @@ jobs:
           REPORT="Creating release for ${GIT_TAG} finished with status ${{ job.status }}. \
           GitHub release link: ${{ steps.create-release.outputs.url }}."
           echo "${REPORT}"
-          echo "::set-output name=report::${REPORT}"
-          echo "REPORT=${REPORT}" >> "$GITHUB_ENV"
+          echo "report=${REPORT}" >> $GITHUB_ENV
+          echo "REPORT=${REPORT}" >> $GITHUB_ENV
 
       - name: Slack Notification
         if: ${{ always() && !success() }}
