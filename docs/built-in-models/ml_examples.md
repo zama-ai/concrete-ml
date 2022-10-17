@@ -17,18 +17,18 @@ _A * means that FHE accuracy was calculated on a subset of the validation set._
 
 ## Concrete-ML models
 
-- [LinearRegression.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LinearRegression.ipynb)
-- [LogisticRegression.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LogisticRegression.ipynb)
-- [PoissonRegression.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/PoissonRegression.ipynb)
-- [DecisionTreeClassifier.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/DecisionTreeClassifier.ipynb)
-- [XGBClassifier.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/XGBClassifier.ipynb)
-- [GLMComparison.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/GLMComparison.ipynb)
-- [XGBRegressor.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/XGBRegressor.ipynb)
+- [LinearRegression.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/LinearRegression.ipynb)
+- [LogisticRegression.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/LogisticRegression.ipynb)
+- [PoissonRegression.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/PoissonRegression.ipynb)
+- [DecisionTreeClassifier.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/DecisionTreeClassifier.ipynb)
+- [XGBClassifier.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/XGBClassifier.ipynb)
+- [GLMComparison.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/GLMComparison.ipynb)
+- [XGBRegressor.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/XGBRegressor.ipynb)
 
 ## Comparison of classifiers
 
-- [ClassifierComparison.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ClassifierComparison.ipynb)
+- [ClassifierComparison.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/ClassifierComparison.ipynb)
 
 ## Kaggle competition
 
-- [KaggleTitanic.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/KaggleTitanic.ipynb)
+- [KaggleTitanic.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/KaggleTitanic.ipynb)
