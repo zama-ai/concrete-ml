@@ -32,7 +32,7 @@ The `QuantizedOp` class provides a generic implementation of an ONNX operation, 
 
 ![](../.gitbook/assets/image_4.png)
 
-This figure shows that the `QuantizedOp` has a body that implements the computation of the operation, following the [ONNX spec](https://github.com/onnx/onnx/blob/main/docs/Operators.md). The operation's body can take either integer or float inputs and can output float or integer values. Two quantizers are attached to the operation: one that takes float inputs and produces integer inputs and one that does the same for the output.
+This figure shows that the `QuantizedOp` has a body that implements the computation of the operation, following the [ONNX spec](https://github.com/onnx/onnx/tree/main/docs/Operators.md). The operation's body can take either integer or float inputs and can output float or integer values. Two quantizers are attached to the operation: one that takes float inputs and produces integer inputs and one that does the same for the output.
 
 ### Operations that can fuse to a TLU
 

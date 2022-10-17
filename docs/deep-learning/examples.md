@@ -12,6 +12,6 @@ The following table summarizes the examples in this section:
 
 ## Examples
 
-- [FullyConnectedNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
-- [QuantizationAwareTraining.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb)
-- [ConvolutionalNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
+- [FullyConnectedNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
+- [QuantizationAwareTraining.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/QuantizationAwareTraining.ipynb)
+- [ConvolutionalNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
