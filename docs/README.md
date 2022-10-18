@@ -1,6 +1,6 @@
 # What is Concrete ML?
 
-[⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | [🗣 Community support forum](https://community.zama.ai/c/concrete-ml/8) | [📁 Contribute to the project](https://github.com/zama-ai/concrete-ml/blob/main/docs/dev/howto/contributing.md)
+[⭐️ Star the repo on Github](https://github.com/zama-ai/concrete-ml) | [🗣 Community support forum](https://community.zama.ai/c/concrete-ml/8) | [📁 Contribute to the project](developer-guide/contributing.md)
 
 ![](.gitbook/assets/3.png)
 
