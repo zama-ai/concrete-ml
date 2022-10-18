@@ -72,7 +72,7 @@ While the example above shows how to import a Brevitas/PyTorch model, Concrete-M
 
 QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
-Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a PyTorch QAT network, you can use the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compiletorchmodel) library function, passing `import_qat=True`:
+Suppose that `n_bits_qat` is the bit-width of activations and weights during the QAT process. To import a PyTorch QAT network, you can use the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_torch_model) library function, passing `import_qat=True`:
 
 <!--pytest-codeblocks:skip-->
 

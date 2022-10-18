@@ -8,7 +8,7 @@ For a more formal description of the usage of Brevitas to build FHE-compatible n
 
 1. [Building a standard baseline PyTorch model](#baseline-model)
 1. [Adding pruning to make learning more robust](#pruning-using-torch)
-1. [Converting to Quantization Aware Training with Brevitas](#quantization-aware-training-qat)
+1. [Converting to Quantization Aware Training with Brevitas](#quantization-aware-training)
 
 ## Baseline model
 

@@ -629,6 +629,7 @@ check_links:
 	@# poetry run python -m linkcheckmd README.md
 
 	poetry run python ./script/make_utils/local_link_check.py
+	poetry run python ./script/make_utils/check_headers.py
 
 	@# For weblinks and internal references
 	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it

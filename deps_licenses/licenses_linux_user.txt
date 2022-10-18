@@ -15,7 +15,7 @@ humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.4, MIT License
 joblib, 1.2.0, BSD License
 kiwisolver, 1.4.4, BSD License
-matplotlib, 3.6.1, Python Software Foundation License
+matplotlib, 3.6.0, Python Software Foundation License
 mpmath, 1.2.1, BSD License
 networkx, 2.8.7, BSD License
 numpy, 1.23.4, BSD License

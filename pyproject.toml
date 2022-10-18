@@ -93,6 +93,7 @@ transformers = "^4.20.1"
 pdoc3 = "^0.10.0"
 lazydocs = "^0.4.0"
 seaborn = "^0.12.0"
+mistletoe = "^0.9.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
