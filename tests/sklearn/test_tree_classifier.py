@@ -85,9 +85,7 @@ PARAMS_TREE = {
 )
 @pytest.mark.parametrize("n_classes,", [2, 4])
 @pytest.mark.parametrize("offset", [0, 1, 2])
-def test_decision_tree_hyperparameters(
-    hyperparameters, n_classes, offset, load_data, check_accuracy, check_r2_score
-):
+def test_decision_tree_hyperparameters(hyperparameters, n_classes, offset, load_data):
     """Test that the hyperparameters are valid."""
 
     # Get the datasets. The data generation is seeded in load_data.
@@ -105,9 +103,8 @@ def test_decision_tree_hyperparameters(
     )
     model, sklearn_model = model.fit_benchmark(x, y)
 
-    # Make sure that model.predict is the same as sklearn_model.predict
-    check_accuracy(model.predict(x), sklearn_model.predict(x))
-    check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
+    # Check accuracy between the two models predictions
+    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
 @pytest.mark.parametrize("model", [XGBClassifier, RandomForestClassifier, DecisionTreeClassifier])

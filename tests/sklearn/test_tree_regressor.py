@@ -122,13 +122,7 @@ def test_model_compile_run_fhe(
         pytest.param(16, id="16_bits"),
     ],
 )
-def test_model_quantization(
-    model,
-    parameters,
-    n_bits,
-    load_data,
-    check_r2_score,
-):
+def test_model_quantization(model, parameters, n_bits, load_data):
     """Tests quantization of sklearn decision tree regressors."""
 
     # Get the dataset
@@ -151,7 +145,5 @@ def test_model_quantization(
 
         model, sklearn_model = model_instantiated.fit_benchmark(x, y, **params)
 
-    y_pred_sklearn = model.predict(x)
-    y_pred_quantized = sklearn_model.predict(x)
-
-    check_r2_score(y_pred_sklearn, y_pred_quantized)
+    # Check that both models have similar scores
+    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05

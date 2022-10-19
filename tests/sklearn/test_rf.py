@@ -23,9 +23,7 @@ PARAMS_RF = {
     ],
 )
 @pytest.mark.parametrize("n_classes", [2, 4])
-def test_rf_classifier_hyperparameters(
-    hyperparameters, n_classes, load_data, check_r2_score, check_accuracy
-):
+def test_rf_classifier_hyperparameters(hyperparameters, n_classes, load_data):
     """Test that the hyperparameters are valid."""
 
     # Get the dataset. The data generation is seeded in load_data.
@@ -40,9 +38,9 @@ def test_rf_classifier_hyperparameters(
         **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
-    # Check accuracy and r2 score between the two models predictions
-    check_accuracy(model.predict(x), sklearn_model.predict(x))
-    check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
+
+    # Check accuracy between the two models predictions
+    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
 # Get the dataset. The data generation is seeded in load_data.
@@ -163,7 +161,7 @@ def test_rf_classifier_grid_search(load_data):
         for value in values  # type: ignore
     ],
 )
-def test_rf_regressor_hyperparameters(hyperparameters, load_data, check_r2_score):
+def test_rf_regressor_hyperparameters(hyperparameters, load_data):
     """Test that the hyperparameters are valid."""
     x, y = load_data(
         dataset="regression",
@@ -175,8 +173,9 @@ def test_rf_regressor_hyperparameters(hyperparameters, load_data, check_r2_score
         **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
-    # Check accuracy and r2 score between the two models predictions
-    check_r2_score(model.predict(x), sklearn_model.predict(x))
+
+    # Check that both models have similar scores
+    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
 # pylint: disable=too-many-arguments

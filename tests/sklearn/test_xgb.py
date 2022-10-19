@@ -42,9 +42,7 @@ PARAMS_XGB: Dict[str, List[Any]] = {
     ],
 )
 @pytest.mark.parametrize("n_classes", [2, 4])
-def test_xgb_classifier_hyperparameters(
-    hyperparameters, n_classes, load_data, check_r2_score, check_accuracy
-):
+def test_xgb_classifier_hyperparameters(hyperparameters, n_classes, load_data):
     """Test that the hyperparameters are valid."""
 
     # Get the datasets. The data generation is seeded in load_data.
@@ -62,9 +60,9 @@ def test_xgb_classifier_hyperparameters(
         random_state=numpy.random.randint(0, 2**15),
     )
     model, sklearn_model = model.fit_benchmark(x, y)
-    # Check accuracy and r2 score between the two models predictions
-    check_accuracy(model.predict(x), sklearn_model.predict(x))
-    check_r2_score(model.predict_proba(x), sklearn_model.predict_proba(x))
+
+    # Check that both models have similar scores
+    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
 # Get the datasets. The data generation is seeded in load_data.
@@ -202,7 +200,7 @@ def test_xgb_classifier_grid_search(load_data):
         # R2 score is too low for max_delta_step if different from 0.
     ],
 )
-def test_xgb_regressor_hyperparameters(hyperparameters, load_data, check_r2_score):
+def test_xgb_regressor_hyperparameters(hyperparameters, load_data):
     """Test that the hyperparameters are valid."""
 
     # Get the dataset. The data generation is seeded in load_data.
@@ -219,8 +217,9 @@ def test_xgb_regressor_hyperparameters(hyperparameters, load_data, check_r2_scor
         random_state=numpy.random.randint(0, 2**15),
     )
     model, sklearn_model = model.fit_benchmark(x, y)
-    # Check r2 score between the two models predictions
-    check_r2_score(model.predict(x), sklearn_model.predict(x))
+
+    # Check that both models have similar scores
+    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
 # Get the datasets. The data generation is seeded in load_data.
