@@ -3,7 +3,7 @@ import numpy
 import onnx
 import pytest
 import torch
-from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from onnx import helper, numpy_helper
 from torch import nn
 
@@ -14,7 +14,7 @@ from concrete.ml.torch.numpy_module import NumpyModule
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
-# Currently, with MAXIMUM_TLU_BIT_WIDTH bits maximum, we can use few weights
+# Currently, with MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS bits maximum, we can use few weights
 # max in the theoretical case.
 INPUT_OUTPUT_FEATURE = [1, 2, 3]
 
@@ -152,7 +152,7 @@ def test_quantized_module_compilation(
         return
 
     # Do not test unsupported bit widths when we are not using the Virtual Lib
-    if not use_virtual_lib and n_bits > MAXIMUM_TLU_BIT_WIDTH:
+    if not use_virtual_lib and n_bits > MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS:
         return
 
     # Define an input shape (n_examples, n_features)
@@ -389,7 +389,7 @@ def test_post_training_quantization_constant_folding():
 
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(
-        MAXIMUM_TLU_BIT_WIDTH, numpy_model, is_signed=True
+        MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS, numpy_model, is_signed=True
     )
 
     numpy_input = numpy.random.random(size=(10, 10))

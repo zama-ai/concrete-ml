@@ -569,7 +569,7 @@ class QuantizedConv(QuantizedOp):
                 q_input_pad,
                 q_weights_1,
                 None,
-                self.pads,
+                [0, 0, 0, 0],
                 self.strides,
                 self.dilations,
             )

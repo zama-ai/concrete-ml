@@ -9,7 +9,7 @@ import brevitas.nn as qnn
 import numpy
 import torch
 import torch.nn.utils.prune as pruning
-from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
 from skorch.regressor import NeuralNetRegressor as SKNeuralNetRegressor
 from torch import nn
@@ -34,7 +34,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
         n_hidden_neurons_multiplier=4,
         n_w_bits=3,
         n_a_bits=3,
-        n_accum_bits=MAXIMUM_TLU_BIT_WIDTH,
+        n_accum_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
         activation_function=nn.ReLU,
     ):
         """Sparse Quantized Neural Network constructor.

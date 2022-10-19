@@ -10,7 +10,7 @@ import numpy
 import onnx
 import pytest
 import torch
-from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.base_quantized_op import ALL_QUANTIZED_OPS
@@ -665,7 +665,7 @@ def test_quantized_pad():
 def test_quantized_reshape(shape):
     """Test quantized reshape."""
 
-    n_bits_reshape = MAXIMUM_TLU_BIT_WIDTH
+    n_bits_reshape = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 
     num_values = numpy.prod(numpy.asarray(shape))
     data = numpy.arange(num_values).astype(numpy.float32)
@@ -1046,7 +1046,7 @@ def test_brevitas_quant(check_r2_score):
 def test_quantized_transpose(shape, axes):
     """Test quantized transpose."""
 
-    n_bits_transpose = MAXIMUM_TLU_BIT_WIDTH
+    n_bits_transpose = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 
     num_values = numpy.prod(numpy.asarray(shape))
     data = numpy.arange(num_values).astype(numpy.float32)

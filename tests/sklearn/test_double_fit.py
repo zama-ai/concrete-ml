@@ -4,7 +4,7 @@ from functools import partial
 
 import numpy
 import pytest
-from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from shared import classifiers, regressors
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
@@ -67,7 +67,7 @@ def test_double_fit_qnn(load_data):
         "module__n_layers": 3,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
-        "module__n_accum_bits": MAXIMUM_TLU_BIT_WIDTH,
+        "module__n_accum_bits": MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
         "module__n_outputs": 2,
         "module__input_dim": 10,
         "module__activation_function": nn.ReLU,

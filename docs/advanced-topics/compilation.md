@@ -85,7 +85,7 @@ While Concrete-ML hides away all the Concrete-Numpy code that performs model inf
 
 ```python
 import numpy
-from concrete.numpy.compilation import compiler
+from concrete.numpy import compiler
 
 # Let's assume Quantization has been applied and we are left with integers only.
 # This is essentially the work of Concrete-ML
