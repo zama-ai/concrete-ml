@@ -41,12 +41,14 @@ from .ops_impl import (
     numpy_asinh,
     numpy_atan,
     numpy_atanh,
+    numpy_avgpool,
     numpy_batchnorm,
     numpy_brevitas_quant,
     numpy_cast,
     numpy_celu,
     numpy_clip,
     numpy_constant,
+    numpy_conv,
     numpy_cos,
     numpy_cosh,
     numpy_div,
@@ -55,6 +57,7 @@ from .ops_impl import (
     numpy_erf,
     numpy_exp,
     numpy_flatten,
+    numpy_floor,
     numpy_gemm,
     numpy_greater,
     numpy_greater_float,
@@ -70,7 +73,10 @@ from .ops_impl import (
     numpy_less_or_equal_float,
     numpy_log,
     numpy_matmul,
+    numpy_max,
+    numpy_min,
     numpy_mul,
+    numpy_neg,
     numpy_not,
     numpy_not_float,
     numpy_or,
@@ -84,6 +90,7 @@ from .ops_impl import (
     numpy_round,
     numpy_selu,
     numpy_sigmoid,
+    numpy_sign,
     numpy_sin,
     numpy_sinh,
     numpy_softplus,
@@ -93,8 +100,6 @@ from .ops_impl import (
     numpy_thresholdedrelu,
     numpy_transpose,
     numpy_where,
-    torch_avgpool,
-    torch_conv,
 )
 
 ATTR_TYPES = dict(onnx.AttributeProto.AttributeType.items())
@@ -151,10 +156,10 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Transpose": numpy_transpose,
-    "Conv": torch_conv,
+    "Conv": numpy_conv,
     "PRelu": numpy_prelu,
     "HardSwish": numpy_hardswish,
-    "AveragePool": torch_avgpool,
+    "AveragePool": numpy_avgpool,
     "Pad": numpy_pad,
     "Where": numpy_where,
     "Cast": numpy_cast,
@@ -164,7 +169,13 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Pow": numpy_pow,
     "ReduceSum": numpy_reduce_sum,
     "onnx.brevitas.Quant": numpy_brevitas_quant,
+    "Floor": numpy_floor,
+    "Max": numpy_max,
+    "Min": numpy_min,
+    "Neg": numpy_neg,
+    "Sign": numpy_sign,
 }
+
 
 # Creating the following dictionaries was introduced following the performance regression issues
 # observed in https://github.com/zama-ai/concrete-ml-internal/issues/1357.

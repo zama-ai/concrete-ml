@@ -135,6 +135,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Erf
 - Exp
 - Flatten
+- Floor
 - Gemm
 - Greater
 - GreaterOrEqual
@@ -146,7 +147,10 @@ The following operators are supported for evaluation and conversion to an equiva
 - LessOrEqual
 - Log
 - MatMul
+- Max
+- Min
 - Mul
+- Neg
 - Not
 - Or
 - PRelu
@@ -158,6 +162,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Round
 - Selu
 - Sigmoid
+- Sign
 - Sin
 - Sinh
 - Softplus

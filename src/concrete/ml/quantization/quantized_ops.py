@@ -1,6 +1,7 @@
 """Quantized versions of the ONNX operators for post training quantization."""
 
 # pylint: disable=too-many-lines
+
 # FIXME: #1018
 
 from typing import Any, Dict, Optional, Sequence, Set, SupportsIndex, Union
@@ -9,7 +10,12 @@ import numpy
 from concrete.onnx import conv as cnp_conv
 
 from ..common.debugging import assert_true
-from .base_quantized_op import QuantizedOp
+from ..onnx.onnx_impl_utils import (
+    compute_onnx_pool_padding,
+    numpy_onnx_pad,
+    onnx_avgpool_compute_norm_const,
+)
+from .base_quantized_op import QuantizedOp, QuantizedOpUnivariateOfEncrypted
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
 
 
@@ -79,7 +85,7 @@ class QuantizedRound(QuantizedOp):
     _impl_for_op_named: str = "Round"
 
 
-class QuantizedPow(QuantizedOp):
+class QuantizedPow(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Quantized pow op.
 
     Only works for a float constant power. This operation will be fused to a (potentially
@@ -87,37 +93,6 @@ class QuantizedPow(QuantizedOp):
     """
 
     _impl_for_op_named: str = "Pow"
-
-    def __init__(
-        self,
-        n_bits_output: int,
-        int_input_names: Set[str] = None,
-        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
-        **attrs,
-    ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
-
-        # We do not support power raising between encrypted tensors
-        # Only power-raising between
-        # - encrypted tensors and float constants
-        # - tensors that are produced by a unique integer tensor
-        # is supported
-        # Power-raising between two constants is possible but should be optimized out by
-        # the constant folding procedure
-        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
-
-    def can_fuse(self) -> bool:
-        """Determine if this op can be fused.
-
-        Power raising can be fused and computed in float when a single integer tensor generates
-        both the operands. For example in the formula: f(x) = x ** (x + 1)  where x is an integer
-        tensor.
-
-        Returns:
-            bool: Can fuse
-        """
-        return len(self._int_input_names) == 1
 
 
 # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/195
@@ -521,15 +496,6 @@ class QuantizedConv(QuantizedOp):
             " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
             " standard",
         )
-        assert_true(
-            self.pads[0] == self.pads[len(self.kernel_shape)]
-            and self.pads[1] == self.pads[1 + len(self.kernel_shape)],
-            "The convolution operator in Concrete ML only supports symmetric padding",
-        )
-        assert_true(
-            self.pads[0] == 0 and self.pads[1] == 0,
-            "Quantized convolution only supports 0-padding convolution for now",
-        )
 
     def q_impl(
         self,
@@ -573,16 +539,20 @@ class QuantizedConv(QuantizedOp):
         assert q_input.quantizer.scale is not None
         assert q_input.quantizer.zero_point is not None
 
+        q_input_pad = numpy_onnx_pad(q_input.qvalues, self.pads, q_input.quantizer.zero_point, True)
+
         # We follow the Quantized Gemm implementation
         # which in turn follows Eq.7 in https://arxiv.org/abs/1712.05877
         # to split the core computation from the zero points and scales.
 
         # Compute the first encrypted term that convolves weights and inputs
+        # Force padding to 0 as padding needs to use a custom padding initializer
+        # and is thus manually performed in the code above
         conv_wx = cnp_conv(
-            q_input.qvalues,
+            q_input_pad,
             q_weights.qvalues,
             None,
-            self.pads,
+            [0, 0, 0, 0],
             self.strides,
             self.dilations,
         )
@@ -596,7 +566,7 @@ class QuantizedConv(QuantizedOp):
         if q_weights.quantizer.zero_point != 0:
             # Compute the sum of the inputs (second encrypted term)
             zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
-                q_input.qvalues,
+                q_input_pad,
                 q_weights_1,
                 None,
                 self.pads,
@@ -684,31 +654,18 @@ class QuantizedAvgPool(QuantizedOp):
 
         # Validate the parameters
         assert_true(
-            len(self.kernel_shape) == 2, "The convolution operator currently supports only 2d"
+            len(self.kernel_shape) == 2, "The Average Pool operator currently supports only 2d"
         )
         assert_true(
             len(self.kernel_shape) == len(self.strides),
-            "The convolution operator requires the number of strides to "
+            "The Average Pool operator requires the number of strides to "
             "be the same as the number of kernel dimensions",
         )
         assert_true(
             len(self.pads) == 2 * len(self.kernel_shape),
-            "The convolution operator in Concrete ML requires padding to be specified as "
+            "The Average Pool operator in Concrete ML requires padding to be specified as "
             " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
             " standard",
-        )
-        assert_true(
-            self.pads[0] == self.pads[len(self.kernel_shape)]
-            and self.pads[1] == self.pads[1 + len(self.kernel_shape)],
-            "The convolution operator in Concrete ML only supports symmetric padding",
-        )
-        assert_true(
-            self.pads[0] == 0 and self.pads[1] == 0,
-            "Quantized convolution only supports 0-padding convolution for now",
-        )
-        assert_true(
-            self.ceil_mode == 0,
-            "Average Pooling only supports Torch-style dimension computation with ceil_mode=0",
         )
 
         self.kernel: Union[numpy.ndarray, None] = None
@@ -734,9 +691,47 @@ class QuantizedAvgPool(QuantizedOp):
         for i in range(n_in_channels):
             kernel[i, i, ::] = 1
 
-        norm_const = 1.0 / numpy.prod(self.kernel_shape)
+        norm_const = 1.0 / onnx_avgpool_compute_norm_const(
+            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, self.ceil_mode
+        )
 
-        sum_result = cnp_conv(q_input.qvalues, kernel, None, self.pads, self.strides)
+        # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
+        # parameters (i.e. were fully constructed). This should always be the case, except
+        # during the UniformQuantizer initialization when the zero_point can exist as None
+        assert q_input.quantizer.zero_point is not None
+
+        if self.ceil_mode == 0:
+            # Simple padding for PyTorch style
+            pool_pads = compute_onnx_pool_padding(
+                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
+            )
+
+            q_input_pad = numpy_onnx_pad(
+                q_input.qvalues, pool_pads, q_input.quantizer.zero_point, int_only=True
+            )
+        else:
+            # Padding for tensorflow style
+
+            # Compute padding with floor and apply it to the input, pad with the input zeropoint
+            pool_pads = compute_onnx_pool_padding(
+                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
+            )
+            q_input_pad = numpy_onnx_pad(
+                q_input.qvalues, pool_pads, q_input.quantizer.zero_point, int_only=True
+            )
+
+            # Compute padding with ceil and apply it to the input, pad with zeros, the zeros
+            # will be ignored in the computation
+            pool_pads_ceil = compute_onnx_pool_padding(
+                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 1
+            )
+            q_input_pad_ceil = numpy_onnx_pad(q_input.qvalues, pool_pads_ceil, 0, True)
+
+            # Copy the PyTorch style padded input to the larger 0 padded tensor
+            q_input_pad_ceil[:, :, 0 : q_input_pad.shape[2], 0 : q_input_pad.shape[3]] = q_input_pad
+            q_input_pad = q_input_pad_ceil
+
+        sum_result = cnp_conv(q_input_pad, kernel, None, [0, 0, 0, 0], self.strides)
 
         result = (
             sum_result.astype(numpy.float32) * norm_const - q_input.quantizer.zero_point
@@ -938,7 +933,7 @@ class QuantizedLessOrEqual(QuantizedOp):
         assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
 
 
-class QuantizedOr(QuantizedOp):
+class QuantizedOr(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Or operator ||.
 
     This operation is not really working as a quantized operation. It just works when things got
@@ -947,39 +942,8 @@ class QuantizedOr(QuantizedOp):
 
     _impl_for_op_named: str = "Or"
 
-    def __init__(
-        self,
-        n_bits_output: int,
-        int_input_names: Set[str] = None,
-        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
-        **attrs,
-    ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
-        # We do not support Or between encrypted tensors
-        # Only Or between
-        # - encrypted tensors and float constants
-        # - tensors that are produced by a unique integer tensor
-        # is supported
-        # Or between two constants is possible but should be optimized out by
-        # the constant folding procedure
-        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
-
-    def can_fuse(self) -> bool:
-        """Determine if this op can be fused.
-
-        Or can be fused and computed in float when a single integer tensor generates
-        both the operands. For example in the formula: f(x) = x || (x + 1)  where x is an integer
-        tensor.
-
-        Returns:
-            bool: Can fuse
-        """
-        return len(self._int_input_names) == 1
-
-
-class QuantizedDiv(QuantizedOp):
+class QuantizedDiv(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Div operator /.
 
     This operation is not really working as a quantized operation. It just works when things got
@@ -988,39 +952,8 @@ class QuantizedDiv(QuantizedOp):
 
     _impl_for_op_named: str = "Div"
 
-    def __init__(
-        self,
-        n_bits_output: int,
-        int_input_names: Set[str] = None,
-        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
-        **attrs,
-    ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
-        # We do not support Div between encrypted tensors
-        # Only Div between
-        # - encrypted tensors and float constants
-        # - tensors that are produced by a unique integer tensor
-        # is supported
-        # Div between two constants is possible but should be optimized out by
-        # the constant folding procedure
-        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
-
-    def can_fuse(self) -> bool:
-        """Determine if this op can be fused.
-
-        Div can be fused and computed in float when a single integer tensor generates
-        both the operands. For example in the formula: f(x) = x / (x + 1)  where x is an integer
-        tensor.
-
-        Returns:
-            bool: Can fuse
-        """
-        return len(self._int_input_names) == 1
-
-
-class QuantizedMul(QuantizedOp):
+class QuantizedMul(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Multiplication operator.
 
     Only multiplies an encrypted tensor with a float constant for now. This operation will
@@ -1028,37 +961,6 @@ class QuantizedMul(QuantizedOp):
     """
 
     _impl_for_op_named: str = "Mul"
-
-    def __init__(
-        self,
-        n_bits_output: int,
-        int_input_names: Set[str] = None,
-        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
-        **attrs,
-    ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
-
-        # We do not support multiplication between encrypted tensors
-        # Only multiplication between
-        # - encrypted tensors and float constants
-        # - tensors that are produced by a unique integer tensor
-        # is supported
-        # Multiplication between two constants is possible but should be optimized out by
-        # the constant folding procedure
-        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
-
-    def can_fuse(self) -> bool:
-        """Determine if this op can be fused.
-
-        Multiplication can be fused and computed in float when a single integer tensor generates
-        both the operands. For example in the formula: f(x) = x * (x + 1)  where x is an integer
-        tensor.
-
-        Returns:
-            bool: Can fuse
-        """
-        return len(self._int_input_names) == 1
 
 
 class QuantizedSub(QuantizedAdd):
@@ -1593,3 +1495,33 @@ class QuantizedTranspose(QuantizedOp):
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
+
+
+class QuantizedFloor(QuantizedOp):
+    """Quantized Floor op."""
+
+    _impl_for_op_named: str = "Floor"
+
+
+class QuantizedMax(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
+    """Quantized Max op."""
+
+    _impl_for_op_named: str = "Max"
+
+
+class QuantizedMin(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
+    """Quantized Min op."""
+
+    _impl_for_op_named: str = "Min"
+
+
+class QuantizedNeg(QuantizedOp):
+    """Quantized Neg op."""
+
+    _impl_for_op_named: str = "Neg"
+
+
+class QuantizedSign(QuantizedOp):
+    """Quantized Neg op."""
+
+    _impl_for_op_named: str = "Sign"

@@ -55,10 +55,10 @@ class CNN(nn.Module):
         super().__init__()
 
         self.activation_function = activation_function()
-        self.conv1 = nn.Conv2d(input_output, 3, 3)
+        self.conv1 = nn.Conv2d(input_output, 3, 3, 1, 1)
         self.pool = nn.AvgPool2d(2, 2)
         self.conv2 = nn.Conv2d(3, 3, 1)
-        self.fc1 = nn.Linear(3 * 2 * 2, 5)
+        self.fc1 = nn.Linear(3 * 3 * 3, 5)
         self.fc2 = nn.Linear(5, 3)
         self.fc3 = nn.Linear(3, 2)
 

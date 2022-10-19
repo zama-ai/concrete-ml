@@ -6,13 +6,17 @@ from typing import Optional, Sequence, Set, SupportsIndex, Tuple, Union
 
 import numpy
 import onnx
-import torch
-import torch.nn
 from brevitas.function import max_int, min_int
 from concrete.numpy import univariate
+from concrete.onnx import conv as cnp_conv
 from scipy import special
 
 from ..common.debugging import assert_true
+from .onnx_impl_utils import (
+    compute_onnx_pool_padding,
+    numpy_onnx_pad,
+    onnx_avgpool_compute_norm_const,
+)
 
 
 # FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
@@ -1028,7 +1032,7 @@ def numpy_transpose(x: numpy.ndarray, /, *, perm=None) -> Tuple[numpy.ndarray]:
 
 
 @onnx_func_raw_args("b")
-def torch_conv(
+def numpy_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,
     b: numpy.ndarray,
@@ -1050,57 +1054,46 @@ def torch_conv(
         x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
         w (numpy.ndarray): weights tensor. Shape is (O x I x Kh x Kw) for 2d
         b (numpy.ndarray, Optional): bias tensor, Shape is (O,)
-        dilations (Tuple[int]): dilation of the kernel, default 1 on all dimensions.
+        dilations (Tuple[int, ...]): dilation of the kernel, default 1 on all dimensions.
         group (int): number of convolution groups, default 1
-        kernel_shape (Tuple[int]): shape of the kernel. Should have 2 elements for 2d conv
-        pads (Tuple[int]): padding in ONNX format (begin, end) on each axis
-        strides (Tuple[int]): stride of the convolution on each axis
+        kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
+        pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
+        strides (Tuple[int, ...]): stride of the convolution on each axis
 
     Returns:
         res (numpy.ndarray): a tensor of size (N x OutChannels x OutHeight x OutWidth).
            See https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
 
-    Raises:
-        AssertionError: if the convolution arguments are wrong
     """
 
     # Convert the inputs to tensors to compute conv using torch
-    tx = torch.Tensor(x.copy())
-    tw = torch.Tensor(w.copy())
-    tb = torch.Tensor(b.squeeze().copy()) if b is not None else None
-
     assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
     assert_true(
         bool(numpy.all(numpy.asarray(dilations) == 1)),
         "The convolution operator in Concrete Numpy does not support dilation",
     )
-
-    # For mypy
-    assert len(pads) == 4
-
-    assert_true(group == 1, "The convolution operator in Concrete Numpy does not support groups")
     assert_true(
-        pads[0] == pads[1] and pads[2] == pads[3],
-        "The convolution operator in Concrete ML only supports symmetric padding",
+        group == 1,
+        "The convolution operator in Concrete-ML does not support groups",
     )
 
-    # Extract the 'begin' pads for all dimensions. Begin padding should be the same as the end pad
-    torch_pads = (pads[0], pads[1])
+    # Pad the input if needed
+    x_pad = numpy_onnx_pad(x, pads)
 
     # Compute the torch convolution
-    res = torch.conv2d(tx, tw, tb, strides, torch_pads, dilations, group).numpy()
+    res = cnp_conv(x_pad, w, b, None, strides, dilations, None, group)
 
     return (res,)
 
 
-def torch_avgpool(
+def numpy_avgpool(
     x: numpy.ndarray,
     /,
     *,
     ceil_mode: int,
     kernel_shape: Tuple[int, ...],
-    pads: Tuple[int, ...],
-    strides: Tuple[int, ...],
+    pads: Tuple[int, ...] = None,
+    strides: Tuple[int, ...] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute Average Pooling using Torch.
 
@@ -1111,9 +1104,9 @@ def torch_avgpool(
     Args:
         x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
         ceil_mode (int): ONNX rounding parameter, expected 0 (torch style dimension computation)
-        kernel_shape (Tuple[int]): shape of the kernel. Should have 2 elements for 2d conv
-        pads (Tuple[int]): padding in ONNX format (begin, end) on each axis
-        strides (Tuple[int]): stride of the convolution on each axis
+        kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
+        pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
+        strides (Tuple[int, ...]): stride of the convolution on each axis
 
     Returns:
         res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight x OutWidth).
@@ -1123,31 +1116,41 @@ def torch_avgpool(
         AssertionError: if the pooling arguments are wrong
     """
 
-    # Convert the inputs to tensors to compute conv using torch
-    tx = torch.Tensor(x.copy())
-
     assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
-    assert_true(ceil_mode == 0, "Average Pooling only supports torch style dimension computation")
+
     # For mypy
-    assert len(pads) == 4
+    assert pads is None or len(pads) == 4
 
     # For mypy
     assert len(kernel_shape) == 2
 
-    assert len(strides) == 2
+    assert strides is None or len(strides) == 2
 
-    assert_true(
-        pads[0] == pads[1] and pads[2] == pads[3],
-        "The convolution operator in Concrete ML only supports symmetric padding",
+    # Use default values if the ONNX did not set these parameters
+    pads = (0, 0, 0, 0) if pads is None else pads
+    strides = (1, 1) if strides is None else strides
+
+    # Compute the average pooling using a grouped convolution (groups = input channels)
+    # This means that each slice of the kernel is applied on each input channel respectively
+    # We create a kernel full of ones, that sums the values in its support
+    n_in_channels = x.shape[1]
+    kernel = numpy.ones(
+        (n_in_channels, 1, kernel_shape[0], kernel_shape[1]),
+        dtype=numpy.uint8,
     )
 
-    # Extract the 'begin' pads for all dimensions. Begin padding should be the same as the end pad
-    torch_pads = (pads[0], pads[1])
+    norm_const = onnx_avgpool_compute_norm_const(x.shape, kernel_shape, pads, strides, ceil_mode)
 
-    # Compute the torch convolution
-    res = torch.nn.functional.avg_pool2d(
-        tx, kernel_shape, strides, torch_pads, ceil_mode=False, count_include_pad=True
-    ).numpy()
+    # Pad the input tensor
+    pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode)
+    q_input_pad = numpy_onnx_pad(x, pool_pads)
+
+    # Compute the sums of input values for each kernel position
+    res = cnp_conv(q_input_pad, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
+
+    # Compute the average of the input values for each kernel position
+    res /= norm_const
+
     return (res,)
 
 
@@ -1454,3 +1457,79 @@ def numpy_brevitas_quant(
     y = (y - zero_point) * scale
 
     return (y,)
+
+
+def numpy_floor(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute Floor in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Floor-1
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.floor(x),)
+
+
+def numpy_max(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute Max in numpy according to ONNX spec.
+
+    Computes the max between the first input and a float constant.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
+
+    Args:
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Constant tensor to compare to the first input
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.maximum(a, b),)
+
+
+def numpy_min(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute Min in numpy according to ONNX spec.
+
+    Computes the minimum between the first input and a float constant.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
+
+    Args:
+        a (numpy.ndarray): Input tensor
+        b (numpy.ndarray): Constant tensor to compare to the first input
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.minimum(a, b),)
+
+
+def numpy_sign(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute Sign in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.sign(x),)
+
+
+def numpy_neg(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Compute Negative in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.negative(x),)

@@ -9,6 +9,7 @@ from typing import Callable, Tuple, Union
 import numpy
 import onnx
 import pytest
+import torch
 from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
 
 from concrete.ml.quantization import QuantizedArray
@@ -28,6 +29,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedErf,
     QuantizedExp,
     QuantizedFlatten,
+    QuantizedFloor,
     QuantizedGemm,
     QuantizedGreater,
     QuantizedGreaterOrEqual,
@@ -39,7 +41,10 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedLessOrEqual,
     QuantizedLog,
     QuantizedMatMul,
+    QuantizedMax,
+    QuantizedMin,
     QuantizedMul,
+    QuantizedNeg,
     QuantizedNot,
     QuantizedOp,
     QuantizedOr,
@@ -52,6 +57,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedRound,
     QuantizedSelu,
     QuantizedSigmoid,
+    QuantizedSign,
     QuantizedSoftplus,
     QuantizedSub,
     QuantizedTanh,
@@ -101,6 +107,9 @@ IS_SIGNED = [pytest.param(True), pytest.param(False)]
         QuantizedRound,
         QuantizedErf,
         QuantizedNot,
+        QuantizedSign,
+        QuantizedNeg,
+        QuantizedFloor,
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
@@ -224,6 +233,8 @@ ARITH_N_BITS_LIST = [20, 16, 8]
         (QuantizedPow, False),
         (QuantizedOr, False),
         (QuantizedDiv, False),
+        (QuantizedMin, False),
+        (QuantizedMax, False),
     ],
 )
 @pytest.mark.parametrize("n_bits", ARITH_N_BITS_LIST)
@@ -466,11 +477,25 @@ def test_identity_op(x, n_bits):
             numpy.random.randn(3, 32, 2, 2),
             numpy.random.uniform(size=(3,)),
             (1, 1),
-            (0, 0, 0, 0),
+            (1, 1, 1, 1),
+        ),
+        (
+            numpy.random.uniform(size=(2, 32, 4, 4)),
+            numpy.random.randn(3, 32, 2, 2),
+            numpy.random.uniform(size=(3,)),
+            (1, 1),
+            (1, 1, 1, 1),
+        ),
+        (
+            numpy.random.uniform(size=(2, 2, 32, 32)),
+            numpy.random.randn(3, 2, 2, 2),
+            numpy.random.uniform(size=(3,)),
+            (4, 4),
+            (7, 1, 7, 1),
         ),
     ],
 )
-def test_quantized_conv(params, n_bits, check_r2_score):
+def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal):
     """Test the quantized convolution operator."""
 
     # Retrieve arguments
@@ -494,6 +519,21 @@ def test_quantized_conv(params, n_bits, check_r2_score):
     # Compute the result in floating point
     expected_result = q_op.calibrate(net_input)
 
+    # Compute the reference result
+
+    tweight = torch.Tensor(weights.copy())
+    tbias = torch.Tensor(biases.squeeze().copy()) if biases is not None else None
+    # Pad the input if needed
+    tinputs = torch.Tensor(net_input.copy())
+
+    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
+    tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
+
+    # Compute the torch convolution
+    torch_res = torch.conv2d(tx_pad, tweight, tbias, strides).numpy()
+    check_float_arrays_equal(torch_res, expected_result)
+
     # Compute the quantized result
     result = q_op(q_input).dequant()
 
@@ -505,32 +545,22 @@ def test_quantized_conv(params, n_bits, check_r2_score):
 @pytest.mark.parametrize(
     "params",
     [
-        (
-            numpy.random.uniform(size=(1, 1, 32, 32)) * 4,
-            (3, 3),
-            (2, 2),
-            (0, 0, 0, 0),
-        ),
-        (
-            numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2,
-            (2, 2),
-            (1, 1),
-            (0, 0, 0, 0),
-        ),
-        (
-            numpy.random.uniform(size=(2, 32, 4, 4)),
-            (2, 2),
-            (1, 1),
-            (0, 0, 0, 0),
-        ),
+        (numpy.random.uniform(size=(1, 1, 32, 32)) * 4, (3, 3), (2, 2), (0, 0, 0, 0), 0),
+        (numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2, (2, 2), (1, 1), (0, 0, 0, 0), 0),
+        (numpy.random.uniform(size=(2, 32, 4, 4)), (2, 2), (1, 1), (0, 0, 0, 0), 0),
+        (numpy.random.uniform(size=(2, 32, 4, 4)), (2, 4), (1, 1), (1, 2, 1, 2), 1),
+        (numpy.random.uniform(size=(2, 32, 4, 4)), (2, 4), (1, 1), (0, 2, 0, 2), 1),
+        (numpy.random.uniform(size=(2, 32, 5, 5)), (3, 3), (1, 1), (1, 1, 1, 1), 1),
+        (numpy.random.uniform(size=(2, 1, 7, 5)), (5, 1), (1, 1), (1, 2, 0, 4), 1),
+        (numpy.random.uniform(size=(1, 1, 16, 16)), (2, 2), (4, 4), (1, 2, 0, 4), 1),
     ],
 )
 @pytest.mark.parametrize("is_signed", [True, False])
-def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score):
+def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_float_arrays_equal):
     """Test the quantized average pool operator."""
 
     # Retrieve arguments
-    net_input, kernel_shape, strides, pads = params
+    net_input, kernel_shape, strides, pads, ceil_mode = params
 
     # Create quantized data
     q_input = QuantizedArray(n_bits, net_input, is_signed=is_signed)
@@ -540,12 +570,24 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score):
         strides=strides,
         pads=pads,
         kernel_shape=kernel_shape,
-        ceil_mode=0,
+        ceil_mode=ceil_mode,
         input_quant_opts=q_input.quantizer.quant_options,
     )
 
     # Compute the result in floating point
     expected_result = q_op.calibrate(net_input)
+
+    # Pad the input if needed
+    tinputs = torch.Tensor(net_input.copy())
+
+    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
+    tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
+
+    # Compute the torch average pool
+    bceil_mode = bool(ceil_mode)
+    torch_res = torch.nn.functional.avg_pool2d(tx_pad, kernel_shape, strides, 0, bceil_mode).numpy()
+    check_float_arrays_equal(torch_res, expected_result)
 
     # Compute the quantized result
     result = q_op(q_input).dequant()
@@ -572,13 +614,11 @@ def test_quantized_conv_args():
     args_and_errors = {
         ("strides", (2, 2, 1)): ".*strides.*",
         ("pads", (0, 0)): ".*(pads|padding).*",
-        ("pads", (0, 1, 1, 2)): ".*(pads|padding).*",
         ("kernel_shape", (3, 1, 2)): ".*2d.*",
         ("dilations", (3, 3, 3)): ".dilation.*",
     }
     for (name, value), error in args_and_errors.items():
         kwargs_op = {**args_ok, **{name: value}}
-        print(kwargs_op)
         with pytest.raises(AssertionError, match=error):
             QuantizedConv(
                 n_bits,
@@ -879,6 +919,8 @@ def test_all_ops_were_tested():
         QuantizedSoftplus: test_univariate_ops_no_attrs,
         QuantizedAbs: test_univariate_ops_no_attrs,
         QuantizedLog: test_univariate_ops_no_attrs,
+        QuantizedSign: test_univariate_ops_no_attrs,
+        QuantizedNeg: test_univariate_ops_no_attrs,
         QuantizedExp: test_exp_op,
         QuantizedClip: test_clip_op,
         QuantizedIdentity: test_identity_op,
@@ -903,8 +945,11 @@ def test_all_ops_were_tested():
         QuantizedOr: test_all_arith_ops,
         QuantizedDiv: test_all_arith_ops,
         QuantizedPow: test_all_arith_ops,
+        QuantizedMax: test_all_arith_ops,
+        QuantizedMin: test_all_arith_ops,
         QuantizedReduceSum: test_reduce_sum,
         QuantizedErf: test_univariate_ops_no_attrs,
+        QuantizedFloor: test_univariate_ops_no_attrs,
         QuantizedBrevitasQuant: test_brevitas_quant,
         QuantizedTranspose: test_quantized_transpose,
     }

@@ -1,4 +1,5 @@
 """Base Quantized Op class that implements quantization for a float numpy op."""
+
 from copy import deepcopy
 from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
@@ -483,3 +484,47 @@ class QuantizedOp:
         if self.can_fuse():
             output_quant_opts.is_qat = False
         return output_quant_opts
+
+
+class QuantizedOpUnivariateOfEncrypted:
+    """An univariate operator of an encrypted value.
+
+    This operation is not really operating as a quantized operation. It is useful when the
+    computations get fused into a TLU, as in e.g. Act(x) = x || (x + 42)).
+    """
+
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        # Disable mypy which is failing for mixins
+        super().__init__(
+            n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs
+        )  # type: ignore
+
+        # We do not support this type of operation between encrypted tensors, only between:
+        # - encrypted tensors and float constants
+        # - tensors that are produced by a unique integer tensor
+        # If this operation is applied between two constants
+        # it should be optimized out by the constant folding procedure
+        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        This operation can be fused and computed in float when a single integer tensor generates
+        both the operands. For example in the formula: f(x) = x || (x + 1)  where x is an integer
+        tensor.
+
+        Returns:
+            bool: Can fuse
+        """
+
+        # for mypy
+        assert isinstance(self, QuantizedOp)
+
+        return len(self._int_input_names) == 1  # pylint: disable=no-member
