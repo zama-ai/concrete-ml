@@ -690,4 +690,6 @@ download_datasets:
 check_forbidden_words:
 	./script/make_utils/check_forbidden_words.sh
 
-
+.PHONY: update_dependabot_prs # Update all dependabot PRs on origin
+update_dependabot_prs:
+	./script/make_utils/update_dependabot_prs.sh
