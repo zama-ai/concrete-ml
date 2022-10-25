@@ -626,9 +626,7 @@ check_links:
 	@# Mainly for web links and _api_doc (sphinx)
 	poetry run python -m linkcheckmd docs -local
 
-	@# FIXME: #1810
-	@# Make it back when zama-fhe/encrypted_sentiment_analysis is public
-	@# poetry run python -m linkcheckmd README.md
+	poetry run python -m linkcheckmd README.md
 
 	poetry run python ./script/make_utils/local_link_check.py
 	poetry run python ./script/make_utils/check_headers.py
@@ -636,20 +634,21 @@ check_links:
 	@# For weblinks and internal references
 	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it
 	@# 		requires credentials
-	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#	--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: issues with access to
 	@#		our private repo
+	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
-	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis: currently private
+	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis: currently
+	@#		private
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal: because some files are only
-	@#		private at this time
+	@#		private at this time. We'll finally check files with check_links_after_release after
+	@#		everything has been pushed to public repository
 	poetry run linkchecker docs --check-extern \
-		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
-		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
+		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis \
@@ -657,6 +656,12 @@ check_links:
 
 .PHONY: check_links_after_release # Check links in the documentation as if we were users
 check_links_after_release:
+	@# The difference between check_links_after_release and check_links is:
+	@#	 - use check_links during dev time: we have --ignore to accept files which are not already
+	@#	   in the public repo
+	@#	 - at release time, use check_links_after_release, to check that the doc or public
+	@#	   repository only use public links
+
 	@# Because of issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
 
@@ -667,14 +672,18 @@ check_links_after_release:
 	poetry run python ./script/make_utils/local_link_check.py
 
 	@# For weblinks and internal references
+	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it
+	@# 		requires credentials
+	@#	--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: issues with access to
+	@#		our private repo
 	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
 	poetry run linkchecker docs --check-extern \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
-		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
+		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org
 
