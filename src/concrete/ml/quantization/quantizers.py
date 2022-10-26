@@ -75,9 +75,21 @@ class QuantizationOptions:
     """
 
     n_bits: int
+
+    # Determines whether the integer value representing the quantized floats are signed
     is_signed: bool = False
+
+    # Determines whether to use symmetric quantization and/or whether the values have a
+    # symmetric distribution with respect to 0
     is_symmetric: bool = False
+
+    # Determines whether the values handled by the Quantizer are already quantized through
+    # quantization aware training
     is_qat: bool = False
+
+    # Determines whether the values handled by the quantizer were produced by a custom
+    # quantization layer that has pre-computed scale and zeropoint (i.e. ONNX brevitas quant layer)
+    is_precomputed_qat: bool = False
 
     def __init__(
         self, n_bits, is_signed: bool = False, is_symmetric: bool = False, is_qat: bool = False
@@ -104,6 +116,7 @@ class QuantizationOptions:
         self.is_signed = opts.is_signed
         self.is_symmetric = opts.is_symmetric
         self.is_qat = opts.is_qat
+        self.is_precomputed_qat = opts.is_precomputed_qat
 
     @property
     def quant_options(self):
@@ -174,6 +187,34 @@ class MinMaxQuantizationStats:
         self.rmax = stats.rmax
         self.rmin = stats.rmin
         self.uvalues = stats.uvalues
+
+    def check_is_uniform_quantized(self, options: QuantizationOptions) -> bool:
+        """Check if these statistics correspond to uniformly quantized values.
+
+        Determines whether the values represented by this QuantizedArray show
+        a quantized structure that allows to infer the scale of quantization.
+
+        Args:
+            options (QuantizationOptions): used to quantize the values in the QuantizedArray
+
+        Returns:
+            bool: check result.
+        """
+
+        assert self.uvalues is not None
+
+        if self.uvalues.size > 2**options.n_bits:
+            return False
+
+        if self.uvalues.size == 1:
+            return False
+
+        unique_scales = numpy.unique(numpy.diff(self.uvalues))
+        min_scale = unique_scales[0]
+
+        re_quant_scales = numpy.rint(unique_scales / min_scale) * min_scale
+
+        return numpy.allclose(unique_scales, re_quant_scales, atol=0.02)
 
 
 class UniformQuantizationParameters:
@@ -266,11 +307,23 @@ class UniformQuantizationParameters:
                     (2**options.n_bits - 1 - self.offset)
                 )
             else:
+                # Infer the QAT parameters if this is a custom QAT network
+                # which does not store scale/zp in the ONNX directly.
+
+                # Do not infer the parameters if the network was trained with Brevitas
+                # they are stored in the ONNX file and are the true quantization parameters
+                # used in training - no need to infer them.
+
+                # If the parameters do not appear quantized, use PTQ for quantization.
+                # The QuantizedModule will perform error checking of quantized tensors
+                # and will issue an error if the network is not well quantized during training
                 if (
                     options.is_qat
+                    and not options.is_precomputed_qat
                     and stats.uvalues is not None
-                    and stats.uvalues.size <= 2**options.n_bits
+                    and stats.check_is_uniform_quantized(options)
                 ):
+
                     # FIXME: this crashes when a model is poorly trained
                     # the code crashes later on without this check
                     # https://github.com/zama-ai/concrete-ml-internal/issues/1620

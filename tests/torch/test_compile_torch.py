@@ -174,7 +174,7 @@ class StepActivationModule(nn.Module):
 class SimpleQAT(nn.Module):
     """Torch model implements a step function that needs Greater, Cast and Where."""
 
-    def __init__(self, _n_feat, activation_function, n_bits=2):
+    def __init__(self, _n_feat, activation_function, n_bits=2, disable_bit_check=False):
         super().__init__()
 
         self.act = activation_function()
@@ -196,8 +196,11 @@ class SimpleQAT(nn.Module):
         numpy.random.shuffle(all_weights)
         int_weights = all_weights.reshape(self.fc1.weight.shape)
 
-        # Ensure we have the correct max/min that produces the correct scale in Quantized Array
-        assert numpy.max(int_weights) - numpy.min(int_weights) == (2**n_bits_weights - 1)
+        # A check that is used to ensure this class is used correctly
+        # but we may want to disable it to check that the QAT import catches the error
+        if not disable_bit_check:
+            # Ensure we have the correct max/min that produces the correct scale in Quantized Array
+            assert numpy.max(int_weights) - numpy.min(int_weights) == (2**n_bits_weights - 1)
 
         # We want signed weights, so offset the generated weights
         int_weights = int_weights - 2 ** (n_bits_weights - 1)
@@ -743,3 +746,62 @@ def test_pretrained_mnist_qat(default_configuration, check_accuracy):
     )
 
     assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8
+
+
+def test_qat_import_check(default_configuration):
+    """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
+    qat_bits = 4
+
+    use_virtual_lib = True
+
+    error_message_pattern = "Error occurred during quantization aware training.*"
+
+    # This first test is trying to import a network that is QAT (has a quantizer in the graph)
+    # but the import bitwidth is wrong (mismatch between bitwidth specified in training
+    # and the bitwidth specified during import). For NNs that are not built with Brevitas
+    # the bitwidth must be manually specified and is used to infer quantization parameters.
+    with pytest.raises(ValueError, match=error_message_pattern):
+        compile_and_test_torch_or_onnx(
+            10,
+            partial(SimpleQAT, n_bits=6, disable_bit_check=True),
+            nn.ReLU,
+            qat_bits,
+            default_configuration,
+            use_virtual_lib,
+            False,
+        )
+
+    # The second case is a network that is not QAT but is being imported as a QAT network
+    with pytest.raises(ValueError, match=error_message_pattern):
+        compile_and_test_torch_or_onnx(
+            (1, 7, 7),
+            CNN,
+            nn.ReLU,
+            qat_bits,
+            default_configuration,
+            use_virtual_lib,
+            False,
+        )
+
+    class AllZeroCNN(CNN):
+        """A CNN class that has all zero weights and biases."""
+
+        def __init__(self, input_output, activation_function):
+            super().__init__(input_output, activation_function)
+
+            for m in self.modules():
+                if isinstance(m, (nn.Conv2d, nn.Linear)):
+                    torch.nn.init.constant_(m.weight.data, 0)
+                    torch.nn.init.constant_(m.bias.data, 0)
+
+    # A network that may look like QAT but it just zeros all inputs
+    with pytest.raises(ValueError, match=error_message_pattern):
+        compile_and_test_torch_or_onnx(
+            (1, 7, 7),
+            AllZeroCNN,
+            nn.ReLU,
+            qat_bits,
+            default_configuration,
+            use_virtual_lib,
+            False,
+        )

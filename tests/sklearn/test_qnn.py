@@ -2,6 +2,7 @@
 from copy import deepcopy
 from itertools import product
 
+import brevitas.nn as qnn
 import numpy
 import pytest
 from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
@@ -353,7 +354,13 @@ def test_custom_net_classifier(load_data):
         ):
             """Construct mini net"""
             super().__init__()
-            self.features = nn.Sequential(nn.Linear(2, 4), nn.ReLU(), nn.Linear(4, 2))
+            self.features = nn.Sequential(
+                qnn.QuantIdentity(return_quant_tensor=True),
+                qnn.QuantLinear(2, 4, weight_bit_width=3, bias=True),
+                nn.ReLU(),
+                qnn.QuantIdentity(return_quant_tensor=True),
+                qnn.QuantLinear(4, 2, weight_bit_width=3, bias=True),
+            )
 
         def forward(self, x):
             """Forward pass."""

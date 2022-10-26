@@ -99,7 +99,6 @@ n_bits_qat = 3  # number of bits for weights and activations during training
 quantized_numpy_module = compile_onnx_model(
     onnx_model,
     input_set,
-    import_qat=True,
     n_bits=n_bits_qat,
 )
 ```
