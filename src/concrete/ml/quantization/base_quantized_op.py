@@ -70,6 +70,8 @@ class QuantizedOp:
     _inputs_not_quantized: Set[str] = set()
     quantize_inputs_with_model_outputs_precision: bool = False
 
+    error_tracker: Optional[List[int]] = None
+
     POSITIONAL_ARGUMENTS_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
 
     def __init__(
@@ -148,6 +150,19 @@ class QuantizedOp:
         )
 
         self.attrs = dict(self._default_attrs, **deepcopy(attrs))
+
+        # Only use QAT for layers that need it (that mix encrypted values: conv, dense, add, etc...)
+        if self.can_fuse():
+            self.input_quant_opts.is_qat = False
+
+    @property
+    def op_type(self):
+        """Get the type of this operation.
+
+        Returns:
+            op_type (str): The type of this operation, in the ONNX referential
+        """
+        return self._impl_for_op_named
 
     # Register node to our internal categories
     def __init_subclass__(cls, **kwargs):
@@ -251,7 +266,7 @@ class QuantizedOp:
         *inputs: Union[QuantizedArray, numpy.ndarray],
         calibrate: bool,
         quantize_actual_values: bool,
-    ):
+    ):  # pylint: disable=too-many-branches
         """Retrieve all the inputs of an operator in the computational graph.
 
         This helper method will prepare a list of inputs to an operator. Inputs can be variables,
@@ -323,7 +338,7 @@ class QuantizedOp:
         # QuantizedArrays, else we return the float32 values directly.
 
         curr_input_fill_idx = 0
-        for input_ in inputs:
+        for input_idx, input_ in enumerate(inputs):
             while prepared_inputs[curr_input_fill_idx] is not None:
                 curr_input_fill_idx += 1
 
@@ -363,6 +378,15 @@ class QuantizedOp:
                     stats=input_.quantizer.quant_stats,
                     params=quant_params,
                 )
+
+                if (
+                    quant_opts.is_qat
+                    and not input_.quantizer.is_precomputed_qat
+                    and self.error_tracker is not None
+                    and not new_input.quantizer.check_is_uniform_quantized(quant_opts)
+                ):
+                    self.error_tracker.append(input_idx)
+
                 prepared_inputs[curr_input_fill_idx] = new_input
             else:
                 input_ = cast(QuantizedArray, input_)

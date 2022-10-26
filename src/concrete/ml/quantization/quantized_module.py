@@ -14,6 +14,31 @@ from .base_quantized_op import QuantizedOp
 from .quantizers import QuantizedArray, UniformQuantizer
 
 
+def _raise_qat_import_error(bad_qat_ops: List[Tuple[str, str]]):
+    """Raise a descriptive error if any invalid ops are present in the ONNX graph.
+
+    Args:
+        bad_qat_ops (List[Tuple[str, str]]): list of tensor names and operation types
+
+    Raises:
+        ValueError: if there were any invalid, non-quantized, tensors as inputs to non-fusable ops
+    """
+
+    raise ValueError(
+        "Error occurred during quantization aware training (QAT) import: "
+        "The following tensors were expected to be quantized, but the values "
+        "found during calibration do not appear to be quantized. \n\n"
+        + "\n".join(
+            map(
+                lambda info: f"* Tensor {info[0]}, input of an {info[1]} operation",
+                bad_qat_ops,
+            )
+        )
+        + "\n\nCould not determine a unique scale for the quantization! "
+        "Please check the ONNX graph of this model."
+    )
+
+
 class QuantizedModule:
     """Inference for a quantized model."""
 
@@ -187,6 +212,7 @@ class QuantizedModule:
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
+
         """
 
         assert_true(
@@ -210,10 +236,25 @@ class QuantizedModule:
         # Init layer_results with the inputs
         layer_results = dict(zip(self.ordered_module_input_names, q_inputs))
 
+        bad_qat_ops: List[Tuple[str, str]] = []
         for output_name, (input_names, layer) in self.quant_layers_dict.items():
             inputs = (layer_results[input_name] for input_name in input_names)
+
+            error_tracker: List[int] = []
+            layer.error_tracker = error_tracker
             output = layer(*inputs)
+            layer.error_tracker = None
+
+            if len(error_tracker) > 0:
+                # The error message contains the ONNX tensor name that
+                # triggered this error
+                for input_idx in error_tracker:
+                    bad_qat_ops.append((input_names[input_idx], layer.op_type))
+
             layer_results[output_name] = output
+
+        if len(bad_qat_ops) > 0:
+            _raise_qat_import_error(bad_qat_ops)
 
         outputs = tuple(
             layer_results[output_name] for output_name in self.ordered_module_output_names

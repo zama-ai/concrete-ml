@@ -1443,6 +1443,11 @@ class QuantizedBrevitasQuant(QuantizedOp):
         options = self._get_output_quant_opts()
         options.is_qat = True
 
+        # Disable the QAT value checker as we have the true parameters in ONNX
+        # Brevitas quantization layers store the scale/zero_point in the ONNX file
+        # so we don't need to compute/infer them
+        options.is_precomputed_qat = True
+
         f_outputs = self.call_impl(*prepared_inputs, **attrs)
         res = QuantizedArray(
             n_bits,
