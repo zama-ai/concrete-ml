@@ -81,13 +81,6 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
-      - name: Download datasets
-        env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-        run: |
-          make download_datasets
-
       - name: Refresh Notebooks
         run: |
           make jupyter_execute

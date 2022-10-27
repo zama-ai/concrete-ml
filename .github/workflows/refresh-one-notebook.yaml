@@ -12,12 +12,10 @@ on:
         - DecisionTreeClassifier \n
         - FullyConnectedNeuralNetwork \n
         - GLMComparison \n
-        - KaggleTitanic \n
         - LinearRegression \n
         - LogisticRegression \n
         - PoissonRegression \n
         - QuantizationAwareTraining \n
-        - SentimentClassification \n
         - XGBClassifier \n
         - XGBRegressor \n
         "
@@ -102,13 +100,6 @@ jobs:
         run: |
           ./script/make_utils/setup_os_deps.sh
           make setup_env
-
-      - name: Download datasets
-        env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-        run: |
-          make download_datasets
 
       - name: Refresh One Notebook
         run: |
