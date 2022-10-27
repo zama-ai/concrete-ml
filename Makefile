@@ -350,7 +350,7 @@ pydocstyle:
 
 .PHONY: finalize_nb # Sanitize notebooks
 finalize_nb:
-	poetry run python ./script/nbmake_utils/notebook_finalize.py docs
+	poetry run python ./script/nbmake_utils/notebook_finalize.py docs use_case_examples
 
 # A warning in a package unrelated to the project made pytest fail with notebooks
 # Run notebook tests without warnings as sources are already tested with warnings treated as errors
@@ -690,10 +690,6 @@ check_links_after_release:
 .PHONY: actionlint # Linter for our github actions
 actionlint:
 	./script/make_utils/actionlint.sh
-
-.PHONY: download_datasets # Download datasets used in jupyter notebooks
-download_datasets:
-	poetry run env ./script/kaggle_utils/download_datasets.sh
 
 .PHONY: check_forbidden_words # Check forbidden words
 check_forbidden_words:

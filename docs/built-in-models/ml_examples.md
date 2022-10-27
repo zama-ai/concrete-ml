@@ -28,7 +28,3 @@ _A * means that FHE accuracy was calculated on a subset of the validation set._
 ## Comparison of classifiers
 
 - [ClassifierComparison.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ClassifierComparison.ipynb)
-
-## Kaggle competition
-
-- [KaggleTitanic.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/KaggleTitanic.ipynb)
