@@ -1,5 +1,6 @@
 """Tests for the sklearn linear models."""
 import warnings
+from copy import deepcopy
 from functools import partial
 from typing import Any, List
 
@@ -233,6 +234,9 @@ def test_linear_model_compile_run_fhe(
     if not use_virtual_lib and is_vl_only_option:
         print("Warning, skipping non VL tests")
         return
+
+    # Prevent the parameters to possibly be shared across multithreaded tests
+    data_parameters = deepcopy(data_parameters)
 
     # If the ReduceSum workaround is used, it can only handle N features with N a power of 2 for
     # now.
