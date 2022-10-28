@@ -157,15 +157,35 @@ demo = gr.Blocks()
 print("Starting the demo...")
 with demo:
 
-    # FIXME: to be finalized with marketing
     gr.Markdown(
         """
-<h1 align="center">Privacy Preserving Machine Learning with  Fully Homomorphic Encryption.</h1>
-<p align="center"><a href="https://github.com/zama-ai/concrete-ml"> Concrete-ML</a> is a Privacy-Preserving Machine Learning (PPML) open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists.
+<p align="center">
+    <img width=200 src="https://user-images.githubusercontent.com/5758427/197816413-d9cddad3-ba38-4793-847d-120975e1da11.png">
 </p>
 
+<h2 align="center">Machine Learning, Natural Language Processing and Fully Homomorphic Encryption to do Sentiment Analysis on Encrypted data.</h2>
+
+<p align="center">
+    <a href="https://github.com/zama-ai/concrete-ml"> <img style="vertical-align: middle; display:inline-block; margin-right: 3px;" width=15 src="https://user-images.githubusercontent.com/5758427/197972109-faaaff3e-10e2-4ab6-80f5-7531f7cfb08f.png">Concrete-ML</a>
+    —
+    <a href="https://docs.zama.ai/concrete-ml"> <img style="vertical-align: middle; display:inline-block; margin-right: 3px;" width=15 src="https://user-images.githubusercontent.com/5758427/197976802-fddd34c5-f59a-48d0-9bff-7ad1b00cb1fb.png">Documentation</a>
+    —
+    <a href="https://community.zama.ai"> <img style="vertical-align: middle; display:inline-block; margin-right: 3px;" width=15 src="https://user-images.githubusercontent.com/5758427/197977153-8c9c01a7-451a-4993-8e10-5a6ed5343d02.png">Community support forum</a>
+    —
+    <a href="https://twitter.com/zama_fhe"> <img style="vertical-align: middle; display:inline-block; margin-right: 3px;" width=15 src="https://user-images.githubusercontent.com/5758427/197975044-bab9d199-e120-433b-b3be-abd73b211a54.png">@zama_fhe</a>
+</p>
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/5758427/197974594-80897620-c64b-4c39-aeeb-c941e4146c6d.png">
+</p>
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/5758427/197974639-cfb7af28-9dfc-4bf6-ab5b-57ad562a5dc4.png">
+</p>
 """
     )
+
+
 
     # FIXME: make it smaller and in the middle
     # gr.Image("Zama.svg")
@@ -178,27 +198,12 @@ with demo:
         </p>
         """
     )
-    gr.Markdown(
-        """
-This short demo explain the concept of Fully Homomorphic Encryption (FHE), here we consider:
-- a client, where a tweet is entered, quantized and then encrypted
-- a server, which received the encrypted quantized tweet, and analyze it with FHE
-Finally, the encrypted sentiment (represented as negative, positive, or neutral) is sent back to the client, which can recover the plain value with her secret key.
-"""
-    )
-    gr.Markdown(
-        """
-           Finally, the encrypted sentiment (represented as negative, positive, or neutral) is sent back to the client, which can recover the plain value with her secret key.
-        """
-    )
 
-    gr.Markdown("## Setup")
+    gr.Markdown("## Notes")
     gr.Markdown(
     """
-The model is previously compiled and sent to the server machine. On the client side, the key must be generated, and the evaluation key must be sent to the server.
-Note that,
-- the private key is used to encrypt and decrypt the data and shall never be shared.
-- the evaluation key is a public key that the server needs to process encrypted data.
+- The private key is used to encrypt and decrypt the data and shall never be shared.
+- The evaluation key is a public key that the server needs to process encrypted data.
 """
     )
 
@@ -223,11 +228,11 @@ Note that,
 
     # FIXME: add a picture from marketing with client->server interactions
 
-    gr.Markdown("## Client Side")
+    gr.Markdown("## Client side")
     gr.Markdown(
-        "Please type a small tweet and press the button: your tweet will be encoded, quantized and encrypted. Then, the encrypted value will be sent to the server."
+        "Enter a sensitive text message you received and would like to do sentiment analysis on (ideas: the last text message of your boss.... or lover)."
     )
-    text = gr.Textbox(label="Enter a tweet:", value="Zama's Concrete-ML is awesome")
+    text = gr.Textbox(label="Enter a message:", value="I really like your work recently")
     size_text = gr.Number(label="Size of the text (in bytes):", value=0, interactive=False)
     b_encode_quantize_text = gr.Button(
         "Encode, quantize and encrypt the text with transformer vectorizer, and send to server"
@@ -256,7 +261,7 @@ Note that,
             interactive=False,
         )
 
-    gr.Markdown("## Server Side")
+    gr.Markdown("## Server side")
     gr.Markdown(
         "The encrypted value is received by the server. Thanks to the evaluation key and to FHE, the server can compute the (encrypted) prediction directly over encrypted values. Once the computation is finished, the server returns the encrypted prediction to the client."
     )
@@ -268,9 +273,9 @@ Note that,
         interactive=False,
     )
 
-    gr.Markdown("## Client Side")
+    gr.Markdown("## Client side")
     gr.Markdown(
-        "The encrypted sentiment is sent back to client, who can finally decrypt it with her private key. Only the client is aware of the original tweet and the prediction."
+        "The encrypted sentiment is sent back to client, who can finally decrypt it with its private key. Only the client is aware of the original tweet and the prediction."
     )
     b_decrypt_prediction = gr.Button("Decrypt prediction")
 
@@ -299,5 +304,7 @@ Note that,
 
     # Button to decrypt the prediction on the client
     b_decrypt_prediction.click(decrypt_prediction, inputs=[user_id], outputs=[labels_sentiment])
-
+    gr.Markdown(
+        "The app was built with [Concrete-ML](https://github.com/zama-ai/concrete-ml), a Privacy-Preserving Machine Learning (PPML) open-source set of tools by [Zama](https://zama.ai/). Try it yourself and don't forget to star on Github &#11088;."
+    )
 demo.launch(share=False)
