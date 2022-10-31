@@ -532,6 +532,13 @@ clean_local_git:
 	@# Don't consider deleting `main` or current branches
 	@git branch | grep -v "^*" | grep -v main | xargs echo "git branch -D "
 	@echo
+	@read -p "Do it now (y/N)? " -r; \
+	if [[ $$REPLY =~ ^[Yy] ]]; \
+	then \
+		git branch | grep -v "^*" | grep -v main | xargs git branch -D ; \
+		echo; \
+		git branch; \
+	fi
 
 .PHONY: mdformat # Apply markdown formatting
 # Remark we need to remove .md's in venv. Remark that we fix $$ problems with mdformat at the end
