@@ -154,9 +154,9 @@ LINEAR_REGRESSION_ARGUMENTS = [
     {"n_bits": n_bits, "use_sum_workaround": True} for n_bits in range(2, 11)
 ]
 # Backward compatibility
-if ("LinearRegression" in CLASSIFIERS) and (
+if ("LinearRegression" in REGRESSORS) and (
     "use_sum_workaround"
-    not in inspect.signature(CLASSIFIERS_STRING_TO_CLASS["LinearRegression"]).parameters
+    not in inspect.signature(REGRESSORS_STRING_TO_CLASS["LinearRegression"]).parameters
 ):
     LINEAR_REGRESSION_ARGUMENTS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
 
