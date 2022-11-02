@@ -58,7 +58,7 @@ then
     echo "Refreshing notebooks"
 
     # shellcheck disable=SC2207
-    LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    LIST_OF_NOTEBOOKS=($(find ./docs/ ./use_case_examples/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
 
     # Remove notebooks with long execution times
     for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
@@ -87,7 +87,7 @@ then
     echo "Refreshing notebooks in parallel"
 
     # shellcheck disable=SC2207
-    LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
+    LIST_OF_NOTEBOOKS=($(find ./docs/ ./use_case_examples/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
 
     # Remove notebooks with long execution times
     for NOTEBOOK_TO_REMOVE in "${LONG_EXECUTION_TIMES_NOTEBOOKS[@]}"
