@@ -128,6 +128,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         graphviz* \
         jq \
         make \
+        cmake \
         unzip \
         pandoc \
         openssl \

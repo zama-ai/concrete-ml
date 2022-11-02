@@ -56,6 +56,8 @@ env:
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
   IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
 
 jobs:
   matrix-preparation:
@@ -103,10 +105,10 @@ jobs:
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9"
+            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS="3.9"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
-            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9"
+            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "push_to_main" ]]; then
             LINUX_PYTHON_VERSIONS="3.8"
@@ -354,6 +356,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        id: setup-python
         with:
           python-version: ${{ matrix.python_version }}
 
@@ -368,6 +371,8 @@ jobs:
         id: install-deps
         run: |
           ./script/make_utils/setup_os_deps.sh
+          # Needed to include Python.h
+          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
 
           echo
           echo "Using these tools:"
