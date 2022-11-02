@@ -1505,7 +1505,8 @@ def numpy_reduce_sum(
     # Numpy's keepdims parameter is a boolean while ONNX's one is an int (0 or 1). Even though
     # Python handles them equivalently, we need to manually convert it as mypy doesn't accept this
     # type difference
-    return (numpy.sum(a, axis=axis, keepdims=bool(keepdims)),)
+    # FIXME #2050 : Find a way to make axis of type Union[SupportsIndex, Sequence[SupportsIndex]
+    return (numpy.sum(a, axis=axis, keepdims=bool(keepdims)),)  # type: ignore
 
 
 @onnx_func_raw_args("scale", "zero_point", "bit_width")
