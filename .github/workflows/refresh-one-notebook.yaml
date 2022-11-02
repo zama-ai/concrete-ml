@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       notebook:
-        # --- refresh_notebooks_list.py: refresh list of notebooks currently available [BEGIN] ---
+        # --- refresh_notebooks_list.py: refresh list of notebooks currently available [START] ---
         # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
         description: "Notebook file name only in: \n
         - ClassifierComparison \n
@@ -18,6 +18,9 @@ on:
         - QuantizationAwareTraining \n
         - XGBClassifier \n
         - XGBRegressor \n
+        - SentimentClassification \n
+        - mnist_in_fhe \n
+        - KaggleTitanic \n
         "
         # --- refresh_notebooks_list.py: refresh list of notebooks currently available [END] ---
         required: true
@@ -28,6 +31,24 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
+  # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
+  ClassifierComparison: "docs/advanced_examples/ClassifierComparison.ipynb" 
+  ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
+  ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
+  DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
+  FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
+  GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
+  LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
+  LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
+  PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
+  QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
+  XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
+  XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
+  SentimentClassification: "use_case_examples/encrypted_sentiment_analysis/SentimentClassification.ipynb" 
+  mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
+  KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
+  # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
 
 jobs:
   start-runner-linux:
@@ -71,6 +92,7 @@ jobs:
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+      NOTEBOOK_NAME: ${{ github.event.inputs.notebook }}
 
     steps:
       - name: Add masks
@@ -103,7 +125,7 @@ jobs:
 
       - name: Refresh One Notebook
         run: |
-          make jupyter_execute_one NOTEBOOK="docs/advanced_examples/${{ github.event.inputs.notebook }}.ipynb"
+          make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"
 
       - name: Open PR
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
