@@ -1456,6 +1456,11 @@ def numpy_pow(a: numpy.ndarray, b: numpy.ndarray) -> Tuple[numpy.ndarray]:
     return (numpy.power(a, b),)
 
 
+# noop_with_empty_axes has a strange definition as its description does not seem to exactly match
+# the one given for the axes parameter. Moreover, neither Torch or Numpy handles such a feature.
+# However, it looks like it is used to indicate that a sum with an empty axes parameter should be
+# handled as an identity operator, which is consistent with Numpy's inherent behavior. For this
+# particular reason, we decided not to consider it in the following definition.
 # pylint: disable=unused-argument
 @onnx_func_raw_args("axes")
 def numpy_reduce_sum(
@@ -1486,24 +1491,21 @@ def numpy_reduce_sum(
         numpy.ndarray: Output reduced tensor.
     """
 
-    assert_true(
-        axes is not None and len(axes.shape) == 1 and axes[0] == 1,
-        "ReduceSum currently only handles summing over axis 1.",
-    )
-
-    assert_true(len(a.shape) == 2, "ReduceSum currently only handles arrays of 2 dimensions")
+    assert_true(keepdims in [0, 1], f"keepdims parameter should either be 0 or 1. Got {keepdims}")
 
     assert_true(
-        keepdims == 1, "ReduceSum currently only keeps the inputs' dimensions for its outputs."
+        axes is None or isinstance(axes, numpy.ndarray),
+        f"axes parameter should either be None or a Numpy array. Got {type(axes)}",
     )
 
-    n_values = a.shape[1]
-    assert_true(
-        (n_values != 0) and (n_values & (n_values - 1) == 0),
-        "ReduceSum currently only handles N values with N a power of 2.",
-    )
+    # Numpy's axis parameter only handles tuple of integers (or None) as input while ONNX's axes
+    # parameter is an array (or None)
+    axis = tuple(axes) if axes is not None else None
 
-    return (numpy.sum(a, axis=1, keepdims=True),)
+    # Numpy's keepdims parameter is a boolean while ONNX's one is an int (0 or 1). Even though
+    # Python handles them equivalently, we need to manually convert it as mypy doesn't accept this
+    # type difference
+    return (numpy.sum(a, axis=axis, keepdims=bool(keepdims)),)
 
 
 @onnx_func_raw_args("scale", "zero_point", "bit_width")
