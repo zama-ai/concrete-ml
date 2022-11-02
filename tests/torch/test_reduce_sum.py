@@ -225,30 +225,26 @@ def generate_wrong_parameters_and_id():
         {"one_dim": True},
     ]
 
-    for in_fhe in [True, False]:
-        for wrong_parameter in wrong_parameters:
-            wrong_parameter_name = list(wrong_parameter.keys())[0]
-            wrong_parameter_value = list(wrong_parameter.values())[0]
+    for wrong_parameter in wrong_parameters:
+        wrong_parameter_name = list(wrong_parameter.keys())[0]
+        wrong_parameter_value = list(wrong_parameter.values())[0]
 
-            if (wrong_parameter_name not in ["n_samples"]) or in_fhe:
-                n_values = wrong_parameter.get("n_values", 2)
-                n_samples = wrong_parameter.get("n_samples", 1) if in_fhe else 1
-                keepdims = wrong_parameter.get("keepdims", True)
-                one_dim = wrong_parameter.get("one_dim", False)
-                axes = wrong_parameter.get("axes", 1) if not one_dim else 0
+        n_values = wrong_parameter.get("n_values", 2)
+        n_samples = wrong_parameter.get("n_samples", 1)
+        keepdims = wrong_parameter.get("keepdims", True)
+        one_dim = wrong_parameter.get("one_dim", False)
+        axes = wrong_parameter.get("axes", 1) if not one_dim else 0
 
-                pytest_id = "reduce_sum_wrong_parameters"
+        pytest_id = "reduce_sum_wrong_parameters"
 
-                pytest_id += (
-                    f"_{wrong_parameter_name}_{wrong_parameter_value}" + "_in_FHE_(VL)" * in_fhe
-                )
+        pytest_id += f"_{wrong_parameter_name}_{wrong_parameter_value}" + "_in_FHE_(VL)"
 
-                parameters = (n_values, n_samples, keepdims, axes, one_dim, in_fhe)
-                yield parameters, pytest_id
+        parameters = (n_values, n_samples, keepdims, axes, one_dim)
+        yield parameters, pytest_id
 
 
 @pytest.mark.parametrize(
-    "n_values, n_samples, keepdims, axes, one_dim, in_fhe",
+    "n_values, n_samples, keepdims, axes, one_dim",
     [
         pytest.param(
             *parameters,
@@ -258,9 +254,9 @@ def generate_wrong_parameters_and_id():
     ],
 )
 def test_reduce_sum_wrong_parameters(
-    n_values, n_samples, keepdims, axes, one_dim, in_fhe, default_configuration
+    n_values, n_samples, keepdims, axes, one_dim, default_configuration
 ):
-    """Test all parameters forbidden for ReduceSum on a torch model."""
+    """Test all parameters forbidden for QuantizedReduceSum on a torch model."""
     n_bits = 5
 
     # Create a Torch module that only sums the elements of an array
@@ -280,7 +276,7 @@ def test_reduce_sum_wrong_parameters(
             numpy_input=numpy_input,
             inputset=inputset,
             n_bits=n_bits,
-            in_fhe=in_fhe,
+            in_fhe=True,
             use_virtual_lib=True,
             configuration=default_configuration,
         )
