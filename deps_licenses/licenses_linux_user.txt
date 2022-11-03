@@ -4,7 +4,7 @@ PyYAML, 6.0, MIT License
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.21.0, BSD-3
 concrete-ml-extensions-brevitas, 0.0.0, UNKNOWN
-concrete-numpy, 0.9.0rc1, BSD License
+concrete-numpy, 0.8.0, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
