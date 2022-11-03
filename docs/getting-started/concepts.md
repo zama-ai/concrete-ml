@@ -21,7 +21,7 @@ You can see some examples of the model development workflow [here](../built-in-m
    - provides a compiled model that can run on the server to perform inference on encrypted data
 1. **Key generation**. The data owner (client) needs to generate a pair of private keys (to encrypt/decrypt their data and results) and a public evaluation key (for the model's FHE evaluation on the server).
 
-You can see an example of the model deployment workflow [here](https://github.com/zama-ai/concrete-ml/blob/release/0.3.x/docs/advanced_examples/ClientServer.ipynb).
+You can see an example of the model deployment workflow [here](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/ClientServer.ipynb).
 
 ## Cryptography concepts
 
