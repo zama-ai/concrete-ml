@@ -38,6 +38,7 @@ def main(file_to_update):
         notebook_path
         for notebooks_path in NOTEBOOKS_DIRS
         for notebook_path in notebooks_path.rglob("*.ipynb")
+        if not str(notebook_path).endswith("-checkpoint.ipynb")
     ]
 
     # Open the file to update
