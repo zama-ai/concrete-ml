@@ -52,7 +52,7 @@ Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 |            macOS (Intel)             |         Yes         |       Yes        |
 | macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |   Coming soon    |
 
-Note: Concrete-ML only supports Python `3.8` and `3.9`. Platforms like [Kaggle](https://www.kaggle.com) or [Google Colab](https://colab.research.google.com) use Python `3.7` which is a deprecated version and is not currently supported in Concrete-ML.
+Note: Concrete-ML only supports Python `3.7`, `3.8` and `3.9`.
 
 ### Docker.
 
