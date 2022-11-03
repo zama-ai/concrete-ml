@@ -15,6 +15,7 @@ from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from ..common.debugging import assert_true
 from ..common.utils import DEFAULT_P_ERROR_PBS, get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
+from ..onnx.onnx_utils import remove_initializer_from_input
 from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedModule
 from . import NumpyModule
 
@@ -291,6 +292,7 @@ def compile_brevitas_qat_model(
         keep_initializers_as_inputs=False,
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
     )
+    onnx_model = remove_initializer_from_input(onnx_model)
 
     # Compile using the ONNX conversion flow, in QAT mode
     q_module_vl = compile_onnx_model(

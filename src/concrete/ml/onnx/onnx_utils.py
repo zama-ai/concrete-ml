@@ -266,3 +266,30 @@ def execute_onnx_with_numpy(
 
         node_results.update(zip(node.output, outputs))
     return tuple(node_results[output.name] for output in graph.output)
+
+
+# https://github.com/microsoft/onnxruntime/blob/fdce4fa6af437b0b822958ab47b3b8f77f9e14ae/tools/python/remove_initializer_from_input.py
+# https://github.com/microsoft/onnxruntime/issues/4033
+def remove_initializer_from_input(model: onnx.ModelProto):  # pragma: no cover
+    """Remove initializers from model inputs.
+
+    In some cases, ONNX initializers may appear, erroneously, as graph inputs.
+    This function searches all model inputs and removes those that are initializers.
+
+    Args:
+        model (onnx.ModelProto): the model to clean
+
+    Returns:
+        onnx.ModelProto: the cleaned model
+    """
+
+    inputs = model.graph.input
+    name_to_input: Dict[str, Any] = {}
+    for model_input in inputs:
+        name_to_input[model_input.name] = model_input
+
+    for initializer in model.graph.initializer:
+        if initializer.name in name_to_input:
+            inputs.remove(name_to_input[initializer.name])
+
+    return model
