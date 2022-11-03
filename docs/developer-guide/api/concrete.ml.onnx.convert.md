@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/src/concrete/ml/onnx/convert.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/convert.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.onnx.convert`
 
@@ -13,7 +13,7 @@ ONNX conversion related code.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/src/concrete/ml/onnx/convert.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/convert.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_and_onnx_model`
 
@@ -31,7 +31,7 @@ Get the numpy equivalent forward of the provided torch Module.
 
 - <b>`torch_module`</b> (torch.nn.Module):  the torch Module for which to get the equivalent numpy  forward.
 - <b>`dummy_input`</b> (Union\[torch.Tensor, Tuple\[torch.Tensor, ...\]\]):  dummy inputs for ONNX export.
-- <b>`output_onnx_file`</b> (Optional\[Union\[Path, str\]\], optional):  Path to save the ONNX file to. Will  use a temp file if not provided.  Defaults to None.
+- <b>`output_onnx_file`</b> (Optional\[Union\[Path, str\]\]):  Path to save the ONNX file to. Will  use a temp file if not provided.  Defaults to None.
 
 **Returns:**
 
@@ -39,7 +39,7 @@ Get the numpy equivalent forward of the provided torch Module.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/src/concrete/ml/onnx/convert.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/convert.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward`
 

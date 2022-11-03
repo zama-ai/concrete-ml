@@ -13,6 +13,7 @@
 - [`concrete.ml.deployment.fhe_client_server`](./concrete.ml.deployment.fhe_client_server.md#module-concretemldeploymentfhe_client_server): APIs for FHE deployment.
 - [`concrete.ml.onnx`](./concrete.ml.onnx.md#module-concretemlonnx): ONNX module.
 - [`concrete.ml.onnx.convert`](./concrete.ml.onnx.convert.md#module-concretemlonnxconvert): ONNX conversion related code.
+- [`concrete.ml.onnx.onnx_impl_utils`](./concrete.ml.onnx.onnx_impl_utils.md#module-concretemlonnxonnx_impl_utils): Utility functions for onnx operator implementations.
 - [`concrete.ml.onnx.onnx_model_manipulations`](./concrete.ml.onnx.onnx_model_manipulations.md#module-concretemlonnxonnx_model_manipulations): Some code to manipulate models.
 - [`concrete.ml.onnx.onnx_utils`](./concrete.ml.onnx.onnx_utils.md#module-concretemlonnxonnx_utils): Utils to interpret an ONNX model with numpy.
 - [`concrete.ml.onnx.ops_impl`](./concrete.ml.onnx.ops_impl.md#module-concretemlonnxops_impl): ONNX ops implementation in python + numpy.
@@ -46,6 +47,7 @@
 - [`fhe_client_server.FHEModelServer`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver): Server API to load and run the FHE circuit.
 - [`ops_impl.ONNXMixedFunction`](./concrete.ml.onnx.ops_impl.md#class-onnxmixedfunction): A mixed quantized-raw valued onnx function.
 - [`base_quantized_op.QuantizedOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedop): Base class for quantized ONNX ops implemented in numpy.
+- [`base_quantized_op.QuantizedOpUnivariateOfEncrypted`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedopunivariateofencrypted): An univariate operator of an encrypted value.
 - [`post_training.ONNXConverter`](./concrete.ml.quantization.post_training.md#class-onnxconverter): Base ONNX to Concrete ML computation graph conversion class.
 - [`post_training.PostTrainingAffineQuantization`](./concrete.ml.quantization.post_training.md#class-posttrainingaffinequantization): Post-training Affine Quantization.
 - [`post_training.PostTrainingQATImporter`](./concrete.ml.quantization.post_training.md#class-posttrainingqatimporter): Converter of Quantization Aware Training networks.
@@ -64,6 +66,7 @@
 - [`quantized_ops.QuantizedErf`](./concrete.ml.quantization.quantized_ops.md#class-quantizederf): Quantized erf op.
 - [`quantized_ops.QuantizedExp`](./concrete.ml.quantization.quantized_ops.md#class-quantizedexp): Quantized Exp op.
 - [`quantized_ops.QuantizedFlatten`](./concrete.ml.quantization.quantized_ops.md#class-quantizedflatten): Quantized flatten for encrypted inputs.
+- [`quantized_ops.QuantizedFloor`](./concrete.ml.quantization.quantized_ops.md#class-quantizedfloor): Quantized Floor op.
 - [`quantized_ops.QuantizedGemm`](./concrete.ml.quantization.quantized_ops.md#class-quantizedgemm): Quantized Gemm op.
 - [`quantized_ops.QuantizedGreater`](./concrete.ml.quantization.quantized_ops.md#class-quantizedgreater): Comparison operator >.
 - [`quantized_ops.QuantizedGreaterOrEqual`](./concrete.ml.quantization.quantized_ops.md#class-quantizedgreaterorequal): Comparison operator >=.
@@ -75,7 +78,10 @@
 - [`quantized_ops.QuantizedLessOrEqual`](./concrete.ml.quantization.quantized_ops.md#class-quantizedlessorequal): Comparison operator \<=.
 - [`quantized_ops.QuantizedLog`](./concrete.ml.quantization.quantized_ops.md#class-quantizedlog): Quantized Log op.
 - [`quantized_ops.QuantizedMatMul`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmatmul): Quantized MatMul op.
+- [`quantized_ops.QuantizedMax`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmax): Quantized Max op.
+- [`quantized_ops.QuantizedMin`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmin): Quantized Min op.
 - [`quantized_ops.QuantizedMul`](./concrete.ml.quantization.quantized_ops.md#class-quantizedmul): Multiplication operator.
+- [`quantized_ops.QuantizedNeg`](./concrete.ml.quantization.quantized_ops.md#class-quantizedneg): Quantized Neg op.
 - [`quantized_ops.QuantizedNot`](./concrete.ml.quantization.quantized_ops.md#class-quantizednot): Quantized Not op.
 - [`quantized_ops.QuantizedOr`](./concrete.ml.quantization.quantized_ops.md#class-quantizedor): Or operator ||.
 - [`quantized_ops.QuantizedPRelu`](./concrete.ml.quantization.quantized_ops.md#class-quantizedprelu): Quantized PRelu op.
@@ -87,6 +93,7 @@
 - [`quantized_ops.QuantizedRound`](./concrete.ml.quantization.quantized_ops.md#class-quantizedround): Quantized round op.
 - [`quantized_ops.QuantizedSelu`](./concrete.ml.quantization.quantized_ops.md#class-quantizedselu): Quantized Selu op.
 - [`quantized_ops.QuantizedSigmoid`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsigmoid): Quantized sigmoid op.
+- [`quantized_ops.QuantizedSign`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsign): Quantized Neg op.
 - [`quantized_ops.QuantizedSoftplus`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsoftplus): Quantized Softplus op.
 - [`quantized_ops.QuantizedSub`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsub): Subtraction operator.
 - [`quantized_ops.QuantizedTanh`](./concrete.ml.quantization.quantized_ops.md#class-quantizedtanh): Quantized Tanh op.
@@ -143,6 +150,10 @@
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
 - [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the numpy equivalent forward of the provided torch Module.
+- [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
+- [`onnx_impl_utils.compute_onnx_pool_padding`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_onnx_pool_padding): Compute any additional padding needed to compute pooling layers.
+- [`onnx_impl_utils.numpy_onnx_pad`](./concrete.ml.onnx.onnx_impl_utils.md#function-numpy_onnx_pad): Pad a tensor according to ONNX spec, using an optional custom pad value.
+- [`onnx_impl_utils.onnx_avgpool_compute_norm_const`](./concrete.ml.onnx.onnx_impl_utils.md#function-onnx_avgpool_compute_norm_const): Compute the average pooling normalization constant.
 - [`onnx_model_manipulations.clean_graph_after_node`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node): Clean the graph of the onnx model by removing nodes after the given node name.
 - [`onnx_model_manipulations.keep_following_outputs_discard_others`](./concrete.ml.onnx.onnx_model_manipulations.md#function-keep_following_outputs_discard_others): Keep the outputs given in outputs_to_keep and remove the others from the model.
 - [`onnx_model_manipulations.remove_identity_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_identity_nodes): Remove identity nodes from a model.
@@ -161,6 +172,7 @@
 - [`ops_impl.numpy_asinh`](./concrete.ml.onnx.ops_impl.md#function-numpy_asinh): Compute sinh in numpy according to ONNX spec.
 - [`ops_impl.numpy_atan`](./concrete.ml.onnx.ops_impl.md#function-numpy_atan): Compute atan in numpy according to ONNX spec.
 - [`ops_impl.numpy_atanh`](./concrete.ml.onnx.ops_impl.md#function-numpy_atanh): Compute atanh in numpy according to ONNX spec.
+- [`ops_impl.numpy_avgpool`](./concrete.ml.onnx.ops_impl.md#function-numpy_avgpool): Compute Average Pooling using Torch.
 - [`ops_impl.numpy_batchnorm`](./concrete.ml.onnx.ops_impl.md#function-numpy_batchnorm): Compute the batch normalization of the input tensor.
 - [`ops_impl.numpy_cast`](./concrete.ml.onnx.ops_impl.md#function-numpy_cast): Execute ONNX cast in Numpy.
 - [`ops_impl.numpy_celu`](./concrete.ml.onnx.ops_impl.md#function-numpy_celu): Compute celu in numpy according to ONNX spec.
@@ -173,6 +185,7 @@
 - [`ops_impl.numpy_erf`](./concrete.ml.onnx.ops_impl.md#function-numpy_erf): Compute erf in numpy according to ONNX spec.
 - [`ops_impl.numpy_exp`](./concrete.ml.onnx.ops_impl.md#function-numpy_exp): Compute exponential in numpy according to ONNX spec.
 - [`ops_impl.numpy_flatten`](./concrete.ml.onnx.ops_impl.md#function-numpy_flatten): Flatten a tensor into a 2d array.
+- [`ops_impl.numpy_floor`](./concrete.ml.onnx.ops_impl.md#function-numpy_floor): Compute Floor in numpy according to ONNX spec.
 - [`ops_impl.numpy_greater`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater): Compute greater in numpy according to ONNX spec.
 - [`ops_impl.numpy_greater_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_float): Compute greater in numpy according to ONNX spec and cast outputs to floats.
 - [`ops_impl.numpy_greater_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal): Compute greater or equal in numpy according to ONNX spec.
@@ -187,7 +200,10 @@
 - [`ops_impl.numpy_less_or_equal_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_less_or_equal_float): Compute less or equal in numpy according to ONNX spec and cast outputs to floats.
 - [`ops_impl.numpy_log`](./concrete.ml.onnx.ops_impl.md#function-numpy_log): Compute log in numpy according to ONNX spec.
 - [`ops_impl.numpy_matmul`](./concrete.ml.onnx.ops_impl.md#function-numpy_matmul): Compute matmul in numpy according to ONNX spec.
+- [`ops_impl.numpy_max`](./concrete.ml.onnx.ops_impl.md#function-numpy_max): Compute Max in numpy according to ONNX spec.
+- [`ops_impl.numpy_min`](./concrete.ml.onnx.ops_impl.md#function-numpy_min): Compute Min in numpy according to ONNX spec.
 - [`ops_impl.numpy_mul`](./concrete.ml.onnx.ops_impl.md#function-numpy_mul): Compute mul in numpy according to ONNX spec.
+- [`ops_impl.numpy_neg`](./concrete.ml.onnx.ops_impl.md#function-numpy_neg): Compute Negative in numpy according to ONNX spec.
 - [`ops_impl.numpy_not`](./concrete.ml.onnx.ops_impl.md#function-numpy_not): Compute not in numpy according to ONNX spec.
 - [`ops_impl.numpy_not_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_not_float): Compute not in numpy according to ONNX spec and cast outputs to floats.
 - [`ops_impl.numpy_or`](./concrete.ml.onnx.ops_impl.md#function-numpy_or): Compute or in numpy according to ONNX spec.
@@ -197,6 +213,7 @@
 - [`ops_impl.numpy_round`](./concrete.ml.onnx.ops_impl.md#function-numpy_round): Compute round in numpy according to ONNX spec.
 - [`ops_impl.numpy_selu`](./concrete.ml.onnx.ops_impl.md#function-numpy_selu): Compute selu in numpy according to ONNX spec.
 - [`ops_impl.numpy_sigmoid`](./concrete.ml.onnx.ops_impl.md#function-numpy_sigmoid): Compute sigmoid in numpy according to ONNX spec.
+- [`ops_impl.numpy_sign`](./concrete.ml.onnx.ops_impl.md#function-numpy_sign): Compute Sign in numpy according to ONNX spec.
 - [`ops_impl.numpy_sin`](./concrete.ml.onnx.ops_impl.md#function-numpy_sin): Compute sin in numpy according to ONNX spec.
 - [`ops_impl.numpy_sinh`](./concrete.ml.onnx.ops_impl.md#function-numpy_sinh): Compute sinh in numpy according to ONNX spec.
 - [`ops_impl.numpy_softmax`](./concrete.ml.onnx.ops_impl.md#function-numpy_softmax): Compute softmax in numpy according to ONNX spec.
@@ -209,7 +226,6 @@
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
-- [`ops_impl.torch_avgpool`](./concrete.ml.onnx.ops_impl.md#function-torch_avgpool): Compute Average Pooling using Torch.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a numpy functions using Hummingbird.
 - [`compile.compile_brevitas_qat_model`](./concrete.ml.torch.compile.md#function-compile_brevitas_qat_model): Compile a Brevitas Quantization Aware Training model.
