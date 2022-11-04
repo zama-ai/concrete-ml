@@ -324,7 +324,7 @@ docs: clean_docs
 apidocs:
 	poetry run lazydocs --output-path="$(APIDOCS_OUTPUT)" \
 		--overview-file="README.md" \
-		--src-base-url="https://github.com/zama-ai/concrete-ml-internal/tree/main/" \
+		--src-base-url="https://github.com/zama-ai/concrete-ml/tree/release/0.5.x" \
 		--no-watermark \
 		concrete.ml
 	"$(MAKE)" mdformat

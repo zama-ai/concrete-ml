@@ -14,7 +14,7 @@ The table below summarizes the current compatibility:
 ## Example
 
 The following example considers a `LogisticRegression` model on a simple classification problem.
-A more advanced example can be found in the [Titanic use case notebook](https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/titanic/KaggleTitanic.ipynb), which considers a `XGBClassifier`.
+A more advanced example can be found in the [Titanic use case notebook](https://github.com/zama-ai/concrete-ml/tree/release/0.5.x/use_case_examples/titanic/KaggleTitanic.ipynb), which considers a `XGBClassifier`.
 
 ```python
 import numpy as np

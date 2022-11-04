@@ -70,11 +70,11 @@ Concrete-ML is built on top of Zama's Concrete framework. It uses [Concrete-Nump
 
 Various tutorials are proposed for the [built-in models](built-in-models/ml_examples.md) and for [deep learning](deep-learning/examples.md). In addition, we also list standalone use-cases:
 
-- [MNIST](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/use_case_examples/mnist/README.md): a Python and notebook showing a Quantization Aware Training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
+- [MNIST](https://github.com/zama-ai/concrete-ml/blob/release/0.5.x/use_case_examples/mnist/README.md): a Python and notebook showing a Quantization Aware Training (done with [Brevitas](https://github.com/Xilinx/brevitas) and following constraints of the package) and its corresponding use in Concrete-ML.
 
-- [Titanic](https://github.com/zama-ai/concrete-ml-internal/tree/1969-concrete-ml-041/use_case_examples/titanic/KaggleTitanic.ipynb): a notebook, which gives a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Done with XGBoost from Concrete-ML. It comes as a companion of [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
+- [Titanic](https://github.com/zama-ai/concrete-ml/tree/release/0.5.x/use_case_examples/titanic/KaggleTitanic.ipynb): a notebook, which gives a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Done with XGBoost from Concrete-ML. It comes as a companion of [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 
-- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml-internal/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral, in FHE of course! The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on HuggingFace.
+- [Encrypted sentiment analysis](https://github.com/zama-ai/concrete-ml/tree/release/0.5.x/use_case_examples/encrypted_sentiment_analysis/README.md): a gradio demo which predicts if a tweet / short message is positive, negative or neutral, in FHE of course! The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on HuggingFace.
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 

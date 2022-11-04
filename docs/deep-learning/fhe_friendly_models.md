@@ -1,6 +1,6 @@
 # Step-by-Step Guide
 
-This section includes a complete example of converting a neural network to Quantization Aware Training (QAT). This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world data-set, please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/use_case_examples/mnist/mnist_in_fhe.ipynb).
+This section includes a complete example of converting a neural network to Quantization Aware Training (QAT). This tutorial uses PyTorch and Brevitas to train a simple network on a synthetic data-set. You can find the demo of the final network in the [custom-model with quantization aware training demo](https://github.com/zama-ai/concrete-ml/blob/release/0.5.x/docs/advanced_examples/QuantizationAwareTraining.ipynb). To see how to apply these network design principles for a real-world data-set, please see the [MNIST use-case example](https://github.com/zama-ai/concrete-ml/blob/release/0.5.x/use_case_examples/mnist/mnist_in_fhe.ipynb).
 
 For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 

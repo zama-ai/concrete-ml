@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/read-documentation-yellow?style=flat-square">
   </a>
 <!-- Link to tutorials badge using shields.io -->
-  <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.3.x/docs/advanced_examples">
+  <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.5.x/docs/advanced_examples">
     <img src="https://img.shields.io/badge/tutorials-and%20demos-orange?style=flat-square">
   </a>
 <!-- Community forum badge using shields.io -->
