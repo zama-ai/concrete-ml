@@ -12,15 +12,15 @@ on:
         - DecisionTreeClassifier \n
         - FullyConnectedNeuralNetwork \n
         - GLMComparison \n
+        - KaggleTitanic \n
         - LinearRegression \n
         - LogisticRegression \n
+        - mnist_in_fhe \n
         - PoissonRegression \n
         - QuantizationAwareTraining \n
+        - SentimentClassification \n
         - XGBClassifier \n
         - XGBRegressor \n
-        - SentimentClassification \n
-        - mnist_in_fhe \n
-        - KaggleTitanic \n
         "
         # --- refresh_notebooks_list.py: refresh list of notebooks currently available [END] ---
         required: true
@@ -39,15 +39,15 @@ env:
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
+  KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
+  mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
+  SentimentClassification: "use_case_examples/encrypted_sentiment_analysis/SentimentClassification.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
-  SentimentClassification: "use_case_examples/encrypted_sentiment_analysis/SentimentClassification.ipynb" 
-  mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
-  KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
 
 jobs:
@@ -93,6 +93,8 @@ jobs:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
       NOTEBOOK_NAME: ${{ github.event.inputs.notebook }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
 
     steps:
       - name: Add masks
@@ -123,6 +125,16 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
+      - name: Download Sentiment classification datasets
+        if: ${{ env.NOTEBOOK_NAME == 'SentimentClassification' }}
+        run: |
+          cd ./use_case_examples/encrypted_sentiment_analysis && ./download_data.sh
+
+      - name: Download Titanic datasets
+        if: ${{ env.NOTEBOOK_NAME == 'KaggleTitanic' }}
+        run: |
+          cd ./use_case_examples/titanic && ./download_data.sh
+          
       - name: Refresh One Notebook
         run: |
           make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"

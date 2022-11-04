@@ -41,6 +41,9 @@ def main(file_to_update):
         if not str(notebook_path).endswith("-checkpoint.ipynb")
     ]
 
+    # Sort the paths by name for better display
+    notebook_paths.sort(key=lambda path: path.stem.lower())
+
     # Open the file to update
     with open(file_to_update, "r", encoding="utf-8") as file:
         lines = file.readlines()
@@ -75,8 +78,7 @@ def main(file_to_update):
             # Append the complete list of current available notebooks with a specific format
             newlines.append(TAB + 'description: "Notebook file name only in: ' + r"\n" + "\n")
             newlines.extend(
-                TAB + f"- {notebook_path.stem} " + r"\n" + "\n"
-                for notebook_path in sorted(notebook_paths)
+                TAB + f"- {notebook_path.stem} " + r"\n" + "\n" for notebook_path in notebook_paths
             )
             newlines.append(TAB + '"\n')
 
@@ -103,7 +105,7 @@ def main(file_to_update):
             # Append the complete list of current available notebook paths with a specific format
             newlines.extend(
                 SMALL_TAB + f"{notebook_path.stem}: " + f'"{notebook_path}" \n'
-                for notebook_path in sorted(notebook_paths)
+                for notebook_path in notebook_paths
             )
 
         # Else, if the current line is a header end, stop the update

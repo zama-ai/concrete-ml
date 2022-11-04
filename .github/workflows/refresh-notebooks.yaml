@@ -51,6 +51,8 @@ jobs:
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
 
     steps:
       - name: Add masks
@@ -80,6 +82,11 @@ jobs:
         run: |
           ./script/make_utils/setup_os_deps.sh
           make setup_env
+
+      - name: Download use case examples datasets
+        run: |
+          cd ./use_case_examples/encrypted_sentiment_analysis && ./download_data.sh && cd -
+          cd ./use_case_examples/titanic && ./download_data.sh
 
       - name: Refresh Notebooks
         run: |
