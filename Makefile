@@ -322,6 +322,7 @@ docs: clean_docs
 
 .PHONY: apidocs # Builds API docs
 apidocs:
+	@# At release time, one needs to change --src-base-url (to be a public release/A.B.x branch)
 	poetry run lazydocs --output-path="$(APIDOCS_OUTPUT)" \
 		--overview-file="README.md" \
 		--src-base-url="https://github.com/zama-ai/concrete-ml-internal/tree/main/" \
@@ -331,7 +332,7 @@ apidocs:
 
 .PHONY: check_apidocs # Check that API docs are ok and
 check_apidocs:
-	# Check nothing has changed
+	@# Check nothing has changed
 	./script/doc_utils/check_apidocs.sh
 
 .PHONY: clean_docs # Clean docs build directory
@@ -664,13 +665,12 @@ check_links:
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal
 
 .PHONY: check_links_after_release # Check links in the documentation as if we were users
-check_links_after_release:
+check_links_after_release: docs
 	@# The difference between check_links_after_release and check_links is:
 	@#	 - use check_links during dev time: we have --ignore to accept files which are not already
 	@#	   in the public repo
 	@#	 - at release time, use check_links_after_release, to check that the doc or public
 	@#	   repository only use public links
-	@# Note that one should recompile the docs before with `make docs` to check everything
 
 	@# Because of issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
