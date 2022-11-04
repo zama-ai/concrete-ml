@@ -670,6 +670,7 @@ check_links_after_release:
 	@#	   in the public repo
 	@#	 - at release time, use check_links_after_release, to check that the doc or public
 	@#	   repository only use public links
+	@# Note that one should recompile the docs before with `make docs` to check everything
 
 	@# Because of issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
