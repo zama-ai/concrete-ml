@@ -38,6 +38,12 @@ do
    shift
 done
 
+# Temp file with CN version inside. We can't have a dynamic TMP_FILE_CN_VERSION filename, since it
+# changes the md5
+TMP_FILE_CN_VERSION="/tmp/cn_version.txt"
+rm -f TMP_FILE_CN_VERSION
+echo "${CN_VERSION}" > ${TMP_FILE_CN_VERSION}
+
 UNAME=$(uname)
 if [ "$UNAME" == "Darwin" ]
 then
@@ -63,7 +69,7 @@ then
 
     # If the dependencies have not changed, don't do anything
     MD5_OLD_DEPENDENCIES=$(cat ${LICENSES_FILENAME}.md5)
-    MD5_NEW_DEPENDENCIES=$(openssl md5 poetry.lock)
+    MD5_NEW_DEPENDENCIES=$(openssl md5 poetry.lock ${TMP_FILE_CN_VERSION} | sed -e "s@(stdin)= @@g" | openssl md5 | sed -e "s@(stdin)= @@g")
 
     echo "MD5 of the poetry.lock for which dependencies have been listed: ${MD5_OLD_DEPENDENCIES}"
     echo "MD5 of the current poetry.lock:                                 ${MD5_NEW_DEPENDENCIES}"
@@ -165,7 +171,7 @@ then
         echo "Success: no update in $LICENSES_FILENAME"
     else
         # Update the .md5 files
-        openssl md5 poetry.lock > ${LICENSES_FILENAME}.md5
+        openssl md5 poetry.lock ${TMP_FILE_CN_VERSION} | sed -e "s@(stdin)= @@g" | openssl md5 | sed -e "s@(stdin)= @@g" > ${LICENSES_FILENAME}.md5
     fi
 fi
 
