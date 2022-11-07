@@ -285,7 +285,15 @@ def compile_brevitas_qat_model(
     use_tempfile: bool = output_onnx_file is None
 
     # Brevitas to ONNX
-    onnx_model = BrevitasONNXManager.export(
+    exporter = BrevitasONNXManager()
+    # Here we add a "eliminate_nop_pad" optimization step for onnxoptimizer
+    # https://github.com/onnx/optimizer/blob/master/onnxoptimizer/passes/eliminate_nop_pad.h#L5
+    # It deletes 0-values padding.
+    # This is needed because AvgPool2d adds a 0-Pad operation that then breaks the compilation
+    # A list of steps that can be added can be found in the following link
+    # https://github.com/onnx/optimizer/blob/master/onnxoptimizer/pass_registry.h
+    exporter.onnx_passes.append("eliminate_nop_pad")
+    onnx_model = exporter.export(
         torch_model,
         input_shape=dummy_input_for_tracing[0].shape,
         export_path=str(output_onnx_file_path),
