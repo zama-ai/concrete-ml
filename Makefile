@@ -422,6 +422,10 @@ upgrade_py_deps:
 pytest_codeblocks:
 	./script/make_utils/pytest_codeblocks.sh
 
+.PHONY: pytest_codeblocks_pip_cml # Test code blocks with pypi Concrete-ML
+pytest_codeblocks_pip_cml:
+	./script/make_utils/pytest_codeblocks_pip_cml.sh
+
 .PHONY: pytest_codeblocks_one # Test code blocks using pytest in one file (TEST)
 pytest_codeblocks_one:
 	./script/make_utils/pytest_codeblocks.sh --file "$${TEST}"
