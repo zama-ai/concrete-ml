@@ -165,12 +165,19 @@ def remove_node_types(onnx_model: onnx.ModelProto, op_types_to_remove: List[str]
     simplify_onnx_model(onnx_model)
 
 
-def clean_graph_after_node(onnx_model: onnx.ModelProto, node_name: str):
+def clean_graph_after_node_name(
+    onnx_model: onnx.ModelProto, node_name: str, fail_if_not_found: bool = True
+):
     """Clean the graph of the onnx model by removing nodes after the given node name.
 
     Args:
         onnx_model (onnx.ModelProto): The onnx model.
         node_name (str): The node's name whose following nodes will be removed.
+        fail_if_not_found (bool): If true, abort if the node name is not found
+
+    Raises:
+        ValueError: if the node name is not found and if fail_if_not_found is set
+
     """
     nodes_to_remove = []
     output_to_follow = "variable"
@@ -197,6 +204,54 @@ def clean_graph_after_node(onnx_model: onnx.ModelProto, node_name: str):
     if op_reached:
         for node in nodes_to_remove:
             onnx_model.graph.node.remove(node)
+    elif fail_if_not_found:  # pragma: no cover
+        raise ValueError(f"Error, can't find {node_name}")  # pragma: no cover
+
+    # Keep the output node
+    keep_following_outputs_discard_others(onnx_model, [output_to_follow])
+
+
+def clean_graph_after_node_op_type(
+    onnx_model: onnx.ModelProto, node_op_type: str, fail_if_not_found: bool = True
+):
+    """Clean the graph of the onnx model by removing nodes after the given node type.
+
+    Args:
+        onnx_model (onnx.ModelProto): The onnx model.
+        node_op_type (str): The node's op_type whose following nodes will be removed.
+        fail_if_not_found (bool): If true, abort if the node op_type is not found
+
+    Raises:
+        ValueError: if the node op_type is not found and if fail_if_not_found is set
+
+    """
+    nodes_to_remove = []
+    output_to_follow = "variable"
+    op_reached = False
+
+    # Find nodes to remove
+    for node in onnx_model.graph.node:
+
+        # If the operator has previously been reached, store the node
+        if op_reached:
+            nodes_to_remove.append(node)
+
+        # Else, if the current node represents the operator, retrieve its output node
+        elif node.op_type == node_op_type:
+            op_reached = True
+
+            # Create output node
+            onnx_model.graph.output[0].CopyFrom(
+                onnx.helper.make_tensor_value_info(node.output[0], onnx.TensorProto.FLOAT, [2])
+            )
+            output_to_follow = node.output[0]
+
+    # Once the graph has been covered and a operator was found, remove its its following nodes
+    if op_reached:
+        for node in nodes_to_remove:
+            onnx_model.graph.node.remove(node)
+    elif fail_if_not_found:  # pragma: no cover
+        raise ValueError(f"Error, can't find {node_op_type}")  # pragma: no cover
 
     # Keep the output node
     keep_following_outputs_discard_others(onnx_model, [output_to_follow])
