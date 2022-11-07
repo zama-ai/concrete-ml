@@ -15,6 +15,8 @@ from concrete.numpy.compilation import (Circuit, Compiler, Configuration,
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from sklearn.datasets import make_classification, make_regression
 
+from concrete.numpy import Graph as CNPGraph
+
 
 def pytest_addoption(parser):
     """Options for pytest"""
@@ -329,6 +331,12 @@ def check_is_good_execution_impl(
         f"Last function result:\n{last_function_result}"
     )
 
+def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
+    succ = list(graph.graph.successors(graph.input_nodes[0]))
+    if any(s.converted_to_table_lookup for s in succ):
+        raise AssertionError(
+            f"Graph contains a TLU on an input node"
+        )
 
 @pytest.fixture
 def check_is_good_execution_for_quantized_models():
@@ -342,6 +350,10 @@ def check_is_good_execution():
 
     return check_is_good_execution_impl
 
+@pytest.fixture
+def check_graph_input_has_no_tlu():
+
+    return check_graph_input_has_no_tlu_impl
 
 def check_array_equality_impl(actual: Any, expected: Any, verbose: bool = True):
     """Assert that `actual` is equal to `expected`."""

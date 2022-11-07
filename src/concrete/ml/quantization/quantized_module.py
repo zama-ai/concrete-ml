@@ -299,15 +299,7 @@ class QuantizedModule:
 
         qvalues = tuple(self.input_quantizers[idx].quant(values[idx]) for idx in range(len(values)))
 
-        qvalues_as_uint32 = tuple(qvalue.astype(numpy.uint32) for qvalue in qvalues)
-        assert_true(
-            all(
-                numpy.array_equal(qval_uint32, qval)
-                for qval_uint32, qval in zip(qvalues_as_uint32, qvalues)
-            ),
-            on_error_msg="Input quantizer does not give values within uint32.",
-        )
-        return qvalues_as_uint32[0] if len(qvalues_as_uint32) == 1 else qvalues_as_uint32
+        return qvalues[0] if len(qvalues) == 1 else qvalues
 
     def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
         """Take the last layer q_out and use its dequant function.

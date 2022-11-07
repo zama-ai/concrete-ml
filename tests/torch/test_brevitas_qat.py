@@ -122,7 +122,9 @@ class TinyCNN(nn.Module):
 
 
 @pytest.mark.parametrize("qat_bits", [3, 7])
-def test_brevitas_tinymnist_cnn(qat_bits):  # pylint: disable=too-many-statements
+def test_brevitas_tinymnist_cnn(
+    qat_bits, check_graph_input_has_no_tlu
+):  # pylint: disable=too-many-statements
     """Train, execute and test a QAT CNN on a small version of MNIST."""
 
     # And some helpers for visualization.
@@ -258,3 +260,5 @@ def test_brevitas_tinymnist_cnn(qat_bits):  # pylint: disable=too-many-statement
     # Accept, at most, 5 pct points accuracy difference. This can be due to the 7b input
     # output quantization. VL accuracy can be larger than fp32 accuracy though.
     assert vl_acc - torch_acc >= -0.05
+
+    check_graph_input_has_no_tlu(q_module_vl.fhe_circuit.graph)

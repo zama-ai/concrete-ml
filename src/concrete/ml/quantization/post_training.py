@@ -1,7 +1,7 @@
 """Post Training Quantization methods."""
 
 from abc import abstractmethod
-from typing import Dict, Set, Tuple, Type, Union, cast
+from typing import Dict, List, Set, Tuple, Type, Union, cast
 
 import numpy
 import onnx
@@ -12,7 +12,8 @@ from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_name
 from ..torch.numpy_module import NumpyModule
 from .base_quantized_op import DEFAULT_MODEL_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
 from .quantized_module import QuantizedModule
-from .quantizers import QuantizationOptions, QuantizedArray
+from .quantized_ops import QuantizedBrevitasQuant
+from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
 
 class ONNXConverter:
@@ -395,20 +396,97 @@ class ONNXConverter:
             self.quant_ops_dict,
         )
 
-        q_input = tuple(
-            QuantizedArray(self.n_bits_model_inputs, val, is_signed=False).quantizer
-            for val in calibration_data
-        )
+        self._process_input_quantizers(quantized_module, calibration_data)
 
-        # Note that the input quantizer can not be signed
-        # since Concrete Numpy does not yet support signed inputs
-        assert_true(
-            all(not q.is_signed for q in q_input),
-            "The QuantizedModule input " "quantizer can not be signed",
-        )
-
-        quantized_module.set_inputs_quantization_parameters(*q_input)
         return quantized_module
+
+    def _process_input_quantizers(
+        self, quantized_module: QuantizedModule, calibration_data: Tuple[numpy.ndarray, ...]
+    ):
+        """Determine the quantizers for a quantized module.
+
+        Args:
+            quantized_module (QuantizedModule): the quantized module containing the ops of the model
+            calibration_data: calibration data for each input tensor
+        """
+
+        # Create several lists:
+        # - a list of layers that use each input directly (i.e. have this input as an integer input)
+        # - a list of quantizers that are applied to each input node
+        # - a list of inputs that have TLUs, for which these TLUs can not be removed
+        layer_using_input: Dict[int, List[QuantizedOp]] = {}
+        quantizers_for_input: Dict[int, QuantizedBrevitasQuant] = {}
+        inputs_not_optimizable: List[int] = []
+
+        # Determine, for each input, whether it is used by a single non-fusable layer
+        # and, optionally, if it is processed by a QAT quantizer in the process
+
+        # If the input is used by a fusable op directly, or goes through a uniform QAT quantizer
+        # then we can use the QAT quantizer's or fusable-op's quantizer in the clear, instead
+        # of relying on default quantization parameters in the clear (using model_inputs bits)
+        for inp_idx, graph_input in enumerate(self.numpy_model.onnx_model.graph.input):
+            layer_using_input[inp_idx] = []
+            for _, q_op in quantized_module.quant_layers_dict.values():
+                # If this op does not use this input (irrespective of univariate fusable
+                # processing it may have gone through), ignore it
+                assert isinstance(q_op, QuantizedOp)
+                if graph_input.name not in q_op.int_input_names:
+                    continue
+
+                # This op uses this input (or a univariate transform of it)
+                if not q_op.can_fuse():
+                    # If this is a non-fusable op working on integers, store it
+                    # If there is no QAT quantizer on this input, we'll use the op's
+                    # input quantizer as the clear-input quantizer
+                    layer_using_input[inp_idx].append(q_op)
+                elif isinstance(q_op, QuantizedBrevitasQuant):
+                    # If this is a fusable op that is a QAT quantizer, store it
+                    # We'll use this quantizer's parameters in the clear-input quantizer
+                    quantizers_for_input[inp_idx] = q_op
+                else:
+                    # If the input is processed by some other type of univariate layer
+                    # we can not optimize out the TLUs on this op by moving them in the clear
+                    inputs_not_optimizable.append(inp_idx)
+
+            if len(layer_using_input[inp_idx]) > 1:
+                inputs_not_optimizable.append(inp_idx)
+
+        # The input quantizers which we can extract from the graph
+        # are:
+        # - in quantizers_for_input : QAT quantizers applied directly to inputs
+        # - in layer_using_input : quantizers taken from non-fusable ops
+        # Now set the input quantizers based on the quantizers that can be extracted from the graph
+        q_input_list = []
+        for inp_idx, val in enumerate(calibration_data):
+            if inp_idx in inputs_not_optimizable:
+                # If an input is not optimizable, use the "model_inputs" bits set by the user
+                q_input_list.append(
+                    QuantizedArray(self.n_bits_model_inputs, val, is_signed=True).quantizer
+                )
+            elif inp_idx in quantizers_for_input:
+                # If a QAT quantizer is applied to this input, use its output params that
+                # are determined from the ONNX file
+                opts = quantizers_for_input[inp_idx].input_quant_opts
+                # Set the same options as those produced by a QuantizedBrevitasQuant op
+                opts.is_qat = True
+                opts.is_precomputed_qat = True
+                q_input_list.append(
+                    UniformQuantizer(
+                        opts,
+                        quantizers_for_input[inp_idx].output_quant_stats,
+                        quantizers_for_input[inp_idx].output_quant_params,
+                    )
+                )
+            else:
+                # If the input is injected directly into a non-fusable op (conv, etc...),
+                # use that op's quantization options (ensures matching options that allows
+                # the optimization to take place)
+                assert_true(len(layer_using_input[inp_idx]) == 1)
+                opts = layer_using_input[inp_idx][0].input_quant_opts
+                q_input_list.append(QuantizedArray(opts.n_bits, val, options=opts).quantizer)
+
+        q_input = tuple(q_input_list)
+        quantized_module.set_inputs_quantization_parameters(*q_input)
 
 
 class PostTrainingAffineQuantization(ONNXConverter):
@@ -478,7 +556,11 @@ class PostTrainingAffineQuantization(ONNXConverter):
             n_bits = self.n_bits_op_inputs
 
         # Create new calibration data (output of the previous layer)
-        q_calibration_data = (QuantizedArray(n_bits, data) for data in calibration_data)
+        # Use the op's input options (thus behavior in calibration is the same as in compilation)
+        q_calibration_data = (
+            QuantizedArray(n_bits, data, True, options=quantized_op.input_quant_opts)
+            for data in calibration_data
+        )
 
         # Dequantize to have the value in clear and ready for next calibration
         return quantized_op(*q_calibration_data).dequant()

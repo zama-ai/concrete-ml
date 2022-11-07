@@ -89,9 +89,15 @@ def execute_reduce_sum(
         # Check that no error comes from the quantization process
         quantizer = quantized_numpy_module.input_quantizers[0]
 
-        assert quantizer.scale == 1.0 and quantizer.zero_point == 2 ** (
-            n_bits - 1
-        ), "Wrong quantization of inputs: should be 'one to one'."
+        assert quantizer.scale == 1.0, "Wrong quantization of inputs: should be 'one to one'."
+        if quantizer.is_signed:
+            assert (
+                quantizer.zero_point == 0
+            ), "Wrong quantization of inputs: should be 'one to one'."
+        else:
+            assert quantizer.zero_point == 2 ** (
+                n_bits - 1
+            ), "Wrong quantization of inputs: should be 'one to one'."
 
         # Quantize the input
         q_input = quantized_numpy_module.quantize_input(numpy_input)

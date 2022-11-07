@@ -1396,6 +1396,33 @@ class QuantizedBrevitasQuant(QuantizedOp):
             "Zero Point of Brevitas Quant op must be float",
         )
 
+    def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
+        """Create corresponding QuantizedArray for the output of Quantization function.
+
+        Args:
+            *inputs (numpy.ndarray): Calibration sample inputs.
+
+        Returns:
+            numpy.ndarray: the output values for the provided calibration samples.
+        """
+
+        result = super().calibrate(*inputs)
+
+        # Override the output quantization params with
+        # those stored in the ONNX model. This allows the quantized module to
+        # pass these parameters to the module's input quantizer
+
+        # for mypy: this is set by the base class calibration
+        assert self.output_quant_params is not None
+
+        offset = self.output_quant_params.offset
+        self.output_quant_params = UniformQuantizationParameters()
+        self.output_quant_params.scale = self.constant_inputs[1]
+        self.output_quant_params.zero_point = self.constant_inputs[2]
+        self.output_quant_params.offset = offset
+
+        return result
+
     def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
         """Quantize values.
 
@@ -1423,6 +1450,17 @@ class QuantizedBrevitasQuant(QuantizedOp):
         quant_params = UniformQuantizationParameters()
         quant_params.scale = prepared_inputs[1]
         quant_params.zero_point = prepared_inputs[2]
+
+        assert len(q_inputs) >= 1
+
+        # Pass-through when the input is already quantized in the manner that this
+        # layer wants to quantize it. This is done to optimize out the model input TLU
+        if (
+            q_inputs[0].quantizer.quant_options.is_equal(self.input_quant_opts)
+            and q_inputs[0].quantizer.quant_params.scale == quant_params.scale
+            and q_inputs[0].quantizer.quant_params.zero_point == quant_params.zero_point
+        ):
+            return q_inputs[0]
 
         # FIXME: figure out if this check is needed
         # the code seems to run with narrow == 1

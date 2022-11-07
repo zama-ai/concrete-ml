@@ -1026,10 +1026,13 @@ def test_brevitas_quant(check_r2_score):
         3: 7,
     }
 
+    # Verify that "signed" is checked
     with pytest.raises(AssertionError):
         QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="ROUND", signed=5, narrow=0)
-        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="FLOOR", signed=5, narrow=0)
-        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="ROUND", signed=1, narrow=1)
+
+    # Verify that "rounding_mode" is checked
+    with pytest.raises(AssertionError):
+        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="FLOOR", signed=1, narrow=0)
 
     x = numpy.random.randn(100)
     q_data = QuantizedArray(7, x, is_signed=True)

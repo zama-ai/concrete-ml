@@ -251,6 +251,13 @@ class QuantizedTorchEstimatorMixin:
             p_error=p_error,
         )
 
+        succ = list(circuit.graph.graph.successors(circuit.graph.input_nodes[0]))
+        assert_true(
+            not any(s.converted_to_table_lookup for s in succ),
+            "The compiled circuit"
+            " applies lookup tables on input nodes, please check the underlying nn.Module.",
+        )
+
         return circuit
 
     def fit(self, X, y, **fit_params):
@@ -1202,7 +1209,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             # Create a numpy array with the expected shape: (n_samples, n_classes)
             for i, qX_i in enumerate(qX):
                 fhe_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(
-                    qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
+                    qX_i.reshape(1, qX_i.shape[0])
                 )
                 y_preds[i, :] = fhe_pred[0]
             # Convert to numpy array

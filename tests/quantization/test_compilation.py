@@ -37,6 +37,21 @@ class FC(nn.Module):
         return out
 
 
+class MultiOpOnSingleInputConvNN(nn.Module):
+    """Network that applies two quantized operations on a single input."""
+
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 8, 3)
+        self.conv2 = nn.Conv2d(1, 8, 3)
+
+    def forward(self, x):
+        """Forward pass."""
+        layer1_out = torch.relu(self.conv1(x))
+        layer2_out = torch.relu(self.conv2(x))
+        return layer1_out + layer2_out
+
+
 class FCSeq(nn.Module):
     """Torch model that should generate MatMul->Add ONNX patterns
 
@@ -145,6 +160,7 @@ def test_quantized_module_compilation(
     n_bits,
     use_virtual_lib,
     is_vl_only_option,
+    check_graph_input_has_no_tlu,
 ):
     """Test a neural network compilation for FHE inference."""
     if not use_virtual_lib and is_vl_only_option:
@@ -188,10 +204,12 @@ def test_quantized_module_compilation(
         check_is_good_execution(
             fhe_circuit=quantized_model.forward_fhe,
             function=quantized_model.forward,
-            args=[x_q.astype(numpy.uint8)],
+            args=[x_q],
             check_function=numpy.array_equal,
             verbose=False,
         )
+
+    check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
 
 
 @pytest.mark.parametrize(
@@ -215,6 +233,7 @@ def test_quantized_cnn_compilation(
     activation,
     default_configuration,
     check_is_good_execution,
+    check_graph_input_has_no_tlu,
     use_virtual_lib,
     is_vl_only_option,
 ):
@@ -232,12 +251,14 @@ def test_quantized_cnn_compilation(
 
     # Define the torch model
     torch_cnn_model = model(n_classes, activation)
+
     # Create random inputs with 1 channel each
     numpy_input = numpy.random.uniform(-1, 1, size=(1, 1, *input_shape))
     tensor_input = torch.from_numpy(numpy_input).float()
 
     # Create corresponding numpy model
     torch_cnn_model = NumpyModule(torch_cnn_model, tensor_input)
+
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(n_bits, torch_cnn_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
@@ -257,10 +278,12 @@ def test_quantized_cnn_compilation(
         check_is_good_execution(
             fhe_circuit=quantized_model.forward_fhe,
             function=quantized_model.forward,
-            args=[x_q.astype(numpy.uint8)],
+            args=[x_q],
             check_function=numpy.array_equal,
             verbose=False,
         )
+
+    check_graph_input_has_no_tlu(quantized_model.forward_fhe.graph)
 
 
 class NumpyModuleTest(NumpyModule):
@@ -408,3 +431,33 @@ def test_post_training_quantization_constant_folding():
     q_gemm = post_training_quant.quant_ops_dict[model_output_name][1]
     assert isinstance(q_gemm, QuantizedGemm)
     assert numpy.array_equal(q_gemm.constant_inputs[1].values, expected_constant)
+
+
+def test_compile_multi_input_nn_with_input_tlus(
+    default_configuration, check_graph_input_has_no_tlu
+):
+    """Checks that there are input TLUs on a network for which input TLUs can not be removed."""
+
+    torch_cnn_model = MultiOpOnSingleInputConvNN()
+    numpy_input = numpy.random.uniform(-1, 1, size=(1, 1, 10, 10))
+    tensor_input = torch.from_numpy(numpy_input).float()
+
+    # Create corresponding numpy model
+    torch_cnn_model = NumpyModule(torch_cnn_model, tensor_input)
+    # Quantize with post-training static method
+    post_training_quant = PostTrainingAffineQuantization(2, torch_cnn_model)
+    quantized_model = post_training_quant.quantize_module(numpy_input)
+
+    # Quantize input
+    q_input = quantized_model.quantize_input(numpy_input)
+
+    # Compile
+    quantized_model.compile(
+        q_input,
+        default_configuration,
+        use_virtual_lib=True,
+    )
+
+    # Check that the network has TLUs in the input node
+    with pytest.raises(AssertionError, match=".*TLU on an input node.*"):
+        check_graph_input_has_no_tlu(quantized_model.forward_fhe.graph)

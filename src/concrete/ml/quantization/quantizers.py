@@ -131,6 +131,22 @@ class QuantizationOptions:
         res.copy_opts(self)
         return res
 
+    def is_equal(self, opts) -> bool:
+        """Compare two quantization options sets.
+
+        Args:
+            opts (QuantizationOptions): options to compare this instance to
+
+        Returns:
+            bool: whether the two quantization options compared are equivalent
+        """
+        return (
+            opts.is_qat == self.is_qat
+            and opts.is_signed == self.is_signed
+            and opts.is_symmetric == self.is_symmetric
+            and opts.n_bits == self.n_bits
+        )
+
 
 class MinMaxQuantizationStats:
     """Calibration set statistics.

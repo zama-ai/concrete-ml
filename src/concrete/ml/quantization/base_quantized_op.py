@@ -160,6 +160,17 @@ class QuantizedOp:
         """
         return self._impl_for_op_named
 
+    @property
+    def int_input_names(self):
+        """Get the names of encrypted integer tensors that are used by this op.
+
+        Returns:
+            List[str]: the names of the tensors
+
+        """
+
+        return self._int_input_names
+
     # Register node to our internal categories
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -362,19 +373,31 @@ class QuantizedOp:
                 # use the .values directly (see else branch below). We need the quantization
                 # stats to generate the quantization code, they can not be computed on the fly.
 
-                quant_params = None
-                if input_.quantizer.is_qat:
-                    # TODO: eliminate redundant TLU #992
-                    # see: https://github.com/zama-ai/concrete-ml-internal/issues/992
-                    quant_params = input_.quantizer.quant_params
+                if quant_opts.is_equal(input_.quantizer.quant_options):
+                    # Pass-through when the input is already quantized in
+                    # the manner that this op requires: use the qvalues directly,
+                    # they will then be used by this quantized op's q_impl
+                    new_input = QuantizedArray(
+                        quant_opts.n_bits,
+                        input_.qvalues,
+                        value_is_float=False,
+                        options=quant_opts,
+                        stats=input_.quantizer.quant_stats,
+                        params=input_.quantizer.quant_params,
+                    )
 
-                new_input = QuantizedArray(
-                    quant_opts.n_bits,
-                    input_.values,
-                    options=quant_opts,
-                    stats=input_.quantizer.quant_stats,
-                    params=quant_params,
-                )
+                else:
+                    quant_params = None
+                    if input_.quantizer.is_qat:
+                        quant_params = input_.quantizer.quant_params
+
+                    new_input = QuantizedArray(
+                        quant_opts.n_bits,
+                        input_.values,
+                        options=quant_opts,
+                        stats=input_.quantizer.quant_stats,
+                        params=quant_params,
+                    )
 
                 if (
                     quant_opts.is_qat
