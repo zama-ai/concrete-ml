@@ -160,7 +160,7 @@ then
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Other/Proprietary License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Python Software Foundation License"
 
-    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources concrete-ml-extensions-brevitas
+    pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources pkg_resources concrete-ml-extensions-brevitas
 
     deactivate
 
