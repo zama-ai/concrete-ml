@@ -30,7 +30,7 @@ from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
-from ..onnx.onnx_model_manipulations import clean_graph_after_node, remove_node_types
+from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
 
 # The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
 # here in order to avoid duplicating them.
@@ -1271,7 +1271,7 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
         Any operators following gemm, including the sigmoid, softmax and argmax operators, are
         removed from the graph. They will be executed in clear in the post-processing method.
         """
-        clean_graph_after_node(self._onnx_model_, node_name="Gemm_2")
+        clean_graph_after_node_op_type(self._onnx_model_, node_op_type="Gemm")
         super().clean_graph()
 
     def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:

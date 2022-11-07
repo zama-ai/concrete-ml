@@ -12,7 +12,7 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.utils import get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import (
-    clean_graph_after_node,
+    clean_graph_after_node_name,
     keep_following_outputs_discard_others,
     remove_node_types,
 )
@@ -126,7 +126,7 @@ def tree_to_numpy(
             if len(node.input) > 0 and "weight_3" in node.input[0] and node.op_type == "MatMul":
                 node_cut_id = node.output[0]
 
-        clean_graph_after_node(onnx_model=onnx_model, node_name=node_name_to_cut)
+        clean_graph_after_node_name(onnx_model=onnx_model, node_name=node_name_to_cut)
 
     # Else, keep track of the last output
     else:
