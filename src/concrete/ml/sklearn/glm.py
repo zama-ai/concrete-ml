@@ -1,7 +1,6 @@
 """Implement sklearn's Generalized Linear Models (GLM)."""
 from __future__ import annotations
 
-import copy
 from abc import abstractmethod
 from typing import Union
 
@@ -9,25 +8,30 @@ import numpy
 import sklearn
 import torch
 
-from ..common.check_inputs import check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
-from ..quantization import PostTrainingAffineQuantization
 from ..torch.numpy_module import NumpyModule
 from .base import SklearnLinearModelMixin
-from .torch_module import _LinearRegressionTorchModel
+from .torch_modules import _LinearTorchModel
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable-next=too-many-instance-attributes
 class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
-    """Regression via a penalized Generalized Linear Model (GLM) with FHE."""
+    """Regression via a penalized Generalized Linear Model (GLM) with FHE.
 
-    # The inheritance method does not inherit directly from the related Sklearn model and therefore
-    # is not initialized by using super()
-    # pylint: disable=super-init-not-called
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs: number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+    """
+
     def __init__(
         self,
         *,
-        n_bits: Union[int, dict] = 2,
+        n_bits: Union[int, dict] = 8,
         alpha: float = 1.0,
         fit_intercept: bool = True,
         solver: str = "lbfgs",
@@ -47,82 +51,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
-    # pylint: enable=super-init-not-called
-
-    @property
-    def onnx_model(self):
-        return self._onnx_model_
-
-    def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> None:
-        """Fit the GLM regression quantized model.
-
-        Args:
-            X : The training data, which can be:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The target data.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
-        """
-        # GLMS don't handle the use of a sum workaround
-        kwargs.pop("use_sum_workaround", None)
-
-        # Copy X and check that is has a proper type
-        X = copy.deepcopy(X)
-        X, y = check_X_y_and_assert(X, y)
-
-        # Retrieving the Sklearn parameters
-        params = self.get_params()
-        params.pop("n_bits", None)
-
-        # Initialize a sklearn generalized linear model
-        # pylint: disable=attribute-defined-outside-init
-        self.sklearn_model = self.sklearn_alg(**params)
-
-        # Fit the sklearn model
-        self.sklearn_model.fit(X, y, *args, **kwargs)
-
-        # Extract the weights
-        weight = self.sklearn_model.coef_
-
-        # Extract the input and output sizes
-        input_size = weight.shape[0]
-        output_size = weight.shape[1] if len(weight.shape) > 1 else 1
-
-        # Initialize the Torch model. Using a small Torch model that reproduces the proper
-        # inference is necessary in this case because the Hummingbird library, which is used for
-        # converting a Sklearn model into an ONNX one, doesn't not support GLMs. Also, the Torch
-        # module can be given to the NumpyModule class the same way it is done for its ONNX
-        # equivalent, thus making the initial workflow still relevant.
-        torch_model = _LinearRegressionTorchModel(
-            input_size=input_size,
-            output_size=output_size,
-            use_bias=self.fit_intercept,
-        )
-
-        # Update the Torch model's weights and bias using the Sklearn model's one
-        torch_model.linear.weight.data = torch.from_numpy(weight).reshape(output_size, input_size)
-        if self.fit_intercept:
-            torch_model.linear.bias.data = torch.tensor(self.sklearn_model.intercept_)
-
-        # Create a NumpyModule from the Torch model
-        numpy_module = NumpyModule(
-            torch_model,
-            dummy_input=torch.from_numpy(X[0]),
-        )
-        self._onnx_model_ = numpy_module.onnx_model
-
-        # Apply post-training quantization
-        post_training = PostTrainingAffineQuantization(
-            n_bits=self.n_bits, numpy_model=numpy_module, is_signed=True
-        )
-
-        # Calibrate and create quantize module
-        self.quantized_module_ = post_training.quantize_module(X)
-
-        # pylint: enable=attribute-defined-outside-init
-
     def post_processing(
         self, y_preds: numpy.ndarray, already_dequantized: bool = False
     ) -> numpy.ndarray:
@@ -140,7 +68,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         # This step is necessary for the client-server workflow as the post_processing method
         # is directly called on the quantized outputs, contrary to the base class' predict method.
         if not already_dequantized:
-            y_preds = self.quantized_module_.dequantize_output(y_preds)
+            y_preds = self.dequantize_output(y_preds)
 
         return self._inverse_link(y_preds)
 
@@ -161,6 +89,39 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         y_preds = self.post_processing(y_preds, already_dequantized=True)
         return y_preds
 
+    # FIXME: #2080 Remove this method when Hummingbird releases its next update as they will make
+    # converting GLMs available
+    def _set_onnx_model(self, test_input: numpy.ndarray):
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+            test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+
+        assert_true(
+            self.sklearn_model is not None,
+            "The model is not fitted. Please run fit(...) on proper arguments first.",
+        )
+
+        # Initialize the Torch model. Using a small Torch model that reproduces the proper
+        # inference is necessary for GLMs. Indeed, the Hummingbird library does not support these
+        # models and thus cannot be used to convert them into an ONNX form. Additionally, a
+        # NumpyModule accepts a Torch module as an input, making the rest of the structure still
+        # usable.
+        torch_model = _LinearTorchModel(
+            weight=self.sklearn_model.coef_,
+            bias=self.sklearn_model.intercept_ if self.fit_intercept else None,
+        )
+
+        # Create a NumpyModule from the Torch model
+        numpy_module = NumpyModule(
+            torch_model,
+            dummy_input=torch.from_numpy(test_input[0]),
+        )
+
+        # Retrieve the ONNX graph
+        self.onnx_model = numpy_module.onnx_model
+
     @abstractmethod
     def _inverse_link(self, y_preds):
         """Apply the link function's inverse on the inputs.
@@ -170,18 +131,28 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         """
 
 
-# pylint: enable=too-many-instance-attributes
-
-
 class PoissonRegressor(_GeneralizedLinearRegressor):
-    """A Poisson regression model with FHE."""
+    """A Poisson regression model with FHE.
+
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+
+    For more details on PoissonRegressor please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
+    """
 
     sklearn_alg = sklearn.linear_model.PoissonRegressor
 
     def __init__(
         self,
         *,
-        n_bits: Union[int, dict] = 2,
+        n_bits: Union[int, dict] = 8,
         alpha: float = 1.0,
         fit_intercept: bool = True,
         max_iter: int = 100,
@@ -214,14 +185,27 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
 
 
 class GammaRegressor(_GeneralizedLinearRegressor):
-    """A Gamma regression model with FHE."""
+    """A Gamma regression model with FHE.
+
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+
+    For more details on GammaRegressor please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
+    """
 
     sklearn_alg = sklearn.linear_model.GammaRegressor
 
     def __init__(
         self,
         *,
-        n_bits: Union[int, dict] = 2,
+        n_bits: Union[int, dict] = 8,
         alpha: float = 1.0,
         fit_intercept: bool = True,
         max_iter: int = 100,
@@ -254,14 +238,27 @@ class GammaRegressor(_GeneralizedLinearRegressor):
 
 
 class TweedieRegressor(_GeneralizedLinearRegressor):
-    """A Tweedie regression model with FHE."""
+    """A Tweedie regression model with FHE.
+
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+
+    For more details on TweedieRegressor please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
+    """
 
     sklearn_alg = sklearn.linear_model.TweedieRegressor
 
     def __init__(
         self,
         *,
-        n_bits: Union[int, dict] = 2,
+        n_bits: Union[int, dict] = 8,
         power: float = 0.0,
         alpha: float = 1.0,
         fit_intercept: bool = True,

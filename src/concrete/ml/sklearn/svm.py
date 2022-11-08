@@ -6,14 +6,27 @@ from .base import SklearnLinearClassifierMixin, SklearnLinearModelMixin
 
 # pylint: disable=invalid-name,too-many-instance-attributes
 class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
-    """A Regression Support Vector Machine (SVM)."""
+    """A Regression Support Vector Machine (SVM).
+
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+
+    For more details on LinearSVR please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html
+    """
 
     sklearn_alg = sklearn.svm.LinearSVR
 
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        n_bits=2,
+        n_bits=8,
         epsilon=0.0,
         tol=0.0001,
         C=1.0,
@@ -42,14 +55,27 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
 
 
 class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
-    """A Classification Support Vector Machine (SVM)."""
+    """A Classification Support Vector Machine (SVM).
+
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+
+    For more details on LinearSVC please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html
+    """
 
     sklearn_alg = sklearn.svm.LinearSVC
 
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        n_bits=2,
+        n_bits=8,
         penalty="l2",
         loss="squared_hinge",
         *,

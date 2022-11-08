@@ -23,7 +23,7 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
-from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
@@ -35,7 +35,7 @@ from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remo
 # The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
 # here in order to avoid duplicating them.
 from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
-from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedArray
+from ..quantization import PostTrainingQATImporter, QuantizedArray, get_n_bits_dict
 from ..torch import NumpyModule
 from .protocols import Quantizer
 from .tree_to_numpy import Task, tree_to_numpy
@@ -928,120 +928,38 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
     sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
     random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
 
-    def __init__(self, *args, n_bits: Union[int, Dict] = 2, **kwargs):
+    def __init__(self, *args, n_bits: Union[int, Dict[str, int]] = 8, **kwargs):
         """Initialize the FHE linear model.
 
         Args:
-            n_bits (int, Dict): Number of bits to quantize the model. If an int is passed
-                for n_bits, the value will be used for activation,
-                inputs and weights. If a dict is passed, then it should
-                contain  "model_inputs", "op_inputs", "op_weights" and
-                "model_outputs" keys with corresponding number of
-                quantization bits for:
-                    - model_inputs : number of bits for model input
-                    - op_inputs : number of bits to quantize layer input values
-                    - op_weights: learned parameters or constants in the network
-                    - model_outputs: final model output quantization bits
-                Default to 2.
+            n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+                for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+                passed, then it should contain "op_inputs" and "op_weights" as keys with
+                corresponding number of quantization bits so that:
+                    - op_inputs : number of bits to quantize the input values
+                    - op_weights: number of bits to quantize the learned parameters
+                Default to 8.
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
         """
         super().__init__(*args, **kwargs)
-        self.n_bits = n_bits
+        self.n_bits: Union[int, Dict[str, int]] = n_bits
         self.post_processing_params: Dict[str, Any] = {}
-
-    @property
-    def onnx_model(self) -> onnx.ModelProto:
-        """Get the ONNX model.
-
-        .. # noqa: DAR201
-
-        Returns:
-           onnx.ModelProto: the ONNX model
-        """
-        return self._onnx_model_
-
-    @property
-    def quantize_input(self) -> Callable:
-        """Get the input quantization function.
-
-        Returns:
-            Callable : function that quantizes the input
-        """
-        assert self.quantized_module_ is not None
-        return self.quantized_module_.quantize_input
-
-    @property
-    def fhe_circuit(self) -> Circuit:
-        """Get the FHE circuit.
-
-        Returns:
-            Circuit: the FHE circuit
-        """
-        return self.quantized_module_.forward_fhe
-
-    @fhe_circuit.setter
-    def fhe_circuit(self, value: Circuit):
-        """Set the FHE circuit.
-
-        Args:
-            value (Circuit): the FHE circuit
-        """
-        self.quantized_module_.forward_fhe = value
-
-    @property
-    def input_quantizers(self) -> List[QuantizedArray]:
-        """Get the input quantizers.
-
-        Returns:
-            List[QuantizedArray]: the input quantizers
-        """
-        return self.quantized_module_.input_quantizers
-
-    @input_quantizers.setter
-    def input_quantizers(self, value: List[QuantizedArray]):
-        """Set the input quantizers.
-
-        Args:
-            value (List[QuantizedArray]): the input quantizers
-        """
-        self.quantized_module_ = QuantizedModule()
-        self.quantized_module_.input_quantizers = value
-
-    @property
-    def output_quantizers(self) -> List[QuantizedArray]:
-        """Get the input quantizers.
-
-        Returns:
-            List[QuantizedArray]: the input quantizers
-        """
-        return self.quantized_module_.output_quantizers
-
-    @output_quantizers.setter
-    def output_quantizers(self, value: List[QuantizedArray]):
-        """Set the input quantizers.
-
-        Args:
-            value (List[QuantizedArray]): the input quantizers
-        """
-        self.quantized_module_.output_quantizers = value
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Post-processing the output.
-
-        Args:
-            y_preds (numpy.ndarray): the output to post-process
-
-        Returns:
-            numpy.ndarray: the post-processed output
-        """
-        return self.quantized_module_.dequantize_output(y_preds)
+        self.fhe_circuit: Optional[Circuit] = None
+        self.input_quantizers: List[UniformQuantizer] = []
+        self.output_quantizers: List[UniformQuantizer] = []
+        self.weight_quantizers: List[UniformQuantizer] = []
+        self.onnx_model: onnx.ModelProto = None
+        self._output_scale: Optional[float] = None
+        self._output_zero_point: Optional[int] = None
+        self._q_weights: Optional[numpy.ndarray] = None
+        self._q_bias: Optional[numpy.ndarray] = None
 
     def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> Any:
         """Fit the FHE linear model.
 
         Args:
-            X : training data
+            X : Training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
@@ -1059,10 +977,11 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # LinearRegression handles multi-labels data
         X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
 
-        # Initialize the sklearn model
+        # Retrieve sklearn's init parameters and remove the ones specific to Concrete-ML
         params = self.get_params()  # type: ignore
         params.pop("n_bits", None)
-        params.pop("use_sum_workaround", None)
+
+        # Initialize the sklearn model
         self.sklearn_model = self.sklearn_alg(**params)
 
         # Fit the sklearn model
@@ -1086,37 +1005,55 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             self.n_jobs = None
             self.sklearn_model.n_jobs = None
 
-        # Convert to onnx
-        self._onnx_model_ = hb_convert(
-            self.sklearn_model,
-            backend="onnx",
-            test_input=X,
-            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
-        ).model
+        # Retrieve the ONNX graph
+        self._set_onnx_model(X)
 
-        # Remove Cast nodes
-        self.clean_graph()
+        # Convert the n_bits attribute into a proper dictionary
+        n_bits = get_n_bits_dict(self.n_bits)
 
-        # Create NumpyModule from onnx model
-        numpy_module = NumpyModule(self._onnx_model_)
+        # Quantize the inputs and store the associated quantizer
+        q_inputs = QuantizedArray(n_bits=n_bits["op_inputs"], values=X)
+        input_quantizer = q_inputs.quantizer
+        self.input_quantizers.append(input_quantizer)
 
-        # Apply post-training quantization
-        post_training = PostTrainingAffineQuantization(
-            n_bits=self.n_bits, numpy_model=numpy_module, is_signed=True
+        # Quantize the weights and store the associated quantizer
+        # Transpose and expand are necessary in order to make sure the weight array has the correct
+        # shape when calling the Gemm operator on it
+        weights = self.sklearn_model.coef_.T
+        q_weights = QuantizedArray(
+            n_bits=n_bits["op_weights"],
+            values=numpy.expand_dims(weights, axis=1) if len(weights.shape) == 1 else weights,
+        )
+        self._q_weights = q_weights.qvalues
+        weight_quantizer = q_weights.quantizer
+        self.weight_quantizers.append(weight_quantizer)
+
+        # mypy
+        assert input_quantizer.scale is not None
+        assert weight_quantizer.scale is not None
+
+        # Retrieve the scale and zero-point of the matmul's outputs, following the same steps from
+        # the QuantizedGemm operator, which are based on equations detailed in
+        # https://arxiv.org/abs/1712.05877
+        self._output_scale = input_quantizer.scale * weight_quantizer.scale
+        self._output_zero_point = input_quantizer.zero_point * (
+            numpy.sum(self._q_weights, axis=0, keepdims=True)
+            - X.shape[1] * weight_quantizer.zero_point
         )
 
-        # Calibrate and create quantize module
-        self.quantized_module_ = post_training.quantize_module(X)
+        # Updating post-processing parameters
+        self._update_post_processing_params()
+
+        # Quantize the bias using the matmul's scale and zero-point, such that
+        # q_bias = round((1/S)*bias + Z)
+        # Contrary to the QuantizedGemm operator which handles the bias term as a floating point
+        # (and thus fusing it with following TLUs), we need to quantize the bias term so that it
+        # matches the same range of values as the matmul's outputs.
+        self._q_bias = numpy.round(
+            self.sklearn_model.intercept_ / self._output_scale + self._output_zero_point
+        ).astype(numpy.int64)
 
         return self
-
-    def clean_graph(self):
-        """Clean the graph of the onnx model.
-
-        This will remove the Cast node in the model's onnx.graph since they have no use in
-        quantized or FHE models.
-        """
-        remove_node_types(onnx_model=self._onnx_model_, op_types_to_remove=["Cast"])
 
     def fit_benchmark(
         self,
@@ -1135,16 +1072,17 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
                 The random state. Defaults to None.
             *args: The arguments to pass to the sklearn linear model.
                 or not (False). Default to False.
-            *args: args for super().fit
-            **kwargs: kwargs for super().fit
+            *args: Arguments for super().fit
+            **kwargs: Keyword arguments for super().fit
 
         Returns:
             Tuple[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression]:
                 The FHE and sklearn LinearRegression.
         """
+
+        # Retrieve sklearn's init parameters and remove the ones specific to Concrete-ML
         params = self.get_params()  # type: ignore
         params.pop("n_bits", None)
-        params.pop("use_sum_workaround", None)
 
         # Make sure the random_state is set or both algorithms will diverge
         # due to randomness in the training.
@@ -1167,57 +1105,6 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         return self, sklearn_model
 
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict on user data.
-
-        Predict on user data using either the quantized clear model,
-        implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
-
-        Args:
-            X (numpy.ndarray): the input data
-            execute_in_fhe (bool): whether to execute the inference in FHE
-
-        Returns:
-            numpy.ndarray: the prediction as ordinals
-        """
-
-        X = check_array_and_assert(X)
-
-        # Quantize the input
-        qX = self.quantized_module_.quantize_input(X)
-
-        # mypy
-        assert isinstance(qX, numpy.ndarray)
-
-        if execute_in_fhe:
-
-            # Make sure the model is compiled
-            assert_true(
-                self.quantized_module_.is_compiled,
-                "The model is not compiled. Please run compile(...) first.",
-            )
-
-            # mypy
-            assert self.quantized_module_.forward_fhe is not None
-            # mypy does not see the self.coef_ from sklearn.linear_model.LinearRegression.
-            # Need to ignore with mypy warning.
-            n_targets = (
-                1 if self.sklearn_model.coef_.ndim == 1 else self.sklearn_model.coef_.shape[0]
-            )
-            y_preds = numpy.zeros(shape=(X.shape[0], n_targets), dtype=numpy.int64)
-            # Execute the compiled FHE circuit
-            # Create a numpy array with the expected shape: (n_samples, n_classes)
-            for i, qX_i in enumerate(qX):
-                fhe_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(
-                    qX_i.reshape(1, qX_i.shape[0])
-                )
-                y_preds[i, :] = fhe_pred[0]
-            # Convert to numpy array
-            y_preds = self.quantized_module_.dequantize_output(y_preds)
-        else:
-            y_preds = self.quantized_module_.forward_and_dequant(qX)
-        return y_preds
-
     def compile(
         self,
         X: numpy.ndarray,
@@ -1235,44 +1122,269 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
                 to use during compilation
             compilation_artifacts (Optional[DebugArtifacts]): Artifacts object to fill during
                 compilation
-            show_mlir (bool): if set, the MLIR produced by the converter and which is
+            show_mlir (bool): If set, the MLIR produced by the converter and which is
                 going to be sent to the compiler backend is shown on the screen, e.g., for debugging
                 or demo. Defaults to False.
-            use_virtual_lib (bool): whether to compile using the virtual library that allows higher
+            use_virtual_lib (bool): Whether to compile using the virtual library that allows higher
                 bitwidths with simulated FHE computation. Defaults to False
-            p_error (Optional[float]): probability of error of a PBS
+            p_error (Optional[float]): Probability of error of a PBS
 
         Returns:
-            Circuit: the compiled Circuit.
+            Circuit: The compiled Circuit.
 
         """
-        # Quantize the input
-        quantized_numpy_inputset = self.quantized_module_.quantize_input(X)
 
-        # Compile the model
-        circuit = self.quantized_module_.compile(
-            quantized_numpy_inputset,
-            configuration,
-            compilation_artifacts,
+        def inference_to_compile(q_X: numpy.ndarray) -> numpy.ndarray:
+            """Compile the circuit in FHE using only the inputs as parameters.
+
+            Args:
+                q_X (numpy.ndarray): The quantized input data
+
+            Returns:
+                numpy.ndarray: The circuit's outputs.
+            """
+            # mypy
+            assert (
+                self.weight_quantizers and self._q_weights is not None and self._q_bias is not None
+            ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+            return self._inference(
+                q_X, self._q_weights, self._q_bias, self.weight_quantizers[0].zero_point
+            )
+
+        # mypy
+        assert (
+            self.input_quantizers
+        ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+        # Quantize the inputs
+        q_X = self.input_quantizers[0].quant(X)
+
+        # Make the input set an generator yielding values with proper dimensions
+        inputset = _get_inputset_generator((q_X,), self.input_quantizers)
+
+        # Instantiate the compiler on the linear regression's inference
+        compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
+
+        # Compile on the input set
+        self.fhe_circuit = compiler.compile(
+            inputset,
+            configuration=configuration,
+            artifacts=compilation_artifacts,
             show_mlir=show_mlir,
-            use_virtual_lib=use_virtual_lib,
+            virtual=use_virtual_lib,
             p_error=p_error,
         )
 
-        return circuit
+        return self.fhe_circuit
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict on user data.
+
+        Predict on user data using either the quantized clear model,
+        implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
+
+        Args:
+            X (numpy.ndarray): The input data
+            execute_in_fhe (bool): Whether to execute the inference in FHE
+
+        Returns:
+            numpy.ndarray: The prediction as ordinals
+        """
+
+        X = check_array_and_assert(X)
+
+        # mypy
+        # The model is fitted if and only if the model's input quantizer is initialized
+        assert (
+            self.input_quantizers
+        ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+        # Quantize the inputs
+        q_X = self.quantize_input(X)
+
+        # If the predictions are executed in FHE, we call the circuit on each sample
+        if execute_in_fhe:
+
+            # mypy
+            # Make sure the model is compiled
+            assert (
+                self.fhe_circuit is not None
+            ), "The model is not compiled. Please run compile(...) first."
+
+            q_y_preds_list = []
+            for q_X_i in q_X:
+                q_y_pred_i = self.fhe_circuit.encrypt_run_decrypt(q_X_i.reshape(1, q_X_i.shape[0]))
+                q_y_preds_list.append(q_y_pred_i[0])
+
+            q_y_preds = numpy.array(q_y_preds_list)
+
+        # If the predictions are not executed in FHE, we only need to call the inference
+        else:
+            # mypy
+            assert (
+                self.weight_quantizers and self._q_weights is not None and self._q_bias is not None
+            ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+            q_y_preds = self._inference(
+                q_X, self._q_weights, self._q_bias, self.weight_quantizers[0].zero_point
+            )
+
+        # Dequantize the outputs
+        y_preds = self.dequantize_output(q_y_preds)
+
+        return y_preds
+
+    def quantize_input(self, X: numpy.ndarray):
+        """Quantize the input.
+
+        Args:
+            X (numpy.ndarray): The input to quantize
+
+        Returns:
+            numpy.ndarray: The quantized input
+        """
+        return self.input_quantizers[0].quant(X)
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Dequantize the output.
+
+        Args:
+            q_y_preds (numpy.ndarray): The quantized output to dequantize
+
+        Returns:
+            numpy.ndarray: The dequantized output
+        """
+        # Retrieve the post-processing parameters
+        output_scale = self.post_processing_params["output_scale"]
+        output_zero_point = self.post_processing_params["output_zero_point"]
+
+        assert (
+            output_scale is not None and output_zero_point is not None
+        ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+        # Dequantize the output.
+        # Since the matmul and the bias both use the same scale and zero-points, we obtain that
+        # y = S*(q_y - 2*Z)
+        y_preds = output_scale * (q_y_preds - 2 * output_zero_point)
+        return y_preds
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Post-processing the quantized output.
+
+        For linear models, post-processing only considers a dequantization step.
+
+        Args:
+            y_preds (numpy.ndarray): The quantized outputs to post-process
+
+        Returns:
+            numpy.ndarray: The post-processed output
+        """
+        return self.dequantize_output(y_preds)
+
+    def _set_onnx_model(self, test_input: numpy.ndarray):
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+            test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+
+        assert_true(
+            self.sklearn_model is not None,
+            "The model is not fitted. Please run fit(...) on proper arguments first.",
+        )
+
+        self.onnx_model = hb_convert(
+            self.sklearn_model,
+            backend="onnx",
+            test_input=test_input,
+            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
+        ).model
+
+        self.clean_graph()
+
+    def clean_graph(self):
+        """Clean the graph of the onnx model.
+
+        This will remove the Cast node in the model's onnx.graph since they have no use in
+        quantized or FHE models.
+        """
+        remove_node_types(onnx_model=self.onnx_model, op_types_to_remove=["Cast"])
+
+    def _update_post_processing_params(self):
+        """Update the post processing parameters."""
+
+        assert (
+            self._output_scale is not None and self._output_zero_point is not None
+        ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+        self.post_processing_params = {
+            "output_scale": self._output_scale,
+            "output_zero_point": self._output_zero_point,
+        }
+
+    @staticmethod
+    def _inference(
+        q_x: numpy.ndarray,
+        q_weights: numpy.ndarray,
+        q_bias: numpy.ndarray,
+        weight_zp: numpy.ndarray,
+    ) -> numpy.ndarray:
+        """Execute a linear inference.
+
+        Args:
+            q_x (numpy.ndarray): The quantized input data
+            q_weights (numpy.ndarray): The quantized weights
+            q_bias (numpy.ndarray): The quantized bias
+            weight_zp (int): Zero-point use for quantizing the weights
+
+        Returns:
+            numpy.ndarray: The predicted values.
+        """
+        # Quantizing weights and inputs makes an additional term appear in the inference function
+        y_pred = q_x @ q_weights - weight_zp * numpy.sum(q_x, axis=1, keepdims=True)
+        y_pred += q_bias
+        return y_pred
 
 
 class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
     """A Mixin class for sklearn linear classifiers with FHE."""
 
-    def clean_graph(self):
-        """Clean the graph of the onnx model.
+    def post_processing(self, y_preds: numpy.ndarray, already_dequantized: bool = False):
+        """Post-processing the predictions.
 
-        Any operators following gemm, including the sigmoid, softmax and argmax operators, are
-        removed from the graph. They will be executed in clear in the post-processing method.
+        This step may include a dequantization of the inputs if not done previously, in particular
+        within the client-server workflow.
+
+        Args:
+            y_preds (numpy.ndarray): The predictions to post-process.
+            already_dequantized (bool): Wether the inputs were already dequantized or not. Default
+                to False.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
         """
-        clean_graph_after_node_op_type(self._onnx_model_, node_op_type="Gemm")
-        super().clean_graph()
+
+        # If y_preds were already dequantized previously, there is no need to do so once again.
+        # This step is necessary for the client-server workflow as the post_processing method
+        # is directly called on the quantized outputs, contrary to the base class' predict method.
+        if not already_dequantized:
+            y_preds = self.dequantize_output(y_preds)
+
+        # If the predictions only has one dimension (i.e. binary classification problem), apply the
+        # sigmoid operator
+        if y_preds.shape[1] == 1:
+            y_preds = numpy_sigmoid(y_preds)[0]
+
+            # Transform in a 2d array where [1-p, p] is the output as scikit-learn only outputs 1
+            # value when considering 2 classes
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+
+        # Else, apply the softmax operator
+        else:
+            y_preds = numpy_softmax(y_preds)[0]
+
+        return y_preds
 
     def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict confidence scores for samples.
@@ -1318,37 +1430,11 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
         y_preds = numpy.argmax(y_preds, axis=1)
         return y_preds
 
-    def post_processing(self, y_preds: numpy.ndarray, already_dequantized: bool = False):
-        """Post-processing the predictions.
+    def clean_graph(self):
+        """Clean the graph of the onnx model.
 
-        This step may include a dequantization of the inputs if not done previously, in particular
-        within the client-server workflow.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions to post-process.
-            already_dequantized (bool): Wether the inputs were already dequantized or not. Default
-                to False.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
+        Any operators following gemm, including the sigmoid, softmax and argmax operators, are
+        removed from the graph. They will be executed in clear in the post-processing method.
         """
-        # If y_preds were already dequantized previously, there is no need to do so once again.
-        # This step is necessary for the client-server workflow as the post_processing method
-        # is directly called on the quantized outputs, contrary to the base class' predict method.
-        if not already_dequantized:
-            y_preds = super().post_processing(y_preds)
-
-        # If the predictions only has one dimension (i.e. binary classification problem), apply the
-        # sigmoid operator
-        if y_preds.shape[1] == 1:
-            y_preds = numpy_sigmoid(y_preds)[0]
-
-            # Transform in a 2d array where [1-p, p] is the output as scikit-learn only outputs 1
-            # value when considering 2 classes
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-
-        # Else, apply the softmax operator
-        else:
-            y_preds = numpy_softmax(y_preds)[0]
-
-        return y_preds
+        clean_graph_after_node_op_type(self.onnx_model, node_op_type="Gemm")
+        super().clean_graph()

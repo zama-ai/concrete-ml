@@ -1,6 +1,5 @@
 """Tests for the sklearn linear models."""
 import warnings
-from copy import deepcopy
 from functools import partial
 from typing import Any, List
 
@@ -219,46 +218,27 @@ for classifier_model in classifier_model_classes:
 @pytest.mark.parametrize("model_class, data_parameters", multiple_models_datasets)
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-@pytest.mark.parametrize("use_sum_workaround", [True, False])
 def test_linear_model_compile_run_fhe(
     model_class,
     data_parameters,
     fit_intercept,
-    use_sum_workaround,
     use_virtual_lib,
     load_data,
     default_configuration,
     is_vl_only_option,
+    check_r2_score,
+    check_accuracy,
 ):
     """Tests the sklearn regressions."""
     if not use_virtual_lib and is_vl_only_option:
         print("Warning, skipping non VL tests")
         return
 
-    # Prevent the parameters to possibly be shared across multithreaded tests
-    data_parameters = deepcopy(data_parameters)
-
-    # If the ReduceSum workaround is used, it can only handle N features with N a power of 2 for
-    # now.
-    if use_sum_workaround:
-        n_features = 2 ** (int(numpy.floor(numpy.log2(data_parameters["n_features"]))) + 1)
-        data_parameters["n_features"] = n_features
-
     # Get the dataset
     x, y = load_data(**data_parameters)
 
     # Define the model's hyperparameters
-    model_hyperparameters = {"n_bits": 2, "fit_intercept": fit_intercept}
-
-    # If the LinearRegression model is tested with single target, we instantiate it using the
-    # use_sum_workaround parameter
-    if model_class == LinearRegression and len(y.shape) == 1:
-        model_hyperparameters["use_sum_workaround"] = use_sum_workaround
-
-    # Else, if use_sum_workaround is set to true, skip the test as the sum workaround is not
-    # applicable to other models or LinearRegression with multi-targets.
-    elif use_sum_workaround:
-        return
+    model_hyperparameters = {"n_bits": 8, "fit_intercept": fit_intercept}
 
     # Instantiate the model
     model = model_class(**model_hyperparameters)
@@ -266,25 +246,35 @@ def test_linear_model_compile_run_fhe(
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model, _ = model.fit_benchmark(x, y)
+        model, sklearn_model = model.fit_benchmark(x, y)
 
-    y_pred = model.predict(x[:1])
+    y_pred = model.predict(x)
 
     # Test compilation
-    model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
+    fhe_circuit = model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
 
-    # Make sure we can predict over a single example in FHE.
-    y_pred_fhe = model.predict(x[:1], execute_in_fhe=True)
+    # Check that no TLUs are found within the circuit
+    # FIXME Change this once CN implements this feature
+    # https://github.com/zama-ai/concrete-numpy-internal/issues/1714
+    assert not any(
+        node.converted_to_table_lookup for node in fhe_circuit.graph.graph.nodes
+    ), "FHE circuit contains at least one TLU"
 
-    # Check that the output shape is correct
-    assert y_pred_fhe.shape == y_pred.shape
+    y_pred_sklearn = sklearn_model.predict(x)
+    y_pred_fhe = model.predict(x, execute_in_fhe=True)
+
+    # If the model is a classifier, check that accuracies are similar
+    if model_class in classifier_model_classes:
+        check_accuracy(y_pred_sklearn, y_pred_fhe)
+
+    # If the model is a regressor, check that R2 scores are similar
+    else:
+        check_r2_score(y_pred_sklearn, y_pred_fhe)
+
+    # Check that the output shapes are correct
+    assert y_pred.shape == y_pred_fhe.shape, "Quantized clear and FHE outputs have different shapes"
 
 
-# We currently don't want to check a LinearRegression model's R2 score using the sum workaround as
-# it still an experimental feature. This might change with the calibration technique developed in
-# https://github.com/zama-ai/concrete-ml-internal/issues/1452.
-# We therefore only make sure that use_sum_workaround set to False correctly does not change the
-# initial implementation.
 @pytest.mark.parametrize("model_class, data_parameters", multiple_models_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -294,13 +284,11 @@ def test_linear_model_compile_run_fhe(
     ],
 )
 @pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("use_sum_workaround", [False])
 def test_linear_model_quantization(
     model_class,
     data_parameters,
     n_bits,
     fit_intercept,
-    use_sum_workaround,
     load_data,
     check_r2_score,
     check_accuracy,
@@ -312,16 +300,6 @@ def test_linear_model_quantization(
 
     # Define the model's hyperparameters
     model_hyperparameters = {"n_bits": n_bits, "fit_intercept": fit_intercept}
-
-    # If the LinearRegression model is tested with single target, we instantiate it using the
-    # use_sum_workaround parameter
-    if model_class == LinearRegression and len(y.shape) == 1:
-        model_hyperparameters["use_sum_workaround"] = use_sum_workaround
-
-    # Else, if use_sum_workaround is set to true, skip the test as the sum workaround is not
-    # applicable to other models or LinearRegression with multi-targets.
-    elif use_sum_workaround:
-        return
 
     model = model_class(**model_hyperparameters)
 
@@ -370,28 +348,13 @@ def test_linear_model_quantization(
 
 @pytest.mark.parametrize("model_class, data_parameters", models_datasets)
 @pytest.mark.parametrize("fit_intercept", [True, False])
-@pytest.mark.parametrize("use_sum_workaround", [True, False])
-def test_pipeline_sklearn(
-    model_class, data_parameters, fit_intercept, use_sum_workaround, load_data
-):
+def test_pipeline_sklearn(model_class, data_parameters, fit_intercept, load_data):
     """Tests that the linear models work well within sklearn pipelines."""
     x, y = load_data(**data_parameters)
 
     # Define the model's hyperparameters
     model_hyperparameters = {"n_bits": 2, "fit_intercept": fit_intercept}
 
-    # If the LinearRegression model is tested with single target, we instantiate it using the
-    # use_sum_workaround parameter
-    if model_class == LinearRegression and len(y.shape) == 1:
-        model_hyperparameters["use_sum_workaround"] = use_sum_workaround
-
-    # Else, if use_sum_workaround is set to true, skip the test as the sum workaround is not
-    # applicable to other models or LinearRegression with multi-targets.
-    elif use_sum_workaround:
-        return
-
-    # The number of PCA components needs to be a power of 2 in order to be able to use the
-    # sum workaround
     pipe_cv = Pipeline(
         [
             ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),

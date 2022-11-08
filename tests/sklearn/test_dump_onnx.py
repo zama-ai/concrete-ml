@@ -180,8 +180,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x2]
   %_operators.0.intercepts[FLOAT, 2]
 ) {
-  %variable = Gemm[alpha = 1, beta = 1](%input_0, """
-        """%_operators.0.coefficients, %_operators.0.intercepts)
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
         TweedieRegressor: """graph torch_jit (
@@ -228,8 +227,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x1]
   %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %variable = Gemm[alpha = 1, beta = 1](%input_0, """
-        """%_operators.0.coefficients, %_operators.0.intercepts)
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
         LogisticRegression: """graph torch_jit (
@@ -238,8 +236,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x1]
   %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, """
-        """%_operators.0.coefficients, %_operators.0.intercepts)
+  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %onnx::Sigmoid_6
 }""",
         LinearSVC: """graph torch_jit (
@@ -248,8 +245,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x1]
   %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, """
-        """%_operators.0.coefficients, %_operators.0.intercepts)
+  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %onnx::Sigmoid_6
 }""",
         RandomForestClassifier: "Not tested",
@@ -342,8 +338,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x1]
   %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %variable = Gemm[alpha = 1, beta = 1]"""
-        """(%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
         Lasso: """graph torch_jit (
@@ -352,8 +347,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x1]
   %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %variable = Gemm[alpha = 1, beta = 1]"""
-        """(%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
         ElasticNet: """graph torch_jit (
@@ -362,8 +356,7 @@ def test_dump(
   %_operators.0.coefficients[FLOAT, 10x1]
   %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %variable = Gemm[alpha = 1, beta = 1]"""
-        """(%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
         DecisionTreeRegressor: """graph torch_jit (

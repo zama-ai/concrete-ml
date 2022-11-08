@@ -16,6 +16,72 @@ from .quantized_ops import QuantizedBrevitasQuant
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
 
+def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
+    """Convert the n_bits parameter into a proper dictionary.
+
+    Args:
+        n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" and "op_weights" (mandatory)
+            - "model_inputs" and "model_outputs" (optional, default to 5 bits).
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_weights" bits. The maximum between this value and a default value (5) is then
+            assigned to the number of "model_inputs" "model_outputs". This default value is a
+            compromise between model accuracy and runtime performance in FHE. "model_outputs" gives
+            the precision of the final network's outputs, while "model_inputs" gives the precision
+            of the network's inputs. "op_inputs" and "op_weights" both control the quantization for
+            inputs and weights of all layers.
+
+    Returns:
+        n_bits_dict (Dict[str, int]): A dictionary properly representing the number of bits to use
+            for quantization.
+    """
+
+    assert_true(
+        isinstance(n_bits, int)
+        or (
+            isinstance(n_bits, Dict)
+            and set(n_bits.keys()).issubset(
+                {"model_inputs", "op_weights", "model_outputs", "op_inputs"}
+            )
+            and {"op_weights", "op_inputs"}.issubset(set(n_bits.keys()))
+        ),
+        "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
+        "the following keys:\n"
+        "- `op_weights` and `op_inputs` (mandatory)\n"
+        f"- `model_outputs` and `model_inputs` (optional, default to {DEFAULT_MODEL_BITS} "
+        "bits)",
+    )
+
+    # If a single integer is passed, we use a default value for the model's input and
+    # output bits
+    if isinstance(n_bits, int):
+        n_bits_dict = {
+            "model_inputs": max(DEFAULT_MODEL_BITS, n_bits),
+            "op_weights": n_bits,
+            "op_inputs": n_bits,
+            "model_outputs": max(DEFAULT_MODEL_BITS, n_bits),
+        }
+
+    # If model_inputs or model_outputs are not given, we consider a default value
+    elif isinstance(n_bits, Dict):
+        n_bits_dict = {
+            "model_inputs": DEFAULT_MODEL_BITS,
+            "model_outputs": max(DEFAULT_MODEL_BITS, n_bits["op_inputs"]),
+        }
+
+        n_bits_dict.update(n_bits)
+
+    assert_true(
+        n_bits_dict["model_outputs"] >= n_bits_dict["op_inputs"],
+        "Using fewer bits to represent the model_outputs than the op inputs is not "
+        f"recommended. Got model_outputs: {n_bits_dict['model_outputs']} and op_inputs: "
+        f"{n_bits_dict['op_inputs']}",
+    )
+
+    return n_bits_dict
+
+
 class ONNXConverter:
     """Base ONNX to Concrete ML computation graph conversion class.
 
@@ -55,49 +121,7 @@ class ONNXConverter:
     def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule, is_signed: bool = False):
         self.quant_ops_dict = {}
 
-        assert_true(
-            isinstance(n_bits, int)
-            or (
-                isinstance(n_bits, Dict)
-                and set(n_bits.keys()).issubset(
-                    {"model_inputs", "op_weights", "model_outputs", "op_inputs"}
-                )
-                and {"op_weights", "op_inputs"}.issubset(set(n_bits.keys()))
-            ),
-            "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
-            "the following keys:\n"
-            "- `op_weights` and `op_inputs` (mandatory)\n"
-            f"- `model_outputs` and `model_inputs` (optional, default to {DEFAULT_MODEL_BITS} "
-            "bits)",
-        )
-
-        # If a single integer is passed, we use a default value for the model's input and
-        # output bits
-        if isinstance(n_bits, int):
-            n_bits_dict = {
-                "model_inputs": max(DEFAULT_MODEL_BITS, n_bits),
-                "op_weights": n_bits,
-                "op_inputs": n_bits,
-                "model_outputs": max(DEFAULT_MODEL_BITS, n_bits),
-            }
-
-        # If model_inputs or model_outputs are not given, we consider a default value
-        elif isinstance(n_bits, Dict):
-            n_bits_dict = {
-                "model_inputs": DEFAULT_MODEL_BITS,
-                "model_outputs": max(DEFAULT_MODEL_BITS, n_bits["op_inputs"]),
-            }
-
-            n_bits_dict.update(n_bits)
-
-        assert_true(
-            n_bits_dict["model_outputs"] >= n_bits_dict["op_inputs"],
-            "Using fewer bits to represent the model_outputs than the op inputs is not "
-            f"recommended. Got model_outputs: {n_bits_dict['model_outputs']} and op_inputs: "
-            f"{n_bits_dict['op_inputs']}",
-        )
-
-        self.n_bits = n_bits_dict
+        self.n_bits = get_n_bits_dict(n_bits)
         self.quant_params = {}
         self.numpy_model = numpy_model
         self.is_signed = is_signed

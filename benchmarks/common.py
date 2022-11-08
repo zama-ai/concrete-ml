@@ -150,9 +150,8 @@ NN_BENCHMARK_PARMAMS = (
     ]
 )
 
-LINEAR_REGRESSION_ARGUMENTS = [
-    {"n_bits": n_bits, "use_sum_workaround": True} for n_bits in range(2, 11)
-]
+LINEAR_REGRESSION_ARGUMENTS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
+
 # Backward compatibility
 if ("LinearRegression" in REGRESSORS) and (
     "use_sum_workaround"

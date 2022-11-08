@@ -1,6 +1,6 @@
 """QuantizedModule API."""
 import copy
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy
 from concrete.numpy.compilation.artifacts import DebugArtifacts
@@ -37,6 +37,26 @@ def _raise_qat_import_error(bad_qat_ops: List[Tuple[str, str]]):
         + "\n\nCould not determine a unique scale for the quantization! "
         "Please check the ONNX graph of this model."
     )
+
+
+def _get_inputset_generator(
+    q_inputs: Tuple[numpy.ndarray, ...], input_quantizers: List[UniformQuantizer]
+) -> Generator:
+    """Create an input set generator with proper dimensions.
+
+    Args:
+        q_inputs (numpy.ndarray): The quantized inputs
+        input_quantizers (List[UniformQuantizer]): The input quantizers used on the input set
+
+    Returns:
+        Generator: The input set generator with proper dimensions.
+    """
+    if len(input_quantizers) > 1:
+        return (
+            tuple(numpy.expand_dims(q_input[idx], 0) for q_input in q_inputs)
+            for idx in range(q_inputs[0].shape[0])
+        )
+    return (numpy.expand_dims(arr, 0) for arr in q_inputs[0])
 
 
 class QuantizedModule:
@@ -382,15 +402,7 @@ class QuantizedModule:
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
         )
 
-        def get_inputset_iterable():
-            if len(self.input_quantizers) > 1:
-                return (
-                    tuple(numpy.expand_dims(q_input[idx], 0) for q_input in q_inputs)
-                    for idx in range(ref_len)
-                )
-            return (numpy.expand_dims(arr, 0) for arr in q_inputs[0])
-
-        inputset = get_inputset_iterable()
+        inputset = _get_inputset_generator(q_inputs, self.input_quantizers)
 
         self.forward_fhe = compiler.compile(
             inputset,
