@@ -104,6 +104,7 @@ jobs:
           body: "Automatic PR with notebooks refresh for ${{ github.ref_name }}."
           add-paths: |
             docs/**/*.ipynb
+          delete-branch: true
 
 
   stop-runner-linux:

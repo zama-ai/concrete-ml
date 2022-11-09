@@ -141,7 +141,10 @@ jobs:
         run: |
           make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"
 
+      # If the target branch is main or a release branch, a Pull Request is opened for everyone to 
+      # review. The current branch will be deleted once the PR is accepted and merged.
       - name: Open PR
+        if: ${{ github.ref_name == "main" || startsWith(github.ref_name , 'release/')}} 
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
         with:
           token: ${{ secrets.BOT_TOKEN }}
@@ -153,6 +156,16 @@ jobs:
             for ${{ github.ref_name }}."
           add-paths: |
             docs/**/*.ipynb
+          delete-branch: true
+      
+      # If the target branch is another branch, the current branch is automatically merged into it
+      - name: Merge branch
+        if: ${{ github.ref_name != "main" && !(startsWith(github.ref_name , 'release/'))}}
+        uses: devmasx/merge-branch@1.4.0
+        with:
+          type: now
+          target_branch: "${{ github.ref_name }}"
+          github_token: ${{ secrets.BOT_TOKEN }}
 
 
   stop-runner-linux:
@@ -186,7 +199,9 @@ jobs:
         stop-runner-linux,
       ]
 
+    # If the target branch is main or a release branch, a slack notification is sent
     name: Send Slack notification
+    if: ${{ github.ref_name == "main" || startsWith(github.ref_name , 'release/')}} 
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
@@ -210,8 +225,8 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Refreshing ${{ github.event.inputs.notebook }} finished \
-            with status ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
+          SLACK_MESSAGE: "Refreshing ${{ github.event.inputs.notebook }} for ${{ github.ref_name }} 
+            finished with status ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
             - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
             - refresh-one-notebook: ${{ needs.refresh-one-notebook.result || 'Did not run.' }}\n\n\
             - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}"
