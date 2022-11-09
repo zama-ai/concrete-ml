@@ -128,11 +128,13 @@ jobs:
       - name: Download Sentiment classification datasets
         if: ${{ env.NOTEBOOK_NAME == 'SentimentClassification' }}
         run: |
+          source .venv/bin/activate
           cd ./use_case_examples/encrypted_sentiment_analysis && ./download_data.sh
 
       - name: Download Titanic datasets
         if: ${{ env.NOTEBOOK_NAME == 'KaggleTitanic' }}
         run: |
+          source .venv/bin/activate
           cd ./use_case_examples/titanic && ./download_data.sh
           
       - name: Refresh One Notebook

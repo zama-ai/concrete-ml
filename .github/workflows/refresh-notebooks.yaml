@@ -85,6 +85,7 @@ jobs:
 
       - name: Download use case examples datasets
         run: |
+          source .venv/bin/activate
           cd ./use_case_examples/encrypted_sentiment_analysis && ./download_data.sh && cd -
           cd ./use_case_examples/titanic && ./download_data.sh
 
