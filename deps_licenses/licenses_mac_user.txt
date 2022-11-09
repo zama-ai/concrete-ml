@@ -4,7 +4,7 @@ PyYAML, 6.0, MIT License
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.21.0, BSD-3
 concrete-ml-extensions-brevitas, 0.0.0, UNKNOWN
-concrete-numpy, 0.9.0rc1, BSD License
+concrete-numpy, 0.9.0rc2, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
@@ -42,5 +42,5 @@ tokenize-rt, 5.0.0, MIT License
 tomli, 2.0.1, MIT License
 torch, 1.12.1, BSD License
 tqdm, 4.64.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
-typing-extensions, 4.4.0, Python Software Foundation License
+typing_extensions, 4.4.0, Python Software Foundation License
 xgboost, 1.6.2, Apache Software License
