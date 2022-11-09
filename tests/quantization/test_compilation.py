@@ -151,6 +151,7 @@ class TinyCNN(nn.Module):
 )
 @pytest.mark.parametrize("n_bits", [2, 9, 16])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("verbose_compilation", [True, False])
 def test_quantized_module_compilation(
     input_output_feature,
     model,
@@ -161,6 +162,7 @@ def test_quantized_module_compilation(
     use_virtual_lib,
     is_vl_only_option,
     check_graph_input_has_no_tlu,
+    verbose_compilation,
 ):
     """Test a neural network compilation for FHE inference."""
     if not use_virtual_lib and is_vl_only_option:
@@ -197,6 +199,7 @@ def test_quantized_module_compilation(
         q_input,
         default_configuration,
         use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
     )
 
     for x_q in q_input:
@@ -227,6 +230,7 @@ def test_quantized_module_compilation(
     ],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("verbose_compilation", [True, False])
 def test_quantized_cnn_compilation(
     input_output_feature,
     model,
@@ -236,6 +240,7 @@ def test_quantized_cnn_compilation(
     check_graph_input_has_no_tlu,
     use_virtual_lib,
     is_vl_only_option,
+    verbose_compilation,
 ):
     """Test a convolutional neural network compilation for FHE inference."""
     if not use_virtual_lib and is_vl_only_option:
@@ -271,6 +276,7 @@ def test_quantized_cnn_compilation(
         q_input,
         default_configuration,
         use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
     )
 
     for x_q in q_input:

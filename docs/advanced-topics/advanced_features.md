@@ -24,13 +24,108 @@ The execution for the two models are 336 ms per example for the standard `p_erro
 
 Users have the possibility to change this `p_error` as they choose fit, by passing an argument to the `compile` function of any of the models. Here is an example:
 
-<!--pytest-codeblocks:skip-->
-
 ```python
-from concrete.ml.sklearn import XGBoostClassifier
-clf = XGBoostClassifier()
+from concrete.ml.sklearn import XGBClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+
+# Retrieve train and test sets
+X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
+
+clf = XGBClassifier()
 clf.fit(X_train, y_train)
 
 # Here comes the p_error parameter
 clf.compile(X_train, p_error = 0.1)
 ```
+
+## Seeing compilation information
+
+By using `verbose_compilation = True` during compilation, one receives lot of information from the compiler and its inner optimizer.
+
+```python
+from concrete.ml.sklearn import LogisticRegression
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+
+# Retrieve train and test sets
+X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
+
+clf = LogisticRegression()
+clf.fit(X_train, y_train)
+
+clf.compile(X_train, verbose_compilation=True)
+```
+
+Here, one will see
+
+- the computation graph, typically
+
+```
+Computation Graph
+-------------------------------------------------------------------------------------------------------------------------------
+%0 = [[-5097]]                             # ClearTensor<int14, shape=(1, 1)>
+%1 = q_X                                   # EncryptedTensor<uint8, shape=(1, 4)>
+%2 = [[ 91] [ 60] [  0] [255]]             # ClearTensor<uint8, shape=(4, 1)>
+%3 = 111                                   # ClearScalar<uint7>
+%4 = sum(%1, axis=1, keepdims=True)        # EncryptedTensor<uint10, shape=(1, 1)>
+%5 = matmul(%1, %2)                        # EncryptedTensor<uint17, shape=(1, 1)>
+%6 = multiply(%3, %4)                      # EncryptedTensor<uint17, shape=(1, 1)>
+%7 = subtract(%5, %6)                      # EncryptedTensor<int17, shape=(1, 1)>
+%8 = add(%7, %0)                           # EncryptedTensor<int17, shape=(1, 1)>
+return %8
+```
+
+- the MLIR, which produced by Concrete-Numpy and given to the compiler
+
+```
+MLIR
+-------------------------------------------------------------------------------------------------------------------------------
+module {
+  func.func @main(%arg0: tensor<1x4x!FHE.eint<17>>) -> tensor<1x1x!FHE.eint<17>> {
+    %cst = arith.constant dense<-5097> : tensor<1x1xi18>
+    %cst_0 = arith.constant dense<[[91], [60], [0], [255]]> : tensor<4x1xi18>
+    %c111_i18 = arith.constant 111 : i18
+    %0 = "FHELinalg.sum"(%arg0) {axes = [1], keep_dims = true} : (tensor<1x4x!FHE.eint<17>>) -> tensor<1x1x!FHE.eint<17>>
+    %1 = "FHELinalg.matmul_eint_int"(%arg0, %cst_0) : (tensor<1x4x!FHE.eint<17>>, tensor<4x1xi18>) -> tensor<1x1x!FHE.eint<17>>
+    %cst_1 = tensor.from_elements %c111_i18 : tensor<1xi18>
+    %2 = "FHELinalg.mul_eint_int"(%0, %cst_1) : (tensor<1x1x!FHE.eint<17>>, tensor<1xi18>) -> tensor<1x1x!FHE.eint<17>>
+    %3 = "FHELinalg.sub_eint"(%1, %2) : (tensor<1x1x!FHE.eint<17>>, tensor<1x1x!FHE.eint<17>>) -> tensor<1x1x!FHE.eint<17>>
+    %4 = "FHELinalg.add_eint_int"(%3, %cst) : (tensor<1x1x!FHE.eint<17>>, tensor<1x1xi18>) -> tensor<1x1x!FHE.eint<17>>
+    return %4 : tensor<1x1x!FHE.eint<17>>
+  }
+}
+```
+
+- information from the optimizer:
+
+```
+Optimizer
+-------------------------------------------------------------------------------------------------------------------------------
+--- Circuit
+  17 bits integers
+  9 manp (maxi log2 norm2)
+  52ms to solve
+--- Optimizer config
+  6.334248e-05 error per pbs call
+  nan error per circuit call
+--- Complexity for the full circuit
+  0 Millions Operations
+--- Correctness for each Pbs call
+  1/-2147483648 errors (0.000000e+00)
+--- Correctness for the full circuit
+  1/-2147483648 errors (0.000000e+00)
+--- Parameters resolution
+  1x glwe_dimension
+  2**11 polynomial (2048)
+  0 lwe dimension
+  keyswitch l,b=0,0
+  blindrota l,b=0,0
+  wopPbs : false
+```
+
+In this latter optimization information, one will find information about bit-width ("17 bits integers") used in the program, probability of error of an individual PBS ("6.334248e-05 error per pbs call"), probability of error of the full circuit (FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/2140), an estimation of the cost of the circuit (FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/2140), and, for cryptographers only, some information about cryptographic parameters.

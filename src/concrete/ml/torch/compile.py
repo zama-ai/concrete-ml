@@ -52,6 +52,7 @@ def _compile_torch_or_onnx_model(
     n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -75,6 +76,7 @@ def _compile_torch_or_onnx_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False
         p_error (Optional[float]): probability of error of a PBS
+        verbose_compilation (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -117,6 +119,7 @@ def _compile_torch_or_onnx_model(
         show_mlir=show_mlir,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
+        verbose_compilation=verbose_compilation,
     )
 
     quantized_module.onnx_model = onnx_model
@@ -134,6 +137,7 @@ def compile_torch_model(
     n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -156,6 +160,7 @@ def compile_torch_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False
         p_error (Optional[float]): probability of error of a PBS
+        verbose_compilation (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -170,6 +175,7 @@ def compile_torch_model(
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
+        verbose_compilation=verbose_compilation,
     )
 
 
@@ -183,6 +189,7 @@ def compile_onnx_model(
     n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -205,6 +212,7 @@ def compile_onnx_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False.
         p_error (Optional[float]): probability of error of a PBS
+        verbose_compilation (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -227,6 +235,7 @@ def compile_onnx_model(
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
+        verbose_compilation=verbose_compilation,
     )
 
 
@@ -240,6 +249,7 @@ def compile_brevitas_qat_model(
     use_virtual_lib: bool = False,
     p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
     output_onnx_file: Union[Path, str] = None,
+    verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
@@ -263,6 +273,7 @@ def compile_brevitas_qat_model(
         p_error (Optional[float]): probability of error of a PBS
         output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
             is generated
+        verbose_compilation (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -313,6 +324,7 @@ def compile_brevitas_qat_model(
         use_virtual_lib=use_virtual_lib,
         configuration=configuration,
         p_error=p_error,
+        verbose_compilation=verbose_compilation,
     )
 
     # Remove the tempfile if we used one

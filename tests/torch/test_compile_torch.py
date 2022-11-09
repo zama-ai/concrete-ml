@@ -248,6 +248,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     is_onnx,
     dump_onnx=False,
     expected_onnx_str=None,
+    verbose_compilation=False,
 ):
     """Test the different model architecture from torch numpy."""
 
@@ -305,6 +306,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 configuration=default_configuration,
                 n_bits=n_bits,
                 use_virtual_lib=use_virtual_lib,
+                verbose_compilation=verbose_compilation,
             )
         else:
             quantized_numpy_module = compile_torch_model(
@@ -314,6 +316,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 configuration=default_configuration,
                 n_bits=n_bits,
                 use_virtual_lib=use_virtual_lib,
+                verbose_compilation=verbose_compilation,
             )
 
         # Create test data from the same distribution and quantize using
@@ -348,6 +351,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             configuration=default_configuration,
             n_bits=n_bits,
             use_virtual_lib=use_virtual_lib,
+            verbose_compilation=verbose_compilation,
         )
 
         # Create test data from the same distribution and quantize using.
@@ -432,6 +436,7 @@ def test_compile_torch_or_onnx_networks(
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        verbose_compilation=False,
     )
 
 
@@ -473,6 +478,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        verbose_compilation=False,
     )
 
 
@@ -551,6 +557,7 @@ def test_compile_torch_or_onnx_activations(
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        verbose_compilation=False,
     )
 
 
@@ -596,6 +603,7 @@ def test_compile_torch_qat(
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        verbose_compilation=False,
     )
 
 
@@ -626,12 +634,7 @@ def test_compile_torch_qat(
         pytest.param(nn.ReLU, id="relu"),
     ],
 )
-def test_dump_torch_network(
-    model,
-    expected_onnx_str,
-    activation_function,
-    default_configuration,
-):
+def test_dump_torch_network(model, expected_onnx_str, activation_function, default_configuration):
     """This is a test which is equivalent to tests in test_dump_onnx.py, but for torch modules."""
     input_output_feature = 7
     use_virtual_lib = True
@@ -648,10 +651,12 @@ def test_dump_torch_network(
         is_onnx,
         dump_onnx=True,
         expected_onnx_str=expected_onnx_str,
+        verbose_compilation=False,
     )
 
 
-def test_pretrained_mnist_qat(default_configuration, check_accuracy):
+@pytest.mark.parametrize("verbose_compilation", [True, False])
+def test_pretrained_mnist_qat(default_configuration, check_accuracy, verbose_compilation):
     """Load a QAT MNIST model and make sure we get the same results in VL as with ONNX."""
 
     onnx_file_path = "tests/data/mnist_2b_s1_1.zip"
@@ -699,6 +704,7 @@ def test_pretrained_mnist_qat(default_configuration, check_accuracy):
         configuration=default_configuration,
         n_bits=n_bits,
         use_virtual_lib=True,
+        verbose_compilation=verbose_compilation,
     )
 
     num_inputs = 1
@@ -743,6 +749,7 @@ def test_pretrained_mnist_qat(default_configuration, check_accuracy):
         configuration=default_configuration,
         n_bits=n_bits,
         use_virtual_lib=False,
+        verbose_compilation=verbose_compilation,
     )
 
     assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8

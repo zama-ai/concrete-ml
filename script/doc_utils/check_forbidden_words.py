@@ -26,6 +26,12 @@ def process_file(file_str: str, do_open_problematic_files=False):
     if "docs/developer-guide/api" in file_str:
         return True, 0
 
+    # forbidden_word_list is a list of tuples: each tuple is of the form
+    # (forbidden_word, exceptions), where:
+    #       forbidden_word: is the forbidden word
+    #       exceptions: is a list (possibly empty) of exceptions; if the forbidden_word is found
+    #           but one of the elements in the exceptions match the string, it is not considered as
+    #           an error
     forbidden_word_list: List[Tuple[str, List]]
     forbidden_word_list = [
         ("Concrete-ml", []),

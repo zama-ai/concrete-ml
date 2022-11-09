@@ -71,8 +71,15 @@ for regression_model in regressor_model_classes:
 
 @pytest.mark.parametrize("model, parameters", multiple_models_datasets)
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("verbose_compilation", [True, False])
 def test_model_compile_run_fhe(
-    model, parameters, use_virtual_lib, load_data, default_configuration, is_vl_only_option
+    model,
+    parameters,
+    use_virtual_lib,
+    load_data,
+    default_configuration,
+    is_vl_only_option,
+    verbose_compilation,
 ):
     """Tests the sklearn regressions."""
     if not use_virtual_lib and is_vl_only_option:
@@ -104,7 +111,12 @@ def test_model_compile_run_fhe(
     y_pred = model.predict(x[:1])
 
     # Test compilation
-    model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
+    model.compile(
+        x,
+        default_configuration,
+        use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
+    )
 
     # Make sure we can predict over a single example in FHE.
     y_pred_fhe = model.predict(x[:1], execute_in_fhe=True)

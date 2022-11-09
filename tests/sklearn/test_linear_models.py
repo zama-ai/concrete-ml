@@ -218,6 +218,7 @@ for classifier_model in classifier_model_classes:
 @pytest.mark.parametrize("model_class, data_parameters", multiple_models_datasets)
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("verbose_compilation", [True, False])
 def test_linear_model_compile_run_fhe(
     model_class,
     data_parameters,
@@ -228,6 +229,7 @@ def test_linear_model_compile_run_fhe(
     is_vl_only_option,
     check_r2_score,
     check_accuracy,
+    verbose_compilation,
 ):
     """Tests the sklearn regressions."""
     if not use_virtual_lib and is_vl_only_option:
@@ -251,7 +253,12 @@ def test_linear_model_compile_run_fhe(
     y_pred = model.predict(x)
 
     # Test compilation
-    fhe_circuit = model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
+    fhe_circuit = model.compile(
+        x,
+        default_configuration,
+        use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
+    )
 
     # Check that no TLUs are found within the circuit
     # FIXME Change this once CN implements this feature

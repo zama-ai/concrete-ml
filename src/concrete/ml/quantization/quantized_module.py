@@ -363,6 +363,7 @@ class QuantizedModule:
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
         p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+        verbose_compilation: bool = False,
     ) -> Circuit:
         """Compile the forward function of the module.
 
@@ -377,6 +378,7 @@ class QuantizedModule:
             use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
                 Defaults to False.
             p_error (Optional[float]): probability of error of a PBS.
+            verbose_compilation (bool): whether to show compilation information
 
         Returns:
             Circuit: the compiled Circuit.
@@ -411,6 +413,7 @@ class QuantizedModule:
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
             p_error=p_error,
+            verbose=verbose_compilation,
         )
 
         self._is_compiled = True

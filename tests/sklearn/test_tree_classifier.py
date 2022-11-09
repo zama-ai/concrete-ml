@@ -37,6 +37,7 @@ from concrete.ml.sklearn import DecisionTreeClassifier, RandomForestClassifier, 
     ],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("verbose_compilation", [True, False])
 def test_decision_tree_classifier(
     parameters,
     load_data,
@@ -44,6 +45,7 @@ def test_decision_tree_classifier(
     check_is_good_execution_for_quantized_models,
     use_virtual_lib,
     is_vl_only_option,
+    verbose_compilation,
 ):
     """Tests the sklearn DecisionTreeClassifier."""
     if not use_virtual_lib and is_vl_only_option:
@@ -59,7 +61,12 @@ def test_decision_tree_classifier(
     model.fit(x, y)
 
     # Test compilation
-    model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
+    model.compile(
+        x,
+        default_configuration,
+        use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
+    )
 
     # Compare FHE vs non-FHE
     check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
