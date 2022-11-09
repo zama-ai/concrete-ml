@@ -154,7 +154,8 @@
 - [`onnx_impl_utils.compute_onnx_pool_padding`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_onnx_pool_padding): Compute any additional padding needed to compute pooling layers.
 - [`onnx_impl_utils.numpy_onnx_pad`](./concrete.ml.onnx.onnx_impl_utils.md#function-numpy_onnx_pad): Pad a tensor according to ONNX spec, using an optional custom pad value.
 - [`onnx_impl_utils.onnx_avgpool_compute_norm_const`](./concrete.ml.onnx.onnx_impl_utils.md#function-onnx_avgpool_compute_norm_const): Compute the average pooling normalization constant.
-- [`onnx_model_manipulations.clean_graph_after_node`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node): Clean the graph of the onnx model by removing nodes after the given node name.
+- [`onnx_model_manipulations.clean_graph_after_node_name`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_name): Clean the graph of the onnx model by removing nodes after the given node name.
+- [`onnx_model_manipulations.clean_graph_after_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_op_type): Clean the graph of the onnx model by removing nodes after the given node type.
 - [`onnx_model_manipulations.keep_following_outputs_discard_others`](./concrete.ml.onnx.onnx_model_manipulations.md#function-keep_following_outputs_discard_others): Keep the outputs given in outputs_to_keep and remove the others from the model.
 - [`onnx_model_manipulations.remove_identity_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_identity_nodes): Remove identity nodes from a model.
 - [`onnx_model_manipulations.remove_node_types`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_node_types): Remove unnecessary nodes from the ONNX graph.

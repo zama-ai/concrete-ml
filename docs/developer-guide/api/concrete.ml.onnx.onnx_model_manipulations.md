@@ -99,10 +99,14 @@ ______________________________________________________________________
 
 <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.5.x/src/concrete/ml/onnx/onnx_model_manipulations.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `clean_graph_after_node`
+## <kbd>function</kbd> `clean_graph_after_node_name`
 
 ```python
-clean_graph_after_node(onnx_model: ModelProto, node_name: str)
+clean_graph_after_node_name(
+    onnx_model: ModelProto,
+    node_name: str,
+    fail_if_not_found: bool = True
+)
 ```
 
 Clean the graph of the onnx model by removing nodes after the given node name.
@@ -111,3 +115,34 @@ Clean the graph of the onnx model by removing nodes after the given node name.
 
 - <b>`onnx_model`</b> (onnx.ModelProto):  The onnx model.
 - <b>`node_name`</b> (str):  The node's name whose following nodes will be removed.
+- <b>`fail_if_not_found`</b> (bool):  If true, abort if the node name is not found
+
+**Raises:**
+
+- <b>`ValueError`</b>:  if the node name is not found and if fail_if_not_found is set
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml/tree/release/0.5.x/src/concrete/ml/onnx/onnx_model_manipulations.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `clean_graph_after_node_op_type`
+
+```python
+clean_graph_after_node_op_type(
+    onnx_model: ModelProto,
+    node_op_type: str,
+    fail_if_not_found: bool = True
+)
+```
+
+Clean the graph of the onnx model by removing nodes after the given node type.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The onnx model.
+- <b>`node_op_type`</b> (str):  The node's op_type whose following nodes will be removed.
+- <b>`fail_if_not_found`</b> (bool):  If true, abort if the node op_type is not found
+
+**Raises:**
+
+- <b>`ValueError`</b>:  if the node op_type is not found and if fail_if_not_found is set
