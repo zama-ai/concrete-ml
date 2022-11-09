@@ -3,7 +3,7 @@
 set -e
 
 rm -rf .venvpip
-python3.9 -m venv .venvpip
+python3 -m venv .venvpip
 
 # shellcheck disable=SC1091
 source .venvpip/bin/activate
@@ -13,8 +13,11 @@ pip install pandas
 pip install tensorflow
 pip install tf2onnx
 
-# Fresh new Concrete-ML from pypi
-pip install concrete-ml
+# Fresh new Concrete-ML from pypi:
+# If it is a public version:
+#       pip install concrete-ml
+# If it is still a private version
+pip install -U --pre concrete-ml
 
 # For pytest
 pip install pytest

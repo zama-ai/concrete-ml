@@ -11,6 +11,9 @@ mkdir -p "${TEST_DIR}"
 MD_FILES=$(find . -type f -name "*.md" | grep -v "^\./\." | grep -v "api/concrete\.ml")
 NCPU=$(./script/make_utils/ncpus.sh)
 
+# Force NCPU to 1, since using parallel checks makes issues on linux or CI
+NCPU=1
+
 while [ -n "$1" ]
 do
    case "$1" in
