@@ -48,7 +48,7 @@ def numpy_onnx_pad(
         # to the real-axis 0
         if int_only:
             # Work in integer Concrete-Numpy mode
-            x_pad = cnp_ones(padded_shape) * pad_value
+            x_pad = cnp_ones(tuple(padded_shape)) * numpy.int64(pad_value)
         else:
             # Floating point mode
             x_pad = numpy.ones(padded_shape, dtype=numpy.float32) * pad_value
