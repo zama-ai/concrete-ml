@@ -65,6 +65,7 @@ class QuantizedOp:
     _params_name_to_input_idx: Dict[str, int] = {}
     _input_idx_to_params_name: Dict[int, str] = {}
     _params_that_are_onnx_inputs: Set[str] = set()
+    _params_that_are_onnx_var_inputs: Set[str] = set()
     _params_that_are_required_onnx_inputs: Set[str] = set()
     _has_attr: bool
     _inputs_not_quantized: Set[str] = set()
@@ -72,7 +73,11 @@ class QuantizedOp:
 
     error_tracker: Optional[List[int]] = None
 
-    POSITIONAL_ARGUMENTS_KINDS = {Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD}
+    POSITIONAL_ARGUMENTS_KINDS = {
+        Parameter.POSITIONAL_ONLY,
+        Parameter.POSITIONAL_OR_KEYWORD,
+    }
+    VAR_POSITIONAL_ARGUMENTS_KINDS = {Parameter.VAR_POSITIONAL}
 
     def __init__(
         self,
@@ -219,6 +224,11 @@ class QuantizedOp:
             for param in impl_params.values()
             if param.kind in cls.POSITIONAL_ARGUMENTS_KINDS
         }
+        cls._params_that_are_onnx_var_inputs = {
+            param.name
+            for param in impl_params.values()
+            if param.kind in cls.VAR_POSITIONAL_ARGUMENTS_KINDS
+        }
         cls._params_that_are_required_onnx_inputs = {
             param.name for param in impl_params.values() if isinstance(param.default, _empty)
         }
@@ -303,9 +313,16 @@ class QuantizedOp:
         num_onnx_inputs = len(self._params_that_are_onnx_inputs)
         num_required_onnx_inputs = len(self._params_that_are_required_onnx_inputs)
         num_provided_constants = len(self.constant_inputs)
-        prepared_inputs: List[Optional[Union[QuantizedArray, numpy.ndarray]]] = [
-            None
-        ] * num_onnx_inputs
+        num_inputs = len(inputs)
+        is_param_variadic = len(self._params_that_are_onnx_var_inputs) > 0
+
+        prepared_inputs: List[Optional[Union[QuantizedArray, numpy.ndarray]]]
+        if is_param_variadic:
+            # prepared_inputs length can't be infered from num_onnx_inputs with a var parameter
+            # use inputs instead
+            prepared_inputs = [None] * num_inputs
+        else:
+            prepared_inputs = [None] * num_onnx_inputs
 
         # If calibrating (calibrate=True): inputs are numpy.ndarrays of float32
         # If used in the computation graph (calibrate=False): inputs are QuantizedArrays, of which
@@ -331,9 +348,13 @@ class QuantizedOp:
             else:
                 prepared_inputs[input_idx] = constant_val
 
-        num_inputs = len(inputs)
+        condition_inputs = (
+            num_onnx_inputs >= (num_inputs) + num_provided_constants >= num_required_onnx_inputs
+            if not is_param_variadic
+            else True
+        )
         assert_true(
-            num_onnx_inputs >= (num_inputs) + num_provided_constants >= num_required_onnx_inputs,
+            condition_inputs,
             f"This operator has {num_onnx_inputs} ONNX inputs, and {num_provided_constants} "
             "constants were already provided when instantiating the class. "
             f"Got a call with {num_inputs} inputs and constants while the call expects between "

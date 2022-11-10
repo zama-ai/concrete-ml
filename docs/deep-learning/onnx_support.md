@@ -124,6 +124,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Cast
 - Celu
 - Clip
+- Concat
 - Constant
 - Conv
 - Cos
@@ -170,6 +171,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Tanh
 - ThresholdedRelu
 - Transpose
+- Unsqueeze
 - Where
 - onnx.brevitas.Quant
 

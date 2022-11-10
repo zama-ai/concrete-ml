@@ -430,7 +430,7 @@ class QuantizedReshape(QuantizedOp):
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
             q_inputs[0].quantizer.n_bits,
-            numpy.reshape(prepared_inputs[0].qvalues, newshape),
+            self.call_impl(prepared_inputs[0].qvalues, newshape, **attrs),
             value_is_float=False,
             options=self._get_output_quant_opts(),
             stats=prepared_inputs[0].quantizer.quant_stats,
@@ -1528,12 +1528,10 @@ class QuantizedTranspose(QuantizedOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
-        axes_permute = self.attrs["perm"]
-
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
             q_inputs[0].quantizer.n_bits,
-            numpy.transpose(prepared_inputs[0].qvalues, axes_permute),
+            self.call_impl(prepared_inputs[0].qvalues, **attrs),
             value_is_float=False,
             options=self._get_output_quant_opts(),
             stats=prepared_inputs[0].quantizer.quant_stats,
@@ -1569,3 +1567,88 @@ class QuantizedSign(QuantizedOp):
     """Quantized Neg op."""
 
     _impl_for_op_named: str = "Sign"
+
+
+class QuantizedUnsqueeze(QuantizedOp):
+    """Unsqueeze operator."""
+
+    _impl_for_op_named: str = "Unsqueeze"
+    quantize_inputs_with_model_outputs_precision = True
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Unsqueeze the input tensors on a given axis.
+
+        Args:
+            q_inputs: an encrypted integer tensor
+            attrs: additional optional unsqueeze options
+
+        Returns:
+            result (QuantizedArray): unsqueezed encrypted integer tensor
+        """
+
+        # FIXME: Currently Unsqueeze quantizes the inputs, but this is unnecessary if the reshape
+        # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
+        # here only if the concatenated result is returned directly from the FHE program.
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        axes = prepared_inputs[1]
+        assert_true(isinstance(axes, list))
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].quantizer.n_bits,
+            self.call_impl(prepared_inputs[0].qvalues, axes, **attrs),
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )
+
+
+class QuantizedConcat(QuantizedOp):
+    """Concatenate operator."""
+
+    _impl_for_op_named: str = "Concat"
+    quantize_inputs_with_model_outputs_precision = True
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Concatenate the input tensors on a giver axis.
+
+        Args:
+            q_inputs: an encrypted integer tensor
+            attrs: additional optional concatenate options
+
+        Returns:
+            result (QuantizedArray): concatenated encrypted integer tensor
+        """
+
+        # FIXME: Currently Concatenate quantizes the inputs, but this is unnecessary if the reshape
+        # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
+        # here only if the concatenated result is returned directly from the FHE program.
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        # The input tensors must have the same quantization parameters to be concatenated.
+        scales = [x.quantizer.scale for x in prepared_inputs]
+        zero_points = [x.quantizer.zero_point for x in prepared_inputs]
+        assert_true(
+            all(x == scales[0] for x in scales) and all(x == zero_points[0] for x in zero_points),
+            "All inputs must have the same scale and zero_point to be concatenated.",
+        )
+
+        tensors_to_concat = [prepared_input.qvalues for prepared_input in prepared_inputs]
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].quantizer.n_bits,
+            self.call_impl(*tensors_to_concat, **attrs),
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )

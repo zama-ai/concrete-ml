@@ -23,6 +23,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedCast,
     QuantizedCelu,
     QuantizedClip,
+    QuantizedConcat,
     QuantizedConv,
     QuantizedDiv,
     QuantizedElu,
@@ -62,6 +63,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedSub,
     QuantizedTanh,
     QuantizedTranspose,
+    QuantizedUnsqueeze,
     QuantizedWhere,
 )
 
@@ -952,6 +954,8 @@ def test_all_ops_were_tested():
         QuantizedFloor: test_univariate_ops_no_attrs,
         QuantizedBrevitasQuant: test_brevitas_quant,
         QuantizedTranspose: test_quantized_transpose,
+        QuantizedUnsqueeze: test_quantized_unsqueeze,
+        QuantizedConcat: test_quantized_concat,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
@@ -1066,3 +1070,66 @@ def test_quantized_transpose(shape, axes):
     assert q_transposed.quantizer.zero_point == q_arr0.quantizer.zero_point
     assert q_transposed.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(numpy.transpose(q_arr0.qvalues, axes) == q_transposed.qvalues)
+
+
+@pytest.mark.parametrize(
+    "shape1, shape2, axis",
+    [pytest.param((10, 5), (10, 5), 1), pytest.param((50, 40), (50, 40), 1)],
+)
+def test_quantized_concat(shape1, shape2, axis):
+    """Test quantized reshape."""
+
+    n_bits_concat_output = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    data = numpy.random.randn(*shape1)
+    data_to_concatenate = numpy.random.randn(*shape2)
+
+    q_arr = QuantizedArray(n_bits=n_bits_concat_output, values=data)
+
+    q_arr_to_concat = QuantizedArray(n_bits=n_bits_concat_output, values=data_to_concatenate)
+
+    q_concatenated = QuantizedConcat(
+        n_bits_concat_output, input_quant_opts=q_arr.quantizer.quant_options, axis=axis
+    )
+
+    with pytest.raises(
+        AssertionError,
+        match="All inputs must have the same scale and zero_point to be concatenated.",
+    ):
+        q_result = q_concatenated(q_arr, q_arr_to_concat)
+
+    q_arr_to_concat.quantizer.scale = q_arr.quantizer.scale
+    q_arr_to_concat.quantizer.zero_point = q_arr.quantizer.zero_point
+
+    q_result = q_concatenated(q_arr, q_arr_to_concat)
+
+    assert q_result.quantizer.zero_point == q_arr.quantizer.zero_point
+    assert q_result.quantizer.scale == q_arr.quantizer.scale
+    assert numpy.all(
+        numpy.concatenate([q_arr.qvalues, q_arr_to_concat.qvalues], axis) == q_result.qvalues
+    )
+
+
+@pytest.mark.parametrize("shape, axis", [pytest.param((10, 5), [1]), pytest.param((50, 40), [0])])
+def test_quantized_unsqueeze(shape, axis):
+    """Test quantized reshape."""
+
+    def custom_numpy_unsqueeze(x, axes):
+        for axis in axes:
+            x = numpy.expand_dims(x, axis=axis)
+        return x
+
+    n_bits_concat_output = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    data = numpy.random.randn(*shape)
+
+    q_arr = QuantizedArray(n_bits=n_bits_concat_output, values=data)
+
+    q_unsqueeze = QuantizedUnsqueeze(
+        n_bits_concat_output,
+        input_quant_opts=q_arr.quantizer.quant_options,
+        constant_inputs={1: axis},
+    )
+    q_result = q_unsqueeze(q_arr)
+
+    assert q_result.quantizer.zero_point == q_arr.quantizer.zero_point
+    assert q_result.quantizer.scale == q_arr.quantizer.scale
+    assert numpy.all(custom_numpy_unsqueeze(q_arr.qvalues, axes=axis) == q_result.qvalues)

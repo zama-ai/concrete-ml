@@ -1632,3 +1632,36 @@ def numpy_neg(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor
     """
     return (numpy.negative(x),)
+
+
+def numpy_concatenate(*x: numpy.ndarray, axis: int) -> Tuple[numpy.ndarray]:
+    """Apply concatenate in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#concat-13
+
+    Args:
+        *x (numpy.ndarray): Input tensors to be concatenated.
+        axis (int): Which axis to concat on.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor.
+    """
+    return (numpy.concatenate(x, axis=axis),)
+
+
+@onnx_func_raw_args("axis")
+def numpy_unsqueeze(x: numpy.ndarray, axis: list) -> Tuple[numpy.ndarray]:
+    """Apply the unsqueeze operator in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#unsqueeze-13
+
+    Args:
+        x (numpy.ndarray): Input tensor.
+        axis (list): List of the axis to unsqueeze.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor.
+    """
+    for ax in axis:
+        x = numpy.expand_dims(x, axis=ax)
+    return (x,)

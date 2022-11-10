@@ -47,6 +47,7 @@ from .ops_impl import (
     numpy_cast,
     numpy_celu,
     numpy_clip,
+    numpy_concatenate,
     numpy_constant,
     numpy_conv,
     numpy_cos,
@@ -99,6 +100,7 @@ from .ops_impl import (
     numpy_tanh,
     numpy_thresholdedrelu,
     numpy_transpose,
+    numpy_unsqueeze,
     numpy_where,
 )
 
@@ -174,6 +176,8 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Min": numpy_min,
     "Neg": numpy_neg,
     "Sign": numpy_sign,
+    "Concat": numpy_concatenate,
+    "Unsqueeze": numpy_unsqueeze,
 }
 
 

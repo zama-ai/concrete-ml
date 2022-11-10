@@ -120,6 +120,30 @@ class NetWithLoops(torch.nn.Module):
         return x
 
 
+class NetWithConcatUnsqueeze(torch.nn.Module):
+    """Torch model to test the concat and unsqueeze operators."""
+
+    def __init__(self, activation_function, n_feat, n_fc_layers):
+        super().__init__()
+        self.fc1 = nn.Linear(n_feat, 3)
+        self.ifc = nn.Sequential()
+        for i in range(n_fc_layers):
+            self.ifc.add_module(f"fc{i+1}", nn.Linear(3, 3))
+        self.out = nn.Linear(3, 1)
+        self.act = activation_function()
+
+    def forward(self, x):
+        """Forward pass."""
+        x = self.act(self.fc1(x))
+        results = []
+        for module in self.ifc:
+            results.append(module(x))
+        # Use torch.stack which creates Unsqueeze operators for each module
+        # and a final Concat operator.
+        results = torch.stack(results)
+        return results
+
+
 class QATTestModule(nn.Module):
     """Torch model that implements a simple non-uniform quantizer."""
 
@@ -149,6 +173,9 @@ class QATTestModule(nn.Module):
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(CNN, (5, 3, 32, 32)),
         pytest.param(partial(NetWithLoops, n_feat=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)),
+        pytest.param(
+            partial(NetWithConcatUnsqueeze, n_feat=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)
+        ),
         pytest.param(QATTestModule, (5, 3, 6, 6)),
     ],
 )
