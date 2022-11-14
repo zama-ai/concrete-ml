@@ -199,7 +199,7 @@ jobs:
       - name: Start EC2 runner python 37
         id: start-ec2-runner-37
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-37-linux-runner) }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -223,7 +223,7 @@ jobs:
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-38-linux-runner) }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -247,7 +247,7 @@ jobs:
       - name: Start EC2 runner python 39
         id: start-ec2-runner-39
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-39-linux-runner) }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -271,7 +271,7 @@ jobs:
       - name: Start EC2 runner python 310
         id: start-ec2-runner-310
         if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-310-linux-runner) }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -595,7 +595,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Stop EC2 runner python 37
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-37 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -604,7 +604,7 @@ jobs:
           mode: stop
 
       - name: Stop EC2 runner python 38
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -613,7 +613,7 @@ jobs:
           mode: stop
 
       - name: Stop EC2 runner python 39
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-39 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -622,7 +622,7 @@ jobs:
           mode: stop
 
       - name: Stop EC2 runner python 310
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-310 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -883,7 +883,7 @@ jobs:
       - name: Start EC2 runner python
         id: start-ec2-runner
         if: ${{ !cancelled() }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -1291,7 +1291,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         if: ${{ always() && needs.start-package-release-runner.outputs.ec2-instance-id }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}

@@ -96,7 +96,7 @@ jobs:
       - name: Start EC2 runner
         id: start-ec2-runner
         if: ${{ !cancelled() }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -233,7 +233,7 @@ jobs:
       - name: Shutdown EC2 runner
         id: shutdown-ec2-runner
         if: ${{ always() }}
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: stop
           label: ${{ needs.start-ec2.outputs.label }}
