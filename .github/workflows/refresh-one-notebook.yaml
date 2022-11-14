@@ -156,15 +156,15 @@ jobs:
             for ${{ github.ref_name }}."
           add-paths: |
             docs/**/*.ipynb
+            use_case_examples/**/*.ipynb
       
       # If the target branch is another branch, the current branch is automatically merged into it
-      - name: Merge branch
+      - name: Push changes into the current branch
         if: ${{ github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
-        uses: devmasx/merge-branch@1.4.0
+        uses: stefanzweifel/git-auto-commit-action@v4
         with:
-          type: now
-          target_branch: "${{ github.ref_name }}"
-          github_token: ${{ secrets.BOT_TOKEN }}
+          commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
+          push_options: '--force-with-lease'
 
 
   stop-runner-linux:
