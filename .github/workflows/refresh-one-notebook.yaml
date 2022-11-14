@@ -142,7 +142,7 @@ jobs:
           make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"
 
       # If the target branch is main or a release branch, a Pull Request is opened for everyone to 
-      # review. The current branch will be deleted once the PR is accepted and merged.
+      # review.
       - name: Open PR
         if: ${{ github.ref_name == 'main' || startsWith(github.ref_name , 'release/') }} 
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
@@ -156,7 +156,6 @@ jobs:
             for ${{ github.ref_name }}."
           add-paths: |
             docs/**/*.ipynb
-          delete-branch: true
       
       # If the target branch is another branch, the current branch is automatically merged into it
       - name: Merge branch
