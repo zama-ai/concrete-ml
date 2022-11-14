@@ -144,7 +144,7 @@ jobs:
       # If the target branch is main or a release branch, a Pull Request is opened for everyone to 
       # review. The current branch will be deleted once the PR is accepted and merged.
       - name: Open PR
-        if: ${{ github.ref_name == "main" || startsWith(github.ref_name , 'release/')}} 
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name , 'release/') }} 
         uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
         with:
           token: ${{ secrets.BOT_TOKEN }}
@@ -160,7 +160,7 @@ jobs:
       
       # If the target branch is another branch, the current branch is automatically merged into it
       - name: Merge branch
-        if: ${{ github.ref_name != "main" && !(startsWith(github.ref_name , 'release/'))}}
+        if: ${{ github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
         uses: devmasx/merge-branch@1.4.0
         with:
           type: now
@@ -191,7 +191,7 @@ jobs:
           mode: stop
 
   send-report:
-    if: ${{ always() }}
+    if: ${{ github.ref_name == 'main' || startsWith(github.ref_name , 'release/') }} 
     needs:
       [
         start-runner-linux,
@@ -201,7 +201,6 @@ jobs:
 
     # If the target branch is main or a release branch, a slack notification is sent
     name: Send Slack notification
-    if: ${{ github.ref_name == "main" || startsWith(github.ref_name , 'release/')}} 
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
@@ -218,7 +217,6 @@ jobs:
           echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
 
       - name: Slack Notification
-        if: ${{ always() }}
         continue-on-error: true
         uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
         env:
