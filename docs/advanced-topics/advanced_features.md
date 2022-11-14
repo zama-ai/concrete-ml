@@ -58,7 +58,8 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 clf = LogisticRegression()
 clf.fit(X_train, y_train)
 
-clf.compile(X_train, verbose_compilation=True)
+# FIXME: to be activate https://github.com/zama-ai/concrete-ml-internal/issues/2163
+# clf.compile(X_train, verbose_compilation=True)
 ```
 
 Here, one will see
