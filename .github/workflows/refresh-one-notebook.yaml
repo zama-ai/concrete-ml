@@ -165,6 +165,7 @@ jobs:
         with:
           commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
           push_options: '--force-with-lease'
+          add_options: '-u'
 
 
   stop-runner-linux:
