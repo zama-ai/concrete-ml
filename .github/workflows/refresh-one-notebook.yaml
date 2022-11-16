@@ -114,6 +114,8 @@ jobs:
 
       - name: Checkout Code
         uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
 
       - name: 'Set up Python 3.8'
         uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
@@ -166,7 +168,6 @@ jobs:
           commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
           push_options: '--force'
           add_options: '-u'
-          token: ${{ secrets.BOT_TOKEN }}
 
 
   stop-runner-linux:
