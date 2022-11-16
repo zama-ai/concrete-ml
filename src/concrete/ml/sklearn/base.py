@@ -28,7 +28,7 @@ from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
-from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
+from ..common.utils import generate_proxy_function, manage_parameters_for_pbs_errors
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
 
@@ -210,7 +210,8 @@ class QuantizedTorchEstimatorMixin:
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-        p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+        p_error: Optional[float] = None,
+        global_p_error: Optional[float] = None,
         verbose_compilation: bool = False,
     ) -> Circuit:
         """Compile the model.
@@ -224,7 +225,8 @@ class QuantizedTorchEstimatorMixin:
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): whether to compile using the virtual library that allows higher
                 bitwidths
-            p_error (Optional[float]): probability of error of a PBS
+            p_error (Optional[float]): probability of error of a single PBS
+            global_p_error (Optional[float]): probability of error of the full circuit
             verbose_compilation (bool): whether to show compilation information
 
         Returns:
@@ -250,6 +252,7 @@ class QuantizedTorchEstimatorMixin:
             show_mlir=show_mlir,
             use_virtual_lib=use_virtual_lib,
             p_error=p_error,
+            global_p_error=global_p_error,
             verbose_compilation=verbose_compilation,
         )
 
@@ -631,7 +634,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-        p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+        p_error: Optional[float] = None,
+        global_p_error: Optional[float] = None,
         verbose_compilation: bool = False,
     ) -> Circuit:
         """Compile the model.
@@ -645,7 +649,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): set to True to use the so called virtual lib
                 simulating FHE computation. Defaults to False
-            p_error (Optional[float]): probability of error of a PBS
+            p_error (Optional[float]): probability of error of a single PBS
+            global_p_error (Optional[float]): probability of error of the full circuit
             verbose_compilation (bool): whether to show compilation information
 
         Returns:
@@ -668,6 +673,10 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
         )
+
+        # Find the right way to set parameters for compiler, depending on the way we want to default
+        p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+
         self.fhe_circuit = compiler.compile(
             (sample.reshape(1, sample.shape[0]) for sample in X),
             configuration=configuration,
@@ -675,6 +684,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
             p_error=p_error,
+            global_p_error=global_p_error,
             verbose=verbose_compilation,
         )
         # mypy
@@ -1117,7 +1127,8 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-        p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+        p_error: Optional[float] = None,
+        global_p_error: Optional[float] = None,
         verbose_compilation: bool = False,
     ) -> Circuit:
         """Compile the FHE linear model.
@@ -1133,7 +1144,8 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
                 or demo. Defaults to False.
             use_virtual_lib (bool): Whether to compile using the virtual library that allows higher
                 bitwidths with simulated FHE computation. Defaults to False
-            p_error (Optional[float]): Probability of error of a PBS
+            p_error (Optional[float]): Probability of error of a single PBS
+            global_p_error (Optional[float]): probability of error of the full circuit
             verbose_compilation (bool): whether to show compilation information
 
         Returns:
@@ -1173,6 +1185,9 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # Instantiate the compiler on the linear regression's inference
         compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
 
+        # Find the right way to set parameters for compiler, depending on the way we want to default
+        p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+
         # Compile on the input set
         self.fhe_circuit = compiler.compile(
             inputset,
@@ -1181,6 +1196,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
             p_error=p_error,
+            global_p_error=global_p_error,
             verbose=verbose_compilation,
         )
 

@@ -13,7 +13,7 @@ from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 
 from ..common.debugging import assert_true
-from ..common.utils import DEFAULT_P_ERROR_PBS, get_onnx_opset_version
+from ..common.utils import get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_utils import remove_initializer_from_input
 from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedModule
@@ -42,6 +42,7 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
     )
 
 
+# pylint: disable-next=too-many-arguments
 def _compile_torch_or_onnx_model(
     model: Union[torch.nn.Module, onnx.ModelProto],
     torch_inputset: Dataset,
@@ -51,7 +52,8 @@ def _compile_torch_or_onnx_model(
     show_mlir: bool = False,
     n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
@@ -75,7 +77,8 @@ def _compile_torch_or_onnx_model(
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False
-        p_error (Optional[float]): probability of error of a PBS
+        p_error (Optional[float]): probability of error of a single PBS
+        global_p_error (Optional[float]): probability of error of the full circuit
         verbose_compilation (bool): whether to show compilation information
 
     Returns:
@@ -119,6 +122,7 @@ def _compile_torch_or_onnx_model(
         show_mlir=show_mlir,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
+        global_p_error=global_p_error,
         verbose_compilation=verbose_compilation,
     )
 
@@ -127,6 +131,7 @@ def _compile_torch_or_onnx_model(
     return quantized_module
 
 
+# pylint: disable-next=too-many-arguments
 def compile_torch_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
@@ -136,7 +141,8 @@ def compile_torch_model(
     show_mlir: bool = False,
     n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
@@ -159,7 +165,8 @@ def compile_torch_model(
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False
-        p_error (Optional[float]): probability of error of a PBS
+        p_error (Optional[float]): probability of error of a single PBS
+        global_p_error (Optional[float]): probability of error of the full circuit
         verbose_compilation (bool): whether to show compilation information
 
     Returns:
@@ -175,10 +182,12 @@ def compile_torch_model(
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
+        global_p_error=global_p_error,
         verbose_compilation=verbose_compilation,
     )
 
 
+# pylint: disable-next=too-many-arguments
 def compile_onnx_model(
     onnx_model: onnx.ModelProto,
     torch_inputset: Dataset,
@@ -188,7 +197,8 @@ def compile_onnx_model(
     show_mlir: bool = False,
     n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
@@ -211,7 +221,8 @@ def compile_onnx_model(
         n_bits: the number of bits for the quantization
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False.
-        p_error (Optional[float]): probability of error of a PBS
+        p_error (Optional[float]): probability of error of a single PBS
+        global_p_error (Optional[float]): probability of error of the full circuit
         verbose_compilation (bool): whether to show compilation information
 
     Returns:
@@ -235,10 +246,12 @@ def compile_onnx_model(
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
+        global_p_error=global_p_error,
         verbose_compilation=verbose_compilation,
     )
 
 
+# pylint: disable-next=too-many-arguments
 def compile_brevitas_qat_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
@@ -247,7 +260,8 @@ def compile_brevitas_qat_model(
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
     output_onnx_file: Union[Path, str] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
@@ -270,7 +284,8 @@ def compile_brevitas_qat_model(
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation,
             defaults to False.
-        p_error (Optional[float]): probability of error of a PBS
+        p_error (Optional[float]): probability of error of a single PBS
+        global_p_error (Optional[float]): probability of error of the full circuit
         output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
             is generated
         verbose_compilation (bool): whether to show compilation information
@@ -324,6 +339,7 @@ def compile_brevitas_qat_model(
         use_virtual_lib=use_virtual_lib,
         configuration=configuration,
         p_error=p_error,
+        global_p_error=global_p_error,
         verbose_compilation=verbose_compilation,
     )
 

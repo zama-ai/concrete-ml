@@ -2,16 +2,13 @@
 
 import string
 from types import FunctionType
-from typing import Callable, Dict, Iterable, Tuple
+from typing import Callable, Dict, Iterable, Optional, Tuple
 
 import onnx
 
 from ..common.debugging import assert_true
 
 _VALID_ARG_CHARS = set(string.ascii_letters).union(str(i) for i in range(10)).union(("_",))
-
-# Default probability of success of PBS
-DEFAULT_P_ERROR_PBS = 6.3342483999973e-05
 
 
 def replace_invalid_arg_name_chars(arg_name: str) -> str:
@@ -87,3 +84,49 @@ def get_onnx_opset_version(onnx_model: onnx.ModelProto) -> int:
     info = onnx_model.opset_import[0]
     assert_true(info.domain == "", "onnx version information is not as expected")
     return info.version
+
+
+def manage_parameters_for_pbs_errors(
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
+):
+    """Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
+
+    The returned (p_error, global_p_error) depends on user's parameters and the way we want to
+    manage defaults in Concrete-ML, which may be different from the way defaults are managed in
+    Concrete-Numpy
+
+    Principle:
+        - if none are set, we set global_p_error to a default value of our choice
+        - if both are set, we raise an error
+        - if one is set, we use it and forward it to Concrete-Numpy and the compiler
+
+    Args:
+        p_error (Optional[float]): probability of error of a single PBS.
+        global_p_error (Optional[float]): probability of error of the full circuit.
+
+    Returns:
+        (p_error, global_p_error): parameters to give to the compiler
+
+    Raises:
+        ValueError: if the two parameters are set (this is _not_ as in Concrete-Numpy)
+
+    """
+
+    # Default probability of error of a circuit. Only used if p_error is set to None
+    default_global_p_error_pbs = 0.01
+
+    if (p_error, global_p_error) == (None, None):
+        # FIXME, #2197: check it is what we decide in the team
+        p_error, global_p_error = (None, default_global_p_error_pbs)
+    elif p_error is None:
+        # Nothing to do, use user's parameters
+        pass
+    elif global_p_error is None:
+        # Per Concrete-Numpy, we need to give a value to global_p_error which will not be used
+        # FIXME: this may be removed if CN changes a bit, to see with Umut
+        global_p_error = 42.42
+    else:
+        raise ValueError("Please only set one of (p_error, global_p_error) values")
+
+    return p_error, global_p_error

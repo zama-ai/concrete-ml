@@ -9,7 +9,7 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
-from ..common.utils import DEFAULT_P_ERROR_PBS, generate_proxy_function
+from ..common.utils import generate_proxy_function, manage_parameters_for_pbs_errors
 from .base_quantized_op import QuantizedOp
 from .quantizers import QuantizedArray, UniformQuantizer
 
@@ -362,7 +362,8 @@ class QuantizedModule:
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
-        p_error: Optional[float] = DEFAULT_P_ERROR_PBS,
+        p_error: Optional[float] = None,
+        global_p_error: Optional[float] = None,
         verbose_compilation: bool = False,
     ) -> Circuit:
         """Compile the forward function of the module.
@@ -377,7 +378,8 @@ class QuantizedModule:
                 or demo. Defaults to False.
             use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
                 Defaults to False.
-            p_error (Optional[float]): probability of error of a PBS.
+            p_error (Optional[float]): probability of error of a single PBS.
+            global_p_error (Optional[float]): probability of error of the full circuit.
             verbose_compilation (bool): whether to show compilation information
 
         Returns:
@@ -406,6 +408,9 @@ class QuantizedModule:
 
         inputset = _get_inputset_generator(q_inputs, self.input_quantizers)
 
+        # Find the right way to set parameters for compiler, depending on the way we want to default
+        p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+
         self.forward_fhe = compiler.compile(
             inputset,
             configuration,
@@ -413,6 +418,7 @@ class QuantizedModule:
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
             p_error=p_error,
+            global_p_error=global_p_error,
             verbose=verbose_compilation,
         )
 

@@ -103,6 +103,7 @@ class ConcreteBaseEstimatorProtocol(Protocol):
         show_mlir: bool,
         use_virtual_lib: bool,
         p_error: float,
+        global_p_error: float,
         verbose_compilation: bool,
     ) -> Circuit:
         """Compiles a model to a FHE Circuit.
@@ -116,7 +117,8 @@ class ConcreteBaseEstimatorProtocol(Protocol):
             show_mlir (bool): whether or not to show MLIR during the compilation
             use_virtual_lib (bool): whether to compile using the virtual library that allows higher
                 bitwidths
-            p_error (float): probability of error of a PBS
+            p_error (float): probability of error of a single PBS
+            global_p_error (float): probability of error of the full circuit
             verbose_compilation (bool): whether to show compilation information
 
         .. # noqa: DAR202
