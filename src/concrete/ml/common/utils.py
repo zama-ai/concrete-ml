@@ -114,10 +114,10 @@ def manage_parameters_for_pbs_errors(
     """
 
     # Default probability of error of a circuit. Only used if p_error is set to None
+    # FIXME #2223: we'll find the most appropriate value for default_global_p_error_pbs
     default_global_p_error_pbs = 0.01
 
     if (p_error, global_p_error) == (None, None):
-        # FIXME, #2197: check it is what we decide in the team
         p_error, global_p_error = (None, default_global_p_error_pbs)
     elif p_error is None:
         # Nothing to do, use user's parameters
