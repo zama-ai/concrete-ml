@@ -203,7 +203,7 @@ class QuantizedGemm(QuantizedOp):
 
         final_term = p * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
-        numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
+        numpy_q_out = numpy_q_out + final_term - sum_weights
 
         # Quantization scales and zero points (FLOATS involved)
         # This is going to be compiled with a PBS (along with the following activation function)
@@ -268,7 +268,6 @@ class QuantizedAdd(QuantizedOp):
         assert self.output_quant_params is not None
         assert self.output_quant_params.scale is not None
         assert self.output_quant_params.zero_point is not None
-        assert self.b_sign in [-1, 1]
 
         # Optimize computation when adding constants, or tensors obtained from a unique integer
         # tensor. Optimization allows univariate float subgraph fusion to a TLU
@@ -325,10 +324,15 @@ class QuantizedAdd(QuantizedOp):
         # The sum of quantized encrypted integer values
         # This sum has << max(in_bits0, in_bits1) + 1 >> bits
         # Moreover, the zeropoint will be sum of input zeropoints
+        assert self.b_sign in [-1, 1]
+
+        # This lines will be simplified into
+        #       sum_q = rescale_q0 + self.b_sign * rescale_q1
+        # when zama-ai/concrete-numpy-internal#1749 is done
         if self.b_sign == 1:
             sum_q = rescale_q0 + rescale_q1
         elif self.b_sign == -1:
-            sum_q = rescale_q0 + (-1) * rescale_q1
+            sum_q = rescale_q0 - rescale_q1
 
         # But we would like the output to have n_bits, so we dequantize
         dequant_sum = self.output_quant_params.scale * sum_q
@@ -590,7 +594,7 @@ class QuantizedConv(QuantizedOp):
         final_term = n_weights * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
         # Now compute the whole sum (sum of the four terms)
-        numpy_q_out = numpy_q_out + final_term + (numpy.negative(sum_weights))
+        numpy_q_out = numpy_q_out + final_term - sum_weights
 
         # Compute the rescaling factor that dequantizes the input
         # This is going to be compiled with a PBS (along with the following activation function)
