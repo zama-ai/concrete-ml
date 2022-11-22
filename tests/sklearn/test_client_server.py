@@ -2,7 +2,6 @@
 
 import tempfile
 import warnings
-from functools import partial
 from shutil import copyfile
 
 import numpy
@@ -11,16 +10,7 @@ from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
-from concrete.ml.pytest.utils import classifiers, regressors
-from concrete.ml.sklearn import (
-    DecisionTreeClassifier,
-    LogisticRegression,
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    RandomForestClassifier,
-    XGBClassifier,
-    XGBRegressor,
-)
+from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
 from concrete.ml.torch.compile import compile_torch_model
 
 # pylint: disable=too-many-statements
@@ -81,36 +71,7 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
 
     # Generate random data
     x, y = load_data(**parameters)
-    x_train = x[:-1]
-    y_train = y[:-1]
-    x_test = x[-1:]
-
-    if isinstance(model, partial):
-        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
-            model_params = model.keywords
-            # Change module__input_dim to be the same as the input dimension
-            model_params["module__input_dim"] = x_train.shape[1]
-            # qnns require float32 as input
-            x = x.astype(numpy.float32)
-            x_train = x_train.astype(numpy.float32)
-            x_test = x_test.astype(numpy.float32)
-
-            if model.func is NeuralNetRegressor:
-                # Reshape y_train and y_test if 1d (regression for neural nets)
-                if y_train.ndim == 1:
-                    y_train = y_train.reshape(-1, 1).astype(numpy.float32)
-    elif model in [XGBClassifier, RandomForestClassifier, XGBRegressor]:
-        model_params = {
-            "n_estimators": 5,
-            "max_depth": 2,
-            "random_state": numpy.random.randint(0, 2**15),
-        }
-    elif model is DecisionTreeClassifier:
-        model_params = {"max_depth": 2, "random_state": numpy.random.randint(0, 2**15)}
-    elif model in [LogisticRegression]:
-        model_params = {"random_state": numpy.random.randint(0, 2**15)}
-    else:
-        model_params = {}
+    model_params, x, _, x_train, y_train, x_test = sanitize_test_and_train_datasets(model, x, y)
 
     model = model(**model_params)
 
