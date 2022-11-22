@@ -5,7 +5,6 @@ from functools import partial
 import numpy
 import pytest
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
-from shared import classifiers, regressors
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -13,6 +12,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
+from concrete.ml.pytest.utils import classifiers, regressors
 from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
 
 

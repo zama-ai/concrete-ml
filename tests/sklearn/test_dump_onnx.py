@@ -5,8 +5,9 @@ from functools import partial
 import numpy
 import onnx
 import pytest
-from shared import classifiers, regressors
 from sklearn.exceptions import ConvergenceWarning
+
+from concrete.ml.pytest.utils import classifiers, regressors
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 from concrete.ml.sklearn import (

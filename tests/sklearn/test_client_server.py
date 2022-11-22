@@ -7,11 +7,11 @@ from shutil import copyfile
 
 import numpy
 import pytest
-from shared import classifiers, regressors
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
+from concrete.ml.pytest.utils import classifiers, regressors
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
     LogisticRegression,

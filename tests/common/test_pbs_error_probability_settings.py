@@ -4,11 +4,9 @@ from functools import partial
 
 import numpy
 import pytest
-
-# FIXME, #2202: we need to remove this copy of the file and just have one
-from shared_to_be_removed import classifiers, regressors
 from sklearn.exceptions import ConvergenceWarning
 
+from concrete.ml.pytest.utils import classifiers, regressors
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
     LogisticRegression,

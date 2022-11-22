@@ -6,10 +6,10 @@ import numpy
 import pandas
 import pytest
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
-from shared import classifier_models, classifiers, regressor_models, regressors
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete.ml.pytest.utils import classifier_models, classifiers, regressor_models, regressors
 from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
 
 
