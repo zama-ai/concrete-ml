@@ -10,6 +10,7 @@ from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
+from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
 from concrete.ml.torch.compile import compile_torch_model
 
@@ -92,30 +93,12 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
     client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
 
 
-class FC(nn.Module):
-    """Torch model for the tests"""
-
-    def __init__(self, input_output, activation_function):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=input_output, out_features=input_output)
-        self.act_f = activation_function()
-        self.fc2 = nn.Linear(in_features=input_output, out_features=input_output)
-
-    def forward(self, x):
-        """Forward pass."""
-        out = self.fc1(x)
-        out = self.act_f(out)
-        out = self.fc2(out)
-
-        return out
-
-
 def test_client_server_custom_model(default_configuration_no_jit):
     """Tests the client server custom model."""
 
     # Generate random data
     x_train, x_test = numpy.random.rand(100, 2), numpy.random.rand(1, 2)
-    torch_model = FC(2, nn.ReLU)
+    torch_model = FCSmall(2, nn.ReLU)
     n_bits = 2
 
     # Get the quantized module from the model

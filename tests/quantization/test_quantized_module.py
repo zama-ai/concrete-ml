@@ -7,63 +7,9 @@ import pytest
 import torch
 from torch import nn
 
+from concrete.ml.pytest.torch_models import CNN, FC
 from concrete.ml.quantization import PostTrainingAffineQuantization
 from concrete.ml.torch import NumpyModule
-
-
-class CNN(nn.Module):
-    """Torch CNN model for the tests."""
-
-    def __init__(self, activation_function):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.AvgPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-        self.act_f = activation_function()
-
-    def forward(self, x):
-        """Forward pass."""
-        x = self.pool(torch.relu(self.conv1(x)))
-        x = self.pool(torch.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)
-        x = self.act_f(self.fc1(x))
-        x = self.act_f(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-
-class FC(nn.Module):
-    """Torch model for the tests"""
-
-    def __init__(self, activation_function):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=32 * 32 * 3, out_features=128)
-        self.act_1 = activation_function()
-        self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.act_2 = activation_function()
-        self.fc3 = nn.Linear(in_features=64, out_features=64)
-        self.act_3 = activation_function()
-        self.fc4 = nn.Linear(in_features=64, out_features=64)
-        self.act_4 = activation_function()
-        self.fc5 = nn.Linear(in_features=64, out_features=10)
-
-    def forward(self, x):
-        """Forward pass."""
-        out = self.fc1(x)
-        out = self.act_1(out)
-        out = self.fc2(out)
-        out = self.act_2(out)
-        out = self.fc3(out)
-        out = self.act_3(out)
-        out = self.fc4(out)
-        out = self.act_4(out)
-        out = self.fc5(out)
-
-        return out
-
 
 N_BITS_LIST = [
     20,
@@ -79,7 +25,7 @@ N_BITS_LIST = [
     "model, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
-        pytest.param(CNN, (100, 3, 32, 32)),
+        pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
     ],
 )
 @pytest.mark.parametrize(
@@ -130,18 +76,23 @@ def test_quantized_linear(
     to be the same as the standard module.
     """
     # Define the torch model
-    torch_fc_model = model(activation_function)
+    torch_fc_model = model(activation_function=activation_function)
+
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape)
+
     # Create corresponding numpy model
     numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
+
     # Predict with real model
     numpy_prediction = numpy_fc_model(numpy_input)
+
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(
         n_bits, numpy_fc_model, is_signed=is_signed
     )
     quantized_model = post_training_quant.quantize_module(numpy_input)
+
     # Quantize input
     qinput = quantized_model.quantize_input(numpy_input)
     prediction = quantized_model(qinput)

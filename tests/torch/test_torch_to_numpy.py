@@ -6,175 +6,28 @@ import pytest
 import torch
 from torch import nn
 
+from concrete.ml.pytest.torch_models import (
+    CNN,
+    FC,
+    CNNInvalid,
+    NetWithConcatUnsqueeze,
+    NetWithLoops,
+    QATTestModule,
+)
 from concrete.ml.torch import NumpyModule
-
-
-class CNN(nn.Module):
-    """Torch CNN model for the tests."""
-
-    def __init__(self, activation_function):
-        super().__init__()
-
-        self.activation_function = activation_function()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.AvgPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        """Forward pass."""
-        x = self.pool(self.activation_function(self.conv1(x)))
-        x = self.pool(self.activation_function(self.conv2(x)))
-        x = x.reshape(x.shape[0], -1)
-        x = self.activation_function(self.fc1(x))
-        x = self.activation_function(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-
-class FC(nn.Module):  # pylint: disable=too-many-instance-attributes
-    """Torch model for the tests"""
-
-    def __init__(self, activation_function):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=32 * 32 * 3, out_features=128)
-        self.act_1 = activation_function()
-        self.bn1 = nn.BatchNorm1d(128)
-        self.fc2 = nn.Linear(in_features=128, out_features=64)
-        self.bn2 = nn.BatchNorm1d(64)
-        self.act_2 = activation_function()
-        self.fc3 = nn.Linear(in_features=64, out_features=64)
-        self.act_3 = activation_function()
-        self.fc4 = nn.Linear(in_features=64, out_features=64)
-        self.act_4 = activation_function()
-        self.fc5 = nn.Linear(in_features=64, out_features=10)
-
-    def forward(self, x):
-        """Forward pass."""
-        out = self.bn1(self.fc1(x))
-        out = self.act_1(out)
-        out = self.bn2(self.fc2(out))
-        out = self.act_2(out)
-        out = self.fc3(out)
-        out = self.act_3(out)
-        out = self.fc4(out)
-        out = self.act_4(out)
-        out = self.fc5(out)
-
-        return out
-
-
-class CNNInvalid(nn.Module):
-    """Torch CNN model for the tests."""
-
-    def __init__(self, activation_function, padding, groups, gather_slice):
-        super().__init__()
-
-        self.activation_function = activation_function()
-        self.flatten_function = lambda x: torch.flatten(x, 1)
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.AvgPool2d(2, 2, padding=1) if padding else nn.AvgPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5, groups=2) if groups else nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * (5 + padding * 1) * (5 + padding * 1), 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-        self.gather_slice = gather_slice
-
-    def forward(self, x):
-        """Forward pass."""
-        x = self.pool(self.activation_function(self.conv1(x)))
-        x = self.pool(self.activation_function(self.conv2(x)))
-        x = self.flatten_function(x)
-        x = self.activation_function(self.fc1(x))
-        x = self.activation_function(self.fc2(x))
-        x = self.fc3(x)
-        # Produce a Gather and Slice which are not supported
-        if self.gather_slice:
-            return x[0, 0:-1:2]
-        return x
-
-
-class NetWithLoops(torch.nn.Module):
-    """Torch model, where we reuse some elements in a loop in the forward and don't expect the
-    user to define these elements in a particular order"""
-
-    def __init__(self, activation_function, n_feat, n_fc_layers):
-        super().__init__()
-        self.fc1 = nn.Linear(n_feat, 3)
-        self.ifc = nn.Sequential()
-        for i in range(n_fc_layers):
-            self.ifc.add_module(f"fc{i+1}", nn.Linear(3, 3))
-        self.out = nn.Linear(3, 1)
-        self.act = activation_function()
-
-    def forward(self, x):
-        """Forward pass."""
-        x = self.act(self.fc1(x))
-        for m in self.ifc:
-            x = self.act(m(x))
-        x = self.act(self.out(x))
-
-        return x
-
-
-class NetWithConcatUnsqueeze(torch.nn.Module):
-    """Torch model to test the concat and unsqueeze operators."""
-
-    def __init__(self, activation_function, n_feat, n_fc_layers):
-        super().__init__()
-        self.fc1 = nn.Linear(n_feat, 3)
-        self.ifc = nn.Sequential()
-        for i in range(n_fc_layers):
-            self.ifc.add_module(f"fc{i+1}", nn.Linear(3, 3))
-        self.out = nn.Linear(3, 1)
-        self.act = activation_function()
-
-    def forward(self, x):
-        """Forward pass."""
-        x = self.act(self.fc1(x))
-        results = []
-        for module in self.ifc:
-            results.append(module(x))
-        # Use torch.stack which creates Unsqueeze operators for each module
-        # and a final Concat operator.
-        results = torch.stack(results)
-        return results
-
-
-class QATTestModule(nn.Module):
-    """Torch model that implements a simple non-uniform quantizer."""
-
-    def __init__(self, activation_function):
-        super().__init__()
-
-        self.act = activation_function()
-
-    def forward(self, x):
-        """Forward pass with a quantizer built into the computation graph."""
-
-        def step(x, bias):
-            """The step function for quantization."""
-            y = torch.zeros_like(x)
-            mask = torch.gt(x - bias, 0.0)
-            y[mask] = 1.0
-            return y
-
-        x = step(x, 0.5) * 2.0
-        x = self.act(x)
-        return x
 
 
 @pytest.mark.parametrize(
     "model, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
-        pytest.param(CNN, (5, 3, 32, 32)),
-        pytest.param(partial(NetWithLoops, n_feat=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)),
+        pytest.param(partial(CNN, input_output=3), (5, 3, 32, 32)),
         pytest.param(
-            partial(NetWithConcatUnsqueeze, n_feat=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)
+            partial(NetWithLoops, input_output=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)
+        ),
+        pytest.param(
+            partial(NetWithConcatUnsqueeze, input_output=32 * 32 * 3, n_fc_layers=4),
+            (100, 32 * 32 * 3),
         ),
         pytest.param(QATTestModule, (5, 3, 6, 6)),
     ],

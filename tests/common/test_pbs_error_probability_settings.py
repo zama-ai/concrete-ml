@@ -7,28 +7,11 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
 from concrete.ml.torch.compile import compile_torch_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
-
-
-class FC(nn.Module):
-    """Torch model for the tests"""
-
-    def __init__(self, input_output, activation_function):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=input_output, out_features=input_output)
-        self.act_f = activation_function()
-        self.fc2 = nn.Linear(in_features=input_output, out_features=input_output)
-
-    def forward(self, x):
-        """Forward pass."""
-        out = self.fc1(x)
-        out = self.act_f(out)
-        out = self.fc2(out)
-
-        return out
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
@@ -74,7 +57,7 @@ def test_config_sklearn(model, parameters, kwargs, load_data):
 
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC)],
+    [pytest.param(FCSmall)],
 )
 @pytest.mark.parametrize(
     "kwargs",

@@ -8,6 +8,13 @@ from onnx import helper, numpy_helper
 from torch import nn
 
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
+from concrete.ml.pytest.torch_models import (
+    FCSeq,
+    FCSeqAddBiasVec,
+    FCSmall,
+    MultiOpOnSingleInputConvNN,
+    TinyCNN,
+)
 from concrete.ml.quantization import QuantizedGemm
 from concrete.ml.quantization.post_training import PostTrainingAffineQuantization
 from concrete.ml.torch.numpy_module import NumpyModule
@@ -19,124 +26,9 @@ from concrete.ml.torch.numpy_module import NumpyModule
 INPUT_OUTPUT_FEATURE = [1, 2, 3]
 
 
-class FC(nn.Module):
-    """Torch model for the tests"""
-
-    def __init__(self, input_output, act):
-        super().__init__()
-        self.fc1 = nn.Linear(in_features=input_output, out_features=input_output)
-        self.act = act()
-        self.fc2 = nn.Linear(in_features=input_output, out_features=input_output)
-
-    def forward(self, x):
-        """Forward pass."""
-        out = self.fc1(x)
-        out = self.act(out)
-        out = self.fc2(out)
-
-        return out
-
-
-class MultiOpOnSingleInputConvNN(nn.Module):
-    """Network that applies two quantized operations on a single input."""
-
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 8, 3)
-        self.conv2 = nn.Conv2d(1, 8, 3)
-
-    def forward(self, x):
-        """Forward pass."""
-        layer1_out = torch.relu(self.conv1(x))
-        layer2_out = torch.relu(self.conv2(x))
-        return layer1_out + layer2_out
-
-
-class FCSeq(nn.Module):
-    """Torch model that should generate MatMul->Add ONNX patterns
-
-    This network generates additions with a constant scalar
-    """
-
-    def __init__(self, input_output, act):
-        super().__init__()
-        self.feat = nn.Sequential()
-        in_features = input_output
-        self.n_layers = 2
-        self.biases = [torch.Tensor(size=(1,)) for _ in range(self.n_layers)]
-        for b in self.biases:
-            nn.init.uniform_(b)
-
-        for idx in range(self.n_layers):
-            out_features = in_features if idx == self.n_layers - 1 else in_features
-            layer_name = f"fc{idx}"
-            layer = nn.Linear(in_features=in_features, out_features=out_features, bias=False)
-            self.feat.add_module(layer_name, layer)
-            in_features = out_features
-
-        self.act = act()
-
-    def forward(self, x):
-        """Forward pass."""
-        for idx, l in enumerate(self.feat):
-            x = self.act(l(x) + self.biases[idx])
-        return x
-
-
-class FCSeqAddBiasVec(nn.Module):
-    """Torch model that should generate MatMul->Add ONNX patterns
-
-    This network tests the addition with a constant vector
-    """
-
-    def __init__(self, input_output, act):
-        super().__init__()
-        self.feat = nn.Sequential()
-        in_features = input_output
-        self.n_layers = 2
-        self.biases = [torch.Tensor(size=(input_output,)) for _ in range(self.n_layers)]
-        for b in self.biases:
-            nn.init.uniform_(b)
-
-        for idx in range(self.n_layers):
-            out_features = in_features if idx == self.n_layers - 1 else in_features
-            layer_name = f"fc{idx}"
-            layer = nn.Linear(in_features=in_features, out_features=out_features, bias=False)
-            self.feat.add_module(layer_name, layer)
-            in_features = out_features
-
-        self.act = act()
-
-    def forward(self, x):
-        """Forward pass."""
-        for idx, l in enumerate(self.feat):
-            x = self.act(l(x) + self.biases[idx])
-        return x
-
-
-class TinyCNN(nn.Module):
-    """A very small CNN."""
-
-    def __init__(self, n_classes, act) -> None:
-        """Create the tiny CNN with two conv layers."""
-        super().__init__()
-
-        self.conv1 = nn.Conv2d(1, 2, 2, stride=1, padding=0)
-        self.avg_pool1 = nn.AvgPool2d(2, 2)
-        self.conv2 = nn.Conv2d(2, n_classes, 2, stride=1, padding=0)
-        self.act = act()
-        self.n_classes = n_classes
-
-    def forward(self, x):
-        """Forward the two layers with the chosen activation function"""
-        x = self.act(self.avg_pool1(self.conv1(x)))
-        x = self.act(self.conv2(x))
-        return x
-
-
 @pytest.mark.parametrize(
     "model",
-    [pytest.param(FC), pytest.param(FCSeq), pytest.param(FCSeqAddBiasVec)],
+    [pytest.param(FCSmall), pytest.param(FCSeq), pytest.param(FCSeqAddBiasVec)],
 )
 @pytest.mark.parametrize(
     "input_output_feature",
