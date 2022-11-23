@@ -1131,7 +1131,7 @@ def numpy_transpose(x: numpy.ndarray, *, perm=None) -> Tuple[numpy.ndarray]:
 def numpy_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,
-    b: numpy.ndarray,
+    b: Optional[numpy.ndarray] = None,
     *,
     dilations: Tuple[int, ...],
     group: int = 1,
@@ -1148,9 +1148,9 @@ def numpy_conv(
     Args:
         x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
         w (numpy.ndarray): weights tensor. Shape is (O x I x Kh x Kw) for 2d
-        b (numpy.ndarray, Optional): bias tensor, Shape is (O,)
+        b (Optional[numpy.ndarray]): bias tensor, Shape is (O,). Default to None.
         dilations (Tuple[int, ...]): dilation of the kernel, default 1 on all dimensions.
-        group (int): number of convolution groups, default 1
+        group (int): number of convolution groups. Default to 1.
         kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
         pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
         strides (Tuple[int, ...]): stride of the convolution on each axis
