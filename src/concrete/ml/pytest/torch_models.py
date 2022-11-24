@@ -99,6 +99,37 @@ class CNN(nn.Module):
         return x
 
 
+class CNNMaxPool(nn.Module):
+    """Torch CNN model for the tests with a max pool."""
+
+    def __init__(self, input_output, activation_function):
+        super().__init__()
+        self.conv1 = nn.Conv2d(input_output, 6, 5)
+        self.maxpool = nn.MaxPool2d(2, 2)
+        self.conv2 = nn.Conv2d(6, 16, 5)
+        self.fc1 = nn.Linear(16 * 5 * 5, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, 10)
+        self.act_f = activation_function()
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x: the input of the NN
+
+        Returns:
+            the output of the NN
+        """
+        x = self.maxpool(torch.relu(self.conv1(x)))
+        x = self.maxpool(torch.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)
+        x = self.act_f(self.fc1(x))
+        x = self.act_f(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+
 class CNNOther(nn.Module):
     """Torch CNN model for the tests."""
 

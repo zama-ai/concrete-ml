@@ -43,6 +43,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedLog,
     QuantizedMatMul,
     QuantizedMax,
+    QuantizedMaxPool,
     QuantizedMin,
     QuantizedMul,
     QuantizedNeg,
@@ -570,14 +571,62 @@ def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal
 @pytest.mark.parametrize(
     "params",
     [
-        (numpy.random.uniform(size=(1, 1, 32, 32)) * 4, (3, 3), (2, 2), (0, 0, 0, 0), 0),
-        (numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2, (2, 2), (1, 1), (0, 0, 0, 0), 0),
-        (numpy.random.uniform(size=(2, 32, 4, 4)), (2, 2), (1, 1), (0, 0, 0, 0), 0),
-        (numpy.random.uniform(size=(2, 32, 4, 4)), (2, 4), (1, 1), (1, 2, 1, 2), 1),
-        (numpy.random.uniform(size=(2, 32, 4, 4)), (2, 4), (1, 1), (0, 2, 0, 2), 1),
-        (numpy.random.uniform(size=(2, 32, 5, 5)), (3, 3), (1, 1), (1, 1, 1, 1), 1),
-        (numpy.random.uniform(size=(2, 1, 7, 5)), (5, 1), (1, 1), (1, 2, 0, 4), 1),
-        (numpy.random.uniform(size=(1, 1, 16, 16)), (2, 2), (4, 4), (1, 2, 0, 4), 1),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 32, 32)),
+            (3, 3),
+            (2, 2),
+            (0, 0, 0, 0),
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-1.2, high=0.2, size=(10, 1, 16, 16)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 4),
+            (1, 1),
+            (1, 2, 1, 2),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 4),
+            (1, 1),
+            (0, 2, 0, 2),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 5, 5)),
+            (3, 3),
+            (1, 1),
+            (1, 1, 1, 1),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 1, 7, 5)),
+            (5, 1),
+            (1, 1),
+            (1, 2, 0, 4),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 16, 16)),
+            (2, 2),
+            (4, 4),
+            (1, 2, 0, 4),
+            1,
+        ),
     ],
 )
 @pytest.mark.parametrize("is_signed", [True, False])
@@ -612,6 +661,130 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
     # Compute the torch average pool
     bceil_mode = bool(ceil_mode)
     torch_res = torch.nn.functional.avg_pool2d(tx_pad, kernel_shape, strides, 0, bceil_mode).numpy()
+    check_float_arrays_equal(torch_res, expected_result)
+
+    # Compute the quantized result
+    result = q_op(q_input).dequant()
+
+    # The fp32 and quantized results should be very similar when quantization precision is high
+    check_r2_score(expected_result, result)
+
+
+@pytest.mark.parametrize("n_bits", [16])
+@pytest.mark.parametrize(
+    "params",
+    [
+        (
+            numpy.random.uniform(low=-4.0, high=4.0, size=(1, 1, 32, 32)),
+            (3, 3),
+            (2, 2),
+            (0, 0, 0, 0),
+            1,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-0.2, high=0.2, size=(10, 1, 16, 16)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+            1,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-5.0, high=3.0, size=(2, 32, 4, 4)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+            1,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-1.0, high=1.0, size=(1, 1, 6, 7)),
+            (2, 4),
+            (1, 1),
+            (1, 2, 1, 2),
+            2,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=0.0, high=1.0, size=(2, 32, 14, 14)),
+            (2, 4),
+            (1, 1),
+            (0, 2, 0, 2),
+            2,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=0.0, high=1.0, size=(2, 32, 15, 15)),
+            (3, 3),
+            (1, 1),
+            (1, 1, 1, 1),
+            3,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-3.0, high=4.0, size=(2, 1, 17, 15)),
+            (5, 4),
+            (1, 1),
+            (1, 2, 1, 2),
+            1,
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-3.0, high=1.0, size=(1, 1, 16, 16)),
+            (5, 5),
+            (4, 4),
+            (1, 2, 1, 2),
+            1,
+            0,
+        ),
+    ],
+)
+@pytest.mark.parametrize("is_signed", [True, False])
+def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_float_arrays_equal):
+    """Test the quantized max pool operator."""
+
+    # Retrieve arguments
+    net_input, kernel_shape, strides, pads, dilation, ceil_mode = params
+
+    # Create quantized data
+    q_input = QuantizedArray(n_bits, net_input, is_signed=is_signed)
+
+    dilations = tuple([dilation] * (len(kernel_shape)))
+
+    q_op = QuantizedMaxPool(
+        n_bits,
+        dilations=dilations,
+        strides=strides,
+        pads=pads,
+        kernel_shape=kernel_shape,
+        ceil_mode=ceil_mode,
+        input_quant_opts=q_input.quantizer.quant_options,
+    )
+
+    # Compute the result in floating point
+    expected_result = q_op.calibrate(net_input)
+
+    # Pad the input if needed
+    tinputs = torch.Tensor(net_input.copy())
+
+    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
+    tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
+
+    # Compute the torch max pool
+    bceil_mode = bool(ceil_mode)
+
+    torch_res = torch.nn.functional.max_pool2d(
+        tx_pad, kernel_shape, strides, 0, dilation, bceil_mode
+    ).numpy()
+
+    print("Torch")
+    print(torch_res)
+
+    print("Expected")
+    print(expected_result)
+
     check_float_arrays_equal(torch_res, expected_result)
 
     # Compute the quantized result
@@ -955,6 +1128,7 @@ def test_all_ops_were_tested():
         QuantizedPRelu: test_quantized_prelu,
         QuantizedHardSwish: test_univariate_ops_no_attrs,
         QuantizedAvgPool: test_quantized_avg_pool,
+        QuantizedMaxPool: test_quantized_max_pool,
         QuantizedPad: test_quantized_pad,
         QuantizedCast: test_quantized_comparators_and_where,
         QuantizedWhere: test_quantized_comparators_and_where,

@@ -25,6 +25,7 @@ from .quantized_ops import (
     QuantizedLessOrEqual,
     QuantizedLog,
     QuantizedMatMul,
+    QuantizedMaxPool,
     QuantizedMul,
     QuantizedOr,
     QuantizedPad,

@@ -11,6 +11,7 @@ from concrete.ml.pytest.torch_models import (
     FC,
     CNNGrouped,
     CNNInvalid,
+    CNNMaxPool,
     NetWithConcatUnsqueeze,
     NetWithLoops,
     QATTestModule,
@@ -24,6 +25,7 @@ from concrete.ml.torch import NumpyModule
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (5, 3, 32, 32)),
         pytest.param(partial(CNNGrouped, input_output=6, groups=3), (5, 6, 7, 7)),
+        pytest.param(partial(CNNMaxPool, input_output=3), (5, 3, 32, 32)),
         pytest.param(
             partial(NetWithLoops, input_output=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)
         ),

@@ -2,13 +2,14 @@
 
 # pylint: disable=too-many-lines
 from inspect import signature
-from typing import Optional, Sequence, Set, Tuple, Union
+from typing import List, Optional, Sequence, Set, Tuple, Union
 
 import numpy
 import onnx
 from brevitas.function import max_int, min_int
 from concrete.numpy import univariate
 from concrete.onnx import conv as cnp_conv
+from concrete.onnx import maxpool as cnp_maxpool
 from scipy import special
 from typing_extensions import SupportsIndex
 
@@ -1219,7 +1220,7 @@ def numpy_avgpool(
         AssertionError: if the pooling arguments are wrong
     """
 
-    assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
+    assert_true(len(kernel_shape) == 2, "The average pool operator currently supports only 2-d")
 
     # For mypy
     assert pads is None or len(pads) == 4
@@ -1253,6 +1254,76 @@ def numpy_avgpool(
 
     # Compute the average of the input values for each kernel position
     res /= norm_const
+
+    return (res,)
+
+
+def numpy_maxpool(
+    x: numpy.ndarray,
+    *,
+    kernel_shape: Tuple[int, ...],
+    strides: Tuple[int, ...] = None,
+    auto_pad: str = "NOTSET",
+    pads: Tuple[int, ...] = None,
+    dilations: Optional[Union[Tuple[int, ...], List[int]]] = None,
+    ceil_mode: int = 0,
+    storage_order: int = 0,
+) -> Tuple[numpy.ndarray]:
+    """Compute Max Pooling using Torch.
+
+    Currently supports 2d max pooling with torch semantics. This function is ONNX compatible.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#MaxPool
+
+    Args:
+        x (numpy.ndarray): the input
+        kernel_shape (Union[Tuple[int, ...], List[int]]): shape of the kernel
+        strides (Optional[Union[Tuple[int, ...], List[int]]]): stride along each spatial axis
+            set to 1 along each spatial axis if not set
+        auto_pad (str): padding strategy, default = "NOTSET"
+        pads (Optional[Union[Tuple[int, ...], List[int]]]): padding for the beginning and ending
+            along each spatial axis (D1_begin, D2_begin, ..., D1_end, D2_end, ...)
+            set to 0 along each spatial axis if not set
+        dilations (Optional[Union[Tuple[int, ...], List[int]]]): dilation along each spatial axis
+            set to 1 along each spatial axis if not set
+        ceil_mode (int): ceiling mode, default = 1
+        storage_order (int): storage order, 0 for row major, 1 for column major, default = 0
+
+    Returns:
+        res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight x OutWidth).
+           See https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
+
+    """
+
+    assert_true(len(kernel_shape) == 2, "The max pool operator currently supports only 2-d")
+
+    # For mypy
+    assert pads is None or len(pads) == 4
+
+    # For mypy
+    assert len(kernel_shape) == 2
+
+    assert strides is None or len(strides) == 2
+
+    # Use default values if the ONNX did not set these parameters
+    pads = (0, 0, 0, 0) if pads is None else pads
+    strides = (1, 1) if strides is None else strides
+
+    # Pad the input tensor
+    pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode)
+    q_input_pad = numpy_onnx_pad(x, pool_pads)
+
+    fake_pads = [0] * len(pads)
+    res = cnp_maxpool(
+        q_input_pad,
+        kernel_shape=kernel_shape,
+        strides=strides,
+        auto_pad=auto_pad,
+        pads=fake_pads,
+        dilations=dilations,
+        ceil_mode=ceil_mode,
+        storage_order=storage_order,
+    )
 
     return (res,)
 

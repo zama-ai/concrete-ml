@@ -148,6 +148,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Log
 - MatMul
 - Max
+- MaxPool
 - Min
 - Mul
 - Neg

@@ -7,7 +7,7 @@ import pytest
 import torch
 from torch import nn
 
-from concrete.ml.pytest.torch_models import CNN, FC
+from concrete.ml.pytest.torch_models import CNN, FC, CNNMaxPool
 from concrete.ml.quantization import PostTrainingAffineQuantization
 from concrete.ml.torch import NumpyModule
 
@@ -26,6 +26,7 @@ N_BITS_LIST = [
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
+        pytest.param(partial(CNNMaxPool, input_output=3), (100, 3, 32, 32)),
     ],
 )
 @pytest.mark.parametrize(

@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Sequence, Set, Union
 
 import numpy
 from concrete.onnx import conv as cnp_conv
+from concrete.onnx import maxpool as cnp_maxpool
 from typing_extensions import SupportsIndex
 
 from ..common.debugging import assert_true
@@ -473,11 +474,11 @@ class QuantizedConv(QuantizedOp):
         super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Get the ONNX parameters
-        self.dilations = attrs.get("dilations", (1, 1))
         self.group = attrs.get("group", 1)
         self.kernel_shape = attrs.get("kernel_shape", None)
-        self.pads = attrs.get("pads", (0, 0, 0, 0))
-        self.strides = attrs.get("strides", (1, 1))
+        self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
+        self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
+        self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
 
         # Validate the parameters
         assert_true(
@@ -565,11 +566,12 @@ class QuantizedConv(QuantizedOp):
         # Compute the first encrypted term that convolves weights and inputs
         # Force padding to 0 as padding needs to use a custom padding initializer
         # and is thus manually performed in the code above
+        fake_pads = [0] * len(self.pads)
         conv_wx = cnp_conv(
             q_input_pad,
             q_weights.qvalues,
             bias=None,
-            pads=[0, 0, 0, 0],
+            pads=fake_pads,
             strides=self.strides,
             dilations=self.dilations,
             group=self.group,
@@ -668,8 +670,9 @@ class QuantizedAvgPool(QuantizedOp):
         # Get the ONNX parameters
         self.ceil_mode = attrs.get("ceil_mode", None)
         self.kernel_shape = attrs.get("kernel_shape", None)
-        self.pads = attrs.get("pads", (0, 0, 0, 0))
-        self.strides = attrs.get("strides", (1, 1))
+        self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
+        self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
+        self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
 
         # Validate the parameters
         assert_true(
@@ -750,7 +753,11 @@ class QuantizedAvgPool(QuantizedOp):
             q_input_pad_ceil[:, :, 0 : q_input_pad.shape[2], 0 : q_input_pad.shape[3]] = q_input_pad
             q_input_pad = q_input_pad_ceil
 
-        sum_result = cnp_conv(q_input_pad, kernel, None, [0, 0, 0, 0], self.strides)
+        # Remark that here, we are _not_ using Concrete-Numpy pad, since it would pad with
+        # 0's while we want to pad with zero-point's. So, instead, he have done the padding
+        # on our side, with q_input_pad
+        fake_pads = [0] * len(self.pads)
+        sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
 
         result = (
             sum_result.astype(numpy.float32) * norm_const - q_input.quantizer.zero_point
@@ -769,6 +776,121 @@ class QuantizedAvgPool(QuantizedOp):
         """Determine if this op can be fused.
 
         Avg Pooling operation can not be fused since it must be performed over integer tensors and
+        it combines different elements of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+        return False
+
+
+class QuantizedMaxPool(QuantizedOp):
+    """Quantized Max Pooling op."""
+
+    _impl_for_op_named: str = "MaxPool"
+
+    # Since this op takes a single input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+
+        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+
+        # Get the ONNX parameters
+        self.auto_pad = attrs.get("auto_pad", "NOTSET")
+        self.ceil_mode = attrs.get("ceil_mode", 0)
+        self.kernel_shape = attrs.get("kernel_shape", None)
+        self.storage_order = attrs.get("storage_order", 0)
+        self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
+        self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
+        self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
+
+        # Validate the parameters
+        assert_true(
+            self.ceil_mode == 0, "Only ceil_mode = 0 is supported by Concrete Numpy for now"
+        )
+
+        # Validate the parameters
+        assert_true(len(self.kernel_shape) == 2, "The Max Pool operator currently supports only 2d")
+        assert_true(
+            len(self.kernel_shape) == len(self.strides),
+            "The Max Pool operator requires the number of strides to "
+            "be the same as the number of kernel dimensions",
+        )
+        assert_true(
+            len(self.pads) == 2 * len(self.kernel_shape),
+            "The Max Pool operator in Concrete ML requires padding to be specified as "
+            " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
+            " standard",
+        )
+
+    def q_impl(
+        self,
+        *q_inputs: QuantizedArray,
+        **attrs,
+    ) -> QuantizedArray:
+
+        # Retrieve the quantized inputs
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+        q_input: QuantizedArray = prepared_inputs[0]
+
+        # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
+        # parameters (i.e. were fully constructed). This should always be the case, except
+        # during the UniformQuantizer initialization when the zero_point can exist as None
+        assert q_input.quantizer.zero_point is not None
+
+        assert_true(
+            self.ceil_mode == 0, "Only ceil_mode = 0 is supported by Concrete Numpy for now"
+        )
+
+        # Simple padding for PyTorch style
+        pool_pads = compute_onnx_pool_padding(
+            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, self.ceil_mode
+        )
+
+        q_input_pad = numpy_onnx_pad(
+            q_input.qvalues, pool_pads, q_input.quantizer.zero_point, int_only=True
+        )
+
+        # Remark that here, we are _not_ using Concrete-Numpy pad, since it would pad with
+        # 0's while we want to pad with zero-point's. So, instead, he have done the padding
+        # on our side, with q_input_pad
+        fake_pads = [0] * len(self.pads)
+        sum_result = cnp_maxpool(
+            q_input_pad,
+            kernel_shape=self.kernel_shape,
+            strides=self.strides,
+            auto_pad=self.auto_pad,
+            pads=fake_pads,
+            dilations=self.dilations,
+            ceil_mode=self.ceil_mode,
+            storage_order=self.storage_order,
+        )
+
+        result = (
+            sum_result.astype(numpy.float32) - q_input.quantizer.zero_point
+        ) * q_input.quantizer.scale
+
+        return QuantizedArray(
+            self.n_bits,
+            result,
+            value_is_float=True,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Max Pooling operation can not be fused since it must be performed over integer tensors and
         it combines different elements of the input tensors.
 
         Returns:
