@@ -12,7 +12,7 @@
 set -e
 
 # Things you may want to change
-FROM_WHEN="2022-07-01"
+FROM_WHEN="2022-10-01"
 LIST_OF_REPOSITORIES=(concrete-ml-internal
                       concrete-ml)
 
