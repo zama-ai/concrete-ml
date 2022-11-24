@@ -75,5 +75,5 @@ sed -n -e '/collecting/,$p' "${OUTPUT_DIRECTORY}/one.txt" | grep -v collecting |
 echo ""
 echo "diff:"
 echo ""
-diff --color -u "${OUTPUT_DIRECTORY}/one.modified.txt" "${OUTPUT_DIRECTORY}/three.txt" --ignore-all-space --ignore-blank-lines --ignore-space-change
+diff -u "${OUTPUT_DIRECTORY}/one.modified.txt" "${OUTPUT_DIRECTORY}/three.txt" --ignore-all-space --ignore-blank-lines --ignore-space-change
 echo "Successful --forcing_random_seed check"

@@ -1,6 +1,5 @@
 """Tests with brevitas quantization aware training."""
 
-import brevitas.nn as qnn
 import numpy
 import pytest
 import torch
@@ -9,116 +8,10 @@ from concrete.numpy.compilation.configuration import Configuration
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from torch import nn
-from torch.nn.utils import prune
 from torch.utils.data import DataLoader, TensorDataset
 
+from concrete.ml.pytest.torch_models import TinyQATCNN
 from concrete.ml.torch.compile import compile_brevitas_qat_model
-
-
-class TinyCNN(nn.Module):
-    """A very small QAT CNN to classify the sklearn digits dataset.
-
-    This class also allows pruning to a maximum of 10 active neurons, which
-    should help keep the accumulator bit width low.
-    """
-
-    def __init__(self, n_classes, n_bits, n_active) -> None:
-        """Construct the CNN with a configurable number of classes."""
-        super().__init__()
-
-        a_bits = n_bits
-        w_bits = n_bits
-
-        self.n_active = n_active
-
-        # This network has a total complexity of 1216 MAC
-        self.quant1 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv1 = qnn.QuantConv2d(1, 2, 3, stride=1, padding=0, weight_bit_width=w_bits)
-        self.quant2 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv2 = qnn.QuantConv2d(2, 3, 3, stride=2, padding=0, weight_bit_width=w_bits)
-        self.quant3 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv3 = qnn.QuantConv2d(3, 16, 2, stride=1, padding=0, weight_bit_width=w_bits)
-        self.quant4 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.fc1 = qnn.QuantLinear(16, n_classes, weight_bit_width=3, bias=True)
-
-        # Enable pruning, prepared for training
-        self.toggle_pruning(True)
-
-    def toggle_pruning(self, enable):
-        """Enables or removes pruning."""
-
-        # Maximum number of active neurons (i.e. corresponding weight != 0)
-
-        # Go through all the convolution layers
-        for layer in (self.conv1, self.conv2, self.conv3):
-            s = layer.weight.shape
-
-            # Compute fan-in (number of inputs to a neuron)
-            # and fan-out (number of neurons in the layer)
-            layer_size = [s[0], numpy.prod(s[1:])]
-
-            # The number of input neurons (fan-in) is the product of
-            # the kernel width x height x inChannels.
-            if layer_size[1] > self.n_active:
-                if enable:
-                    # This will create a forward hook to create a mask tensor that is multiplied
-                    # with the weights during forward. The mask will contain 0s or 1s
-                    prune.l1_unstructured(
-                        layer, "weight", (layer_size[1] - self.n_active) * layer_size[0]
-                    )
-                else:
-                    # When disabling pruning, the mask is multiplied with the weights
-                    # and the result is stored in the weights member
-                    prune.remove(layer, "weight")
-
-    def forward(self, x):
-        """Run inference on the tiny CNN, apply the decision layer on the reshaped conv output."""
-
-        x = self.quant1(x)
-        x = self.conv1(x)
-        x = torch.relu(x)
-        x = self.quant2(x)
-        x = self.conv2(x)
-        x = torch.relu(x)
-        x = self.quant3(x)
-        x = self.conv3(x)
-        x = torch.relu(x)
-        x = self.quant4(x)
-        x = x.view(-1, 16)
-        x = self.fc1(x)
-        return x
-
-    def test_torch(self, test_loader):
-        """Test the network: measure accuracy on the test set."""
-
-        # Freeze normalization layers
-        self.eval()
-
-        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int32)
-        all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int32)
-
-        # Iterate over the batches
-        idx = 0
-        for data, target in test_loader:
-            # Accumulate the ground truth labels
-            endidx = idx + target.shape[0]
-            all_targets[idx:endidx] = target.numpy()
-
-            # Run forward and get the raw predictions first
-            raw_pred = self(data).detach().numpy()
-
-            # Get the predicted class id, handle NaNs
-            if numpy.any(numpy.isnan(raw_pred)):
-                output = -1
-            else:
-                output = raw_pred.argmax(1)
-            all_y_pred[idx:endidx] = output
-
-            idx += target.shape[0]
-
-        # Print out the accuracy as a percentage
-        n_correct = numpy.sum(all_targets == all_y_pred)
-        return n_correct / len(test_loader)
 
 
 @pytest.mark.parametrize("qat_bits", [3, 7])
@@ -167,7 +60,7 @@ def test_brevitas_tinymnist_cnn(
 
     while not trained_ok:
         # Create the tiny CNN module with 10 output classes
-        net = TinyCNN(10, qat_bits, 5 if qat_bits <= 3 else 20)
+        net = TinyQATCNN(10, qat_bits, 5 if qat_bits <= 3 else 20)
 
         # Train a single epoch to have a fast test, accuracy should still be the same VL vs torch
         # But train 3 epochs for the VL test to check that training works well

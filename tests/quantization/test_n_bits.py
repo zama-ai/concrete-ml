@@ -4,23 +4,17 @@ import pytest
 import torch
 from torch import nn
 
+from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.quantization.base_quantized_op import DEFAULT_MODEL_BITS
 from concrete.ml.quantization.post_training import ONNXConverter
 from concrete.ml.torch.numpy_module import NumpyModule
 
-
-class TorchModel(nn.Module):
-    """A small Torch model."""
-
-    # pylint: disable=no-self-use
-    def forward(self, x):
-        """Identity inference."""
-        return x
-
-
 # Instantiate a simple NumpyModule used for initializing the ONNXConverter. The actual model is not
 # tested here.
-numpy_module = NumpyModule(model=TorchModel(), dummy_input=torch.tensor([0]))
+numpy_module = NumpyModule(
+    model=FCSmall(input_output=3, activation_function=nn.ReLU),
+    dummy_input=torch.randn(3),
+)
 
 n_bits_correct = [
     pytest.param(
