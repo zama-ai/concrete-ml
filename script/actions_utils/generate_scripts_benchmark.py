@@ -7,7 +7,7 @@ from typing import List
 
 MAX_VALUE = 100
 MIN_VALUE = 0
-MAX_NUMBER_OF_JOBS = 200  # Theoreticall limit is 256
+MAX_NUMBER_OF_JOBS = 50  # Theoreticall limit is 256
 
 
 def int_range(x: str) -> int:

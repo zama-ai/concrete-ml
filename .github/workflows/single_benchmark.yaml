@@ -165,17 +165,23 @@ jobs:
 
       - name: Install dependencies
         id: install-deps
-        run: |
-          cd ./cml_to_install
-          # The python-dev version should be in sync with the one from the previous step
-          apt-get install --no-install-recommends -y gnome-keyring
-          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3.9-dev
-          apt-mark hold docker.io
-          ./script/make_utils/setup_os_deps.sh
-          # Needed for some reason
-          make setup_env
-          source ./.venv/bin/activate
-          python -m pip show concrete-numpy
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 5
+          timeout_minutes: 20
+          retry_wait_seconds: 5
+          shell: bash
+          command: |
+            cd ./cml_to_install
+            # The python-dev version should be in sync with the one from the previous step
+            apt-get install --no-install-recommends -y gnome-keyring
+            apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3.9-dev
+            apt-mark hold docker.io
+            ./script/make_utils/setup_os_deps.sh
+            # Needed for some reason
+            make setup_env
+            source ./.venv/bin/activate
+            python -m pip show concrete-numpy
 
       # Run with current version
       - name: Checkout CML to run
