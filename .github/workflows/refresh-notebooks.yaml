@@ -29,7 +29,7 @@ jobs:
 
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -112,7 +112,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Stop EC2 runner python 38
-        uses: machulav/ec2-github-runner@c34ba2df3363ebde9d19fdbc341e03d02267284d
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
         if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
         with:
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
