@@ -331,6 +331,8 @@ def check_is_good_execution_impl(
         f"Last function result:\n{last_function_result}"
     )
 
+# FIXME: To update when the https://github.com/zama-ai/concrete-numpy-internal/issues/1714 feature 
+# becomes available in CN
 def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
     succ = list(graph.graph.successors(graph.input_nodes[0]))
     if any(s.converted_to_table_lookup for s in succ):
