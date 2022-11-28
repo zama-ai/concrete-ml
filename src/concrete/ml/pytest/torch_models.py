@@ -106,7 +106,7 @@ class CNNOther(nn.Module):
         super().__init__()
 
         self.activation_function = activation_function()
-        self.conv1 = nn.Conv2d(input_output, 3, 3, 1, 1)
+        self.conv1 = nn.Conv2d(input_output, 3, 3, stride=1, padding=1)
         self.pool = nn.AvgPool2d(2, 2)
         self.conv2 = nn.Conv2d(3, 3, 1)
         self.fc1 = nn.Linear(3 * 3 * 3, 5)
@@ -167,6 +167,38 @@ class CNNInvalid(nn.Module):
         # Produce a Gather and Slice which are not supported
         if self.gather_slice:
             return x[0, 0:-1:2]
+        return x
+
+
+class CNNGrouped(nn.Module):
+    """Torch CNN model with grouped convolution for compile torch tests."""
+
+    def __init__(self, input_output, activation_function, groups):
+        super().__init__()
+
+        self.activation_function = activation_function()
+        self.conv1 = nn.Conv2d(input_output, 3, 3, stride=1, padding=1, dilation=1, groups=groups)
+        self.pool = nn.AvgPool2d(2, 2)
+        self.conv2 = nn.Conv2d(3, 3, 1, stride=1, padding=0, dilation=1, groups=3)
+        self.fc1 = nn.Linear(3 * 3 * 3, 5)
+        self.fc2 = nn.Linear(5, 3)
+        self.fc3 = nn.Linear(3, 2)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x: the input of the NN
+
+        Returns:
+            the output of the NN
+        """
+        x = self.pool(self.activation_function(self.conv1(x)))
+        x = self.activation_function(self.conv2(x))
+        x = x.flatten(1)
+        x = self.activation_function(self.fc1(x))
+        x = self.activation_function(self.fc2(x))
+        x = self.fc3(x)
         return x
 
 
@@ -514,13 +546,16 @@ class TinyQATCNN(nn.Module):
 
         self.n_active = n_active
 
-        # This network has a total complexity of 1216 MAC
         self.quant1 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv1 = qnn.QuantConv2d(1, 2, 3, stride=1, padding=0, weight_bit_width=w_bits)
+        self.conv1 = qnn.QuantConv2d(1, 3, 3, stride=1, padding=0, weight_bit_width=w_bits)
         self.quant2 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv2 = qnn.QuantConv2d(2, 3, 3, stride=2, padding=0, weight_bit_width=w_bits)
+        self.conv2 = qnn.QuantConv2d(
+            3, 6, 3, stride=2, padding=0, groups=3, weight_bit_width=w_bits
+        )
         self.quant3 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv3 = qnn.QuantConv2d(3, 16, 2, stride=1, padding=0, weight_bit_width=w_bits)
+        self.conv3 = qnn.QuantConv2d(
+            6, 16, 2, stride=1, padding=0, groups=2, weight_bit_width=w_bits
+        )
         self.quant4 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
         self.fc1 = qnn.QuantLinear(16, n_classes, weight_bit_width=3, bias=True)
 

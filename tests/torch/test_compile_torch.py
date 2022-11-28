@@ -19,6 +19,7 @@ from concrete.ml.pytest.torch_models import (
     FC,
     BranchingGemmModule,
     BranchingModule,
+    CNNGrouped,
     CNNOther,
     FCSmall,
     MultiInputNN,
@@ -256,6 +257,7 @@ def test_compile_torch_or_onnx_networks(
     "model",
     [
         pytest.param(CNNOther),
+        pytest.param(partial(CNNGrouped, groups=3)),
     ],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
@@ -277,7 +279,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     qat_bits = 0
 
     compile_and_test_torch_or_onnx(
-        (1, 7, 7),
+        (6, 7, 7),
         model,
         activation_function,
         qat_bits,

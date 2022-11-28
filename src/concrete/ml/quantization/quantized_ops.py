@@ -463,8 +463,8 @@ class QuantizedConv(QuantizedOp):
             constant_inputs: the weights and activations
             input_quant_opts: options for the input quantizer
             attrs: convolution options
-                dilations (Tuple[int]): dilation of the kernel, default 1 on all dimensions.
-                group (int): number of convolution groups, default 1
+                dilations (Tuple[int]): dilation of the kernel. Default to 1 on all dimensions.
+                group (int): number of convolution groups. Default to 1.
                 kernel_shape (Tuple[int]): shape of the kernel. Should have 2 elements for 2d conv
                 pads (Tuple[int]): padding in ONNX format (begin, end) on each axis
                 strides (Tuple[int]): stride of the convolution on each axis
@@ -491,9 +491,6 @@ class QuantizedConv(QuantizedOp):
         assert_true(
             bool(numpy.all(numpy.asarray(self.dilations) == 1)),
             "The convolution operator in Concrete Numpy does not suppport dilation",
-        )
-        assert_true(
-            self.group == 1, "The convolution operator in Concrete Numpy does not support groups"
         )
         assert_true(
             len(self.pads) == 2 * len(self.kernel_shape),
@@ -535,6 +532,21 @@ class QuantizedConv(QuantizedOp):
         q_weights: QuantizedArray = prepared_inputs[1]
         q_bias: Optional[numpy.ndarray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
 
+        in_channels = q_input.values.shape[1]
+        weight_channels = q_weights.values.shape[1]
+        assert_true(
+            weight_channels == in_channels / self.group,
+            f"Expected number of channels in weight to be {in_channels / self.group} "
+            f"(C / group). Got {weight_channels}.",
+        )
+
+        out_channels = q_weights.values.shape[0]
+        assert_true(
+            out_channels % self.group == 0,
+            f"Expected number of output channels O ({out_channels}) to be a multiple of "
+            f"group ({self.group}).",
+        )
+
         # Prepare a constant tensor to compute the sum of the inputs
         q_weights_1 = numpy.ones_like(q_weights.qvalues)
 
@@ -556,10 +568,11 @@ class QuantizedConv(QuantizedOp):
         conv_wx = cnp_conv(
             q_input_pad,
             q_weights.qvalues,
-            None,
-            [0, 0, 0, 0],
-            self.strides,
-            self.dilations,
+            bias=None,
+            pads=[0, 0, 0, 0],
+            strides=self.strides,
+            dilations=self.dilations,
+            group=self.group,
         )
 
         # The total number of elements that are convolved by the application of a single kernel
@@ -573,10 +586,11 @@ class QuantizedConv(QuantizedOp):
             zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
                 q_input_pad,
                 q_weights_1,
-                None,
-                [0, 0, 0, 0],
-                self.strides,
-                self.dilations,
+                bias=None,
+                pads=[0, 0, 0, 0],
+                strides=self.strides,
+                dilations=self.dilations,
+                group=self.group,
             )
 
             # Last part that has to be done in FHE the rest must go in a PBS.

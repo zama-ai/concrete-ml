@@ -9,6 +9,7 @@ from torch import nn
 from concrete.ml.pytest.torch_models import (
     CNN,
     FC,
+    CNNGrouped,
     CNNInvalid,
     NetWithConcatUnsqueeze,
     NetWithLoops,
@@ -22,6 +23,7 @@ from concrete.ml.torch import NumpyModule
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (5, 3, 32, 32)),
+        pytest.param(partial(CNNGrouped, input_output=6, groups=3), (5, 6, 7, 7)),
         pytest.param(
             partial(NetWithLoops, input_output=32 * 32 * 3, n_fc_layers=4), (100, 32 * 32 * 3)
         ),
@@ -121,23 +123,20 @@ def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score)
 
 
 @pytest.mark.parametrize(
-    "padding, groups, gather_slice",
+    "padding, gather_slice",
     [
-        pytest.param(True, False, False),
-        pytest.param(False, True, False),
-        pytest.param(False, False, True),
+        pytest.param(True, False),
+        pytest.param(False, True),
     ],
 )
-def test_raises(padding, groups, gather_slice):
+def test_raises(padding, gather_slice):
     """Function to test incompatible layers."""
 
-    torch_incompatible_model = CNNInvalid(nn.ReLU, padding, groups, gather_slice)
+    torch_incompatible_model = CNNInvalid(nn.ReLU, padding, False, gather_slice)
 
     error_msg_pattern = None
     if padding:
         error_msg_pattern = ".*Padding.*"
-    elif groups:
-        error_msg_pattern = ".*groups.*"
     elif gather_slice:
         error_msg_pattern = (
             "The following ONNX operators are required to convert the torch model to numpy but are"

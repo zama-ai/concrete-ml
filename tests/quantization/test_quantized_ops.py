@@ -458,6 +458,7 @@ def test_identity_op(x, n_bits):
     # Weights has size: O (output channels) x I (input channels) x Kh x Kw
     # Biases has size: O (output channels)
     # Strides and padding have size 2 (padding/stride on y and x)
+    # Group is either 1 or a multiple of both C and 0, so that I = C / group
     "params",
     [
         (
@@ -466,6 +467,7 @@ def test_identity_op(x, n_bits):
             numpy.random.uniform(size=(3,)) * 0.01 + 5,
             (2, 2),
             (0, 0, 0, 0),
+            1,
         ),
         (
             numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2,
@@ -473,6 +475,7 @@ def test_identity_op(x, n_bits):
             numpy.random.uniform(size=(16,)) * 5,
             (1, 1),
             (0, 0, 0, 0),
+            1,
         ),
         (
             numpy.random.uniform(size=(2, 32, 4, 4)),
@@ -480,6 +483,7 @@ def test_identity_op(x, n_bits):
             numpy.random.uniform(size=(3,)),
             (1, 1),
             (1, 1, 1, 1),
+            1,
         ),
         (
             numpy.random.uniform(size=(2, 32, 4, 4)),
@@ -487,6 +491,7 @@ def test_identity_op(x, n_bits):
             numpy.random.uniform(size=(3,)),
             (1, 1),
             (1, 1, 1, 1),
+            1,
         ),
         (
             numpy.random.uniform(size=(2, 2, 32, 32)),
@@ -494,6 +499,23 @@ def test_identity_op(x, n_bits):
             numpy.random.uniform(size=(3,)),
             (4, 4),
             (7, 1, 7, 1),
+            1,
+        ),
+        (
+            numpy.random.uniform(size=(1, 4, 32, 32)),
+            numpy.random.randn(6, 2, 2, 2),
+            numpy.random.uniform(size=(6,)),
+            (4, 4),
+            (7, 1, 7, 1),
+            2,
+        ),
+        (
+            numpy.random.uniform(size=(1, 3, 32, 32)),
+            numpy.random.randn(3, 1, 2, 2),
+            numpy.random.uniform(size=(3,)),
+            (4, 4),
+            (7, 1, 7, 1),
+            3,
         ),
     ],
 )
@@ -501,7 +523,7 @@ def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal
     """Test the quantized convolution operator."""
 
     # Retrieve arguments
-    net_input, weights, biases, strides, pads = params
+    net_input, weights, biases, strides, pads, group = params
 
     # Create quantized data
     q_input = QuantizedArray(n_bits, net_input, is_signed=False)
@@ -516,6 +538,7 @@ def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal
         pads=pads,
         kernel_shape=(weights.shape[2], weights.shape[3]),
         dilations=(1, 1),
+        group=group,
     )
 
     # Compute the result in floating point
@@ -533,7 +556,7 @@ def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal
     tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
 
     # Compute the torch convolution
-    torch_res = torch.conv2d(tx_pad, tweight, tbias, strides).numpy()
+    torch_res = torch.conv2d(tx_pad, tweight, tbias, stride=strides, groups=group).numpy()
     check_float_arrays_equal(torch_res, expected_result)
 
     # Compute the quantized result

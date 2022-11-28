@@ -1150,7 +1150,8 @@ def numpy_conv(
         w (numpy.ndarray): weights tensor. Shape is (O x I x Kh x Kw) for 2d
         b (Optional[numpy.ndarray]): bias tensor, Shape is (O,). Default to None.
         dilations (Tuple[int, ...]): dilation of the kernel, default 1 on all dimensions.
-        group (int): number of convolution groups. Default to 1.
+        group (int): number of convolution groups, can be 1 or a multiple of both (C,) and (O,), so
+            that I = C / group. Default to 1.
         kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
         pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
         strides (Tuple[int, ...]): stride of the convolution on each axis
@@ -1167,9 +1168,17 @@ def numpy_conv(
         bool(numpy.all(numpy.asarray(dilations) == 1)),
         "The convolution operator in Concrete Numpy does not support dilation",
     )
+
+    weight_channels = x.shape[1]
     assert_true(
-        group == 1,
-        "The convolution operator in Concrete-ML does not support groups",
+        w.shape[1] == weight_channels / group,
+        f"Expected number of channels in weight to be {weight_channels / group} (C / group). Got "
+        f"{w.shape[1]}.",
+    )
+
+    assert_true(
+        w.shape[0] % group == 0,
+        f"Expected number of output O ({w.shape[0]}) to be a multiple of group " f"({group}).",
     )
 
     # Pad the input if needed
