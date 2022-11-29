@@ -45,15 +45,15 @@ echo "Successful determinism check"
 
 LIST_FILES=$(grep "tests/seeding/test_seeding.py" "${OUTPUT_DIRECTORY}/one.txt")
 LIST_SEED=()
-while IFS='' read -r line; do LIST_SEED+=("$line"); done < <(grep "forcing_random_seed" "${OUTPUT_DIRECTORY}/one.txt" | sed -e "s@Relaunch the tests with --forcing_random_seed @@" | sed -e "s@ --randomly-dont-reset-seed to reproduce@@")
+while IFS='' read -r line; do LIST_SEED+=("$line"); done < <(grep "forcing_random_seed" "${OUTPUT_DIRECTORY}/one.txt" | sed -e "s@Relaunch the tests with --forcing_random_seed @@" | sed -e "s@ --randomly-dont-reset-seed to reproduce. Remark that adding --randomly-seed=... is needed when the testcase uses randoms in pytest parameters@@" )
 
 WHICH=0
 echo "" > "${OUTPUT_DIRECTORY}/three.txt"
 for x in $LIST_FILES
 do
-    # For test test_seed_3, we need to add $RANDOMLY_SEED
+    # For several tests, we need to add $RANDOMLY_SEED
     EXTRA_OPTION=""
-    if [ "$x" == "tests/seeding/test_seeding.py::test_seed_3[random_inputs0]" ]
+    if grep -q "tests/seeding/test_seeding.py::test_seed_needing_randomly_seed_arg" <<< "$x"
     then
         EXTRA_OPTION=" --randomly-seed=$RANDOMLY_SEED"
     fi

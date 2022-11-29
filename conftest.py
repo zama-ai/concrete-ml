@@ -9,9 +9,14 @@ from typing import Any, Callable, Iterable, Optional, Union
 import numpy
 import pytest
 import torch
-from concrete.numpy.compilation import (Circuit, Compiler, Configuration,
-                                        DebugArtifacts, EncryptionStatus,
-                                        configuration)
+from concrete.numpy.compilation import (
+    Circuit,
+    Compiler,
+    Configuration,
+    DebugArtifacts,
+    EncryptionStatus,
+    configuration,
+)
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from sklearn.datasets import make_classification, make_regression
 
@@ -212,7 +217,8 @@ def autoseeding_of_everything(record_property, request):
     print("\nForcing seed to random.seed to ", seed)
     print(
         f"\nRelaunch the tests with --forcing_random_seed {seed} "
-        + "--randomly-dont-reset-seed to reproduce"
+        + "--randomly-dont-reset-seed to reproduce. Remark that adding --randomly-seed=... "
+        + "is needed when the testcase uses randoms in pytest parameters"
     )
     print(
         "Remark that potentially, any option used in the pytest call may have an impact so in "
@@ -331,14 +337,14 @@ def check_is_good_execution_impl(
         f"Last function result:\n{last_function_result}"
     )
 
-# FIXME: To update when the https://github.com/zama-ai/concrete-numpy-internal/issues/1714 feature 
+
+# FIXME: To update when the https://github.com/zama-ai/concrete-numpy-internal/issues/1714 feature
 # becomes available in CN
 def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
     succ = list(graph.graph.successors(graph.input_nodes[0]))
     if any(s.converted_to_table_lookup for s in succ):
-        raise AssertionError(
-            f"Graph contains a TLU on an input node"
-        )
+        raise AssertionError(f"Graph contains a TLU on an input node")
+
 
 @pytest.fixture
 def check_is_good_execution_for_quantized_models():
@@ -352,10 +358,12 @@ def check_is_good_execution():
 
     return check_is_good_execution_impl
 
+
 @pytest.fixture
 def check_graph_input_has_no_tlu():
 
     return check_graph_input_has_no_tlu_impl
+
 
 def check_array_equality_impl(actual: Any, expected: Any, verbose: bool = True):
     """Assert that `actual` is equal to `expected`."""
