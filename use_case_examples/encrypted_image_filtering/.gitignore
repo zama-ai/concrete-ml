@@ -1,0 +1,6 @@
+.venv
+.playground/
+.artifacts
+.fhe_keys
+tmp
+.artifacts
