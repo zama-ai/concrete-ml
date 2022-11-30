@@ -45,7 +45,7 @@ env:
   mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
-  SentimentClassification: "use_case_examples/encrypted_sentiment_analysis/SentimentClassification.ipynb" 
+  SentimentClassification: "use_case_examples/sentiment-analysis-with-transformer/SentimentClassification.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---

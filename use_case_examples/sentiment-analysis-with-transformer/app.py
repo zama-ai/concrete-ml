@@ -50,6 +50,9 @@ def clean_tmp_directory():
 
 
 def keygen():
+    # Clean tmp directory if needed
+    clean_tmp_directory()
+
     print("Initializing FHEModelClient...")
 
     # Let's create a user_id
@@ -71,7 +74,8 @@ def keygen():
 
 
 def encode_quantize_encrypt(text, user_id):
-    assert user_id != [], "Please, wait for the creation of FHE keys before trying to encrypt."
+    if not user_id:
+        raise gr.Error("You need to generate FHE keys first.")
 
     fhe_api = FHEModelClient("sentiment_fhe_model/deployment", f".fhe_keys/{user_id}")
     fhe_api.load()
@@ -102,10 +106,14 @@ def encode_quantize_encrypt(text, user_id):
 
 
 def run_fhe(user_id):
-    assert user_id != [], "Please, wait for the creation of FHE keys before trying to predict."
+    encoded_data_path = Path(f"tmp/tmp_encrypted_quantized_encoding_{user_id}.npy")
+    if not user_id:
+        raise gr.Error("You need to generate FHE keys first.")
+    if not encoded_data_path.is_file():
+        raise gr.Error("No encrypted data was found. Encrypt the data before trying to predict.")
 
     # Read encrypted_quantized_encoding from the file
-    encrypted_quantized_encoding = numpy.load(f"tmp/tmp_encrypted_quantized_encoding_{user_id}.npy")
+    encrypted_quantized_encoding = numpy.load(encoded_data_path)
 
     # Read evaluation_key from the file
     evaluation_key = numpy.load(f"tmp/tmp_evaluation_key_{user_id}.npy")
@@ -132,10 +140,14 @@ def run_fhe(user_id):
 
 
 def decrypt_prediction(user_id):
-    assert user_id != [], "Please, wait for the creation of FHE keys before trying to decrypt."
+    encoded_data_path = Path(f"tmp/tmp_encrypted_prediction_{user_id}.npy")
+    if not user_id:
+        raise gr.Error("You need to generate FHE keys first.")
+    if not encoded_data_path.is_file():
+        raise gr.Error("No encrypted prediction was found. Run the prediction over the encrypted data first.")
 
     # Read encrypted_prediction from the file
-    encrypted_prediction = numpy.load(f"tmp/tmp_encrypted_prediction_{user_id}.npy").tobytes()
+    encrypted_prediction = numpy.load(encoded_data_path).tobytes()
 
     fhe_api = FHEModelClient("sentiment_fhe_model/deployment", f".fhe_keys/{user_id}")
     fhe_api.load()
@@ -176,11 +188,11 @@ with demo:
 </p>
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/5758427/197974594-80897620-c64b-4c39-aeeb-c941e4146c6d.png">
+  <img src="https://user-images.githubusercontent.com/7602572/202997494-4ce17b99-9739-4b2c-9f99-e93cca661361.png">
 </p>
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/5758427/197974639-cfb7af28-9dfc-4bf6-ab5b-57ad562a5dc4.png">
+  <img src="https://user-images.githubusercontent.com/7602572/202998030-5883d817-7b16-406a-8052-b5a0ffe5ec9b.png">
 </p>
 """
     )
@@ -207,7 +219,9 @@ with demo:
 """
     )
 
-    b_gen_key_and_install = gr.Button("Generate the key and send public part to server")
+    gr.Markdown("# Step 1: Generate the keys")
+
+    b_gen_key_and_install = gr.Button("Generate the keys and send public part to server")
 
     evaluation_key = gr.Textbox(
         label="Evaluation key (truncated):",
@@ -226,17 +240,18 @@ with demo:
         label="Size of the evalution key (in bytes):", value=0, interactive=False
     )
 
-    # FIXME: add a picture from marketing with client->server interactions
-
+    gr.Markdown("# Step 2: Provide a message")
     gr.Markdown("## Client side")
     gr.Markdown(
         "Enter a sensitive text message you received and would like to do sentiment analysis on (ideas: the last text message of your boss.... or lover)."
     )
     text = gr.Textbox(label="Enter a message:", value="I really like your work recently")
-    size_text = gr.Number(label="Size of the text (in bytes):", value=0, interactive=False)
+
+    gr.Markdown("# Step 3: Encode the message with the private key")
     b_encode_quantize_text = gr.Button(
         "Encode, quantize and encrypt the text with transformer vectorizer, and send to server"
     )
+    size_text = gr.Number(label="Size of the text (in bytes):", value="0", interactive=False)
 
     with gr.Row():
         encoding = gr.Textbox(
@@ -261,6 +276,7 @@ with demo:
             interactive=False,
         )
 
+    gr.Markdown("# Step 4: Run the FHE evaluation")
     gr.Markdown("## Server side")
     gr.Markdown(
         "The encrypted value is received by the server. Thanks to the evaluation key and to FHE, the server can compute the (encrypted) prediction directly over encrypted values. Once the computation is finished, the server returns the encrypted prediction to the client."
@@ -273,6 +289,7 @@ with demo:
         interactive=False,
     )
 
+    gr.Markdown("# Step 5: Decrypt the sentiment")
     gr.Markdown("## Client side")
     gr.Markdown(
         "The encrypted sentiment is sent back to client, who can finally decrypt it with its private key. Only the client is aware of the original tweet and the prediction."
