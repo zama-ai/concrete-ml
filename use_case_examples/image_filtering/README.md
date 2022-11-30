@@ -18,7 +18,7 @@ Check out the configuration reference at https://huggingface.co/docs/hub/spaces-
 
 ## Running the application on your machine
 
-In this directory, ie `encrypted_image_filtering`, you can do the following steps.
+In this directory, ie `image_filtering`, you can do the following steps.
 
 ### Do once
 
