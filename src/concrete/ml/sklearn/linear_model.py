@@ -62,6 +62,7 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
 
     sklearn_alg = sklearn.linear_model.ElasticNet
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits=8,
@@ -69,8 +70,14 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         l1_ratio=0.5,
         fit_intercept=True,
         normalize="deprecated",
+        precompute=False,
+        max_iter=1000,
         copy_X=True,
+        tol=0.0001,
+        warm_start=False,
         positive=False,
+        random_state=None,
+        selection="cyclic",
     ):
         # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
@@ -81,6 +88,12 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.copy_X = copy_X
         self.positive = positive
         self._onnx_model_ = None
+        self.precompute = precompute
+        self.max_iter = max_iter
+        self.tol = tol
+        self.warm_start = warm_start
+        self.random_state = random_state
+        self.selection = selection
         super().__init__(n_bits=n_bits)
 
 
@@ -102,14 +115,21 @@ class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
 
     sklearn_alg = sklearn.linear_model.Lasso
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits=8,
         alpha: float = 1.0,
         fit_intercept=True,
         normalize="deprecated",
+        precompute=False,
         copy_X=True,
+        max_iter=1000,
+        tol=0.0001,
+        warm_start=False,
         positive=False,
+        random_state=None,
+        selection="cyclic",
     ):
         # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
@@ -119,6 +139,12 @@ class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.copy_X = copy_X
         self.positive = positive
         self._onnx_model_ = None
+        self.max_iter = max_iter
+        self.warm_start = warm_start
+        self.selection = selection
+        self.tol = tol
+        self.precompute = precompute
+        self.random_state = random_state
         super().__init__(n_bits=n_bits)
 
 
@@ -140,6 +166,7 @@ class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
 
     sklearn_alg = sklearn.linear_model.Ridge
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits=8,
@@ -147,7 +174,11 @@ class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         fit_intercept=True,
         normalize="deprecated",
         copy_X=True,
+        max_iter=None,
+        tol=0.001,
+        solver="auto",
         positive=False,
+        random_state=None,
     ):
         # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
@@ -156,6 +187,10 @@ class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.normalize = normalize
         self.copy_X = copy_X
         self.positive = positive
+        self.max_iter = max_iter
+        self.tol = tol
+        self.solver = solver
+        self.random_state = random_state
         self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 

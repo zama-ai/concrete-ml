@@ -1,7 +1,7 @@
 """Tests for the torch to numpy module."""
+import inspect
 import random
 import warnings
-from functools import partial
 
 import numpy
 import pytest
@@ -9,17 +9,6 @@ from sklearn import tree
 from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
-from concrete.ml.sklearn import (
-    ElasticNet,
-    GammaRegressor,
-    Lasso,
-    LinearRegression,
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    PoissonRegressor,
-    Ridge,
-    TweedieRegressor,
-)
 
 
 def test_seed_1():
@@ -92,30 +81,14 @@ def test_seed_needing_randomly_seed_arg_3(random_inputs_1, random_inputs_2, rand
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_seed_sklearn(model, parameters, load_data, default_configuration):
-    """Test seeding of sklearn regression model using a DecisionTreeRegressor."""
+    """Test seeding of sklearn models"""
 
     x, y = load_data(**parameters)
     model_params, x, _, x_train, y_train, _ = sanitize_test_and_train_datasets(model, x, y)
 
-    # FIXME #2251: some models have not random_state for now. Check if it is expected or not
-    if model in [
-        Ridge,
-        GammaRegressor,
-        TweedieRegressor,
-        PoissonRegressor,
-        ElasticNet,
-        Lasso,
-        LinearRegression,
-    ]:
-        return
-
-    # FIXME #2251: some models have not random_state for now. Check if it is expected or not
-    if isinstance(model, partial):
-        if model.func in [NeuralNetRegressor, NeuralNetClassifier]:
-            return
-
     # Force "random_state": if it was there, it is overwritten; if it was not there, it is added
-    model_params["random_state"] = numpy.random.randint(0, 2**15)
+    if "random_state" in inspect.getfullargspec(model).args:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
     model = model(**model_params)
 
     with warnings.catch_warnings():

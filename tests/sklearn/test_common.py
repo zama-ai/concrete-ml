@@ -1,23 +1,35 @@
 """Tests common to all sklearn models."""
+import inspect
 import warnings
-from functools import partial
 
 import numpy
 import pytest
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
-from concrete.ml.sklearn import (
-    ElasticNet,
-    GammaRegressor,
-    Lasso,
-    LinearRegression,
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    PoissonRegressor,
-    Ridge,
-    TweedieRegressor,
+from concrete.ml.pytest.utils import (
+    classifier_models,
+    classifiers,
+    regressor_models,
+    regressors,
+    sanitize_test_and_train_datasets,
 )
+
+
+def test_sklearn_args():
+    """Check that all arguments from the underlying sklearn model are exposed."""
+    test_counter = 0
+    skip_counter = 0
+    for model_class in classifier_models + regressor_models:
+        if hasattr(model_class, "sklearn_alg"):
+            assert not set(inspect.getfullargspec(model_class.sklearn_alg).args) - set(
+                inspect.getfullargspec(model_class).args
+            )
+            test_counter += 1
+        else:
+            skip_counter += 1
+
+    assert test_counter == 16
+    assert skip_counter == 2
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
@@ -27,25 +39,11 @@ def test_seed_sklearn(model, parameters, load_data):
     _, _, _, x_train, y_train, _ = sanitize_test_and_train_datasets(model, x, y)
     model_class = model
 
+    if "random_state" not in inspect.getfullargspec(model_class).args:
+        pytest.skip(f"Model class: `{model_class}` has no arguments random_state.")
+
     random_state_constructor = numpy.random.randint(0, 2**15)
     random_state_user = numpy.random.randint(0, 2**15)
-
-    # FIXME #2251: some models have not random_state for now. Check if it is expected or not
-    if model in [
-        Ridge,
-        GammaRegressor,
-        TweedieRegressor,
-        PoissonRegressor,
-        ElasticNet,
-        Lasso,
-        LinearRegression,
-    ]:
-        return
-
-    # FIXME #2251: some models have not random_state for now. Check if it is expected or not
-    if isinstance(model, partial):
-        if model.func in [NeuralNetRegressor, NeuralNetClassifier]:
-            return
 
     # First case: user gives his own random_state
     model = model_class(random_state=random_state_constructor)
