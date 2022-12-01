@@ -1,7 +1,7 @@
 """Quantization utilities for a numpy array/tensor."""
 
 from copy import deepcopy
-from typing import Optional, get_type_hints
+from typing import Optional, Union, get_type_hints
 
 import numpy
 
@@ -241,7 +241,7 @@ class UniformQuantizationParameters:
     """
 
     scale: Optional[float] = None
-    zero_point: Optional[int] = None
+    zero_point: Optional[Union[int, float, numpy.ndarray]] = None
     offset: Optional[int] = None
 
     def copy_params(self, params) -> None:
@@ -455,7 +455,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.zero_point is not None
         assert self.scale is not None
 
-        return self.scale * (qvalues + -(float(self.zero_point)))
+        return self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 
 
 class QuantizedArray:
@@ -554,7 +554,7 @@ class QuantizedArray:
             self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
 
             # If no stats are provided, compute them.
-            # Note that this can not be done during tracing
+            # Note that this cannot be done during tracing
             if stats is None:
                 self.quantizer.compute_quantization_stats(values)
 

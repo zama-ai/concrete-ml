@@ -12,7 +12,7 @@ from ..common.debugging import assert_true
 def numpy_onnx_pad(
     x: numpy.ndarray,
     pads: Tuple[int, ...],
-    pad_value: Union[float, int] = 0,
+    pad_value: Union[float, int, numpy.ndarray] = 0,
     int_only: bool = False,
 ) -> numpy.ndarray:
     """Pad a tensor according to ONNX spec, using an optional custom pad value.

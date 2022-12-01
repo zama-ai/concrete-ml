@@ -373,9 +373,11 @@ GEMM_N_BITS_LIST = [20, 16, 8]
     ],
 )
 @pytest.mark.parametrize("is_signed", IS_SIGNED)
+@pytest.mark.parametrize("produces_output", [True, False])
 def test_all_gemm_ops(
     n_bits: int,
     is_signed: bool,
+    produces_output: bool,
     n_examples: int,
     n_features: int,
     n_neurons: int,
@@ -400,6 +402,7 @@ def test_all_gemm_ops(
     q_gemm = QuantizedGemm(
         n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights, "c": bias}
     )
+    q_gemm.produces_graph_output = produces_output
 
     # Calibrate the Quantized layer
     expected_gemm_outputs = q_gemm.calibrate(inputs)
@@ -410,7 +413,10 @@ def test_all_gemm_ops(
 
     # 2- Same test without bias
     q_gemm = QuantizedGemm(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
+    q_gemm.produces_graph_output = produces_output
+
     q_mm = QuantizedMatMul(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
+    q_mm.produces_graph_output = produces_output
 
     # Calibrate the quantized layers
     expected_gemm_outputs = q_gemm.calibrate(inputs)
@@ -431,6 +437,7 @@ def test_all_gemm_ops(
         alpha=1,
         beta=0,
     )
+    q_gemm.produces_graph_output = produces_output
 
     # Calibrate the Quantized layer
     expected_gemm_outputs = q_gemm.calibrate(inputs)
@@ -463,68 +470,112 @@ def test_identity_op(x, n_bits):
     "params",
     [
         (
-            numpy.random.uniform(size=(1, 3, 32, 32)) * 4,
-            numpy.random.randn(3, 3, 3, 3) * 3,
-            numpy.random.uniform(size=(3,)) * 0.01 + 5,
+            (1, 3, 32, 32),
+            4,
+            (3, 3, 3, 3),
+            3,
+            (3,),
+            0.01,
+            5,
             (2, 2),
             (0, 0, 0, 0),
             1,
         ),
         (
-            numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2,
-            numpy.random.randn(16, 1, 3, 3) * 0.25,
-            numpy.random.uniform(size=(16,)) * 5,
+            (10, 1, 16, 16),
+            0.2,
+            (16, 1, 3, 3),
+            0.25,
+            (16,),
+            5,
+            0,
             (1, 1),
             (0, 0, 0, 0),
             1,
         ),
         (
-            numpy.random.uniform(size=(2, 32, 4, 4)),
-            numpy.random.randn(3, 32, 2, 2),
-            numpy.random.uniform(size=(3,)),
+            (2, 32, 4, 4),
+            1,
+            (3, 32, 2, 2),
+            1,
+            (3,),
+            1,
+            0,
             (1, 1),
             (1, 1, 1, 1),
             1,
         ),
         (
-            numpy.random.uniform(size=(2, 32, 4, 4)),
-            numpy.random.randn(3, 32, 2, 2),
-            numpy.random.uniform(size=(3,)),
+            (2, 32, 4, 4),
+            1,
+            (3, 32, 2, 2),
+            1,
+            (3,),
+            1,
+            0,
             (1, 1),
             (1, 1, 1, 1),
             1,
         ),
         (
-            numpy.random.uniform(size=(2, 2, 32, 32)),
-            numpy.random.randn(3, 2, 2, 2),
-            numpy.random.uniform(size=(3,)),
+            (2, 2, 32, 32),
+            -1,
+            (3, 2, 2, 2),
+            1,
+            (3,),
+            1,
+            0,
             (4, 4),
             (7, 1, 7, 1),
             1,
         ),
         (
-            numpy.random.uniform(size=(1, 4, 32, 32)),
-            numpy.random.randn(6, 2, 2, 2),
-            numpy.random.uniform(size=(6,)),
+            (1, 4, 32, 32),
+            -1,
+            (6, 2, 2, 2),
+            1,
+            (6,),
+            1,
+            0,
             (4, 4),
             (7, 1, 7, 1),
             2,
         ),
         (
-            numpy.random.uniform(size=(1, 3, 32, 32)),
-            numpy.random.randn(3, 1, 2, 2),
-            numpy.random.uniform(size=(3,)),
+            (1, 3, 32, 32),
+            -1,
+            (3, 1, 2, 2),
+            1,
+            (3,),
+            1,
+            0,
             (4, 4),
             (7, 1, 7, 1),
             3,
         ),
     ],
 )
-def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal):
+@pytest.mark.parametrize("produces_output", [True, False])
+def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_float_arrays_equal):
     """Test the quantized convolution operator."""
 
     # Retrieve arguments
-    net_input, weights, biases, strides, pads, group = params
+    (
+        size_input,
+        scale_input,
+        size_weights,
+        scale_weights,
+        size_bias,
+        scale_bias,
+        offset_bias,
+        strides,
+        pads,
+        group,
+    ) = params
+
+    net_input = numpy.random.uniform(size=size_input) * scale_input
+    weights = numpy.random.randn(*size_weights) * scale_weights
+    biases = numpy.random.uniform(size=size_bias) * scale_bias + offset_bias
 
     # Create quantized data
     q_input = QuantizedArray(n_bits, net_input, is_signed=False)
@@ -541,30 +592,36 @@ def test_quantized_conv(params, n_bits, check_r2_score, check_float_arrays_equal
         dilations=(1, 1),
         group=group,
     )
+    q_op.produces_graph_output = produces_output
 
     # Compute the result in floating point
     expected_result = q_op.calibrate(net_input)
 
     # Compute the reference result
 
-    tweight = torch.Tensor(weights.copy())
-    tbias = torch.Tensor(biases.squeeze().copy()) if biases is not None else None
     # Pad the input if needed
-    tinputs = torch.Tensor(net_input.copy())
 
     # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
     # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
-    tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
+    tx_pad = torch.nn.functional.pad(
+        torch.Tensor(net_input.copy()), (pads[1], pads[3], pads[0], pads[2])
+    )
 
     # Compute the torch convolution
-    torch_res = torch.conv2d(tx_pad, tweight, tbias, stride=strides, groups=group).numpy()
+    torch_res = torch.conv2d(
+        tx_pad,
+        torch.Tensor(weights.copy()),
+        torch.Tensor(biases.squeeze().copy()) if biases is not None else None,
+        strides,
+        groups=group,
+    ).numpy()
     check_float_arrays_equal(torch_res, expected_result)
 
     # Compute the quantized result
     result = q_op(q_input).dequant()
 
     # The fp32 and quantized results should be very similar when quantization precision is high
-    check_r2_score(expected_result, result)
+    check_r2_score(result, expected_result)
 
 
 @pytest.mark.parametrize("n_bits", [16])

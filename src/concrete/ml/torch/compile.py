@@ -319,6 +319,8 @@ def compile_brevitas_qat_model(
     # A list of steps that can be added can be found in the following link
     # https://github.com/onnx/optimizer/blob/master/onnxoptimizer/pass_registry.h
     exporter.onnx_passes.append("eliminate_nop_pad")
+    exporter.onnx_passes.append("fuse_pad_into_conv")
+
     onnx_model = exporter.export(
         torch_model,
         input_shape=dummy_input_for_tracing[0].shape,

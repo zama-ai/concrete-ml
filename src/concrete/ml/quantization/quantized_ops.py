@@ -17,8 +17,28 @@ from ..onnx.onnx_impl_utils import (
     numpy_onnx_pad,
     onnx_avgpool_compute_norm_const,
 )
-from .base_quantized_op import QuantizedOp, QuantizedOpUnivariateOfEncrypted
+from .base_quantized_op import QuantizedMixingOp, QuantizedOp, QuantizedOpUnivariateOfEncrypted
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
+
+
+def _check_op_input_zero_point(zero_point: Any, op_name: Optional[str]):
+    """Check that an operation's quantized input zero-point is a single value.
+
+    Args:
+        zero_point (Any): The input zero-point
+        op_name (str): The name of the operation that is checking its input
+
+    """
+
+    # Checks with assert to also to ensure type safety
+    assert zero_point is not None and (
+        isinstance(zero_point, (int, float))
+        or numpy.isscalar(zero_point)
+        or (isinstance(zero_point, numpy.ndarray) and zero_point.size == 1)
+    ), (
+        f"Operation {op_name} is trying to use an input with a zero-point that is "
+        "not a single value. Only model output quantizers can have zero-points that are arrays. "
+    )
 
 
 class QuantizedSigmoid(QuantizedOp):
@@ -97,8 +117,7 @@ class QuantizedPow(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     _impl_for_op_named: str = "Pow"
 
 
-# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/195
-class QuantizedGemm(QuantizedOp):
+class QuantizedGemm(QuantizedMixingOp):
     """Quantized Gemm op."""
 
     _impl_for_op_named: str = "Gemm"
@@ -147,7 +166,7 @@ class QuantizedGemm(QuantizedOp):
 
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[QuantizedArray] = (
+        q_bias: Optional[numpy.ndarray] = (
             None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
         )
 
@@ -172,7 +191,7 @@ class QuantizedGemm(QuantizedOp):
 
         # The following MatMul is done with integers, and thus, does not use of any PBS.
         # Rescaling the output of the integer MatMul to handle scale changes is done
-        # in float32 and will thus be fused with any float32 processing that follows this layer.
+        # in float and will thus be fused with any float processing that follows this layer.
 
         # Here we follow Eq.7 in https://arxiv.org/abs/1712.05877 to split the core computation
         # from the zero points and scales.
@@ -191,11 +210,10 @@ class QuantizedGemm(QuantizedOp):
                 input_q_values, axis=1, keepdims=True
             )
 
-            # Last part that has to be done in integer, the rest must go in a PBS.
-            # Forced fusing using .astype(numpy.float32)
-            numpy_q_out = (matmul + sum_input).astype(numpy.float32)
+            # Last part that has to be done in integer
+            numpy_q_out = matmul + sum_input
         else:
-            numpy_q_out = matmul.astype(numpy.float32)
+            numpy_q_out = matmul
 
         # sum_weights is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
@@ -204,22 +222,43 @@ class QuantizedGemm(QuantizedOp):
 
         final_term = p * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
-        numpy_q_out = numpy_q_out + final_term - sum_weights
-
-        # Quantization scales and zero points (FLOATS involved)
-        # This is going to be compiled with a PBS (along with the following activation function)
-
         # Note that here we do not rescale to the output_scale and we do not add a zero-point
         # Any following Gemm/MatMul/Conv layers will do the rescaling (during requantization)
         # by calling _prepare_inputs_with_constants(...quantize_real_values=True)
         m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
+
+        # If this operation's result are network outputs, return
+        # directly the integer values and a appropriate quantization parameters that
+        # allow direct in-the-clear dequantization, including the bias
+        if self.produces_graph_output:
+            out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
+            if q_bias is not None:
+                # Make mypy happy
+                assert q_bias is not None
+                # Reshape the biases to broadcast them to each neuron
+                out_zp = out_zp + q_bias / (-m_matmul)
+
+            # FIXME: remove when CNP fixes the return type of cnp_conv in non-tracing mode
+            # https://github.com/zama-ai/concrete-numpy-internal/issues/1739
+            if isinstance(numpy_q_out, numpy.ndarray):
+                numpy_q_out = numpy_q_out.astype(numpy.int64)
+
+            # We identify terms in the above equation to determine what
+            # the scale/zp of the in-the-clear quantizer should be
+            # to properly dequantize numpy_q_out
+            return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
+
+        # Quantization scales and zero points (FLOATS involved)
+        # This is going to be compiled with a PBS (along with the following activation function)
+        numpy_q_out = numpy_q_out.astype(numpy.float64) + final_term - sum_weights
+
         numpy_q_out = m_matmul * numpy_q_out
 
         if q_bias is not None:
-            # The bias is handled as a float32 and will be fused
+            # The bias is handled as a float and will be fused
             numpy_q_out = numpy_q_out + q_bias
 
-        # Return the float32 values, so that CN can fuse any following float32 operations
+        # Return the float values, so that CN can fuse any following float operations
         # We also keep track of the scaling factor and zero-point, since these will be
         # applied by the following layers.
         return QuantizedArray(
@@ -230,18 +269,6 @@ class QuantizedGemm(QuantizedOp):
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
-
-    def can_fuse(self):
-        """Determine if this op can be fused.
-
-        Gemm operation can not be fused since it must be performed over integer tensors and it
-        combines different values of the input tensors.
-
-        Returns:
-            bool: False, this operation can not be fused as it adds different encrypted integers
-        """
-
-        return False
 
 
 class QuantizedMatMul(QuantizedGemm):
@@ -338,7 +365,7 @@ class QuantizedAdd(QuantizedOp):
         # But we would like the output to have n_bits, so we dequantize
         dequant_sum = self.output_quant_params.scale * sum_q
 
-        # Return the raw float32 values without re-quantizing them to the new scale, as any
+        # Return the raw float values without re-quantizing them to the new scale, as any
         # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
         return QuantizedArray(
             self.n_bits,
@@ -443,7 +470,7 @@ class QuantizedReshape(QuantizedOp):
         )
 
 
-class QuantizedConv(QuantizedOp):
+class QuantizedConv(QuantizedMixingOp):
     """Quantized Conv op."""
 
     _impl_for_op_named: str = "Conv"
@@ -557,7 +584,11 @@ class QuantizedConv(QuantizedOp):
         assert q_input.quantizer.scale is not None
         assert q_input.quantizer.zero_point is not None
 
-        q_input_pad = numpy_onnx_pad(q_input.qvalues, self.pads, q_input.quantizer.zero_point, True)
+        # Can only pad with scalar zero-points, but zero-points can be float in special cases
+        # for output layers
+        _check_op_input_zero_point(q_input.quantizer.zero_point, self.op_instance_name)
+        pad_value = int(q_input.quantizer.zero_point)
+        q_input_pad = numpy_onnx_pad(q_input.qvalues, self.pads, pad_value, True)
 
         # We follow the Quantized Gemm implementation
         # which in turn follows Eq.7 in https://arxiv.org/abs/1712.05877
@@ -585,6 +616,11 @@ class QuantizedConv(QuantizedOp):
         # large bitwidth, in the case where it would be multiplied by zero
         if q_weights.quantizer.zero_point != 0:
             # Compute the sum of the inputs (second encrypted term)
+            assert_true(
+                isinstance(q_weights.quantizer.zero_point, (int, numpy.int_)),
+                f"Zero point of weights tensor in {self.op_type} "
+                f"op {self.op_instance_name} must be integer",
+            )
             zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
                 q_input_pad,
                 q_weights_1,
@@ -594,12 +630,9 @@ class QuantizedConv(QuantizedOp):
                 dilations=self.dilations,
                 group=self.group,
             )
-
-            # Last part that has to be done in FHE the rest must go in a PBS.
-            # Forced fusing using .astype(numpy.float32)
-            numpy_q_out = (conv_wx + zw_conv_1x).astype(numpy.float32)
+            numpy_q_out = conv_wx + zw_conv_1x
         else:
-            numpy_q_out = conv_wx.astype(numpy.float32)
+            numpy_q_out = conv_wx
 
         # Compute the third term, the sum of the weights which is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
@@ -609,24 +642,51 @@ class QuantizedConv(QuantizedOp):
         # Compute the forth term which is a constant
         final_term = n_weights * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
-        # Now compute the whole sum (sum of the four terms)
-        numpy_q_out = numpy_q_out + final_term - sum_weights
-
         # Compute the rescaling factor that dequantizes the input
         # This is going to be compiled with a PBS (along with the following activation function)
         # Note that we don't requantize the output of the conv, this will be done by
         # any Gemm/Add/Conv layers that follow
         m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
 
+        # If this operation's result are network outputs, return
+        # directly the integer values and an appropriate quantization parameters that
+        # allow direct in-the-clear dequantization, including the bias
+        if self.produces_graph_output:
+            # Note that to use the bias, we need to rescale it to the output scale
+            # For Eq. 7 in  https://arxiv.org/abs/1712.05877, we can write:
+            # S_out(q_out - zp_out) = S_x * S_w (multisum + bias / (S_x * S_w))
+            # where multisum is the dot product of quantized inputs and quantized weights
+            # Then we identify terms:
+            #   S_out = S_x * S_w
+            #   q_out = multisum terms involving inputs
+            #   zp_out = -(multisum terms involving weights + bias / (S_x * S_w))
+            out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
+            if q_bias is not None:
+                # Reshape the biases to broadcast them to each channel
+                out_zp = out_zp - q_bias.reshape((1, -1, 1, 1)) / m_matmul
+
+            # FIXME: remove when CNP fixes the return type of cnp_conv in non-tracing mode
+            # https://github.com/zama-ai/concrete-numpy-internal/issues/1739
+            if isinstance(numpy_q_out, numpy.ndarray):
+                numpy_q_out = numpy_q_out.astype(numpy.int64)
+
+            # We identify terms in the above equation to determine what
+            # the scale/zp of the in-the-clear quantizer should be
+            # to properly dequantize numpy_q_out
+            return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
+
+        # Now compute the whole sum (sum of the four terms)
+        numpy_q_out = numpy_q_out.astype(numpy.float64) + final_term - sum_weights
+
         # Rescale from scale=scale_inputs x scale_outputs to output scale
         numpy_q_out = m_matmul * numpy_q_out
 
         if q_bias is not None:
             # The bias addition is handled in float and will be fused into a TLU
-            # Broadcast the rescaled biases to each channel
+            # Reshape the biases to broadcast them to each channel
             numpy_q_out = numpy_q_out + q_bias.reshape((1, -1, 1, 1))  # bias_part
 
-        # And return as a QuantizedArray initialized from the float32 data, keeping
+        # And return as a QuantizedArray initialized from the float data, keeping
         # track of the quantization parameters
         return QuantizedArray(
             self.n_bits,
@@ -637,20 +697,8 @@ class QuantizedConv(QuantizedOp):
             params=self.output_quant_params,
         )
 
-    def can_fuse(self) -> bool:
-        """Determine if this op can be fused.
 
-        Conv operation can not be fused since it must be performed over integer tensors and it
-        combines different elements of the input tensors.
-
-        Returns:
-            bool: False, this operation can not be fused as it adds different encrypted integers
-        """
-
-        return False
-
-
-class QuantizedAvgPool(QuantizedOp):
+class QuantizedAvgPool(QuantizedMixingOp):
     """Quantized Average Pooling op."""
 
     _impl_for_op_named: str = "AveragePool"
@@ -722,31 +770,28 @@ class QuantizedAvgPool(QuantizedOp):
         # during the UniformQuantizer initialization when the zero_point can exist as None
         assert q_input.quantizer.zero_point is not None
 
-        if self.ceil_mode == 0:
-            # Simple padding for PyTorch style
-            pool_pads = compute_onnx_pool_padding(
-                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
-            )
+        # Compute padding with floor and apply it to the input, pad with the input zeropoint
+        pool_pads = compute_onnx_pool_padding(
+            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
+        )
 
-            q_input_pad = numpy_onnx_pad(
-                q_input.qvalues, pool_pads, q_input.quantizer.zero_point, int_only=True
-            )
-        else:
+        # Can only pad with scalar zero-points, but zero-points can be float in special cases
+        # for output layers
+        _check_op_input_zero_point(q_input.quantizer.zero_point, self.op_instance_name)
+        pad_value = int(q_input.quantizer.zero_point)
+        q_input_pad = numpy_onnx_pad(q_input.qvalues, pool_pads, pad_value, int_only=True)
+
+        if self.ceil_mode == 1:
             # Padding for tensorflow style
-
-            # Compute padding with floor and apply it to the input, pad with the input zeropoint
-            pool_pads = compute_onnx_pool_padding(
-                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
-            )
-            q_input_pad = numpy_onnx_pad(
-                q_input.qvalues, pool_pads, q_input.quantizer.zero_point, int_only=True
-            )
 
             # Compute padding with ceil and apply it to the input, pad with zeros, the zeros
             # will be ignored in the computation
             pool_pads_ceil = compute_onnx_pool_padding(
                 q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 1
             )
+
+            # Can only pad with scalar zero-points, but zero-points can be float in special cases
+            # for output layers
             q_input_pad_ceil = numpy_onnx_pad(q_input.qvalues, pool_pads_ceil, 0, True)
 
             # Copy the PyTorch style padded input to the larger 0 padded tensor
@@ -760,7 +805,7 @@ class QuantizedAvgPool(QuantizedOp):
         sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
 
         result = (
-            sum_result.astype(numpy.float32) * norm_const - q_input.quantizer.zero_point
+            sum_result.astype(numpy.float64) * norm_const - q_input.quantizer.zero_point
         ) * q_input.quantizer.scale
 
         return QuantizedArray(
@@ -771,17 +816,6 @@ class QuantizedAvgPool(QuantizedOp):
             stats=self.output_quant_stats,
             params=self.output_quant_params,
         )
-
-    def can_fuse(self) -> bool:
-        """Determine if this op can be fused.
-
-        Avg Pooling operation can not be fused since it must be performed over integer tensors and
-        it combines different elements of the input tensors.
-
-        Returns:
-            bool: False, this operation can not be fused as it adds different encrypted integers
-        """
-        return False
 
 
 class QuantizedMaxPool(QuantizedOp):
@@ -929,10 +963,10 @@ class QuantizedPad(QuantizedOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Pad operation can not be fused since it must be performed over integer tensors.
+        Pad operation cannot be fused since it must be performed over integer tensors.
 
         Returns:
-            bool: False, this operation can not be fused as it is manipulates integer tensors
+            bool: False, this operation cannot be fused as it is manipulates integer tensors
         """
         return False
 
@@ -1167,10 +1201,10 @@ class QuantizedFlatten(QuantizedOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Flatten operation can not be fused since it must be performed over integer tensors.
+        Flatten operation cannot be fused since it must be performed over integer tensors.
 
         Returns:
-            bool: False, this operation can not be fused as it is manipulates integer tensors.
+            bool: False, this operation cannot be fused as it is manipulates integer tensors.
         """
 
         return False
@@ -1558,7 +1592,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
         offset = self.output_quant_params.offset
         self.output_quant_params = UniformQuantizationParameters()
         self.output_quant_params.scale = self.constant_inputs[1]
-        self.output_quant_params.zero_point = self.constant_inputs[2]
+        self.output_quant_params.zero_point = int(self.constant_inputs[2])
         self.output_quant_params.offset = offset
 
         return result
@@ -1612,7 +1646,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
         #     f"{self.attrs['signed']=} ?=1 , {self.attrs['narrow']=} ?=0",
         # )
 
-        # Currently we can not determine if symmetric quantization was used,
+        # Currently we cannot determine if symmetric quantization was used,
         # we just assume the offset is 0, the offset is not used for clipping in QAT.
         quant_params.offset = 0
 

@@ -811,3 +811,48 @@ class QATTestModule(nn.Module):
         x = step(x, 0.5) * 2.0
         x = self.act(x)
         return x
+
+
+class SingleMixNet(nn.Module):
+    """Torch model that with a single conv layer that produces the output, e.g. a blur filter."""
+
+    def __init__(self, use_conv, use_qat, inp_size, n_bits):  # pylint: disable=unused-argument
+        super().__init__()
+
+        if use_conv:
+            # Initialize a blur filter float weights
+            np_weights = numpy.asarray([[[[1, 1, 1], [1, 4, 1], [1, 1, 1]]]])
+
+            if use_qat:
+                self.mixing_layer = nn.Sequential(
+                    qnn.QuantIdentity(bit_width=n_bits),
+                    qnn.QuantConv2d(1, 1, 3, stride=1, bias=True, weight_bit_width=n_bits),
+                )
+            else:
+                self.mixing_layer = nn.Conv2d(1, 1, 3, stride=1, bias=True)
+        else:
+            # Initialize a linear layer with 1s
+            np_weights = numpy.asarray([[1] * inp_size])
+            if use_qat:
+                self.mixing_layer = nn.Sequential(
+                    qnn.QuantIdentity(bit_width=n_bits),
+                    qnn.QuantLinear(inp_size, inp_size, bias=True, weight_bit_width=n_bits),
+                )
+            else:
+                self.mixing_layer = nn.Linear(inp_size, inp_size, bias=True)
+
+        layer_obj = self.mixing_layer[1] if use_qat else self.mixing_layer
+        layer_obj.weight.data = torch.from_numpy(np_weights).float()
+        layer_obj.bias.data = torch.rand(size=(1,))
+
+    def forward(self, x):
+        """Execute the single convolution.
+
+        Args:
+            x: the input of the NN
+
+        Returns:
+            the output of the NN
+        """
+
+        return self.mixing_layer(x)

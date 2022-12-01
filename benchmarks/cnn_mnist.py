@@ -156,9 +156,6 @@ def test_concrete(
 ):
     """Test a compiled network."""
 
-    # When running in FHE we cast inputs to uint8, but when running using the Virtual Lib (VL)
-    # we may want inputs to exceed 8b to test quantization performance. Thus for VL we cast to int32
-    dtype_inputs = np.uint8 if use_fhe else np.int32
     all_y_pred = np.zeros((len(test_loader)), dtype=np.int32)
     all_targets = np.zeros((len(test_loader)), dtype=np.int32)
 
@@ -166,8 +163,8 @@ def test_concrete(
     idx = 0
     for data, target in tqdm(test_loader):
         data = data.numpy()
-        # Quantize the inputs and cast to appropriate data type
-        x_test_q = quantized_module.quantize_input(data).astype(dtype_inputs)
+        # Quantize the inputs
+        x_test_q = quantized_module.quantize_input(data)
 
         # Accumulate the ground truth labels
         endidx = idx + target.shape[0]

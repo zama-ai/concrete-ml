@@ -346,6 +346,16 @@ def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
         raise AssertionError(f"Graph contains a TLU on an input node")
 
 
+def check_graph_output_has_no_tlu_impl(graph: CNPGraph):
+    if graph.output_nodes[0].converted_to_table_lookup:
+        raise AssertionError(f"Graph output is produced by a TLU: {str(graph.format())}")
+
+
+def check_graph_has_no_input_output_tlu_impl(graph: CNPGraph):
+    check_graph_input_has_no_tlu_impl(graph)
+    check_graph_output_has_no_tlu_impl(graph)
+
+
 @pytest.fixture
 def check_is_good_execution_for_quantized_models():
     """Fixture to check model FHE execution."""
@@ -363,6 +373,16 @@ def check_is_good_execution():
 def check_graph_input_has_no_tlu():
 
     return check_graph_input_has_no_tlu_impl
+
+
+@pytest.fixture
+def check_graph_output_has_no_tlu():
+    return check_graph_output_has_no_tlu_impl
+
+
+@pytest.fixture
+def check_graph_has_no_input_output_tlu():
+    return check_graph_has_no_input_output_tlu_impl
 
 
 def check_array_equality_impl(actual: Any, expected: Any, verbose: bool = True):

@@ -334,7 +334,7 @@ def test_post_training_quantization_constant_folding():
 def test_compile_multi_input_nn_with_input_tlus(
     default_configuration, check_graph_input_has_no_tlu
 ):
-    """Checks that there are input TLUs on a network for which input TLUs can not be removed."""
+    """Checks that there are input TLUs on a network for which input TLUs cannot be removed."""
 
     torch_cnn_model = MultiOpOnSingleInputConvNN()
     numpy_input = numpy.random.uniform(-1, 1, size=(1, 1, 10, 10))

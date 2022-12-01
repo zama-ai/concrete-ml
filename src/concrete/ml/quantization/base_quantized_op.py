@@ -71,6 +71,13 @@ class QuantizedOp:
     _inputs_not_quantized: Set[str] = set()
     quantize_inputs_with_model_outputs_precision: bool = False
 
+    # Determines if this op computes a tensor that is a graph output, i.e. a tensor
+    # that will be decrypted and dequantized in the clear
+    produces_graph_output = False
+
+    # The ONNX name of this op instance (e.g. "Conv_9", "MatMul_5" etc.)
+    op_instance_name = None
+
     error_tracker: Optional[List[int]] = None
 
     POSITIONAL_ARGUMENTS_KINDS = {
@@ -177,9 +184,9 @@ class QuantizedOp:
         return self._int_input_names
 
     # Register node to our internal categories
-    def __init_subclass__(cls, **kwargs):
+    def __init_subclass__(cls, is_utility=False, **kwargs):
         super().__init_subclass__(**kwargs)
-        if cls.__name__ == "QuantizedOpUnivariateOfEncrypted":
+        if is_utility:
             return
         ALL_QUANTIZED_OPS.add(cls)
         op_name = cls._impl_for_op_named
@@ -392,7 +399,7 @@ class QuantizedOp:
                 # call this function with quantize_actual_values==True), this
                 # will produce numpy ops that will be fused to a TLU. Fusable ops will
                 # use the .values directly (see else branch below). We need the quantization
-                # stats to generate the quantization code, they can not be computed on the fly.
+                # stats to generate the quantization code, they cannot be computed on the fly.
 
                 if quant_opts.is_equal(input_.quantizer.quant_options):
                     # Pass-through when the input is already quantized in
@@ -406,7 +413,6 @@ class QuantizedOp:
                         stats=input_.quantizer.quant_stats,
                         params=input_.quantizer.quant_params,
                     )
-
                 else:
                     quant_params = None
                     if input_.quantizer.is_qat:
@@ -554,7 +560,7 @@ class QuantizedOp:
         return output_quant_opts
 
 
-class QuantizedOpUnivariateOfEncrypted(QuantizedOp):
+class QuantizedOpUnivariateOfEncrypted(QuantizedOp, is_utility=True):
     """An univariate operator of an encrypted value.
 
     This operation is not really operating as a quantized operation. It is useful when the
@@ -596,3 +602,63 @@ class QuantizedOpUnivariateOfEncrypted(QuantizedOp):
         assert isinstance(self, QuantizedOp)
 
         return len(self._int_input_names) == 1  # pylint: disable=no-member
+
+
+class QuantizedMixingOp(QuantizedOp, is_utility=True):
+    """An operator that mixes (adds or multiplies) together encrypted inputs.
+
+    Mixing operators cannot be fused to TLUs.
+    """
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Mixing operations cannot be fused since it must be performed over integer tensors and it
+        combines different encrypted elements of the input tensors. Mixing operations are Conv,
+        MatMul, etc.
+
+        Returns:
+            bool: False, this operation cannot be fused as it adds different encrypted integers
+        """
+
+        return False
+
+    def make_output_quant_parameters(
+        self,
+        q_values: Union[numpy.ndarray, Any],
+        scale: float,
+        zero_point: Union[int, float, numpy.ndarray],
+    ) -> QuantizedArray:
+        """Build a quantized array from quantized integer results of the op and quantization params.
+
+        Args:
+            q_values (Union[numpy.ndarray, Any]): the quantized integer values to wrap
+                in the QuantizedArray
+            scale (float): the pre-computed scale of the quantized values
+            zero_point (Union[int, float, numpy.ndarray]): the pre-computed zero_point of
+                the q_values
+
+        Returns:
+            QuantizedArray: the quantized array that will be passed to the QuantizedModule output.
+        """
+
+        out_opts = self._get_output_quant_opts()
+        out_opts.is_signed = False
+        out_opts.is_symmetric = False
+
+        out_params = UniformQuantizationParameters()
+        out_params.scale = scale
+        out_params.zero_point = zero_point
+
+        # Since we don't know the real bit-width of this numpy_q_out value,
+        # return a quantizer that has zero offset
+        out_params.offset = 0
+
+        return QuantizedArray(
+            self.n_bits,
+            q_values,
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=out_params,
+        )

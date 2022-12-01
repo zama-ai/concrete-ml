@@ -78,15 +78,22 @@ def test_quantized_linear(
     """
     # Define the torch model
     torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model.eval()
 
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape)
 
+    torch_input = torch.from_numpy(numpy_input).float()
     # Create corresponding numpy model
-    numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input)
+
+    torch_prediction = torch_fc_model(torch_input).detach().numpy()
 
     # Predict with real model
     numpy_prediction = numpy_fc_model(numpy_input)
+
+    # Check that numpy execution is accurate w.r.t torch execution
+    check_r2_score(torch_prediction, numpy_prediction)
 
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(

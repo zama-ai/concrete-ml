@@ -16,7 +16,7 @@ from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 @pytest.mark.parametrize("qat_bits", [3, 7])
 def test_brevitas_tinymnist_cnn(
-    qat_bits, check_graph_input_has_no_tlu
+    qat_bits, check_graph_input_has_no_tlu, check_graph_output_has_no_tlu
 ):  # pylint: disable=too-many-statements
     """Train, execute and test a QAT CNN on a small version of MNIST."""
 
@@ -88,10 +88,6 @@ def test_brevitas_tinymnist_cnn(
     def test_with_concrete(quantized_module, test_loader, use_fhe, use_vl):
         """Test a neural network that is quantized and compiled with Concrete-ML."""
 
-        # When running in FHE, we cast inputs to uint8, but when running using the Virtual Lib (VL)
-        # we may want inputs to exceed 8b to test quantization performance. Thus,
-        # for VL we cast to int32
-        dtype_inputs = numpy.uint8 if use_fhe else numpy.int32
         all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int32)
         all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int32)
 
@@ -101,7 +97,7 @@ def test_brevitas_tinymnist_cnn(
         for data, target in test_loader:
             data = data.numpy()
             # Quantize the inputs and cast to appropriate data type
-            x_test_q = quantized_module.quantize_input(data).astype(dtype_inputs)
+            x_test_q = quantized_module.quantize_input(data)
 
             # Accumulate the ground truth labels
             endidx = idx + target.shape[0]
@@ -155,3 +151,4 @@ def test_brevitas_tinymnist_cnn(
     assert vl_acc - torch_acc >= -0.05
 
     check_graph_input_has_no_tlu(q_module_vl.fhe_circuit.graph)
+    check_graph_output_has_no_tlu(q_module_vl.fhe_circuit.graph)

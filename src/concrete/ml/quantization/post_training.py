@@ -1,7 +1,7 @@
 """Post Training Quantization methods."""
 
 from abc import abstractmethod
-from typing import Dict, List, Set, Tuple, Type, Union, cast
+from typing import Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import numpy
 import onnx
@@ -167,17 +167,95 @@ class ONNXConverter:
         self,
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
-    ) -> numpy.ndarray:
+        quantizers: List[Optional[UniformQuantizer]],
+    ) -> Tuple[numpy.ndarray, UniformQuantizer]:
         """Configure a graph operation according to model conversion mode.
 
         Args:
             quantized_op (QuantizedOp): Quantized graph operator instance
             *calibration_data (numpy.ndarray): tuple of network input tensors to be used for
                 calibration
+            quantizers (List[Optional[UniformQuantizer]]): a list of quantizers that
+                should produce the quantized values used in calibration. If none are given,
+                the calibration will generate the quantized values with the layer's input
+                calibration options.
 
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
+
+    def _calibrate_layers_activation(
+        self,
+        calibrate_quantized: bool,
+        quantized_op: QuantizedOp,
+        *calibration_data: numpy.ndarray,
+        quantizers: List[Optional[UniformQuantizer]],
+    ) -> Tuple[numpy.ndarray, UniformQuantizer]:
+        """Calibrate the QuantizedOp with the previous layer's output calibration data.
+
+        Args:
+            calibrate_quantized (bool): determines if we use de-quantized values (True) or
+                raw values (False) during calibration.
+            quantized_op (QuantizedOp): the quantized operator for the current layer.
+            *calibration_data: numpy.ndarray: the previous layer's calibration data.
+            quantizers (List[Optional[UniformQuantizer]]): a list of quantizers that
+                should produce the quantized values used in calibration. If none are given,
+                the calibration will generate the quantized values with the layer's input
+                calibration options.
+
+        Returns:
+            numpy.ndarray: the output of the newly calibrated layer.
+        """
+        # Calibrate the output of the layer
+        raw_result = quantized_op.calibrate(*calibration_data)
+
+        # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
+        # order to reduce the impact of quantization.
+        if quantized_op.quantize_inputs_with_model_outputs_precision:
+            n_bits = self.n_bits_model_outputs
+        else:
+            n_bits = self.n_bits_op_inputs
+
+        # Create new calibration data (output of the previous layer)
+        # Use the op's input options (thus behavior in calibration is the same as in compilation)
+        q_calibration_data: List[QuantizedArray] = list(
+            QuantizedArray(n_bits, data, True, options=quantized_op.input_quant_opts)
+            for data in calibration_data
+        )
+
+        # Override, when necessary, the calibration data with data that is quantized with
+        # layer quantizers that are overriden by the QAT graph quantizers
+        for idx, data in enumerate(calibration_data):
+            if quantizers[idx] is None:
+                continue
+
+            quantizer = quantizers[idx]
+            assert quantizer is not None
+
+            q_calibration_data[idx] = QuantizedArray(
+                quantizer.n_bits,
+                data,
+                True,
+                options=quantizer.quant_options,
+                stats=quantizer.quant_stats,
+                params=quantizer.quant_params,
+            )
+
+        # Dequantize to have the value in clear and ready for next calibration
+        quant_result = quantized_op(*q_calibration_data)
+        if quantized_op.produces_graph_output:
+            assert quantized_op.output_quant_stats is not None
+            assert quantized_op.output_quant_params is not None
+            quantized_op.output_quant_stats.copy_stats(quant_result.quantizer.quant_stats)
+            quantized_op.output_quant_params.copy_params(quant_result.quantizer.quant_params)
+
+        # For PTQ, the calibration is performed on quantized data
+        if calibrate_quantized:
+            return quant_result.dequant(), quant_result.quantizer
+
+        # For QAT, the calibration is performed on raw data, performing
+        # calibration on quantized that would confound inferred QAT and PTQ.
+        return raw_result, quant_result.quantizer
 
     @abstractmethod
     def _process_initializer(
@@ -224,6 +302,7 @@ class ONNXConverter:
             for onnx_init in inits
         )
 
+    # pylint: disable-next=too-many-statements
     def _quantize_layers(self, *input_calibration_data: numpy.ndarray):
         """Compute parameters for post-training quantization and generate quantized ops.
 
@@ -239,6 +318,9 @@ class ONNXConverter:
 
         graph = self.numpy_model.onnx_model.graph
 
+        # Get the list of output tensor names
+        graph_output_names = [o.name for o in graph.output]
+
         node_results: Dict[str, Union[numpy.ndarray, QuantizedArray]] = dict(
             {
                 graph_input.name: input_value
@@ -246,6 +328,7 @@ class ONNXConverter:
             },
             **self.quant_params,
         )
+        node_override_quantizer: Dict[str, UniformQuantizer] = {}
 
         constants: Set[str] = set(self.quant_params.keys())
 
@@ -263,14 +346,14 @@ class ONNXConverter:
         # We first define which ops perform 'non-fusable' computations and in which settings.
         # Some examples are: gemm & conv, which add together scalars - different elements (cells) of
         # their input encrypted tensors. Another case is Add which, when adding two different
-        # encrypted integer inputs, can not be fused. However, Add can be fused when it adds
+        # encrypted integer inputs, cannot be fused. However, Add can be fused when it adds
         # the results computed from a unique integer tensor. Such as the function f(x) = x + x / 2.
 
         # We keep track, for each tensor, from which integer tensor(s) it is produced. We also
         # consider that input tensors 'produce' themselves. When an operation can be fused, its
         # input integer tensor names are simply forwarded to the next op.
 
-        # When an op can not be fused, it produces a new integer encrypted tensor.
+        # When an op cannot be fused, it produces a new integer encrypted tensor.
 
         # All tensor names are taken from the ONNX tensor names.
 
@@ -353,6 +436,13 @@ class ONNXConverter:
                     **attributes,
                 )
 
+                # Determine if this op computes a tensor that is a graph output, i.e. a tensor
+                # that will be decrypted and dequantized in the clear
+                quantized_op_instance.produces_graph_output = output_name in graph_output_names
+
+                # Set the operation name to be able to link errors to specific ops
+                quantized_op_instance.op_instance_name = node.name
+
                 # Store the output tensor's integer producers
                 tensor_int_producers[output_name] = set()
                 if not quantized_op_instance.can_fuse():
@@ -371,10 +461,15 @@ class ONNXConverter:
                     quantized_op_instance,
                 )
 
-                output_calibration_data = self._process_layer(
-                    quantized_op_instance, *curr_calibration_data
+                layer_quant = list(
+                    node_override_quantizer.get(input_name, None)
+                    for input_name in variable_input_names
+                )
+                output_calibration_data, layer_quantizer = self._process_layer(
+                    quantized_op_instance, *curr_calibration_data, quantizers=layer_quant
                 )
                 node_results[output_name] = output_calibration_data
+                node_override_quantizer[output_name] = layer_quantizer
 
             # Otherwise use the original operator to operate on float values to do constant folding
             else:
@@ -437,7 +532,7 @@ class ONNXConverter:
         # Create several lists:
         # - a list of layers that use each input directly (i.e. have this input as an integer input)
         # - a list of quantizers that are applied to each input node
-        # - a list of inputs that have TLUs, for which these TLUs can not be removed
+        # - a list of inputs that have TLUs, for which these TLUs cannot be removed
         layer_using_input: Dict[int, List[QuantizedOp]] = {}
         quantizers_for_input: Dict[int, QuantizedBrevitasQuant] = {}
         inputs_not_optimizable: List[int] = []
@@ -469,7 +564,7 @@ class ONNXConverter:
                     quantizers_for_input[inp_idx] = q_op
                 else:
                     # If the input is processed by some other type of univariate layer
-                    # we can not optimize out the TLUs on this op by moving them in the clear
+                    # we cannot optimize out the TLUs on this op by moving them in the clear
                     inputs_not_optimizable.append(inp_idx)
 
             if len(layer_using_input[inp_idx]) > 1:
@@ -541,53 +636,26 @@ class PostTrainingAffineQuantization(ONNXConverter):
         self,
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
-    ):
+        quantizers: List[Optional[UniformQuantizer]],
+    ) -> Tuple[numpy.ndarray, UniformQuantizer]:
         """Configure a graph operation by performing calibration for uniform quantization.
 
         Args:
             quantized_op (QuantizedOp): Quantized graph operator instance
             *calibration_data (numpy.ndarray): tuple of network input tensors to be used for
                 calibration
+            quantizers (List[Optional[UniformQuantizer]]): a list of quantizers that
+                should produce the quantized values used in calibration. If none are given,
+                the calibration will generate the quantized values with the layer's input
+                calibration options.
 
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
 
-        return self._calibrate_layers_activation(quantized_op, *calibration_data)
-
-    def _calibrate_layers_activation(
-        self,
-        quantized_op: QuantizedOp,
-        *calibration_data: numpy.ndarray,
-    ) -> numpy.ndarray:
-        """Calibrate the QuantizedOp linked to name with previous calibration data.
-
-        Args:
-            quantized_op (QuantizedOp): the quantized operator for the current layer.
-            *calibration_data: numpy.ndarray: the previous layer's calibration data.
-
-        Returns:
-            numpy.ndarray: the output of the newly calibrated layer.
-        """
-        # Calibrate the output of the layer
-        quantized_op.calibrate(*calibration_data)
-
-        # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
-        # order to reduce the impact of quantization.
-        if quantized_op.quantize_inputs_with_model_outputs_precision:
-            n_bits = self.n_bits_model_outputs
-        else:
-            n_bits = self.n_bits_op_inputs
-
-        # Create new calibration data (output of the previous layer)
-        # Use the op's input options (thus behavior in calibration is the same as in compilation)
-        q_calibration_data = (
-            QuantizedArray(n_bits, data, True, options=quantized_op.input_quant_opts)
-            for data in calibration_data
+        return self._calibrate_layers_activation(
+            True, quantized_op, *calibration_data, quantizers=quantizers
         )
-
-        # Dequantize to have the value in clear and ready for next calibration
-        return quantized_op(*q_calibration_data).dequant()
 
     def _process_initializer(self, n_bits: int, values: Union[numpy.ndarray, QuantizedArray]):
         """Quantize a network constant tensor (a weights tensor).
@@ -686,20 +754,26 @@ class PostTrainingQATImporter(ONNXConverter):
         self,
         quantized_op: QuantizedOp,
         *calibration_data: numpy.ndarray,
-    ):
+        quantizers: List[Optional[UniformQuantizer]],
+    ) -> Tuple[numpy.ndarray, UniformQuantizer]:
         """Configure a graph operation by calibrating it for Quantization Aware Training.
 
         Args:
             quantized_op (QuantizedOp): Quantized graph operator instance
             *calibration_data (numpy.ndarray): tuple of network input tensors to be used for
                 calibration
+            quantizers (List[Optional[UniformQuantizer]]): a list of quantizers that
+                should produce the quantized values used in calibration. If none are given,
+                the calibration will generate the quantized values with the layer's input
+                calibration options.
 
         Returns:
             numpy.ndarray: calibration data for the following operators
         """
 
-        layer_output = quantized_op.calibrate(*calibration_data)
-        return layer_output
+        return self._calibrate_layers_activation(
+            False, quantized_op, *calibration_data, quantizers=quantizers
+        )
 
     def _process_initializer(self, n_bits: int, values: Union[numpy.ndarray, QuantizedArray]):
         """Process an already quantized weight tensor.

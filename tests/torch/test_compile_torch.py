@@ -25,14 +25,20 @@ from concrete.ml.pytest.torch_models import (
     MultiInputNN,
     NetWithLoops,
     SimpleQAT,
+    SingleMixNet,
     StepActivationModule,
     UnivariateModule,
 )
+from concrete.ml.quantization import QuantizedModule
 
 # pylint sees separated imports from concrete but does not understand they come from two different
 # packages/projects, disable the warning
 # pylint: disable=ungrouped-imports
-from concrete.ml.torch.compile import compile_onnx_model, compile_torch_model
+from concrete.ml.torch.compile import (
+    compile_brevitas_qat_model,
+    compile_onnx_model,
+    compile_torch_model,
+)
 
 # pylint: enable=ungrouped-imports
 
@@ -54,7 +60,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     dump_onnx=False,
     expected_onnx_str=None,
     verbose_compilation=False,
-):
+) -> QuantizedModule:
     """Test the different model architecture from torch numpy."""
 
     # Define an input shape (n_examples, n_features)
@@ -193,6 +199,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             print(str_model)
             assert str_model == expected_onnx_str
 
+    return quantized_numpy_module
+
 
 @pytest.mark.parametrize(
     "activation_function",
@@ -269,6 +277,8 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     use_virtual_lib,
     is_onnx,
     is_vl_only_option,
+    check_graph_input_has_no_tlu,
+    check_graph_output_has_no_tlu,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -278,7 +288,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     # To signal that this network is not using QAT set the QAT bits to 0
     qat_bits = 0
 
-    compile_and_test_torch_or_onnx(
+    q_module = compile_and_test_torch_or_onnx(
         (6, 7, 7),
         model,
         activation_function,
@@ -288,6 +298,9 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         is_onnx,
         verbose_compilation=False,
     )
+
+    check_graph_input_has_no_tlu(q_module.fhe_circuit.graph)
+    check_graph_output_has_no_tlu(q_module.fhe_circuit.graph)
 
 
 @pytest.mark.parametrize(
@@ -476,7 +489,9 @@ def test_dump_torch_network(model, expected_onnx_str, activation_function, defau
 
 
 @pytest.mark.parametrize("verbose_compilation", [True, False])
-def test_pretrained_mnist_qat(default_configuration, check_accuracy, verbose_compilation):
+def test_pretrained_mnist_qat(
+    default_configuration, check_accuracy, verbose_compilation, check_graph_output_has_no_tlu
+):
     """Load a QAT MNIST model and make sure we get the same results in VL as with ONNX."""
 
     onnx_file_path = "tests/data/mnist_2b_s1_1.zip"
@@ -572,6 +587,10 @@ def test_pretrained_mnist_qat(default_configuration, check_accuracy, verbose_com
         verbose_compilation=verbose_compilation,
     )
 
+    # As this is a custom QAT network, the input goes through multiple univariate
+    # ops that form a quantizer. Thus it has input TLUs. But it should not have output TLUs
+    check_graph_output_has_no_tlu(quantized_numpy_module.fhe_circuit.graph)
+
     assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8
 
 
@@ -632,3 +651,73 @@ def test_qat_import_check(default_configuration):
             use_virtual_lib,
             False,
         )
+
+
+@pytest.mark.parametrize("n_bits, use_virtual_lib", [(2, False)])
+@pytest.mark.parametrize("use_qat", [True, False])
+@pytest.mark.parametrize("force_tlu", [True, False])
+@pytest.mark.parametrize("module, input_shape", [(SingleMixNet, (1, 8, 8)), (SingleMixNet, 10)])
+def test_net_has_no_tlu(
+    module,
+    input_shape,
+    use_qat,
+    force_tlu,
+    n_bits,
+    use_virtual_lib,
+    default_configuration,
+    check_graph_output_has_no_tlu,
+):
+    """Tests that there is no TLU in nets with a single conv/linear."""
+    use_conv = isinstance(input_shape, tuple) and len(input_shape) > 1
+
+    net = module(use_conv, use_qat, input_shape, n_bits)
+
+    # We have the option to force having a TLU in the net by
+    # applying a nonlinear function on the original network's output. Thus
+    # we can check that a tlu is indeed present and was not removed by accident in this case
+    if force_tlu:
+
+        def relu_adder_decorator(method):
+            def decorate_name(self):
+                return torch.relu(method(self))
+
+            return decorate_name
+
+        net.forward = relu_adder_decorator(net.forward)
+
+    # Generate the input in both the 2d and 1d cases
+    if not isinstance(input_shape, tuple):
+        input_shape = (input_shape,)
+    inputset = numpy.random.uniform(size=(100, *input_shape))
+
+    if use_qat:
+        # Compile with appropriate QAT compilation function, here the ZPs will all be 0
+        quantized_numpy_module = compile_brevitas_qat_model(
+            net,
+            inputset,
+            n_bits=n_bits,
+            configuration=default_configuration,
+            use_virtual_lib=use_virtual_lib,
+        )
+    else:
+        # Compile with PTQ. Note that this will have ZP>0
+        quantized_numpy_module = compile_torch_model(
+            net,
+            inputset,
+            import_qat=False,
+            configuration=default_configuration,
+            n_bits=n_bits,
+            use_virtual_lib=use_virtual_lib,
+        )
+
+    mlir = quantized_numpy_module.fhe_circuit.mlir
+
+    # Check if a TLU is present or not, depending on whether we force a TLU to be present
+    if force_tlu:
+        with pytest.raises(AssertionError):
+            check_graph_output_has_no_tlu(quantized_numpy_module.fhe_circuit.graph)
+        with pytest.raises(AssertionError):
+            assert "lookup_table" not in mlir
+    else:
+        check_graph_output_has_no_tlu(quantized_numpy_module.fhe_circuit.graph)
+        assert "lookup_table" not in mlir
