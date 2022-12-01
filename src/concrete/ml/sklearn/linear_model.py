@@ -24,6 +24,8 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
 
     sklearn_alg = sklearn.linear_model.LinearRegression
 
+    _is_a_public_cml_model = True
+
     def __init__(
         self,
         n_bits=8,
@@ -61,6 +63,7 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """
 
     sklearn_alg = sklearn.linear_model.ElasticNet
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(
@@ -114,6 +117,7 @@ class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """
 
     sklearn_alg = sklearn.linear_model.Lasso
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(
@@ -165,6 +169,7 @@ class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """
 
     sklearn_alg = sklearn.linear_model.Ridge
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(
@@ -212,6 +217,7 @@ class LogisticRegression(SklearnLinearClassifierMixin, sklearn.base.ClassifierMi
     """
 
     sklearn_alg = sklearn.linear_model.LogisticRegression
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(

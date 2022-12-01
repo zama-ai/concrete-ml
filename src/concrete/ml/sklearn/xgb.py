@@ -31,6 +31,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
     sklearn_model: Any
     framework: str = "xgboost"
 
+    _is_a_public_cml_model = True
+
     # pylint: disable=too-many-arguments,too-many-locals
     def __init__(
         self,
@@ -187,6 +189,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
     _tensor_tree_predict: Optional[Callable]
     sklearn_model: Any
     framework: str = "xgboost"
+    _is_a_public_cml_model = True
 
     # pylint: disable=too-many-arguments,too-many-locals
     def __init__(

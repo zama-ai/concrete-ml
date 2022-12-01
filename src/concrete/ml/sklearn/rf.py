@@ -19,6 +19,8 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
     sklearn_model: Any
     framework: str = "sklearn"
 
+    _is_a_public_cml_model = True
+
     # pylint: disable=too-many-arguments,protected-access
 
     def __init__(
@@ -81,6 +83,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
     _tensor_tree_predict: Optional[Callable]
     sklearn_model: Any
     framework: str = "sklearn"
+    _is_a_public_cml_model = True
 
     # pylint: disable=too-many-arguments,protected-access
 

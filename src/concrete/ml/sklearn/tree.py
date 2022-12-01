@@ -21,6 +21,9 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
     n_classes_: int
     framework: str = "sklearn"
 
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
+
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
@@ -74,6 +77,9 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
     _tensor_tree_predict: Optional[Callable]
     q_y: QuantizedArray
     framework: str = "sklearn"
+
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(

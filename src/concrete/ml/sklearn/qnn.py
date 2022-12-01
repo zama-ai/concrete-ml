@@ -327,7 +327,9 @@ class FixedTypeSkorchNeuralNet:
 
 
 class NeuralNetClassifier(
-    FixedTypeSkorchNeuralNet, QuantizedSkorchEstimatorMixin, SKNeuralNetClassifier
+    FixedTypeSkorchNeuralNet,
+    QuantizedSkorchEstimatorMixin,
+    SKNeuralNetClassifier,
 ):
     """Scikit-learn interface for quantized FHE compatible neural networks.
 
@@ -340,6 +342,9 @@ class NeuralNetClassifier(
     standard scikit-learn estimators as this class needs to predict in FHE and network inference
     executor is the NumpyModule.
     """
+
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
 
     # FIXME: make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
     # see https://github.com/zama-ai/concrete-ml-internal/issues/327
@@ -440,6 +445,9 @@ class NeuralNetRegressor(
     standard scikit-learn estimators as this class needs to predict in FHE and network inference
     executor is the NumpyModule.
     """
+
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
 
     # FIXME: make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
     # see https://github.com/zama-ai/concrete-ml-internal/issues/327

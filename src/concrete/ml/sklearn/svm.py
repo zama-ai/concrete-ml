@@ -22,6 +22,7 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     """
 
     sklearn_alg = sklearn.svm.LinearSVR
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(
@@ -71,6 +72,7 @@ class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
     """
 
     sklearn_alg = sklearn.svm.LinearSVC
+    _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
     def __init__(

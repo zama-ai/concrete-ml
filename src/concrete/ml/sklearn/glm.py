@@ -149,6 +149,9 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
 
     sklearn_alg = sklearn.linear_model.PoissonRegressor
 
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
+
     def __init__(
         self,
         *,
@@ -202,6 +205,9 @@ class GammaRegressor(_GeneralizedLinearRegressor):
 
     sklearn_alg = sklearn.linear_model.GammaRegressor
 
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
+
     def __init__(
         self,
         *,
@@ -254,6 +260,9 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
     """
 
     sklearn_alg = sklearn.linear_model.TweedieRegressor
+
+    # pylint: disable-next=protected-access
+    _is_a_public_cml_model = True
 
     def __init__(
         self,

@@ -10,7 +10,7 @@ import tempfile
 import warnings
 from abc import abstractmethod
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 import numpy
 import onnx
@@ -48,6 +48,11 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 
 # pylint: enable=wrong-import-position,wrong-import-order
 
+_ALL_SKLEARN_MODELS: Set[Type] = set()
+_LINEAR_MODELS: Set[Type] = set()
+_TREE_MODELS: Set[Type] = set()
+_NEURALNET_MODELS: Set[Type] = set()
+
 
 class QuantizedTorchEstimatorMixin:
     """Mixin that provides quantization for a torch module and follows the Estimator API.
@@ -57,6 +62,15 @@ class QuantizedTorchEstimatorMixin:
     """
 
     post_processing_params: Dict[str, Any] = {}
+    _is_a_public_cml_model = False
+
+    def __init_subclass__(cls):
+        for klass in cls.__mro__:
+
+            # pylint: disable-next=protected-access
+            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+                _NEURALNET_MODELS.add(cls)
+                _ALL_SKLEARN_MODELS.add(cls)
 
     def __init__(
         self,
@@ -496,6 +510,14 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
     framework: str
     fhe_circuit: Optional[Circuit] = None
     _onnx_model_: Optional[onnx.ModelProto] = None
+    _is_a_public_cml_model: bool = False
+
+    def __init_subclass__(cls):
+        for klass in cls.__mro__:
+            # pylint: disable-next=protected-access
+            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+                _TREE_MODELS.add(cls)
+                _ALL_SKLEARN_MODELS.add(cls)
 
     def __init__(self, n_bits: int):
         """Initialize the TreeBasedEstimatorMixin.
@@ -708,6 +730,15 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
 
     A place to share methods that are used on all tree-based regressors.
     """
+
+    _is_a_public_cml_model: bool = False
+
+    def __init_subclass__(cls):
+        for klass in cls.__mro__:
+            # pylint: disable-next=protected-access
+            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+                _TREE_MODELS.add(cls)
+                _ALL_SKLEARN_MODELS.add(cls)
 
     def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
         """Fit the tree-based estimator.
@@ -942,6 +973,15 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
     sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
     random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
+
+    _is_a_public_cml_model: bool = False
+
+    def __init_subclass__(cls):
+        for klass in cls.__mro__:
+            # pylint: disable-next=protected-access
+            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+                _LINEAR_MODELS.add(cls)
+                _ALL_SKLEARN_MODELS.add(cls)
 
     def __init__(self, *args, n_bits: Union[int, Dict[str, int]] = 8, **kwargs):
         """Initialize the FHE linear model.
@@ -1462,3 +1502,17 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
         """
         clean_graph_after_node_op_type(self.onnx_model, node_op_type="Gemm")
         super().clean_graph()
+
+
+def get_sklearn_models():
+    """Return the list of available models in Concrete-ML.
+
+    Returns:
+        the lists of models in Concrete-ML
+    """
+
+    # Import anything in sklearn, just to force the import, to populate _ALL_SKLEARN_MODELS list
+    # pylint: disable=unused-import, import-outside-toplevel, cyclic-import
+    from ..sklearn import LinearRegression  # noqa: F401
+
+    return _ALL_SKLEARN_MODELS, _LINEAR_MODELS, _TREE_MODELS, _NEURALNET_MODELS
