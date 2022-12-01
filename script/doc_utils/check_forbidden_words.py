@@ -48,6 +48,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("requantize", []),
         ("an FHE", []),
         ("can Google", []),
+        ("can not", []),
         ("jupyter", []),
         ("PyTest", []),
         ("pyTest", []),
