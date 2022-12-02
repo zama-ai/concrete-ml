@@ -21,9 +21,10 @@ AVAILABLE_FILTERS = [
     "identity",
     "inverted",
     "rotate",
+    "black and white",
     "blur",
     "sharpen",
-    "ridge_detection",
+    "ridge detection",
 ]
 
 # The input image's shape. Images with larger input shapes will be cropped and/or resized to this

@@ -62,7 +62,7 @@ class _TorchRotate(nn.Module):
 class _TorchConv2D(nn.Module):
     """Torch model for applying a single 2D convolution operator on images."""
 
-    def __init__(self, kernel):
+    def __init__(self, kernel, n_in_channels=3, n_out_channels=3, groups=1):
         """Initializing the filter
         
         Args:
@@ -70,6 +70,9 @@ class _TorchConv2D(nn.Module):
         """
         super().__init__()
         self.kernel = kernel
+        self.n_out_channels = n_out_channels
+        self.n_in_channels = n_in_channels
+        self.groups = groups
 
     def forward(self, x):
         """Forward pass for filtering the image using a 2D kernel.
@@ -83,14 +86,33 @@ class _TorchConv2D(nn.Module):
         """
         # Define the convolution parameters
         stride = 1
-        groups = 3
-        n_in_channels = 3
         kernel_shape = self.kernel.shape
 
         # Ensure the kernel has a proper shape
-        kernel = torch.from_numpy(self.kernel).expand(n_in_channels, n_in_channels // groups, kernel_shape[0], kernel_shape[1])
+        # If the kernel has a 1D shape, a (1, 1) kernel is used for each in_channels 
+        if len(kernel_shape) == 1:
+            kernel = self.kernel.reshape(
+                self.n_out_channels, 
+                self.n_in_channels // self.groups, 
+                1, 
+                1,
+            )
+        
+        # Else, if the kernel has a 2D shape, a single (Kw, Kh) kernel is used on all in_channels 
+        elif len(kernel_shape) == 2:
+            kernel = self.kernel.expand(
+                self.n_out_channels, 
+                self.n_in_channels // self.groups, 
+                kernel_shape[0], 
+                kernel_shape[1],
+            )
+        else:
+            raise ValueError(
+                "Wrong kernel shape, only 1D or 2D kernels are accepted. Got kernel of shape "
+                f"{kernel_shape}"
+            )
 
-        return nn.functional.conv2d(x, kernel, stride=stride, groups=groups)
+        return nn.functional.conv2d(x, kernel, stride=stride, groups=self.groups)
 
 
 class Filter:
@@ -107,12 +129,13 @@ class Filter:
         
         assert_true(
             image_filter in AVAILABLE_FILTERS, 
-            f"Filter does not exist. Got {image_filter}"
+            f"Unsupported image filter or transformation. Expected one of {*AVAILABLE_FILTERS,}, "
+            f"but got {image_filter}"
         )
 
         self.filter = image_filter
-        self.permute_dim = False
         self.divide = None
+        self.repeat_out_channels = False
     
         if image_filter == "identity":
             self.torch_model = _TorchIdentity()
@@ -122,36 +145,58 @@ class Filter:
         
         elif image_filter == "rotate":
             self.torch_model = _TorchRotate()
-    
-        elif image_filter == "blur":
-            kernel = np.ones((3, 3), dtype=np.int64)
 
-            self.torch_model = _TorchConv2D(kernel)
-            self.permute_dim = True
+        elif image_filter == "black and white":
+            # Define the grayscale weights (RGB order)
+            # These weights were used in PAL and NTSC video systems and can be found at
+            # https://en.wikipedia.org/wiki/Grayscale
+            # There are initially supposed to be float weights (0.299, 0.587, 0.114), with
+            # 0.299 + 0.587 + 0.114 = 1
+            # However, since FHE computations require weights to be integers, we first multiply 
+            # these by a factor of 1000. The output image's values are then divided by 1000 in 
+            # post-processing in order to retrieve the correct result
+            kernel = torch.tensor([299, 587, 114])
+
+            self.torch_model = _TorchConv2D(kernel, n_out_channels=1, groups=1)
+
+            # Division value for post-processing
+            self.divide = 1000
+
+            # Grayscaled image needs to be put in RGB format for Gradio display
+            self.repeat_out_channels = True
+
+        elif image_filter == "blur":
+            kernel = torch.ones((3, 3), dtype=torch.int64)
+
+            self.torch_model = _TorchConv2D(kernel, n_out_channels=3, groups=3)
+
+            # Division value for post-processing
             self.divide = 9
         
         elif image_filter == "sharpen":
-            kernel = np.array([
+            kernel = torch.tensor([
                 [0, -1, 0],
                 [-1, 5, -1],
                 [0, -1, 0],
             ])
 
-            self.torch_model = _TorchConv2D(kernel)
-            self.permute_dim = True
+            self.torch_model = _TorchConv2D(kernel, n_out_channels=3, groups=3)
         
-        elif image_filter == "ridge_detection":
+        elif image_filter == "ridge detection":
             # Make the filter properly grayscaled, as it is commonly used
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
         
-            kernel = np.array([
+            kernel = torch.tensor([
                 [-1, -1, -1],
-                [-1, 8, -1],
+                [-1, 9, -1],
                 [-1, -1, -1],
             ])
 
-            self.torch_model = _TorchConv2D(kernel)
-            self.permute_dim = True
+            self.torch_model = _TorchConv2D(kernel, n_out_channels=1, groups=1)
+
+            # Ridge detection is usually displayed as a grayscaled image, which needs to be put in 
+            # RGB format for Gradio display
+            self.repeat_out_channels = True
 
         self.onnx_model = None
         self.fhe_circuit = None
@@ -164,12 +209,11 @@ class Filter:
             onnx_model (onnx.ModelProto): The loaded onnx model to consider. If None, it will be 
                 generated automatically using a NumpyModule. Default to None.
         """
-        # If the filter uses the convolution operator, reshape the inputs found in inputset.
-        # This is done because Torch and Numpy don't follow the same shape conventions.  
-        if self.permute_dim:
-            inputset = tuple(
-                np.expand_dims(input.transpose(2,0,1), axis=0).astype(np.int64) for input in inputset
-            )
+        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow 
+        # the same shape conventions.  
+        inputset = tuple(
+            np.expand_dims(input.transpose(2,0,1), axis=0).astype(np.int64) for input in inputset
+        )
         
         # If no onnx model was given, generate a new one.
         if onnx_model is None:
@@ -207,10 +251,9 @@ class Filter:
         Returns:
             input_image (np.ndarray): The pre-processed image
         """
-        # If the filter uses the convolution operator, reshape the image.
-        # This is done because Torch and Numpy don't follow the same shape conventions. 
-        if self.permute_dim:
-            return np.expand_dims(input_image.transpose(2,0,1), axis=0)
+        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow 
+        # the same shape conventions.  
+        input_image = np.expand_dims(input_image.transpose(2,0,1), axis=0).astype(np.int64)
         
         return input_image
 
@@ -230,10 +273,13 @@ class Filter:
         # Clip the image's values to proper RGB standards as filters don't handle such constraints 
         output_image = output_image.clip(0, 255)
 
-        # If the filter uses the convolution operator, reshape the image.
-        # This is done because Torch and Numpy don't follow the same shape conventions. 
-        if self.permute_dim:
-            return output_image.transpose(0,2,3,1).squeeze(0)
+        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow 
+        # the same shape conventions.
+        output_image = output_image.transpose(0,2,3,1).squeeze(0)
+        
+        # Grayscaled image needs to be put in RGB format for Gradio display
+        if self.repeat_out_channels:
+            output_image = output_image.repeat(3, axis=2)
 
         return output_image
 

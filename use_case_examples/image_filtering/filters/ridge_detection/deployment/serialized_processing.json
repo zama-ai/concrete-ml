@@ -1,1 +1,3 @@
-{"model_filter": "ridge_detection", "model_post_processing_params": {}, "cml_version": "0.6.0-rc0"}
+version https://git-lfs.github.com/spec/v1
+oid sha256:1ab4958003eab7cd408e9a42dcef73ae0c2beb4689f7304089a4fa08083ecacc
+size 63

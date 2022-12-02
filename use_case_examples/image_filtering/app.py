@@ -260,7 +260,7 @@ def decrypt_output(user_id, image_filter):
     return output_image
 
 
-demo = gr.Blocks(show_error=True)
+demo = gr.Blocks()
 
 
 print("Starting the demo...")
