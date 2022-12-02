@@ -6,6 +6,7 @@ on:
         # --- refresh_notebooks_list.py: refresh list of notebooks currently available [START] ---
         # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
         description: "Notebook file name only in: \n
+        - Cifar10 \n
         - ClassifierComparison \n
         - ClientServer \n
         - ConvolutionalNeuralNetwork \n
@@ -34,6 +35,7 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
+  Cifar10: "use_case_examples/cifar_10_with_model_splitting/Cifar10.ipynb" 
   ClassifierComparison: "docs/advanced_examples/ClassifierComparison.ipynb" 
   ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
