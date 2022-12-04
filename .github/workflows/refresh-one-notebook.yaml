@@ -128,7 +128,7 @@ jobs:
           make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"
 
       - name: Open PR
-        uses: peter-evans/create-pull-request@b4d51739f96fca8047ad065eccef63442d8e99f7
+        uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
