@@ -10,7 +10,7 @@
 
 
 # Get all branches that start with "dependabot/" from origin
-branches=$(git branch -r | grep "dependabot/" | sed 's/origin\///')
+branches=$(git ls-remote origin | grep "dependabot/" | awk '{print $2}' | sed 's/refs\/heads\///')
 
 # Remember which branch we are currently in
 current_branch=$(git rev-parse --abbrev-ref HEAD)

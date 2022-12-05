@@ -21,9 +21,9 @@ class QATSimpleNet(nn.Module):
         self.quant_inp = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
         self.fc1 = qnn.QuantLinear(N_FEAT, n_hidden, True, weight_bit_width=n_bits, bias_quant=None)
         self.quant2 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
-        self.fc2 = qnn.QuantLinear(n_hidden, n_hidden, True, weight_bit_width=3, bias_quant=None)
+        self.fc2 = qnn.QuantLinear(n_hidden, n_hidden, True, weight_bit_width=n_bits, bias_quant=None)
         self.quant3 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
-        self.fc3 = qnn.QuantLinear(n_hidden, 2, True, weight_bit_width=n_hidden, bias_quant=None)
+        self.fc3 = qnn.QuantLinear(n_hidden, 2, True, weight_bit_width=n_bits, bias_quant=None)
 
     def forward(self, x):
         x = self.quant_inp(x)
