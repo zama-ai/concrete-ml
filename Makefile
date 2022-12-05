@@ -78,17 +78,20 @@ reinstall_env:
 .PHONY: python_format # Apply python formatting
 python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
-	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources
+	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources \
+	--dir use_case_examples
 
 .PHONY: check_python_format # Check python format
 check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
 	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources \
+	--dir use_case_examples \
 	--check
 
 .PHONY: check_finalize_nb # Check sanitization of notebooks
 check_finalize_nb:
-	poetry run python ./script/nbmake_utils/notebook_finalize.py docs --check
+	poetry run python ./script/nbmake_utils/notebook_finalize.py docs --check &
+	poetry run python ./script/nbmake_utils/notebook_finalize.py use_case_examples --check
 
 .PHONY: pylint # Run pylint
 pylint:

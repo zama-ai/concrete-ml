@@ -89,6 +89,11 @@ then
     PYLINT_EXTRA_OPTIONS="--disable duplicate-code"
     nbqa_ize docs "${PYLINT_EXTRA_OPTIONS}"
 
+    # In addition, we disable import-error, because we may have packages which are just for
+    # use_case_examples, ie not available in `make sync_env`
+    PYLINT_EXTRA_OPTIONS="$PYLINT_EXTRA_OPTIONS --disable import-error"
+    nbqa_ize use_case_examples "${PYLINT_EXTRA_OPTIONS}"
+
 elif [ "$WHAT_TO_DO" == "one" ]
 then
     echo "Running nbqa on ${NOTEBOOK}"
