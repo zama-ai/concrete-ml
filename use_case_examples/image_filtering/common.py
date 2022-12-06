@@ -45,3 +45,5 @@ _INPUTSET_DIR = REPO_DIR / "input_examples"
 
 # List of all image examples suggested in the app
 EXAMPLES = [str(image) for image in _INPUTSET_DIR.glob('**/*')]
+
+SERVER_URL = "http://localhost:8000/filter_image"

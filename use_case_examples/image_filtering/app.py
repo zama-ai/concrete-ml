@@ -4,20 +4,25 @@ import gradio as gr
 import numpy
 import os
 import requests
-import json
-import base64
-import subprocess
 import shutil
+import subprocess
 import time
 
 from custom_client_server import CustomFHEClient
-from common import AVAILABLE_FILTERS, FILTERS_PATH, TMP_PATH, KEYS_PATH, INPUT_SHAPE, REPO_DIR, KEYS_PATH, EXAMPLES
+from common import (
+    FILTERS_PATH,
+    TMP_PATH,
+    KEYS_PATH,
+    INPUT_SHAPE,
+    EXAMPLES,
+    AVAILABLE_FILTERS,
+    SERVER_URL,
+    REPO_DIR,
+)
 
 # Uncomment here to have both the server and client in the same terminal
-# subprocess.Popen(["uvicorn", "server:app"], cwd=REPO_DIR)
-
-# Wait 5 sec for the server to start
-time.sleep(5)
+subprocess.Popen(["uvicorn", "server:app"], cwd=REPO_DIR)
+time.sleep(3)
 
 
 def shorten_bytes_object(bytes_object, limit=500):
@@ -65,7 +70,7 @@ def get_file_path(name, user_id, image_filter):
     Returns:
         pathlib.Path: The file path.
     """
-    return TMP_PATH / f"tmp_{name}_{image_filter}_{user_id}.npy"
+    return TMP_PATH / f"tmp_{name}_{image_filter}_{user_id}"
 
 def clean_temporary_files(n_keys=20):
     """Clean keys and encrypted images.
@@ -126,10 +131,12 @@ def keygen(image_filter):
     # execution
     evaluation_key = client.get_serialized_evaluation_keys()
 
-    # Save evaluation_key in a file as it is too large to pass through regular Gradio buttons (see
-    # https://github.com/gradio-app/gradio/issues/1877)
+    # Save evaluation_key as bytes in a file as it is too large to pass through regular Gradio 
+    # buttons (see https://github.com/gradio-app/gradio/issues/1877)
     evaluation_key_path = get_file_path("evaluation_key", user_id, image_filter)
-    numpy.save(evaluation_key_path, evaluation_key)
+
+    with evaluation_key_path.open('wb') as evaluation_key_file:
+        evaluation_key_file.write(evaluation_key)
 
     return (user_id, True)
 
@@ -156,10 +163,12 @@ def encrypt(user_id, input_image, image_filter):
     # Pre-process, encrypt and serialize the image
     encrypted_image = client.pre_process_encrypt_serialize(input_image)
 
-    # Save encrypted_image in a file, since too large to pass through regular Gradio
+    # Save encrypted_image to bytes in a file, since too large to pass through regular Gradio
     # buttons, https://github.com/gradio-app/gradio/issues/1877
-    encrypted_input_path = get_file_path("encrypted_image", user_id, image_filter)
-    numpy.save(encrypted_input_path, encrypted_image)
+    encrypted_image_path = get_file_path("encrypted_image", user_id, image_filter)
+
+    with encrypted_image_path.open('wb') as encrypted_image_file:
+        encrypted_image_file.write(encrypted_image)
 
     # Create a truncated version of the encrypted image for display
     encrypted_image_short = shorten_bytes_object(encrypted_image)
@@ -189,41 +198,31 @@ def run_fhe(user_id, image_filter):
     if not encrypted_input_path.is_file():
         raise gr.Error('Please generate the private key and then encrypt an image first.')
 
-    # Load the encrypted image 
-    encrypted_image = numpy.load(encrypted_input_path)
+    # Define the data and files to post
+    data = {
+        "filter": image_filter
+    }
 
-    # Load the evaluation key
-    evaluation_key = numpy.load(evaluation_key_path)
+    files = [
+        ('files', open(encrypted_input_path, 'rb')),
+        ('files', open(evaluation_key_path, 'rb')),
+    ]
 
-    # Use base64 to encode the encrypted image and evaluation key. This is used to simulate a real
-    # client-server interface
-    # Investigate if is possible to make this encoding/decoding process faster 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2257
-    encrypted_encoding = base64.b64encode(encrypted_image).decode()
-    encoded_evaluation_key = base64.b64encode(evaluation_key).decode()
+    with requests.post(
+        url=SERVER_URL,
+        data=data, 
+        files=files,
+    ) as response:
 
-    # Define the post query
-    query = {}
-    query["filter"] = image_filter
-    query["evaluation_key"] = encoded_evaluation_key
-    query["encrypted_image"] = encrypted_encoding
+        # Save the encrypted output to bytes in a file as it is too large to pass through regular 
+        # Gradio buttons (see https://github.com/gradio-app/gradio/issues/1877)
+        encrypted_output_path = get_file_path("encrypted_output", user_id, image_filter)
 
-    # Call the server to run the FHE executions on the encrypted image 
-    headers = {"Content-type": "application/json"}
-    response = requests.post(
-        "http://localhost:8000/filter_image", data=json.dumps(query), headers=headers
-    )
-
-    # Retrieve and decode the server's encrypted output
-    encrypted_output_image = base64.b64decode(response.json()["encrypted_output_image"])
-
-    # Save the encrypted output in a file as it is too large to pass through regular Gradio
-    # buttons (see https://github.com/gradio-app/gradio/issues/1877)
-    encrypted_output_path = get_file_path("encrypted_output", user_id, image_filter)
-    numpy.save(encrypted_output_path, encrypted_output_image)
+        with encrypted_output_path.open("wb") as encrypted_output_file:
+            encrypted_output_file.write(response.content)
     
     # Create a truncated version of the encrypted output for display
-    encrypted_output_image_short = shorten_bytes_object(encrypted_output_image)
+    encrypted_output_image_short = shorten_bytes_object(response.content)
 
     return encrypted_output_image_short
 
@@ -248,8 +247,9 @@ def decrypt_output(user_id, image_filter):
     if not encrypted_output_path.is_file():
         raise gr.Error('Please run the FHE execution first.')
 
-    # Load (in bytes) the encrypted output
-    encrypted_output_image = numpy.load(encrypted_output_path).tobytes()
+    # Load the encrypted output as bytes
+    with encrypted_output_path.open("rb") as encrypted_output_file:
+        encrypted_output_image = encrypted_output_file.read()
 
     # Retrieve the client API
     client = get_client(user_id, image_filter)
@@ -360,7 +360,7 @@ with demo:
         ],
     )  
 
-    # Button to send the encodings to the server using post at (localhost:8000/transform_image)
+    # Button to send the encodings to the server using post method
     execute_fhe_button.click(run_fhe, inputs=[user_id, image_filter], outputs=[encrypted_output_image])
 
     # Button to decrypt the output on the client side

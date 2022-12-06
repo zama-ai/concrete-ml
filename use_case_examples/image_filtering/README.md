@@ -62,16 +62,7 @@ python3 generate_dev_filters.py
 
 ## Run the following steps each time you relaunch the application
 
-In a terminal (Tab 1, the server side):
-
-<!--pytest-codeblocks:skip-->
-
-```bash
-source .venv/bin/activate
-uvicorn server:app
-```
-
-Then, in another terminal (Tab 2, the client side):
+In a terminal, run:
 
 <!--pytest-codeblocks:skip-->
 
@@ -82,4 +73,4 @@ python3 app.py
 
 ## Interacting with the application
 
-Open the given URL link (search for a line like `Running on local URL:  http://127.0.0.1:8888/` in your Terminal 2).
+Open the given URL link (search for a line like `Running on local URL:  http://127.0.0.1:8888/`).
