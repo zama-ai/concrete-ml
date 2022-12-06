@@ -2,10 +2,12 @@
 
 import numpy
 import pytest
+from sklearn.base import is_classifier
 from sklearn.datasets import load_breast_cancer, load_diabetes
 from sklearn.metrics import make_scorer, matthews_corrcoef, mean_squared_error
 from sklearn.model_selection import GridSearchCV
 
+# FIXME #2320: remaining factorization to be done
 from concrete.ml.sklearn import RandomForestClassifier, RandomForestRegressor
 
 PARAMS_RF = {
@@ -14,6 +16,7 @@ PARAMS_RF = {
 }
 
 
+@pytest.mark.parametrize("model", [RandomForestClassifier, RandomForestRegressor])
 @pytest.mark.parametrize(
     "hyperparameters",
     [
@@ -23,18 +26,27 @@ PARAMS_RF = {
     ],
 )
 @pytest.mark.parametrize("n_classes", [2, 4])
-def test_rf_classifier_hyperparameters(hyperparameters, n_classes, load_data):
+def test_rf_hyperparameters(model, hyperparameters, n_classes, load_data):
     """Test that the hyperparameters are valid."""
 
     # Get the dataset. The data generation is seeded in load_data.
-    x, y = load_data(
-        dataset="classification",
-        n_samples=100,
-        n_features=10,
-        n_informative=5,
-        n_classes=n_classes,
-    )
-    model = RandomForestClassifier(
+    if is_classifier(model):
+        x, y = load_data(
+            dataset="classification",
+            n_samples=100,
+            n_features=10,
+            n_informative=5,
+            n_classes=n_classes,
+        )
+    else:
+        x, y = load_data(
+            dataset="regression",
+            n_samples=100,
+            n_features=10,
+            n_informative=5,
+        )
+
+    model = model(
         **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
     )
     model, sklearn_model = model.fit_benchmark(x, y)
@@ -125,16 +137,29 @@ def test_rf_classifier(
     check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
 
 
-def test_rf_classifier_grid_search(load_data):
+@pytest.mark.parametrize("model", [RandomForestClassifier, RandomForestRegressor])
+def test_rf_grid_search(model, load_data):
     """Tests random forest with the gridsearchCV from sklearn."""
 
     # Get the dataset. The data generation is seeded in load_data.
-    x, y = load_data(
-        dataset="classification",
-        n_samples=1000,
-        n_features=100,
-        n_classes=2,
-    )
+    if is_classifier(model):
+        x, y = load_data(
+            dataset="classification",
+            n_samples=100,
+            n_features=10,
+            n_informative=5,
+        )
+
+        grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
+
+    else:
+        x, y = load_data(
+            dataset="regression",
+            n_samples=1000,
+            n_features=100,
+        )
+
+        grid_scorer = make_scorer(mean_squared_error, greater_is_better=True)
 
     param_grid = {
         "n_bits": [20],
@@ -142,41 +167,13 @@ def test_rf_classifier_grid_search(load_data):
         "n_estimators": [5, 10, 50, 100],
     }
 
-    grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
-
-    concrete_clf = RandomForestClassifier()
+    concrete_clf = model()
     _ = GridSearchCV(
         concrete_clf, param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
     ).fit(x, y)
 
 
 # Regression
-
-
-@pytest.mark.parametrize(
-    "hyperparameters",
-    [
-        pytest.param({key: value}, id=f"{key}={value}")
-        for key, values in PARAMS_RF.items()
-        for value in values  # type: ignore
-    ],
-)
-def test_rf_regressor_hyperparameters(hyperparameters, load_data):
-    """Test that the hyperparameters are valid."""
-    x, y = load_data(
-        dataset="regression",
-        n_samples=100,
-        n_features=10,
-        n_informative=5,
-    )
-    model = RandomForestRegressor(
-        **hyperparameters, n_bits=20, n_jobs=1, random_state=numpy.random.randint(0, 2**15)
-    )
-    model, sklearn_model = model.fit_benchmark(x, y)
-
-    # Check that both models have similar scores
-    assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
-
 
 # pylint: disable=too-many-arguments
 @pytest.mark.parametrize(
@@ -256,25 +253,3 @@ def test_rf_regressor(
 
     # Compare FHE vs non-FHE
     check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
-
-
-def test_rf_regressor_grid_search(load_data):
-    """Tests random forest with the gridsearchCV from sklearn."""
-    x, y = load_data(
-        dataset="regression",
-        n_samples=1000,
-        n_features=100,
-    )
-
-    param_grid = {
-        "n_bits": [20],
-        "max_depth": [15],
-        "n_estimators": [5, 10, 50, 100],
-    }
-
-    grid_scorer = make_scorer(mean_squared_error, greater_is_better=True)
-
-    concrete_clf = RandomForestRegressor()
-    _ = GridSearchCV(
-        concrete_clf, param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
-    ).fit(x, y)

@@ -13,7 +13,7 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 
 from concrete.ml.pytest.utils import classifiers, regressors
-from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
@@ -21,7 +21,7 @@ def test_pipeline_classifiers_regressors(model, parameters, load_data):
     """Tests that classifiers and regressors work well within sklearn pipelines."""
     if isinstance(model, partial):
         # Tested in test_pipeline_and_cv_qnn
-        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+        if model.func in get_sklearn_neural_net_models():
             return
 
     x, y = load_data(**parameters)
@@ -62,8 +62,9 @@ qnn = [
 ]
 
 
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models(regressor=False))
 @pytest.mark.parametrize("parameters", qnn)
-def test_pipeline_and_cv_qnn(parameters, load_data):
+def test_pipeline_and_cv_qnn(model, parameters, load_data):
     """Test whether we can use the quantized NN sklearn wrappers in pipelines and in
     cross-validation"""
 
@@ -99,7 +100,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
         [
             ("pca", PCA(n_components=n_dims, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
-            ("net", NeuralNetClassifier(**params)),
+            ("net", model(**params)),
         ]
     )
 
@@ -110,7 +111,7 @@ def test_pipeline_and_cv_qnn(parameters, load_data):
         [
             ("pca", PCA(n_components=n_dims, random_state=numpy.random.randint(0, 2**15))),
             ("scaler", StandardScaler()),
-            ("net", NeuralNetClassifier(**params)),
+            ("net", model(**params)),
         ]
     )
 

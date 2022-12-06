@@ -11,6 +11,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+# FIXME #2320: remaining factorization to be done
 from concrete.ml.sklearn import (
     ElasticNet,
     GammaRegressor,

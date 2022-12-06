@@ -10,6 +10,7 @@ from sklearn.exceptions import ConvergenceWarning
 from concrete.ml.pytest.utils import classifiers, regressors
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
+# FIXME #2320: remaining factorization to be done
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,

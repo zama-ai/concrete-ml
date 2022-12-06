@@ -17,7 +17,11 @@ from concrete.ml.sklearn.xgb import XGBClassifier, XGBRegressor
 
 def test_get_sklearn_models():
     """List all available models in Concrete-ML."""
-    cml_list, linear_list, tree_list, neuralnet_list = get_sklearn_models()
+    dic = get_sklearn_models()
+    cml_list = dic["all"]
+    linear_list = dic["linear"]
+    tree_list = dic["tree"]
+    neuralnet_list = dic["neural_net"]
 
     print("All models: ")
     for m in cml_list:
@@ -36,44 +40,41 @@ def test_get_sklearn_models():
         print(f"     {m}")
 
     # Check values
-    expected_neuralnet_list = set({NeuralNetRegressor, NeuralNetClassifier})
+    expected_neuralnet_list = [NeuralNetClassifier, NeuralNetRegressor]
     assert (
         neuralnet_list == expected_neuralnet_list
     ), "Please change the expected number of models if you add new models"
 
-    expected_tree_list = set(
-        {
-            XGBClassifier,
-            XGBRegressor,
-            DecisionTreeRegressor,
-            DecisionTreeClassifier,
-            RandomForestRegressor,
-            RandomForestClassifier,
-        }
-    )
+    expected_tree_list = [
+        DecisionTreeClassifier,
+        DecisionTreeRegressor,
+        RandomForestClassifier,
+        RandomForestRegressor,
+        XGBClassifier,
+        XGBRegressor,
+    ]
     assert (
         tree_list == expected_tree_list
     ), "Please change the expected number of models if you add new models"
 
-    expected_linear_list = set(
-        {
-            LinearSVR,
-            LinearSVC,
-            LogisticRegression,
-            LinearRegression,
-            ElasticNet,
-            Lasso,
-            Ridge,
-            GammaRegressor,
-            PoissonRegressor,
-            TweedieRegressor,
-        }
-    )
+    expected_linear_list = [
+        ElasticNet,
+        GammaRegressor,
+        Lasso,
+        LinearRegression,
+        LinearSVC,
+        LinearSVR,
+        LogisticRegression,
+        PoissonRegressor,
+        Ridge,
+        TweedieRegressor,
+    ]
     assert (
         linear_list == expected_linear_list
     ), "Please change the expected number of models if you add new models"
 
     # Check number
-    assert (
-        cml_list == expected_linear_list | expected_tree_list | expected_neuralnet_list
+    assert cml_list == sorted(
+        expected_linear_list + expected_neuralnet_list + expected_tree_list,
+        key=lambda m: m.__name__,
     ), "Please change the expected number of models if you add new models"

@@ -3,7 +3,9 @@ import numpy
 import pytest
 from sklearn.datasets import load_breast_cancer
 
-from concrete.ml.sklearn import DecisionTreeClassifier, RandomForestClassifier, XGBClassifier
+# FIXME #2320: remaining factorization to be done
+from concrete.ml.sklearn import DecisionTreeClassifier
+from concrete.ml.sklearn.base import get_sklearn_tree_models
 
 
 # Get the datasets. The data generation is seeded in load_data.
@@ -114,7 +116,7 @@ def test_decision_tree_hyperparameters(hyperparameters, n_classes, offset, load_
     assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
-@pytest.mark.parametrize("model", [XGBClassifier, RandomForestClassifier, DecisionTreeClassifier])
+@pytest.mark.parametrize("model", get_sklearn_tree_models(regressor=False))
 def test_one_class_edge_case(model):
     """Test the assertion for one class in y."""
 

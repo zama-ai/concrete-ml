@@ -9,15 +9,15 @@ from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.pytest.utils import classifiers, regressors
-from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_double_fit(model, parameters, load_data):
     """Tests that calling fit multiple times gives the same results"""
     if isinstance(model, partial):
-        # Works differently for NeuralNetClassifier or NeuralNetRegressor
-        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+        # Works differently for neural nets
+        if model.func in get_sklearn_neural_net_models():
             return
 
     x, y = load_data(**parameters)
@@ -47,7 +47,8 @@ def test_double_fit(model, parameters, load_data):
     assert numpy.array_equal(y_pred_one, y_pred_two)
 
 
-def test_double_fit_qnn(load_data):
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models(regressor=False))
+def test_double_fit_qnn(model, load_data):
     """Tests that calling fit multiple times gives the same results"""
 
     # Get the dataset. The data generation is seeded in load_data.
@@ -75,7 +76,7 @@ def test_double_fit_qnn(load_data):
         "verbose": 0,
     }
 
-    model = NeuralNetClassifier(**params)
+    model = model(**params)
 
     # Some models use a bit of randomness while fitting under scikit-learn, making the
     # outputs always different after each fit. In order to avoid that problem, their random_state

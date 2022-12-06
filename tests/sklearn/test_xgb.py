@@ -8,6 +8,7 @@ from sklearn.datasets import load_breast_cancer, load_diabetes
 from sklearn.metrics import make_scorer, matthews_corrcoef, mean_squared_error
 from sklearn.model_selection import GridSearchCV
 
+# FIXME #2320: remaining factorization to be done
 from concrete.ml.sklearn import XGBClassifier, XGBRegressor
 
 PARAMS_XGB: Dict[str, List[Any]] = {

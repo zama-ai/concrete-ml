@@ -10,15 +10,15 @@ from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.pytest.utils import classifier_models, classifiers, regressor_models, regressors
-from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
 def test_pandas(model, parameters, load_data):
     """Tests that we can use Pandas for inputs to fit"""
     if isinstance(model, partial):
-        # Works differently for NeuralNetClassifier or NeuralNetRegressor
-        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+        # Works differently for neural nets
+        if model.func in get_sklearn_neural_net_models():
             return
 
     x, y = load_data(**parameters)
@@ -47,7 +47,8 @@ def test_pandas(model, parameters, load_data):
         model.predict(x)
 
 
-def test_pandas_qnn(load_data):
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models(regressor=False))
+def test_pandas_qnn(model, load_data):
     """Tests with pandas"""
 
     # Get the dataset. The data generation is seeded in load_data.
@@ -79,7 +80,7 @@ def test_pandas_qnn(load_data):
         "verbose": 0,
     }
 
-    model = NeuralNetClassifier(**params)
+    model = model(**params)
 
     # Some models use a bit of randomness while fitting under scikit-learn, making the
     # outputs always different after each fit. In order to avoid that problem, their random_state
@@ -106,8 +107,8 @@ def test_pandas_qnn(load_data):
 def test_failure_bad_param(model, bad_value, expected_error):
     """Check our checks see if ever the Panda dataset is not correct."""
     if isinstance(model, partial):
-        # Works differently for NeuralNetClassifier or NeuralNetRegressor
-        if model.func in [NeuralNetClassifier, NeuralNetRegressor]:
+        # Works differently for neural nets
+        if model.func in get_sklearn_neural_net_models():
             return
 
     dic = {

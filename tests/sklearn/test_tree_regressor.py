@@ -6,6 +6,7 @@ import numpy
 import pytest
 from sklearn.exceptions import ConvergenceWarning
 
+# FIXME #2320: remaining factorization to be done
 from concrete.ml.sklearn import DecisionTreeRegressor, RandomForestRegressor, XGBRegressor
 
 

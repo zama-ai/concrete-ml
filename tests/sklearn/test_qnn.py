@@ -6,6 +6,7 @@ import brevitas.nn as qnn
 import numpy
 import pytest
 from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+from sklearn.base import is_classifier, is_regressor
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
@@ -13,11 +14,8 @@ from sklearn.preprocessing import StandardScaler
 from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
 from torch import nn
 
-from concrete.ml.sklearn.qnn import (
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    QuantizedSkorchEstimatorMixin,
-)
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
+from concrete.ml.sklearn.qnn import QuantizedSkorchEstimatorMixin
 
 
 @pytest.mark.parametrize(
@@ -37,7 +35,7 @@ from concrete.ml.sklearn.qnn import (
 )
 @pytest.mark.parametrize("n_outputs", [1, 5])
 @pytest.mark.parametrize("input_dim", [100])
-@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
 def test_nn_models_quant(
     n_layers,
     n_bits_w_a,
@@ -53,7 +51,7 @@ def test_nn_models_quant(
     """Test the correctness of the results of quantized NN classifiers through the sklearn
     wrapper."""
     # Get the dataset. The data generation is seeded in load_data.
-    if model == NeuralNetClassifier:
+    if is_classifier(model):
         x, y = load_data(
             dataset="classification",
             n_samples=1000,
@@ -66,7 +64,7 @@ def test_nn_models_quant(
         )
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif model == NeuralNetRegressor:
+    elif is_regressor(model):
         x, y, _ = load_data(
             dataset="regression",
             n_samples=1000,
@@ -101,7 +99,7 @@ def test_nn_models_quant(
         "verbose": 0,
     }
 
-    if n_outputs == 1 and model == NeuralNetClassifier:
+    if n_outputs == 1 and is_classifier(model):
         with pytest.raises(
             ValueError,
             match=".* number of classes.*",
@@ -137,7 +135,7 @@ def test_nn_models_quant(
     check_r2_score(y_pred_sk, y_pred)
 
 
-@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
 def test_parameter_validation(model, load_data):
     """Test that the sklearn quantized NN wrappers validate their parameters"""
 
@@ -154,7 +152,7 @@ def test_parameter_validation(model, load_data):
     }
 
     # Get the dataset. The data generation is seeded in load_data.
-    if model == NeuralNetClassifier:
+    if is_classifier(model):
         x, y = load_data(
             dataset="classification",
             n_samples=1000,
@@ -167,7 +165,7 @@ def test_parameter_validation(model, load_data):
         )
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif model == NeuralNetRegressor:
+    elif is_regressor(model):
         x, y, _ = load_data(
             dataset="regression",
             n_samples=1000,
@@ -216,7 +214,7 @@ def test_parameter_validation(model, load_data):
         pytest.param(nn.CELU),
     ],
 )
-@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
 def test_compile_and_calib(
     activation_function, model, load_data, default_configuration, use_virtual_lib, is_vl_only_option
 ):
@@ -229,7 +227,7 @@ def test_compile_and_calib(
     n_features = 10
 
     # Get the dataset. The data generation is seeded in load_data.
-    if model == NeuralNetClassifier:
+    if is_classifier(model):
         x, y = load_data(
             dataset="classification",
             n_samples=1000,
@@ -242,7 +240,7 @@ def test_compile_and_calib(
         )
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif model == NeuralNetRegressor:
+    elif is_regressor(model):
         x, y, _ = load_data(
             dataset="regression",
             n_samples=1000,
@@ -287,7 +285,7 @@ def test_compile_and_calib(
         "verbose": 0,
     }
 
-    if model == NeuralNetClassifier:
+    if is_classifier(model):
         params["criterion__weight"] = class_weights
 
     clf = model(**params)
@@ -307,12 +305,12 @@ def test_compile_and_calib(
 
     # Train the model
     # Needed for coverage
-    if model == NeuralNetClassifier:
+    if is_classifier(model):
         for x_d_type, y_d_type in product(
             [numpy.float32, numpy.float64], [numpy.float32, numpy.float64]
         ):
             clf.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
-    elif model == NeuralNetRegressor:
+    elif is_regressor(model):
         for x_d_type, y_d_type in product(
             [numpy.float32, numpy.float64], [numpy.int32, numpy.int64]
         ):
