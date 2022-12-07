@@ -11,6 +11,7 @@ on:
         - ConvolutionalNeuralNetwork \n
         - DecisionTreeClassifier \n
         - FullyConnectedNeuralNetwork \n
+        - FullyConnectedNeuralNetworkOnMNIST \n
         - GLMComparison \n
         - KaggleTitanic \n
         - LinearRegression \n
@@ -38,6 +39,7 @@ env:
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
+  FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
