@@ -2,5 +2,6 @@
 .playground/
 .artifacts
 .fhe_keys
-tmp
+server_tmp/
+client_tmp/
 .artifacts

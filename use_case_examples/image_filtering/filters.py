@@ -57,7 +57,7 @@ class _TorchRotate(nn.Module):
         Returns:
             torch.Tensor: The rotated image.
         """
-        return x.transpose(0, 1)
+        return x.transpose(2, 3)
 
 class _TorchConv2D(nn.Module):
     """Torch model for applying a single 2D convolution operator on images."""

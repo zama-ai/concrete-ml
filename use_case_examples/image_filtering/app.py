@@ -11,7 +11,7 @@ import time
 from custom_client_server import CustomFHEClient
 from common import (
     FILTERS_PATH,
-    TMP_PATH,
+    CLIENT_TMP_PATH,
     KEYS_PATH,
     INPUT_SHAPE,
     EXAMPLES,
@@ -59,8 +59,8 @@ def get_client(user_id, image_filter):
         KEYS_PATH / f"{image_filter}_{user_id}"
     )
 
-def get_file_path(name, user_id, image_filter):
-    """Get the correct file path.
+def get_client_file_path(name, user_id, image_filter):
+    """Get the correct temporary file path for the client.
 
     Args:
         name (str): The desired file name.
@@ -70,7 +70,7 @@ def get_file_path(name, user_id, image_filter):
     Returns:
         pathlib.Path: The file path.
     """
-    return TMP_PATH / f"tmp_{name}_{image_filter}_{user_id}"
+    return CLIENT_TMP_PATH / f"{name}_{image_filter}_{user_id}"
 
 def clean_temporary_files(n_keys=20):
     """Clean keys and encrypted images.
@@ -94,7 +94,7 @@ def clean_temporary_files(n_keys=20):
             shutil.rmtree(p)
 
     # Get all the encrypted objects in the temporary folder
-    list_files_tmp = TMP_PATH.iterdir()
+    list_files_tmp = CLIENT_TMP_PATH.iterdir()
 
     # Delete all files related to the current user
     for file in list_files_tmp:
@@ -133,7 +133,7 @@ def keygen(image_filter):
 
     # Save evaluation_key as bytes in a file as it is too large to pass through regular Gradio 
     # buttons (see https://github.com/gradio-app/gradio/issues/1877)
-    evaluation_key_path = get_file_path("evaluation_key", user_id, image_filter)
+    evaluation_key_path = get_client_file_path("evaluation_key", user_id, image_filter)
 
     with evaluation_key_path.open('wb') as evaluation_key_file:
         evaluation_key_file.write(evaluation_key)
@@ -165,7 +165,7 @@ def encrypt(user_id, input_image, image_filter):
 
     # Save encrypted_image to bytes in a file, since too large to pass through regular Gradio
     # buttons, https://github.com/gradio-app/gradio/issues/1877
-    encrypted_image_path = get_file_path("encrypted_image", user_id, image_filter)
+    encrypted_image_path = get_client_file_path("encrypted_image", user_id, image_filter)
 
     with encrypted_image_path.open('wb') as encrypted_image_file:
         encrypted_image_file.write(encrypted_image)
@@ -176,8 +176,71 @@ def encrypt(user_id, input_image, image_filter):
     return (input_image, encrypted_image_short)
 
 
+def send_input(user_id, image_filter):
+    """Send the encrypted input image as well as the evaluation key to the server.
+
+    Args:
+        user_id (int): The current user's ID.
+        image_filter (str): The current filter to consider.
+    """
+    # Get the evaluation key path
+    evaluation_key_path = get_client_file_path("evaluation_key", user_id, image_filter)
+
+    if user_id == '' or not evaluation_key_path.is_file():
+        raise gr.Error('Please generate the private key first.')
+    
+    encrypted_input_path = get_client_file_path("encrypted_image", user_id, image_filter)
+
+    if not encrypted_input_path.is_file():
+        raise gr.Error('Please generate the private key and then encrypt an image first.')
+
+    # Define the data and files to post
+    data = {
+        "user_id": user_id,
+        "filter": image_filter,
+    }
+
+    files = [
+        ('files', open(encrypted_input_path, 'rb')),
+        ('files', open(evaluation_key_path, 'rb')),
+    ]
+    
+    # Send the encrypted input image and evaluation key to the server
+    url = SERVER_URL + "send_input"
+    with requests.post(
+        url=url,
+        data=data, 
+        files=files,
+    ) as response:
+        return response.ok
+
+
 def run_fhe(user_id, image_filter):
-    """Apply the filter on the encrypted image using FHE.
+    """Apply the filter on the encrypted image previously sent using FHE.
+
+    Args:
+        user_id (int): The current user's ID.
+        image_filter (str): The current filter to consider.
+    """
+    data = {
+        "user_id": user_id,
+        "filter": image_filter,
+    }
+
+    # Trigger the FHE execution on the encrypted image previously sent
+    url = SERVER_URL + "run_fhe"
+    with requests.post(
+        url=url,
+        data=data, 
+    )  as response:
+        if response.ok:
+            return response.json()
+        else:
+            raise gr.Error('Please wait for the input image to be sent to the server.')
+
+
+def get_output(user_id, image_filter):
+    """Retrieve the encrypted output image.
 
     Args:
         user_id (int): The current user's ID.
@@ -187,45 +250,31 @@ def run_fhe(user_id, image_filter):
         encrypted_output_image_short (bytes): A representation of the encrypted result.
 
     """
-    # Get the evaluation key path
-    evaluation_key_path = get_file_path("evaluation_key", user_id, image_filter)
-
-    if user_id == '' or not evaluation_key_path.is_file():
-        raise gr.Error('Please generate the private key first.')
-    
-    encrypted_input_path = get_file_path("encrypted_image", user_id, image_filter)
-
-    if not encrypted_input_path.is_file():
-        raise gr.Error('Please generate the private key and then encrypt an image first.')
-
-    # Define the data and files to post
     data = {
-        "filter": image_filter
+        "user_id": user_id,
+        "filter": image_filter,
     }
 
-    files = [
-        ('files', open(encrypted_input_path, 'rb')),
-        ('files', open(evaluation_key_path, 'rb')),
-    ]
-
+    # Retrieve the encrypted output image
+    url = SERVER_URL + "get_output"
     with requests.post(
-        url=SERVER_URL,
+        url=url,
         data=data, 
-        files=files,
     ) as response:
+        if response.ok:
+            # Save the encrypted output to bytes in a file as it is too large to pass through regular 
+            # Gradio buttons (see https://github.com/gradio-app/gradio/issues/1877)
+            encrypted_output_path = get_client_file_path("encrypted_output", user_id, image_filter)
 
-        # Save the encrypted output to bytes in a file as it is too large to pass through regular 
-        # Gradio buttons (see https://github.com/gradio-app/gradio/issues/1877)
-        encrypted_output_path = get_file_path("encrypted_output", user_id, image_filter)
-
-        with encrypted_output_path.open("wb") as encrypted_output_file:
-            encrypted_output_file.write(response.content)
+            with encrypted_output_path.open("wb") as encrypted_output_file:
+                encrypted_output_file.write(response.content)
     
-    # Create a truncated version of the encrypted output for display
-    encrypted_output_image_short = shorten_bytes_object(response.content)
+            # Create a truncated version of the encrypted output for display
+            encrypted_output_image_short = shorten_bytes_object(response.content)
 
-    return encrypted_output_image_short
-
+            return encrypted_output_image_short
+        else:
+            raise gr.Error('Please wait for the FHE execution to be completed.')
 
 def decrypt_output(user_id, image_filter):
     """Decrypt the result.
@@ -235,14 +284,15 @@ def decrypt_output(user_id, image_filter):
         image_filter (str): The current filter to consider.
     
     Returns:
-        output_image (numpy.ndarray): The decrypted output.
+        (output_image, False, False) ((Tuple[numpy.ndarray, bool, bool]): The decrypted output, as
+            well as two booleans used for resetting Gradio checkboxes 
 
     """
     if user_id == '':
         raise gr.Error('Please generate the private key first.')
 
     # Get the encrypted output path
-    encrypted_output_path = get_file_path("encrypted_output", user_id, image_filter)
+    encrypted_output_path = get_client_file_path("encrypted_output", user_id, image_filter)
 
     if not encrypted_output_path.is_file():
         raise gr.Error('Please run the FHE execution first.')
@@ -257,7 +307,7 @@ def decrypt_output(user_id, image_filter):
     # Deserialize, decrypt and post-process the encrypted output 
     output_image = client.deserialize_decrypt_post_process(encrypted_output_image)
 
-    return output_image
+    return output_image, False, False
 
 
 demo = gr.Blocks()
@@ -276,7 +326,7 @@ with demo:
 
     gr.Markdown("## Client side")
     gr.Markdown(
-        f"Upload an image. It will automatically be resized to shape ({INPUT_SHAPE[0]}x{INPUT_SHAPE[1]})."
+        f"Step 1. Upload an image. It will automatically be resized to shape ({INPUT_SHAPE[0]}x{INPUT_SHAPE[1]})."
         "The image is however displayed using its original resolution."
     )
     with gr.Row():
@@ -284,7 +334,7 @@ with demo:
 
         examples = gr.Examples(examples=EXAMPLES, inputs=[input_image], examples_per_page=5, label="Examples to use.")
 
-    gr.Markdown("Choose your filter")
+    gr.Markdown("Step 2. Choose your filter")
     image_filter = gr.Dropdown(choices=AVAILABLE_FILTERS, value="inverted", label="Choose your filter", interactive=True)
 
     gr.Markdown("### Notes")
@@ -295,24 +345,26 @@ with demo:
         """
         )
 
-    keygen_button = gr.Button("Generate the private key.")
+    with gr.Row():
+        keygen_button = gr.Button("Step 3. Generate the private key.")
 
-    keygen_checkbox = gr.Checkbox(label="Private key generated.", interactive=False)
+        keygen_checkbox = gr.Checkbox(label="Private key generated:", interactive=False)
 
-    encrypt_button = gr.Button(
-        "Encrypt the image using FHE."
-    )
+    with gr.Row():
+        encrypt_button = gr.Button(
+            "Step 4. Encrypt the image using FHE."
+        )
 
-    user_id = gr.Textbox(
-        label="",
-        max_lines=4,
-        interactive=False,
-        visible=False
-    )
+        user_id = gr.Textbox(
+            label="",
+            max_lines=2,
+            interactive=False,
+            visible=False
+        )
 
-    # Maybe display an image representation
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
-    encrypted_image = gr.Textbox(label="Encrypted image representation:", max_lines=4, interactive=False) 
+        # Display an image representation
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
+        encrypted_image = gr.Textbox(label="Encrypted image representation:", max_lines=2, interactive=False) 
 
     gr.Markdown("## Server side")
     gr.Markdown(
@@ -321,11 +373,22 @@ with demo:
         "the encrypted results to the client."
     )
 
-    execute_fhe_button = gr.Button("Run FHE execution")
+    with gr.Row():
+        send_input_button = gr.Button("Step 5. Send the encrypted image to the server.")
 
-    # Maybe display an image representation
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
-    encrypted_output_image = gr.Textbox(label="Encrypted output image representation:", max_lines=4, interactive=False) 
+        send_input_checkbox = gr.Checkbox(label="Encrypted image sent.", interactive=False)
+
+    with gr.Row():
+        execute_fhe_button = gr.Button("Step 6. Run FHE execution")
+
+        fhe_execution_time = gr.Textbox(label="Total FHE execution time (in seconds).", max_lines=1, interactive=False) 
+
+    with gr.Row():
+        get_output_button = gr.Button("Step 7. Receive the encrypted output image from the server.")
+
+        # Display an image representation
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
+        encrypted_output_image = gr.Textbox(label="Encrypted output image representation:", max_lines=2, interactive=False) 
 
     gr.Markdown("## Client side")
     gr.Markdown(
@@ -333,7 +396,7 @@ with demo:
         "private key. Only the client is aware of the original image and its transformed version."
     )
 
-    decrypt_button = gr.Button("Decrypt the output")
+    decrypt_button = gr.Button("Step 8. Decrypt the output")
 
     # Final input vs output display
     with gr.Row():
@@ -354,17 +417,24 @@ with demo:
     encrypt_button.click(
         encrypt,
         inputs=[user_id, input_image, image_filter],
-        outputs=[
-            original_image,
-            encrypted_image,
-        ],
-    )  
+        outputs=[original_image, encrypted_image],
+    ) 
 
     # Button to send the encodings to the server using post method
-    execute_fhe_button.click(run_fhe, inputs=[user_id, image_filter], outputs=[encrypted_output_image])
+    send_input_button.click(send_input, inputs=[user_id, image_filter], outputs=[send_input_checkbox])
+
+    # Button to send the encodings to the server using post method
+    execute_fhe_button.click(run_fhe, inputs=[user_id, image_filter], outputs=[fhe_execution_time])    
+    
+    # Button to send the encodings to the server using post method
+    get_output_button.click(get_output, inputs=[user_id, image_filter], outputs=[encrypted_output_image])
 
     # Button to decrypt the output on the client side
-    decrypt_button.click(decrypt_output, inputs=[user_id, image_filter], outputs=[output_image])
+    decrypt_button.click(
+        decrypt_output, 
+        inputs=[user_id, image_filter], 
+        outputs=[output_image, keygen_checkbox, send_input_checkbox],
+    )
 
     gr.Markdown(
         "The app was built with [Concrete-ML](https://github.com/zama-ai/concrete-ml), a "
