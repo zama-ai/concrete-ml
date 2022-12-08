@@ -1,12 +1,13 @@
-import onnx
-import pandas as pd
-from concrete.ml.deployment import FHEModelDev, FHEModelClient
-from concrete.ml.onnx.convert import get_equivalent_numpy_forward
 import json
 import os
 import shutil
 from pathlib import Path
 
+import onnx
+import pandas as pd
+
+from concrete.ml.deployment import FHEModelClient, FHEModelDev
+from concrete.ml.onnx.convert import get_equivalent_numpy_forward
 
 script_dir = Path(__file__).parent
 

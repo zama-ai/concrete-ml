@@ -1,14 +1,13 @@
 "A script to generate all development files necessary for the image filtering demo."
 
+import shutil
+from pathlib import Path
+
 import numpy as np
 import onnx
-import shutil
-from pathlib import Path 
-
+from common import AVAILABLE_FILTERS, FILTERS_PATH, INPUT_SHAPE, INPUTSET
 from custom_client_server import CustomFHEDev
 from filters import Filter
-from common import FILTERS_PATH, AVAILABLE_FILTERS, INPUT_SHAPE, INPUTSET
-
 
 print("Generating deployment files for all available filters")
 
@@ -31,7 +30,7 @@ for image_filter in AVAILABLE_FILTERS:
     if deployment_path.is_dir():
         shutil.rmtree(deployment_path)
 
-    # Save the files needed for deployment 
+    # Save the files needed for deployment
     fhe_dev_filter = CustomFHEDev(deployment_path, filter)
     fhe_dev_filter.save()
 

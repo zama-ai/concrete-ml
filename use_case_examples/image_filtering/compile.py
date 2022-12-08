@@ -1,13 +1,12 @@
 "A script to manually compile all filters."
 
-import onnx
 import json
 import shutil
+
 import numpy as np
-
-from custom_client_server import CustomFHEDev, CustomFHEClient
-from common import FILTERS_PATH, AVAILABLE_FILTERS, INPUT_SHAPE, INPUTSET, KEYS_PATH
-
+import onnx
+from common import AVAILABLE_FILTERS, FILTERS_PATH, INPUT_SHAPE, INPUTSET, KEYS_PATH
+from custom_client_server import CustomFHEClient, CustomFHEDev
 
 print("Starting compiling the filters.")
 
@@ -37,7 +36,7 @@ for image_filter in AVAILABLE_FILTERS:
     if deployment_path.is_dir():
         shutil.rmtree(deployment_path)
 
-    # Save the files needed for deployment 
+    # Save the files needed for deployment
     fhe_api = CustomFHEDev(model=model, path_dir=deployment_path)
     fhe_api.save()
 

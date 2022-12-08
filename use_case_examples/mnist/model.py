@@ -1,33 +1,32 @@
+# Brevitas
+import brevitas.nn as qnn
+
+# Concrete-Numpy
+import concrete.numpy as cnp
 import numpy as np
-from dependencies import value
 
 # Torch
 import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
-from torch.nn import init
-
-# Brevitas
-import brevitas.nn as qnn
 from brevitas import quant
-from brevitas.nn.quant_activation import QuantIdentity
-from brevitas.quant import IntBias
 from brevitas.core import bit_width
 from brevitas.core.bit_width import BitWidthImplType
+from brevitas.core.function_wrapper import TensorClamp
 from brevitas.core.quant import QuantType
 from brevitas.core.restrict_val import FloatToIntImplType, RestrictValueType
 from brevitas.core.scaling import ScalingImplType
 from brevitas.core.zero_point import ZeroZeroPoint
-from brevitas.core.function_wrapper import TensorClamp
 from brevitas.inject import ExtendedInjector
+from brevitas.nn.quant_activation import QuantIdentity
 from brevitas.quant import *
+from brevitas.quant import IntBias
 from brevitas.quant.base import *
 from brevitas.quant.base import ParamFromRuntimeMinMaxScaling
 from brevitas.quant.solver import *
 from brevitas.quant.solver import ActQuantSolver, WeightQuantSolver
-
-# Concrete-Numpy
-import concrete.numpy as cnp
+from dependencies import value
+from torch.nn import init
 
 
 class MNISTQATModel(nn.Module):

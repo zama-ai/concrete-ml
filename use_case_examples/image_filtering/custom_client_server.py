@@ -1,13 +1,13 @@
 "Client-server interface implementation for custom models."
 
-import numpy as np
+from pathlib import Path
 from typing import Any
-from pathlib import Path 
 
 import concrete.numpy as cnp
-from concrete.ml.common.debugging.custom_assert import assert_true
-
+import numpy as np
 from filters import Filter
+
+from concrete.ml.common.debugging.custom_assert import assert_true
 
 
 class CustomFHEDev:
@@ -26,7 +26,7 @@ class CustomFHEDev:
         self.path_dir = Path(path_dir)
         self.model = model
 
-        # Create the directory path if it does not exist yet  
+        # Create the directory path if it does not exist yet
         Path(self.path_dir).mkdir(parents=True, exist_ok=True)
 
     def save(self):
@@ -134,7 +134,6 @@ class CustomFHEClient:
         serialized_enc_x = self.client.specs.serialize_public_args(enc_x)
         return serialized_enc_x
 
-
     def deserialize_decrypt_post_process(
         self, serialized_encrypted_output: cnp.PublicArguments
     ) -> np.ndarray:
@@ -152,14 +151,10 @@ class CustomFHEClient:
         )
 
         # Decrypt the values
-        unserialized_decrypted_output = self.client.decrypt(
-            unserialized_encrypted_output
-        )
+        unserialized_decrypted_output = self.client.decrypt(unserialized_encrypted_output)
 
         # Apply the model post processing
-        unserialized_decrypted_output = self.model.post_processing(
-            unserialized_decrypted_output
-        )
+        unserialized_decrypted_output = self.model.post_processing(unserialized_decrypted_output)
         return unserialized_decrypted_output
 
 
@@ -204,8 +199,6 @@ class CustomFHEServer:
             serialized_encrypted_data
         )
         unserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
-        result = self.server.run(
-            unserialized_encrypted_data, unserialized_evaluation_keys
-        )
+        result = self.server.run(unserialized_encrypted_data, unserialized_evaluation_keys)
         serialized_result = self.server.client_specs.serialize_public_result(result)
         return serialized_result

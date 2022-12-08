@@ -1,18 +1,20 @@
 """A gradio app. that runs locally (analytics=False and share=False) about sentiment analysis on tweets."""
 
+import base64
+import json
+import os
+import shutil
+import subprocess
+import time
+from pathlib import Path
+
 import gradio as gr
+import numpy
+import requests
 from requests import head
 from transformer_vectorizer import TransformerVectorizer
+
 from concrete.ml.deployment import FHEModelClient
-import numpy
-import os
-from pathlib import Path
-import requests
-import json
-import base64
-import subprocess
-import shutil
-import time
 
 subprocess.Popen(["uvicorn", "server:app"])
 
@@ -28,6 +30,7 @@ print("Loading the transformer model...")
 
 # Initialize the transformer vectorizer
 transformer_vectorizer = TransformerVectorizer()
+
 
 def clean_tmp_directory():
     # Allow 20 user keys to be stored.
@@ -60,7 +63,6 @@ def keygen():
     fhe_api = FHEModelClient("sentiment_fhe_model/deployment", f".fhe_keys/{user_id}")
     fhe_api.load()
 
-
     # Generate a fresh key
     fhe_api.generate_private_and_evaluation_keys(force=True)
     evaluation_key = fhe_api.get_serialized_evaluation_keys()
@@ -92,8 +94,12 @@ def encode_quantize_encrypt(text, user_id):
     encodings_size = len(encodings.tobytes())
     quantized_encoding_size = len(quantized_encodings.tobytes())
     encrypted_quantized_encoding_size = len(encrypted_quantized_encoding)
-    encrypted_quantized_encoding_shorten = list(encrypted_quantized_encoding)[:ENCRYPTED_DATA_BROWSER_LIMIT]
-    encrypted_quantized_encoding_shorten_hex = ''.join(f'{i:02x}' for i in encrypted_quantized_encoding_shorten)
+    encrypted_quantized_encoding_shorten = list(encrypted_quantized_encoding)[
+        :ENCRYPTED_DATA_BROWSER_LIMIT
+    ]
+    encrypted_quantized_encoding_shorten_hex = "".join(
+        f"{i:02x}" for i in encrypted_quantized_encoding_shorten
+    )
     return (
         encodings[0],
         quantized_encodings[0],
@@ -135,7 +141,7 @@ def run_fhe(user_id):
     # buttons, https://github.com/gradio-app/gradio/issues/1877
     numpy.save(f"tmp/tmp_encrypted_prediction_{user_id}.npy", encrypted_prediction)
     encrypted_prediction_shorten = list(encrypted_prediction)[:ENCRYPTED_DATA_BROWSER_LIMIT]
-    encrypted_prediction_shorten_hex = ''.join(f'{i:02x}' for i in encrypted_prediction_shorten)
+    encrypted_prediction_shorten_hex = "".join(f"{i:02x}" for i in encrypted_prediction_shorten)
     return encrypted_prediction_shorten_hex
 
 
@@ -144,7 +150,9 @@ def decrypt_prediction(user_id):
     if not user_id:
         raise gr.Error("You need to generate FHE keys first.")
     if not encoded_data_path.is_file():
-        raise gr.Error("No encrypted prediction was found. Run the prediction over the encrypted data first.")
+        raise gr.Error(
+            "No encrypted prediction was found. Run the prediction over the encrypted data first."
+        )
 
     # Read encrypted_prediction from the file
     encrypted_prediction = numpy.load(encoded_data_path).tobytes()
@@ -194,8 +202,6 @@ with demo:
 """
     )
 
-
-
     # FIXME: make it smaller and in the middle
     # gr.Image("Zama.svg")
 
@@ -210,7 +216,7 @@ with demo:
 
     gr.Markdown("## Notes")
     gr.Markdown(
-    """
+        """
 - The private key is used to encrypt and decrypt the data and shall never be shared.
 - The evaluation key is a public key that the server needs to process encrypted data.
 """
@@ -226,12 +232,7 @@ with demo:
         interactive=False,
     )
 
-    user_id = gr.Textbox(
-        label="",
-        max_lines=4,
-        interactive=False,
-        visible=False
-    )
+    user_id = gr.Textbox(label="", max_lines=4, interactive=False, visible=False)
 
     size_evaluation_key = gr.Number(
         label="Size of the evalution key (in bytes):", value=0, interactive=False
@@ -296,7 +297,9 @@ with demo:
     labels_sentiment = gr.Label(label="Sentiment:")
 
     # Button for key generation
-    b_gen_key_and_install.click(keygen, inputs=[], outputs=[evaluation_key, size_evaluation_key, user_id])
+    b_gen_key_and_install.click(
+        keygen, inputs=[], outputs=[evaluation_key, size_evaluation_key, user_id]
+    )
 
     # Button to quantize and encrypt
     b_encode_quantize_text.click(

@@ -1,42 +1,44 @@
 "Filter definitions, with pre-processing, post-processing and compilation methods."
 
-from torch import nn
 import json
+
 import numpy as np
 import torch
-from concrete.ml.torch.numpy_module import NumpyModule
-from concrete.ml.onnx.convert import get_equivalent_numpy_forward
-from concrete.ml.common.utils import generate_proxy_function
-from concrete.numpy.compilation.compiler import Compiler
-from concrete.ml.common.debugging.custom_assert import assert_true
-from concrete.ml.version import __version__ as CML_VERSION
-
 from common import AVAILABLE_FILTERS
+from concrete.numpy.compilation.compiler import Compiler
+from torch import nn
 
+from concrete.ml.common.debugging.custom_assert import assert_true
+from concrete.ml.common.utils import generate_proxy_function
+from concrete.ml.onnx.convert import get_equivalent_numpy_forward
+from concrete.ml.torch.numpy_module import NumpyModule
+from concrete.ml.version import __version__ as CML_VERSION
 
 # Add a "black and white" filter
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2277
+
 
 class _TorchIdentity(nn.Module):
     """Torch identity model."""
 
     def forward(self, x):
         """Identity forward pass.
-        
+
         Args:
             x (torch.Tensor): The input image.
-        
+
         Returns:
             x (torch.Tensor): The input image.
         """
         return x
+
 
 class _TorchInverted(nn.Module):
     """Torch inverted model."""
 
     def forward(self, x):
         """Forward pass for inverting an image's colors.
-        
+
         Args:
             x (torch.Tensor): The input image.
 
@@ -45,12 +47,13 @@ class _TorchInverted(nn.Module):
         """
         return 255 - x
 
+
 class _TorchRotate(nn.Module):
     """Torch rotated model."""
 
     def forward(self, x):
         """Forward pass for rotating an image.
-        
+
         Args:
             x (torch.Tensor): The input image.
 
@@ -59,12 +62,13 @@ class _TorchRotate(nn.Module):
         """
         return x.transpose(2, 3)
 
+
 class _TorchConv2D(nn.Module):
     """Torch model for applying a single 2D convolution operator on images."""
 
     def __init__(self, kernel, n_in_channels=3, n_out_channels=3, groups=1):
         """Initializing the filter
-        
+
         Args:
             kernel (np.ndarray): The convolution kernel to consider.
         """
@@ -82,28 +86,28 @@ class _TorchConv2D(nn.Module):
 
         Returns:
             torch.Tensor: The filtered image.
-        
+
         """
         # Define the convolution parameters
         stride = 1
         kernel_shape = self.kernel.shape
 
         # Ensure the kernel has a proper shape
-        # If the kernel has a 1D shape, a (1, 1) kernel is used for each in_channels 
+        # If the kernel has a 1D shape, a (1, 1) kernel is used for each in_channels
         if len(kernel_shape) == 1:
             kernel = self.kernel.reshape(
-                self.n_out_channels, 
-                self.n_in_channels // self.groups, 
-                1, 
+                self.n_out_channels,
+                self.n_in_channels // self.groups,
+                1,
                 1,
             )
-        
-        # Else, if the kernel has a 2D shape, a single (Kw, Kh) kernel is used on all in_channels 
+
+        # Else, if the kernel has a 2D shape, a single (Kw, Kh) kernel is used on all in_channels
         elif len(kernel_shape) == 2:
             kernel = self.kernel.expand(
-                self.n_out_channels, 
-                self.n_in_channels // self.groups, 
-                kernel_shape[0], 
+                self.n_out_channels,
+                self.n_in_channels // self.groups,
+                kernel_shape[0],
                 kernel_shape[1],
             )
         else:
@@ -126,23 +130,23 @@ class Filter:
         Args:
             image_filter (str): The filter to consider. Default to "inverted".
         """
-        
+
         assert_true(
-            image_filter in AVAILABLE_FILTERS, 
+            image_filter in AVAILABLE_FILTERS,
             f"Unsupported image filter or transformation. Expected one of {*AVAILABLE_FILTERS,}, "
-            f"but got {image_filter}"
+            f"but got {image_filter}",
         )
 
         self.filter = image_filter
         self.divide = None
         self.repeat_out_channels = False
-    
+
         if image_filter == "identity":
             self.torch_model = _TorchIdentity()
 
         elif image_filter == "inverted":
             self.torch_model = _TorchInverted()
-        
+
         elif image_filter == "rotate":
             self.torch_model = _TorchRotate()
 
@@ -152,8 +156,8 @@ class Filter:
             # https://en.wikipedia.org/wiki/Grayscale
             # There are initially supposed to be float weights (0.299, 0.587, 0.114), with
             # 0.299 + 0.587 + 0.114 = 1
-            # However, since FHE computations require weights to be integers, we first multiply 
-            # these by a factor of 1000. The output image's values are then divided by 1000 in 
+            # However, since FHE computations require weights to be integers, we first multiply
+            # these by a factor of 1000. The output image's values are then divided by 1000 in
             # post-processing in order to retrieve the correct result
             kernel = torch.tensor([299, 587, 114])
 
@@ -172,65 +176,67 @@ class Filter:
 
             # Division value for post-processing
             self.divide = 9
-        
+
         elif image_filter == "sharpen":
-            kernel = torch.tensor([
-                [0, -1, 0],
-                [-1, 5, -1],
-                [0, -1, 0],
-            ])
+            kernel = torch.tensor(
+                [
+                    [0, -1, 0],
+                    [-1, 5, -1],
+                    [0, -1, 0],
+                ]
+            )
 
             self.torch_model = _TorchConv2D(kernel, n_out_channels=3, groups=3)
-        
+
         elif image_filter == "ridge detection":
             # Make the filter properly grayscaled, as it is commonly used
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
-        
-            kernel = torch.tensor([
-                [-1, -1, -1],
-                [-1, 9, -1],
-                [-1, -1, -1],
-            ])
+
+            kernel = torch.tensor(
+                [
+                    [-1, -1, -1],
+                    [-1, 9, -1],
+                    [-1, -1, -1],
+                ]
+            )
 
             self.torch_model = _TorchConv2D(kernel, n_out_channels=1, groups=1)
 
-            # Ridge detection is usually displayed as a grayscaled image, which needs to be put in 
+            # Ridge detection is usually displayed as a grayscaled image, which needs to be put in
             # RGB format for Gradio display
             self.repeat_out_channels = True
 
         self.onnx_model = None
         self.fhe_circuit = None
-    
+
     def compile(self, inputset, onnx_model=None):
         """Compile the model using an inputset.
 
         Args:
             inputset (List[np.ndarray]): The set of images to use for compilation
-            onnx_model (onnx.ModelProto): The loaded onnx model to consider. If None, it will be 
+            onnx_model (onnx.ModelProto): The loaded onnx model to consider. If None, it will be
                 generated automatically using a NumpyModule. Default to None.
         """
-        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow 
-        # the same shape conventions.  
+        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow
+        # the same shape conventions.
         inputset = tuple(
-            np.expand_dims(input.transpose(2,0,1), axis=0).astype(np.int64) for input in inputset
+            np.expand_dims(input.transpose(2, 0, 1), axis=0).astype(np.int64) for input in inputset
         )
-        
+
         # If no onnx model was given, generate a new one.
         if onnx_model is None:
             numpy_module = NumpyModule(
                 self.torch_model,
                 dummy_input=torch.from_numpy(inputset[0]),
             )
-        
+
             onnx_model = numpy_module.onnx_model
 
         # Get the proxy function and parameter mappings for initializing the compiler
         self.onnx_model = onnx_model
         numpy_filter = get_equivalent_numpy_forward(onnx_model)
 
-        numpy_filter_proxy, parameters_mapping = generate_proxy_function(
-            numpy_filter, ["inputs"]
-        )
+        numpy_filter_proxy, parameters_mapping = generate_proxy_function(numpy_filter, ["inputs"])
 
         compiler = Compiler(
             numpy_filter_proxy,
@@ -247,14 +253,14 @@ class Filter:
 
         Args:
             input_image (np.ndarray): The image to pre-process
-        
+
         Returns:
             input_image (np.ndarray): The pre-processed image
         """
-        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow 
-        # the same shape conventions.  
-        input_image = np.expand_dims(input_image.transpose(2,0,1), axis=0).astype(np.int64)
-        
+        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow
+        # the same shape conventions.
+        input_image = np.expand_dims(input_image.transpose(2, 0, 1), axis=0).astype(np.int64)
+
         return input_image
 
     def post_processing(self, output_image):
@@ -262,7 +268,7 @@ class Filter:
 
         Args:
             input_image (np.ndarray): The decrypted image to post-process
-        
+
         Returns:
             input_image (np.ndarray): The post-processed image
         """
@@ -270,26 +276,26 @@ class Filter:
         if self.divide is not None:
             output_image //= self.divide
 
-        # Clip the image's values to proper RGB standards as filters don't handle such constraints 
+        # Clip the image's values to proper RGB standards as filters don't handle such constraints
         output_image = output_image.clip(0, 255)
 
-        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow 
+        # Reshape the inputs found in inputset. This is done because Torch and Numpy don't follow
         # the same shape conventions.
-        output_image = output_image.transpose(0,2,3,1).squeeze(0)
-        
+        output_image = output_image.transpose(0, 2, 3, 1).squeeze(0)
+
         # Grayscaled image needs to be put in RGB format for Gradio display
         if self.repeat_out_channels:
             output_image = output_image.repeat(3, axis=2)
 
         return output_image
 
-    @classmethod 
+    @classmethod
     def from_json(cls, json_path):
         """Instantiate a filter using a json file.
 
         Args:
             json_path (Union[str, pathlib.Path]): Path to the json file.
-        
+
         Returns:
             model (Filter): The instantiated filter class.
         """
@@ -312,24 +318,24 @@ class Filter:
 
     def to_json(self, path_dir, file_name="serialized_processing"):
         """Export the parameters to a json file.
-        
+
         Args:
             path_dir (Union[str, pathlib.Path]): The path to consider when saving the file.
             file_name (str): The file name
         """
-        # Serialize the parameters 
-        serialized_processing = {"model_filter": self.filter,}
+        # Serialize the parameters
+        serialized_processing = {
+            "model_filter": self.filter,
+        }
         serialized_processing = self._clean_dict_types_for_json(serialized_processing)
 
         # Add the version of the current CML library
         serialized_processing["cml_version"] = CML_VERSION
 
         # Save the json file
-        with open(
-            path_dir / f"{file_name}.json", "w", encoding="utf-8"
-        ) as f:
+        with open(path_dir / f"{file_name}.json", "w", encoding="utf-8") as f:
             json.dump(serialized_processing, f)
-    
+
     def _clean_dict_types_for_json(self, d: dict) -> dict:
         """Clean all values in the dict to be json serializable.
 
