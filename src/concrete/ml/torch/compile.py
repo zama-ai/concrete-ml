@@ -10,10 +10,9 @@ import torch
 from brevitas.export import BrevitasONNXManager
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
-from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 
 from ..common.debugging import assert_true
-from ..common.utils import get_onnx_opset_version
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_utils import remove_initializer_from_input
 from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedModule
@@ -50,7 +49,7 @@ def _compile_torch_or_onnx_model(
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
+    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -139,7 +138,7 @@ def compile_torch_model(
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
+    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -195,7 +194,7 @@ def compile_onnx_model(
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
+    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     use_virtual_lib: bool = False,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,

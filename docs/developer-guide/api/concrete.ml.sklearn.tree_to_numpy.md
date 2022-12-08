@@ -8,7 +8,7 @@ Implements the conversion of a tree model to a numpy function.
 
 ## **Global Variables**
 
-- **MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS**
+- **MAXIMUM_TLU_BIT_WIDTH**
 - **OPSET_VERSION_FOR_ONNX_EXPORT**
 - **EXPECTED_NUMBER_OF_OUTPUTS_PER_TASK**
 

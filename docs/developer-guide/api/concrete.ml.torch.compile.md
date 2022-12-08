@@ -8,7 +8,7 @@ torch compilation function.
 
 ## **Global Variables**
 
-- **MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS**
+- **MAXIMUM_TLU_BIT_WIDTH**
 - **DEFAULT_P_ERROR_PBS**
 - **OPSET_VERSION_FOR_ONNX_EXPORT**
 

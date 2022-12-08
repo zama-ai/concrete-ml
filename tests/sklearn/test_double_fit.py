@@ -4,10 +4,10 @@ from functools import partial
 
 import numpy
 import pytest
-from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from concrete.ml.pytest.utils import classifiers, regressors
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
@@ -68,7 +68,7 @@ def test_double_fit_qnn(model, load_data):
         "module__n_layers": 3,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
-        "module__n_accum_bits": MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
+        "module__n_accum_bits": MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         "module__n_outputs": 2,
         "module__input_dim": 10,
         "module__activation_function": nn.ReLU,

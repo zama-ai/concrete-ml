@@ -5,11 +5,10 @@ from typing import Callable, List, Optional, Tuple
 
 import numpy
 import onnx
-from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
-from ..common.utils import get_onnx_opset_version
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import (
     clean_graph_after_node_name,
@@ -45,7 +44,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     task: Task,
-    output_n_bits: Optional[int] = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
+    output_n_bits: Optional[int] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 

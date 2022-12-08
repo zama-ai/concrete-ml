@@ -10,8 +10,8 @@ import numpy
 import onnx
 import pytest
 import torch
-from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 
+from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.base_quantized_op import ALL_QUANTIZED_OPS
 from concrete.ml.quantization.quantized_ops import (
@@ -920,7 +920,7 @@ def test_quantized_pad():
 def test_quantized_reshape(shape):
     """Test quantized reshape."""
 
-    n_bits_reshape = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    n_bits_reshape = MAX_BITWIDTH_BACKWARD_COMPATIBLE
 
     num_values = numpy.prod(numpy.asarray(shape))
     data = numpy.arange(num_values).astype(numpy.float32)
@@ -1307,7 +1307,7 @@ def test_brevitas_quant(check_r2_score):
 def test_quantized_transpose(shape, axes):
     """Test quantized transpose."""
 
-    n_bits_transpose = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    n_bits_transpose = MAX_BITWIDTH_BACKWARD_COMPATIBLE
 
     num_values = numpy.prod(numpy.asarray(shape))
     data = numpy.arange(num_values).astype(numpy.float32)
@@ -1333,7 +1333,7 @@ def test_quantized_transpose(shape, axes):
 def test_quantized_concat(shape1, shape2, axis):
     """Test quantized reshape."""
 
-    n_bits_concat_output = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    n_bits_concat_output = MAX_BITWIDTH_BACKWARD_COMPATIBLE
     data = numpy.random.randn(*shape1)
     data_to_concatenate = numpy.random.randn(*shape2)
 
@@ -1372,7 +1372,7 @@ def test_quantized_unsqueeze(shape, axis):
             x = numpy.expand_dims(x, axis=axis)
         return x
 
-    n_bits_concat_output = MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    n_bits_concat_output = MAX_BITWIDTH_BACKWARD_COMPATIBLE
     data = numpy.random.randn(*shape)
 
     q_arr = QuantizedArray(n_bits=n_bits_concat_output, values=data)

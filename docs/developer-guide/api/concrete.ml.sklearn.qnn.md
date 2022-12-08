@@ -8,7 +8,7 @@ Scikit-learn interface for concrete quantized neural networks.
 
 ## **Global Variables**
 
-- **MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS**
+- **MAXIMUM_TLU_BIT_WIDTH**
 
 ______________________________________________________________________
 

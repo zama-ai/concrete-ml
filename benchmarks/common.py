@@ -24,12 +24,17 @@ from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
 try:
-    from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+    from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 except ImportError:  # For backward compatibility purposes
     try:
-        from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH as MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+        from concrete.numpy.mlir.utils import (
+            MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS as MAXIMUM_TLU_BIT_WIDTH,
+        )
     except ImportError:
-        from concrete.numpy import MAXIMUM_BIT_WIDTH as MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+        try:
+            from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+        except ImportError:
+            from concrete.numpy import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
 
 # Hack to import all models currently implemented in CML
 # (but that might not be implemented in targeted version)
@@ -680,8 +685,7 @@ def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
         n_bits_weights = n_bits["op_weights"]
 
     n_components = math.floor(
-        (2**MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS - 1)
-        / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
+        (2**MAXIMUM_TLU_BIT_WIDTH - 1) / ((2**n_bits_inputs - 1) * (2**n_bits_weights - 1))
     )
     return n_components
 

@@ -3,10 +3,11 @@ import numpy
 import onnx
 import pytest
 import torch
-from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
+from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from onnx import helper, numpy_helper
 from torch import nn
 
+from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.pytest.torch_models import (
     FCSeq,
@@ -21,7 +22,7 @@ from concrete.ml.torch.numpy_module import NumpyModule
 
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
-# Currently, with MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS bits maximum, we can use few weights
+# Currently, with MAXIMUM_TLU_BIT_WIDTH bits maximum, we can use few weights
 # max in the theoretical case.
 INPUT_OUTPUT_FEATURE = [1, 2, 3]
 
@@ -41,7 +42,7 @@ INPUT_OUTPUT_FEATURE = [1, 2, 3]
         nn.Sigmoid,
     ],
 )
-@pytest.mark.parametrize("n_bits", [2, 9, 16])
+@pytest.mark.parametrize("n_bits", [2, 17, 25])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("verbose_compilation", [True, False])
 def test_quantized_module_compilation(
@@ -62,7 +63,7 @@ def test_quantized_module_compilation(
         return
 
     # Do not test unsupported bit widths when we are not using the Virtual Lib
-    if not use_virtual_lib and n_bits > MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS:
+    if not use_virtual_lib and n_bits > MAXIMUM_TLU_BIT_WIDTH:
         return
 
     # Define an input shape (n_examples, n_features)
@@ -310,7 +311,7 @@ def test_post_training_quantization_constant_folding():
 
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(
-        MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS, numpy_model, is_signed=True
+        MAX_BITWIDTH_BACKWARD_COMPATIBLE, numpy_model, is_signed=True
     )
 
     numpy_input = numpy.random.random(size=(10, 10))

@@ -4,7 +4,6 @@ from functools import partial
 
 import numpy
 import pytest
-from concrete.numpy.mlir.utils import MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -12,6 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
+from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from concrete.ml.pytest.utils import classifiers, regressors
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
@@ -88,7 +88,7 @@ def test_pipeline_and_cv_qnn(model, parameters, load_data):
         "module__n_layers": 3,
         "module__n_w_bits": 5,
         "module__n_a_bits": 5,
-        "module__n_accum_bits": 4 * MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS,
+        "module__n_accum_bits": 4 * MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         "module__n_outputs": 2,
         "module__input_dim": n_dims,
         "module__activation_function": nn.ReLU,
