@@ -10,27 +10,6 @@ from sklearn.exceptions import ConvergenceWarning
 from concrete.ml.pytest.utils import classifiers, regressors
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
-# FIXME #2320: remaining factorization to be done
-from concrete.ml.sklearn import (
-    DecisionTreeClassifier,
-    DecisionTreeRegressor,
-    ElasticNet,
-    GammaRegressor,
-    Lasso,
-    LinearRegression,
-    LinearSVC,
-    LinearSVR,
-    LogisticRegression,
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    PoissonRegressor,
-    RandomForestClassifier,
-    RandomForestRegressor,
-    Ridge,
-    TweedieRegressor,
-    XGBClassifier,
-    XGBRegressor,
-)
 
 
 def check_onnx_file_dump(model, parameters, load_data, str_expected, default_configuration):
@@ -123,7 +102,7 @@ def test_dump(
 ):
     """Tests dump."""
     expected_strings = {
-        XGBRegressor: """graph torch_jit (
+        "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.base_prediction[INT64, 1]
@@ -148,7 +127,7 @@ def test_dump(
   %x = Reshape[allowzero = 0](%onnx::Reshape_20, %onnx::Reshape_21)
   return %x
 }""",
-        XGBClassifier: """graph torch_jit (
+        "XGBClassifier": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
   %onnx::Less_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -166,7 +145,7 @@ def test_dump(
   %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
   return %x
 }""",
-        GammaRegressor: """graph torch_jit (
+        "GammaRegressor": """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
@@ -176,7 +155,7 @@ def test_dump(
   %5 = Add(%linear.bias, %onnx::Add_4)
   return %5
 }""",
-        LinearRegression: """graph torch_jit (
+        "LinearRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x2]
@@ -185,7 +164,7 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        TweedieRegressor: """graph torch_jit (
+        "TweedieRegressor": """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
@@ -195,7 +174,7 @@ def test_dump(
   %5 = Add(%linear.bias, %onnx::Add_4)
   return %5
 }""",
-        PoissonRegressor: """graph torch_jit (
+        "PoissonRegressor": """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
 ) initializers (
   %linear.bias[DOUBLE, scalar]
@@ -205,7 +184,7 @@ def test_dump(
   %5 = Add(%linear.bias, %onnx::Add_4)
   return %5
 }""",
-        DecisionTreeClassifier: """graph torch_jit (
+        "DecisionTreeClassifier": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
   %onnx::LessOrEqual_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -223,7 +202,7 @@ def test_dump(
   %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
   return %x
 }""",
-        LinearSVR: """graph torch_jit (
+        "LinearSVR": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -232,7 +211,7 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        LogisticRegression: """graph torch_jit (
+        "LogisticRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -241,7 +220,7 @@ def test_dump(
   %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %onnx::Sigmoid_6
 }""",
-        LinearSVC: """graph torch_jit (
+        "LinearSVC": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -250,9 +229,9 @@ def test_dump(
   %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %onnx::Sigmoid_6
 }""",
-        RandomForestClassifier: "Not tested",
-        RandomForestRegressor: "Not tested",
-        NeuralNetClassifier: """graph torch_jit (
+        "RandomForestClassifier": "Not tested",
+        "RandomForestRegressor": "Not tested",
+        "NeuralNetClassifier": """graph torch_jit (
   %inp.1[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 40]
@@ -293,7 +272,7 @@ def test_dump(
   %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
   return %41
 }""",
-        NeuralNetRegressor: """graph torch_jit (
+        "NeuralNetRegressor": """graph torch_jit (
   %inp.1[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 10]
@@ -334,7 +313,7 @@ def test_dump(
   %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
   return %41
 }""",
-        Ridge: """graph torch_jit (
+        "Ridge": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -343,7 +322,7 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        Lasso: """graph torch_jit (
+        "Lasso": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -352,7 +331,7 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        ElasticNet: """graph torch_jit (
+        "ElasticNet": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
   %_operators.0.coefficients[FLOAT, 10x1]
@@ -361,7 +340,7 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        DecisionTreeRegressor: """graph torch_jit (
+        "DecisionTreeRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
   %onnx::LessOrEqual_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -386,6 +365,6 @@ def test_dump(
     else:
         model_class = model
 
-    str_expected = expected_strings[model_class] if model_class in expected_strings else ""
+    str_expected = expected_strings[model_class.__name__]
 
     check_onnx_file_dump(model, parameters, load_data, str_expected, default_configuration)
