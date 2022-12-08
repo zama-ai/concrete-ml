@@ -118,7 +118,8 @@ class ConcreteBaseEstimatorProtocol(Protocol):
             use_virtual_lib (bool): whether to compile using the virtual library that allows higher
                 bitwidths
             p_error (float): probability of error of a single PBS
-            global_p_error (float): probability of error of the full circuit
+            global_p_error (float): probability of error of the full circuit. Not simulated
+                by the VL, i.e., taken as 0
             verbose_compilation (bool): whether to show compilation information
 
         .. # noqa: DAR202

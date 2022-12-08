@@ -379,7 +379,8 @@ class QuantizedModule:
             use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
                 Defaults to False.
             p_error (Optional[float]): probability of error of a single PBS.
-            global_p_error (Optional[float]): probability of error of the full circuit.
+            global_p_error (Optional[float]): probability of error of the full circuit. Not
+                simulated by the VL, i.e., taken as 0
             verbose_compilation (bool): whether to show compilation information
 
         Returns:

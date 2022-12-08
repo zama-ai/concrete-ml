@@ -77,7 +77,8 @@ def _compile_torch_or_onnx_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit
+        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
+            by the VL, i.e., taken as 0
         verbose_compilation (bool): whether to show compilation information
 
     Returns:
@@ -165,7 +166,8 @@ def compile_torch_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit
+        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
+            by the VL, i.e., taken as 0
         verbose_compilation (bool): whether to show compilation information
 
     Returns:
@@ -221,7 +223,8 @@ def compile_onnx_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
             Defaults to False.
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit
+        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
+            by the VL, i.e., taken as 0
         verbose_compilation (bool): whether to show compilation information
 
     Returns:
@@ -284,7 +287,8 @@ def compile_brevitas_qat_model(
         use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation,
             defaults to False.
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit
+        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
+            by the VL, i.e., taken as 0
         output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
             is generated
         verbose_compilation (bool): whether to show compilation information
