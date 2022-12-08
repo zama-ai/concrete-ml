@@ -1526,16 +1526,18 @@ def get_sklearn_models():
     return ans
 
 
-def _filter_models(prelist, classifier, regressor):
+def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name: str = None):
     """Return the models which are in prelist and follow (classifier, regressor) conditions.
 
     Args:
         prelist: list of models
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
+        str_in_class_name (str): if not None, only return models with this as a substring in the
+            class name
 
     Returns:
-        the sublist which fullfils the (classifier, regressor) conditions.
+        the sublist which fullfils the (classifier, regressor, str_in_class_name) conditions.
 
     """
     assert_true(classifier or regressor, "Please set at least one option")
@@ -1548,34 +1550,45 @@ def _filter_models(prelist, classifier, regressor):
     if regressor:
         answer += [m for m in prelist if sklearn.base.is_regressor(m)]
 
+    if str_in_class_name is not None:
+        answer = [m for m in answer if str_in_class_name in m.__name__]
+
     # We return a sorted list such that it is ordered, to avoid notably issues when it is used
     # in @pytest.mark.parametrize
     return sorted(answer, key=lambda m: m.__name__)
 
 
-def get_sklearn_tree_models(classifier=True, regressor=True):
+def get_sklearn_tree_models(
+    classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
+):
     """Return the list of available tree models in Concrete-ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
+        str_in_class_name (str): if not None, only return models with this as a substring in the
+            class name
 
     Returns:
         the lists of tree models in Concrete-ML
     """
     prelist = get_sklearn_models()["tree"]
-    return _filter_models(prelist, classifier, regressor)
+    return _filter_models(prelist, classifier, regressor, str_in_class_name)
 
 
-def get_sklearn_neural_net_models(classifier=True, regressor=True):
+def get_sklearn_neural_net_models(
+    classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
+):
     """Return the list of available neural net models in Concrete-ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
+        str_in_class_name (str): if not None, only return models with this as a substring in the
+            class name
 
     Returns:
         the lists of neural net models in Concrete-ML
     """
     prelist = get_sklearn_models()["neural_net"]
-    return _filter_models(prelist, classifier, regressor)
+    return _filter_models(prelist, classifier, regressor, str_in_class_name)

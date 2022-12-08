@@ -7,8 +7,7 @@ from sklearn.datasets import load_breast_cancer, load_diabetes
 from sklearn.metrics import make_scorer, matthews_corrcoef, mean_squared_error
 from sklearn.model_selection import GridSearchCV
 
-# FIXME #2320: remaining factorization to be done
-from concrete.ml.sklearn import RandomForestClassifier, RandomForestRegressor
+from concrete.ml.sklearn.base import get_sklearn_tree_models
 
 PARAMS_RF = {
     "max_depth": [2, 4, 6],
@@ -16,7 +15,7 @@ PARAMS_RF = {
 }
 
 
-@pytest.mark.parametrize("model", [RandomForestClassifier, RandomForestRegressor])
+@pytest.mark.parametrize("model", get_sklearn_tree_models(str_in_class_name="RandomForest"))
 @pytest.mark.parametrize(
     "hyperparameters",
     [
@@ -55,89 +54,7 @@ def test_rf_hyperparameters(model, hyperparameters, n_classes, load_data):
     assert abs(sklearn_model.score(x, y) - model.score(x, y)) < 0.05
 
 
-# Get the dataset. The data generation is seeded in load_data.
-# pylint: disable=too-many-arguments
-@pytest.mark.parametrize(
-    "parameters",
-    [
-        pytest.param({"dataset": lambda: load_breast_cancer(return_X_y=True)}, id="breast_cancer"),
-        pytest.param(
-            {
-                "dataset": "classification",
-                "n_samples": 1000,
-                "n_features": 100,
-                "n_classes": 2,
-            },
-            id="make_classification",
-        ),
-    ],
-)
-@pytest.mark.parametrize(
-    "use_virtual_lib",
-    [
-        pytest.param(False, id="no_virtual_lib"),
-        pytest.param(True, id="use_virtual_lib"),
-    ],
-)
-@pytest.mark.parametrize(
-    "max_depth, n_estimators, skip_if_not_weekly",
-    [
-        pytest.param(2, 1, False, id="max_depth_2_n_estimators_1"),
-        pytest.param(2, 5, False, id="max_depth_2_n_estimators_5"),
-        pytest.param(4, 20, True, id="max_depth_4_n_estimators_20"),
-    ],
-)
-@pytest.mark.parametrize(
-    "n_bits",
-    [
-        pytest.param(6, id="n_bits_6"),
-        pytest.param(2, id="n_bits_2"),
-    ],
-)
-def test_rf_classifier(
-    parameters,
-    max_depth,
-    n_estimators,
-    skip_if_not_weekly,
-    n_bits,
-    load_data,
-    default_configuration,
-    check_is_good_execution_for_quantized_models,
-    use_virtual_lib,
-    is_weekly_option,
-    is_vl_only_option,
-):
-    """Tests the random forest."""
-
-    if not is_weekly_option:
-        if skip_if_not_weekly:
-            # Skip long tests
-            return
-
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
-
-    # Get the dataset
-    x, y = load_data(**parameters)
-
-    model = RandomForestClassifier(
-        max_depth=max_depth,
-        n_estimators=n_estimators,
-        n_bits=n_bits,
-        random_state=numpy.random.randint(0, 2**15),
-        n_jobs=1,
-    )
-    model.fit(x, y)
-
-    # Test compilation
-    model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
-
-    # Compare FHE vs non-FHE
-    check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
-
-
-@pytest.mark.parametrize("model", [RandomForestClassifier, RandomForestRegressor])
+@pytest.mark.parametrize("model", get_sklearn_tree_models(str_in_class_name="RandomForest"))
 def test_rf_grid_search(model, load_data):
     """Tests random forest with the gridsearchCV from sklearn."""
 
@@ -173,22 +90,11 @@ def test_rf_grid_search(model, load_data):
     ).fit(x, y)
 
 
-# Regression
-
 # pylint: disable=too-many-arguments
+@pytest.mark.parametrize("model", get_sklearn_tree_models(str_in_class_name="RandomForest"))
 @pytest.mark.parametrize(
     "parameters",
-    [
-        pytest.param({"dataset": lambda: load_diabetes(return_X_y=True)}, id="diabetes"),
-        pytest.param(
-            {
-                "dataset": "regression",
-                "n_samples": 1000,
-                "n_features": 100,
-            },
-            id="make_regression",
-        ),
-    ],
+    [0, 1],
 )
 @pytest.mark.parametrize(
     "use_virtual_lib",
@@ -212,7 +118,8 @@ def test_rf_grid_search(model, load_data):
         pytest.param(2, id="n_bits_2"),
     ],
 )
-def test_rf_regressor(
+def test_rf(
+    model,
     parameters,
     max_depth,
     n_estimators,
@@ -237,9 +144,27 @@ def test_rf_regressor(
         return
 
     # Get the dataset
-    x, y = load_data(**parameters)
+    if is_classifier(model):
+        if parameters == 0:
+            x, y = load_data(
+                dataset="classification",
+                n_samples=100,
+                n_features=10,
+                n_informative=5,
+            )
+        else:
+            x, y = load_data(dataset=lambda: load_breast_cancer(return_X_y=True))
+    else:
+        if parameters == 0:
+            x, y = load_data(
+                dataset="regression",
+                n_samples=1000,
+                n_features=100,
+            )
+        else:
+            x, y = load_data(dataset=lambda: load_diabetes(return_X_y=True))
 
-    model = RandomForestRegressor(
+    model = model(
         max_depth=max_depth,
         n_estimators=n_estimators,
         n_bits=n_bits,
