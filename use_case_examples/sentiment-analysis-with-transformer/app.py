@@ -152,9 +152,6 @@ def decrypt_prediction(user_id):
     fhe_api = FHEModelClient("sentiment_fhe_model/deployment", f".fhe_keys/{user_id}")
     fhe_api.load()
 
-    # We need to retrieve the private key that matches the client specs (see issue #18)
-    fhe_api.generate_private_and_evaluation_keys(force=False)
-
     predictions = fhe_api.deserialize_decrypt_dequantize(encrypted_prediction)
     return {
         "negative": predictions[0][0],
