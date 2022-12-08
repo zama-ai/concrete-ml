@@ -138,6 +138,11 @@ pcc:
 	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
 
+.PHONY: spcc # Run selected pre-commit checks (those which break most often, for SW changes)
+spcc:
+	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
+	--no-print-directory spcc_internal
+
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
@@ -146,6 +151,13 @@ PCC_DEPS += check_forbidden_words gitleaks
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
 pcc_internal: $(PCC_DEPS)
+
+# flake8 has been removed since it is too slow
+SPCC_DEPS := check_python_format pylint_src pylint_tests mypy_ci pydocstyle
+
+# Not commented on purpose for make help, since internal
+.PHONY: spcc_internal
+spcc_internal: $(SPCC_DEPS)
 
 # One can reproduce pytest thanks to the --randomly-seed which is given by
 # pytest-randomly
