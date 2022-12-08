@@ -87,7 +87,7 @@ classifiers = [
             "n_informative": 10,
             "n_redundant": 0,
         },
-        id=model.__name__ if not isinstance(model, partial) else None,
+        id=model.__name__ if not isinstance(model, partial) else model.func.__name__,
     )
     for model in classifier_models
 ]
@@ -107,7 +107,7 @@ regressors = [
             "n_targets": 2 if model == LinearRegression else 1,
             "noise": 0,
         },
-        id=model.__name__ if not isinstance(model, partial) else None,
+        id=model.__name__ if not isinstance(model, partial) else model.func.__name__,
     )
     for model in regressor_models
 ]

@@ -303,7 +303,7 @@ class QuantizedTorchEstimatorMixin:
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
         self.quantized_module_ = None
-        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
+        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
 
         # Call skorch fit that will train the network
         super().fit(X, y, **fit_params)
@@ -755,7 +755,7 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
         Returns:
             Any: The fitted model.
         """
-        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
+        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
 
         # mypy
         assert self.n_bits is not None
@@ -859,7 +859,7 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             Any: The fitted model.
         """
-        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
+        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
 
         self.classes_ = numpy.unique(y)
 
@@ -1030,7 +1030,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         X = copy.deepcopy(X)
 
         # LinearRegression handles multi-labels data
-        X, y = check_X_y_and_assert(X, y, multi_output=y.size > 1)
+        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
 
         # Retrieve sklearn's init parameters and remove the ones specific to Concrete-ML
         params = self.get_params()  # type: ignore

@@ -90,7 +90,8 @@ def test_pandas_qnn(model, load_data):
         model_params["random_state"] = numpy.random.randint(0, 2**15)
     model.set_params(**model_params)
 
-    # FIXME: still to be done
+    # Pandas data frames are not properly handle yet
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2327
     model.fit(x.to_numpy(), y.to_numpy())
     model.predict(x.to_numpy())
 
