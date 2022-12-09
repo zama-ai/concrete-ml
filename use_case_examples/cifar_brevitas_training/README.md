@@ -1,4 +1,3 @@
-
 # Ternary VGG on CIFAR10 with Fully Homomorphic encryption
 
 ## Description
@@ -83,11 +82,12 @@ Warning: this execution can be quite costly.
 
 # Accuracy
 
-| Runtime              | Accuracy |
-| -------------------- | -------- |
-| VGG Torch            | 88.9     |
-| VGG Concrete-ML      | 88.7     |
-| VGG FHE (simulation*) | 88.7     |
+| Runtime                | Accuracy |
+| ---------------------- | -------- |
+| VGG Torch              | 88.9     |
+| VGG Concrete-ML        | 88.7     |
+| VGG FHE (simulation\*) | 88.7     |
+
 FIXME (https://github.com/zama-ai/concrete-ml-internal/issues/2350): add actual FHE accuracy and performance.
 
 \* The simulation is done using Virtual Library (VL) that simulates the FHE evaluation in the clear for faster debugging.

@@ -134,6 +134,8 @@ Various tutorials are proposed for the [built-in models](docs/built-in-models/ml
 
 - [Sentiment analysis with transformers](use_case_examples/sentiment-analysis-with-transformer): a gradio demo which predicts if a tweet / short message is positive, negative or neutral, in FHE of course! The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on Hugging Face. And read the official [blog post](https://huggingface.co/blog/sentiment-analysis-fhe) explaining how we do it!
 
+- [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar_brevitas_training): code for training and evaluating a VGG-like neural network using Brevitas, and a script to run the neural network in FHE. Our simulations with the Virtual Library show an accuracy of 88.7%. Running inferences in FHE is a work in progress.
+
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 
 ## Citing Concrete-ML
