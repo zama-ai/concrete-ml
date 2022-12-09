@@ -37,6 +37,8 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("Concrete-ml", []),
         ("Concrete-Ml", []),
         ("Concrete ML", []),
+        ("concrete ml", []),
+        ("concrete-ml", []),
         ("pytorch", []),
         ("bitwidth", []),
         ("bit width", []),
