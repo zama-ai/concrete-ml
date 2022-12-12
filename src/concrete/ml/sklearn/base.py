@@ -1561,6 +1561,24 @@ def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name
     return sorted(answer, key=lambda m: m.__name__)
 
 
+def get_sklearn_linear_models(
+    classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
+):
+    """Return the list of available linear models in Concrete-ML.
+
+    Args:
+        classifier (bool): whether you want classifiers or not
+        regressor (bool): whether you want regressors or not
+        str_in_class_name (str): if not None, only return models with this as a substring in the
+            class name
+
+    Returns:
+        the lists of linear models in Concrete-ML
+    """
+    prelist = get_sklearn_models()["linear"]
+    return _filter_models(prelist, classifier, regressor, str_in_class_name)
+
+
 def get_sklearn_tree_models(
     classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
 ):

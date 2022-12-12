@@ -74,8 +74,6 @@ classifier_models = [
 ]
 
 # Get the datasets. The data generation is seeded in load_data.
-# Remark that NeuralNetClassifier is not here because it is particular model for us, needs much more
-# parameters
 classifiers = [
     pytest.param(
         model,
@@ -83,13 +81,16 @@ classifiers = [
             "dataset": "classification",
             "n_samples": 1000,
             "n_features": 10,
-            "n_classes": 2,  # qnns do not have multiclass yet
+            "n_classes": 2
+            if isinstance(model, partial) and "NeuralNet" in model.func.__name__
+            else n_classes,  # FIXME #2402, qnns do not have multiclass yet
             "n_informative": 10,
             "n_redundant": 0,
         },
         id=model.__name__ if not isinstance(model, partial) else model.func.__name__,
     )
     for model in classifier_models
+    for n_classes in [2, 4]
 ]
 
 # Get the datasets. The data generation is seeded in load_data.

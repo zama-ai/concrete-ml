@@ -72,6 +72,21 @@ def test_dump(
     default_configuration,
 ):
     """Tests dump."""
+
+    if isinstance(model, partial):
+        model_class = model.func
+    else:
+        model_class = model
+
+    model_class_name = model_class.__name__
+
+    # Some models have been done with different n_classes which create different ONNX
+    if parameters.get("n_classes", 2) != 2 and model_class_name in [
+        "LinearSVC",
+        "LogisticRegression",
+    ]:
+        return
+
     expected_strings = {
         "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -331,11 +346,5 @@ def test_dump(
 }""",
     }
 
-    if isinstance(model, partial):
-        model_class = model.func
-    else:
-        model_class = model
-
-    str_expected = expected_strings[model_class.__name__]
-
+    str_expected = expected_strings[model_class_name]
     check_onnx_file_dump(model, parameters, load_data, str_expected, default_configuration)
