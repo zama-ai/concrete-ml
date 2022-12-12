@@ -15,38 +15,9 @@ from concrete.ml.pytest.utils import classifiers, regressors
 def check_onnx_file_dump(model, parameters, load_data, str_expected, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
 
-    if isinstance(model, partial):
-        model_name = model.func.__name__
-    else:
-        model_name = model.__name__
-
     # Get the dataset. The data generation is seeded in load_data.
-    if model_name == "NeuralNetClassifier":
-        x, y = load_data(
-            dataset="classification",
-            n_samples=100,
-            n_features=10,
-            n_classes=2,
-            n_informative=10,
-            n_redundant=0,
-        )
-        x = x.astype(numpy.float32)
-
-    # Get the dataset. The data generation is seeded in load_data.
-    elif model_name == "NeuralNetRegressor":
-        x, y = load_data(
-            dataset="regression",
-            strictly_positive=False,
-            n_samples=1000,
-            n_features=10,
-            n_informative=10,
-            n_targets=1,
-            noise=2.0,
-        )
-        x = x.astype(numpy.float32)
-        y = y.reshape(-1, 1).astype(numpy.float32)
-    else:
-        x, y = load_data(**parameters)
+    model_name = model.__name__ if not isinstance(model, partial) else model.func.__name__
+    x, y = load_data(**parameters, model_name=model_name)
 
     # Set the model
     model = model(n_bits=6)

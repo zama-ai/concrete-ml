@@ -468,7 +468,11 @@ def load_data():
     """Fixture for generating random regression or classification problem."""
 
     def custom_load_data(
-        dataset: Union[str, Callable], *args, strictly_positive: bool = False, **kwargs
+        dataset: Union[str, Callable],
+        *args,
+        strictly_positive: bool = False,
+        model_name: Optional[str] = None,
+        **kwargs,
     ):
         """Generate a random regression or classification problem.
 
@@ -483,7 +487,10 @@ def load_data():
                 datasets or a callable for any other dataset generation.
             strictly_positive (bool): If True, the regression data will be only composed of strictly
                 positive values. It has no effect on classification problems. Default to False.
+            model_name (Optional[str]): If NeuralNetRegressor, a specific change on y will be
+                applied.
         """
+
         # Create a random_state value in order to seed the data generation functions. This enables
         # all tests that use this fixture to be deterministic and thus reproducible.
         random_state = numpy.random.randint(0, 2**15)
@@ -499,6 +506,11 @@ def load_data():
             # Some regressors can only handle positive target values, often strictly positive.
             if strictly_positive:
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
+
+            if model_name == "NeuralNetRegressor":
+                generated_regression[1] = (
+                    generated_regression[1].reshape(-1, 1).astype(numpy.float32)
+                )
 
             return tuple(generated_regression)
 
