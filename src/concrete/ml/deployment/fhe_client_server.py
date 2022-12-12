@@ -93,12 +93,12 @@ class FHEModelServer:
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        unserialized_encrypted_quantized_data = self.server.client_specs.unserialize_public_args(
+        deserialized_encrypted_quantized_data = self.server.client_specs.unserialize_public_args(
             serialized_encrypted_quantized_data
         )
-        unserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
+        deserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
         result = self.server.run(
-            unserialized_encrypted_quantized_data, unserialized_evaluation_keys
+            deserialized_encrypted_quantized_data, deserialized_evaluation_keys
         )
         serialized_result = self.server.client_specs.serialize_public_result(result)
         return serialized_result
@@ -310,16 +310,16 @@ class FHEModelClient:
         Returns:
             numpy.ndarray: the decrypted and desarialized values
         """
-        # Unserialize the encrypted values
-        unserialized_encrypted_quantized_result = self.client.specs.unserialize_public_result(
+        # Deserialize the encrypted values
+        deserialized_encrypted_quantized_result = self.client.specs.unserialize_public_result(
             serialized_encrypted_quantized_result
         )
 
         # Decrypt the values
-        unserialized_decrypted_quantized_result = self.client.decrypt(
-            unserialized_encrypted_quantized_result
+        deserialized_decrypted_quantized_result = self.client.decrypt(
+            deserialized_encrypted_quantized_result
         )
-        return unserialized_decrypted_quantized_result
+        return deserialized_decrypted_quantized_result
 
     def deserialize_decrypt_dequantize(
         self, serialized_encrypted_quantized_result: cnp.PublicArguments
@@ -333,13 +333,13 @@ class FHEModelClient:
         Returns:
             numpy.ndarray: the decrypted (dequantized) values
         """
-        # Decrypt and desarialize the values
-        unserialized_decrypted_quantized_result = self.deserialize_decrypt(
+        # Decrypt and deserialize the values
+        deserialized_decrypted_quantized_result = self.deserialize_decrypt(
             serialized_encrypted_quantized_result
         )
 
         # Dequantize the values and apply the model post processing
-        unserialized_decrypted_dequantized_result = self.model.post_processing(
-            unserialized_decrypted_quantized_result
+        deserialized_decrypted_dequantized_result = self.model.post_processing(
+            deserialized_decrypted_quantized_result
         )
-        return unserialized_decrypted_dequantized_result
+        return deserialized_decrypted_dequantized_result

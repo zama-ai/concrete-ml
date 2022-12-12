@@ -145,17 +145,17 @@ class CustomFHEClient:
         Returns:
             numpy.ndarray: the decrypted values
         """
-        # Unserialize the encrypted values
-        unserialized_encrypted_output = self.client.specs.unserialize_public_result(
+        # Deserialize the encrypted values
+        deserialized_encrypted_output = self.client.specs.unserialize_public_result(
             serialized_encrypted_output
         )
 
         # Decrypt the values
-        unserialized_decrypted_output = self.client.decrypt(unserialized_encrypted_output)
+        deserialized_decrypted_output = self.client.decrypt(deserialized_encrypted_output)
 
         # Apply the model post processing
-        unserialized_decrypted_output = self.model.post_processing(unserialized_decrypted_output)
-        return unserialized_decrypted_output
+        deserialized_decrypted_output = self.model.post_processing(deserialized_decrypted_output)
+        return deserialized_decrypted_output
 
 
 class CustomFHEServer:
@@ -195,10 +195,10 @@ class CustomFHEServer:
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        unserialized_encrypted_data = self.server.client_specs.unserialize_public_args(
+        deserialized_encrypted_data = self.server.client_specs.unserialize_public_args(
             serialized_encrypted_data
         )
-        unserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
-        result = self.server.run(unserialized_encrypted_data, unserialized_evaluation_keys)
+        deserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
+        result = self.server.run(deserialized_encrypted_data, deserialized_evaluation_keys)
         serialized_result = self.server.client_specs.serialize_public_result(result)
         return serialized_result
