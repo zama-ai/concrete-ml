@@ -159,7 +159,7 @@ jobs:
           path: ./cml_to_install
 
       - name: Set up Python
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@2c3dd9e7e29afd70cc0950079bde6c979d1f69f9
         with:
           python-version: "3.9"
 
