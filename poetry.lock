@@ -405,7 +405,7 @@ PyYAML = "*"
 
 [[package]]
 name = "concrete-ml-extensions-brevitas"
-version = "0.0.0"
+version = "0.1.0"
 description = "Quantization-aware training in PyTorch"
 category = "main"
 optional = false
@@ -415,20 +415,20 @@ python-versions = ">=3.6"
 dependencies = "2.0.1"
 future-annotations = "*"
 packaging = "*"
-torch = ">=1.1.0"
+torch = ">=1.5.0"
 typing-extensions = ">=3.7.4"
 
 [package.extras]
 export = ["onnx", "onnxoptimizer"]
-finn_integration_ge_pt150 = ["torch (>=1.5.0)", "bitstring", "finn-base", "toposort", "onnx (==1.7.0)", "onnxruntime (==1.5.2)", "onnxoptimizer"]
+finn_integration_ge_pt150 = ["torch (>=1.5.0)", "bitstring", "toposort", "qonnx", "onnxruntime", "onnx", "onnxoptimizer"]
 finn_integration_lt_pt150 = ["torch (<1.5.0)", "bitstring", "finn-base", "toposort", "onnxruntime (==1.4.0)", "onnxoptimizer", "onnx (==1.5.0)", "onnx (==1.7.0)"]
 hadamard = ["scipy"]
+notebook = ["jupyter", "nbmake"]
 ort_integration = ["onnxruntime", "onnx", "onnxoptimizer"]
 stt = ["pillow (>=4.3.0)", "ruamel.yaml", "requests", "librosa", "inflect", "unidecode", "torch-stft", "sox", "tqdm", "soundfile", "numba (<=0.49.1)"]
 test = ["pytest", "pytest-cases", "pytest-mock", "mock", "hypothesis", "scipy", "torchvision"]
 tts = ["soundfile", "librosa", "numpy", "scipy", "tqdm", "pillow", "pyyaml"]
 vision = ["torchvision"]
-vitis_ai_integration = ["onnx", "onnxoptimizer"]
 
 [[package]]
 name = "concrete-numpy"
@@ -3780,7 +3780,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "flake8 
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "3094ff242890a7e046d95349688bc986cf2a5aa4ebdeafab5a1d84a6ec6843ed"
+content-hash = "f180d40e33a814cef4e4035c7a379858dc9cc8f1e68c3dd5c105a001c9acaff6"
 
 [metadata.files]
 absl-py = []

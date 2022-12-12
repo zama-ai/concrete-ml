@@ -151,7 +151,7 @@
 - [`onnx_model_manipulations.simplify_onnx_model`](./concrete.ml.onnx.onnx_model_manipulations.md#function-simplify_onnx_model): Simplify an ONNX model, removes unused Constant nodes and Identity nodes.
 - [`onnx_utils.execute_onnx_with_numpy`](./concrete.ml.onnx.onnx_utils.md#function-execute_onnx_with_numpy): Execute the provided ONNX graph on the given inputs.
 - [`onnx_utils.get_attribute`](./concrete.ml.onnx.onnx_utils.md#function-get_attribute): Get the attribute from an ONNX AttributeProto.
-- [`onnx_utils.get_op_name`](./concrete.ml.onnx.onnx_utils.md#function-get_op_name): Construct the qualified name of the ONNX operator.
+- [`onnx_utils.get_op_type`](./concrete.ml.onnx.onnx_utils.md#function-get_op_type): Construct the qualified name of the ONNX operator.
 - [`ops_impl.cast_to_float`](./concrete.ml.onnx.ops_impl.md#function-cast_to_float): Cast values to floating points.
 - [`ops_impl.numpy_abs`](./concrete.ml.onnx.ops_impl.md#function-numpy_abs): Compute abs in numpy according to ONNX spec.
 - [`ops_impl.numpy_acos`](./concrete.ml.onnx.ops_impl.md#function-numpy_acos): Compute acos in numpy according to ONNX spec.

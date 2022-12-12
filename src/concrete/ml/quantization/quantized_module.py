@@ -199,11 +199,20 @@ class QuantizedModule:
     def __call__(self, *x: numpy.ndarray):
         return self.forward(*x)
 
-    def forward(self, *qvalues: numpy.ndarray) -> numpy.ndarray:
+    def forward(
+        self, *qvalues: numpy.ndarray, debug: bool = False
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, Dict[str, numpy.ndarray]]]:
         """Forward pass with numpy function only.
 
         Args:
             *qvalues (numpy.ndarray): numpy.array containing the quantized values.
+            debug (bool): In debug mode, returns quantized intermediary values of the computation.
+                          This is useful when a model's intermediary values in Concrete-ML need
+                          to be compared with the intermediary values obtained in pytorch/onnx.
+                          When set, the second return value is a dictionary containing ONNX
+                          operation names as keys and, as values, their input QuantizedArray or
+                          ndarray. The use can thus extract the quantized or float values of
+                          quantized inputs.
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
@@ -220,6 +229,15 @@ class QuantizedModule:
             "integer types. Make sure you quantize your input before calling forward.",
             ValueError,
         )
+
+        if debug:
+            debug_value_tracker: Dict[str, Any] = {}
+            for (_, layer) in self.quant_layers_dict.values():
+                layer.debug_value_tracker = debug_value_tracker
+            result = self._forward(*qvalues)
+            for (_, layer) in self.quant_layers_dict.values():
+                layer.debug_value_tracker = None
+            return result, debug_value_tracker
 
         return self._forward(*qvalues)
 
@@ -270,7 +288,7 @@ class QuantizedModule:
                 # The error message contains the ONNX tensor name that
                 # triggered this error
                 for input_idx in error_tracker:
-                    bad_qat_ops.append((input_names[input_idx], layer.op_type))
+                    bad_qat_ops.append((input_names[input_idx], layer.__class__.op_type()))
 
             layer_results[output_name] = output
 
@@ -296,7 +314,7 @@ class QuantizedModule:
             (numpy.ndarray): Predictions of the quantized model
         """
         q_out = self.forward(*q_x)
-        return self.dequantize_output(q_out)
+        return self.dequantize_output(q_out)  # type: ignore
 
     def quantize_input(
         self, *values: numpy.ndarray

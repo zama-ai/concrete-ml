@@ -87,6 +87,10 @@ class QuantizationOptions:
     # quantization aware training
     is_qat: bool = False
 
+    # Determine if the quantized integer values should only be in [2^(n-1)+1 .. 2^(n-1)-1]
+    # or whether we use the full range. Only implemented for QAT
+    is_narrow: bool = False
+
     # Determines whether the values handled by the quantizer were produced by a custom
     # quantization layer that has pre-computed scale and zeropoint (i.e. ONNX brevitas quant layer)
     is_precomputed_qat: bool = False
@@ -117,6 +121,7 @@ class QuantizationOptions:
         self.is_symmetric = opts.is_symmetric
         self.is_qat = opts.is_qat
         self.is_precomputed_qat = opts.is_precomputed_qat
+        self.is_narrow = opts.is_narrow
 
     @property
     def quant_options(self):
@@ -131,18 +136,20 @@ class QuantizationOptions:
         res.copy_opts(self)
         return res
 
-    def is_equal(self, opts) -> bool:
+    def is_equal(self, opts, ignore_sign_qat: bool = False) -> bool:
         """Compare two quantization options sets.
 
         Args:
             opts (QuantizationOptions): options to compare this instance to
+            ignore_sign_qat (bool): ignore sign comparison for QAT options
 
         Returns:
             bool: whether the two quantization options compared are equivalent
         """
+        sign_equals = True if opts.is_qat and ignore_sign_qat else opts.is_signed == self.is_signed
         return (
             opts.is_qat == self.is_qat
-            and opts.is_signed == self.is_signed
+            and sign_equals
             and opts.is_symmetric == self.is_symmetric
             and opts.n_bits == self.n_bits
         )
@@ -240,7 +247,7 @@ class UniformQuantizationParameters:
     The parameters are computed from quantization options and quantization statistics.
     """
 
-    scale: Optional[float] = None
+    scale: Optional[numpy.float64] = None
     zero_point: Optional[Union[int, float, numpy.ndarray]] = None
     offset: Optional[int] = None
 
@@ -304,7 +311,7 @@ class UniformQuantizationParameters:
             if numpy.abs(stats.rmax) < STABILITY_CONST:
                 # If the value is a 0 we cannot do it since the scale would become 0 as well
                 # resulting in division by 0
-                self.scale = 1.0
+                self.scale = numpy.float64(1.0)
                 # Ideally we should get rid of round here but it is risky
                 # regarding the FHE compilation.
                 # Indeed, the zero_point value for the weights has to be an integer
@@ -313,15 +320,16 @@ class UniformQuantizationParameters:
             else:
                 # If the value is not a 0 we can tweak the scale factor so that
                 # the value quantizes to 1
-                self.scale = stats.rmax
+                self.scale = numpy.float64(stats.rmax)
                 self.zero_point = 0
         else:
             if options.is_symmetric:
                 assert_true(not options.is_qat)
                 self.zero_point = 0
-                self.scale = numpy.maximum(numpy.abs(stats.rmax), numpy.abs(stats.rmin)) / (
-                    (2**options.n_bits - 1 - self.offset)
-                )
+                self.scale = (
+                    numpy.maximum(numpy.abs(stats.rmax), numpy.abs(stats.rmin))
+                    / ((2**options.n_bits - 1 - self.offset))
+                ).astype(numpy.float64)
             else:
                 # Infer the QAT parameters if this is a custom QAT network
                 # which does not store scale/zp in the ONNX directly.
@@ -351,10 +359,10 @@ class UniformQuantizationParameters:
                         "This can occur with a badly trained model.",
                     )
                     unique_scales = numpy.unique(numpy.diff(stats.uvalues))
-                    self.scale = unique_scales[0]
+                    self.scale = numpy.float64(unique_scales[0])
 
                 if self.scale is None:
-                    self.scale = (
+                    self.scale = numpy.float64(
                         (stats.rmax - stats.rmin) / (2**options.n_bits - 1)
                         if stats.rmax != stats.rmin
                         else 1.0
@@ -377,8 +385,6 @@ class UniformQuantizationParameters:
 
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1434
 # Change UniformQuantizer inheritance from UniformQuantizationParameters to composition.
-
-
 class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMaxQuantizationStats):
     """Uniform quantizer.
 
@@ -413,6 +419,10 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             self.stats, kwargs = fill_from_kwargs(self, MinMaxQuantizationStats, **kwargs)
             self.params, kwargs = fill_from_kwargs(self, UniformQuantizationParameters, **kwargs)
 
+        # Force scale to be a float64
+        if self.scale is not None:
+            self.scale = numpy.float64(self.scale)
+
         # All kwargs should belong to one of the parameter sets, anything else is unsupported
         assert_true(len(kwargs) == 0, f"Unexpected kwargs: {kwargs}")
 
@@ -433,11 +443,19 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         qvalues = numpy.rint(values / self.scale + self.zero_point)
 
-        # If the values are produced by a QAT layer, they should have values in the correct
-        # range. But we can't know if the QAT quantization was symmetric or not, so the offset
-        # is not set up properly. Thus, we don't clip for QAT values
-        if not self.is_qat:
-            qvalues = qvalues.clip(-self.offset, 2 ** (self.n_bits) - 1 - self.offset)
+        # Offset is either 2^(n-1) or 0, but for narrow range
+        # the values should be clipped to [2^(n-1)+1, .. 2^(n-1)-1], so we add
+        # one to the minimum value for narrow range
+        min_value = -self.offset
+        if self.is_narrow:
+            min_value += 1
+
+        # Clipping can be performed for PTQ and for precomputed (for now only Brevitas) QAT
+        # (where quantizer parameters are available in ONNX layers).
+        # For Custom QAT, with inferred parameters the type of quantization (signed/narrow)
+        # can not be inferred and thus clipping can not be performed reliably
+        if not self.is_qat or self.is_precomputed_qat:
+            qvalues = qvalues.clip(min_value, 2 ** (self.n_bits) - 1 - self.offset)
 
         return qvalues.astype(numpy.int64)
 
@@ -454,6 +472,14 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         # for mypy
         assert self.zero_point is not None
         assert self.scale is not None
+
+        assert_true(
+            isinstance(self.scale, numpy.float64)
+            or (isinstance(self.scale, numpy.ndarray) and self.scale.dtype is numpy.float64),
+            "Scale is a "
+            + str(type(self.scale))
+            + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
+        )
 
         return self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 

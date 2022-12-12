@@ -561,14 +561,15 @@ class TinyQATCNN(nn.Module):
     should help keep the accumulator bit width low.
     """
 
-    def __init__(self, n_classes, n_bits, n_active) -> None:
+    def __init__(self, n_classes, n_bits, n_active, signed, narrow) -> None:
         """Construct the CNN with a configurable number of classes.
 
         Args:
-            n_classes: number of classes
-            n_bits: bits for the quantization
-            n_active: active neurons
-
+            n_classes (int): number of outputs of the neural net
+            n_bits (int): number of weight and activation bits for quantization
+            n_active (int): number of active (non-zero weight) neurons to keep
+            signed (bool): whether quantized integer values are signed
+            narrow (bool): whether the range of quantized integer values is narrow/symmetric
         """
         super().__init__()
 
@@ -577,18 +578,23 @@ class TinyQATCNN(nn.Module):
 
         self.n_active = n_active
 
-        self.quant1 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.conv1 = qnn.QuantConv2d(1, 3, 3, stride=1, padding=0, weight_bit_width=w_bits)
-        self.quant2 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
+        q_args = {"signed": signed, "narrow_range": narrow}
+
+        self.quant1 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
+        self.conv1 = qnn.QuantConv2d(
+            1, 2, 3, stride=1, padding=0, weight_bit_width=w_bits, **q_args
+        )
+        self.quant2 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
         self.conv2 = qnn.QuantConv2d(
-            3, 6, 3, stride=2, padding=0, groups=3, weight_bit_width=w_bits
+            2, 3, 3, stride=2, padding=0, weight_bit_width=w_bits, **q_args
         )
-        self.quant3 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
+        self.quant3 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
         self.conv3 = qnn.QuantConv2d(
-            6, 16, 2, stride=1, padding=0, groups=2, weight_bit_width=w_bits
+            3, 16, 2, stride=1, padding=0, weight_bit_width=w_bits, **q_args
         )
-        self.quant4 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True)
-        self.fc1 = qnn.QuantLinear(16, n_classes, weight_bit_width=3, bias=True)
+
+        self.quant4 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
+        self.fc1 = qnn.QuantLinear(16, n_classes, weight_bit_width=3, bias=True, **q_args)
 
         # Enable pruning, prepared for training
         self.toggle_pruning(True)
@@ -657,7 +663,7 @@ class TinyQATCNN(nn.Module):
             test_loader: the test loader
 
         Returns:
-            the accuracy
+            res: the number of correctly classified test examples
 
         """
 
@@ -689,7 +695,7 @@ class TinyQATCNN(nn.Module):
 
         # Print out the accuracy as a percentage
         n_correct = numpy.sum(all_targets == all_y_pred)
-        return n_correct / len(test_loader)
+        return n_correct
 
 
 class SimpleQAT(nn.Module):

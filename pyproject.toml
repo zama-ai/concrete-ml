@@ -48,7 +48,7 @@ hummingbird-ml = {version="^0.4.4", extras = ["onnx"]}
 protobuf = "3.19.4"
 # FIXME: Update to remote brevitas repo after patches are merged
 # https://github.com/zama-ai/concrete-ml-internal/issues/1388
-concrete-ml-extensions-brevitas = "0.0.0"
+concrete-ml-extensions-brevitas = "0.1.0"
 onnxoptimizer = "^0.2.7"
 
 [tool.poetry.dev-dependencies]

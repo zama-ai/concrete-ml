@@ -260,15 +260,15 @@ def test_dump(
   %zero_point.19[FLOAT, scalar]
 ) {
   %onnx::Gemm_13 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %scale, %zero_point, %bit_width)
-  %onnx::Gemm_18 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
+  %onnx::Gemm_18 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
   %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_13, %onnx::Gemm_18, %features.fc0.bias)
   %inp = Relu(%input)
   %onnx::Gemm_24 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp, %scale.7, %zero_point.7, %bit_width.7)
-  %onnx::Gemm_29 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
+  %onnx::Gemm_29 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
   %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_24, %onnx::Gemm_29, %features.fc1.bias)
   %inp.4 = Relu(%input.3)
   %onnx::Gemm_35 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.4, %scale.15, %zero_point.15, %bit_width.15)
-  %onnx::Gemm_40 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
+  %onnx::Gemm_40 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
   %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
   return %41
 }""",
@@ -301,15 +301,15 @@ def test_dump(
   %zero_point.19[FLOAT, scalar]
 ) {
   %onnx::Gemm_13 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %scale, %zero_point, %bit_width)
-  %onnx::Gemm_18 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
+  %onnx::Gemm_18 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
   %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_13, %onnx::Gemm_18, %features.fc0.bias)
   %inp = Relu(%input)
   %onnx::Gemm_24 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp, %scale.7, %zero_point.7, %bit_width.7)
-  %onnx::Gemm_29 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
+  %onnx::Gemm_29 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
   %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_24, %onnx::Gemm_29, %features.fc1.bias)
   %inp.4 = Relu(%input.3)
   %onnx::Gemm_35 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.4, %scale.15, %zero_point.15, %bit_width.15)
-  %onnx::Gemm_40 = Quant[narrow = 1, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
+  %onnx::Gemm_40 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
   %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
   return %41
 }""",

@@ -16,7 +16,7 @@ import numpy
 import onnx
 import sklearn
 import torch
-from brevitas.export import BrevitasONNXManager
+from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.compiler import Compiler
@@ -1007,7 +1007,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         self.output_quantizers: List[UniformQuantizer] = []
         self.weight_quantizers: List[UniformQuantizer] = []
         self.onnx_model: onnx.ModelProto = None
-        self._output_scale: Optional[float] = None
+        self._output_scale: Optional[numpy.float64] = None
         self._output_zero_point: Optional[int] = None
         self._q_weights: Optional[numpy.ndarray] = None
         self._q_bias: Optional[numpy.ndarray] = None

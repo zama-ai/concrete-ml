@@ -11,7 +11,7 @@ from concrete.onnx import conv as cnp_conv
 from concrete.onnx import maxpool as cnp_maxpool
 from typing_extensions import SupportsIndex
 
-from ..common.debugging import assert_true
+from ..common.debugging import assert_false, assert_true
 from ..onnx.onnx_impl_utils import (
     compute_onnx_pool_padding,
     numpy_onnx_pad,
@@ -909,7 +909,7 @@ class QuantizedMaxPool(QuantizedOp):
         )
 
         result = (
-            sum_result.astype(numpy.float32) - q_input.quantizer.zero_point
+            sum_result.astype(numpy.float64) - q_input.quantizer.zero_point
         ) * q_input.quantizer.scale
 
         return QuantizedArray(
@@ -1507,6 +1507,11 @@ class QuantizedBrevitasQuant(QuantizedOp):
     """Brevitas uniform quantization with encrypted input."""
 
     _impl_for_op_named: str = "onnx.brevitas.Quant"
+    # FIXME: Note that this should be reset when the correctness test that finds
+    # all mismatches between CML and Brevitas is fixed
+    # https://github.com/zama-ai/concrete-ml-internal/issues/2373
+    quantize_inputs_with_model_outputs_precision = True
+    output_quant_opts: QuantizationOptions
 
     def __init__(
         self,
@@ -1557,6 +1562,14 @@ class QuantizedBrevitasQuant(QuantizedOp):
             "Narrow range flag in Brevitas quantizer must be 0/1",
         )
 
+        self.is_signed = bool(attrs["signed"])
+        self.is_narrow = bool(attrs["narrow"])
+
+        assert_false(
+            not self.is_signed and self.is_narrow,
+            "Can not use narrow range for non-signed Brevitas quantizers",
+        )
+
         # To ensure dequantization produces floats, the following parameters must be float.
         # This should be default export setting in Brevitas
         check_float(
@@ -1569,6 +1582,26 @@ class QuantizedBrevitasQuant(QuantizedOp):
             and self.constant_inputs[self._params_name_to_input_idx["zero_point"]],
             "Zero Point of Brevitas Quant op must be float",
         )
+
+        # For mypy
+        assert constant_inputs is not None
+
+        # The constant inputs can have either int or str keys, here it's int
+        n_bits = constant_inputs[3]  # type: ignore
+
+        # Set the QAT flag on the output of this operation, so that the
+        # following operation in the graph is aware of this flag and can
+        # just copy the quantization
+        self.output_quant_opts = self._get_output_quant_opts()
+        self.output_quant_opts.n_bits = n_bits
+        self.output_quant_opts.is_qat = True
+
+        # Disable the QAT value checker as we have the true parameters in ONNX
+        # Brevitas quantization layers store the scale/zero_point in the ONNX file
+        # so we don't need to compute/infer them
+        self.output_quant_opts.is_precomputed_qat = True
+        self.output_quant_opts.is_narrow = self.is_narrow
+        self.output_quant_opts.is_signed = self.is_signed
 
     def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of Quantization function.
@@ -1589,11 +1622,12 @@ class QuantizedBrevitasQuant(QuantizedOp):
         # for mypy: this is set by the base class calibration
         assert self.output_quant_params is not None
 
-        offset = self.output_quant_params.offset
         self.output_quant_params = UniformQuantizationParameters()
-        self.output_quant_params.scale = self.constant_inputs[1]
+        self.output_quant_params.scale = numpy.float64(self.constant_inputs[1])
         self.output_quant_params.zero_point = int(self.constant_inputs[2])
-        self.output_quant_params.offset = offset
+
+        n_bits = int(self.constant_inputs[3])
+        self.output_quant_params.offset = 2 ** (n_bits - 1) if self.is_signed else 0
 
         return result
 
@@ -1618,57 +1652,37 @@ class QuantizedBrevitasQuant(QuantizedOp):
         # that is suitable for network output, as the op could be the last op in the graph
 
         # Thus, we enforce the QAT number of bits on this op's output
-        n_bits = prepared_inputs[3]
-
-        # Copy the quantization parameters that were used in training
-        quant_params = UniformQuantizationParameters()
-        quant_params.scale = prepared_inputs[1]
-        quant_params.zero_point = prepared_inputs[2]
+        n_bits = int(prepared_inputs[3])
 
         assert len(q_inputs) >= 1
 
+        assert_true(
+            self.output_quant_params is not None, "You need to calibrate this op before using it"
+        )
+
+        # For mypy
+        assert self.output_quant_params is not None
+        assert self.output_quant_params.scale is not None
+        assert self.output_quant_params.zero_point is not None
+
         # Pass-through when the input is already quantized in the manner that this
-        # layer wants to quantize it. This is done to optimize out the model input TLU
+        # layer wants to quantize it. This is done to optimize out the model input TLU.
+        # Only works when the layer has been calibrated.
         if (
-            q_inputs[0].quantizer.quant_options.is_equal(self.input_quant_opts)
-            and q_inputs[0].quantizer.quant_params.scale == quant_params.scale
-            and q_inputs[0].quantizer.quant_params.zero_point == quant_params.zero_point
+            q_inputs[0].quantizer.quant_options.is_equal(self.output_quant_opts)
+            and q_inputs[0].quantizer.quant_params.scale == self.output_quant_params.scale
+            and q_inputs[0].quantizer.quant_params.zero_point == self.output_quant_params.zero_point
         ):
             return q_inputs[0]
-
-        # FIXME: figure out if this check is needed
-        # the code seems to run with narrow == 1
-        # https://github.com/zama-ai/concrete-ml-internal/issues/1591
-        # assert_true(
-        #     self.attrs["signed"] == 1 and self.attrs["narrow"] == 0,
-        #     "Only signed wide range Brevitas quantization giving 0 offset "
-        #     "is implemented for now\n"
-        #     f"{self.attrs['signed']=} ?=1 , {self.attrs['narrow']=} ?=0",
-        # )
-
-        # Currently we cannot determine if symmetric quantization was used,
-        # we just assume the offset is 0, the offset is not used for clipping in QAT.
-        quant_params.offset = 0
-
-        # Set the QAT flag on the output of this operation, so that the
-        # following operation in the graph is aware of this flag and can
-        # just copy the quantization
-        options = self._get_output_quant_opts()
-        options.is_qat = True
-
-        # Disable the QAT value checker as we have the true parameters in ONNX
-        # Brevitas quantization layers store the scale/zero_point in the ONNX file
-        # so we don't need to compute/infer them
-        options.is_precomputed_qat = True
 
         f_outputs = self.call_impl(*prepared_inputs, **attrs)
         res = QuantizedArray(
             n_bits,
             f_outputs,
             value_is_float=True,
-            options=options,
+            options=self.output_quant_opts,
             stats=self.output_quant_stats,
-            params=quant_params,
+            params=self.output_quant_params,
         )
         return res
 

@@ -8,7 +8,7 @@ import onnx
 from onnx import numpy_helper
 
 from ..common.debugging import assert_true
-from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_name
+from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_type
 from ..torch.numpy_module import NumpyModule
 from .base_quantized_op import DEFAULT_MODEL_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
 from .quantized_module import QuantizedModule
@@ -275,12 +275,14 @@ class ONNXConverter:
 
     @abstractmethod
     def _get_input_quant_opts(
-        self, values: Tuple[numpy.ndarray], quantized_op_class: Type["QuantizedOp"]
+        self,
+        values: Tuple[Union[numpy.ndarray, QuantizedArray], ...],
+        quantized_op_class: Type["QuantizedOp"],
     ) -> QuantizationOptions:
         """Construct a quantization options set for the input of a layer.
 
         Args:
-            values (Tuple[numpy.ndarray]): calibration data for this op
+            values (Tuple[Union[numpy.ndarray, QuantizedArray], ...]): calibration data for this op
             quantized_op_class (Type["QuantizedOp"]): The quantized operator's class
 
         Returns:
@@ -302,7 +304,7 @@ class ONNXConverter:
             for onnx_init in inits
         )
 
-    # pylint: disable-next=too-many-statements
+    # pylint: disable-next=too-many-branches,too-many-statements
     def _quantize_layers(self, *input_calibration_data: numpy.ndarray):
         """Compute parameters for post-training quantization and generate quantized ops.
 
@@ -363,7 +365,7 @@ class ONNXConverter:
         }
 
         for node in graph.node:
-            op_type = get_op_name(node)
+            op_type = get_op_type(node)
 
             attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
 
@@ -386,19 +388,24 @@ class ONNXConverter:
             curr_inputs = {input_name: node_results[input_name] for input_name in node.input}
 
             # Constant inputs
-            curr_cst_inputs = {}
+            curr_cst_inputs: Dict[int, Union[QuantizedArray, numpy.ndarray]] = {}
             for input_idx, (input_name, value) in enumerate(curr_inputs.items()):
                 if not (input_name in self.quant_params or input_name in constants):
                     continue
 
-                # Initializers are ndarray
-                assert isinstance(value, numpy.ndarray) or numpy.isscalar(value)
-
-                curr_cst_inputs[input_idx] = (
-                    value
-                    if not quantized_op_class.must_quantize_input(input_idx)
-                    else self._process_initializer(self.n_bits_op_weights, value)
-                )
+                if quantized_op_class.must_quantize_input(input_idx):
+                    if isinstance(value, QuantizedArray):
+                        curr_cst_inputs[input_idx] = value
+                    else:
+                        # Initializers are ndarray or scalar
+                        assert isinstance(value, numpy.ndarray) or numpy.isscalar(value)
+                        curr_cst_inputs[input_idx] = self._process_initializer(
+                            self.n_bits_op_weights, value
+                        )
+                else:
+                    # Initializers are ndarray or scalar
+                    assert isinstance(value, numpy.ndarray) or numpy.isscalar(value)
+                    curr_cst_inputs[input_idx] = value
 
             has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
 
@@ -474,12 +481,43 @@ class ONNXConverter:
             # Otherwise use the original operator to operate on float values to do constant folding
             else:
                 # Get the non quantized values
+                # Note that we handle both numpy.array and QuantizedArray here.
+                # Inputs to a constant folding step are always float but may produce
+                # either numpy.array or QuantizedArray
                 real_cst_inputs = (
                     input.values if isinstance(input, QuantizedArray) else input
                     for input in curr_cst_inputs.values()
                 )
 
-                node_output = ONNX_OPS_TO_NUMPY_IMPL[op_type](*real_cst_inputs, **attributes)
+                # The output of a constant folding op can be either QuantizedArray or numpy.ndarray
+                node_output: Tuple[Union[numpy.ndarray, QuantizedArray], ...] = ()
+
+                if get_op_type(node) == QuantizedBrevitasQuant.op_type():
+                    list_real_cst_inputs = list(real_cst_inputs)
+                    quantizer = QuantizedBrevitasQuant(
+                        self.n_bits_model_outputs,
+                        node_integer_inputs,
+                        {
+                            1: list_real_cst_inputs[1],
+                            2: list_real_cst_inputs[2],
+                            3: list_real_cst_inputs[3],
+                        },
+                        self._get_input_quant_opts(curr_calibration_data, quantized_op_class),
+                        **attributes,
+                    )
+                    # The values to quantize may be stored in a QuantizedArray (for initializers
+                    # and constants), but they can also be float (produced by some other folded
+                    # operation).
+                    constant_values_to_quantize = (
+                        curr_cst_inputs[0]
+                        if isinstance(curr_cst_inputs[0], QuantizedArray)
+                        else self._process_initializer(self.n_bits_op_weights, curr_cst_inputs[0])
+                    )
+                    # QuantizedBrevitasQuant takes a single input
+                    quantizer.calibrate(constant_values_to_quantize.values)
+                    node_output = (quantizer(constant_values_to_quantize),)
+                else:
+                    node_output = ONNX_OPS_TO_NUMPY_IMPL[op_type](*real_cst_inputs, **attributes)
                 num_output = len(node_output)
                 assert_true(
                     (num_output) == 1,
@@ -585,10 +623,9 @@ class ONNXConverter:
             elif inp_idx in quantizers_for_input:
                 # If a QAT quantizer is applied to this input, use its output params that
                 # are determined from the ONNX file
-                opts = quantizers_for_input[inp_idx].input_quant_opts
+                opts = QuantizationOptions(quantizers_for_input[inp_idx].output_quant_opts.n_bits)
+                opts.copy_opts(quantizers_for_input[inp_idx].output_quant_opts)
                 # Set the same options as those produced by a QuantizedBrevitasQuant op
-                opts.is_qat = True
-                opts.is_precomputed_qat = True
                 q_input_list.append(
                     UniformQuantizer(
                         opts,
@@ -680,21 +717,25 @@ class PostTrainingAffineQuantization(ONNXConverter):
         )
 
     def _get_input_quant_opts(
-        self, values: Tuple[numpy.ndarray], quantized_op_class: Type["QuantizedOp"]
+        self,
+        values: Tuple[Union[numpy.ndarray, QuantizedArray], ...],
+        quantized_op_class: Type["QuantizedOp"],
     ):
         """Construct a quantization options set for the input of a layer.
 
         Inputs and activations require signed quantization.
 
         Args:
-            values (Tuple[numpy.ndarray]): calibration data for this op
+            values (Tuple[Union[numpy.ndarray, QuantizedArray], ...]): calibration data for this op
             quantized_op_class (Type["QuantizedOp"]): The quantized operator's class
 
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
 
-        is_signed = any(v.min() < 0 for v in values)
+        is_signed = any(v.min() < 0 for v in values if isinstance(v, numpy.ndarray)) or any(
+            v.values.min() < 0 for v in values if isinstance(v, QuantizedArray)
+        )
 
         # Some operators need to quantize their inputs using model_outputs instead of op_inputs in
         # order to reduce the impact of quantization.
@@ -795,7 +836,9 @@ class PostTrainingQATImporter(ONNXConverter):
         return QuantizedArray(n_bits, values, is_signed=True, is_symmetric=False, is_qat=True)
 
     def _get_input_quant_opts(
-        self, values: Tuple[numpy.ndarray], quantized_op_class: Type["QuantizedOp"]
+        self,
+        values: Tuple[Union[numpy.ndarray, QuantizedArray], ...],
+        quantized_op_class: Type["QuantizedOp"],
     ):
         """Construct a quantization options set for the input of a layer of a QAT network.
 
@@ -803,7 +846,7 @@ class PostTrainingQATImporter(ONNXConverter):
         (such as Gemm/Conv/Add).
 
         Args:
-            values (Tuple[numpy.ndarray]): calibration data for this op
+            values (Tuple[Union[numpy.ndarray, QuantizedArray], ...]): calibration data for this op
             quantized_op_class (Type["QuantizedOp"]): The quantized operator's class
 
         Returns:

@@ -1261,22 +1261,32 @@ def test_quantized_flatten(input_shape, expected_shape, axis, is_signed):
     assert numpy.all(q_reshaped.qvalues.shape == expected_shape)
 
 
-def test_brevitas_quant(check_r2_score):
+@pytest.mark.parametrize("is_signed", [True, False])
+@pytest.mark.parametrize("narrow", [True, False])
+def test_brevitas_quant(check_r2_score, is_signed: bool, narrow: bool):
     """Test the brevitas quantization op that produces a QuantizedArray."""
 
     idx_name = {"scale": 1, "zero_point": 2, "bit_width": 3}
 
-    quant = QuantizedBrevitasQuant(
-        7,
-        constant_inputs={
-            idx_name["scale"]: numpy.random.uniform(0.1, 10),
-            idx_name["zero_point"]: float(numpy.random.randint(-10, 10)),
-            idx_name["bit_width"]: numpy.random.randint(2, 16),
-        },
-        rounding_mode="ROUND",
-        signed=1,
-        narrow=0,
-    )
+    def create_layer(is_signed, narrow):
+        return QuantizedBrevitasQuant(
+            7,
+            constant_inputs={
+                idx_name["scale"]: numpy.random.uniform(0.1, 10),
+                idx_name["zero_point"]: float(numpy.random.randint(-10, 10)),
+                idx_name["bit_width"]: numpy.random.randint(2, 16),
+            },
+            rounding_mode="ROUND",
+            signed=is_signed,
+            narrow=narrow,
+        )
+
+    if not is_signed and narrow:
+        with pytest.raises(AssertionError, match=r"Can not use narrow range.*"):
+            quant = create_layer(1 if is_signed else 0, 1 if narrow else 0)
+        return
+
+    quant = create_layer(1 if is_signed else 0, 1 if narrow else 0)
 
     cinp = {
         1: 1.0,
@@ -1297,7 +1307,6 @@ def test_brevitas_quant(check_r2_score):
 
     res_fp32 = quant.calibrate(x)
     res_q = quant(q_data).dequant()
-
     check_r2_score(res_fp32, res_q)
 
 

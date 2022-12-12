@@ -40,10 +40,10 @@ ______________________________________________________________________
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `get_op_name`
+## <kbd>function</kbd> `get_op_type`
 
 ```python
-get_op_name(node)
+get_op_type(node)
 ```
 
 Construct the qualified name of the ONNX operator.

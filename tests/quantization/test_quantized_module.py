@@ -152,3 +152,57 @@ def test_raises_on_float_inputs(model, input_shape, dtype, err_msg):
         match=err_msg,
     ):
         quantized_model(numpy_input)
+
+
+@pytest.mark.parametrize("n_bits", [2, 7])
+@pytest.mark.parametrize(
+    "model, input_shape",
+    [
+        pytest.param(FC, (100, 32 * 32 * 3)),
+        pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
+    ],
+)
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.ReLU, id="ReLU"),
+    ],
+)
+def test_intermediary_values(n_bits, model, input_shape, activation_function):
+    """Check that all torch linear/conv layers return debug values in the QuantizedModule."""
+
+    torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model.eval()
+
+    # Create random input
+    numpy_input = numpy.random.uniform(size=input_shape)
+
+    torch_input = torch.from_numpy(numpy_input).float()
+    # Create corresponding numpy model
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input)
+
+    # Quantize with post-training static method
+    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
+    quantized_model = post_training_quant.quantize_module(numpy_input)
+
+    # Quantize input
+    qinput = quantized_model.quantize_input(numpy_input)
+    _, debug_values = quantized_model.forward(qinput, debug=True)
+
+    # Count the number of Gemm/Conv layers in the CML debug values
+    num_gemm_conv = 0
+    for layer_name in debug_values:
+        if "Gemm" not in layer_name and "Conv" not in layer_name:
+            continue
+
+        num_gemm_conv += 1
+
+    # Count the number of Gemm/Conv layers in the pytorch model
+    num_torch_gemm_conv = 0
+    for layer in torch_fc_model.modules():
+        if not isinstance(layer, (nn.Conv2d, nn.Linear)):
+            continue
+        num_torch_gemm_conv += 1
+
+    # Make sure we have debug output for all conv/gemm layers in CML
+    assert num_gemm_conv == num_torch_gemm_conv

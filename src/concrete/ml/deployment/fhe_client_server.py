@@ -1,6 +1,7 @@
 """APIs for FHE deployment."""
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -154,11 +155,15 @@ class FHEModelDev:
             "output_quantizers": [],
         }
         for quantizer in self.model.input_quantizers:
-            quantizer_dict = quantizer.__dict__
+            # The object __dict__ is not a copy and the values in the dict are the same instances
+            # as the original values. Modifying the __dict__ modifies the original values
+            quantizer_dict = deepcopy(quantizer.__dict__)
             serialized_processing["input_quantizers"].append(quantizer_dict)
 
         for quantizer in self.model.output_quantizers:
-            quantizer_dict = quantizer.__dict__
+            # The object __dict__ is not a copy and the values in the dict are the same instances
+            # as the original values. Modifying the __dict__ modifies the original values
+            quantizer_dict = deepcopy(quantizer.__dict__)
             serialized_processing["output_quantizers"].append(quantizer_dict)
 
         serialized_processing = self._clean_dict_types_for_json(serialized_processing)

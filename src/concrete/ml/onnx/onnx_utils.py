@@ -233,8 +233,8 @@ def get_attribute(attribute: onnx.AttributeProto) -> Any:
     return ATTR_GETTERS[attribute.type](attribute)
 
 
-def get_op_name(node):
-    """Construct the qualified name of the ONNX operator.
+def get_op_type(node):
+    """Construct the qualified type name of the ONNX operator.
 
     Args:
         node (Any): ONNX graph node

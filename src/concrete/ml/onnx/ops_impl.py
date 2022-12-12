@@ -13,7 +13,7 @@ from concrete.onnx import maxpool as cnp_maxpool
 from scipy import special
 from typing_extensions import SupportsIndex
 
-from ..common.debugging import assert_true
+from ..common.debugging import assert_false, assert_true
 from .onnx_impl_utils import (
     compute_onnx_pool_padding,
     numpy_onnx_pad,
@@ -1620,6 +1620,10 @@ def numpy_brevitas_quant(
     assert_true(signed in (1, 0), "Signed flag in Brevitas quantizer must be 0/1")
     assert_true(narrow in (1, 0), "Narrow range flag in Brevitas quantizer must be 0/1")
 
+    assert_false(
+        signed == 0 and narrow == 1,
+        "Can not use narrow range for non-signed Brevitas quantizers",
+    )
     # Compute the re-scaled values
     y = x / scale
     y = y + zero_point

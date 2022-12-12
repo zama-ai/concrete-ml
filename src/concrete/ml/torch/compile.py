@@ -7,7 +7,7 @@ from typing import Optional, Tuple, Union
 import numpy
 import onnx
 import torch
-from brevitas.export import BrevitasONNXManager
+from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 

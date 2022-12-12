@@ -36,7 +36,9 @@ class SparseQuantNeuralNetImpl(nn.Module):
         n_a_bits=3,
         n_accum_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         activation_function=nn.ReLU,
-    ):
+        quant_narrow=False,
+        quant_signed=True,
+    ):  # pylint: disable=too-many-arguments
         """Sparse Quantized Neural Network constructor.
 
         Args:
@@ -60,6 +62,8 @@ class SparseQuantNeuralNetImpl(nn.Module):
                 the default value for n_hidden_neurons_multiplier, 4, is safe to avoid overflow.
             activation_function: a torch class that is used to construct activation functions in
                 the network (e.g. torch.ReLU, torch.SELU, torch.Sigmoid, etc)
+            quant_narrow : whether this network should use narrow range quantized integer values
+            quant_signed : whether to use signed quantized integer values
 
         Raises:
             ValueError: if the parameters have invalid values or the computed accumulator bitwidth
@@ -95,11 +99,23 @@ class SparseQuantNeuralNetImpl(nn.Module):
             )
 
             quant_name = f"quant{idx}"
-            quantizer = qnn.QuantIdentity(bit_width=n_a_bits, return_quant_tensor=True)
+            quantizer = qnn.QuantIdentity(
+                bit_width=n_a_bits,
+                return_quant_tensor=True,
+                narrow_range=quant_narrow,
+                signed=quant_signed,
+            )
 
             layer_name = f"fc{idx}"
             layer = qnn.QuantLinear(
-                in_features, out_features, True, weight_bit_width=n_w_bits, bias_quant=None
+                in_features,
+                out_features,
+                True,
+                weight_bit_width=n_w_bits,
+                bias_quant=None,
+                weight_narrow_range=quant_narrow,
+                narrow_range=quant_narrow,
+                signed=quant_signed,
             )
 
             self.features.add_module(quant_name, quantizer)

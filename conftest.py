@@ -343,7 +343,7 @@ def check_is_good_execution_impl(
 def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
     succ = list(graph.graph.successors(graph.input_nodes[0]))
     if any(s.converted_to_table_lookup for s in succ):
-        raise AssertionError(f"Graph contains a TLU on an input node")
+        raise AssertionError(f"Graph contains a TLU on an input node: {str(graph.format())}")
 
 
 def check_graph_output_has_no_tlu_impl(graph: CNPGraph):

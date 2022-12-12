@@ -70,6 +70,7 @@ class QuantizedOp:
     _has_attr: bool
     _inputs_not_quantized: Set[str] = set()
     quantize_inputs_with_model_outputs_precision: bool = False
+    op_instance_name: Optional[str] = None
 
     # Determines if this op computes a tensor that is a graph output, i.e. a tensor
     # that will be decrypted and dequantized in the clear
@@ -79,6 +80,7 @@ class QuantizedOp:
     op_instance_name = None
 
     error_tracker: Optional[List[int]] = None
+    debug_value_tracker: Optional[Dict[str, Any]] = None
 
     POSITIONAL_ARGUMENTS_KINDS = {
         Parameter.POSITIONAL_ONLY,
@@ -163,14 +165,14 @@ class QuantizedOp:
         if self.can_fuse():
             self.input_quant_opts.is_qat = False
 
-    @property
-    def op_type(self):
+    @classmethod
+    def op_type(cls):
         """Get the type of this operation.
 
         Returns:
             op_type (str): The type of this operation, in the ONNX referential
         """
-        return self._impl_for_op_named
+        return cls._impl_for_op_named
 
     @property
     def int_input_names(self):
@@ -401,7 +403,11 @@ class QuantizedOp:
                 # use the .values directly (see else branch below). We need the quantization
                 # stats to generate the quantization code, they cannot be computed on the fly.
 
-                if quant_opts.is_equal(input_.quantizer.quant_options):
+                # Conv/Matmul layers have quantization options initialized by the PTQ default,
+                # but when parsing the ONNX graph, some options can be overwritten. Thus
+                # when evaluating QAT layers we ignore one of these options to allow the
+                # override.
+                if quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True):
                     # Pass-through when the input is already quantized in
                     # the manner that this op requires: use the qvalues directly,
                     # they will then be used by this quantized op's q_impl
@@ -440,6 +446,16 @@ class QuantizedOp:
                 prepared_inputs[curr_input_fill_idx] = input_.values
 
             curr_input_fill_idx += 1
+
+        if self.debug_value_tracker is not None:
+            # For mypy
+            assert self.debug_value_tracker is not None
+            assert self.op_instance_name is not None
+
+            # pylint: disable-next=unsupported-assignment-operation
+            self.debug_value_tracker[self.op_instance_name] = {
+                k: prepared_inputs[k] for k in range(len(prepared_inputs))
+            }
 
         return prepared_inputs
 
@@ -626,7 +642,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
     def make_output_quant_parameters(
         self,
         q_values: Union[numpy.ndarray, Any],
-        scale: float,
+        scale: numpy.float64,
         zero_point: Union[int, float, numpy.ndarray],
     ) -> QuantizedArray:
         """Build a quantized array from quantized integer results of the op and quantization params.
