@@ -46,7 +46,7 @@
   - [FHE Op-graph design](developer-guide/fhe-op-graphs.md)
   - [External Libraries](developer-guide/external_libraries.md)
 - [API](developer-guide/api/README.md)
-  <begin>
+  <!-- auto-created, do not edit, begin -->
   - [concrete.ml.common.check_inputs.md](developer-guide/api/concrete.ml.common.check_inputs.md)
   - [concrete.ml.common.debugging.custom_assert.md](developer-guide/api/concrete.ml.common.debugging.custom_assert.md)
   - [concrete.ml.common.debugging.md](developer-guide/api/concrete.ml.common.debugging.md)
@@ -85,4 +85,4 @@
   - [concrete.ml.torch.md](developer-guide/api/concrete.ml.torch.md)
   - [concrete.ml.torch.numpy_module.md](developer-guide/api/concrete.ml.torch.numpy_module.md)
   - [concrete.ml.version.md](developer-guide/api/concrete.ml.version.md)
-  <end>
+  <!-- auto-created, do not edit, end -->

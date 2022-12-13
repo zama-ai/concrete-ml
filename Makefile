@@ -343,6 +343,9 @@ apidocs:
 		--src-base-url="https://github.com/zama-ai/concrete-ml-internal/tree/main/" \
 		--no-watermark \
 		concrete.ml
+
+	# Update our summary
+	./script/doc_utils/update_apidocs_files_in_SUMMARY.sh
 	"$(MAKE)" mdformat
 
 .PHONY: check_apidocs # Check that API docs are ok and
