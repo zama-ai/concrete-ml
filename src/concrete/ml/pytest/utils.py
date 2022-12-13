@@ -5,6 +5,7 @@ import numpy
 import pytest
 from torch import nn
 
+from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
 from concrete.ml.sklearn import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,
@@ -36,6 +37,10 @@ regressor_models = [
     LinearSVR,
     PoissonRegressor,
     TweedieRegressor,
+    partial(TweedieRegressor, link="auto", power=0.0),
+    partial(TweedieRegressor, link="auto", power=2.8),
+    partial(TweedieRegressor, link="log", power=1.0),
+    partial(TweedieRegressor, link="identity", power=0.0),
     DecisionTreeRegressor,
     RandomForestRegressor,
     partial(
@@ -82,12 +87,12 @@ classifiers = [
             "n_samples": 1000,
             "n_features": 10,
             "n_classes": 2
-            if isinstance(model, partial) and "NeuralNet" in model.func.__name__
+            if "NeuralNet" in get_model_name(model)
             else n_classes,  # FIXME #2402, qnns do not have multiclass yet
             "n_informative": 10,
             "n_redundant": 0,
         },
-        id=model.__name__ if not isinstance(model, partial) else model.func.__name__,
+        id=get_model_name(model),
     )
     for model in classifier_models
     for n_classes in [2, 4]
@@ -101,14 +106,16 @@ regressors = [
         model,
         {
             "dataset": "regression",
-            "strictly_positive": model in [GammaRegressor, PoissonRegressor, TweedieRegressor],
+            "strictly_positive": is_model_class_in_a_list(
+                model, [GammaRegressor, PoissonRegressor, TweedieRegressor]
+            ),
             "n_samples": 200,
             "n_features": 10,
             "n_informative": 10,
             "n_targets": 2 if model == LinearRegression else 1,
             "noise": 0,
         },
-        id=model.__name__ if not isinstance(model, partial) else model.func.__name__,
+        id=get_model_name(model),
     )
     for model in regressor_models
 ]
@@ -145,6 +152,9 @@ def sanitize_test_and_train_datasets(model, x, y):
                 # Reshape y_train and y_test if 1d (regression for neural nets)
                 if y_train.ndim == 1:
                     y_train = y_train.reshape(-1, 1).astype(numpy.float32)
+        else:
+            assert model.func in [TweedieRegressor]
+            model_params = {}
     elif model in [XGBClassifier, RandomForestClassifier, XGBRegressor]:
         model_params = {
             "n_estimators": 5,

@@ -2,6 +2,7 @@
 
 import tempfile
 import warnings
+from functools import partial
 from shutil import copyfile
 
 import numpy
@@ -75,6 +76,13 @@ def test_client_server_sklearn(
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Tests the encrypt decrypt api."""
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2756
+    # We currently have issues with some TweedieRegressor's
+    if isinstance(model, partial):
+        if model.func.__name__ == "TweedieRegressor":
+            if model.keywords.get("link") == "log" or model.keywords.get("power") != 0:
+                pytest.skip("Waiting for #2756 fix")
 
     # Generate random data
     x, y = load_data(**parameters)

@@ -1,6 +1,7 @@
 """Tests common to all sklearn models."""
 import inspect
 import warnings
+from functools import partial
 
 import numpy
 import pytest
@@ -18,18 +19,20 @@ from concrete.ml.pytest.utils import (
 def test_sklearn_args():
     """Check that all arguments from the underlying sklearn model are exposed."""
     test_counter = 0
-    skip_counter = 0
+    skipped = []
     for model_class in classifier_models + regressor_models:
+        if isinstance(model_class, partial):
+            model_class = model_class.func
         if hasattr(model_class, "sklearn_alg"):
             assert not set(inspect.getfullargspec(model_class.sklearn_alg).args) - set(
                 inspect.getfullargspec(model_class).args
             )
             test_counter += 1
         else:
-            skip_counter += 1
+            skipped.append(model_class.__name__)
 
-    assert test_counter == 16
-    assert skip_counter == 2
+    assert test_counter == 20
+    assert skipped == ["NeuralNetClassifier", "NeuralNetRegressor"]
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)

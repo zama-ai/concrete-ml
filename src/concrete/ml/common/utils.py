@@ -1,6 +1,7 @@
 """Utils that can be re-used by other pieces of code in the module."""
 
 import string
+from functools import partial
 from types import FunctionType
 from typing import Callable, Dict, Iterable, Optional, Tuple
 
@@ -159,3 +160,36 @@ def check_there_is_no_p_error_options_in_configuration(configuration):
             configuration.global_p_error is None,
             "Don't set global_p_error in configuration, use kwargs",
         )
+
+
+def is_model_class_in_a_list(model_class, a_list):
+    """Say if model_class (which may be a partial()) is an element of a_list.
+
+    Args:
+        model_class: the model
+        a_list: the list in which to look
+
+    Returns:
+        whether the class is in the list
+
+    """
+    if isinstance(model_class, partial):
+        return model_class.func in a_list
+
+    return model_class in a_list
+
+
+def get_model_name(model_class):
+    """Return a model (which may be a partial()) name.
+
+    Args:
+        model_class: the model
+
+    Returns:
+        the class name
+
+    """
+    if isinstance(model_class, partial):
+        return model_class.func.__name__
+
+    return model_class.__name__
