@@ -128,13 +128,17 @@ Full, comprehensive documentation is available here: [https://docs.zama.ai/concr
 
 Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, several complete use-cases are explored:
 
-- [MNIST](use_case_examples/mnist):a python script and notebook showing quantization-aware training following FHE constraints. The model is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete-ML.
+- [MNIST](use_case_examples/mnist): a python script and notebook showing quantization-aware training following FHE constraints. The model is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete-ML.
 
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): a notebook, which gives a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Done with XGBoost from Concrete-ML. It comes as a companion of [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 
 - [Sentiment analysis with transformers](use_case_examples/sentiment-analysis-with-transformer): a gradio demo which predicts if a tweet / short message is positive, negative or neutral, in FHE of course! The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on Hugging Face. And read the official [blog post](https://huggingface.co/blog/sentiment-analysis-fhe) explaining how we do it!
 
 - [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar_brevitas_training): code for training and evaluating a VGG-like neural network using Brevitas, and a script to run the neural network in FHE. Our simulations with the Virtual Library show an accuracy of 88.7%. Running inferences in FHE is a work in progress.
+
+- [Running the first (expensive) layer(s) of a neural network in clear, on the client side](use_case_examples/cifar_10_with_model_splitting): we explain how to split an expensive neural network model in two, to execute the first part on the client side in clear, then to encrypt the intermediate result in FHE, then to finalize the computation in FHE. Our tutorial is also an experience on CIFAR10 with a limitation to 8b PBS, which achieves 62% accuracy, which is not that bad in such constrains.
+
+- [Encrypted image filtering](use_case_examples/image_filtering): finally, the live demo for our [6-min](https://6min.zama.ai) is available, in the form of a gradio application. We take encrypted images, and apply some filters (for example black-and-white, ridge detection, or your own filter).
 
 More generally, if you have built awesome projects using Concrete-ML, feel free to let us know and we'll link to it!
 
