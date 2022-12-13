@@ -8,7 +8,7 @@ ONNX ops implementation in python + numpy.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L20"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cast_to_float`
 
@@ -28,7 +28,7 @@ Cast values to floating points.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `onnx_func_raw_args`
 
@@ -48,7 +48,7 @@ Decorate a numpy onnx function to flag the raw/non quantized inputs.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_where_body`
 
@@ -72,7 +72,7 @@ This function is not mapped to any ONNX operator (as opposed to numpy_where). It
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_where`
 
@@ -94,7 +94,7 @@ Compute the equivalent of numpy.where.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_add`
 
@@ -117,7 +117,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Add-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_constant`
 
@@ -139,7 +139,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Constant-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L300"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_matmul`
 
@@ -162,7 +162,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#MatMul-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_relu`
 
@@ -184,7 +184,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Relu-14
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L315"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sigmoid`
 
@@ -206,7 +206,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sigmoid-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_softmax`
 
@@ -232,7 +232,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#softmax-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L373"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cos`
 
@@ -254,7 +254,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Cos-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L366"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cosh`
 
@@ -276,7 +276,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Cosh-9
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L380"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sin`
 
@@ -298,7 +298,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sin-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L421"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sinh`
 
@@ -320,7 +320,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sinh-9
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L408"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L437"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_tan`
 
@@ -342,7 +342,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Tan-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L453"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_tanh`
 
@@ -364,7 +364,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Tanh-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L469"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_acos`
 
@@ -386,7 +386,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Acos-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L450"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L485"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_acosh`
 
@@ -408,7 +408,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Acosh-9
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L464"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_asin`
 
@@ -430,7 +430,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Asin-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L478"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L517"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_asinh`
 
@@ -452,7 +452,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Asinh-9
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L492"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_atan`
 
@@ -474,7 +474,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Atan-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L506"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_atanh`
 
@@ -496,7 +496,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Atanh-9
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_elu`
 
@@ -519,7 +519,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Elu-6
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L581"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_selu`
 
@@ -547,7 +547,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Selu-6
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L559"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L603"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_celu`
 
@@ -570,7 +570,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Celu-12
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L619"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_leakyrelu`
 
@@ -593,7 +593,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LeakyRelu-6
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L591"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L635"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_thresholdedrelu`
 
@@ -616,7 +616,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#ThresholdedRelu-10
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L610"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_hardsigmoid`
 
@@ -644,7 +644,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#HardSigmoid-6
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L629"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_softplus`
 
@@ -666,7 +666,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Softplus-1
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L644"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_abs`
 
@@ -688,7 +688,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Abs-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L659"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L707"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_div`
 
@@ -711,7 +711,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Div-14
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L680"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L731"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_mul`
 
@@ -734,7 +734,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Mul-14
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L696"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sub`
 
@@ -757,7 +757,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sub-14
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L712"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L769"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_log`
 
@@ -779,7 +779,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Log-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L812"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_erf`
 
@@ -801,7 +801,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Erf-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L765"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L829"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_hardswish`
 
@@ -823,7 +823,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#hardswish-14
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L784"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L850"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_exp`
 
@@ -845,7 +845,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Exp-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L799"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L867"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_equal`
 
@@ -868,7 +868,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L815"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L886"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_not`
 
@@ -890,7 +890,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L831"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L904"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_not_float`
 
@@ -912,7 +912,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L846"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L921"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater`
 
@@ -935,7 +935,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L863"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L941"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater_float`
 
@@ -958,7 +958,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L879"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L960"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater_or_equal`
 
@@ -981,7 +981,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L896"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater_or_equal_float`
 
@@ -1004,7 +1004,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L912"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L999"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less`
 
@@ -1027,7 +1027,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L929"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less_float`
 
@@ -1050,7 +1050,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1038"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less_or_equal`
 
@@ -1073,7 +1073,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L962"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1058"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less_or_equal_float`
 
@@ -1096,7 +1096,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L978"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1077"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_identity`
 
@@ -1118,7 +1118,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Identity-14
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1014"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_transpose`
 
@@ -1141,17 +1141,17 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Transpose-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1096"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `torch_avgpool`
+## <kbd>function</kbd> `numpy_avgpool`
 
 ```python
-torch_avgpool(
+numpy_avgpool(
     x: ndarray,
     ceil_mode: int,
     kernel_shape: Tuple[int, ],
-    pads: Tuple[int, ],
-    strides: Tuple[int, ]
+    pads: Tuple[int, ] = None,
+    strides: Tuple[int, ] = None
 ) → Tuple[ndarray]
 ```
 
@@ -1165,9 +1165,9 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
 - <b>`x`</b> (numpy.ndarray):  input data (many dtypes are supported). Shape is N x C x H x W for 2d
 - <b>`ceil_mode`</b> (int):  ONNX rounding parameter, expected 0 (torch style dimension computation)
-- <b>`kernel_shape`</b> (Tuple\[int\]):  shape of the kernel. Should have 2 elements for 2d conv
-- <b>`pads`</b> (Tuple\[int\]):  padding in ONNX format (begin, end) on each axis
-- <b>`strides`</b> (Tuple\[int\]):  stride of the convolution on each axis
+- <b>`kernel_shape`</b> (Tuple\[int, ...\]):  shape of the kernel. Should have 2 elements for 2d conv
+- <b>`pads`</b> (Tuple\[int, ...\]):  padding in ONNX format (begin, end) on each axis
+- <b>`strides`</b> (Tuple\[int, ...\]):  stride of the convolution on each axis
 
 **Returns:**
 
@@ -1180,7 +1180,48 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_maxpool`
+
+```python
+numpy_maxpool(
+    x: ndarray,
+    kernel_shape: Tuple[int, ],
+    strides: Tuple[int, ] = None,
+    auto_pad: str = 'NOTSET',
+    pads: Tuple[int, ] = None,
+    dilations: Optional[Tuple[int, ], List[int]] = None,
+    ceil_mode: int = 0,
+    storage_order: int = 0
+) → Tuple[ndarray]
+```
+
+Compute Max Pooling using Torch.
+
+Currently supports 2d max pooling with torch semantics. This function is ONNX compatible.
+
+See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#MaxPool
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  the input
+- <b>`kernel_shape`</b> (Union\[Tuple\[int, ...\], List\[int\]\]):  shape of the kernel
+- <b>`strides`</b> (Optional\[Union\[Tuple\[int, ...\], List\[int\]\]\]):  stride along each spatial axis  set to 1 along each spatial axis if not set
+- <b>`auto_pad`</b> (str):  padding strategy, default = "NOTSET"
+- <b>`pads`</b> (Optional\[Union\[Tuple\[int, ...\], List\[int\]\]\]):  padding for the beginning and ending  along each spatial axis (D1_begin, D2_begin, ..., D1_end, D2_end, ...)  set to 0 along each spatial axis if not set
+- <b>`dilations`</b> (Optional\[Union\[Tuple\[int, ...\], List\[int\]\]\]):  dilation along each spatial axis  set to 1 along each spatial axis if not set
+- <b>`ceil_mode`</b> (int):  ceiling mode, default = 1
+- <b>`storage_order`</b> (int):  storage order, 0 for row major, 1 for column major, default = 0
+
+**Returns:**
+
+- <b>`res`</b> (numpy.ndarray):  a tensor of size (N x InChannels x OutHeight x OutWidth).
+- <b>`See https`</b>: //pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1362"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cast`
 
@@ -1205,7 +1246,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1204"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1380"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_batchnorm`
 
@@ -1247,7 +1288,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#BatchNormalization-
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1451"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_flatten`
 
@@ -1270,7 +1311,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Flatten-13.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1294"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1469"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or`
 
@@ -1293,7 +1334,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1310"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1488"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or_float`
 
@@ -1316,7 +1357,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1506"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_round`
 
@@ -1338,7 +1379,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Round-11 Remark tha
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1523"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_pow`
 
@@ -1361,7 +1402,146 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Pow-13
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_floor`
+
+```python
+numpy_floor(x: ndarray) → Tuple[ndarray]
+```
+
+Compute Floor in numpy according to ONNX spec.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Floor-1
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  Input tensor
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  Output tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1659"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_max`
+
+```python
+numpy_max(a: ndarray, b: ndarray) → Tuple[ndarray]
+```
+
+Compute Max in numpy according to ONNX spec.
+
+Computes the max between the first input and a float constant.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
+
+**Args:**
+
+- <b>`a`</b> (numpy.ndarray):  Input tensor
+- <b>`b`</b> (numpy.ndarray):  Constant tensor to compare to the first input
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  Output tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1676"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_min`
+
+```python
+numpy_min(a: ndarray, b: ndarray) → Tuple[ndarray]
+```
+
+Compute Min in numpy according to ONNX spec.
+
+Computes the minimum between the first input and a float constant.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
+
+**Args:**
+
+- <b>`a`</b> (numpy.ndarray):  Input tensor
+- <b>`b`</b> (numpy.ndarray):  Constant tensor to compare to the first input
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  Output tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1693"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_sign`
+
+```python
+numpy_sign(x: ndarray) → Tuple[ndarray]
+```
+
+Compute Sign in numpy according to ONNX spec.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  Input tensor
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  Output tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1707"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_neg`
+
+```python
+numpy_neg(x: ndarray) → Tuple[ndarray]
+```
+
+Compute Negative in numpy according to ONNX spec.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  Input tensor
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  Output tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L1721"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_concatenate`
+
+```python
+numpy_concatenate(*x: ndarray, axis: int) → Tuple[ndarray]
+```
+
+Apply concatenate in numpy according to ONNX spec.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#concat-13
+
+**Args:**
+
+- <b>`*x (numpy.ndarray)`</b>:  Input tensors to be concatenated.
+- <b>`axis`</b> (int):  Which axis to concat on.
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  Output tensor.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ONNXMixedFunction`
 
@@ -1369,7 +1549,7 @@ A mixed quantized-raw valued onnx function.
 
 ONNX functions will take inputs which can be either quantized or float. Some functions only take quantized inputs, but some functions take both types. For mixed functions we need to tag the parameters that do not need quantization. Thus quantized ops can know which inputs are not QuantizedArray and we avoid unnecessary wrapping of float values as QuantizedArrays.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/ops_impl.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 

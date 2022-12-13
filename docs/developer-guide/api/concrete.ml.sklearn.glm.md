@@ -8,19 +8,27 @@ Implement sklearn's Generalized Linear Models (GLM).
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L176"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PoissonRegressor`
 
 A Poisson regression model with FHE.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L181"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+**Parameters:**
+
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
+
+For more details on PoissonRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    n_bits: 'Union[int, dict]' = 2,
+    n_bits: 'Union[int, dict]' = 8,
     alpha: 'float' = 1.0,
     fit_intercept: 'bool' = True,
     max_iter: 'int' = 100,
@@ -32,70 +40,7 @@ __init__(
 
 ______________________________________________________________________
 
-#### <kbd>property</kbd> fhe_circuit
-
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> input_quantizers
-
-Get the input quantizers.
-
-**Returns:**
-
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> onnx_model
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> output_quantizers
-
-Get the input quantizers.
-
-**Returns:**
-
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> quantize_input
-
-Get the input quantization function.
-
-**Returns:**
-
-- <b>`Callable `</b>:  function that quantizes the input
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `fit`
-
-```python
-fit(X, y: 'ndarray', *args, **kwargs) → None
-```
-
-Fit the GLM regression quantized model.
-
-**Args:**
-
-- <b>`X `</b>:  The training data, which can be:  * numpy arrays  * torch tensors  * pandas DataFrame or Series
-- <b>`y`</b> (numpy.ndarray):  The target data.
-- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.
-- <b>`**kwargs`</b>:  The keyword arguments to pass to the sklearn linear model.
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -119,7 +64,7 @@ Post-processing the predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -142,19 +87,27 @@ Predict on user data using either the quantized clear model, implemented with te
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GammaRegressor`
 
 A Gamma regression model with FHE.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+**Parameters:**
+
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
+
+For more details on GammaRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    n_bits: 'Union[int, dict]' = 2,
+    n_bits: 'Union[int, dict]' = 8,
     alpha: 'float' = 1.0,
     fit_intercept: 'bool' = True,
     max_iter: 'int' = 100,
@@ -166,70 +119,7 @@ __init__(
 
 ______________________________________________________________________
 
-#### <kbd>property</kbd> fhe_circuit
-
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> input_quantizers
-
-Get the input quantizers.
-
-**Returns:**
-
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> onnx_model
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> output_quantizers
-
-Get the input quantizers.
-
-**Returns:**
-
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> quantize_input
-
-Get the input quantization function.
-
-**Returns:**
-
-- <b>`Callable `</b>:  function that quantizes the input
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `fit`
-
-```python
-fit(X, y: 'ndarray', *args, **kwargs) → None
-```
-
-Fit the GLM regression quantized model.
-
-**Args:**
-
-- <b>`X `</b>:  The training data, which can be:  * numpy arrays  * torch tensors  * pandas DataFrame or Series
-- <b>`y`</b> (numpy.ndarray):  The target data.
-- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.
-- <b>`**kwargs`</b>:  The keyword arguments to pass to the sklearn linear model.
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -253,7 +143,7 @@ Post-processing the predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -276,19 +166,27 @@ Predict on user data using either the quantized clear model, implemented with te
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TweedieRegressor`
 
 A Tweedie regression model with FHE.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L261"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+**Parameters:**
+
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
+
+For more details on TweedieRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    n_bits: 'Union[int, dict]' = 2,
+    n_bits: 'Union[int, dict]' = 8,
     power: 'float' = 0.0,
     alpha: 'float' = 1.0,
     fit_intercept: 'bool' = True,
@@ -302,70 +200,7 @@ __init__(
 
 ______________________________________________________________________
 
-#### <kbd>property</kbd> fhe_circuit
-
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> input_quantizers
-
-Get the input quantizers.
-
-**Returns:**
-
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> onnx_model
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> output_quantizers
-
-Get the input quantizers.
-
-**Returns:**
-
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> quantize_input
-
-Get the input quantization function.
-
-**Returns:**
-
-- <b>`Callable `</b>:  function that quantizes the input
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `fit`
-
-```python
-fit(X, y: 'ndarray', *args, **kwargs) → None
-```
-
-Fit the GLM regression quantized model.
-
-**Args:**
-
-- <b>`X `</b>:  The training data, which can be:  * numpy arrays  * torch tensors  * pandas DataFrame or Series
-- <b>`y`</b> (numpy.ndarray):  The target data.
-- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.
-- <b>`**kwargs`</b>:  The keyword arguments to pass to the sklearn linear model.
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -389,7 +224,7 @@ Post-processing the predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 

@@ -8,13 +8,13 @@ Implements the conversion of a tree model to a numpy function.
 
 ## **Global Variables**
 
-- **MAXIMUM_TLU_BIT_WIDTH**
+- **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
 - **OPSET_VERSION_FOR_ONNX_EXPORT**
 - **EXPECTED_NUMBER_OF_OUTPUTS_PER_TASK**
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_to_numpy`
 
@@ -45,7 +45,7 @@ Convert the tree inference to a numpy functions using Hummingbird.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `Task`
 

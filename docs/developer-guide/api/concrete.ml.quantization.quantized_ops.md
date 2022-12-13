@@ -8,7 +8,7 @@ Quantized versions of the ONNX operators for post training quantization.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSigmoid`
 
@@ -16,7 +16,17 @@ Quantized sigmoid op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L22"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L50"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedHardSigmoid`
 
@@ -24,7 +34,17 @@ Quantized HardSigmoid op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedRelu`
 
@@ -32,7 +52,17 @@ Quantized Relu op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L34"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L62"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedPRelu`
 
@@ -40,7 +70,17 @@ Quantized PRelu op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedLeakyRelu`
 
@@ -48,7 +88,17 @@ Quantized LeakyRelu op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedHardSwish`
 
@@ -56,7 +106,17 @@ Quantized Hardswish op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedElu`
 
@@ -64,7 +124,17 @@ Quantized Elu op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L58"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSelu`
 
@@ -72,7 +142,17 @@ Quantized Selu op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedCelu`
 
@@ -80,7 +160,17 @@ Quantized Celu op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedClip`
 
@@ -88,7 +178,17 @@ Quantized clip op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedRound`
 
@@ -96,7 +196,17 @@ Quantized round op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedPow`
 
@@ -104,47 +214,25 @@ Quantized pow op.
 
 Only works for a float constant power. This operation will be fused to a (potentially larger) TLU.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `__init__`
-
-```python
-__init__(
-    n_bits_output: int,
-    int_input_names: Set[str] = None,
-    constant_inputs: Optional[Dict[str, Any], Dict[int, Any]] = None,
-    input_quant_opts: QuantizationOptions = None,
-    **attrs
-) → None
-```
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse() → bool
-```
-
-Determine if this op can be fused.
-
-Power raising can be fused and computed in float when a single integer tensor generates both the operands. For example in the formula: f(x) = x \*\* (x + 1)  where x is an integer tensor.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  Can fuse
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedGemm`
 
 Quantized Gemm op.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -160,25 +248,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse()
-```
-
-Determine if this op can be fused.
-
-Gemm operation can not be fused since it must be performed over integer tensors and it combines different values of the input tensors.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  False, this operation can not be fused as it adds different encrypted integers
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -188,13 +268,13 @@ q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L270"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedMatMul`
 
 Quantized MatMul op.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L129"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -210,25 +290,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse()
-```
-
-Determine if this op can be fused.
-
-Gemm operation can not be fused since it must be performed over integer tensors and it combines different values of the input tensors.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  False, this operation can not be fused as it adds different encrypted integers
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L154"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -238,7 +310,7 @@ q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L276"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedAdd`
 
@@ -248,7 +320,17 @@ Can add either two variables (both encrypted) or a variable and a constant
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L371"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -266,7 +348,7 @@ Add operation can be computed in float and fused if it operates over inputs prod
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -276,7 +358,7 @@ q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L393"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedTanh`
 
@@ -284,7 +366,17 @@ Quantized Tanh op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L391"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L399"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSoftplus`
 
@@ -292,7 +384,17 @@ Quantized Softplus op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L397"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L405"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedExp`
 
@@ -300,7 +402,17 @@ Quantized Exp op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L411"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedLog`
 
@@ -308,7 +420,17 @@ Quantized Log op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L409"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedAbs`
 
@@ -316,7 +438,17 @@ Quantized Abs op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L423"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedIdentity`
 
@@ -324,7 +456,17 @@ Quantized Identity op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L420"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L428"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -334,7 +476,7 @@ q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedReshape`
 
@@ -342,7 +484,17 @@ Quantized Reshape op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L440"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -363,13 +515,13 @@ Reshape the input integer encrypted tensor.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L465"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L473"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedConv`
 
 Quantized Conv op.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L470"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L478"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -392,33 +544,25 @@ Construct the quantized convolution operator and retrieve parameters.
 - <b>`constant_inputs`</b>:  the weights and activations
 - <b>`input_quant_opts`</b>:  options for the input quantizer
 - <b>`attrs`</b>:  convolution options
-- <b>`dilations`</b> (Tuple\[int\]):  dilation of the kernel, default 1 on all dimensions.
-- <b>`group`</b> (int):  number of convolution groups, default 1
+- <b>`dilations`</b> (Tuple\[int\]):  dilation of the kernel. Default to 1 on all dimensions.
+- <b>`group`</b> (int):  number of convolution groups. Default to 1.
 - <b>`kernel_shape`</b> (Tuple\[int\]):  shape of the kernel. Should have 2 elements for 2d conv
 - <b>`pads`</b> (Tuple\[int\]):  padding in ONNX format (begin, end) on each axis
 - <b>`strides`</b> (Tuple\[int\]):  stride of the convolution on each axis
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L649"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse() → bool
-```
-
-Determine if this op can be fused.
-
-Conv operation can not be fused since it must be performed over integer tensors and it combines different elements of the input tensors.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  False, this operation can not be fused as it adds different encrypted integers
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L534"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L530"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -444,13 +588,13 @@ Allows an optional quantized bias.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L662"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L701"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedAvgPool`
 
 Quantized Average Pooling op.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L668"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L707"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -466,25 +610,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse() → bool
-```
-
-Determine if this op can be fused.
-
-Avg Pooling operation can not be fused since it must be performed over integer tensors and it combines different elements of the input tensors.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  False, this operation can not be fused as it adds different encrypted integers
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L744"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -494,13 +630,13 @@ q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L766"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L821"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `QuantizedPad`
+## <kbd>class</kbd> `QuantizedMaxPool`
 
-Quantized Padding op.
+Quantized Max Pooling op.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L827"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -516,7 +652,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L793"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L924"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -526,23 +672,31 @@ can_fuse() → bool
 
 Determine if this op can be fused.
 
-Pad operation can not be fused since it must be performed over integer tensors.
+Max Pooling operation can not be fused since it must be performed over integer tensors and it combines different elements of the input tensors.
 
 **Returns:**
 
-- <b>`bool`</b>:  False, this operation can not be fused as it is manipulates integer tensors
+- <b>`bool`</b>:  False, this operation can not be fused as it adds different encrypted integers
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L804"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L866"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `QuantizedWhere`
+### <kbd>method</kbd> `q_impl`
 
-Where operator on quantized arrays.
+```python
+q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
+```
 
-Supports only constants for the results produced on the True/False branches.
+______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L813"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L936"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedPad`
+
+Quantized Padding op.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L941"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -558,7 +712,69 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L836"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L963"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `can_fuse`
+
+```python
+can_fuse() → bool
+```
+
+Determine if this op can be fused.
+
+Pad operation cannot be fused since it must be performed over integer tensors.
+
+**Returns:**
+
+- <b>`bool`</b>:  False, this operation cannot be fused as it is manipulates integer tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L974"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedWhere`
+
+Where operator on quantized arrays.
+
+Supports only constants for the results produced on the True/False branches.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L983"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(
+    n_bits_output: int,
+    int_input_names: Set[str] = None,
+    constant_inputs: Optional[Dict[str, Any], Dict[int, Any]] = None,
+    input_quant_opts: QuantizationOptions = None,
+    **attrs
+) → None
+```
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1006"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedCast`
 
@@ -568,7 +784,17 @@ In FHE we only support a limited number of output types. Booleans are cast to in
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L845"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1015"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedGreater`
 
@@ -576,7 +802,7 @@ Comparison operator >.
 
 Only supports comparison with a constant.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L854"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -592,7 +818,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L869"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1039"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedGreaterOrEqual`
 
@@ -600,7 +836,7 @@ Comparison operator >=.
 
 Only supports comparison with a constant.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L878"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1048"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -616,7 +852,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L893"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1063"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedLess`
 
@@ -624,7 +870,7 @@ Comparison operator \<.
 
 Only supports comparison with a constant.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L902"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1072"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -640,7 +886,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L917"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1087"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedLessOrEqual`
 
@@ -648,7 +904,7 @@ Comparison operator \<=.
 
 Only supports comparison with a constant.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L926"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1096"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -664,7 +920,17 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L941"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedOr`
 
@@ -672,41 +938,19 @@ Or operator ||.
 
 This operation is not really working as a quantized operation. It just works when things got fused, as in e.g. Act(x) = x || (x + 42))
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L950"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `__init__`
-
-```python
-__init__(
-    n_bits_output: int,
-    int_input_names: Set[str] = None,
-    constant_inputs: Optional[Dict[str, Any], Dict[int, Any]] = None,
-    input_quant_opts: QuantizationOptions = None,
-    **attrs
-) → None
-```
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L969"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse() → bool
-```
-
-Determine if this op can be fused.
-
-Or can be fused and computed in float when a single integer tensor generates both the operands. For example in the formula: f(x) = x || (x + 1)  where x is an integer tensor.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  Can fuse
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L982"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1121"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedDiv`
 
@@ -714,41 +958,19 @@ Div operator /.
 
 This operation is not really working as a quantized operation. It just works when things got fused, as in e.g. Act(x) = 1000 / (x + 42))
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L991"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `__init__`
-
-```python
-__init__(
-    n_bits_output: int,
-    int_input_names: Set[str] = None,
-    constant_inputs: Optional[Dict[str, Any], Dict[int, Any]] = None,
-    input_quant_opts: QuantizationOptions = None,
-    **attrs
-) → None
-```
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1010"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse() → bool
-```
-
-Determine if this op can be fused.
-
-Div can be fused and computed in float when a single integer tensor generates both the operands. For example in the formula: f(x) = x / (x + 1)  where x is an integer tensor.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  Can fuse
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1023"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1131"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedMul`
 
@@ -756,41 +978,19 @@ Multiplication operator.
 
 Only multiplies an encrypted tensor with a float constant for now. This operation will be fused to a (potentially larger) TLU.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1032"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `__init__`
-
-```python
-__init__(
-    n_bits_output: int,
-    int_input_names: Set[str] = None,
-    constant_inputs: Optional[Dict[str, Any], Dict[int, Any]] = None,
-    input_quant_opts: QuantizationOptions = None,
-    **attrs
-) → None
-```
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1051"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
 
-### <kbd>method</kbd> `can_fuse`
-
-```python
-can_fuse() → bool
-```
-
-Determine if this op can be fused.
-
-Multiplication can be fused and computed in float when a single integer tensor generates both the operands. For example in the formula: f(x) = x * (x + 1)  where x is an integer tensor.
+Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`bool`</b>:  Can fuse
+- <b>`List[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1064"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSub`
 
@@ -800,7 +1000,17 @@ This works the same as addition on both encrypted - encrypted and on encrypted -
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L371"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -818,7 +1028,7 @@ Add operation can be computed in float and fused if it operates over inputs prod
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -828,7 +1038,7 @@ q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1074"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedBatchNormalization`
 
@@ -836,7 +1046,17 @@ Quantized Batch normalization with encrypted input and in-the-clear normalizatio
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1080"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedFlatten`
 
@@ -844,7 +1064,17 @@ Quantized flatten for encrypted inputs.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1201"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -854,15 +1084,15 @@ can_fuse() → bool
 
 Determine if this op can be fused.
 
-Flatten operation can not be fused since it must be performed over integer tensors.
+Flatten operation cannot be fused since it must be performed over integer tensors.
 
 **Returns:**
 
-- <b>`bool`</b>:  False, this operation can not be fused as it is manipulates integer tensors.
+- <b>`bool`</b>:  False, this operation cannot be fused as it is manipulates integer tensors.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1086"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -883,7 +1113,7 @@ Flatten the input integer encrypted tensor.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1136"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedReduceSum`
 
@@ -891,7 +1121,7 @@ ReduceSum with encrypted input.
 
 This operator is currently an experimental feature.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -920,7 +1150,17 @@ Construct the quantized ReduceSum operator and retrieve parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `calibrate`
 
@@ -940,7 +1180,7 @@ Create corresponding QuantizedArray for the output of the activation function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1359"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -961,7 +1201,7 @@ Sum the encrypted tensor's values over axis 1.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1231"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1308"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `tree_sum`
 
@@ -982,7 +1222,7 @@ Large sum without overflow (only MSB remains).
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedErf`
 
@@ -990,7 +1230,17 @@ Quantized erf op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1423"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1500"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedNot`
 
@@ -998,13 +1248,23 @@ Quantized Not op.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1506"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedBrevitasQuant`
 
 Brevitas uniform quantization with encrypted input.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1516"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1035,7 +1295,37 @@ Construct the Brevitas quantization operator.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1496"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1606"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `calibrate`
+
+```python
+calibrate(*inputs: ndarray) → ndarray
+```
+
+Create corresponding QuantizedArray for the output of Quantization function.
+
+**Args:**
+
+- <b>`*inputs (numpy.ndarray)`</b>:  Calibration sample inputs.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  the output values for the provided calibration samples.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1634"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1056,7 +1346,7 @@ Quantize values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1556"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1690"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedTranspose`
 
@@ -1066,7 +1356,17 @@ This operator performs quantization, transposes the encrypted data, then dequant
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1566"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1084,3 +1384,171 @@ Reshape the input integer encrypted tensor.
 **Returns:**
 
 - <b>`result`</b> (QuantizedArray):  reshaped encrypted integer tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1730"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedFloor`
+
+Quantized Floor op.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedMax`
+
+Quantized Max op.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1742"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedMin`
+
+Quantized Min op.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedNeg`
+
+Quantized Neg op.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedSign`
+
+Quantized Neg op.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1760"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedUnsqueeze`
+
+Unsqueeze operator.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1766"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `q_impl`
+
+```python
+q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
+```
+
+Unsqueeze the input tensors on a given axis.
+
+**Args:**
+
+- <b>`q_inputs`</b>:  an encrypted integer tensor
+- <b>`attrs`</b>:  additional optional unsqueeze options
+
+**Returns:**
+
+- <b>`result`</b> (QuantizedArray):  unsqueezed encrypted integer tensor
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1799"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `QuantizedConcat`
+
+Concatenate operator.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> int_input_names
+
+Get the names of encrypted integer tensors that are used by this op.
+
+**Returns:**
+
+- <b>`List[str]`</b>:  the names of the tensors
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_ops.py#L1805"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `q_impl`
+
+```python
+q_impl(*q_inputs: QuantizedArray, **attrs) → QuantizedArray
+```
+
+Concatenate the input tensors on a giver axis.
+
+**Args:**
+
+- <b>`q_inputs`</b>:  an encrypted integer tensor
+- <b>`attrs`</b>:  additional optional concatenate options
+
+**Returns:**
+
+- <b>`result`</b> (QuantizedArray):  concatenated encrypted integer tensor

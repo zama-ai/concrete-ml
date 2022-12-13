@@ -18,7 +18,7 @@ Utils to interpret an ONNX model with numpy.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_attribute`
 
@@ -38,7 +38,7 @@ Get the attribute from an ONNX AttributeProto.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_op_type`
 
@@ -46,7 +46,7 @@ ______________________________________________________________________
 get_op_type(node)
 ```
 
-Construct the qualified name of the ONNX operator.
+Construct the qualified type name of the ONNX operator.
 
 **Args:**
 
@@ -58,7 +58,7 @@ Construct the qualified name of the ONNX operator.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L231"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `execute_onnx_with_numpy`
 
@@ -76,3 +76,25 @@ Execute the provided ONNX graph on the given inputs.
 **Returns:**
 
 - <b>`Tuple[numpy.ndarray]`</b>:  The result of the graph's execution.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_utils.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `remove_initializer_from_input`
+
+```python
+remove_initializer_from_input(model: ModelProto)
+```
+
+Remove initializers from model inputs.
+
+In some cases, ONNX initializers may appear, erroneously, as graph inputs. This function searches all model inputs and removes those that are initializers.
+
+**Args:**
+
+- <b>`model`</b> (onnx.ModelProto):  the model to clean
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  the cleaned model

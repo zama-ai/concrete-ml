@@ -11,5 +11,5 @@ Modules for quantization.
 - **quantizers**
 - **base_quantized_op**
 - **quantized_module**
-- **post_training**
 - **quantized_ops**
+- **post_training**

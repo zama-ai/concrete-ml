@@ -8,8 +8,7 @@ torch compilation function.
 
 ## **Global Variables**
 
-- **MAXIMUM_TLU_BIT_WIDTH**
-- **DEFAULT_P_ERROR_PBS**
+- **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
 - **OPSET_VERSION_FOR_ONNX_EXPORT**
 
 ______________________________________________________________________
@@ -36,7 +35,7 @@ Convert a torch tensor or a numpy array to a numpy array.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -50,7 +49,9 @@ compile_torch_model(
     show_mlir: bool = False,
     n_bits=8,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = 6.3342483999973e-05
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
+    verbose_compilation: bool = False
 ) → QuantizedModule
 ```
 
@@ -68,7 +69,9 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation.  Defaults to False
-- <b>`p_error`</b> (Optional\[float\]):  probability of error of a PBS
+- <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
+- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
 
 **Returns:**
 
@@ -76,7 +79,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L192"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -90,7 +93,9 @@ compile_onnx_model(
     show_mlir: bool = False,
     n_bits=8,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = 6.3342483999973e-05
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
+    verbose_compilation: bool = False
 ) → QuantizedModule
 ```
 
@@ -108,7 +113,9 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation.  Defaults to False.
-- <b>`p_error`</b> (Optional\[float\]):  probability of error of a PBS
+- <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
+- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
 
 **Returns:**
 
@@ -116,7 +123,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -129,8 +136,10 @@ compile_brevitas_qat_model(
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     use_virtual_lib: bool = False,
-    p_error: Optional[float] = 6.3342483999973e-05,
-    output_onnx_file: Optional[str] = None
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
+    output_onnx_file: Union[Path, str] = None,
+    verbose_compilation: bool = False
 ) → QuantizedModule
 ```
 
@@ -147,8 +156,10 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation,  defaults to False.
-- <b>`p_error`</b> (Optional\[float\]):  probability of error of a PBS
+- <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated
+- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
 
 **Returns:**
 

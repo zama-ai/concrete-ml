@@ -8,11 +8,11 @@ Utils that can be re-used by other pieces of code in the module.
 
 ## **Global Variables**
 
-- **DEFAULT_P_ERROR_PBS**
+- **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replace_invalid_arg_name_chars`
 
@@ -34,7 +34,7 @@ This does not check that the starting character of arg_name is valid.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_proxy_function`
 
@@ -60,7 +60,7 @@ This returns a runtime compiled function with the sanitized argument names passe
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_opset_version`
 
@@ -77,3 +77,40 @@ Return the ONNX opset_version.
 **Returns:**
 
 - <b>`int`</b>:  the version of the model
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `manage_parameters_for_pbs_errors`
+
+```python
+manage_parameters_for_pbs_errors(
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None
+)
+```
+
+Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
+
+The returned (p_error, global_p_error) depends on user's parameters and the way we want to manage defaults in Concrete-ML, which may be different from the way defaults are managed in Concrete-Numpy
+
+Principle:
+\- if none are set, we set global_p_error to a default value of our choice
+\- if both are set, we raise an error
+\- if one is set, we use it and forward it to Concrete-Numpy and the compiler
+
+Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
+
+**Args:**
+
+- <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS.
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit.
+
+**Returns:**
+
+- <b>`(p_error, global_p_error)`</b>:  parameters to give to the compiler
+
+**Raises:**
+
+- <b>`ValueError`</b>:  if the two parameters are set (this is _not_ as in Concrete-Numpy)

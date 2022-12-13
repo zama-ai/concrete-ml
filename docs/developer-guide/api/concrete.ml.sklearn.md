@@ -11,7 +11,7 @@ Import sklearn models.
 - **protocols**
 - **tree_to_numpy**
 - **base**
-- **torch_module**
+- **torch_modules**
 - **glm**
 - **linear_model**
 - **qnn**

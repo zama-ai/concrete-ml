@@ -8,6 +8,7 @@ ONNX module.
 
 ## **Global Variables**
 
+- **onnx_impl_utils**
 - **ops_impl**
 - **onnx_utils**
 - **convert**
