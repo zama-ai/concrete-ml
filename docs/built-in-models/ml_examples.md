@@ -4,11 +4,11 @@ The following table summarizes the various examples in this section, along with 
 
 | Model                 | Data-set                                                  | Metric                            | Floating Point | Simulation | FHE    |
 | --------------------- | --------------------------------------------------------- | --------------------------------- | -------------- | ---------- | ------ |
-| Linear Regression     | Synthetic 1D                                              | R2                                | 0.876          | 0.863      | 0.863  |
-| Logistic Regression   | Synthetic 2D with 2 classes                               | accuracy                          | 0.90           | 0.875      | 0.875  |
-| Poisson Regression    | [OpenML insurance (freq)](https://www.openml.org/d/41214) | mean Poisson deviance             | 0.61           | 0.60       | 0.60   |
-| Gamma Regression      | [OpenML insurance (sev)](https://www.openml.org/d/41215)  | mean Gamma deviance               | 0.45           | 0.45       | 0.45   |
-| Tweedie Regression    | [OpenML insurance (sev)](https://www.openml.org/d/41215)  | mean Tweedie deviance (power=1.9) | 33.42          | 34.18      | 34.18  |
+| Linear Regression     | Synthetic 1D                                              | R2                                | 0.90           | 0.90       | 0.90   |
+| Logistic Regression   | Synthetic 2D with 2 classes                               | accuracy                          | 0.92           | 0.92       | 0.92   |
+| Poisson Regression    | [OpenML insurance (freq)](https://www.openml.org/d/41214) | mean Poisson deviance             | 1.21           | 1.21       | 1.21   |
+| Gamma Regression      | [OpenML insurance (sev)](https://www.openml.org/d/41215)  | mean Gamma deviance               | 0.33           | 0.33       | 0.33   |
+| Tweedie Regression    | [OpenML insurance (sev)](https://www.openml.org/d/41215)  | mean Tweedie deviance (power=1.9) | 38.55          | 38.55      | 38.55  |
 | Decision Tree         | [OpenML spams](https://www.openml.org/d/44)               | precision score                   | 0.95           | 0.97       | 0.97\* |
 | XGBoost Classifier    | [Diabetes](https://www.openml.org/d/37)                   | MCC                               | 0.48           | 0.52       | 0.52\* |
 | XGBoost Regressor     | [House Prices](https://www.openml.org/d/43926)            | R2                                | 0.92           | 0.90       | 0.90\* |

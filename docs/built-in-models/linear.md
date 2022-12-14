@@ -21,7 +21,7 @@ Models are also compatible with some of scikit-learn's main workflows, such as `
 
 ## Example
 
-Here's an example of how to use this model in FHE on a simple data-set below. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
+Here is an example below of how to use a LogisticRegression model in FHE on a simple data set for classification. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ```python
 import numpy
@@ -38,14 +38,14 @@ X, y = make_classification(
     n_informative=2,
     random_state=2,
     n_clusters_per_class=1,
-    n_samples=100,
+    n_samples=250,
 )
 
 # Retrieve train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
 # Instantiate the model
-model = LogisticRegression(n_bits=2)
+model = LogisticRegression(n_bits=8)
 
 # Fit the model
 model.fit(X_train, y_train)
@@ -57,27 +57,21 @@ y_pred_clear = model.predict(X_test)
 model.compile(X_train)
 
 # Perform the inference in FHE
-# Note that here the encryption and decryption is done behind the scene.
-# It is recommended to run this with a very small batch of
-# examples first (e.g. N_TEST_FHE = 3)
-N_TEST_FHE = 3
-y_pred_fhe = numpy.array([
-  model.predict([sample], execute_in_fhe=True)[0]
-  for sample in tqdm(X_test[:N_TEST_FHE])
-])
+y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
+
 
 # Assert that FHE predictions are the same as the clear predictions
-print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
-      f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
+print(
+  f"{(y_pred_fhe == y_pred_clear).sum()} examples over {len(y_pred_clear)} "
+  "have a FHE inference equal to the clear inference."
+)
 
 # Output:
-#  3 examples over 3 have a FHE inference equal to the clear inference
+#  80 examples over 80 have a FHE inference equal to the clear inference
 ```
 
 We can then plot the decision boundary of the classifier and then compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
 
-![Plaintext model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundarires](../figures/logistic_regression_fhe.png)
+![Sklearn model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundarires](../figures/logistic_regression_fhe.png)
 
-We can clearly observe the impact of quantization over the decision boundaries in the FHE model, separating the initial lines into broken lines with steps. However, this does not change the overall score as both models output the same accuracy (90%).
-
-In fact, the quantization process may sometimes create some artifacts that could lead to a decrease in performance. Still, the impact of those artifacts is often minor when considering linear models as FHE models reach similar scores as their equivalent clear ones.
+The overall accuracy score of are identical (93%) between the scikit-learn model (executed in the clear) and the Concrete-ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries as linear models are able to consider large precision numbers when quantizing inputs and weights in Concrete-ML. Additionally, FHE computations are exact, meaning the FHE predictions are identical to the quantized clear ones.
