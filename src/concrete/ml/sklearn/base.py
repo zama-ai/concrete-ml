@@ -1069,6 +1069,8 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         n_bits = get_n_bits_dict(self.n_bits)
 
         # Quantize the inputs and store the associated quantizer
+        # For now, inputs are quantized over (positive) integers
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2384
         q_inputs = QuantizedArray(n_bits=n_bits["op_inputs"], values=X)
         input_quantizer = q_inputs.quantizer
         self.input_quantizers.append(input_quantizer)

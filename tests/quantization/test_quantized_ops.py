@@ -350,10 +350,7 @@ def test_all_arith_ops(
         check_r2_score(quantized_output_vc, quantized_output_vv)
 
 
-GEMM_N_BITS_LIST = [20, 16, 8]
-
-
-@pytest.mark.parametrize("n_bits", GEMM_N_BITS_LIST)
+@pytest.mark.parametrize("n_bits", N_BITS_LIST)
 @pytest.mark.parametrize(
     "n_examples, n_features, n_neurons",
     [
@@ -1085,74 +1082,58 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
 
 
 @pytest.mark.parametrize(
-    "n_values, n_bits",
+    "data_generator",
     [
-        pytest.param(
-            2**power_n_values,
-            n_bits,
-            id=(
-                f"reduce_sum_{2**power_n_values}_values"  # pylint: disable=undefined-variable
-                f"_{n_bits}_bits_in_FHE_(VL)"
-            ),
-        )
-        for power_n_values in range(8)
-        for n_bits in range(1, 6)
+        pytest.param(partial(numpy.random.uniform, 0, 1), id="uniform"),
+        pytest.param(partial(numpy.random.normal, 0, 1), id="normal"),
+        pytest.param(partial(numpy.random.gamma, 1, 2), id="gamma"),
     ],
 )
-def test_reduce_sum(n_values, n_bits):
+@pytest.mark.parametrize(
+    "keepdims", [pytest.param(keepdims, id=f"keepdims-{keepdims}") for keepdims in [0, 1]]
+)
+@pytest.mark.parametrize(
+    "size, axes, noop_with_empty_axes",
+    [
+        pytest.param(size, axes, noop, id=f"size-{size}-axes-{axes}-noop-{noop}")
+        for (size, axes, noop) in [
+            ((1,), (0,), 0),
+            ((100, 1), (1,), 0),
+            ((100, 10), None, 0),
+            ((100, 10), None, 1),
+            ((10, 100), (0,), 0),
+            ((10, 10, 1000), (2,), 0),
+            ((10, 10, 1000), (0, 2), 0),
+        ]
+    ],
+)
+@pytest.mark.parametrize(
+    "n_bits", [pytest.param(n_bits, id=f"n_bits-{n_bits}") for n_bits in N_BITS_LIST]
+)
+def test_reduce_sum(
+    n_bits, size, data_generator, axes, keepdims, noop_with_empty_axes, check_r2_score
+):
     """Test the QuantizedReduceSum operator."""
-    max_value = 2 ** (n_bits - 1)
-
-    # Initialize the axes constant
-    axes = numpy.array([1])
-    keepdims = 1
+    # Generate the inputs
+    inputs = data_generator(size=(1,) + size)
 
     # Instantiate the operator
-    quantized_op = QuantizedReduceSum(n_bits, constant_inputs={"axes": axes}, keepdims=keepdims)
-
-    # Instantiate the inputs to that they all sum up to 1.
-    inputs = numpy.random.randint(-max_value, max_value, size=(1, n_values)).astype(numpy.float64)
-
-    inputset = numpy.tile(
-        numpy.array([[-max_value], [max_value - 1]], dtype=numpy.float64), (1, n_values)
+    quantized_reduce_sum = QuantizedReduceSum(
+        n_bits,
+        constant_inputs={"axes": numpy.array(axes) if axes is not None else None},
+        keepdims=keepdims,
+        noop_with_empty_axes=noop_with_empty_axes,
     )
 
-    quantized_op.calibrate(inputset)
+    # Calibrate the quantized op and retrieve the expected results
+    expected_outputs = quantized_reduce_sum.calibrate(inputs)
 
-    # Set the quantized inputs
-    q_inputs = QuantizedArray(n_bits, inputs, rmin=-max_value, rmax=max_value - 1, uvalues=[])
+    # Retrieve the results computed by the quantized op applied on quantized inputs
+    q_inputs = QuantizedArray(n_bits, inputs)
+    actual_output = quantized_reduce_sum(q_inputs)
+    actual_output = actual_output.dequant()
 
-    assert q_inputs.quantizer.scale == 1.0 and q_inputs.quantizer.zero_point == 2 ** (
-        n_bits - 1
-    ), "Wrong quantization of inputs: should be 'one to one'."
-
-    # Compute the sum given by the operator
-    computed_sum = quantized_op(q_inputs).dequant()[0]
-
-    # Compute the expected sum
-    expected_sum = quantized_op.call_impl(inputs, axes=axes, keepdims=keepdims)[0]
-
-    # Set the maximum error potentially created by the workaround. This max error is relevant only:
-    # - if there is not quantization error
-    # - if n_values is a power of 2
-    # The idea is that for each depth d (from 1 to total_depth) of the "tree sum", we lose or earn
-    # up to n_values//(2**depth) * 2**(depth-1), so a total of (n_value//2)*total_depth. More
-    # information in the QuantizedReduceSum operator.
-    total_depth = int(numpy.log2(n_values))
-    max_error = (n_values // 2) * total_depth
-
-    # Check if the error does not exceed the theoretical limit. An error term is added for
-    # handling minor quantization artifacts.
-    if n_values > 1:
-        error = abs(expected_sum - computed_sum) / max_error
-        assert (
-            error <= 1.0 + 10e-6
-        ), f"Error reached {error*100:0.2f}% of the max possible error ({max_error})"
-
-    # If only a single input value was considered, we expect no error from the sum.
-    else:
-        error = abs(expected_sum - computed_sum)
-        assert error < 10e-6, f"Got an unexpected error of {error:0.2f} with a single input value."
+    check_r2_score(expected_outputs, actual_output)
 
 
 def test_all_ops_were_tested():

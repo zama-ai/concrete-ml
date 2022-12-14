@@ -116,6 +116,8 @@ class ONNXConverter:
     n_bits: Union[int, Dict]
     quant_params: Dict[str, QuantizedArray]
     numpy_model: NumpyModule
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2369
     is_signed: bool
 
     def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule, is_signed: bool = False):
@@ -732,7 +734,11 @@ class PostTrainingAffineQuantization(ONNXConverter):
         Returns:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
-
+        # This parameter may need to consider self.is_signed in someways in order to be able not
+        # to force inputs to be signed and thus add a TLU in the circuit
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2382
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2369
+        # FIXME: (CN) https://github.com/zama-ai/concrete-numpy-internal/issues/1773
         is_signed = any(v.min() < 0 for v in values if isinstance(v, numpy.ndarray)) or any(
             v.values.min() < 0 for v in values if isinstance(v, QuantizedArray)
         )

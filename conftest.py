@@ -11,10 +11,7 @@ import pytest
 import torch
 from concrete.numpy.compilation import (
     Circuit,
-    Compiler,
     Configuration,
-    DebugArtifacts,
-    EncryptionStatus,
     configuration,
 )
 from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
@@ -338,22 +335,42 @@ def check_is_good_execution_impl(
     )
 
 
-# FIXME: To update when the https://github.com/zama-ai/concrete-numpy-internal/issues/1714 feature
-# becomes available in CN
+# Method is not ideal as some MLIR can contain TLUs but not the associated graph
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
     succ = list(graph.graph.successors(graph.input_nodes[0]))
     if any(s.converted_to_table_lookup for s in succ):
         raise AssertionError(f"Graph contains a TLU on an input node: {str(graph.format())}")
 
 
+# Method is not ideal as some MLIR can contain TLUs but not the associated graph
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_output_has_no_tlu_impl(graph: CNPGraph):
     if graph.output_nodes[0].converted_to_table_lookup:
         raise AssertionError(f"Graph output is produced by a TLU: {str(graph.format())}")
 
 
+# Method is not ideal as some MLIR can contain TLUs but not the associated graph
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_has_no_input_output_tlu_impl(graph: CNPGraph):
     check_graph_input_has_no_tlu_impl(graph)
     check_graph_output_has_no_tlu_impl(graph)
+
+
+# FIXME: To update when the https://github.com/zama-ai/concrete-numpy-internal/issues/1714 feature
+# becomes available in CN
+def check_circuit_has_no_tlu_impl(circuit: Circuit):
+    if "apply_" in circuit.mlir and "_lookup_table" in circuit.mlir:
+        raise AssertionError("The circuit contains at least one TLU")
+
+
+def check_circuit_precision_impl(circuit: Circuit):
+    circuit_precision = circuit.graph.maximum_integer_bit_width()
+    if circuit_precision > MAXIMUM_TLU_BIT_WIDTH:
+        raise AssertionError(
+            f"The circuit's precision is expected to be less than {MAXIMUM_TLU_BIT_WIDTH}. "
+            f"Got {circuit_precision}."
+        )
 
 
 @pytest.fixture
@@ -371,7 +388,6 @@ def check_is_good_execution():
 
 @pytest.fixture
 def check_graph_input_has_no_tlu():
-
     return check_graph_input_has_no_tlu_impl
 
 
@@ -383,6 +399,14 @@ def check_graph_output_has_no_tlu():
 @pytest.fixture
 def check_graph_has_no_input_output_tlu():
     return check_graph_has_no_input_output_tlu_impl
+
+@pytest.fixture
+def check_circuit_has_no_tlu():
+    return check_circuit_has_no_tlu_impl
+
+@pytest.fixture
+def check_circuit_precision():
+    return check_circuit_precision_impl
 
 
 def check_array_equality_impl(actual: Any, expected: Any, verbose: bool = True):

@@ -220,6 +220,7 @@ for classifier_model in classifier_model_classes:
 @pytest.mark.parametrize("fit_intercept", [True, False])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("verbose_compilation", [True, False])
+# pylint: disable-next=too-many-arguments
 def test_linear_model_compile_run_fhe(
     model_class,
     data_parameters,
@@ -231,6 +232,7 @@ def test_linear_model_compile_run_fhe(
     check_r2_score,
     check_accuracy,
     verbose_compilation,
+    check_circuit_has_no_tlu,
 ):
     """Tests the sklearn regressions."""
     if not use_virtual_lib and is_vl_only_option:
@@ -261,12 +263,8 @@ def test_linear_model_compile_run_fhe(
         verbose_compilation=verbose_compilation,
     )
 
-    # Check that no TLUs are found within the circuit
-    # FIXME Change this once CN implements this feature
-    # https://github.com/zama-ai/concrete-numpy-internal/issues/1714
-    assert not any(
-        node.converted_to_table_lookup for node in fhe_circuit.graph.graph.nodes
-    ), "FHE circuit contains at least one TLU"
+    # Check that no TLUs are found within the MLIR
+    check_circuit_has_no_tlu(fhe_circuit)
 
     y_pred_sklearn = sklearn_model.predict(x)
     y_pred_fhe = model.predict(x, execute_in_fhe=True)

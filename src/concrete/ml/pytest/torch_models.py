@@ -862,3 +862,55 @@ class SingleMixNet(nn.Module):
         """
 
         return self.mixing_layer(x)
+
+
+class TorchSum(nn.Module):
+    """Torch model to test the ReduceSum ONNX operator in a leveled circuit."""
+
+    def __init__(self, dim=(0,), keepdim=True):
+        """Initialize the module.
+
+        Args:
+            dim (Tuple[int]): The axis along which the sum should be executed
+            keepdim (bool): If the output should keep the same dimension as the input or not
+        """
+        # Torch sum doesn't seem to handle dim=None, as opposed to its documentation. Instead, the
+        # op should be called without it. Additionally, in this exact case, keepdim parameter is not
+        # supported and the op behaves as if it has been set to False.
+        assert dim is not None, "Dim parameter should not be set to None."
+
+        super().__init__()
+        self.dim = dim
+        self.keepdim = keepdim
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model
+
+        Returns:
+            torch_sum (torch.tensor): The sum of the input's tensor elements along the given axis
+        """
+        torch_sum = x.sum(dim=self.dim, keepdim=self.keepdim)
+        return torch_sum
+
+
+class TorchSumMod(TorchSum):
+    """Torch model to test the ReduceSum ONNX operator in a circuit containing a PBS."""
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model
+
+        Returns:
+            torch_sum (torch.tensor): The sum of the input's tensor elements along the given axis
+        """
+        torch_sum = x.sum(dim=self.dim, keepdim=self.keepdim)
+
+        # Add an additional operator that requires a TLU in order to force this circuit to
+        # handle a PBS without actually changing the results
+        torch_sum = torch_sum + torch_sum % 2 - torch_sum % 2
+        return torch_sum
