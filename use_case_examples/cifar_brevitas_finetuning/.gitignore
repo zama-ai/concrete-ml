@@ -1,0 +1,15 @@
+*.onnx
+__pycache__/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Key cache
+ConcreteNumpyKeyCache
+
+# Data
+/data/

@@ -7,10 +7,13 @@ on:
         # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
         description: "Notebook file name only in: \n
         - Cifar10 \n
+        - CifarInFhe \n
+        - CifarQuantizationAwareTraining \n
         - ClassifierComparison \n
         - ClientServer \n
         - ConvolutionalNeuralNetwork \n
         - DecisionTreeClassifier \n
+        - FromImageNetToCifar \n
         - FullyConnectedNeuralNetwork \n
         - FullyConnectedNeuralNetworkOnMNIST \n
         - GLMComparison \n
@@ -36,10 +39,13 @@ env:
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
   Cifar10: "use_case_examples/cifar_10_with_model_splitting/Cifar10.ipynb" 
+  CifarInFhe: "use_case_examples/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
+  CifarQuantizationAwareTraining: "use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb" 
   ClassifierComparison: "docs/advanced_examples/ClassifierComparison.ipynb" 
   ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
+  FromImageNetToCifar: "use_case_examples/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
