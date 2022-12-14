@@ -694,6 +694,9 @@ check_links_after_release: docs
 	@#	 - at release time, use check_links_after_release, to check that the doc or public
 	@#	   repository only use public links
 
+	@# We don't want links to our internal GitBook
+	./script/doc_utils/check_no_gitbook_links.sh
+
 	@# Because of issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
 
