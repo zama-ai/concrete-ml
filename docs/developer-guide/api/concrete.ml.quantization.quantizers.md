@@ -524,7 +524,7 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `quant`
 
 ```python
-quant() → Optional[ndarray]
+quant() → Union[ndarray, NoneType]
 ```
 
 Quantize self.values.

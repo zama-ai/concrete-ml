@@ -70,6 +70,8 @@
 - [`torch_models.StepActivationModule`](./concrete.ml.pytest.torch_models.md#class-stepactivationmodule): Torch model implements a step function that needs Greater, Cast and Where.
 - [`torch_models.TinyCNN`](./concrete.ml.pytest.torch_models.md#class-tinycnn): A very small CNN.
 - [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits dataset.
+- [`torch_models.TorchSum`](./concrete.ml.pytest.torch_models.md#class-torchsum): Torch model to test the ReduceSum ONNX operator in a leveled circuit.
+- [`torch_models.TorchSumMod`](./concrete.ml.pytest.torch_models.md#class-torchsummod): Torch model to test the ReduceSum ONNX operator in a circuit containing a PBS.
 - [`torch_models.UnivariateModule`](./concrete.ml.pytest.torch_models.md#class-univariatemodule): Torch model that calls univariate and shape functions of torch.
 - [`base_quantized_op.QuantizedMixingOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedmixingop): An operator that mixes (adds or multiplies) together encrypted inputs.
 - [`base_quantized_op.QuantizedOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedop): Base class for quantized ONNX ops implemented in numpy.
@@ -263,6 +265,7 @@
 - [`utils.sanitize_test_and_train_datasets`](./concrete.ml.pytest.utils.md#function-sanitize_test_and_train_datasets): Sanitize datasets depending on the model type.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
+- [`base.get_sklearn_linear_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_linear_models): Return the list of available linear models in Concrete-ML.
 - [`base.get_sklearn_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_models): Return the list of available models in Concrete-ML.
 - [`base.get_sklearn_neural_net_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_neural_net_models): Return the list of available neural net models in Concrete-ML.
 - [`base.get_sklearn_tree_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_tree_models): Return the list of available tree models in Concrete-ML.

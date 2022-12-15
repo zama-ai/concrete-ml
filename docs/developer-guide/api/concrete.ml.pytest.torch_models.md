@@ -837,3 +837,89 @@ Execute the single convolution.
 
 **Returns:**
 the output of the NN
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L867"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `TorchSum`
+
+Torch model to test the ReduceSum ONNX operator in a leveled circuit.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L870"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(dim=(0,), keepdim=True)
+```
+
+Initialize the module.
+
+**Args:**
+
+- <b>`dim`</b> (Tuple\[int\]):  The axis along which the sum should be executed
+- <b>`keepdim`</b> (bool):  If the output should keep the same dimension as the input or not
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L886"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.tensor):  The input of the model
+
+**Returns:**
+
+- <b>`torch_sum`</b> (torch.tensor):  The sum of the input's tensor elements along the given axis
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L899"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `TorchSumMod`
+
+Torch model to test the ReduceSum ONNX operator in a circuit containing a PBS.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L870"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(dim=(0,), keepdim=True)
+```
+
+Initialize the module.
+
+**Args:**
+
+- <b>`dim`</b> (Tuple\[int\]):  The axis along which the sum should be executed
+- <b>`keepdim`</b> (bool):  If the output should keep the same dimension as the input or not
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L902"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.tensor):  The input of the model
+
+**Returns:**
+
+- <b>`torch_sum`</b> (torch.tensor):  The sum of the input's tensor elements along the given axis
