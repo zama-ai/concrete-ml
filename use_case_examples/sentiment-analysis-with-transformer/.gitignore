@@ -1,6 +1,0 @@
-tmp_encrypted_prediction.npy
-tmp_encrypted_quantized_encoding.npy
-tmp_evaluation_key.npy
-.venv
-.fhe_keys
-*.pyc
