@@ -62,7 +62,7 @@ env:
 jobs:
   matrix-preparation:
     runs-on: ubuntu-20.04
-    timeout-minutes: 2
+    timeout-minutes: 5
     outputs:
       linux-matrix: ${{ steps.set-matrix.outputs.linux-matrix }}
       macos-matrix: ${{ steps.set-matrix.outputs.macos-matrix }}
@@ -174,7 +174,7 @@ jobs:
     needs: [matrix-preparation]
     name: Start EC2 runner
     runs-on: ubuntu-20.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     outputs:
       label-37: ${{ steps.start-ec2-runner-37.outputs.label }}
       ec2-instance-id-37: ${{ steps.start-ec2-runner-37.outputs.ec2-instance-id || '' }}
