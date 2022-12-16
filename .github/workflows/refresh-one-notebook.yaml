@@ -152,6 +152,11 @@ jobs:
       - name: Refresh One Notebook
         run: |
           make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"
+      
+      # Pull the latest changes if there are some
+      - name: Pull latest changes
+        run: |
+          git pull -X theirs
 
       # If the target branch is main or a release branch, a Pull Request is opened for everyone to 
       # review.
@@ -176,7 +181,6 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
-          push_options: '--force'
           add_options: '-u'
 
 
