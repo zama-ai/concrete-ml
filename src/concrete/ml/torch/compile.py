@@ -55,7 +55,7 @@ def _compile_torch_or_onnx_model(
     global_p_error: Optional[float] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
-    """Compile a torch module or ONNX into an FHE equivalent.
+    """Compile a torch module or ONNX into a FHE equivalent.
 
     Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and
     finally compile it with Concrete-Numpy
@@ -145,7 +145,7 @@ def compile_torch_model(
     global_p_error: Optional[float] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
-    """Compile a torch module into an FHE equivalent.
+    """Compile a torch module into a FHE equivalent.
 
     Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
     compile it with Concrete-Numpy
@@ -202,7 +202,7 @@ def compile_onnx_model(
     global_p_error: Optional[float] = None,
     verbose_compilation: bool = False,
 ) -> QuantizedModule:
-    """Compile a torch module into an FHE equivalent.
+    """Compile a torch module into a FHE equivalent.
 
     Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
     compile it with Concrete-Numpy

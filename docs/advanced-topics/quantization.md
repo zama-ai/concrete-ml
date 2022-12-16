@@ -4,7 +4,7 @@ Quantization is the process of constraining an input from a continuous or otherw
 
 This means that some accuracy in the representation is lost (e.g. a simple approach is to eliminate least-significant bits). However, in many cases in machine learning, it is possible to adapt the models to give meaningful results while using these smaller data types. This significantly reduces the number of bits necessary for intermediary results during the execution of these machine learning models.
 
-Since FHE is currently limited to 8-bit integers, it is necessary to quantize models to make them compatible. As a general rule, the smaller the precision models, the better the FHE performance.
+Since FHE is currently limited to 16-bit integers, it is necessary to quantize models to make them compatible. As a general rule, the smaller the precision models, the better the FHE performance.
 
 ## Overview of quantization in Concrete-ML
 

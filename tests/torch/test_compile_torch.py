@@ -144,7 +144,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
         assert quantized_numpy_module.is_compiled
         quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
     else:
-        # Compile our network with 16 bits
+        # Compile our network with 16-bits
         # to compare to torch (8b weights + float 32 activations)
         if qat_bits == 0:
             n_bits = 16
@@ -569,7 +569,7 @@ def test_pretrained_mnist_qat(
     # Make sure absolute accuracy is good, this model should have at least 90% accuracy
     check_accuracy(mnist_data["gt"], results, threshold=0.9)
 
-    # Compile to Concrete ML with the Virtual Library with an FHE compatible bitwidth
+    # Compile to Concrete ML with the Virtual Library with a FHE compatible bitwidth
     n_bits = {
         "model_inputs": 7,
         "op_weights": 2,

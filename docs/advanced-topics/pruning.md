@@ -25,7 +25,7 @@ When building a full neural network, each layer will contain multiple neurons, w
 
 For every neuron shown in each layer of the figure above, the linear combinations of inputs and learned weights are computed. Depending on the values of the inputs and weights, the sum $$v_k = \sum_i w_ix_i$$ - which for Concrete-ML neural networks is computed with integers - can take a range of different values.
 
-To respect the bit-width constraint of the FHE [Table Lookup](https://docs.zama.ai/concrete-numpy/tutorials/table_lookup), the values of the accumulator $$v_k$$ must remain small to be representable with only 8 bits. In other words, the values must be between 0 and 255.
+To respect the bit-width constraint of the FHE [Table Lookup](https://docs.zama.ai/concrete-numpy/tutorials/table_lookup), the values of the accumulator $$v_k$$ must remain small to be representable with only 16-bits. In other words, the values must be between 0 and 65535.
 
 Pruning a neural network entails fixing some of the weights $$w_k$$ to be zero during training. This is advantageous to meet FHE constraints, as irrespective of the distribution of $$x_i$$, multiplying these input values by 0 does not increase the accumulator value.
 
@@ -41,8 +41,8 @@ In the formula above, in the worst-case, the maximum number of the input and wei
 
 $$\Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{weights}}} - 1)(2^{n_{\mathsf{inputs}}} - 1)} \right)$$
 
-Here, $$n_{\mathsf{max}} = 8$$ is the maximum precision allowed.
+Here, $$n_{\mathsf{max}} = 16$$ is the maximum precision allowed.
 
-For example, if $$n_{\mathsf{weights}} = 2$$ and $$n_{\mathsf{inputs}} = 2$$ with $$n_{\mathsf{max}} = 8$$, the worst case is where all inputs and weights are equal to their maximal value $$2^2-1=3$$. In this case, there can be at most $$\Omega = 28$$ elements in the multi-sums.
+For example, if $$n_{\mathsf{weights}} = 2$$ and $$n_{\mathsf{inputs}} = 2$$ with $$n_{\mathsf{max}} = 16$$, the worst case is where all inputs and weights are equal to their maximal value $$2^2-1=3$$. In this case, there can be at most $$\Omega = 7281$$ elements in the multi-sums.
 
 In practice, the distribution of the weights of a neural network is Gaussian, with many weights either 0 or having a small value. This enables exceeding the worst-case number of active neurons without having to risk overflowing the bit-width. In built-in neural networks, the parameter `n_hidden_neurons_multiplier` is multiplied with $$\Omega$$ to determine the total number of non-zero weights that should be kept in a neuron.

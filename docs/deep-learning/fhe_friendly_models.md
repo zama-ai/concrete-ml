@@ -49,7 +49,7 @@ The network was trained using different numbers of neurons in the hidden layers,
 | 3bit accuracy         | 56.44% | 55.54% | 56.50% |
 | mean accumulator size | 6.6    | 6.9    | 7.4    |
 
-This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 8 bits), it is sometimes preferable to have a lower accumulator size in order for the inference time to be faster.
+This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 16-bits), it is sometimes preferable to have a lower accumulator size in order for the inference time to be faster.
 
 {% hint style="info" %}
 The accumulator size is determined by Concrete-Numpy as being the maximum bit-width encountered anywhere in the encrypted circuit
@@ -230,7 +230,7 @@ class QATPrunedSimpleNet(nn.Module):
                     prune.remove(layer, "weight")
 ```
 
-Training this network with 30 out of 100 total non-zero neurons gives good accuracy while being FHE-compatible (accumulator size \< 8 bits).
+Training this network with 30 out of 100 total non-zero neurons gives good accuracy while being FHE-compatible (accumulator size \< 16-bits).
 
 | non-zero neurons             | 30    |
 | ---------------------------- | ----- |

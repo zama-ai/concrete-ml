@@ -107,7 +107,7 @@ MODELS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS + CLASSIFIERS + GLMS
 
 NN_BENCHMARK_PARMAMS = (
     [
-        # An FHE compatible config
+        # A FHE compatible config
         {
             "module__n_layers": 3,
             "module__n_w_bits": 2,

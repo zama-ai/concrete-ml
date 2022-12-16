@@ -37,7 +37,7 @@ While Concrete-ML users only need to understand the cryptography concepts above,
 
 ## Model accuracy considerations under FHE constraints
 
-To respect FHE constraints, all numerical programs over encrypted data must have all inputs, constants and intermediate values represented with integers of a maximum of 8 bits.
+To respect FHE constraints, all numerical programs over encrypted data must have all inputs, constants and intermediate values represented with integers of a maximum of 8-bits.
 
 Thus, Concrete-ML quantizes the input data and model outputs in the same way as weights and activations. The main levers to control accumulator bit-width are the numbers of bits used for the inputs, weights and activations of the model. These parameters are crucial to comply with the constraint on accumulator bit-widths. Please refer to [the quantization documentation](../advanced-topics/quantization.md) for more details about how to develop models with quantization in Concrete-ML.
 

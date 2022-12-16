@@ -283,7 +283,7 @@ def check_is_good_execution_impl(
 
     # Allow tests to pass if cells of the output result are good at least once over the nb_tries
     # Enabled only when we have a circuit that's using the maximum possible bit width
-    # >= if there are 8 bits signed integers
+    # >= if there are 16-bits signed integers
     allow_relaxed_tests_passing = max_bit_width >= MAXIMUM_TLU_BIT_WIDTH
 
     # For exactly MAXIMUM_TLU_BIT_WIDTH bits, we have not exactly 100%
