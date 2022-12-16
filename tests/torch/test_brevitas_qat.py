@@ -154,10 +154,10 @@ def test_brevitas_tinymnist_cnn(
         use_vl=True,
     )
 
-    # Accept, at most, 2 examples that are classified differently
+    # Accept, at most, 5 examples that are classified differently
     # This can be due to the 7b input output quantization.
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1572
-    assert abs(vl_correct - torch_correct) <= 2
+    assert abs(vl_correct - torch_correct) <= 5
 
     check_graph_input_has_no_tlu(q_module_vl.fhe_circuit.graph)
     check_graph_output_has_no_tlu(q_module_vl.fhe_circuit.graph)
