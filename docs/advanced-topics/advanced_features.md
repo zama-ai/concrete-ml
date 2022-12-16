@@ -85,7 +85,7 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 clf = LogisticRegression()
 clf.fit(X_train, y_train)
 
-clf.compile(X_train, verbose_compilation=True)
+clf.compile(X_train, verbose_compilation=True, show_mlir=True)
 ```
 
 Here, one will see
@@ -95,15 +95,15 @@ Here, one will see
 ```
 Computation Graph
 -------------------------------------------------------------------------------------------------------------------------------
-%0 = [[-5097]]                             # ClearTensor<int14, shape=(1, 1)>
-%1 = q_X                                   # EncryptedTensor<uint8, shape=(1, 4)>
-%2 = [[ 91] [ 60] [  0] [255]]             # ClearTensor<uint8, shape=(4, 1)>
-%3 = 111                                   # ClearScalar<uint7>
-%4 = sum(%1, axis=1, keepdims=True)        # EncryptedTensor<uint10, shape=(1, 1)>
-%5 = matmul(%1, %2)                        # EncryptedTensor<uint17, shape=(1, 1)>
-%6 = multiply(%3, %4)                      # EncryptedTensor<uint17, shape=(1, 1)>
-%7 = subtract(%5, %6)                      # EncryptedTensor<int17, shape=(1, 1)>
-%8 = add(%7, %0)                           # EncryptedTensor<int17, shape=(1, 1)>
+%0 = q_X                                   # EncryptedTensor<uint8, shape=(1, 4)>         ∈ [0, 255]
+%1 = [[ 91] [ 60] [  0] [255]]             # ClearTensor<uint8, shape=(4, 1)>             ∈ [0, 255]
+%2 = matmul(%0, %1)                        # EncryptedTensor<uint17, shape=(1, 1)>        ∈ [11320, 96183]
+%3 = sum(%0, axis=1, keepdims=True)        # EncryptedTensor<uint10, shape=(1, 1)>        ∈ [354, 694]
+%4 = 111                                   # ClearScalar<uint7>                           ∈ [111, 111]
+%5 = multiply(%4, %3)                      # EncryptedTensor<uint17, shape=(1, 1)>        ∈ [39294, 77034]
+%6 = subtract(%2, %5)                      # EncryptedTensor<int17, shape=(1, 1)>         ∈ [-35759, 26067]
+%7 = [[-5097]]                             # ClearTensor<int14, shape=(1, 1)>             ∈ [-5097, -5097]
+%8 = add(%6, %7)                           # EncryptedTensor<int17, shape=(1, 1)>         ∈ [-40856, 20970]
 return %8
 ```
 
@@ -136,23 +136,41 @@ Optimizer
 --- Circuit
   17 bits integers
   9 manp (maxi log2 norm2)
-  52ms to solve
---- Optimizer config
+  282ms to solve
+--- User config
   6.334248e-05 error per pbs call
-  nan error per circuit call
+  1.000000e-02 error per circuit call
 --- Complexity for the full circuit
-  0 Millions Operations
+  0.000000e+00 Millions Operations
 --- Correctness for each Pbs call
-  1/-2147483648 errors (0.000000e+00)
+  1/-2147483648 errors (1.036585e-46)
 --- Correctness for the full circuit
-  1/-2147483648 errors (0.000000e+00)
+  1/-2147483648 errors (1.036585e-46)
 --- Parameters resolution
-  1x glwe_dimension
-  2**11 polynomial (2048)
+  5x glwe_dimension
+  2**8 polynomial (256)
   0 lwe dimension
   keyswitch l,b=0,0
   blindrota l,b=0,0
   wopPbs : false
+---
 ```
 
-In this latter optimization information, one will find information about bit-width ("17 bits integers") used in the program, probability of error of an individual PBS ("6.334248e-05 error per pbs call"), probability of error of the full circuit (FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/2140), an estimation of the cost of the circuit (FIXME, https://github.com/zama-ai/concrete-ml-internal/issues/2140), and, for cryptographers only, some information about cryptographic parameters.
+In this latter optimization information, one will find information such as:
+
+- bit-width ("17 bits integers") used in the program; we remind that for the moment, the compiler only supports a precision, i.e., that all PBS are promoted to the same bit-width (the largest one). In other words, this bit-width highly drives the speed of the program, and it is essential to try to reduce it as much as possible for fast execution
+- maximal norm2 ("9 manp"), which has an impact on the crypto parameters which can be found. The larger this norm2, the slower PBS will be. The norm2 is related to norm of some constants appearing in your program, in a way which will be clarified in the compiler documentation
+- probability of error of an individual PBS ("6.334248e-05 error per pbs call")
+- probability of error of the full circuit ("1.000000e-02 error per circuit call"),
+- an estimation of the cost of the circuit ("0.000000e+00 Millions Operations"),
+
+and, for cryptographers only, some information about cryptographic parameters:
+
+- 5x glwe_dimension
+- 2\*\*8 polynomial (256)
+- 0 lwe dimension
+- keyswitch l,b=0,0
+- blindrota l,b=0,0
+- wopPbs : false
+
+Remark that this optimizer feedback is a work in progress and will be modified and improved in the future release.
