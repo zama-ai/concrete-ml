@@ -1244,18 +1244,6 @@ class QuantizedReduceSum(QuantizedMixingOp):
                     attribute is set to true 1, input tensor will not be reduced, and the output
                     tensor would be equivalent to input tensor. Default to 0.
         """
-        # Forcing this op to not consider unsigned values as it can make a circuit have an
-        # additional unexpected TLU. This situation is not ideal as fully-leveled circuits don't
-        # want to use any TLUs, however, forcing inputs to be unsigned may increase the
-        # accumulators' precision, which can be an issue if this op is used within a
-        # non-leveled circuit. This is only a workaround until CN fixes the issue.
-        # This issue might also be related to the fact that the ONNXConverter class forces inputs
-        # to be quantized over signed integers if initial values are signed
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2382
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2369
-        if input_quant_opts is not None:
-            input_quant_opts.is_signed = False
-
         super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
 
         # Retrieve and set the ONNX parameters

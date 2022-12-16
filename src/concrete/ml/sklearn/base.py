@@ -24,7 +24,7 @@ from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
 from concrete.ml.quantization.quantized_module import QuantizedModule, _get_inputset_generator
-from concrete.ml.quantization.quantizers import UniformQuantizer
+from concrete.ml.quantization.quantizers import QuantizationOptions, UniformQuantizer
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
@@ -1068,12 +1068,16 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # Convert the n_bits attribute into a proper dictionary
         n_bits = get_n_bits_dict(self.n_bits)
 
+        input_n_bits = n_bits["op_inputs"]
+        input_options = QuantizationOptions(n_bits=input_n_bits, is_signed=True)
+
         # Quantize the inputs and store the associated quantizer
-        # For now, inputs are quantized over (positive) integers
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2384
-        q_inputs = QuantizedArray(n_bits=n_bits["op_inputs"], values=X)
+        q_inputs = QuantizedArray(n_bits=input_n_bits, values=X, options=input_options)
         input_quantizer = q_inputs.quantizer
         self.input_quantizers.append(input_quantizer)
+
+        weights_n_bits = n_bits["op_weights"]
+        weight_options = QuantizationOptions(n_bits=weights_n_bits, is_signed=True)
 
         # Quantize the weights and store the associated quantizer
         # Transpose and expand are necessary in order to make sure the weight array has the correct
@@ -1082,6 +1086,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         q_weights = QuantizedArray(
             n_bits=n_bits["op_weights"],
             values=numpy.expand_dims(weights, axis=1) if len(weights.shape) == 1 else weights,
+            options=weight_options,
         )
         self._q_weights = q_weights.qvalues
         weight_quantizer = q_weights.quantizer
