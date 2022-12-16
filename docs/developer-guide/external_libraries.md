@@ -24,7 +24,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 
 # Instantiate the logistic regression from sklearn
-lr = LogisticRegression()
+model = LogisticRegression()
 
 # Create synthetic data
 X, y = make_classification(
@@ -32,10 +32,10 @@ X, y = make_classification(
 )
 
 # Fit the model
-lr.fit(X, y)
+model.fit(X, y)
 
 # Convert the model to ONNX
-onnx_model = convert(lr, backend="onnx", test_input=X).model
+onnx_model = convert(model, backend="onnx", test_input=X).model
 ```
 
 In theory, the resulting `onnx_model` could be used directly within Concrete-ML's `get_equivalent_numpy_forward` method (as long as all operators present in the ONNX model are implemented in NumPy) and get the NumPy inference.

@@ -25,8 +25,8 @@ from sklearn.model_selection import train_test_split
 
 # Create the data set as a Pandas dataframe
 X, y = make_classification(
-    n_samples=100,
-    n_features=2,
+    n_samples=250,
+    n_features=30,
     n_redundant=0,
     random_state=2,
 )
@@ -36,7 +36,7 @@ X, y = pd.DataFrame(X), pd.DataFrame(y)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 
 # Instantiate the model
-model = LogisticRegression(n_bits=2)
+model = LogisticRegression(n_bits=8)
 
 # Fit the model
 model.fit(X_train, y_train)
@@ -48,16 +48,14 @@ y_pred_clear = model.predict(X_test)
 model.compile(X_train.to_numpy())
 
 # Perform the inference in FHE
-# Warning: this will take a while. It is recommended to run this with a very small batch of
-# examples first (e.g. N_TEST_FHE = 1)
-# Note that here the encryption and decryption is done behind the scenes.
-N_TEST_FHE = 1
-y_pred_fhe = model.predict(X_test.head(N_TEST_FHE), execute_in_fhe=True)
+y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
 
 # Assert that FHE predictions are the same as the clear predictions
-print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
-      f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
+print(
+    f"{(y_pred_fhe == y_pred_clear).sum()} "
+    f"examples over {len(y_pred_fhe)} have a FHE inference equal to the clear inference."
+)
 
 # Output:
-#  1 examples over 1 have a FHE inference equal to the clear inference
+    # 100 examples over 100 have a FHE inference equal to the clear inference.
 ```

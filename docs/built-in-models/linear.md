@@ -33,7 +33,7 @@ from concrete.ml.sklearn import LogisticRegression
 
 # Create the data for classification
 X, y = make_classification(
-    n_features=2,
+    n_features=30,
     n_redundant=0,
     n_informative=2,
     random_state=2,
@@ -59,15 +59,14 @@ model.compile(X_train)
 # Perform the inference in FHE
 y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
 
-
 # Assert that FHE predictions are the same as the clear predictions
 print(
-  f"{(y_pred_fhe == y_pred_clear).sum()} examples over {len(y_pred_clear)} "
-  "have a FHE inference equal to the clear inference."
+    f"{(y_pred_fhe == y_pred_clear).sum()} examples over {len(y_pred_fhe)} "
+    "have a FHE inference equal to the clear inference."
 )
 
 # Output:
-#  80 examples over 80 have a FHE inference equal to the clear inference
+#  100 examples over 100 have a FHE inference equal to the clear inference
 ```
 
 We can then plot the decision boundary of the classifier and then compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).

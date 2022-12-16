@@ -80,40 +80,37 @@ A simple example which is very close to scikit-learn is as follows, for a logist
 ```python
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
-
 from concrete.ml.sklearn import LogisticRegression
 
-# Create the data for classification
-x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+# Lets create a synthetic data-set
+x, y = make_classification(n_samples=100, class_sep=2, n_features=30, random_state=42)
 
-# Retrieve train and test sets
+# Split the data-set into a train and test set
 X_train, X_test, y_train, y_test = train_test_split(
-    x, y, test_size=10, random_state=42
+    x, y, test_size=0.2, random_state=42
 )
 
-# Fix the number of bits to used for quantization 
-model = LogisticRegression(n_bits=2)
-
-# Fit the model
+# Now we train in the clear and quantize the weights
+model = LogisticRegression(n_bits=8)
 model.fit(X_train, y_train)
 
-# Run the predictions on non-encrypted data as a reference
-y_pred_clear = model.predict(X_test, execute_in_fhe=False)
+# We can simulate the predictions in the clear
+y_pred_clear = model.predict(X_test)
 
-# Compile into a FHE model
-model.compile(x)
+# We then compile on a representative set 
+model.compile(X_train)
 
-# Run the inference in FHE
+# Finally we run the inference on encrypted inputs !
 y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
 
 print("In clear  :", y_pred_clear)
 print("In FHE    :", y_pred_fhe)
-print(f"Comparison: {int((y_pred_fhe == y_pred_clear).sum()/len(y_pred_fhe)*100)}% similar")
+print(f"Similarity: {int((y_pred_fhe == y_pred_clear).mean()*100)}%")
 
 # Output:
-#  In clear  : [0 0 0 1 0 1 0 1 1 1]
-#  In FHE    : [0 0 0 1 0 1 0 1 1 1]
-#  Comparison: 100% similar
+    # In clear  : [0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 1 1 1 0 0]
+    # In FHE    : [0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 1 1 1 0 0]
+    # Similarity: 100%
 ```
 
 This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md). Concrete-ML built-in models

@@ -39,15 +39,15 @@ from sklearn.model_selection import train_test_split
 from concrete.ml.sklearn import LogisticRegression
 
 # Create the data for classification
-x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+x, y = make_classification(n_samples=250, class_sep=2, n_features=30, random_state=42)
 
 # Retrieve train and test sets
 X_train, X_test, y_train, y_test = train_test_split(
-    x, y, test_size=10, random_state=42
+    x, y, test_size=0.4, random_state=42
 )
 
 # Fix the number of bits to used for quantization
-model = LogisticRegression(n_bits=2)
+model = LogisticRegression(n_bits=8)
 
 # Fit the model
 model.fit(X_train, y_train)
