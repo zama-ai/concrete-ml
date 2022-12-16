@@ -4,7 +4,7 @@ PyYAML, 6.0, MIT License
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.22.1, BSD-3
 concrete-ml-extensions-brevitas, 0.1.0, UNKNOWN
-concrete-numpy, 0.9.0rc3, BSD License
+concrete-numpy, 0.9.0rc4, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
@@ -25,7 +25,6 @@ onnxmltools, 1.11.1, Apache Software License
 onnxoptimizer, 0.2.7, Apache License v2.0
 onnxruntime, 1.13.1, MIT License
 packaging, 21.3, Apache Software License; BSD License
-pkg_resources, 0.0.0, UNKNOWN
 protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.3, BSD License
 pyparsing, 3.0.9, MIT License
