@@ -63,8 +63,8 @@ def _compile_torch_or_onnx_model(
     Args:
         model (Union[torch.nn.Module, onnx.ModelProto]): the model to quantize, either in torch or
             in ONNX
-        torch_inputset (Dataset): the inputset, can contain either torch
-            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        torch_inputset (Dataset): the calibration inputset, can contain either torch
+            tensors or numpy.ndarray.
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
             in its computation graph and that Concrete ML should not requantize it.
         configuration (Configuration): Configuration object to use
@@ -152,8 +152,8 @@ def compile_torch_model(
 
     Args:
         torch_model (torch.nn.Module): the model to quantize
-        torch_inputset (Dataset): the inputset, can contain either torch
-            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        torch_inputset (Dataset): the calibration inputset, can contain either torch
+            tensors or numpy.ndarray.
         import_qat (bool): Set to True to import a network that contains quantizers and was
             trained using quantization aware training
         configuration (Configuration): Configuration object to use
@@ -209,8 +209,8 @@ def compile_onnx_model(
 
     Args:
         onnx_model (onnx.ModelProto): the model to quantize
-        torch_inputset (Dataset): the inputset, can contain either torch
-            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        torch_inputset (Dataset): the calibration inputset, can contain either torch
+            tensors or numpy.ndarray.
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
             in its computation graph and that Concrete ML should not requantize it.
         configuration (Configuration): Configuration object to use
@@ -275,8 +275,8 @@ def compile_brevitas_qat_model(
 
     Args:
         torch_model (torch.nn.Module): the model to quantize
-        torch_inputset (Dataset): the inputset, can contain either torch
-            tensors or numpy.ndarray, only datasets with a single input are supported for now.
+        torch_inputset (Dataset): the calibration inputset, can contain either torch
+            tensors or numpy.ndarray.
         n_bits (Union[int,dict]): the number of bits for the quantization
         configuration (Configuration): Configuration object to use
             during compilation
