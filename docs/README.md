@@ -54,7 +54,7 @@ This example shows the typical flow of a Concrete-ML model:
 
 ## Current limitations
 
-To make a model work with FHE, the only constraint is to make it run within the supported precision limitations of Concrete-ML (currently 16-bits integers). Thus, machine learning models are required to be quantized, which sometimes leads to a loss of accuracy versus the original model operating on plaintext.
+To make a model work with FHE, the only constraint is to make it run within the supported precision limitations of Concrete-ML (currently 16-bit integers). Thus, machine learning models are required to be quantized, which sometimes leads to a loss of accuracy versus the original model operating on plaintext.
 
 Additionally, Concrete-ML currently only supports FHE _inference_. On the other hand, training has to be done on unencrypted data, producing a model which is then converted to a FHE equivalent that can perform encrypted inference, i.e. prediction over encrypted data.
 

@@ -1,22 +1,22 @@
-# CIFAR-10 FHE classification with 8-bit split VGG
+# CIFAR-10 classification with a split clear/FHE model
 
-In this [notebook](./Cifar10.ipynb) we show how to compile a splitted VGG-like model to classify CIFAR-10 images in FHE.
+In this [notebook](./Cifar10.ipynb) we show how train and compile a FHE VGG-like model to achieve a good speed/accuracy tradeoff on CIFAR-10 images.
 
-At the time of writing this notebook we have a 8-bit constraint on the accumulator size to be able to compile to FHE.
+## Model design
 
-Thus we trained a VGG-Model with pruning and 2-bit weights to try to satisfy this constraint.
+As there is a trade-off between accumulator bit-width and FHE inference speed, this tutorial targets
+8-bit accumulators, to achieve faster FHE inference times. Moreover, we split the model in two parts to allow
+higher precision in the input layer. For the FHE part of the model, we used pruning and 2-bit weights to try to satisfy this constraint.
 
-The first layer of any deep vision model usually being one of the main bottlenecks, with regard to the accumulator size constraint, we opted for splitting the model into 2 sub-modules:
+The first layer of any deep vision model processes the raw images that are usually represented using 8-bit integers.
+With respect to FHE constraints, such large bit-widths for inputs are a bottleneck with regards to the accumulator size constraint. Therefore, we opted to split the model into 2 sub-models:
 
 - The first layer of the VGG model will run in floats and in clear,
 - The rest of the network will run in integers and in FHE.
 
-The method is generic and can be applied to any model.
-Also, one thing that we should note, is that we could do any arbitrary number of computation before and after the FHE computations.
-Any of these clear-data computations would have to be done on the client side.
-By splitting a model this way we can preserve a decent accuracy, by reducing the impact of the quantization necessary for FHE computations, while preserving privacy with FHE.
-But that means that the compilation and serving processes are a bit more intricate
-We showcase how to compile this split model in the [following notebook](./Cifar10.ipynb).
+The method is generic and can be applied to any neural network model, but the compilation and deployment steps are a bit more intricate in this case. We show how to compile this split model in the [notebook](./Cifar10.ipynb).
+
+## Running this example
 
 To run this notebook properly you will need the usual Concrete-ML dependencies plus the extra dependencies from `requirements.txt` that you can install using `pip install -r requirements.txt` .
 
@@ -26,7 +26,9 @@ We also provide a script to run the model in FHE. On an AWS c6i.metal compute ma
 - Time to keygen: 639 seconds
 - Time to infer: 37706 seconds (more than 10 hours)
 
-Anyone can replicate the FHE inference using the [dedicated script](./fhe_inference.py).
+## Results
+
+Anyone can reproduce the FHE inference results using the [dedicated script](./fhe_inference.py).
 
 The Pytorch model and the inference using Pytorch for the first layer and the virtual library for the encrypted part yielded the same top-k accuracies:
 
@@ -36,7 +38,7 @@ The Pytorch model and the inference using Pytorch for the first layer and the vi
 
 which are decent metrics for a traditional VGG model under such constraints.
 
-The accuracy of the model running in FHE was not computed because of the computional cost it would require.
+The accuracy of the model running in FHE was not measured because of the computational cost it would require.
 This is something we plan on measuring once FHE runtimes become more acceptable.
 
 <!-- FIXME: Add more metrics: https://github.com/zama-ai/concrete-ml-internal/issues/2377 -->

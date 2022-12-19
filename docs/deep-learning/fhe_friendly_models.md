@@ -6,9 +6,11 @@ For a more formal description of the usage of Brevitas to build FHE-compatible n
 
 ## Summary
 
-1. [Building a standard baseline PyTorch model](#baseline-model)
-1. [Adding pruning to make learning more robust](#pruning-using-torch)
-1. [Converting to Quantization Aware Training with Brevitas](#quantization-aware-training)
+- [Step-by-Step Guide](#step-by-step-guide)
+  - [Summary](#summary)
+  - [Baseline model](#baseline-model)
+    - [Pruning using Torch](#pruning-using-torch)
+  - [Quantization Aware Training](#quantization-aware-training)
 
 ## Baseline model
 
@@ -49,7 +51,7 @@ The network was trained using different numbers of neurons in the hidden layers,
 | 3bit accuracy         | 56.44% | 55.54% | 56.50% |
 | mean accumulator size | 6.6    | 6.9    | 7.4    |
 
-This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 16-bits), it is sometimes preferable to have a lower accumulator size in order for the inference time to be faster.
+This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 16 bits), it is often preferable to have a lower accumulator size in order to speed up the inference time.
 
 {% hint style="info" %}
 The accumulator size is determined by Concrete-Numpy as being the maximum bit-width encountered anywhere in the encrypted circuit
@@ -230,7 +232,7 @@ class QATPrunedSimpleNet(nn.Module):
                     prune.remove(layer, "weight")
 ```
 
-Training this network with 30 out of 100 total non-zero neurons gives good accuracy while being FHE-compatible (accumulator size \< 16-bits).
+Training this network with 30 out of 100 total non-zero neurons gives good accuracy while keeping the accumulator size low.
 
 | non-zero neurons             | 30    |
 | ---------------------------- | ----- |
