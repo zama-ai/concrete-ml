@@ -59,8 +59,7 @@ Usage is similar as the `p_error` parameter:
 
 ```python
 # Here we set the global_p_error parameter
-# FIXME: to be activate https://github.com/zama-ai/concrete-ml-internal/issues/2163
-clf.compile(X_train)
+clf.compile(X_train, global_p_error = 0.1)
 ```
 
 In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. Note that the shift is relative to the expected value so even if the result is different, it should be __around__ the expected value.
@@ -86,8 +85,7 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 clf = LogisticRegression()
 clf.fit(X_train, y_train)
 
-# FIXME: to be activate https://github.com/zama-ai/concrete-ml-internal/issues/2163
-# clf.compile(X_train, verbose_compilation=True)
+clf.compile(X_train, verbose_compilation=True)
 ```
 
 Here, one will see
