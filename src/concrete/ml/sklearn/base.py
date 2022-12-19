@@ -1432,7 +1432,7 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
 
         Args:
             y_preds (numpy.ndarray): The predictions to post-process.
-            already_dequantized (bool): Wether the inputs were already dequantized or not. Default
+            already_dequantized (bool): Whether the inputs were already dequantized or not. Default
                 to False.
 
         Returns:
@@ -1547,7 +1547,7 @@ def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name
             class name
 
     Returns:
-        the sublist which fullfils the (classifier, regressor, str_in_class_name) conditions.
+        the sublist which fulfills the (classifier, regressor, str_in_class_name) conditions.
 
     """
     assert_true(classifier or regressor, "Please set at least one option")

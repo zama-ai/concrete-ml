@@ -34,7 +34,7 @@ for image_filter in AVAILABLE_FILTERS:
     fhe_dev_filter = CustomFHEDev(deployment_path, filter)
     fhe_dev_filter.save()
 
-    # Save the ONNX mdel
+    # Save the ONNX model
     onnx.save(filter.onnx_model, filter_path / "server.onnx")
 
 print("Done !")

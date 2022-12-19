@@ -92,7 +92,7 @@ class QuantizationOptions:
     is_narrow: bool = False
 
     # Determines whether the values handled by the quantizer were produced by a custom
-    # quantization layer that has pre-computed scale and zeropoint (i.e. ONNX brevitas quant layer)
+    # quantization layer that has pre-computed scale and zero-point (i.e. ONNX brevitas quant layer)
     is_precomputed_qat: bool = False
 
     def __init__(
@@ -332,7 +332,7 @@ class UniformQuantizationParameters:
                 ).astype(numpy.float64)
             else:
                 # Infer the QAT parameters if this is a custom QAT network
-                # which does not store scale/zp in the ONNX directly.
+                # which does not store scale/zero-point in the ONNX directly.
 
                 # Do not infer the parameters if the network was trained with Brevitas
                 # they are stored in the ONNX file and are the true quantization parameters

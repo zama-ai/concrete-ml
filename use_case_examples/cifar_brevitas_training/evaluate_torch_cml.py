@@ -123,7 +123,7 @@ def main():
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
     )
     quantized_numpy_module = compile_brevitas_qat_model(
-        model,  # our torchs model
+        model,  # our torch model
         x,  # a representative inputset to be used for both quantization and compilation
         n_bits={"model_inputs": 8, "op_inputs": 2, "op_weights": 2, "model_outputs": 8},
         use_virtual_lib=True,  # important to run in simulated FHE

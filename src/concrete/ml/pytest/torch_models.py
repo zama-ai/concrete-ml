@@ -278,7 +278,7 @@ class MultiInputNN(nn.Module):
 
         Args:
             x: the first input of the NN
-            y: the secon input of the NN
+            y: the second input of the NN
 
         Returns:
             the output of the NN

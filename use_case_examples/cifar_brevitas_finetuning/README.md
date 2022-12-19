@@ -17,7 +17,7 @@ You can use Pytorch with CUDA in Concrete-ML, just put the right cuda version:
 
 # Description
 
-In this directory, i.e. `cifar_brevitas_finetuning` we show how to solve a classification task on CIFAR-10 and CIFAR-100, by converting any pretrained network in floating point to its fully homomorphic encryption (FHE) equivalent using Quantization Aware Training (QAT) with Brevitas, and then evaluating it using FHE simulation with concrete-ML.
+In this directory, i.e. `cifar_brevitas_finetuning` we show how to solve a classification task on CIFAR-10 and CIFAR-100, by converting any pre-trained network in floating point to its fully homomorphic encryption (FHE) equivalent using Quantization Aware Training (QAT) with Brevitas, and then evaluating it using FHE simulation with concrete-ML.
 
 To do so, we divided this use case in 3 notebooks :
 

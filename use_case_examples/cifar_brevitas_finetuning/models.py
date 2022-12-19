@@ -104,7 +104,7 @@ class QuantVGG11(nn.Module):
         """A quantized network with Brevitas.
 
         Args:
-            bit (int): Bith of quantization.
+            bit (int): Bit of quantization.
             output_size (int): Number of classes.
             act_quant (brevitas.quant): Quantization protocol of activations.
             weight_quant_type (brevitas.core.quant): Int type.

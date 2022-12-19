@@ -313,7 +313,7 @@ class FHEModelClient:
                 and quantized result
 
         Returns:
-            numpy.ndarray: the decrypted and desarialized values
+            numpy.ndarray: the decrypted and deserialized values
         """
         # Deserialize the encrypted values
         deserialized_encrypted_quantized_result = self.client.specs.unserialize_public_result(

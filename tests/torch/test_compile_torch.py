@@ -691,7 +691,7 @@ def test_net_has_no_tlu(
     inputset = numpy.random.uniform(size=(100, *input_shape))
 
     if use_qat:
-        # Compile with appropriate QAT compilation function, here the ZPs will all be 0
+        # Compile with appropriate QAT compilation function, here the zero-points will all be 0
         quantized_numpy_module = compile_brevitas_qat_model(
             net,
             inputset,
@@ -700,7 +700,7 @@ def test_net_has_no_tlu(
             use_virtual_lib=use_virtual_lib,
         )
     else:
-        # Compile with PTQ. Note that this will have ZP>0
+        # Compile with PTQ. Note that this will have zero-point>0
         quantized_numpy_module = compile_torch_model(
             net,
             inputset,

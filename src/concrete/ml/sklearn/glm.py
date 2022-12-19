@@ -58,7 +58,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
 
         Args:
             y_preds (numpy.ndarray): The predictions to post-process.
-            already_dequantized (bool): Wether the inputs were already dequantized or not. Default
+            already_dequantized (bool): Whether the inputs were already dequantized or not. Default
                 to False.
 
         Returns:

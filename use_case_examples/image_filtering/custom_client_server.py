@@ -140,7 +140,7 @@ class CustomFHEClient:
         """Deserialize, decrypt and post-process the values.
 
         Args:
-            serialized_encrypted_output (cnp.PublicArguments): the serialized qnd encrypted output
+            serialized_encrypted_output (cnp.PublicArguments): the serialized and encrypted output
 
         Returns:
             numpy.ndarray: the decrypted values

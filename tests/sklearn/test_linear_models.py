@@ -242,7 +242,7 @@ def test_linear_model_compile_run_fhe(
     # Get the dataset
     x, y = load_data(**data_parameters)
 
-    # Define the model's hyperparameters
+    # Define the model's hyper-parameters
     model_hyperparameters = {"n_bits": 8, "fit_intercept": fit_intercept}
 
     # Instantiate the model
@@ -304,7 +304,7 @@ def test_linear_model_quantization(
     # Get the dataset
     x, y = load_data(**data_parameters)
 
-    # Define the model's hyperparameters
+    # Define the model's hyper-parameters
     model_hyperparameters = {"n_bits": n_bits, "fit_intercept": fit_intercept}
 
     model = model_class(**model_hyperparameters)
@@ -358,7 +358,7 @@ def test_pipeline_sklearn(model_class, data_parameters, fit_intercept, load_data
     """Tests that the linear models work well within sklearn pipelines."""
     x, y = load_data(**data_parameters)
 
-    # Define the model's hyperparameters
+    # Define the model's hyper-parameters
     model_hyperparameters = {"n_bits": 2, "fit_intercept": fit_intercept}
 
     pipe_cv = Pipeline(
@@ -369,7 +369,7 @@ def test_pipeline_sklearn(model_class, data_parameters, fit_intercept, load_data
         ]
     )
 
-    # Do a grid search to find the best hyperparameters
+    # Do a grid search to find the best hyper-parameters
     param_grid = {
         "model__n_bits": [2, 3],
     }

@@ -327,7 +327,7 @@ class QuantizedOp:
 
         prepared_inputs: List[Optional[Union[QuantizedArray, numpy.ndarray]]]
         if is_param_variadic:
-            # prepared_inputs length can't be infered from num_onnx_inputs with a var parameter
+            # prepared_inputs length can't be inferred from num_onnx_inputs with a var parameter
             # use inputs instead
             prepared_inputs = [None] * num_inputs
         else:

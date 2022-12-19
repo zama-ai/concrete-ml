@@ -75,7 +75,7 @@ class Logger(object):
         out_hdlr.setLevel(logging.INFO)
         self.log.addHandler(out_hdlr)
 
-        # Txt logging
+        # Text logging
         if not dry_run:
             file_hdlr = logging.FileHandler(os.path.join(self.output_dir_path, "log.txt"))
             file_hdlr.setFormatter(logging.Formatter("%(asctime)s %(message)s"))

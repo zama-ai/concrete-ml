@@ -47,7 +47,7 @@ def measure_execution_time(func):
     return wrapper
 
 
-# Instanciate the model
+# Instantiate the model
 torch_model = cnv_2w2a(pretrained=False)
 torch_model.eval()
 

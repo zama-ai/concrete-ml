@@ -33,7 +33,7 @@ def test_pipeline_classifiers_regressors(model, parameters, load_data):
             ("model", model()),
         ]
     )
-    # Do a grid search to find the best hyperparameters
+    # Do a grid search to find the best hyper-parameters
     param_grid = {
         "model__n_bits": [2, 3],
     }

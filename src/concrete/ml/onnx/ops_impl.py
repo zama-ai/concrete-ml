@@ -356,7 +356,7 @@ def numpy_softmax(x, axis=1, keepdims=True):
 
     Args:
         x (numpy.ndarray): Input tensor
-        axis (None, int, tuple of ints): Axis or axes along which a softmax's sum is performed. If
+        axis (None, int, tuple of int): Axis or axes along which a softmax's sum is performed. If
             None, it will sum all of the elements of the input array.  If axis is negative it counts
             from the last to the first axis. Default to 1.
         keepdims (bool): If True, the axes which are reduced along the sum are left in the result as

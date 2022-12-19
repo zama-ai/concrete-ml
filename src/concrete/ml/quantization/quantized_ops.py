@@ -244,7 +244,7 @@ class QuantizedGemm(QuantizedMixingOp):
                 numpy_q_out = numpy_q_out.astype(numpy.int64)
 
             # We identify terms in the above equation to determine what
-            # the scale/zp of the in-the-clear quantizer should be
+            # the scale/zero-point of the in-the-clear quantizer should be
             # to properly dequantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
@@ -351,7 +351,7 @@ class QuantizedAdd(QuantizedOp):
 
         # The sum of quantized encrypted integer values
         # This sum has << max(in_bits0, in_bits1) + 1 >> bits
-        # Moreover, the zeropoint will be sum of input zeropoints
+        # Moreover, the zero-point will be sum of input zero-points
         assert self.b_sign in [-1, 1]
 
         # This lines will be simplified into
@@ -671,7 +671,7 @@ class QuantizedConv(QuantizedMixingOp):
                 numpy_q_out = numpy_q_out.astype(numpy.int64)
 
             # We identify terms in the above equation to determine what
-            # the scale/zp of the in-the-clear quantizer should be
+            # the scale/zero-point of the in-the-clear quantizer should be
             # to properly dequantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
@@ -770,7 +770,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         # during the UniformQuantizer initialization when the zero_point can exist as None
         assert q_input.quantizer.zero_point is not None
 
-        # Compute padding with floor and apply it to the input, pad with the input zeropoint
+        # Compute padding with floor and apply it to the input, pad with the input zero-point
         pool_pads = compute_onnx_pool_padding(
             q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
         )

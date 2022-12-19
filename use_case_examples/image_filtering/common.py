@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-# The repo's directory
+# The repository's directory
 REPO_DIR = Path(__file__).parent
 
-# The repo's main directories
+# The repository's main directories
 FILTERS_PATH = REPO_DIR / "filters"
 KEYS_PATH = REPO_DIR / ".fhe_keys"
 CLIENT_TMP_PATH = REPO_DIR / "client_tmp"
@@ -33,7 +33,7 @@ AVAILABLE_FILTERS = [
 # The input image's shape. Images with larger input shapes will be cropped and/or resized to this
 INPUT_SHAPE = (100, 100)
 
-# Generate random images as an inpuset for compilation
+# Generate random images as an inputset for compilation
 np.random.seed(42)
 INPUTSET = tuple(
     np.random.randint(0, 255, size=(INPUT_SHAPE + (3,)), dtype=np.int64) for _ in range(10)

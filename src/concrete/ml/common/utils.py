@@ -128,7 +128,7 @@ def manage_parameters_for_pbs_errors(
         pass
     elif global_p_error is None:
         # Per Concrete-Numpy, we need to give a value to global_p_error which will not be used
-        # FIXME: this may be removed if CN changes a bit, to see with Umut
+        # FIXME: this may be removed if CN changes a bit
         global_p_error = 42.42
     else:
         raise ValueError("Please only set one of (p_error, global_p_error) values")

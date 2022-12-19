@@ -41,10 +41,10 @@ def get_dataloader(batch_size: int, param: Dict) -> Tuple[DataLoader, DataLoader
 
     Args:
         batch_size (int): The batch size.
-        param (Dict): Set of hyperparameters to use depending on whether
+        param (Dict): Set of hyper-parameters to use depending on whether
            CIFAR-10 or CIFAR-100 is used.
     Return:
-        Tuple[DataLoader, DataLoader]: Trainig and test data loaders.
+        Tuple[DataLoader, DataLoader]: Training and test data loaders.
     """
 
     g = torch.Generator()
@@ -97,7 +97,7 @@ def plot_history(param: Dict, load: bool = False) -> None:
     """Display the loss and accuracy for the test and training sets.
 
     Args:
-        param (Dict): Set of hyperparameters to use depending on whether
+        param (Dict): Set of hyper-parameters to use depending on whether
             CIFAR-10 or CIFAR-100 is used.
         load (bool): If True, we upload the stored param.
     Returns:
@@ -158,11 +158,11 @@ def plot_history(param: Dict, load: bool = False) -> None:
 
 def plot_baseline(param: Dict, data: DataLoader, device: str) -> None:
     """
-    Dislay the test accuracy given `param` arguments
+    Display the test accuracy given `param` arguments
     that we got using Transfer Learning and QAT approaches.
 
     Args:
-        param (Dict): Set of hyperparameters to use depending on whether
+        param (Dict): Set of hyper-parameters to use depending on whether
             CIFAR-10 or CIFAR-100 is used.
         data (DataLoader): Test set.
         device (str): Device type.
@@ -201,7 +201,7 @@ def plot_dataset(data_loader: DataLoader, param: Dict, n: int = 10) -> None:
 
     Args:
         data_loader (DataLoader): Data loader.
-        param (Dict): Set of hyperparameters to use depending on whether
+        param (Dict): Set of hyper-parameters to use depending on whether
             CIFAR-10 or CIFAR-100 is used.
         n (int): Limit the number of images to display to `n`.
     Returns:
@@ -243,7 +243,7 @@ def train(
         model (nn.Module): A Pytorch or Brevitas network.
         train_loader (DataLoader): The training set.
         test_loader (DataLoader): The test set.
-        param (Dict): Set of hyperparameters to use depending on whether
+        param (Dict): Set of hyper-parameters to use depending on whether
             CIFAR-10 or CIFAR-100 is used.
         step (int): Display the loss and accuracy every `epoch % step`.
         device (str): Device type.
@@ -288,7 +288,7 @@ def train(
             param["loss_train_history"].append(np.mean(loss_batch_train))
 
             # Evaluation during training:
-            # Desable autograd engine (no backprop)
+            # Disable autograd engine (no backprop)
             # To reduce memory usage and speed up computations
             with torch.no_grad():
                 # Notify batchnorm & dropout layers to work in eval mode
@@ -337,7 +337,7 @@ def torch_inference(
     Args:
         model (nn.Module): A Pytorch or Brevitas network.
         data (DataLoader): The test or evaluation set.
-        param (Dict): Set of hyperparameters to use depending on whether
+        param (Dict): Set of hyper-parameters to use depending on whether
             CIFAR-10 or CIFAR-100 is used.
         k (int): Number of most likely outcomes considered to find the correct label.
         device (str): Device type.
@@ -413,15 +413,15 @@ def fhe_compatibility(model: Callable, bit: int, data: DataLoader) -> Callable:
 def mapping_keys(pretrained_weights: Dict, model: nn.Module, device: str) -> nn.Module:
 
     """
-    Initialize the quantized model with pretrained fp32 weights.
+    Initialize the quantized model with pre-trained fp32 weights.
 
     Args:
-        pretrained_weights (Dict): The state_dict of the pretrained fp32 model.
+        pretrained_weights (Dict): The state_dict of the pre-trained fp32 model.
         model (nn.Module): The Brevitas model.
         device (str): Device type.
 
     Returns:
-        Callable: The quantized model with the pretrained state_dict.
+        Callable: The quantized model with the pre-trained state_dict.
     """
 
     # Brevitas requirement to ignore missing keys

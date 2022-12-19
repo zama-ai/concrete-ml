@@ -73,7 +73,7 @@ def parse_args(args):
     # Compute resources
     parser.add_argument("--num_workers", default=4, type=int, help="Number of workers")
     parser.add_argument("--gpus", type=none_or_str, default=None, help="Comma separated GPUs")
-    # Optimizer hyperparams
+    # Optimizer hyper-parameters
     parser.add_argument("--batch_size", default=100, type=int, help="batch size")
     parser.add_argument("--lr", default=0.02, type=float, help="Learning rate")
     parser.add_argument("--optim", type=none_or_str, default="ADAM", help="Optimizer to use")
@@ -88,7 +88,7 @@ def parse_args(args):
     parser.add_argument("--random_seed", default=1, type=int, help="Random seed")
     # Neural network Architecture
     parser.add_argument("--network", default="CNV_2W2A", type=str, help="neural network")
-    parser.add_argument("--pretrained", action="store_true", help="Load pretrained model")
+    parser.add_argument("--pretrained", action="store_true", help="Load pre-trained model")
     parser.add_argument("--strict", action="store_true", help="Strict state dictionary loading")
     return parser.parse_args(args)
 
@@ -113,7 +113,7 @@ class objdict(dict):
 def launch(cmd_args):
     args = parse_args(cmd_args)
 
-    # Set relative paths relative to current workdir
+    # Set relative paths relative to current working directory
     path_args = ["datadir", "experiments", "resume"]
     for path_arg in path_args:
         path = getattr(args, path_arg)

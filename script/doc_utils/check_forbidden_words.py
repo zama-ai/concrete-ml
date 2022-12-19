@@ -85,6 +85,9 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("builtin", []),
         ("hyper parameters", []),
         ("hyperparameters", []),
+        ("combinaison", []),
+        ("zeropoint", []),
+        ("pretrained", []),
     ]
     # For later
     #   "We" or "Our", or more generally, passive form

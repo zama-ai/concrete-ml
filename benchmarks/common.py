@@ -38,7 +38,7 @@ except ImportError:  # For backward compatibility purposes
 
 # Hack to import all models currently implemented in CML
 # (but that might not be implemented in targeted version)
-# FIXME: Add list of models as txt somewhere
+# FIXME: Add list of models as text somewhere
 # Since we can make no assumption about which models are
 # imported and that one model not existing would cause the
 # whole suite to crash we dynamically import our models

@@ -226,7 +226,7 @@ class ONNXConverter:
         )
 
         # Override, when necessary, the calibration data with data that is quantized with
-        # layer quantizers that are overriden by the QAT graph quantizers
+        # layer quantizers that are overridden by the QAT graph quantizers
         for idx, data in enumerate(calibration_data):
             if quantizers[idx] is None:
                 continue
