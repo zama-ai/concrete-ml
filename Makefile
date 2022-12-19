@@ -149,7 +149,7 @@ spcc:
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
-PCC_DEPS += check_forbidden_words gitleaks
+PCC_DEPS += check_forbidden_words check_unused_images gitleaks
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
@@ -733,3 +733,8 @@ check_forbidden_words:
 .PHONY: update_dependabot_prs # Update all dependabot PRs on origin
 update_dependabot_prs:
 	/bin/bash ./script/make_utils/update_dependabot_prs.sh
+
+.PHONY: check_unused_images # Check for unused images in the doc
+check_unused_images:
+	./script/make_utils/check_all_images_are_used.sh
+

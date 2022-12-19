@@ -155,7 +155,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser("FIXME", allow_abbrev=False)
+    parser = argparse.ArgumentParser(allow_abbrev=False)
 
     parser.add_argument(
         "--files", type=str, nargs="+", required=True, help="The files to modify in place"
