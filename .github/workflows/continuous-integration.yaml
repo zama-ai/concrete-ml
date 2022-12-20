@@ -534,7 +534,7 @@ jobs:
 
       - name: PyTest Notebooks
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 90
+        timeout-minutes: 240
         run: |
           make pytest_nb
 
