@@ -56,21 +56,22 @@ print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 
 In the following example, showing the de-quantization of model outputs, the `QuantizedArray` class is used in a different way. Here it uses pre-quantized integer values and has the `scale` and `zero-point` set explicitly. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the `forward_fhe.encrypt_run_decrypt(..)` call.
 
+<!--pytest-codeblocks:cont-->
+
 ```python
 import numpy
+from concrete.ml.quantization.quantizers import QuantizationOptions
 
-def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
-    # .....
-    # Assume: qvalues is the decrypted integer output of the model
-    # .....
-    QuantizedArray(
-            output_layer.n_bits,
-            qvalues,
-            value_is_float=False,
-            scale=output_layer.output_scale,
-            zero_point=output_layer.output_zero_point,
-        ).dequant()
-    # ....
+q_values = [0, 0, 1, 2, 3, -1]
+QuantizedArray(
+        q_A.quantizer.n_bits,
+        q_values,
+        value_is_float=False,
+        options=q_A.quantizer.quant_options,
+        stats=q_A.quantizer.quant_stats,
+        params=q_A.quantizer.quant_params,
+).dequant()
+
 ```
 
 ## Quantized modules
