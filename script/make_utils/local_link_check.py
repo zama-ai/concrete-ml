@@ -8,7 +8,7 @@ from typing import List, Union
 
 # A regex that matches [foo (bar)](my_link) and returns the my_link
 # used to find all links made in our markdown files.
-MARKDOWN_LINK_REGEX = re.compile(r"\[[^\]]*\]\(([^\)]*)\)")
+MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\".*\"")]
 
 # FIXME: add target check https://github.com/zama-ai/concrete-ml-internal/issues/1435
 
@@ -26,9 +26,17 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
 
     """
     errors: List[str] = []
-    links = MARKDOWN_LINK_REGEX.findall(content)
+    links = []
+    for regex in MARKDOWN_LINK_REGEX:
+        links_found = regex.findall(content)
+        for link in links_found:
+            link = link.replace(r"\_", "_")  # for gitbook
+            if "href=" in link:  # for html links
+                link = link.replace('href="', "")  # remove href=""
+                link = link[0:-1]  # remove last "
+            links.append(link)
+
     for link in links:
-        link = link.replace(r"\_", "_")  # for gitbook
 
         if link.startswith("http"):
             # This means this is a reference to a website

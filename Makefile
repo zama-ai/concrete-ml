@@ -677,6 +677,11 @@ check_links:
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal: because some files are only
 	@#		private at this time. We'll finally check files with check_links_after_release after
 	@#		everything has been pushed to public repository
+	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
+	@# 		them in the docs. But sphinx does not copy such as images to the _build dir since 
+	@#		they are not included by image tags or sphinx image annotations. We ignore links 
+	@#		to gitbook images in the HTML checker. But the images are actually checked by the 
+	@#		markdown link checker, `local_link_check.sh`.
 	poetry run linkchecker docs --check-extern \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
@@ -684,7 +689,8 @@ check_links:
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis \
-		--ignore-url=https://github.com/zama-ai/concrete-ml-internal
+		--ignore-url=https://github.com/zama-ai/concrete-ml-internal \
+		--ignore-url=.gitbook/assets
 
 .PHONY: check_links_after_release # Check links in the documentation as if we were users
 check_links_after_release: docs
@@ -715,12 +721,18 @@ check_links_after_release: docs
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
+	@#  --ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
+	@# 		them in the docs. But sphinx does not copy such as images to the _build dir since
+	@#		they are not included by image tags or sphinx image annotations. We ignore links
+	@#		to gitbook images in the HTML checker. But the images are actually checked by the
+	@#		markdown link checker, `local_link_check.sh`.
 	poetry run linkchecker docs --check-extern \
 		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
-		--ignore-url=https://www.openml.org
+		--ignore-url=https://www.openml.org \
+		--ignore-url=.gitbook/assets
 
 .PHONY: actionlint # Linter for our github actions
 actionlint:

@@ -12,6 +12,7 @@
     getting-started/pip_installing.md
     getting-started/concepts.md
     getting-started/cloud.md
+    getting-started/showcase.md
 
 .. toctree::
     :maxdepth: 0

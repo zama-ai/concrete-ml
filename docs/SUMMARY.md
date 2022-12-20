@@ -7,6 +7,7 @@
 - [Installation](getting-started/pip_installing.md)
 - [Key Concepts](getting-started/concepts.md)
 - [Inference in the Cloud](getting-started/cloud.md)
+- [Demos and Tutorials](getting-started/showcase.md)
 
 ## Built-in Models
 
