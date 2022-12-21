@@ -112,7 +112,8 @@ open("cifar10.mlir", "w").write(quantized_numpy_module.fhe_circuit.mlir)
 
 # Key generation
 print("Creation of the private and evaluation keys.")
-quantized_numpy_module.fhe_circuit.keygen(force=True)
+_, execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.keygen)(force=True)
+print(f"Keygen took {execution_time} seconds")
 
 # List the files in the directory
 files = KEYGEN_CACHE_DIR.glob("**/*")
@@ -132,7 +133,7 @@ one_x_numpy = x_numpy[:1]
 q_x_numpy, execution_time = measure_execution_time(quantized_numpy_module.quantize_input)(
     one_x_numpy
 )
-print(f"Encryption of a single input (image) took {execution_time} seconds")
+print(f"Quantization of a single input (image) took {execution_time} seconds")
 print(f"Size of CLEAR input is {sys.getsizeof(q_x_numpy)}KB\n")
 
 expected_prediction = quantized_numpy_module.forward(q_x_numpy)

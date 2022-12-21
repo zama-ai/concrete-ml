@@ -26,7 +26,6 @@ You can install these dependencies using pip and the requirements.txt file avail
 pip install -r requirements.txt
 ```
 
-# Usage
 
 ## Training and inference
 
@@ -48,10 +47,6 @@ To evaluate the trained model:
 python3 bnn_pynq_train.py --evaluate --resume ./experiments/CNV_2W2A_2W2A_20221114_131345/checkpoints/best.tar
 ```
 
-## Fully Homomorphic Encryption (FHE)
-
-Three files are available to test the Torch neural network in the FHE settings.
-
 ### Simulation in Concrete-ML
 
 In Concrete-ML, you can test your model before running it in FHE such that you don't have to pay the cost of FHE runtime during development.
@@ -66,7 +61,8 @@ python3 evaluate_torch_cml.py
 
 It evaluates the model with Torch and Concrete-ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
 
-### Fully Homomorphic Encryption
+
+## Fully Homomorphic Encryption (FHE)
 
 Once the model has been proposed to have a correct performance, compilation to the FHE settings can be done.
 
@@ -80,14 +76,15 @@ Here, a picture from the CIFAR10 data-set is randomly chosen and preprocessed. T
 
 Warning: this execution can be quite costly.
 
-# Accuracy
+While it is the ambition of Concrete-ML to execute such large CNNs in reasonable time on various hardware accelerators, currently on a CPU the execution times are very high, more than 10 hours for a large many-core machine. This is a work in progress and will be improved significantly in future releases
 
-| Runtime                | Accuracy |
-| ---------------------- | -------- |
-| VGG Torch              | 88.9     |
-| VGG Concrete-ML        | 88.7     |
-| VGG FHE (simulation\*) | 88.7     |
+## Accuracy and performance
 
-FIXME (https://github.com/zama-ai/concrete-ml-internal/issues/2350): add actual FHE accuracy and performance.
+| Runtime                   | Accuracy |
+| ------------------------- | -------- |
+| VGG Torch                 | 88.7     |
+| VGG FHE (simulation\*)    | 88.7     |
+| VGG FHE                   | NA\*\*       |
 
 \* The simulation is done using Virtual Library (VL) that simulates the FHE evaluation in the clear for faster debugging.
+\*\* Expected to match the VGG FHE simulation. It is a work in progress to assess the actual FHE accuracy on a subset of images.
