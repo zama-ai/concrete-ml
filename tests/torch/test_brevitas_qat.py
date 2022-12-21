@@ -263,14 +263,14 @@ def test_brevitas_intermediary_values(
         "verbose": 0,
     }
 
-    concrete_classifier = model(**params)
+    concrete_model = model(**params)
 
     # Compute mean/stdev on training set and normalize both train and test sets with them
     normalizer = StandardScaler()
     x_train = normalizer.fit_transform(x_train)
     x_test = normalizer.transform(x_test)
 
-    _, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
+    concrete_model.fit(x_train, y_train)
 
     # Wrap the original torch module with a debug module that captures intermediary values
     class DebugQNNModel(SparseQuantNeuralNetImpl):
@@ -310,14 +310,14 @@ def test_brevitas_intermediary_values(
 
     # Wrap the original model, and copy its weights
     dbg_model = DebugQNNModel(**params_module)
-    dbg_model.load_state_dict(sklearn_classifier.module.state_dict())
+    dbg_model.load_state_dict(concrete_model.module_.state_dict())
 
     # Execute on the test set and capture debug values
     dbg_model(torch.tensor(x_test.astype(numpy.float64)))
 
     # Execute the Concrete-ML model on the test set and capture debug values
-    q_x = concrete_classifier.quantized_module_.quantize_input(x_test)
-    _, cml_debug_values = concrete_classifier.quantized_module_.forward(q_x, debug=True)
+    q_x = concrete_model.quantized_module_.quantize_input(x_test)
+    _, cml_debug_values = concrete_model.quantized_module_.forward(q_x, debug=True)
     cml_intermediary_values = [
         q_arr[0].qvalues for name, q_arr in cml_debug_values.items() if "Gemm" in name
     ]

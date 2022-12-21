@@ -12,6 +12,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
+import brevitas.nn as qnn
 import numpy
 import onnx
 import sklearn
@@ -440,58 +441,98 @@ class QuantizedTorchEstimatorMixin:
     # pylint: enable=arguments-differ
 
     def fit_benchmark(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> Tuple[Any, Any]:
-        """Fit the quantized estimator and return reference estimator.
+        """Fit the quantized estimator as well as its equivalent float estimator.
 
-        This function returns both the quantized estimator (itself),
-        but also a wrapper around the non-quantized trained NN. This is useful in order
-        to compare performance between the quantized and fp32 versions of the classifier
+        This function returns both the quantized estimator (itself) as well as its non-quantized
+        (float) equivalent, which are both trained separately. This is useful in order
+        to compare performances between quantized and fp32 versions.
 
         Args:
-            X : training data
+            X : The training data
                 By default, you should be able to pass:
                 * numpy arrays
                 * torch tensors
                 * pandas DataFrame or Series
-            y (numpy.ndarray): labels associated with training data
+            y (numpy.ndarray): The labels associated with the training data
             *args: The arguments to pass to the sklearn linear model.
             **kwargs: The keyword arguments to pass to the sklearn linear model.
 
         Returns:
-            self: the trained quantized estimator
-            fp32_model: trained raw (fp32) wrapped NN estimator
+            self: The trained quantized estimator
+            fp32_model: The trained float equivalent estimator
         """
-
+        # Fit the quantized estimator
         self.fit(X, y, *args, **kwargs)
 
-        # Create a skorch estimator with the same training parameters as this one
-        # Follow sklearn.base.clone: copy.deepcopy parameters obtained with get_params()
-        # and pass them to the constructor
+        # Retrieve the Skorch estimator's training parameters
+        # Following sklearn.base.clone's documentation, parameters are obtained with get_params()
+        # and then need to be copied using copy.deepcopy before passing them to the constructor
+        # Following sklearn.base.clone's documentation: "Clone does a deep copy of the model in an
+        # estimator without actually copying  attached data. It returns a new estimator with the
+        # same parameters that has not been fitted on any data."
+        # See: https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html
+        # We therefore obtained the parameters with get_params(), copy them using copy.deepcopy
+        # and then pass them to the constructor.
+        estimator_parameters = self.get_params_for_benchmark()
 
-        # sklearn docs: "Clone does a deep copy of the model in an estimator without actually
-        # copying  attached data. It returns a new estimator with the same parameters
-        # that has not been fitted on any data."
-        # see: https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html
-        new_object_params = self.get_params_for_benchmark()
+        # The `module` parameter needs to be removed as we need to rebuild it separately
+        # This key is only present for NeuralNetClassifiers that don't fix the module type,
+        # otherwise, it may have already been removed (e.g. by FixedTypeSkorchNeuralNet)
+        estimator_parameters.pop("module", None)
 
-        for name, param in new_object_params.items():
-            new_object_params[name] = copy.deepcopy(param)
+        # Copy the estimator's training parameters
+        for name, param in estimator_parameters.items():
+            estimator_parameters[name] = copy.deepcopy(param)
 
-        klass = self.base_estimator_type
-        module_copy = copy.deepcopy(self.base_module_to_compile)
+        # Retrieve the estimator's float equivalent module
+        float_module = self._get_equivalent_float_module()
 
-        # Construct with the fp32 network already trained for this quantized estimator
-        # Need to remove the `module` parameter as we pass the trained instance here
-        # This key is only present for NeuralNetClassifiers that don't fix the module type
-        # Else this key may be removed already, e.g. by the FixedTypeSkorchNeuralNet
-        if "module" in new_object_params:
-            new_object_params.pop("module")
-        fp32_model = klass(module_copy, **new_object_params)
+        # Instantiate the float estimator
+        skorch_estimator_type = self.base_estimator_type
+        float_estimator = skorch_estimator_type(float_module, **estimator_parameters)
 
-        # Don't fit the new estimator, it is already trained. We just need to call initialize() to
-        # signal to the skorch estimator that it is already trained
-        fp32_model.initialize()
+        # Fit the float estimator
+        float_estimator.fit(X, y, *args, **kwargs)
 
-        return self, fp32_model
+        return self, float_estimator
+
+    def _get_equivalent_float_module(self):
+        """Build a topologically equivalent Torch module that can be used on floating points.
+
+        Returns:
+            float_module (nn.Sequential): The equivalent float module.
+        """
+        # Instantiate a new sequential module
+        float_module = torch.nn.Sequential()
+
+        layer_index = -1
+
+        # Iterate over the model's sub-modules
+        for module in self.base_module_to_compile.features:
+
+            # If the module is not a QuantIdentity, it's either a QuantLinear or an activation
+            if not isinstance(module, qnn.QuantIdentity):
+
+                # If the module is a QuantLinear, replace it with a Linear module
+                if isinstance(module, qnn.QuantLinear):
+                    layer_index += 1
+
+                    linear_name = f"fc{layer_index}"
+                    linear_layer = torch.nn.Linear(
+                        module.in_features,
+                        module.out_features,
+                        module.bias is not None,
+                    )
+
+                    float_module.add_module(linear_name, linear_layer)
+
+                # Else, it's a module representing the activation function, which needs to be
+                # added as well
+                else:
+                    activation_name = f"act{layer_index}"
+                    float_module.add_module(activation_name, module)
+
+        return float_module
 
 
 class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):

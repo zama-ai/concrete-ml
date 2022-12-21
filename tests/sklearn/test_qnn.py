@@ -18,123 +18,6 @@ from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn import QuantizedSkorchEstimatorMixin
 
 
-@pytest.mark.parametrize(
-    "n_layers",
-    [3],
-)
-@pytest.mark.parametrize("n_bits_w_a", [16])
-@pytest.mark.parametrize("n_accum_bits", [40])
-@pytest.mark.parametrize(
-    "activation_function",
-    [
-        pytest.param(nn.ReLU),
-        pytest.param(nn.ReLU6),
-        pytest.param(nn.Sigmoid),
-        pytest.param(nn.SELU),
-    ],
-)
-@pytest.mark.parametrize("n_outputs", [1, 5])
-@pytest.mark.parametrize("input_dim", [100])
-@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
-def test_nn_models_quant(
-    n_layers,
-    n_bits_w_a,
-    n_accum_bits,
-    activation_function,
-    n_outputs,
-    input_dim,
-    model,
-    load_data,
-    check_r2_score,
-    check_accuracy,
-):
-    """Test the correctness of the results of quantized NN classifiers through the sklearn
-    wrapper."""
-    # Get the dataset. The data generation is seeded in load_data.
-    if is_classifier(model):
-        x, y = load_data(
-            dataset="classification",
-            n_samples=1000,
-            n_features=input_dim,
-            n_redundant=0,
-            n_repeated=0,
-            n_informative=input_dim,
-            n_classes=n_outputs,
-            class_sep=2,
-        )
-
-    # Get the dataset. The data generation is seeded in load_data.
-    elif is_regressor(model):
-        x, y, _ = load_data(
-            dataset="regression",
-            n_samples=1000,
-            n_features=input_dim,
-            n_informative=input_dim,
-            n_targets=n_outputs,
-            noise=2,
-            coef=True,
-        )
-        if y.ndim == 1:
-            y = numpy.expand_dims(y, 1)
-    else:
-        raise ValueError(f"Data generator not implemented for {str(model)}")
-
-    # Perform a classic test-train split (deterministic by fixing the seed)
-    x_train, x_test, y_train, _ = train_test_split(
-        x,
-        y,
-        test_size=0.25,
-        random_state=numpy.random.randint(0, 2**15),
-    )
-
-    params = {
-        "module__n_layers": n_layers,
-        "module__n_w_bits": n_bits_w_a,
-        "module__n_a_bits": n_bits_w_a,
-        "module__n_accum_bits": n_accum_bits,
-        "module__n_outputs": n_outputs,
-        "module__input_dim": x_train.shape[1],
-        "module__activation_function": activation_function,
-        "max_epochs": 10,
-        "verbose": 0,
-    }
-
-    if n_outputs == 1 and is_classifier(model):
-        with pytest.raises(
-            ValueError,
-            match=".* number of classes.*",
-        ):
-            concrete_classifier = model(**params)
-        return
-
-    concrete_classifier = model(**params)
-
-    # Compute mean/stdev on training set and normalize both train and test sets with them
-    normalizer = StandardScaler()
-    x_train = normalizer.fit_transform(x_train)
-    x_test = normalizer.transform(x_test)
-
-    _, sklearn_classifier = concrete_classifier.fit_benchmark(x_train, y_train)
-
-    if model._estimator_type == "classifier":  # pylint: disable=protected-access
-        # Classification models
-        # We need to cast to float32 for the skorch model
-        # If we run through concrete it's done under the hood
-
-        y_pred_sk = sklearn_classifier.predict(x_test.astype(numpy.float32))
-        y_pred = concrete_classifier.predict(x_test)
-        check_accuracy(y_pred_sk, y_pred)
-
-        y_pred_sk = sklearn_classifier.predict_proba(x_test.astype(numpy.float32))
-        y_pred = concrete_classifier.predict_proba(x_test)
-    else:
-        # Regression models
-        y_pred_sk = sklearn_classifier.predict(x_test.astype(numpy.float32))
-        y_pred = concrete_classifier.predict(x_test)
-
-    check_r2_score(y_pred_sk, y_pred)
-
-
 @pytest.mark.parametrize("model", get_sklearn_neural_net_models())
 def test_parameter_validation(model, load_data):
     """Test that the sklearn quantized NN wrappers validate their parameters"""
@@ -437,7 +320,7 @@ def test_custom_net_classifier(load_data):
     x_test = normalizer.transform(x_test)
 
     # Train the model
-    clf.fit_benchmark(x_train, y_train)
+    clf.fit(x_train, y_train)
 
     # Test the custom network wrapper in a pipeline with grid CV
     # This will clone the skorch estimator

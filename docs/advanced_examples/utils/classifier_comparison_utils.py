@@ -124,15 +124,7 @@ def make_classifier_comparison(title, classifiers, decision_level):
 
             # Train the model and retrieve both the Concrete-ML model and its equivalent one from
             # scikit-learn
-            # If the model is a NeuralNetClassifier, instantiate a scikit-learn MLPClassifier
-            # separately in order to be able to be able to compare the results with a float model
-            # that doesn't use QAT
-            if model.__class__ == NeuralNetClassifier:
-                sklearn_model = MLPClassifier(alpha=1, max_iter=1000, hidden_layer_sizes=(20,))
-                sklearn_model.fit(X_train, y_train)
-                concrete_model = model.fit(X_train, y_train)
-            else:
-                concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
+            concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
 
             # Compute the predictions in clear using the scikit-learn model
             sklearn_y_pred = sklearn_model.predict(X_test)
