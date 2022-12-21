@@ -63,6 +63,7 @@ exclude_patterns = [
     "developer-guide/api/*.md",
     "developer-guide/workflow/README.md",
     "developer-guide/inner-workings/README.md",
+    "conventions.md",
 ]
 
 # Group member variables and methods separately (not alphabetically)

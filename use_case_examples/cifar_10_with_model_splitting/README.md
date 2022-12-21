@@ -20,17 +20,37 @@ The method is generic and can be applied to any neural network model, but the co
 
 To run this notebook properly you will need the usual Concrete-ML dependencies plus the extra dependencies from `requirements.txt` that you can install using `pip install -r requirements.txt` .
 
-We also provide a script to run the model in FHE. On an AWS c6i.metal compute machine, to do the inference of one CIFAR-10 image, we got the following timings:
+We also provide a script to run the model in FHE.
 
-- Time to compile: 103 seconds
-- Time to keygen: 639 seconds
-- Time to infer: 37706 seconds (more than 10 hours)
+The naive approach to run this model in FHE would be to choose a low `p_error` or `global_p_error` and compile the model with it to run the FHE inference.
+By trial and error we found that a `global_p_error` of 0.15 was one of the lowest value for which we could find crypto-parameters.
+On an AWS c6i.metal compute machine, doing the inference of one CIFAR-10 image with a `global_p_error` of 0.15, we got the following timings:
+
+- Time to compile: 112 seconds
+- Time to keygen: 1231 seconds
+- Time to infer: 35619 seconds (around 10 hours)
+
+But this can be improved by searching for a better `p_error`.
+
+One way to do this is to do a binary search using the Virtual Library to estimate the impact of the `p_error` on the final accuracy of our model.
+Using the first 1000 samples of CIFAR-10 train set we ran the search to find the highest `p_error` such that the difference in accuracy between the Virtual Library and the clear model was below 1 point. This search yielded a `p_error` of approximately 0.05.
+We use only a subset of the training set to make the search time acceptable, but one can either modify this number, or even do [bootstrapping](<https://en.wikipedia.org/wiki/Bootstrapping_(statistics)>), to have a better estimate.
+
+Obviously the accuracy difference observed is only a simulation on these 1000 samples so a verification of this result is important to do. We validated this `p_error` choice by running 40 times the inference of the 1000 samples using the Virtual Library and the maximum difference in accuracy that we observed was of 2 points, which seemed relatively okay.
+
+Once we had this `p_error` validated we re-run the FHE inference using this new `p_error`, on the same machine (c6i.metal) and got the following results:
+
+- Time to compile: 109 seconds
+- Time to keygen: 30 seconds
+- Time to infer: 1738 seconds
+
+We see a 20x improvement with a simple change in the `p_error` parameter, for more details on how to handle `p_error` please refer to the [documentation](../../docs/advanced-topics/advanced_features.md#approximate-computations).
 
 ## Results
 
 Anyone can reproduce the FHE inference results using the [dedicated script](./fhe_inference.py).
 
-The Pytorch model and the inference using Pytorch for the first layer and the virtual library for the encrypted part yielded the same top-k accuracies:
+The Pytorch model and the inference using Pytorch for the first layer and the Virtual Library for the encrypted part yielded the same top-k accuracies:
 
 - top-1-accuracy: 0.6234
 - top-2-accuracy: 0.8075

@@ -41,6 +41,9 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
         if link.startswith("http"):
             # This means this is a reference to a website
             continue
+        if link.startswith("<http"):
+            # This means this is a reference to a website
+            continue
         if link.startswith("#"):
             # This means this is a reference to a header
             continue

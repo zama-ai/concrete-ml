@@ -26,6 +26,10 @@ def process_file(file_str: str, do_open_problematic_files=False):
     if "docs/developer-guide/api" in file_str:
         return True, 0
 
+    # Don't do it for conventions.md file that explains what should or not be done
+    if file_path.name == "conventions.md":
+        return True, 0
+
     # forbidden_word_list is a list of tuples: each tuple is of the form
     # (forbidden_word, exceptions), where:
     #       forbidden_word: is the forbidden word

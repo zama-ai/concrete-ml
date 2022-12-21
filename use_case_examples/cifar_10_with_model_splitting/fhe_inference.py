@@ -64,7 +64,7 @@ def main():
         torch_inputset=train_features_sub_set,  # a representative inputset to be used for both quantization and compilation
         n_bits=8,
         configuration=configuration,
-        global_p_error=0.15,
+        p_error=0.05,
         output_onnx_file=compilation_onnx_path,
     )
     end_compile = time.time()
