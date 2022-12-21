@@ -1556,10 +1556,10 @@ def numpy_reduce_sum(
 
     Args:
         a (numpy.ndarray): Input tensor whose elements to sum.
-        axes (Optional[numpy.ndarray]): Array of integers along which to reduce. The default is to
-            reduce over all the dimensions of the input tensor if 'noop_with_empty_axes' is false,
-            else act as an Identity op when 'noop_with_empty_axes' is true. Accepted range is
-            [-r, r-1] where r = rank(data). Default to None.
+        axes (Optional[Union[numpy.ndarray, tuple]]): Array or tuple of integers along which to
+            reduce. The default is to reduce over all the dimensions of the input tensor if
+            'noop_with_empty_axes' is false, else act as an Identity op when 'noop_with_empty_axes'
+            is true. Accepted range is [-r, r-1] where r = rank(data). Default to None.
         keepdims (int): Keep the reduced dimension or not, 1 means keeping the
             input dimension, 0 will reduce it along the given axis. Default to 1.
         noop_with_empty_axes (int): Defines behavior if 'axes' is empty or set to None.
@@ -1574,8 +1574,8 @@ def numpy_reduce_sum(
     assert_true(keepdims in [0, 1], f"keepdims parameter should either be 0 or 1. Got {keepdims}")
 
     assert_true(
-        axes is None or isinstance(axes, numpy.ndarray),
-        f"axes parameter should either be None or a Numpy array. Got {type(axes)}",
+        axes is None or isinstance(axes, (numpy.ndarray, tuple)),
+        f"axes parameter should either be None, a Numpy array or a tuple. Got {type(axes)}",
     )
 
     # Numpy's axis parameter only handles tuple of integers (or None) as input while ONNX's axes

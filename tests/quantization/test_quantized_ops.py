@@ -1115,7 +1115,7 @@ def test_reduce_sum(
 ):
     """Test the QuantizedReduceSum operator."""
     # Generate the inputs
-    inputs = data_generator(size=(1,) + size)
+    inputs = data_generator(size=(10,) + size)
 
     # Instantiate the operator
     quantized_reduce_sum = QuantizedReduceSum(
