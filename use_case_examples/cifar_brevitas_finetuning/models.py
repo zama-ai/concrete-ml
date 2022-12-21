@@ -98,7 +98,6 @@ class QuantVGG11(nn.Module):
         bit: int,
         output_size: int = 3,
         act_quant: brevitas.quant = Int8ActPerTensorFloat,
-        weight_quant_type: brevitas.core.quant = QuantType.INT,
         weight_quant: brevitas.quant = Int8WeightPerTensorFloat,
     ):
         """A quantized network with Brevitas.
@@ -107,7 +106,6 @@ class QuantVGG11(nn.Module):
             bit (int): Bit of quantization.
             output_size (int): Number of classes.
             act_quant (brevitas.quant): Quantization protocol of activations.
-            weight_quant_type (brevitas.core.quant): Int type.
             weight_quant (brevitas.quant): Quantization protocol of the weights.
 
         """
@@ -136,7 +134,6 @@ class QuantVGG11(nn.Module):
                     out_features=t[2],
                     weight_bit_width=bit,
                     weight_quant=weight_quant,
-                    weight_quant_type=weight_quant_type,
                     bias=True,
                     return_quant_tensor=True,
                 )
@@ -167,7 +164,6 @@ class QuantVGG11(nn.Module):
             in_features=512 * 1 * 1,
             out_features=output_size,
             weight_quant=weight_quant,
-            weight_quant_type=weight_quant_type,
             weight_bit_width=bit,
             bias=True,
             return_quant_tensor=True,
