@@ -24,7 +24,12 @@ from concrete.ml.torch.compile import compile_brevitas_qat_model
 @pytest.mark.parametrize("qat_bits", [3, 7])
 @pytest.mark.parametrize("signed, narrow", [(True, False), (True, True), (False, False)])
 def test_brevitas_tinymnist_cnn(
-    qat_bits, signed, narrow, check_graph_input_has_no_tlu, check_graph_output_has_no_tlu
+    qat_bits,
+    signed,
+    narrow,
+    check_graph_input_has_no_tlu,
+    check_graph_output_has_no_tlu,
+    check_is_good_execution_for_cml_vs_circuit,
 ):  # pylint: disable=too-many-statements, too-many-locals
     """Train, execute and test a QAT CNN on a small version of MNIST."""
 
@@ -123,6 +128,7 @@ def test_brevitas_tinymnist_cnn(
                 else:
                     output = quantized_module.forward_and_dequant(x_q)
 
+                check_is_good_execution_for_cml_vs_circuit(x_q, quantized_module)
                 # Take the predicted class from the outputs and store it
                 y_pred = numpy.argmax(output, 1)
                 all_y_pred[idx] = y_pred

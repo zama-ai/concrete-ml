@@ -47,6 +47,7 @@ def compile_and_test_keras(
     opset,
     default_configuration,
     use_virtual_lib,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from Keras."""
 
@@ -91,7 +92,7 @@ def compile_and_test_keras(
 
     assert quantized_numpy_module.is_compiled
     quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
-
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
     # FIXME: add tests of results
 
 
@@ -107,7 +108,12 @@ def compile_and_test_keras(
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_compile_keras_networks(
-    model, input_output_feature, default_configuration, use_virtual_lib, is_vl_only_option
+    model,
+    input_output_feature,
+    default_configuration,
+    use_virtual_lib,
+    is_vl_only_option,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from Keras."""
     if not use_virtual_lib and is_vl_only_option:
@@ -120,10 +126,11 @@ def test_compile_keras_networks(
         OPSET_VERSION_FOR_ONNX_EXPORT,
         default_configuration,
         use_virtual_lib,
+        check_is_good_execution_for_cml_vs_circuit,
     )
 
 
-def test_failure_wrong_offset():
+def test_failure_wrong_offset(check_is_good_execution_for_cml_vs_circuit):
     """Test that wrong ONNX opset version are caught."""
     input_output_feature = 4
     model = FC
@@ -135,6 +142,7 @@ def test_failure_wrong_offset():
             OPSET_VERSION_FOR_ONNX_EXPORT - 1,
             None,
             None,
+            check_is_good_execution_for_cml_vs_circuit,
         )
 
     expected_string = (

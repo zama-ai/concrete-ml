@@ -49,6 +49,7 @@ from concrete.ml.torch.compile import (
 INPUT_OUTPUT_FEATURE = [5, 10]
 
 
+# pylint: disable-next=too-many-arguments
 def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many-statements
     input_output_feature,
     model,
@@ -57,6 +58,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     default_configuration,
     use_virtual_lib,
     is_onnx,
+    check_is_good_execution_for_cml_vs_circuit,
     dump_onnx=False,
     expected_onnx_str=None,
     verbose_compilation=False,
@@ -142,7 +144,9 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
         if not isinstance(qtest, tuple):
             qtest = (qtest,)
         assert quantized_numpy_module.is_compiled
-        quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
+
+        # Make sure VL and quantized module forward give the same output.
+        check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
     else:
         # Compile our network with 16-bits
         # to compare to torch (8b weights + float 32 activations)
@@ -185,6 +189,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
             result = quantized_numpy_module.dequantize_output(q_result)
             results.append(result)
+
+        check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
 
         # FIXME implement a test specific to torch vs CML quantization and use it here #1248
         # See commit 6c40a0c7c3765012766592a74db99430c5a373e5 for
@@ -233,6 +239,7 @@ def test_compile_torch_or_onnx_networks(
     default_configuration,
     use_virtual_lib,
     is_onnx,
+    check_is_good_execution_for_cml_vs_circuit,
     is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
@@ -251,6 +258,7 @@ def test_compile_torch_or_onnx_networks(
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
     )
 
@@ -279,6 +287,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     is_vl_only_option,
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -296,6 +305,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
     )
 
@@ -360,6 +370,7 @@ def test_compile_torch_or_onnx_activations(
     default_configuration,
     use_virtual_lib,
     is_onnx,
+    check_is_good_execution_for_cml_vs_circuit,
     is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
@@ -378,6 +389,7 @@ def test_compile_torch_or_onnx_activations(
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
     )
 
@@ -404,6 +416,7 @@ def test_compile_torch_qat(
     default_configuration,
     use_virtual_lib,
     is_vl_only_option,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -424,6 +437,7 @@ def test_compile_torch_qat(
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
     )
 
@@ -467,7 +481,13 @@ def test_compile_torch_qat(
         pytest.param(nn.ReLU, id="relu"),
     ],
 )
-def test_dump_torch_network(model, expected_onnx_str, activation_function, default_configuration):
+def test_dump_torch_network(
+    model,
+    expected_onnx_str,
+    activation_function,
+    default_configuration,
+    check_is_good_execution_for_cml_vs_circuit,
+):
     """This is a test which is equivalent to tests in test_dump_onnx.py, but for torch modules."""
     input_output_feature = 7
     use_virtual_lib = True
@@ -482,6 +502,7 @@ def test_dump_torch_network(model, expected_onnx_str, activation_function, defau
         default_configuration,
         use_virtual_lib,
         is_onnx,
+        check_is_good_execution_for_cml_vs_circuit,
         dump_onnx=True,
         expected_onnx_str=expected_onnx_str,
         verbose_compilation=False,
@@ -489,8 +510,13 @@ def test_dump_torch_network(model, expected_onnx_str, activation_function, defau
 
 
 @pytest.mark.parametrize("verbose_compilation", [True, False])
+# pylint: disable-next=too-many-locals
 def test_pretrained_mnist_qat(
-    default_configuration, check_accuracy, verbose_compilation, check_graph_output_has_no_tlu
+    default_configuration,
+    check_accuracy,
+    verbose_compilation,
+    check_graph_output_has_no_tlu,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Load a QAT MNIST model and make sure we get the same results in VL as with ONNX."""
 
@@ -553,6 +579,7 @@ def test_pretrained_mnist_qat(
         qtest = (qtest,)
 
     assert quantized_numpy_module.is_compiled
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
 
     # Collect VL results
     results = []
@@ -594,7 +621,7 @@ def test_pretrained_mnist_qat(
     assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8
 
 
-def test_qat_import_check(default_configuration):
+def test_qat_import_check(default_configuration, check_is_good_execution_for_cml_vs_circuit):
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
     qat_bits = 4
 
@@ -615,6 +642,7 @@ def test_qat_import_check(default_configuration):
             default_configuration,
             use_virtual_lib,
             False,
+            check_is_good_execution_for_cml_vs_circuit,
         )
 
     # The second case is a network that is not QAT but is being imported as a QAT network
@@ -627,6 +655,7 @@ def test_qat_import_check(default_configuration):
             default_configuration,
             use_virtual_lib,
             False,
+            check_is_good_execution_for_cml_vs_circuit,
         )
 
     class AllZeroCNN(CNNOther):
@@ -650,6 +679,7 @@ def test_qat_import_check(default_configuration):
             default_configuration,
             use_virtual_lib,
             False,
+            check_is_good_execution_for_cml_vs_circuit,
         )
 
 

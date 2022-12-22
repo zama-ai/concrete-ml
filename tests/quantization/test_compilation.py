@@ -50,12 +50,12 @@ def test_quantized_module_compilation(
     model,
     activation,
     default_configuration,
-    check_is_good_execution,
     n_bits,
     use_virtual_lib,
     is_vl_only_option,
     check_graph_input_has_no_tlu,
     verbose_compilation,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a neural network compilation for FHE inference."""
     if not use_virtual_lib and is_vl_only_option:
@@ -94,17 +94,7 @@ def test_quantized_module_compilation(
         use_virtual_lib=use_virtual_lib,
         verbose_compilation=verbose_compilation,
     )
-
-    for x_q in q_input:
-        x_q = numpy.expand_dims(x_q, 0)
-        check_is_good_execution(
-            fhe_circuit=quantized_model.forward_fhe,
-            function=quantized_model.forward,
-            args=[x_q],
-            check_function=numpy.array_equal,
-            verbose=False,
-        )
-
+    check_is_good_execution_for_cml_vs_circuit(q_input, quantized_model)
     check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
 
 
@@ -129,11 +119,11 @@ def test_quantized_cnn_compilation(
     model,
     activation,
     default_configuration,
-    check_is_good_execution,
     check_graph_input_has_no_tlu,
     use_virtual_lib,
     is_vl_only_option,
     verbose_compilation,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a convolutional neural network compilation for FHE inference."""
     if not use_virtual_lib and is_vl_only_option:
@@ -171,17 +161,7 @@ def test_quantized_cnn_compilation(
         use_virtual_lib=use_virtual_lib,
         verbose_compilation=verbose_compilation,
     )
-
-    for x_q in q_input:
-        x_q = numpy.expand_dims(x_q, 0)
-        check_is_good_execution(
-            fhe_circuit=quantized_model.forward_fhe,
-            function=quantized_model.forward,
-            args=[x_q],
-            check_function=numpy.array_equal,
-            verbose=False,
-        )
-
+    check_is_good_execution_for_cml_vs_circuit(q_input, quantized_model)
     check_graph_input_has_no_tlu(quantized_model.forward_fhe.graph)
 
 
@@ -333,7 +313,9 @@ def test_post_training_quantization_constant_folding():
 
 
 def test_compile_multi_input_nn_with_input_tlus(
-    default_configuration, check_graph_input_has_no_tlu
+    default_configuration,
+    check_graph_input_has_no_tlu,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Checks that there are input TLUs on a network for which input TLUs cannot be removed."""
 
@@ -356,6 +338,7 @@ def test_compile_multi_input_nn_with_input_tlus(
         default_configuration,
         use_virtual_lib=True,
     )
+    check_is_good_execution_for_cml_vs_circuit(q_input, quantized_model)
 
     # Check that the network has TLUs in the input node
     with pytest.raises(AssertionError, match=".*TLU on an input node.*"):

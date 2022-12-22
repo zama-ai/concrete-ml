@@ -5,6 +5,7 @@ import re
 import shutil
 from pathlib import Path
 from typing import Any, Callable, Iterable, Optional, Union
+from concrete.ml.quantization.quantized_module import QuantizedModule
 
 import numpy
 import pytest
@@ -246,95 +247,6 @@ def is_vl_only_option(request):
     return only_vl_tests
 
 
-def check_is_good_execution_for_quantized_models_impl(
-    x: numpy.ndarray,
-    model_predict: Callable,
-):
-    """Run several times the check
-    model.predict(x, execute_in_fhe=True)==model.predict(x, execute_in_fhe=False).
-    If always wrong, return an error."""
-
-    nb_tries = 10
-    y_pred = model_predict(x)
-    for _ in range(nb_tries):
-        y_pred_fhe = model_predict(x, execute_in_fhe=True)
-        if numpy.array_equal(y_pred, y_pred_fhe):
-            return
-    raise AssertionError(
-        f"bad computation after {nb_tries} tries.\nLast engine result:\n{y_pred_fhe}\n"
-        f"Function result:\n{y_pred}"
-    )
-
-
-def check_is_good_execution_impl(
-    fhe_circuit: Circuit,
-    function: Callable,
-    args: Iterable[Any],
-    preprocess_input_func: Callable[[Any], Any] = lambda x: x,
-    postprocess_output_func: Callable[[Any], Any] = lambda x: x,
-    check_function: Callable[[Any, Any], bool] = numpy.equal,
-    verbose: bool = True,
-):
-    """Run several times the check compiler_engine.encrypt_run_decrypt(*args) == function(*args).
-    If always wrong, return an error. One can set the expected probability of success of one
-    execution and the number of tests, to fine-tune the probability of bad luck, i.e. that we run
-    several times the check and always have a wrong result."""
-    max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
-
-    # Allow tests to pass if cells of the output result are good at least once over the nb_tries
-    # Enabled only when we have a circuit that's using the maximum possible bit width
-    # >= if there are 16-bits signed integers
-    allow_relaxed_tests_passing = max_bit_width >= MAXIMUM_TLU_BIT_WIDTH
-
-    # For exactly MAXIMUM_TLU_BIT_WIDTH bits, we have not exactly 100%
-    # accuracy, so let's have more tries
-    nb_tries = 10
-
-    if max_bit_width < MAXIMUM_TLU_BIT_WIDTH:
-        # Here, things are supposed to be more exact, so let's reduce nb_tries
-        nb_tries = 3
-
-    # Prepare the bool array to record if cells were properly computed
-    preprocessed_args = tuple(preprocess_input_func(val) for val in args)
-    cells_were_properly_computed = numpy.zeros_like(function(*preprocessed_args), dtype=bool)
-
-    for i in range(1, nb_tries + 1):
-        preprocessed_args = tuple(preprocess_input_func(val) for val in args)
-        last_engine_result = postprocess_output_func(
-            fhe_circuit.encrypt_run_decrypt(*preprocessed_args)
-        )
-        last_function_result = postprocess_output_func(function(*preprocessed_args))
-
-        ok_execution = check_function(last_engine_result, last_function_result)
-        if isinstance(ok_execution, numpy.ndarray):
-            # Record the cells that were well computed
-            cells_were_properly_computed = numpy.logical_or(
-                cells_were_properly_computed, ok_execution
-            )
-
-            # Get a boolean for the execution
-            ok_execution = ok_execution.all()
-
-        if ok_execution:
-            # Good computation after i tries
-            if verbose:
-                print(f"Good computation after {i} tries")
-            return
-        # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1264
-        # Remove the relaxed tests once accuracy is good again for 7 bits
-        if allow_relaxed_tests_passing and cells_were_properly_computed.all():
-            print(
-                "Computation was never good for all output cells at the same time, "
-                f"however each was evaluated properly at least once, stopped after {i} tries"
-            )
-            return
-
-    raise AssertionError(
-        f"bad computation after {nb_tries} tries.\nLast engine result:\n{last_engine_result}\n"
-        f"Last function result:\n{last_function_result}"
-    )
-
-
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
@@ -371,19 +283,6 @@ def check_circuit_precision_impl(circuit: Circuit):
             f"The circuit's precision is expected to be less than {MAXIMUM_TLU_BIT_WIDTH}. "
             f"Got {circuit_precision}."
         )
-
-
-@pytest.fixture
-def check_is_good_execution_for_quantized_models():
-    """Fixture to check model FHE execution."""
-    return check_is_good_execution_for_quantized_models_impl
-
-
-@pytest.fixture
-def check_is_good_execution():
-    """Fixture to check if good FHE execution."""
-
-    return check_is_good_execution_impl
 
 
 @pytest.fixture
@@ -543,3 +442,80 @@ def load_data():
             return dataset()
 
     return custom_load_data
+
+
+@pytest.fixture
+def check_is_good_execution_for_cml_vs_circuit():
+    """Compare quantized module or built-in inference vs Concrete-Numpy circuit."""
+
+    def batch_circuit_inference(inputs: numpy.ndarray, circuit: Circuit):
+        """Execute a circuit on a batch of data."""
+        # FIXME for now, only allow VL with p_error = 0 since want to make sure the VL
+        # (without randomness) matches perfectly CML's predictions.
+        # (see https://github.com/zama-ai/concrete-ml-internal/issues/2519)
+        if circuit.configuration.virtual and circuit.configuration.p_error not in (
+            None,
+            0.0,
+        ):
+            raise ValueError(
+                "Virtual Library (VL) can not be tested with a simulated p_error. "
+                "Please make sure to have a p_error = 0 or None when the VL is enabled."
+            )
+        results_cnp_circuit = []
+        for i in range(inputs[0].shape[0]):
+            q_x = tuple(inputs[input][[i]] for input in range(len(inputs)))
+            q_result = circuit.encrypt_run_decrypt(*q_x)
+            results_cnp_circuit.append(q_result)
+        results_cnp_circuit = numpy.concatenate(results_cnp_circuit, axis=0)
+        return results_cnp_circuit
+
+    def check_is_good_execution_for_cml_vs_circuit_impl(
+        inputs: Union[tuple, numpy.ndarray],
+        model_function: Union[Callable, QuantizedModule],
+        n_allowed_runs: int = 5,
+    ):
+        """Check that a model or a quantized module give the same output as the circuit.
+
+        Args:
+            inputs (tuple, numpy.ndarray): inputs for the model.
+            model_function (Callable, QuantizedModule): either the Concrete-ML sklearn built-in model
+                or a quantized module.
+            n_allowed_runs (int): in case of FHE execution randomness can make the output slightly different
+                this allows to run the evaluation multiple times
+        """
+        inputs = (inputs,) if not isinstance(inputs, tuple) else inputs
+
+        for _ in range(n_allowed_runs):
+
+            # Check if model_function is QuantizedModule
+            if isinstance(model_function, QuantizedModule):
+                # In the case of a quantized module, integer inputs are expected.
+                assert numpy.all(
+                    [numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]
+                )
+                results_cnp_circuit = batch_circuit_inference(
+                    inputs, model_function.fhe_circuit
+                )
+                results_model_function = model_function.forward(*inputs)
+
+            elif model_function._is_a_public_cml_model:
+                # In the case of a model, floating point inputs are expected.
+                assert numpy.all(
+                    [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
+                )
+                results_cnp_circuit = model_function.predict(
+                    *inputs, execute_in_fhe=True
+                )
+                results_model_function = model_function.predict(
+                    *inputs, execute_in_fhe=False
+                )
+            else:
+                raise ValueError(
+                    "numpy_function should be a built-in concrete sklearn model or a QuantizedModule object."
+                )
+
+            if numpy.array_equal(results_cnp_circuit, results_model_function):
+                return True
+        return False
+
+    return check_is_good_execution_for_cml_vs_circuit_impl

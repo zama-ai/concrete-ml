@@ -93,7 +93,9 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
     client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
 
 
-def test_client_server_custom_model(default_configuration_no_jit):
+def test_client_server_custom_model(
+    default_configuration_no_jit, check_is_good_execution_for_cml_vs_circuit
+):
     """Tests the client server custom model."""
 
     # Generate random data
@@ -109,7 +111,8 @@ def test_client_server_custom_model(default_configuration_no_jit):
         n_bits=n_bits,
         use_virtual_lib=False,
     )
-
+    q_x_train = quantized_numpy_module.quantize_input(x_train)
+    check_is_good_execution_for_cml_vs_circuit(q_x_train, quantized_numpy_module)
     client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration_no_jit)
 
 

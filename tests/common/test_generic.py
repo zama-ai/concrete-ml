@@ -23,7 +23,7 @@ def check_generic(
     n_bits,
     load_data,
     default_configuration,
-    check_is_good_execution_for_quantized_models,
+    check_is_good_execution_for_cml_vs_circuit,
     test_hyper_parameters=True,
     test_grid_search=True,
     test_double_fit=True,
@@ -101,7 +101,7 @@ def check_generic(
             # Not even sure why this is just for the regressor
             return
 
-        check_is_good_execution_for_quantized_models(x=x[:5], model_predict=model.predict)
+        check_is_good_execution_for_cml_vs_circuit(x[:5], model_function=model)
     else:
         # At least, check without execute_in_fhe
         y_pred_fhe = model.predict(x[:1], execute_in_fhe=False)
@@ -303,7 +303,7 @@ def test_generic(
     n_bits,
     load_data,
     default_configuration,
-    check_is_good_execution_for_quantized_models,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test in a generic way."""
     check_generic(
@@ -313,5 +313,5 @@ def test_generic(
         n_bits,
         load_data,
         default_configuration,
-        check_is_good_execution_for_quantized_models,
+        check_is_good_execution_for_cml_vs_circuit,
     )

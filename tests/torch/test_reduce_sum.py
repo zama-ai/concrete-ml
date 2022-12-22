@@ -56,6 +56,7 @@ def test_sum(
     check_circuit_has_no_tlu,
     check_circuit_precision,
     check_r2_score,
+    check_is_good_execution_for_cml_vs_circuit,
 ):
     """Tests ReduceSum ONNX operator on a torch model."""
 
@@ -100,6 +101,7 @@ def test_sum(
     for numpy_input_i in numpy_input:
         # Quantize the input
         q_input = quantized_numpy_module.quantize_input((numpy_input_i,))
+        check_is_good_execution_for_cml_vs_circuit(q_input, quantized_numpy_module)
 
         if not isinstance(q_input, tuple):
             q_input = (q_input,)
