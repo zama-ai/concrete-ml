@@ -49,8 +49,7 @@ def test_config_sklearn(model, parameters, kwargs, load_data):
     else:
         clf.compile(x_train, verbose_compilation=True, **kwargs)
 
-    # FIXME: waiting for https://github.com/zama-ai/concrete-numpy-internal/issues/1737 and
-    # https://github.com/zama-ai/concrete-numpy-internal/issues/1738
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2206
     #
     # Will check that we have expected probabilities
 
@@ -112,7 +111,4 @@ def test_config_torch(model, kwargs):
             **kwargs
         )
 
-    # FIXME: waiting for https://github.com/zama-ai/concrete-numpy-internal/issues/1737 and
-    # https://github.com/zama-ai/concrete-numpy-internal/issues/1738
-    #
-    # Will check that we have expected probabilities
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2206
