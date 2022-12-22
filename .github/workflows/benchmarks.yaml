@@ -37,6 +37,8 @@ on:
           - "c5.2xlarge"
           - "c5.4xlarge"
           - "c5.12xlarge"
+          - "c6i.metal"
+          - "m6i.metal"
   # FIXME: Add recurrent launching
   # https://github.com/zama-ai/concrete-ml-internal/issues/1851
 
