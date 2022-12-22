@@ -336,8 +336,12 @@ docs: clean_docs
 	./script/make_utils/fix_double_dollars_issues_with_mdformat.sh docs-copy --single_dollar
 	@# Fix not-compatible paths
 	./script/make_utils/fix_gitbook_paths.sh docs-copy
+	@# Fixing cardboard
+	poetry run python script/doc_utils/fix_gitbook_table.py --files docs-copy/getting-started/showcase.md
 	@# Docs
 	cd docs-copy && poetry run "$(MAKE)" html SPHINXOPTS='-W --keep-going'
+	@# Copy images from GitBook
+	cp docs/.gitbook/assets/*.png docs-copy/_build/html/_images
 	cp -r docs-copy/_build docs/
 	rm -rf docs-copy
 	@# Check links
