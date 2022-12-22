@@ -55,7 +55,8 @@ onnxoptimizer = "^0.2.7"
 isort = "^5.10.1"
 black = "^22.1.0"
 pylint = "^2.13.0"
-pytest = "^7.1.1"
+# FIXME #2541: issue with coverage
+pytest = "7.1.1"
 pytest-cov = "^3.0.0"
 pytest_codeblocks = "^0.14.0"
 mypy = "^0.942"
@@ -87,7 +88,8 @@ pandas = "^1.3.0"
 jinja2 = "^3.1.2"
 LinkChecker = "^10.1.0"
 kaggle = "^1.5.12"
-tensorflow = "^2.8.0"
+# FIXME, #2532: 2.11 doesn't work on macOS
+tensorflow = "2.10.0"
 tf2onnx = "^1.10.1"
 sphinx-rtd-theme = "^1.0.0"
 boto3 = "^1.23.5"
@@ -100,6 +102,7 @@ pdoc3 = "^0.10.0"
 lazydocs = "^0.4.0"
 seaborn = "^0.12.0"
 mistletoe = "^0.9.0"
+ruff = "^0.0.191"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -121,3 +124,10 @@ version_toml = "pyproject.toml:tool.poetry.version"
 version_variable = "docs/conf.py:release,src/concrete/ml/version.py:__version__"
 upload_to_pypi = "False"
 changelog_sections = "breaking, feature, fix, documentation, performance"
+
+[tool.ruff]
+line-length = 100
+
+# The tool looks to report 'imported but unused (F401)' while actually the function is used by
+# package which import the __init__.py
+ignore = ["F401"]

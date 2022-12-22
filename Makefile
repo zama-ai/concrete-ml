@@ -130,8 +130,16 @@ flake8:
 	poetry run flake8 --config flake8_others.cfg tests/ script/ benchmarks/ \
 		docker/release_resources/
 
+.PHONY: ruff # Run ruff
+ruff:
+	poetry run ruff $(SRC_DIR) tests
+
+.PHONY: ruff # Run ruff fix
+fix_ruff:
+	poetry run ruff $(SRC_DIR) tests --fix
+
 .PHONY: python_linting # Run python linters
-python_linting: pylint flake8
+python_linting: ruff pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
 conformance: finalize_nb python_format licenses nbqa supported_ops mdformat
@@ -156,7 +164,7 @@ PCC_DEPS += check_forbidden_words check_unused_images gitleaks
 pcc_internal: $(PCC_DEPS)
 
 # flake8 has been removed since it is too slow
-SPCC_DEPS := check_python_format pylint_src pylint_tests mypy_ci pydocstyle
+SPCC_DEPS := check_python_format pylint_src pylint_tests mypy_ci pydocstyle ruff
 
 # Not commented on purpose for make help, since internal
 .PHONY: spcc_internal

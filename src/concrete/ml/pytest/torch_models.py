@@ -479,8 +479,8 @@ class FCSeq(nn.Module):
         Returns:
             the output of the NN
         """
-        for idx, l in enumerate(self.feat):
-            x = self.act(l(x) + self.biases[idx])
+        for idx, layer in enumerate(self.feat):
+            x = self.act(layer(x) + self.biases[idx])
         return x
 
 
@@ -517,8 +517,8 @@ class FCSeqAddBiasVec(nn.Module):
         Returns:
             the output of the NN
         """
-        for idx, l in enumerate(self.feat):
-            x = self.act(l(x) + self.biases[idx])
+        for idx, layer in enumerate(self.feat):
+            x = self.act(layer(x) + self.biases[idx])
         return x
 
 

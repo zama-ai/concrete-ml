@@ -1,4 +1,6 @@
 """Tests for the sklearn decision trees."""
+
+
 import warnings
 from functools import partial
 
@@ -87,6 +89,8 @@ def test_dump(
     ]:
         return
 
+    # Ignore long lines here
+    # ruff: noqa: E501
     expected_strings = {
         "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
