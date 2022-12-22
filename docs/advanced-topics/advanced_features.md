@@ -70,10 +70,10 @@ The  `global_p_error` parameter is only used for FHE evaluation and has __no__ e
 
 ## Seeing compilation information
 
-By using `verbose_compilation = True` during compilation, one receives lot of information from the compiler and its inner optimizer.
+By using `verbose_compilation = True` and `show_mlir = True`  during compilation, one receives lot of information from the compiler and its inner optimizer. Remark that these options are however mainly meant for power-users, so they may be hard to understand.
 
 ```python
-from concrete.ml.sklearn import LogisticRegression
+from concrete.ml.sklearn import DecisionTreeClassifier
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
@@ -82,10 +82,10 @@ x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_stat
 # Retrieve train and test sets
 X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 
-clf = LogisticRegression()
+clf = DecisionTreeClassifier(random_state=42)
 clf.fit(X_train, y_train)
 
-clf.compile(X_train, verbose_compilation=True, show_mlir=True)
+clf.compile(X_train, verbose_compilation=True, show_mlir=True, p_error=0.033)
 ```
 
 Here, one will see
@@ -95,16 +95,23 @@ Here, one will see
 ```
 Computation Graph
 -------------------------------------------------------------------------------------------------------------------------------
-%0 = q_X                                   # EncryptedTensor<uint8, shape=(1, 4)>         ∈ [0, 255]
-%1 = [[ 91] [ 60] [  0] [255]]             # ClearTensor<uint8, shape=(4, 1)>             ∈ [0, 255]
-%2 = matmul(%0, %1)                        # EncryptedTensor<uint17, shape=(1, 1)>        ∈ [11320, 96183]
-%3 = sum(%0, axis=1, keepdims=True)        # EncryptedTensor<uint10, shape=(1, 1)>        ∈ [354, 694]
-%4 = 111                                   # ClearScalar<uint7>                           ∈ [111, 111]
-%5 = multiply(%4, %3)                      # EncryptedTensor<uint17, shape=(1, 1)>        ∈ [39294, 77034]
-%6 = subtract(%2, %5)                      # EncryptedTensor<int17, shape=(1, 1)>         ∈ [-35759, 26067]
-%7 = [[-5097]]                             # ClearTensor<int14, shape=(1, 1)>             ∈ [-5097, -5097]
-%8 = add(%6, %7)                           # EncryptedTensor<int17, shape=(1, 1)>         ∈ [-40856, 20970]
-return %8
+ %0 = _inputs                                  # EncryptedTensor<uint6, shape=(1, 4)>           ∈ [0, 63]
+ %1 = transpose(%0)                            # EncryptedTensor<uint6, shape=(4, 1)>           ∈ [0, 63]
+ %2 = [[0 0 0 1]]                              # ClearTensor<uint1, shape=(1, 4)>               ∈ [0, 1]
+ %3 = matmul(%2, %1)                           # EncryptedTensor<uint6, shape=(1, 1)>           ∈ [0, 63]
+ %4 = [[32]]                                   # ClearTensor<uint6, shape=(1, 1)>               ∈ [32, 32]
+ %5 = less_equal(%3, %4)                       # EncryptedTensor<uint1, shape=(1, 1)>           ∈ [False, True]
+ %6 = reshape(%5, newshape=[ 1  1 -1])         # EncryptedTensor<uint1, shape=(1, 1, 1)>        ∈ [False, True]
+ %7 = [[[ 1]  [-1]]]                           # ClearTensor<int2, shape=(1, 2, 1)>             ∈ [-1, 1]
+ %8 = matmul(%7, %6)                           # EncryptedTensor<int2, shape=(1, 2, 1)>         ∈ [-1, 1]
+ %9 = reshape(%8, newshape=[ 2 -1])            # EncryptedTensor<int2, shape=(2, 1)>            ∈ [-1, 1]
+%10 = [[1] [0]]                                # ClearTensor<uint1, shape=(2, 1)>               ∈ [0, 1]
+%11 = equal(%10, %9)                           # EncryptedTensor<uint1, shape=(2, 1)>           ∈ [False, True]
+%12 = reshape(%11, newshape=[ 1  2 -1])        # EncryptedTensor<uint1, shape=(1, 2, 1)>        ∈ [False, True]
+%13 = [[[63  0]  [ 0 63]]]                     # ClearTensor<uint6, shape=(1, 2, 2)>            ∈ [0, 63]
+%14 = matmul(%13, %12)                         # EncryptedTensor<uint6, shape=(1, 2, 1)>        ∈ [0, 63]
+%15 = reshape(%14, newshape=[ 1  2 -1])        # EncryptedTensor<uint6, shape=(1, 2, 1)>        ∈ [0, 63]
+return %15
 ```
 
 - the MLIR, which produced by Concrete-Numpy and given to the compiler
@@ -113,64 +120,77 @@ return %8
 MLIR
 -------------------------------------------------------------------------------------------------------------------------------
 module {
-  func.func @main(%arg0: tensor<1x4x!FHE.eint<17>>) -> tensor<1x1x!FHE.eint<17>> {
-    %cst = arith.constant dense<-5097> : tensor<1x1xi18>
-    %cst_0 = arith.constant dense<[[91], [60], [0], [255]]> : tensor<4x1xi18>
-    %c111_i18 = arith.constant 111 : i18
-    %0 = "FHELinalg.sum"(%arg0) {axes = [1], keep_dims = true} : (tensor<1x4x!FHE.eint<17>>) -> tensor<1x1x!FHE.eint<17>>
-    %1 = "FHELinalg.matmul_eint_int"(%arg0, %cst_0) : (tensor<1x4x!FHE.eint<17>>, tensor<4x1xi18>) -> tensor<1x1x!FHE.eint<17>>
-    %cst_1 = tensor.from_elements %c111_i18 : tensor<1xi18>
-    %2 = "FHELinalg.mul_eint_int"(%0, %cst_1) : (tensor<1x1x!FHE.eint<17>>, tensor<1xi18>) -> tensor<1x1x!FHE.eint<17>>
-    %3 = "FHELinalg.sub_eint"(%1, %2) : (tensor<1x1x!FHE.eint<17>>, tensor<1x1x!FHE.eint<17>>) -> tensor<1x1x!FHE.eint<17>>
-    %4 = "FHELinalg.add_eint_int"(%3, %cst) : (tensor<1x1x!FHE.eint<17>>, tensor<1x1xi18>) -> tensor<1x1x!FHE.eint<17>>
-    return %4 : tensor<1x1x!FHE.eint<17>>
+  func.func @main(%arg0: tensor<1x4x!FHE.eint<6>>) -> tensor<1x2x1x!FHE.eint<6>> {
+    %cst = arith.constant dense<[[[63, 0], [0, 63]]]> : tensor<1x2x2xi7>
+    %cst_0 = arith.constant dense<[[1], [0]]> : tensor<2x1xi7>
+    %cst_1 = arith.constant dense<[[[1], [-1]]]> : tensor<1x2x1xi7>
+    %cst_2 = arith.constant dense<32> : tensor<1x1xi7>
+    %cst_3 = arith.constant dense<[[0, 0, 0, 1]]> : tensor<1x4xi7>
+    %c32_i7 = arith.constant 32 : i7
+    %0 = "FHELinalg.transpose"(%arg0) {axes = []} : (tensor<1x4x!FHE.eint<6>>) -> tensor<4x1x!FHE.eint<6>>
+    %cst_4 = tensor.from_elements %c32_i7 : tensor<1xi7>
+    %1 = "FHELinalg.matmul_int_eint"(%cst_3, %0) : (tensor<1x4xi7>, tensor<4x1x!FHE.eint<6>>) -> tensor<1x1x!FHE.eint<6>>
+    %cst_5 = arith.constant dense<[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]> : tensor<64xi64>
+    %2 = "FHELinalg.apply_lookup_table"(%1, %cst_5) : (tensor<1x1x!FHE.eint<6>>, tensor<64xi64>) -> tensor<1x1x!FHE.eint<6>>
+    %3 = tensor.expand_shape %2 [[0], [1, 2]] : tensor<1x1x!FHE.eint<6>> into tensor<1x1x1x!FHE.eint<6>>
+    %4 = "FHELinalg.matmul_int_eint"(%cst_1, %3) : (tensor<1x2x1xi7>, tensor<1x1x1x!FHE.eint<6>>) -> tensor<1x2x1x!FHE.eint<6>>
+    %5 = tensor.collapse_shape %4 [[0, 1], [2]] : tensor<1x2x1x!FHE.eint<6>> into tensor<2x1x!FHE.eint<6>>
+    %6 = "FHELinalg.add_eint_int"(%5, %cst_4) : (tensor<2x1x!FHE.eint<6>>, tensor<1xi7>) -> tensor<2x1x!FHE.eint<6>>
+    %cst_6 = arith.constant dense<"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"> : tensor<2x64xi64>
+    %cst_7 = arith.constant dense<[[0], [1]]> : tensor<2x1xindex>
+    %7 = "FHELinalg.apply_mapped_lookup_table"(%6, %cst_6, %cst_7) : (tensor<2x1x!FHE.eint<6>>, tensor<2x64xi64>, tensor<2x1xindex>) -> tensor<2x1x!FHE.eint<6>>
+    %8 = tensor.expand_shape %7 [[0, 1], [2]] : tensor<2x1x!FHE.eint<6>> into tensor<1x2x1x!FHE.eint<6>>
+    %9 = "FHELinalg.matmul_int_eint"(%cst, %8) : (tensor<1x2x2xi7>, tensor<1x2x1x!FHE.eint<6>>) -> tensor<1x2x1x!FHE.eint<6>>
+    return %9 : tensor<1x2x1x!FHE.eint<6>>
   }
 }
 ```
 
-- information from the optimizer:
+- information from the optimizer (including cryptographic parameters):
 
 ```
 Optimizer
 -------------------------------------------------------------------------------------------------------------------------------
 --- Circuit
-  17 bits integers
-  9 manp (maxi log2 norm2)
-  282ms to solve
+  6 bits integers
+  7 manp (maxi log2 norm2)
+  388ms to solve
 --- User config
-  6.334248e-05 error per pbs call
-  1.000000e-02 error per circuit call
+  3.300000e-02 error per pbs call
+  1.000000e+00 error per circuit call
 --- Complexity for the full circuit
-  0.000000e+00 Millions Operations
+  4.214000e+02 Millions Operations
 --- Correctness for each Pbs call
-  1/-2147483648 errors (1.036585e-46)
+  1/30 errors (3.234529e-02)
 --- Correctness for the full circuit
-  1/-2147483648 errors (1.036585e-46)
+  1/10 errors (9.390887e-02)
 --- Parameters resolution
-  5x glwe_dimension
-  2**8 polynomial (256)
-  0 lwe dimension
-  keyswitch l,b=0,0
-  blindrota l,b=0,0
+  1x glwe_dimension
+  2**11 polynomial (2048)
+  762 lwe dimension
+  keyswitch l,b=5,3
+  blindrota l,b=2,15
   wopPbs : false
 ---
 ```
 
 In this latter optimization information, one will find information such as:
 
-- bit-width ("17 bits integers") used in the program; we remind that for the moment, the compiler only supports a precision, i.e., that all PBS are promoted to the same bit-width (the largest one). In other words, this bit-width highly drives the speed of the program, and it is essential to try to reduce it as much as possible for fast execution
-- maximal norm2 ("9 manp"), which has an impact on the crypto parameters which can be found. The larger this norm2, the slower PBS will be. The norm2 is related to norm of some constants appearing in your program, in a way which will be clarified in the compiler documentation
-- probability of error of an individual PBS ("6.334248e-05 error per pbs call")
-- probability of error of the full circuit ("1.000000e-02 error per circuit call"),
-- an estimation of the cost of the circuit ("0.000000e+00 Millions Operations"),
+- bit-width ("6 bits integers") used in the program; we remind that for the moment, the compiler only supports a single precision, i.e., that all PBS are promoted to the same bit-width (the largest one). Therefore, this bit-width highly drives the speed of the program, and it is essential to try to reduce it as much as possible for fast execution
+- maximal norm2 ("7 manp"), which has an impact on the crypto parameters which can be found. The larger this norm2, the slower PBS will be. The norm2 is related to norm of some constants appearing in your program, in a way which will be clarified in the compiler documentation
+- probability of error of an individual PBS which was requested by the user ("3.300000e-02 error per pbs call" in User Config)
+- probability of error of the full circuit which was requested by the user  ("1.000000e+00 error per circuit call" in User Config); here, the probability 1 stands for "not used", since we had set the individual probability
+- probability of error of an individual PBS which is found by the optimizer ("1/30 errors (3.234529e-02)")
+- probability of error of the full circuit which is found by the optimizer  ("1/10 errors (9.390887e-02)")
+- an estimation of the cost of the circuit ("4.214000e+02 Millions Operations"): large values indicate a circuit that will execute more slowly
 
 and, for cryptographers only, some information about cryptographic parameters:
 
-- 5x glwe_dimension
-- 2\*\*8 polynomial (256)
-- 0 lwe dimension
-- keyswitch l,b=0,0
-- blindrota l,b=0,0
+- 1x glwe_dimension
+- 2\*\*11 polynomial (2048)
+- 762 lwe dimension
+- keyswitch l,b=5,3
+- blindrota l,b=2,15
 - wopPbs : false
 
-Remark that this optimizer feedback is a work in progress and will be modified and improved in the future release.
+Once again, this optimizer feedback is a work in progress and will be modified and improved in  future releases.
