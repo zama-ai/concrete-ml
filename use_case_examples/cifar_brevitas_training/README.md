@@ -26,7 +26,6 @@ You can install these dependencies using pip and the requirements.txt file avail
 pip install -r requirements.txt
 ```
 
-
 ## Training and inference
 
 The files in this section are almost as identical to the original. Here we train a VGG-like neural network using an example available on [Brevitas Github repository](https://github.com/Xilinx/brevitas/blob/8c3d9de0113528cf6693c6474a13d802a66682c6/src/brevitas_examples/bnn_pynq/).
@@ -61,7 +60,6 @@ python3 evaluate_torch_cml.py
 
 It evaluates the model with Torch and Concrete-ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
 
-
 ## Fully Homomorphic Encryption (FHE)
 
 Once the model has been proposed to have a correct performance, compilation to the FHE settings can be done.
@@ -80,11 +78,11 @@ While it is the ambition of Concrete-ML to execute such large CNNs in reasonable
 
 ## Accuracy and performance
 
-| Runtime                   | Accuracy |
-| ------------------------- | -------- |
-| VGG Torch                 | 88.7     |
-| VGG FHE (simulation\*)    | 88.7     |
-| VGG FHE                   | NA\*\*       |
+| Runtime                | Accuracy |
+| ---------------------- | -------- |
+| VGG Torch              | 88.7     |
+| VGG FHE (simulation\*) | 88.7     |
+| VGG FHE                | NA\*\*   |
 
 \* The simulation is done using Virtual Library (VL) that simulates the FHE evaluation in the clear for faster debugging.
 \*\* Expected to match the VGG FHE simulation. It is a work in progress to assess the actual FHE accuracy on a subset of images.

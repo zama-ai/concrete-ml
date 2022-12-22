@@ -56,7 +56,7 @@ Post-processing the predictions.
 **Args:**
 
 - <b>`y_preds`</b> (numpy.ndarray):  The predictions to post-process.
-- <b>`already_dequantized`</b> (bool):  Wether the inputs were already dequantized or not. Default  to False.
+- <b>`already_dequantized`</b> (bool):  Whether the inputs were already dequantized or not. Default  to False.
 
 **Returns:**
 
@@ -135,7 +135,7 @@ Post-processing the predictions.
 **Args:**
 
 - <b>`y_preds`</b> (numpy.ndarray):  The predictions to post-process.
-- <b>`already_dequantized`</b> (bool):  Wether the inputs were already dequantized or not. Default  to False.
+- <b>`already_dequantized`</b> (bool):  Whether the inputs were already dequantized or not. Default  to False.
 
 **Returns:**
 
@@ -216,7 +216,7 @@ Post-processing the predictions.
 **Args:**
 
 - <b>`y_preds`</b> (numpy.ndarray):  The predictions to post-process.
-- <b>`already_dequantized`</b> (bool):  Wether the inputs were already dequantized or not. Default  to False.
+- <b>`already_dequantized`</b> (bool):  Whether the inputs were already dequantized or not. Default  to False.
 
 **Returns:**
 

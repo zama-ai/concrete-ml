@@ -319,7 +319,7 @@ Forward pass.
 **Args:**
 
 - <b>`x`</b>:  the first input of the NN
-- <b>`y`</b>:  the secon input of the NN
+- <b>`y`</b>:  the second input of the NN
 
 **Returns:**
 the output of the NN

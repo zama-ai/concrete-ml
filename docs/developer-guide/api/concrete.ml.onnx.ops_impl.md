@@ -223,7 +223,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#softmax-13
 **Args:**
 
 - <b>`x`</b> (numpy.ndarray):  Input tensor
-- <b>`axis`</b> (None, int, tuple of ints):  Axis or axes along which a softmax's sum is performed. If  None, it will sum all of the elements of the input array.  If axis is negative it counts  from the last to the first axis. Default to 1.
+- <b>`axis`</b> (None, int, tuple of int):  Axis or axes along which a softmax's sum is performed. If  None, it will sum all of the elements of the input array.  If axis is negative it counts  from the last to the first axis. Default to 1.
 - <b>`keepdims`</b> (bool):  If True, the axes which are reduced along the sum are left in the result as  dimensions with size one. Default to True.
 
 **Returns:**

@@ -151,7 +151,7 @@ Deserialize and decrypt the values.
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  the decrypted and desarialized values
+- <b>`numpy.ndarray`</b>:  the decrypted and deserialized values
 
 ______________________________________________________________________
 

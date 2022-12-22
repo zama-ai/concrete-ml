@@ -55,14 +55,14 @@ compile_torch_model(
 ) → QuantizedModule
 ```
 
-Compile a torch module into an FHE equivalent.
+Compile a torch module into a FHE equivalent.
 
 Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Numpy
 
 **Args:**
 
 - <b>`torch_model`</b> (torch.nn.Module):  the model to quantize
-- <b>`torch_inputset`</b> (Dataset):  the inputset, can contain either torch  tensors or numpy.ndarray, only datasets with a single input are supported for now.
+- <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
 - <b>`import_qat`</b> (bool):  Set to True to import a network that contains quantizers and was  trained using quantization aware training
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
@@ -99,14 +99,14 @@ compile_onnx_model(
 ) → QuantizedModule
 ```
 
-Compile a torch module into an FHE equivalent.
+Compile a torch module into a FHE equivalent.
 
 Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Numpy
 
 **Args:**
 
 - <b>`onnx_model`</b> (onnx.ModelProto):  the model to quantize
-- <b>`torch_inputset`</b> (Dataset):  the inputset, can contain either torch  tensors or numpy.ndarray, only datasets with a single input are supported for now.
+- <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
 - <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not requantize it.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
@@ -150,7 +150,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 **Args:**
 
 - <b>`torch_model`</b> (torch.nn.Module):  the model to quantize
-- <b>`torch_inputset`</b> (Dataset):  the inputset, can contain either torch  tensors or numpy.ndarray, only datasets with a single input are supported for now.
+- <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
 - <b>`n_bits`</b> (Union\[int,dict\]):  the number of bits for the quantization
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
