@@ -526,11 +526,11 @@ jobs:
         run: |
           make pytest_codeblocks
 
-      # - name: PyTest CodeBlocks with Pypi Concrete-ML
-      #   timeout-minutes: 5
-      #   if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
-      #   run: |
-      #     make pytest_codeblocks_pip_cml
+      - name: PyTest CodeBlocks with Pypi Concrete-ML
+        timeout-minutes: 5
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          make pytest_codeblocks_pip_cml
 
       - name: PyTest Notebooks
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
