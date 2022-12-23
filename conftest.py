@@ -515,7 +515,7 @@ def check_is_good_execution_for_cml_vs_circuit():
                 )
 
             if numpy.array_equal(results_cnp_circuit, results_model_function):
-                return True
+                return
         raise RuntimeError(
             f"Mismatch between circuit results:\n{results_cnp_circuit}\n"
             f"and model function results:\n{results_model_function}"

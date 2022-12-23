@@ -598,7 +598,7 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         # Quantize using the learned quantization parameters for each feature
         for i, q_x_ in enumerate(self.input_quantizers):
             qX[:, i] = q_x_.quant(X[:, i])
-        return qX.astype(numpy.int32)
+        return qX.astype(numpy.int64)
 
     def dequantize_output(self, y_preds: numpy.ndarray):
         """Dequantize the integer predictions.
@@ -683,9 +683,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         y_preds = []
         for qX_i in qX:
             # expected x shape is (n_features, n_samples)
-            fhe_pred = self.fhe_circuit.encrypt_run_decrypt(
-                qX_i.astype(numpy.uint8).reshape(1, qX_i.shape[0])
-            )
+            qX_i = numpy.expand_dims(qX_i, 0)
+            fhe_pred = self.fhe_circuit.encrypt_run_decrypt(qX_i)
             y_preds.append(fhe_pred)
         y_preds_array = numpy.concatenate(y_preds, axis=-1)
 

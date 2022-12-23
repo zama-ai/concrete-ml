@@ -509,7 +509,7 @@ def train_and_test_classifier(
     # The OpenML datasets have target variables that might not be integers (for classification
     # integers would represent class ids). Mostly the targets are strings which we do not support.
     # We use an ordinal encoder to encode strings to integers
-    if not y_all.dtype == np.int32:
+    if not y_all.dtype == np.int64:
         enc = OrdinalEncoder()
         y_all = [[y] for y in y_all]
         enc.fit(y_all)

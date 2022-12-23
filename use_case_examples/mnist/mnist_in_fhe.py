@@ -173,7 +173,7 @@ def compile_and_test(
     for idx, im in enumerate(tqdm(reduced_test_data)):
         target_np = test_target[idx]
         q_data = q_module.quantize_input(im)
-        q_data = np.expand_dims(q_data, 0).astype(np.uint8)
+        q_data = np.expand_dims(q_data, 0).astype(np.int64)
 
         prediction = q_module.forward_fhe.encrypt_run_decrypt(q_data)
         prediction = q_module.dequantize_output(prediction)

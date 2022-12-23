@@ -1240,7 +1240,7 @@ def numpy_avgpool(
     n_in_channels = x.shape[1]
     kernel = numpy.ones(
         (n_in_channels, 1, kernel_shape[0], kernel_shape[1]),
-        dtype=numpy.uint8,
+        dtype=numpy.int64,
     )
 
     norm_const = onnx_avgpool_compute_norm_const(x.shape, kernel_shape, pads, strides, ceil_mode)

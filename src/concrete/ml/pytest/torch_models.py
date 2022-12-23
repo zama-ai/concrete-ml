@@ -670,8 +670,8 @@ class TinyQATCNN(nn.Module):
         # Freeze normalization layers
         self.eval()
 
-        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int32)
-        all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int32)
+        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int64)
+        all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
 
         # Iterate over the batches
         idx = 0

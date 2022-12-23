@@ -183,7 +183,7 @@ def test_compile_and_calib(
 
     # Predicting in FHE with a model that is not trained and calibrated should fail
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
-        x_test_q = numpy.zeros((1, n_features), dtype=numpy.uint8)
+        x_test_q = numpy.zeros((1, n_features), dtype=numpy.int64)
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Train the model
@@ -204,7 +204,7 @@ def test_compile_and_calib(
 
     # Predicting with a model that is not compiled should fail
     with pytest.raises(ValueError, match=".* not yet compiled .*"):
-        x_test_q = numpy.zeros((1, n_features), dtype=numpy.uint8)
+        x_test_q = numpy.zeros((1, n_features), dtype=numpy.int64)
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Compile the model

@@ -308,7 +308,7 @@ class QuantizedModule:
 
         Args:
             *q_x (numpy.ndarray): numpy.ndarray containing the quantized input values. Requires the
-                input dtype to be uint8.
+                input dtype to be int64.
 
         Returns:
             (numpy.ndarray): Predictions of the quantized model
@@ -325,7 +325,7 @@ class QuantizedModule:
             *values (numpy.ndarray): Floating point values.
 
         Returns:
-            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.uint32) values.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) values.
         """
         n_qinputs = len(self.input_quantizers)
         n_values = len(values) == n_qinputs

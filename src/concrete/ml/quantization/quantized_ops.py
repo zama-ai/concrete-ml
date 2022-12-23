@@ -756,7 +756,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         n_in_channels = q_input.qvalues.shape[1]
         kernel = numpy.zeros(
             (n_in_channels, n_in_channels, self.kernel_shape[0], self.kernel_shape[1]),
-            dtype=numpy.uint8,
+            dtype=numpy.int64,
         )
         for i in range(n_in_channels):
             kernel[i, i, ::] = 1

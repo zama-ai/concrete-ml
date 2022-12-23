@@ -183,7 +183,7 @@ def onnx_avgpool_compute_norm_const(
         n_in_channels = input_shape[1]
         kernel = numpy.ones(
             (n_in_channels, 1, kernel_shape[0], kernel_shape[1]),
-            dtype=numpy.uint8,
+            dtype=numpy.int64,
         )
 
         # Tensorflow (and ONNX pool with ceil_mode==1) allow the kernel of the pooling op

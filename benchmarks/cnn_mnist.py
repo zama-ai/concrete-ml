@@ -124,8 +124,8 @@ def test_torch(net, test_loader, metric_id_prefix, metric_label_prefix, epoch=No
     # Freeze normalization layers
     net.eval()
 
-    all_y_pred = np.zeros((len(test_loader)), dtype=np.int32)
-    all_targets = np.zeros((len(test_loader)), dtype=np.int32)
+    all_y_pred = np.zeros((len(test_loader)), dtype=np.int64)
+    all_targets = np.zeros((len(test_loader)), dtype=np.int64)
 
     # Iterate over the batches
     idx = 0
@@ -156,8 +156,8 @@ def test_concrete(
 ):
     """Test a compiled network."""
 
-    all_y_pred = np.zeros((len(test_loader)), dtype=np.int32)
-    all_targets = np.zeros((len(test_loader)), dtype=np.int32)
+    all_y_pred = np.zeros((len(test_loader)), dtype=np.int64)
+    all_targets = np.zeros((len(test_loader)), dtype=np.int64)
 
     # Iterate over the test batches and accumulate predictions and ground truth labels in a vector
     idx = 0

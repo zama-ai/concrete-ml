@@ -101,8 +101,8 @@ def test_brevitas_tinymnist_cnn(
     def test_with_concrete(quantized_module, test_loader, use_fhe, use_vl):
         """Test a neural network that is quantized and compiled with Concrete-ML."""
 
-        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int32)
-        all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int32)
+        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int64)
+        all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
 
         # Iterate over the test batches and accumulate predictions and ground truth
         # labels in a vector
