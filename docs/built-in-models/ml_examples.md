@@ -1,36 +1,62 @@
 # Built-in Model Examples
 
-The following table summarizes the various examples in this section, along with their accuracies.
+These examples illustrate the basic usage of built-in Concrete-ML models. For more examples showing how to train high-accuracy models on more complex data-sets, see the [Demos and Tutorials](../getting-started/showcase.md) section.
 
-| Model                 | Data-set                                                  | Metric                            | Floating Point | Simulation | FHE      |
-| --------------------- | --------------------------------------------------------- | --------------------------------- | -------------- | ---------- | -------- |
-| Linear Regression     | Synthetic 1D                                              | R2                                | 0.90           | 0.90       | 0.90     |
-| Logistic Regression   | Synthetic 2D with 2 classes                               | accuracy                          | 0.92           | 0.92       | 0.92     |
-| Poisson Regression    | [OpenML insurance (freq)](https://www.openml.org/d/41214) | mean Poisson deviance             | 1.21           | 1.21       | 1.21     |
-| Gamma Regression      | [OpenML insurance (sev)](https://www.openml.org/d/41215)  | mean Gamma deviance               | 0.33           | 0.33       | 0.33     |
-| Tweedie Regression    | [OpenML insurance (sev)](https://www.openml.org/d/41215)  | mean Tweedie deviance (power=1.9) | 38.55          | 38.55      | 38.55    |
-| Decision Tree         | [OpenML spams](https://www.openml.org/d/44)               | precision score                   | 0.95           | 0.97       | 0.97\*   |
-| XGBoost Classifier    | [Diabetes](https://www.openml.org/d/37)                   | MCC                               | 0.48           | 0.52       | 0.52\*   |
-| XGBoost Regressor     | [House Prices](https://www.openml.org/d/43926)            | R2                                | 0.92           | 0.90       | 0.90\*   |
-| (Built-in) Neural Net | [Iris](https://www.openml.org/d/61)                       | accuracy                          | N/A            | 0.89       | 0.89     |
-| (Built-in) Neural Net | [MNIST](http://yann.lecun.com/exdb/mnist/)                | accuracy                          | N/A            | 0.96       | 0.96\*\* |
+## FHE constraints considerations
 
-_A * means that the metric was calculated on a subset of the validation set._
+In Concrete-ML, built-in linear models are exact equivalents to their scikit-learn counterparts. Indeed, since they do not apply any non-linearity during inference, these models are very fast (~1ms FHE inference time) and can use high precision integers, between 20-25bits.
 
-_A \*\* means that the metric was calculated using FHE simulation._
+Tree-based models apply non-linear functions that enable comparisons of inputs and the trained thresholds. Thus, they are limited with respect to the number of bits used to represent the inputs, but, as these examples show, in practice 5-6 bits are sufficient to exactly reproduce the behavior of their scikit-learn counter-part models.
 
-## Concrete-ML built-in models
+As shown in the examples below, built-in neural networks can be configured to work with user-specified accumulator sizes, which allows the user to adjust the speed/accuracy tradeoff.
 
-- [Linear Regression](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LinearRegression.ipynb)
-- [Logistic Regression](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LogisticRegression.ipynb)
-- [Poisson Regression on Risk Features](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/PoissonRegression.ipynb)
-- [Decision Tree on Spam Classification ](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/DecisionTreeClassifier.ipynb)
-- [XGBoost Classification on Diabetes Detection](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/XGBClassifier.ipynb)
-- [XGBoost Regression on House Prices](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/XGBRegressor.ipynb)
-- [Generalized Linear Models Comparison on Risk Features](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/GLMComparison.ipynb)
-- [Fully-Connected Neural Network on Iris](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
-- [Fully-Connected Neural Network on MNIST](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb)
+{% hint style="info" %}
+It is recommended to use [simulation](../advanced-topics/compilation.md#simulation-with-the-virtual-library) to configure the accuracy/speed trade-off for tree-based models and neural networks, using grid-search or using your own heuristics.
+{% endhint %}
 
-## Comparison of classifiers
+## List of Examples
 
-- [Classifier Comparison](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ClassifierComparison.ipynb)
+### 1. Linear and Logistic Regression
+
+[<img src="../.gitbook/assets/jupyter_logo.png">   Linear Regression example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LinearRegression.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">   Logistic Regression example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/LogisticRegression.ipynb)
+
+These examples show how to use the built-in linear models on synthetic data, which allows easy visualization of the decision boundaries or trend lines. Executing these 1-d and 2-d models in FHE takes around 1 millisecond.
+
+### 2. Generalized Linear Models
+
+[<img src="../.gitbook/assets/jupyter_logo.png">   Poisson Regression example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/PoissonRegression.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">   Generalized Linear Models comparison](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/GLMComparison.ipynb)
+
+These two examples show generalized linear models (GLM) on the  real-world [OpenML insurance](https://www.openml.org/d/41214) data-set. As the non-linear inverse-link functions are computed, these models do not use [PBS](../getting-started/concepts.md#cryptography-concepts), and are, thus, very fast (~1ms execution time).
+
+### 3. Decision Tree
+
+[<img src="../.gitbook/assets/jupyter_logo.png">    Decision Tree example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/DecisionTreeClassifier.ipynb)
+
+Using the [OpenML spams](https://www.openml.org/d/44) data-set, this example shows how to train a classifier that detects spam, based on features extracted from e-mail messages. A grid-search is performed over decision-tree hyper-parameters to find the best ones.
+
+### 4. XGBoost and Random Forest Classifier
+
+[<img src="../.gitbook/assets/jupyter_logo.png">   XGBoost/Random Forest example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/XGBClassifier.ipynb)
+
+This example shows how to train tree-ensemble models (either XGBoost or Random Forest), first on a synthetic data-set, and, then, on the [Diabetes](https://www.openml.org/d/37) data-set. Grid search is used to find the best number of trees in the ensemble.
+
+### 5. XGBoost Regression
+
+[<img src="../.gitbook/assets/jupyter_logo.png">   XGBoost Regression example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/XGBRegressor.ipynb)
+
+Privacy-preserving prediction of house prices is shown in this example, using the [House Prices](https://www.openml.org/d/43926) data-set. Using 50 trees in the ensemble, with 5 bits of precision for the input features, the FHE regressor obtains an $$R^2$$ score of 0.90, and an execution time of 7-8 seconds.
+
+### 6. Fully Connected Neural Network
+
+[<img src="../.gitbook/assets/jupyter_logo.png">   NN Iris example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">   NN MNIST example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb)
+
+Two different configurations of the built-in fully-connected neural networks are shown. First, a small bit-width accumulator network is trained on [Iris](https://www.openml.org/d/61) and compared to a Pytorch floating point network. Second, a larger accumulator (>8 bits) is demonstrated on [MNIST](http://yann.lecun.com/exdb/mnist/).
+
+### 7. Comparison of classifiers
+
+[<img src="../.gitbook/assets/jupyter_logo.png">   Classifier comparison](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ClassifierComparison.ipynb)
+
+Based on three different synthetic data-sets, all the built-in classifiers are demonstrated in this notebook, showing accuracies, inference times, accumulator bit-widths and decision boundaries.
