@@ -166,6 +166,8 @@ def default_configuration():
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         jit=True,
+        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
+        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
 
 
@@ -179,6 +181,8 @@ def default_configuration_no_jit():
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         jit=False,
+        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
+        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
 
 
@@ -299,9 +303,11 @@ def check_graph_output_has_no_tlu():
 def check_graph_has_no_input_output_tlu():
     return check_graph_has_no_input_output_tlu_impl
 
+
 @pytest.fixture
 def check_circuit_has_no_tlu():
     return check_circuit_has_no_tlu_impl
+
 
 @pytest.fixture
 def check_circuit_precision():
@@ -490,12 +496,8 @@ def check_is_good_execution_for_cml_vs_circuit():
             # Check if model_function is QuantizedModule
             if isinstance(model_function, QuantizedModule):
                 # In the case of a quantized module, integer inputs are expected.
-                assert numpy.all(
-                    [numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]
-                )
-                results_cnp_circuit = batch_circuit_inference(
-                    inputs, model_function.fhe_circuit
-                )
+                assert numpy.all([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs])
+                results_cnp_circuit = batch_circuit_inference(inputs, model_function.fhe_circuit)
                 results_model_function = model_function.forward(*inputs)
 
             elif model_function._is_a_public_cml_model:
@@ -503,12 +505,8 @@ def check_is_good_execution_for_cml_vs_circuit():
                 assert numpy.all(
                     [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
                 )
-                results_cnp_circuit = model_function.predict(
-                    *inputs, execute_in_fhe=True
-                )
-                results_model_function = model_function.predict(
-                    *inputs, execute_in_fhe=False
-                )
+                results_cnp_circuit = model_function.predict(*inputs, execute_in_fhe=True)
+                results_model_function = model_function.predict(*inputs, execute_in_fhe=False)
             else:
                 raise ValueError(
                     "numpy_function should be a built-in concrete sklearn model or a QuantizedModule object."
@@ -520,4 +518,5 @@ def check_is_good_execution_for_cml_vs_circuit():
             f"Mismatch between circuit results:\n{results_cnp_circuit}\n"
             f"and model function results:\n{results_model_function}"
         )
+
     return check_is_good_execution_for_cml_vs_circuit_impl

@@ -9,7 +9,11 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
-from ..common.utils import generate_proxy_function, manage_parameters_for_pbs_errors
+from ..common.utils import (
+    check_there_is_no_p_error_options_in_configuration,
+    generate_proxy_function,
+    manage_parameters_for_pbs_errors,
+)
 from .base_quantized_op import QuantizedOp
 from .quantizers import QuantizedArray, UniformQuantizer
 
@@ -426,6 +430,10 @@ class QuantizedModule:
         )
 
         inputset = _get_inputset_generator(q_inputs, self.input_quantizers)
+
+        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
+        # configuration and in direct arguments
+        check_there_is_no_p_error_options_in_configuration(configuration)
 
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)

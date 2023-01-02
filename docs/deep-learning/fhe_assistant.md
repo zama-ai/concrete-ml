@@ -16,10 +16,13 @@ The following example shows how to use the Virtual Lib in Concrete-ML. Simply ad
 from sklearn.datasets import fetch_openml, make_circles
 from concrete.ml.sklearn import RandomForestClassifier
 from concrete.numpy import Configuration
+
 debug_config = Configuration(
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
     insecure_key_cache_location="~/.cml_keycache",
+    p_error=None,
+    global_p_error=None,
 )
 
 n_bits = 2

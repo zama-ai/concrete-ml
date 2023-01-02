@@ -29,7 +29,11 @@ from concrete.ml.quantization.quantizers import QuantizationOptions, UniformQuan
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
 from ..common.debugging.custom_assert import assert_true
-from ..common.utils import generate_proxy_function, manage_parameters_for_pbs_errors
+from ..common.utils import (
+    check_there_is_no_p_error_options_in_configuration,
+    generate_proxy_function,
+    manage_parameters_for_pbs_errors,
+)
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
 
@@ -259,6 +263,10 @@ class QuantizedTorchEstimatorMixin:
 
         # Quantize the compilation input set using the quantization parameters computed in .fit()
         quantized_numpy_inputset = self.quantized_module_.quantize_input(X)
+
+        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
+        # configuration and in direct arguments
+        check_there_is_no_p_error_options_in_configuration(configuration)
 
         # Call the compilation backend to produce the FHE inference circuit
         circuit = self.quantized_module_.compile(
@@ -737,6 +745,10 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             _tensor_tree_predict_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
         )
+
+        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
+        # configuration and in direct arguments
+        check_there_is_no_p_error_options_in_configuration(configuration)
 
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
@@ -1274,6 +1286,10 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         # Instantiate the compiler on the linear regression's inference
         compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
+
+        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
+        # configuration and in direct arguments
+        check_there_is_no_p_error_options_in_configuration(configuration)
 
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)

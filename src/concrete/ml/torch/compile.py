@@ -12,7 +12,12 @@ from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, get_onnx_opset_version
+from ..common.utils import (
+    MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    check_there_is_no_p_error_options_in_configuration,
+    get_onnx_opset_version,
+    manage_parameters_for_pbs_errors,
+)
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_utils import remove_initializer_from_input
 from ..quantization import PostTrainingAffineQuantization, PostTrainingQATImporter, QuantizedModule
@@ -114,6 +119,13 @@ def _compile_torch_or_onnx_model(
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
     quantized_numpy_inputset = quantized_module.quantize_input(*inputset_as_numpy_tuple)
+
+    # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
+    # configuration and in direct arguments
+    check_there_is_no_p_error_options_in_configuration(configuration)
+
+    # Find the right way to set parameters for compiler, depending on the way we want to default
+    p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
     quantized_module.compile(
         quantized_numpy_inputset,

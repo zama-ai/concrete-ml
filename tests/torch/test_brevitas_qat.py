@@ -5,7 +5,6 @@ import numpy
 import pytest
 import torch
 import torch.utils
-from concrete.numpy.compilation.configuration import Configuration
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -27,6 +26,7 @@ def test_brevitas_tinymnist_cnn(
     qat_bits,
     signed,
     narrow,
+    default_configuration,
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
@@ -93,11 +93,6 @@ def test_brevitas_tinymnist_cnn(
         # Retrain while training is bad
         trained_ok = torch_correct > 0
 
-    cfg = Configuration(
-        dump_artifacts_on_unexpected_failures=False,
-        enable_unsafe_features=True,  # This is for our tests only, never use that in prod
-    )
-
     def test_with_concrete(quantized_module, test_loader, use_fhe, use_vl):
         """Test a neural network that is quantized and compiled with Concrete-ML."""
 
@@ -149,7 +144,7 @@ def test_brevitas_tinymnist_cnn(
             "op_weights": qat_bits,
             "model_outputs": 7,
         },
-        configuration=cfg,
+        configuration=default_configuration,
         use_virtual_lib=True,
     )
 

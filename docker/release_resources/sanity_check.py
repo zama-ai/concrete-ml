@@ -76,6 +76,8 @@ def ml_check(args, keyring_dir_as_str):
             enable_unsafe_features=True,  # This is for our tests only, never use that in prod
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
             insecure_key_cache_location=keyring_dir_as_str,
+            p_error=None,
+            global_p_error=None,
         ),
         use_virtual_lib=True,
     )
