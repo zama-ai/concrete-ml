@@ -128,6 +128,7 @@ changelog_sections = "breaking, feature, fix, documentation, performance"
 [tool.ruff]
 line-length = 100
 
+[tool.ruff.per-file-ignores]
 # The tool looks to report 'imported but unused (F401)' while actually the function is used by
 # package which import the __init__.py
-ignore = ["F401"]
+"**/__init__.py" = ["F401"]
