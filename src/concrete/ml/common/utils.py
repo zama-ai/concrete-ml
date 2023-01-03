@@ -147,7 +147,16 @@ def check_there_is_no_p_error_options_in_configuration(configuration: Optional[C
 
     """
     if configuration is not None:
+        assert_true(  # Defaults for Configuration object
+            not (configuration.p_error is None and configuration.global_p_error == 1 / 100_000),
+            "Setting p_error or global_p_error in the configuration is not supported, "
+            "use kwargs instead.\n"
+            "Please consider setting p_error and global_p_error to None in"
+            " the Configuration object.\n"
+            "Default value for Configuration.global_p_error is not None.",
+        )
         assert_true(configuration.p_error is None, "Don't set p_error in configuration, use kwargs")
         assert_true(
-            configuration.global_p_error is None, "Don't set p_error in configuration, use kwargs"
+            configuration.global_p_error is None,
+            "Don't set global_p_error in configuration, use kwargs",
         )
