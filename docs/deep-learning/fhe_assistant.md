@@ -70,30 +70,28 @@ try:
     quantized_numpy_module = compile_torch_model(
         torch_model,
         torch_input,
-        n_bits = 3,
+        n_bits=7,
     )
 except RuntimeError as err:
     print(err)
 ```
 
-Upon execution, the compiler will raise the following error:
+Upon execution, the compiler will raise the following error within the graph representation:
 
 ```
-%0 = [[-1 -3] [ ... ] [-2  2]]        # ClearTensor<int3, shape=(120, 2)>
- %1 = [[ 1  3 -2 ...  1  2  0]]        # ClearTensor<int3, shape=(120, 120)>
- %2 = [[ 2  0  3 ... -2 -2 -1]]        # ClearTensor<int3, shape=(2, 120)>
- %3 = _onnx__Gemm_0                    # EncryptedTensor<uint5, shape=(1, 2)>
- %4 = -15                              # ClearScalar<int5>
- %5 = add(%3, %4)                      # EncryptedTensor<int6, shape=(1, 2)>
- %6 = subgraph(%5)                     # EncryptedTensor<int3, shape=(1, 2)>
- %7 = matmul(%6, %2)                   # EncryptedTensor<int6, shape=(1, 120)>
- %8 = subgraph(%7)                     # EncryptedTensor<uint3, shape=(1, 120)>
- %9 = matmul(%8, %1)                   # EncryptedTensor<int9, shape=(1, 120)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only up to 8-bit integers are supported
-%10 = subgraph(%9)                     # EncryptedTensor<uint3, shape=(1, 120)>
-%11 = matmul(%10, %0)                  # EncryptedTensor<int8, shape=(1, 2)>
-%12 = subgraph(%11)                    # EncryptedTensor<uint5, shape=(1, 2)>
-return %12
+Function you are trying to compile cannot be converted to MLIR:
+
+%0 = _onnx__Gemm_0                    # EncryptedTensor<int7, shape=(1, 2)>        ∈ [-64, 63]
+%1 = [[ 33 -27  ...   22 -29]]        # ClearTensor<int7, shape=(2, 120)>          ∈ [-63, 62]
+%2 = matmul(%0, %1)                   # EncryptedTensor<int14, shape=(1, 120)>     ∈ [-4973, 4828]
+%3 = subgraph(%2)                     # EncryptedTensor<uint7, shape=(1, 120)>     ∈ [0, 126]
+%4 = [[ 16   6  ...   10  54]]        # ClearTensor<int7, shape=(120, 120)>        ∈ [-63, 63]
+%5 = matmul(%3, %4)                   # EncryptedTensor<int17, shape=(1, 120)>     ∈ [-45632, 43208]
+%6 = subgraph(%5)                     # EncryptedTensor<uint7, shape=(1, 120)>     ∈ [0, 126]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
+%7 = [[ -7 -52] ... [-12  62]]        # ClearTensor<int7, shape=(120, 2)>          ∈ [-63, 62]
+%8 = matmul(%6, %7)                   # EncryptedTensor<int16, shape=(1, 2)>       ∈ [-26971, 29843]
+return %8
 ```
 
 Knowing that a linear/dense layer is implemented as a matrix multiplication, it can determine which parts of the op-graph listing in the exception message above correspond to which layers.
@@ -101,62 +99,58 @@ Knowing that a linear/dense layer is implemented as a matrix multiplication, it 
 Layer weights initialization:
 
 ```
-%0 = [[-1 -3] [ ... ] [-2  2]]        # ClearTensor<int3, shape=(120, 2)>
- %1 = [[ 1  3 -2 ...  1  2  0]]        # ClearTensor<int3, shape=(120, 120)>
- %2 = [[ 2  0  3 ... -2 -2 -1]]        # ClearTensor<int3, shape=(2, 120)>
+%1 = [[ 33 -27  ...   22 -29]]        # ClearTensor<int7, shape=(2, 120)>         
+%4 = [[ 16   6  ...   10  54]]        # ClearTensor<int7, shape=(120, 120)>   
+%7 = [[ -7 -52] ... [-12  62]]        # ClearTensor<int7, shape=(120, 2)> 
 ```
 
-Input processing and quantization:
+Input data:
 
 ```
- %3 = _onnx__Gemm_0                    # EncryptedTensor<uint5, shape=(1, 2)>
- %4 = -15                              # ClearScalar<int5>
- %5 = add(%3, %4)                      # EncryptedTensor<int6, shape=(1, 2)>
- %6 = subgraph(%5)                     # EncryptedTensor<int3, shape=(1, 2)>
+%0 = _onnx__Gemm_0                    # EncryptedTensor<int7, shape=(1, 2)>   
 ```
 
 First dense layer and activation function:
 
 ```
-%7 = matmul(%6, %2)                   # EncryptedTensor<int6, shape=(1, 120)>
-%8 = subgraph(%7)                     # EncryptedTensor<uint3, shape=(1, 120)>
+%2 = matmul(%0, %1)                   # EncryptedTensor<int14, shape=(1, 120)>    
+%3 = subgraph(%2)                     # EncryptedTensor<uint7, shape=(1, 120)>        
 ```
 
 Second dense layer and activation function:
 
 ```
-%9 = matmul(%8, %1)                   # EncryptedTensor<int9, shape=(1, 120)>
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ only up to 8-bit integers are supported
-%10 = subgraph(%9)                     # EncryptedTensor<uint3, shape=(1, 120)>
+%5 = matmul(%3, %4)                   # EncryptedTensor<int17, shape=(1, 120)>    
+%6 = subgraph(%5)                     # EncryptedTensor<uint7, shape=(1, 120)>  
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
 ```
 
-Third dense layer and output quantization:
+Third dense layer:
 
 ```
-%11 = matmul(%10, %0)                  # EncryptedTensor<int8, shape=(1, 2)>
-%12 = subgraph(%11)                    # EncryptedTensor<uint5, shape=(1, 2)>
-return %12
+%8 = matmul(%6, %7)                   # EncryptedTensor<int16, shape=(1, 2)> 
+return %8
 ```
 
-We can see here that the error is in the second layer. Reducing the number of neurons in this layer will resolve the error and make the network FHE-compatible:
+We can see here that the error is in the second layer because the product has exceeded the 16-bit precision limit. This error is only detected when the PBS operations are actually applied.
+
+However, reducing the number of neurons in this layer resolves the error and makes the network FHE-compatible:
 
 <!--pytest-codeblocks:cont-->
 
 ```python
-torch_model = SimpleNet(50)
-try:
-    quantized_numpy_module = compile_torch_model(
-        torch_model,
-        torch_input,
-        n_bits = 3,
-    )
-except RuntimeError as err:
-    print(err)
+torch_model = SimpleNet(10)
+
+quantized_numpy_module = compile_torch_model(
+    torch_model,
+    torch_input,
+    n_bits=7,
+)
 ```
 
 ## Complexity analysis
 
-In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, than simpler encrypted operations such matrix multiplications, convolution or additions.
+In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, than simpler encrypted operations such as matrix multiplications, convolution or additions.
 
 Furthermore, the cost of PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It may be of interest to the model developer, then, to determine the bit-width of the circuit and the amount of PBS it performs.
 
@@ -167,57 +161,50 @@ This can be done by inspecting the MLIR code produced by the compiler:
 <!--pytest-codeblocks:cont-->
 
 ```python
-torch_model = SimpleNet(50)
-try:
-    quantized_numpy_module = compile_torch_model(
-        torch_model,
-        torch_input,
-        n_bits = 3,
-        show_mlir=True,
-    )
-except RuntimeError as err:
-    print(err)
+torch_model = SimpleNet(10)
+
+quantized_numpy_module = compile_torch_model(
+    torch_model,
+    torch_input,
+    n_bits=7,
+    show_mlir=True,
+)
 ```
 
 ### Compiled MLIR model
 
 ```
-%cst = arith.constant dense<...> : tensor<50x2xi9>
-%cst_0 = arith.constant dense<...>
-%cst_1 = arith.constant dense<...> : tensor<2x50xi9>
-%c-14_i9 = arith.constant -14 : i9
-%c128_i9 = arith.constant 128 : i9
-%c128_i9_2 = arith.constant 128 : i9
-%c128_i9_3 = arith.constant 128 : i9
-%c128_i9_4 = arith.constant 128 : i9
-%hack_0_c-14_i9 = tensor.from_elements %c-14_i9 : tensor<1xi9>
-%0 = "FHELinalg.add_eint_int"(%arg0, %hack_0_c-14_i9) : (tensor<1x2x!FHE.eint<8>>, tensor<1xi9>) -> tensor<1x2x!FHE.eint<8>>
-%hack_1_c128_i9_4 = tensor.from_elements %c128_i9_4 : tensor<1xi9>
-%1 = "FHELinalg.add_eint_int"(%0, %hack_1_c128_i9_4) : (tensor<1x2x!FHE.eint<8>>, tensor<1xi9>) -> tensor<1x2x!FHE.eint<8>>
-%cst_5 = arith.constant dense<...> : tensor<256xi64>
-%2 = "FHELinalg.apply_lookup_table"(%1, %cst_5) : (tensor<1x2x!FHE.eint<8>>, tensor<256xi64>) -> tensor<1x2x!FHE.eint<8>>
+MLIR
+--------------------------------------------------------------------------------
+module {
+  func.func @main(%arg0: tensor<1x2x!FHE.eint<15>>) -> tensor<1x2x!FHE.eint<15>> {
+    %cst = arith.constant dense<16384> : tensor<1xi16>
+    %0 = "FHELinalg.sub_eint_int"(%arg0, %cst) : (tensor<1x2x!FHE.eint<15>>, tensor<1xi16>) -> tensor<1x2x!FHE.eint<15>>
+    %cst_0 = arith.constant dense<[[-13, 43], [-31, 63], [1, -44], [-61, 20], [31, 2]]> : tensor<5x2xi16>
+    %cst_1 = arith.constant dense<[[-45, 57, 19, 50, -63], [32, 37, 2, 52, -60], [-41, 25, -1, 31, -26], [-51, -40, -53, 0, 4], [20, -25, 56, 54, -23]]> : tensor<5x5xi16>
+    %cst_2 = arith.constant dense<[[-56, -50, 57, 37, -22], [14, -1, 57, -63, 3]]> : tensor<2x5xi16>
+    %c16384_i16 = arith.constant 16384 : i16
+    %1 = "FHELinalg.matmul_eint_int"(%0, %cst_2) : (tensor<1x2x!FHE.eint<15>>, tensor<2x5xi16>) -> tensor<1x5x!FHE.eint<15>>
+    %cst_3 = tensor.from_elements %c16384_i16 : tensor<1xi16>
+    %cst_4 = tensor.from_elements %c16384_i16 : tensor<1xi16>
+    %2 = "FHELinalg.add_eint_int"(%1, %cst_4) : (tensor<1x5x!FHE.eint<15>>, tensor<1xi16>) -> tensor<1x5x!FHE.eint<15>>
+    %cst_5 = arith.constant
 
-%3 = "FHELinalg.matmul_eint_int"(%2, %cst_1) : (tensor<1x2x!FHE.eint<8>>, tensor<2x50xi9>) -> tensor<1x50x!FHE.eint<8>>
-%hack_4_c128_i9_3 = tensor.from_elements %c128_i9_3 : tensor<1xi9>
-%4 = "FHELinalg.add_eint_int"(%3, %hack_4_c128_i9_3) : (tensor<1x50x!FHE.eint<8>>, tensor<1xi9>) -> tensor<1x50x!FHE.eint<8>>
-%cst_6 = arith.constant dense<...> : tensor<34x256xi64>
-%cst_7 = arith.constant dense<...]> : tensor<1x50xindex>
-%5 = "FHELinalg.apply_mapped_lookup_table"(%4, %cst_6, %cst_7) : (tensor<1x50x!FHE.eint<8>>, tensor<34x256xi64>, tensor<1x50xindex>) -> tensor<1x50x!FHE.eint<8>>
+: tensor<5x32768xi64>
+    %cst_6 = arith.constant dense<[[0, 1, 2, 3, 4]]> : tensor<1x5xindex>
+    %3 = "FHELinalg.apply_mapped_lookup_table"(%2, %cst_5, %cst_6) : (tensor<1x5x!FHE.eint<15>>, tensor<5x32768xi64>, tensor<1x5xindex>) -> tensor<1x5x!FHE.eint<15>>
+    %4 = "FHELinalg.matmul_eint_int"(%3, %cst_1) : (tensor<1x5x!FHE.eint<15>>, tensor<5x5xi16>) -> tensor<1x5x!FHE.eint<15>>
+    %5 = "FHELinalg.add_eint_int"(%4, %cst_3) : (tensor<1x5x!FHE.eint<15>>, tensor<1xi16>) -> tensor<1x5x!FHE.eint<15>>
+    %cst_7 = arith.constant
 
-%6 = "FHELinalg.matmul_eint_int"(%5, %cst_0) : (tensor<1x50x!FHE.eint<8>>, tensor<50x50xi9>) -> tensor<1x50x!FHE.eint<8>>
-%hack_7_c128_i9_2 = tensor.from_elements %c128_i9_2 : tensor<1xi9>
-%7 = "FHELinalg.add_eint_int"(%6, %hack_7_c128_i9_2) : (tensor<1x50x!FHE.eint<8>>, tensor<1xi9>) -> tensor<1x50x!FHE.eint<8>>
-%cst_8 = arith.constant dense<...> : tensor<34x256xi64>
-%cst_9 = arith.constant dense<...> : tensor<1x50xindex>
-%8 = "FHELinalg.apply_mapped_lookup_table"(%7, %cst_8, %cst_9) : (tensor<1x50x!FHE.eint<8>>, tensor<34x256xi64>, tensor<1x50xindex>) -> tensor<1x50x!FHE.eint<8>>
+: tensor<5x32768xi64>
+    %6 = "FHELinalg.apply_mapped_lookup_table"(%5, %cst_7, %cst_6) : (tensor<1x5x!FHE.eint<15>>, tensor<5x32768xi64>, tensor<1x5xindex>) -> tensor<1x5x!FHE.eint<15>>
+    %7 = "FHELinalg.matmul_eint_int"(%6, %cst_0) : (tensor<1x5x!FHE.eint<15>>, tensor<5x2xi16>) -> tensor<1x2x!FHE.eint<15>>
+    return %7 : tensor<1x2x!FHE.eint<15>>
 
-%9 = "FHELinalg.matmul_eint_int"(%8, %cst) : (tensor<1x50x!FHE.eint<8>>, tensor<50x2xi9>) -> tensor<1x2x!FHE.eint<8>>
-%hack_10_c128_i9 = tensor.from_elements %c128_i9 : tensor<1xi9>
-%10 = "FHELinalg.add_eint_int"(%9, %hack_10_c128_i9) : (tensor<1x2x!FHE.eint<8>>, tensor<1xi9>) -> tensor<1x2x!FHE.eint<8>>
-%cst_10 = arith.constant dense<...> : tensor<2x256xi64>
-%cst_11 = arith.constant dense<[[0, 1]]> : tensor<1x2xindex>
-%11 = "FHELinalg.apply_mapped_lookup_table"(%10, %cst_10, %cst_11) : (tensor<1x2x!FHE.eint<8>>, tensor<2x256xi64>, tensor<1x2xindex>) -> tensor<1x2x!FHE.eint<8>>
-return %11 : tensor<1x2x!FHE.eint<8>>
+  }
+}
+--------------------------------------------------------------------------------
 ```
 
 There are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.

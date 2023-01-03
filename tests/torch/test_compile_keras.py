@@ -33,6 +33,7 @@ class FC(tensorflow.keras.Model):
         self.dense2 = tensorflow.keras.layers.Dense(output_size, activation=tensorflow.nn.relu6)
         self.flatten = tensorflow.keras.layers.Flatten()
 
+    # pylint: disable-next=unused-argument
     def call(self, inputs, training=None, mask=None):
         """Forward function."""
         x = self.flatten(inputs)
