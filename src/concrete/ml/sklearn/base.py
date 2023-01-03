@@ -444,7 +444,7 @@ class QuantizedTorchEstimatorMixin:
 
         # For prediction in the clear we call the super class which, in turn,
         # will end up calling .infer of this class
-        return super().predict_proba(X)
+        return super().predict_proba(X).astype(numpy.float32)
 
     # pylint: enable=arguments-differ
 
