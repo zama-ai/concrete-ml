@@ -4,21 +4,27 @@ Concrete-ML offers some features for advanced users that wish to adjust the cryp
 
 ## Approximate computations
 
-### An error probability for individual TLU
+### Probability of errors
 
 Concrete-ML makes use of table lookup (TLU) to represent any non-linear operation (e.g. sigmoid). This TLU is implemented through the Programmable Bootstrapping (PBS) operation which will apply a non-linear operation in the cryptographic realm.
 
-In Concrete-ML, the result of the TLU operation is obtained with a specific error probability:
+The result of TLU operations is obtained with a specific error probability. Concrete-ML offers the possibility to set this error probability, which influences the cryptographic parameters. The higher the success rate, the more restrictive the parameters become. This can affect both key generation and, more significantly, FHE execution time.
 
-```python
-p_error = 6.3342483999973e-05
-```
+In Concrete-ML, there are three different ways to define the error probability:
 
-A PBS operation has a `1 - p_error = 99.9936657516%` chance of being successful, which influences the cryptographic parameters. The higher the success rate, the more restrictive the parameters become. This can affect both key generation and, more significantly, FHE execution time.
+- setting `p_error`, the error probability of an individual TLU, see [here](#an-error-probability-for-individual-tlu)
+- setting `global_p_error`, the error probability of the full circuit, see [here](#a-global-error-probability-for-the-entire-model)
+- not setting `p_error` nor `global_p_error`, and using default parameters, see [here](#using-default-error-probability)
 
-The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that one would compute in the clear.
+{% hint style="warning" %}
+`p_error` and `global_p_error` are somehow two concurrent parameters, in the sense they both have an impact on the choice of cryptographic parameters. To avoid any mistake, it is forbidden in Concrete-ML to set both `p_error` and `global_p_error`.
+{% endhint %}
 
-This number is set by default to be relatively low such that any user can build deep circuits without being impacted by this noise as [described in the concepts section](../getting-started/concepts.md#cryptography-concepts). However, there might be use cases and specific circuits where the Gaussian noise can increase without being too dramatic for the circuit accuracy. In that case, increasing the `p_error` can be relevant as it will decrease the execution time in FHE.
+### An error probability for individual TLU
+
+The first way to set error probabilities in Concrete-ML is at the local level, i.e. directly the probability of error of each individual TLU: this probability is referred as `p_error`. A given PBS operation has a `1 - p_error` chance of being successful. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that one would compute in the clear.
+
+For simplicity it is best to use [default options](#using-default-error-probability), irrespective of the type of model. However, especially for deep neural networks, the default values may be too pessimistic, reducing computation speed without any gain in accuracy. For deep neural networks, some TLU errors may not have any impact on accuracy, and the `p_error` can be safely increased (see for example CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
 Here is a visualization of the effect of the `p_error` over a simple linear regression with a `p_error = 0.1` vs the default `p_error` value:
 
@@ -65,8 +71,12 @@ clf.compile(X_train, global_p_error = 0.1)
 In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. Note that the shift is relative to the expected value so even if the result is different, it should be __around__ the expected value.
 
 {% hint style="warning" %}
-The  `global_p_error` parameter is only used for FHE evaluation and has __no__ effect on VL simulation (unlike the `p_error`).
+The  `global_p_error` parameter is only used for FHE evaluation and has __no__ effect on VL simulation (unlike the `p_error`). Fixing it is in our roadmap.
 {% endhint %}
+
+### Using default error probability
+
+If none of `p_error` or `global_p_error` are set, Concrete-ML takes a default `global_p_error = 0.01`.
 
 ## Seeing compilation information
 
@@ -176,7 +186,7 @@ Optimizer
 
 In this latter optimization information, one will find information such as:
 
-- bit-width ("6 bits integers") used in the program; we remind that for the moment, the compiler only supports a single precision, i.e., that all PBS are promoted to the same bit-width (the largest one). Therefore, this bit-width highly drives the speed of the program, and it is essential to try to reduce it as much as possible for fast execution
+- bit-width ("6 bits integers") used in the program; we remind that for the moment, the compiler only supports a single precision, i.e. that all PBS are promoted to the same bit-width (the largest one). Therefore, this bit-width highly drives the speed of the program, and it is essential to try to reduce it as much as possible for fast execution
 - maximal norm2 ("7 manp"), which has an impact on the crypto parameters which can be found. The larger this norm2, the slower PBS will be. The norm2 is related to norm of some constants appearing in your program, in a way which will be clarified in the compiler documentation
 - probability of error of an individual PBS which was requested by the user ("3.300000e-02 error per pbs call" in User Config)
 - probability of error of the full circuit which was requested by the user  ("1.000000e+00 error per circuit call" in User Config); here, the probability 1 stands for "not used", since we had set the individual probability

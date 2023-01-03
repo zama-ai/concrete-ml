@@ -88,6 +88,8 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("combinaison", []),
         ("zeropoint", []),
         ("pretrained", []),
+        ("i.e.,", []),
+        ("e.g.,", []),
     ]
     # For later
     #   "We" or "Our", or more generally, passive form
