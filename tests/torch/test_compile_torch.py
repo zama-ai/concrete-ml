@@ -66,7 +66,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     """Test the different model architecture from torch numpy."""
 
     # Define an input shape (n_examples, n_features)
-    n_examples = 50
+    n_examples = 500
 
     # Define the torch model
     if not isinstance(input_output_feature, tuple):
