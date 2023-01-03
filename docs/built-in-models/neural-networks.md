@@ -1,20 +1,20 @@
 # Neural Networks
 
-Concrete-ML provides simple neural networks models with a Scikit-learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
+Concrete-ML provides simple built-in neural networks models with a Scikit-learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
 
-|                                            Concrete-ML                                             |
-| :------------------------------------------------------------------------------------------------: |
-| [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) |
-|  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  |
+|                                            Concrete-ML                                             | Scikit-learn                                                                                                 |
+| :------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------ |
+| [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html) |
+|  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html)   |
 
-The neural network models are built with [Skorch](https://skorch.readthedocs.io/en/stable/index.html), which provides a scikit-learn like interface to Torch models (more [here](../developer-guide/external_libraries.md#skorch)).
+The neural network models are implemented with [Skorch](https://skorch.readthedocs.io/en/stable/index.html), which provides a scikit-learn like interface to Torch models (more [here](../developer-guide/external_libraries.md#skorch)).
 
-These models use a stack of linear layers and the activation function and the number of neurons in each layer is configurable. This approach is similar to what is available in Scikit-learn using the `MLPClassifier`/`MLPRegressor` classes. The built-in, fully connected neural network (FCNN) models train easily with a single call to `.fit()`, which will automatically quantize the weights and activations. These models use Quantization Aware Training, allowing good performance for low precision (down to 2-3 bit) weights and activations.
+The Concrete-ML models are multi-layer fully-connected networks with customizable activation function and number of neurons in each layer. This approach is similar to what is available in Scikit-learn using the `MLPClassifier`/`MLPRegressor` classes. The built-in models train easily with a single call to `.fit()`, which will automatically quantize the weights and activations. These models use Quantization Aware Training, allowing good performance for low precision (down to 2-3 bit) weights and activations.
 
 While `NeuralNetClassifier` and `NeuralNetClassifier` provide scikit-learn like models, their architecture is somewhat restricted in order to make training easy and robust. If you need more advanced models, you can convert custom neural networks as described in the [FHE-friendly models documentation](../deep-learning/fhe_friendly_models.md).
 
 {% hint style="warning" %}
-Good quantization parameter values are critical to make models [respect FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints). Weights and activations should be quantized to low precision (e.g. 2-4 bits). Furthermore, in cases of overflow, the sparsity of the network can be tuned [as described below](neural-networks.md#overflow-errors).
+Good quantization parameter values are critical to make models [respect FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints). Weights and activations should be quantized to low precision (e.g. 2-4 bits). Furthermore, the sparsity of the network can be tuned [as described below](neural-networks.md#overflow-errors), to avoid accumulator overflow.
 {% endhint %}
 
 ## Example usage
