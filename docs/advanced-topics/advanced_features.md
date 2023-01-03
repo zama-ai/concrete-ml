@@ -26,11 +26,19 @@ The first way to set error probabilities in Concrete-ML is at the local level, i
 
 For simplicity it is best to use [default options](#using-default-error-probability), irrespective of the type of model. However, especially for deep neural networks, the default values may be too pessimistic, reducing computation speed without any gain in accuracy. For deep neural networks, some TLU errors may not have any impact on accuracy, and the `p_error` can be safely increased (see for example CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
-Here is a visualization of the effect of the `p_error` over a simple linear regression with a `p_error = 0.1` vs the default `p_error` value:
+Here is a visualization of the effect of the `p_error` on a neural network model with a `p_error = 0.1` compared to execution in the clear (i.e. no error):
 
-![Impact of p_error in a Linear Regression](../figures/p_error_linear_regression.png)
+![Impact of p_error in a Neural Network](../figures/p_error_nn.png)
 
-The execution for the two models are 336 ms per example for the standard `p_error` and 253 ms per example for a `p_error = 0.1` (on a 8 cores Intel CPU machine). Obviously, this speedup is very dependent on model complexity. To obtain a speedup while maintaining good accuracy, it is possible to search for a good value of `p_error`. Currently no heuristic has been proposed to find a good value a-priori.
+Varying the `p_error` the one hidden-layer neural network above produces the following inference times. Increasing `p_error` to 0.1 halves the inference time with respect to a `p_error` of 0.001. Note, in the graph above, that the decision boundary becomes more noisy with higher `p_error`.
+
+| p_error | Inference Time (ms) |
+| :-----: | ------------------- |
+|  0.001  | 0.80                |
+|  0.01   | 0.41                |
+|   0.1   | 0.37                |
+
+The speedup is dependent on model complexity, but, in an iterative approach, to obtain a speedup while maintaining good accuracy, it is possible to search for a good value of `p_error`. Currently no heuristic has been proposed to find a good value a-priori.
 
 Users have the possibility to change this `p_error` as they choose fit, by passing an argument to the `compile` function of any of the models. Here is an example:
 
