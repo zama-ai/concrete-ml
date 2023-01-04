@@ -8,6 +8,9 @@ python3 -m venv .venvpip
 # shellcheck disable=SC1091
 source .venvpip/bin/activate
 
+# Update pip and setuptools
+pip install -U pip setuptools
+
 # Needed for some tests
 pip install pandas
 pip install tensorflow
