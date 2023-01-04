@@ -176,6 +176,7 @@
 - [`custom_assert.assert_false`](./concrete.ml.common.debugging.custom_assert.md#function-assert_false): Provide a custom assert to check that the condition is False.
 - [`custom_assert.assert_not_reached`](./concrete.ml.common.debugging.custom_assert.md#function-assert_not_reached): Provide a custom assert to check that a piece of code is never reached.
 - [`custom_assert.assert_true`](./concrete.ml.common.debugging.custom_assert.md#function-assert_true): Provide a custom assert to check that the condition is True.
+- [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
 - [`utils.generate_proxy_function`](./concrete.ml.common.utils.md#function-generate_proxy_function): Generate a proxy function for a function accepting only \*args type arguments.
 - [`utils.get_onnx_opset_version`](./concrete.ml.common.utils.md#function-get_onnx_opset_version): Return the ONNX opset_version.
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
