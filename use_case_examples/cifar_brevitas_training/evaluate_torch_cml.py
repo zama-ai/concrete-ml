@@ -121,6 +121,8 @@ def main():
     cfg = Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
+        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
+        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
     quantized_numpy_module = compile_brevitas_qat_model(
         model,  # our torch model

@@ -85,6 +85,8 @@ cfg = Configuration(
     enable_unsafe_features=True,  # Needed to use the insecure key cache location
     use_insecure_key_cache=True,  #  Needed to use the insecure key cache location
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
+    p_error=None,  # To avoid any confusion: we are always using kwarg p_error
+    global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
 )
 
 print("Compiling the model.")

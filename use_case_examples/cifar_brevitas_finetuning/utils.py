@@ -385,7 +385,8 @@ def fhe_compatibility(model: Callable, bit: int, data: DataLoader) -> Callable:
         use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         jit=False,
-        p_error=6.3342483999973e-05,
+        p_error=None,
+        global_p_error=None,
     )
 
     qmodel = compile_brevitas_qat_model(

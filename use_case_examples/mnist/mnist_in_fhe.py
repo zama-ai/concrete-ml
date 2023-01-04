@@ -112,6 +112,8 @@ def compile_and_test(
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
         insecure_key_cache_location="/tmp/keycache",
+        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
+        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
 
     if use_virtual_lib:

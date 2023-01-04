@@ -232,6 +232,8 @@ BENCHMARK_CONFIGURATION = cnp.Configuration(
     show_mlir=False,
     show_graph=False,
     jit=True,
+    p_error=None,  # To avoid any confusion: we are always using kwarg p_error
+    global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
 )
 
 
