@@ -5,7 +5,6 @@ from types import FunctionType
 from typing import Callable, Dict, Iterable, Optional, Tuple
 
 import onnx
-from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
 
@@ -136,13 +135,13 @@ def manage_parameters_for_pbs_errors(
     return p_error, global_p_error
 
 
-def check_there_is_no_p_error_options_in_configuration(configuration: Optional[Configuration]):
+def check_there_is_no_p_error_options_in_configuration(configuration):
     """Check the user did not set p_error or global_p_error in configuration.
 
     It would be dangerous, since we set them in direct arguments in our calls to Concrete-Numpy.
 
     Args:
-        configuration (Optional[Configuration]): Configuration object to use
+        configuration: Configuration object to use
             during compilation
 
     """
