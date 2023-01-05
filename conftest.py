@@ -33,14 +33,6 @@ def pytest_addoption(parser):
     )
 
     parser.addoption(
-        "--keyring-dir",
-        action="store",
-        default=None,
-        type=str,
-        help="Specify the dir to use to store key cache",
-    )
-
-    parser.addoption(
         "--forcing_random_seed",
         action="store",
         default=None,
@@ -62,32 +54,6 @@ def pytest_addoption(parser):
     )
 
 
-DEFAULT_KEYRING_PATH = Path.home().resolve() / ".cache/concrete-ml_pytest"
-
-
-def get_keyring_dir_from_session_or_default(
-    session: Optional[pytest.Session] = None,
-) -> Optional[Path]:
-    """Get keyring dir from test session."""
-    if session is None:
-        return DEFAULT_KEYRING_PATH
-
-    keyring_dir = session.config.getoption("--keyring-dir", default=None)
-    if keyring_dir is not None:
-        if keyring_dir.lower() == "disable":
-            return None
-        keyring_dir = Path(keyring_dir).expanduser().resolve()
-    else:
-        keyring_dir = DEFAULT_KEYRING_PATH
-    return keyring_dir
-
-
-@pytest.fixture
-def default_keyring_path():
-    """Fixture to get test keyring dir."""
-    return DEFAULT_KEYRING_PATH
-
-
 # This is only for doctests where we currently cannot make use of fixtures
 original_compilation_config_init = Configuration.__init__
 
@@ -105,7 +71,7 @@ def monkeypatched_compilation_configuration_init_for_codeblocks(
 
 
 def pytest_sessionstart(session: pytest.Session):
-    """Handle keyring for session and codeblocks Configuration if needed."""
+    """Handle codeblocks Configuration if needed."""
     if session.config.getoption("--codeblocks", default=False):
         # setattr to avoid mypy complaining
         # Disable the flake8 bug bear warning for the mypy fix
@@ -114,14 +80,6 @@ def pytest_sessionstart(session: pytest.Session):
             "__init__",
             monkeypatched_compilation_configuration_init_for_codeblocks,
         )
-
-    keyring_dir = get_keyring_dir_from_session_or_default(session)
-    if keyring_dir is None:
-        return
-    keyring_dir.mkdir(parents=True, exist_ok=True)
-    keyring_dir_as_str = str(keyring_dir)
-    print(f"Using {keyring_dir_as_str} as key cache dir")
-    configuration.insecure_key_cache_location = keyring_dir_as_str
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disable=unused-argument
@@ -148,12 +106,6 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
             global_coverage_file_path = Path(global_coverage_file).resolve()
             with open(global_coverage_file_path, "w", encoding="utf-8") as f:
                 json.dump({"exit_code": coverage_status, "content": coverage_txt}, f)
-
-    keyring_dir = get_keyring_dir_from_session_or_default(session)
-    if keyring_dir is not None:
-        # Remove incomplete keys
-        for incomplete_keys in keyring_dir.glob("**/*incomplete*"):
-            shutil.rmtree(incomplete_keys, ignore_errors=True)
 
 
 @pytest.fixture
