@@ -116,7 +116,9 @@ filterwarnings = [
     "ignore: distutils Version classes are deprecated. Use packaging\\.version instead.*:DeprecationWarning",
     "ignore: forcing n_jobs = 1 on mac for segfault issue",
     "ignore: allowzero=0 by default.*:UserWarning",
-    "ignore:Implicitly cleaning up:ResourceWarning"
+    "ignore:Implicitly cleaning up:ResourceWarning",
+    "ignore:non-integer arguments to randrange() have been deprecated since Python 3.10 and will be removed in a subsequent version:DeprecationWarning",
+
 ]
 
 [tool.semantic_release]
