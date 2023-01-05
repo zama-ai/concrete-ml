@@ -12,7 +12,7 @@ Utils that can be re-used by other pieces of code in the module.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replace_invalid_arg_name_chars`
 
@@ -34,7 +34,7 @@ This does not check that the starting character of arg_name is valid.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_proxy_function`
 
@@ -60,7 +60,7 @@ This returns a runtime compiled function with the sanitized argument names passe
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L76"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_opset_version`
 
@@ -80,7 +80,7 @@ Return the ONNX opset_version.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L91"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `manage_parameters_for_pbs_errors`
 
@@ -117,14 +117,12 @@ Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_there_is_no_p_error_options_in_configuration`
 
 ```python
-check_there_is_no_p_error_options_in_configuration(
-    configuration: Optional[Configuration]
-)
+check_there_is_no_p_error_options_in_configuration(configuration)
 ```
 
 Check the user did not set p_error or global_p_error in configuration.
@@ -133,4 +131,4 @@ It would be dangerous, since we set them in direct arguments in our calls to Con
 
 **Args:**
 
-- <b>`configuration`</b> (Optional\[Configuration\]):  Configuration object to use  during compilation
+- <b>`configuration`</b>:  Configuration object to use  during compilation
