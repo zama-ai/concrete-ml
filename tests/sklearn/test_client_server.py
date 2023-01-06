@@ -67,7 +67,13 @@ class OnDiskNetwork:
 
 
 @pytest.mark.parametrize("model, parameters", classifiers + regressors)
-def test_client_server_sklearn(default_configuration_no_jit, model, parameters, load_data):
+def test_client_server_sklearn(
+    default_configuration_no_jit,
+    model,
+    parameters,
+    load_data,
+    check_is_good_execution_for_cml_vs_circuit,
+):
     """Tests the encrypt decrypt api."""
 
     # Generate random data
@@ -82,7 +88,7 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
         model.fit(x_train, y_train)
 
     # Compile
-    extra_params = {}
+    extra_params = {"global_p_error": 1 / 100_000}
 
     fhe_circuit = model.compile(
         x_train, default_configuration_no_jit, **extra_params, show_mlir=True
@@ -90,6 +96,9 @@ def test_client_server_sklearn(default_configuration_no_jit, model, parameters, 
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
 
+    # Check that the FHE execution is correct.
+    # With a global_p_error of 1/100_000 we only allow one run.
+    check_is_good_execution_for_cml_vs_circuit(x_test, model, n_allowed_runs=1)
     client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
 
 
@@ -110,9 +119,13 @@ def test_client_server_custom_model(
         configuration=default_configuration_no_jit,
         n_bits=n_bits,
         use_virtual_lib=False,
+        global_p_error=1 / 100_000,
     )
-    q_x_train = quantized_numpy_module.quantize_input(x_train)
-    check_is_good_execution_for_cml_vs_circuit(q_x_train, quantized_numpy_module)
+
+    # Check that the FHE execution is correct.
+    # With a global_p_error of 1/100_000 we only allow one run.
+    q_x_test = quantized_numpy_module.quantize_input(x_test)
+    check_is_good_execution_for_cml_vs_circuit(q_x_test, quantized_numpy_module, n_allowed_runs=1)
     client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration_no_jit)
 
 
@@ -210,12 +223,11 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     y_pred_model_server_ds_quantized = model.fhe_circuit.encrypt_run_decrypt(qtest)
     y_pred_model_server_ds_dequantized = model.post_processing(y_pred_model_server_ds_quantized)
 
-    # Make sure the quantization is the same for the client and dev
+    # Make sure the quantized predictions are the same for the dev model and server
     numpy.testing.assert_array_equal(y_pred_on_client_quantized, y_pred_model_server_ds_quantized)
-
-    # FHE has some randomness so we can't have an accurate assertion here
-    assert y_pred_model_server_ds_dequantized is not None
-    assert y_pred_on_client_dequantized is not None
+    numpy.testing.assert_array_equal(
+        y_pred_on_client_dequantized, y_pred_model_server_ds_dequantized
+    )
 
     # Clean up
     network.cleanup()
