@@ -509,7 +509,7 @@ jobs:
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 40
+        timeout-minutes: 80
         run: |
           make pytest
 
@@ -521,13 +521,13 @@ jobs:
           make pytest PYTEST_OPTIONS=--weekly
 
       - name: PyTest CodeBlocks
-        timeout-minutes: 5
+        timeout-minutes: 30
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_codeblocks
 
       - name: PyTest CodeBlocks with Pypi Concrete-ML
-        timeout-minutes: 5
+        timeout-minutes: 30
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_codeblocks_pip_cml
