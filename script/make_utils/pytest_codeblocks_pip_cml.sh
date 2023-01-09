@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 rm -rf .venvpip
 python3 -m venv .venvpip
@@ -18,9 +18,9 @@ pip install tf2onnx
 
 # Fresh new Concrete-ML from pypi:
 # If it is a public version:
-#       pip install concrete-ml
+pip install concrete-ml
 # If it is still a private version
-pip install -U --pre concrete-ml
+#   pip install -U --pre concrete-ml
 
 # For pytest
 pip install pytest
