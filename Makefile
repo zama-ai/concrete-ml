@@ -762,3 +762,10 @@ update_dependabot_prs:
 check_unused_images:
 	./script/make_utils/check_all_images_are_used.sh
 
+.PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete-ML
+pytest_pypi_wheel_cml:
+	./script/make_utils/pytest_pypi_cml.sh --wheel
+
+.PHONY: pytest_pip_cml # Run tests using PyPI Concrete-ML
+pytest_pip_cml:
+	./script/make_utils/pytest_pypi_cml.sh --pip

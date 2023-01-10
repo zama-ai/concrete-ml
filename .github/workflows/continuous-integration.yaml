@@ -538,6 +538,12 @@ jobs:
         run: |
           make pytest_nb
 
+      - name: PyTest with PyPI local wheel of Concrete-ML 
+        if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
+        timeout-minutes: 80
+        run: |
+          make pytest_pypi_wheel_cml
+
       - name: Fast sanity check
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
