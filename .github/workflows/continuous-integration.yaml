@@ -871,6 +871,9 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
+  # This action is launched automatically when a tag is pushed, which happens under the hood
+  # when we do a `make release`. Here, we set an AWS EC2 instance, as GitHub runners had
+  # broken configurations
   start-package-release-runner:
     needs: [build-linux]
     name: Start package-release runner
@@ -910,6 +913,10 @@ jobs:
               {"Key": "Team", "Value": "CML"}
             ]
 
+  # This action is launched automatically when a tag is pushed, which happens under the hood
+  # when we do a `make release` locally. This notably creates docker and pypi images. Most of
+  # the things are done in this action (as opposed to `make release` which just creates a tag),
+  # directly on the AWS EC2 instance created in start-package-release-runner
   package-release:
     needs: [start-package-release-runner]
     outputs:
@@ -1284,6 +1291,7 @@ jobs:
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
+  # Close the AWS EC2 instance which was used during release preparation
   stop-package-release-runner:
     name: Stop EC2 runner
     needs: [start-package-release-runner, package-release]
