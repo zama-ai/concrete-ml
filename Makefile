@@ -704,6 +704,12 @@ check_links:
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal \
 		--ignore-url=.gitbook/assets
 
+	@# We don't want links to our internal GitBook. We may have to switch this test off for a
+	@# moment if we link to links which are not made public in CN documentation, eg. Worse case, it
+	@# is tested in check_links_after_release
+	./script/doc_utils/check_no_gitbook_links.sh
+
+
 .PHONY: check_links_after_release # Check links in the documentation as if we were users
 check_links_after_release: docs
 	@# The difference between check_links_after_release and check_links is:

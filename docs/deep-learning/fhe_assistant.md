@@ -4,7 +4,7 @@ This section provides a set of tools and guidelines to help users build optimize
 
 ## Virtual Library
 
-The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler, allowing users to simulate FHE execution, including any probabilistic behavior FHE may induce. The Virtual Library comes from Concrete-Numpy, where it is called [Virtual Circuits](https://app.gitbook.com/o/-MIF05xPVoj0l_wnOGB7/s/49QbUJ63qvCPBgHEb0Jc/tutorials/virtual_circuits).
+The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler, allowing users to simulate FHE execution, including any probabilistic behavior FHE may induce. The Virtual Library comes from Concrete-Numpy, where it is called [Virtual Circuits](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
 
 The Virtual Lib can be useful when developing and iterating on an ML model implementation. For example, you can check that your model is compatible in terms of operands (all integers) with the Virtual Lib compilation. Then, you can check how many bits your ML model would require, which can give you hints about ways it could be modified to compile it to an actual FHE Circuit. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the Virtual Lib can help to find the optimal model design.
 
