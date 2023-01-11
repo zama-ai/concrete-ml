@@ -1,4 +1,4 @@
-name: concrete-ml CI Pipeline
+name: CML weekly builds
 on:
   pull_request:
 
@@ -710,84 +710,6 @@ jobs:
         # FIXME  #1655 timeout-minutes: 240
         run: |
           make pytest_macOS_for_GitHub
-
-  weekly-pip-audit:
-    if: ${{ github.event_name == 'schedule' }}
-    runs-on: ubuntu-20.04
-    timeout-minutes: 5
-    env:
-      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
-      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
-    steps:
-      - name: Add masks
-        run: |
-          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
-          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
-
-      - name: Checkout Code
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912
-        with:
-          python-version: '3.8'
-
-      - name: Check python3 version
-        env:
-          SYSTEM_VERSION_COMPAT: 0
-        run: |
-          which python3
-          which pip3
-
-      - name: Set up env
-        run: |
-
-          which python3
-          which pip3
-
-          python -m pip install --upgrade pip
-          python -m pip install poetry
-          make setup_env
-
-      - name: Run pip-audit
-        shell: bash
-        run: |
-          set +e
-          VULN_OUT="$(mktemp --suffix=.json)"
-          REPORT_OUT="$(mktemp --suffix=.txt)"
-          echo "REPORT_OUT=${REPORT_OUT}" >> "$GITHUB_ENV"
-          poetry run pip-audit -f json > "${VULN_OUT}"
-          cat "${VULN_OUT}"
-          set -e
-          poetry run python ./script/actions_utils/parse_pip_audit_vulns.py \
-          --vulns-json "${VULN_OUT}" \
-          --vulns-report "${REPORT_OUT}"
-
-      # We store the report in a new step if we exited with an error code above to let the workflow fail
-      # We escape the newlines so that it can be loaded properly by the runner
-      # See https://github.community/t/set-output-truncates-multiline-strings/16852/3
-      - name: Load report in env
-        id: report
-        if: ${{ always() }}
-        run: |
-          cat "${REPORT_OUT}"
-          REPORT="$(cat "${REPORT_OUT}")"
-          REPORT="${REPORT//'%'/'%25'}"
-          REPORT="${REPORT//$'\n'/'%0A'}"
-          REPORT="${REPORT//$'\r'/'%0D'}"
-          echo "report=${REPORT}" >> $GITHUB_OUTPUT
-
-      - name: Slack Notification
-        if: ${{ always() && !success() }}
-        continue-on-error: true
-        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
-        env:
-          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
-          SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "${{ steps.report.outputs.report || 'Error during pip-audit' }} (${{ env.ACTION_RUN_URL }})"
-          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
   publish-docs:
     needs: [build-linux]

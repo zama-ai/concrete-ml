@@ -1,0 +1,106 @@
+name: CML weekly pip audit
+on:
+
+  schedule:
+    # * is a special character in YAML so you have to quote this string
+    # At 22:00 on Sunday
+    # Timezone is UTC, so Paris time is +2 during the summer and +1 during winter
+    - cron: '0 22 * * 0'
+
+concurrency:
+  # Add event_name in the group as workflow dispatch means we could run this in addition to other
+  # workflows already running on a PR or a merge e.g.
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
+  # Cancel the previous build, except on main
+  cancel-in-progress: ${{ github.event_name != 'push' || github.ref != 'refs/heads/main' }}
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  IS_PR: ${{ github.event_name == 'pull_request' }}
+  IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.event_name == 'weekly')) }}
+  IS_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+  IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+  IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
+  IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+
+jobs:
+
+  weekly-pip-audit:
+    if: ${{ always() }}
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912
+        with:
+          python-version: '3.8'
+
+      - name: Check python3 version
+        env:
+          SYSTEM_VERSION_COMPAT: 0
+        run: |
+          which python3
+          which pip3
+
+      - name: Set up env
+        run: |
+
+          which python3
+          which pip3
+
+          python -m pip install --upgrade pip
+          python -m pip install poetry
+          make setup_env
+
+      - name: Run pip-audit
+        shell: bash
+        run: |
+          set +e
+          VULN_OUT="$(mktemp --suffix=.json)"
+          REPORT_OUT="$(mktemp --suffix=.txt)"
+          echo "REPORT_OUT=${REPORT_OUT}" >> "$GITHUB_ENV"
+          poetry run pip-audit -f json > "${VULN_OUT}"
+          cat "${VULN_OUT}"
+          set -e
+          poetry run python ./script/actions_utils/parse_pip_audit_vulns.py \
+          --vulns-json "${VULN_OUT}" \
+          --vulns-report "${REPORT_OUT}"
+
+      # We store the report in a new step if we exited with an error code above to let the workflow fail
+      # We escape the newlines so that it can be loaded properly by the runner
+      # See https://github.community/t/set-output-truncates-multiline-strings/16852/3
+      - name: Load report in env
+        id: report
+        if: ${{ always() }}
+        run: |
+          cat "${REPORT_OUT}"
+          REPORT="$(cat "${REPORT_OUT}")"
+          REPORT="${REPORT//'%'/'%25'}"
+          REPORT="${REPORT//$'\n'/'%0A'}"
+          REPORT="${REPORT//$'\r'/'%0D'}"
+          echo "report=${REPORT}" >> $GITHUB_OUTPUT
+
+      - name: Slack Notification
+        if: ${{ always() && !success() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ job.status }}
+          SLACK_MESSAGE: "${{ steps.report.outputs.report || 'Error during pip-audit' }} (${{ env.ACTION_RUN_URL }})"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
