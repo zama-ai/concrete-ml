@@ -1,6 +1,6 @@
 # Tree-based Models
 
-Concrete-ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-learn](https://scikit-learn.org/stable/):
+Concrete-ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
 
 |                                                Concrete-ML                                                |                                                                           scikit-learn                                                                           |
 | :-------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |

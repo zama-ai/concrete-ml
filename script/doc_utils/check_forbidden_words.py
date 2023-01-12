@@ -59,6 +59,8 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("pyTest", []),
         ("Pytest", []),
         ("python", []),
+        ("Pytorch", []),
+        ("pytorch", []),
         ("HummingBird", []),
         ("hummingbird", ["from hummingbird import", "import hummingbird", "from hummingbird."]),
         ("MacOS", []),
@@ -94,6 +96,20 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("pretrained", []),
         ("i.e.,", []),
         ("e.g.,", []),
+        ("discord", []),
+        ("worst-case", []),
+        ("FHE friendly", []),  # use FHE-friendly
+        ("slow-down", []),
+        ("counter-part", []),
+        ("Scikit-learn", []),  # use Scikit-Learn
+        ("it's", []),  # use `it is`
+        ("It's", []),  # use `It is`
+        ("github", []),
+        ("elementwise", []),
+        ("favourite", []),
+        ("speed up", ["to speed up", "will speed up", "will not speed up"]),
+        ("de-activate", []),
+        ("Skorch", []),
     ]
     # For later
     #   "We" or "Our", or more generally, passive form
@@ -149,7 +165,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
 def main(args):
     """Entry point."""
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
-        res = pool.map(partial(process_file), args.files)
+        res = pool.map(partial(process_file, do_open_problematic_files=args.open), args.files)
         res_first = [r[0] for r in res]
         res_second = [r[1] for r in res]
 
@@ -168,6 +184,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--files", type=str, nargs="+", required=True, help="The files to modify in place"
     )
+
+    parser.add_argument("--open", action="store_true", help="Open files with problems for edit")
 
     cli_args = parser.parse_args()
     main(cli_args)

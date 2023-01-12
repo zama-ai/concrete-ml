@@ -1,6 +1,6 @@
 # Linear Models
 
-Concrete-ML provides several of the most popular linear models for `regression` and `classification` that can be found in [Scikit-learn](https://scikit-learn.org/stable/):
+Concrete-ML provides several of the most popular linear models for `regression` and `classification` that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
 
 |                                                Concrete-ML                                                |                                                                          scikit-learn                                                                           |
 | :-------------------------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------: |

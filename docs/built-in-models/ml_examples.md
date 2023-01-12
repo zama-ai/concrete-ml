@@ -53,7 +53,7 @@ Privacy-preserving prediction of house prices is shown in this example, using th
 [<img src="../.gitbook/assets/jupyter_logo.png">   NN Iris example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb)
 [<img src="../.gitbook/assets/jupyter_logo.png">   NN MNIST example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb)
 
-Two different configurations of the built-in, fully-connected neural networks are shown. First, a small bit-width accumulator network is trained on [Iris](https://www.openml.org/d/61) and compared to a Pytorch floating point network. Second, a larger accumulator (>8 bits) is demonstrated on [MNIST](http://yann.lecun.com/exdb/mnist/).
+Two different configurations of the built-in, fully-connected neural networks are shown. First, a small bit-width accumulator network is trained on [Iris](https://www.openml.org/d/61) and compared to a PyTorch floating point network. Second, a larger accumulator (>8 bits) is demonstrated on [MNIST](http://yann.lecun.com/exdb/mnist/).
 
 ### 7. Comparison of classifiers
 

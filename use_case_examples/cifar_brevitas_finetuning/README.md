@@ -11,7 +11,7 @@ You can install these dependencies using pip and the requirements.txt file avail
 
 `pip install -r requirements.txt`
 
-You can use Pytorch with CUDA in Concrete-ML, just put the right cuda version:
+You can use PyTorch with CUDA in Concrete-ML, just put the right cuda version:
 
 `pip3 install --upgrade torch==1.12 torchvision torchsummary --extra-index-url https://download.pytorch.org/whl/cu113`
 
@@ -42,7 +42,7 @@ CIFAR-100:
 
 | Runtime            | Top1 Accuracy |
 | ------------------ | ------------- |
-| VGG Pytorch        | 70.04%        |
+| VGG PyTorch        | 70.04%        |
 | VGG Brevitas       | 68.40%        |
 | VGG FHE simulation | 68.28%        |
 
@@ -50,6 +50,6 @@ CIFAR-10:
 
 | Runtime            | Top1 Accuracy |
 | ------------------ | ------------- |
-| VGG Pytorch        | 90.11%        |
+| VGG PyTorch        | 90.11%        |
 | VGG Brevitas       | 90.40%        |
 | VGG FHE simulation | 90.28%        |

@@ -42,15 +42,15 @@ In theory, the resulting `onnx_model` could be used directly within Concrete-ML'
 
 In practice, there are some steps needed to clean the ONNX output and make the graph compatible with Concrete-ML, such as applying quantization where needed or deleting/replacing non-FHE friendly ONNX operators (such as _Softmax_ and _ArgMax)._
 
-## Skorch
+## skorch
 
-Concrete-ML uses [Skorch](https://skorch.readthedocs.io/en/stable/) to implement multi-layer, fully-connected PyTorch neural networks in a way that is compatible with the scikit-learn API.
+Concrete-ML uses [skorch](https://skorch.readthedocs.io/en/stable/) to implement multi-layer, fully-connected PyTorch neural networks in a way that is compatible with the scikit-learn API.
 
 This wrapper implements Torch training boilerplate code, lessening the work required of the user. It is possible to add hooks during the training phase, for example once an epoch is finished.
 
-Skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete-ML to provide a fully-connected, multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../advanced-topics/pruning.md) and the [neural network documentation](../built-in-models/neural-networks.md) for more information).
+skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete-ML to provide a fully-connected, multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../advanced-topics/pruning.md) and the [neural network documentation](../built-in-models/neural-networks.md) for more information).
 
-Under the hood, Concrete-ML uses a Skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetImpl`. More information can be found [in the API guide](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl).
+Under the hood, Concrete-ML uses a skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetImpl`. More information can be found [in the API guide](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl).
 
 ```
 class SparseQuantNeuralNetImpl(nn.Module):

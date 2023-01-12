@@ -51,7 +51,7 @@ We see a 20x improvement with a simple change in the `p_error` parameter, for mo
 
 Anyone can reproduce the FHE inference results using the [dedicated script](./fhe_inference.py).
 
-The Pytorch model and the inference using Pytorch for the first layer and the Virtual Library for the encrypted part yielded the same top-k accuracies:
+The PyTorch model and the inference using PyTorch for the first layer and the Virtual Library for the encrypted part yielded the same top-k accuracies:
 
 - top-1-accuracy: 0.6234
 - top-2-accuracy: 0.8075

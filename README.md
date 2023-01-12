@@ -38,7 +38,7 @@ Data scientists can use models with APIs which are close to the frameworks they 
 Concrete-ML features:
 
 - built-in models, which are ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
-- support for customs models that can use quantization aware training. These are developed by the user using pytorch or keras/tensorflow and are imported into Concrete-ML through ONNX
+- support for customs models that can use quantization aware training. These are developed by the user using PyTorch or keras/tensorflow and are imported into Concrete-ML through ONNX
 
 ## Installation.
 
@@ -125,7 +125,7 @@ Full, comprehensive documentation is available here: [https://docs.zama.ai/concr
 
 Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, several complete use-cases are explored:
 
-- [MNIST](use_case_examples/mnist): a python script and notebook showing quantization-aware training following FHE constraints. A fully-connected neural network is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete-ML.
+- [MNIST](use_case_examples/mnist): a Python script and notebook showing quantization-aware training following FHE constraints. A fully-connected neural network is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete-ML.
 
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): a notebook, which gives a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete-ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 

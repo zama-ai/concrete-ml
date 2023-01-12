@@ -74,7 +74,7 @@ Brevitas provides a quantized version of almost all PyTorch layers (`Linear` lay
 
 In order to use FHE, the network must be quantized from end to end, and thanks to the Brevitas's `QuantIdentity` layer, it is possible to quantize the input by placing it at the entry point of the network. Moreover, it is also possible to combine PyTorch and Brevitas layers, provided that a `QuantIdentity` is placed after this PyTorch layer. The following table gives the replacements to be made to convert a PyTorch NN for Concrete-ML compatibility.
 
-| Pytorch fp32 layer   | Concrete-ML model with Pytorch/Brevitas               |
+| PyTorch fp32 layer   | Concrete-ML model with PyTorch/Brevitas               |
 | -------------------- | ----------------------------------------------------- |
 | `torch.nn.Linear`    | `brevitas.quant.QuantLinear`                          |
 | `torch.nn.Conv2d`    | `brevitas.quant.Conv2d`                               |

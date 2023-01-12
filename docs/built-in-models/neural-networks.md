@@ -2,7 +2,7 @@
 
 Concrete-ML provides simple built-in neural networks models with a scikit-learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
 
-|                                            Concrete-ML                                             | Scikit-learn                                                                                                    |
+|                                            Concrete-ML                                             | Scikit-Learn                                                                                                    |
 | :------------------------------------------------------------------------------------------------: | --------------------------------------------------------------------------------------------------------------- |
 | [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural%5C_network.MLPClassifier.html) |
 |  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural%5C_network.MLPRegressor.html)   |
