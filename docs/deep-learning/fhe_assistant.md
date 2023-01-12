@@ -2,13 +2,13 @@
 
 This section provides a set of tools and guidelines to help users build optimized FHE-compatible models.
 
-## Virtual library
+## Virtual Library
 
 The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler, allowing users to simulate FHE execution, including any probabilistic behavior FHE may induce. The Virtual Library comes from Concrete-Numpy, where it is called [Virtual Circuits](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
 
 The Virtual Lib can be useful when developing and iterating on an ML model implementation. For example, you can check that your model is compatible in terms of operands (all integers) with the Virtual Lib compilation. Then, you can check how many bits your ML model would require, which can give you hints about ways it could be modified to compile it to an actual FHE Circuit. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the Virtual Lib can help to find the optimal model design.
 
-The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution, thus allowing for faster iterations, debugging and FHE simulation, regardless of the bit-width used. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
+The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution. This allows for faster iterations, debugging, and FHE simulation, regardless of the bit-width used. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
 The following example shows how to use the Virtual Lib in Concrete-ML. Simply add `use_virtual_lib = True` and `enable_unsafe_features = True` in a `Configuration`. The result of the compilation will then be a simulated circuit that allows for more precision or simulated FHE execution.
 
@@ -153,13 +153,13 @@ quantized_numpy_module = compile_torch_model(
 
 ## Complexity analysis
 
-In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, than simpler encrypted operations such as matrix multiplications, convolution or additions.
+In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, than simpler encrypted operations such as matrix multiplications, convolution, or additions.
 
 Furthermore, the cost of PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It may be of interest to the model developer, then, to determine the bit-width of the circuit and the amount of PBS it performs.
 
 This can be done by inspecting the MLIR code produced by the compiler:
 
-### Concrete-ML Model
+### Concrete-ML model
 
 <!--pytest-codeblocks:cont-->
 
@@ -212,7 +212,7 @@ module {
 
 There are several calls to `FHELinalg.apply_mapped_lookup_table` and `FHELinalg.apply_lookup_table`. These calls apply PBS to the cells of their input tensors. Their inputs in the listing above are: `tensor<1x2x!FHE.eint<8>>` for the first and last call and `tensor<1x50x!FHE.eint<8>>` for the two calls in the middle. Thus, PBS is applied 104 times.
 
-Getting the bit-width of the circuit is then simply:
+Retrieving the bit-width of the circuit is then simply:
 
 <!--pytest-codeblocks:cont-->
 
@@ -220,4 +220,4 @@ Getting the bit-width of the circuit is then simply:
 print(quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width())
 ```
 
-Decreasing the number of bits and the number of PBS induces large reductions in the computation time of the compiled circuit.
+Decreasing the number of bits and the number of PBS applications induces large reductions in the computation time of the compiled circuit.

@@ -56,13 +56,13 @@ Note: Concrete-ML only supports Python `3.7` (linux only), `3.8` and `3.9`.
 
 Concrete-ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)), but not on Google Colab ([see question on community for more details](https://community.zama.ai/t/how-do-i-install-run-concrete-ml-on-google-colab/338)).
 
-### Docker.
+### Docker
 
 To install with Docker, pull the `concrete-ml` image as follows:
 
 `docker pull zamafhe/concrete-ml:latest`
 
-### Pip.
+### Pip
 
 To install Concrete-ML from PyPi, run the following:
 
@@ -133,7 +133,7 @@ Various tutorials are proposed for the [built-in models](docs/built-in-models/ml
 
 - [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar_brevitas_training): code for training from scratch a VGG-like FHE-compatible neural network using Brevitas, and a script to run the neural network in FHE. FHE simulation shows an accuracy of 88.7%, but running inference with FHE is still a work-in-progress.
 
-- [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar_brevitas_finetuning): series of three notebooks, that show how to convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR datasets, converted for FHE execution with Concrete-ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%. True FHE inference is a work-in-progress.
+- [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar_brevitas_finetuning): series of three notebooks, that show how to convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR data-sets, converted for FHE execution with Concrete-ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%. True FHE inference is a work-in-progress.
 
 - [FHE neural network splitting for client/server deployment](use_case_examples/cifar_10_with_model_splitting): we explain how to split a computationally-intensive neural network model in two parts. First, we execute the first part on the client side in the clear, and the output of this step is encrypted. Next, to complete the computation, the second part of the model is evaluated with FHE. This tutorial also shows the impact of FHE speed/accuracy tradeoff on CIFAR10, limiting PBS to 8-bit, and thus achieving 62% accuracy.
 

@@ -67,11 +67,11 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed PyTorch tracer"
 ```
 
-To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page. Just a reminder that commit messages are checked in the comformance step and are rejected if they don't follow the rules.
+Just a reminder that commit messages are checked in the comformance step and are rejected if they don't follow the rules. To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
 
 ## 4. Rebasing
 
-You should rebase on top of the `main` branch before you create your pull request. Merge commits are not allowed, so rebasing on `main` before pushing gives you the best chance of avoiding having to rewrite parts of your PR later if conflicts arise with other PRs being merged. After you commit your changes to your new branch, you can use the following commands to rebase:
+You should rebase on top of the `main` branch before you create your pull request. Merge commits are not allowed, so rebasing on `main` before pushing gives you the best chance of to avoid rewriting parts of your PR later if conflicts arise with other PRs being merged. After you commit changes to your new branch, you can use the following commands to rebase:
 
 ```shell
 # fetch the list of active remote branches
@@ -101,6 +101,6 @@ You can learn more about rebasing [here](https://git-scm.com/docs/git-rebase).
 
 ## 5. Releases
 
-Before any final release, Concrete-ML contributors go through a release candidate (RC) cycle. The idea is that once the codebase and documentations look ready for a release, you create an RC release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C&labels=%5C&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
+Before any final release, Concrete-ML contributors go through a release candidate (RC) cycle. The idea is that once the codebase and documentations look ready for release, you create an RC release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C%5C&labels=%5C%5C&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
 
-Once the last RC is deemed ready, open an issue with the release template using the last RC version from which you remove the `rc?` part (i.e. `v12.67.19` if your last RC version was `v12.67.19-rc4`) on [github](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C&labels=%5C&template=release.md).
+Once the last RC is deemed ready, open an issue with the release template using the last RC version from which you remove the `rc?` part (i.e. `v12.67.19` if your last RC version was `v12.67.19-rc4`) on [GitHub](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=%5C%5C&labels=%5C%5C&template=release.md).

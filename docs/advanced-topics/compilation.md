@@ -6,15 +6,15 @@ As FHE execution is much slower than execution on non-encrypted data, Concrete-M
 
 ## Compilation
 
-Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete-ML hides away most of the complexity of this step. The entire compilation process is done by Concrete-Numpy.
+Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick%5C_start), and Concrete-ML hides away most of the complexity of this step, completing the entire compilation process itself.
 
 From the perspective of the Concrete-ML user, the compilation process performed by Concrete-Numpy can be broken up into 3 steps:
 
-1. Numpy program tracing and creation of a Concrete-Numpy op-graph
-1. checking that the op-graph is FHE compatible
-1. producing machine code for the op-graph. This step automatically determines cryptographic parameters
+1. tracing the Numpy program and creating a Concrete-Numpy op-graph
+1. checking the op-graph for FHE compatability
+1. producing machine code for the op-graph (this step automatically determines cryptographic parameters)
 
-Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server and key generation, encryption and decryption on the client side.
+Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
 
 ## Simulation with the Virtual Library
 
@@ -27,7 +27,7 @@ The result of this single step of the compilation pipeline allows the:
 
 Enabling Virtual Library execution requires the definition of a compilation `Configuration`. As simulation does not execute in FHE, this can be considered _unsafe_:
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:skip-->	
 
 ```python
     COMPIL_CONFIG_VL = Configuration(
@@ -38,7 +38,7 @@ Enabling Virtual Library execution requires the definition of a compilation `Con
 
 Next, the following code uses the simulation mode for built-in models:
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:skip-->	
 
 ```python
     clf.compile(
@@ -50,7 +50,7 @@ Next, the following code uses the simulation mode for built-in models:
 
 And finally, for custom models, it is possible to enable simulation using the following syntax:
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:skip-->	
 
 ```python
     quantized_numpy_module = compile_torch_model(
@@ -65,7 +65,7 @@ And finally, for custom models, it is possible to enable simulation using the fo
 
 Obtaining the simulated predictions of the models using the Virtual Library has the same syntax as execution in FHE:
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:skip-->	
 
 ```python
     Z = clf.predict_proba(X, execute_in_fhe=True)
@@ -73,7 +73,7 @@ Obtaining the simulated predictions of the models using the Virtual Library has 
 
 Moreover, the maximum accumulator bit-width is determined as follows:
 
-<!--pytest-codeblocks:skip-->
+<!--pytest-codeblocks:skip-->	
 
 ```python
     bit_width = clf.quantized_module_.forward_fhe.graph.maximum_integer_bit_width()
@@ -81,7 +81,7 @@ Moreover, the maximum accumulator bit-width is determined as follows:
 
 ## A simple Concrete-Numpy example
 
-While Concrete-ML hides away all the Concrete-Numpy code that performs model inference, it can be useful to understand how Concrete-Numpy code works. Here is an toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
+While Concrete-ML hides away all the Concrete-Numpy code that performs model inference, it can be useful to understand how Concrete-Numpy code works. Here is a toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
 
 ```python
 import numpy

@@ -116,7 +116,8 @@ def main():
                 if header:
                     if abs_file_path not in asts:
                         errors.append(
-                            f"{abs_file_path} was not parsed into AST (from {document_path})"
+                            f"{abs_file_path} for {node.target} was not "
+                            f"parsed into AST (from {document_path})"
                         )
                         continue
                     if header and not contains_header(asts[abs_file_path], header):

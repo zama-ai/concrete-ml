@@ -658,7 +658,7 @@ ______________________________________________________________________
 
 A very small QAT CNN to classify the sklearn digits dataset.
 
-This class also allows pruning to a maximum of 10 active neurons, which should help keep the accumulator bit width low.
+This class also allows pruning to a maximum of 10 active neurons, which should help keep the accumulator bit-width low.
 
 <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/src/concrete/ml/pytest/torch_models.py#L564"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
