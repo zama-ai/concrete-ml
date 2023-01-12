@@ -22,7 +22,7 @@ The first step in the list above takes a Python function implemented using the C
 
 The result of this single step of the compilation pipeline allows the:
 
-- execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but it is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate hyper-parameters. This mode is called the Virtual Library (which is referred as [Virtual Circuits](https://app.gitbook.com/o/-MIF05xPVoj0l_wnOGB7/s/49QbUJ63qvCPBgHEb0Jc/tutorials/virtual_circuits) in Concrete-Numpy).
+- execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but it is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate hyper-parameters. This mode is called the Virtual Library (which is referred as [Virtual Circuits](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits) in Concrete-Numpy).
 - verification of the maximum bit-width of the op-graph, to determine FHE compatibility, without actually compiling the circuit to machine code.
 
 Enabling Virtual Library execution requires the definition of a compilation `Configuration`. As simulation does not execute in FHE, this can be considered _unsafe_:

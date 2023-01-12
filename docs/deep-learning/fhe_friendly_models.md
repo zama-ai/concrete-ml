@@ -8,9 +8,9 @@ Regarding FHE-friendly neural networks, Quantization Aware Training is the best 
 
 Concrete-ML uses a third party library, [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for Pytorch NNs, but other options exist for other frameworks such as Keras/Tensorflow.
 
-Several [demos and tutorials](../getting-started/showcase.md) that use Brevitas are available in Concrete-ML library, such as the [CIFAR classification tutorial](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
+Several [demos and tutorials](../getting-started/showcase.md) that use Brevitas are available in Concrete-ML library, such as the [CIFAR classification tutorial](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
 
-This guide is based on a [notebook tutorial](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb), from which some code blocks are documented here.
+This guide is based on a [notebook tutorial](https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/docs/advanced_examples/QuantizationAwareTraining.ipynb), from which some code blocks are documented here.
 
 For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 
@@ -43,7 +43,7 @@ class SimpleNet(nn.Module):
         return x
 ```
 
-The [notebook tutorial](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb), example shows how to train a fully-connected neural network, similar to the one above, on a synthetic 2D data-set with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
+The [notebook tutorial](https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/docs/advanced_examples/QuantizationAwareTraining.ipynb), example shows how to train a fully-connected neural network, similar to the one above, on a synthetic 2D data-set with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
 
 Once trained, this Pytorch network can be imported using the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_torch_model) function. This function uses simple Post-Training Quantization.
 
