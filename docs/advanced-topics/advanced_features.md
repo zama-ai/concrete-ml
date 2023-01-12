@@ -6,31 +6,31 @@ Concrete-ML offers some features for advanced users that wish to adjust the cryp
 
 ### Probability of errors
 
-Concrete-ML makes use of table lookup (TLU) to represent any non-linear operation (e.g. sigmoid). This TLU is implemented through the Programmable Bootstrapping (PBS) operation which will apply a non-linear operation in the cryptographic realm.
+Concrete-ML makes use of table lookups (TLUs) to represent any non-linear operation (e.g. sigmoid). TLUs are implemented through the Programmable Bootstrapping (PBS) operation which will apply a non-linear operation in the cryptographic realm.
 
 The result of TLU operations is obtained with a specific error probability. Concrete-ML offers the possibility to set this error probability, which influences the cryptographic parameters. The higher the success rate, the more restrictive the parameters become. This can affect both key generation and, more significantly, FHE execution time.
 
 In Concrete-ML, there are three different ways to define the error probability:
 
-- setting `p_error`, the error probability of an individual TLU, see [here](#an-error-probability-for-individual-tlu)
-- setting `global_p_error`, the error probability of the full circuit, see [here](#a-global-error-probability-for-the-entire-model)
-- not setting `p_error` nor `global_p_error`, and using default parameters, see [here](#using-default-error-probability)
+- setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#an-error-probability-for-an-individual-tlu))
+- setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-error-probability-for-the-entire-model))
+- not setting `p_error` nor `global_p_error`, and using default parameters (see [here](advanced_features.md#using-default-error-probability))
 
 {% hint style="warning" %}
-`p_error` and `global_p_error` are somehow two concurrent parameters, in the sense they both have an impact on the choice of cryptographic parameters. To avoid any mistake, it is forbidden in Concrete-ML to set both `p_error` and `global_p_error`.
+`p_error` and `global_p_error` are somehow two concurrent parameters, in the sense they both have an impact on the choice of cryptographic parameters. To avoid a mistake, it is forbidden in Concrete-ML to set both `p_error` and `global_p_error`simultaneously.
 {% endhint %}
 
-### An error probability for individual TLU
+### An error probability for an individual TLU
 
-The first way to set error probabilities in Concrete-ML is at the local level, i.e. directly the probability of error of each individual TLU: this probability is referred as `p_error`. A given PBS operation has a `1 - p_error` chance of being successful. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that one would compute in the clear.
+The first way to set error probabilities in Concrete-ML is at the local level, by directly setting the probability of error of each individual TLU. This probability is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being successful. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that one would compute in the clear.
 
-For simplicity it is best to use [default options](#using-default-error-probability), irrespective of the type of model. However, especially for deep neural networks, the default values may be too pessimistic, reducing computation speed without any gain in accuracy. For deep neural networks, some TLU errors may not have any impact on accuracy, and the `p_error` can be safely increased (see for example CIFAR classifications in [our showcase](../getting-started/showcase.md)).
+For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. However, especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors may not have any impact on accuracy and the `p_error` can be safely increased (see for example CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
 Here is a visualization of the effect of the `p_error` on a neural network model with a `p_error = 0.1` compared to execution in the clear (i.e. no error):
 
 ![Impact of p_error in a Neural Network](../figures/p_error_nn.png)
 
-Varying the `p_error` the one hidden-layer neural network above produces the following inference times. Increasing `p_error` to 0.1 halves the inference time with respect to a `p_error` of 0.001. Note, in the graph above, that the decision boundary becomes more noisy with higher `p_error`.
+Varying the `p_error` in the one hidden-layer neural network above produces the following inference times. Increasing `p_error` to 0.1 halves the inference time with respect to a `p_error` of 0.001. Note, in the graph above, that the decision boundary becomes noisier with higher `p_error`.
 
 | p_error | Inference Time (ms) |
 | :-----: | ------------------- |
@@ -38,9 +38,9 @@ Varying the `p_error` the one hidden-layer neural network above produces the fol
 |  0.01   | 0.41                |
 |   0.1   | 0.37                |
 
-The speedup is dependent on model complexity, but, in an iterative approach, to obtain a speedup while maintaining good accuracy, it is possible to search for a good value of `p_error`. Currently no heuristic has been proposed to find a good value a-priori.
+The speedup is dependent on model complexity, but, in an iterative approach, it is possible to search for a good value of `p_error` to obtain a speedup while maintaining good accuracy. Currently, no heuristic has been proposed to find a good value _a priori_.
 
-Users have the possibility to change this `p_error` as they choose fit, by passing an argument to the `compile` function of any of the models. Here is an example:
+Users have the possibility to change this `p_error` as they see fit, by passing an argument to the `compile` function of any of the models. Here is an example:
 
 ```python
 from concrete.ml.sklearn import XGBClassifier
@@ -59,15 +59,15 @@ clf.fit(X_train, y_train)
 clf.compile(X_train, p_error = 0.1)
 ```
 
-If the `p_error` value is specified and the  [Virtual Library](compilation.md#simulation-with-the-virtual-library) is enabled, the run will take in account the randomness induced by the `p_error`, resulting in statistical similarity to the FHE evaluation.
+If the `p_error` value is specified and the [Virtual Library](compilation.md#simulation-with-the-virtual-library) is enabled, the run will take into account the randomness induced by the `p_error`, resulting in statistical similarity to the FHE evaluation.
 
 ### A global error probability for the entire model
 
-A global `global_p_error` is also available and defines the probability of success for the entire model. Here, the `p_error` for every PBS is computed internally in Concrete-Numpy such that the `global_p_error` is reached.
+A `global_p_error` is also available and defines the probability of success for the entire model. Here, the `p_error` for every PBS is computed internally in Concrete-Numpy such that the `global_p_error` is reached.
 
-There might be cases where the user encounters `No cryptography parameter found` error message. In such a case, increasing the `p_error` or the `global_p_error` might help.
+There might be cases where the user encounters a `No cryptography parameter found` error message. In such a case, increasing the `p_error` or the `global_p_error` might help.
 
-Usage is similar as the `p_error` parameter:
+Usage is similar to the `p_error` parameter:
 
 <!--pytest-codeblocks:cont-->
 
@@ -76,19 +76,19 @@ Usage is similar as the `p_error` parameter:
 clf.compile(X_train, global_p_error = 0.1)
 ```
 
-In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. Note that the shift is relative to the expected value so even if the result is different, it should be __around__ the expected value.
+In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. Note that the shift is relative to the expected value, so even if the result is different, it should be **around** the expected value.
 
 {% hint style="warning" %}
-The  `global_p_error` parameter is only used for FHE evaluation and has __no__ effect on VL simulation (unlike the `p_error`). Fixing it is in our roadmap.
+The `global_p_error` parameter is only used for FHE evaluation and has **no** effect on VL simulation (unlike the `p_error`). Fixing it is in our roadmap.
 {% endhint %}
 
 ### Using default error probability
 
-If none of `p_error` or `global_p_error` are set, Concrete-ML takes a default `global_p_error = 0.01`.
+If neither `p_error` or `global_p_error` are set, Concrete-ML takes a default `global_p_error = 0.01`.
 
 ## Seeing compilation information
 
-By using `verbose_compilation = True` and `show_mlir = True`  during compilation, one receives lot of information from the compiler and its inner optimizer. Remark that these options are however mainly meant for power-users, so they may be hard to understand.
+By using `verbose_compilation = True` and `show_mlir = True` during compilation, the user receives a lot of information from the compiler and its inner optimizer. These options are, however, mainly meant for power-users, so they may be hard to understand.
 
 ```python
 from concrete.ml.sklearn import DecisionTreeClassifier
@@ -106,7 +106,7 @@ clf.fit(X_train, y_train)
 clf.compile(X_train, verbose_compilation=True, show_mlir=True, p_error=0.033)
 ```
 
-Here, one will see
+Here, one will see:
 
 - the computation graph, typically
 
@@ -132,7 +132,7 @@ Computation Graph
 return %15
 ```
 
-- the MLIR, which produced by Concrete-Numpy and given to the compiler
+- the MLIR, produced by Concrete-Numpy and given to the compiler
 
 ```
 MLIR
@@ -192,15 +192,15 @@ Optimizer
 ---
 ```
 
-In this latter optimization information, one will find information such as:
+In this latter optimization, the following information will be provided:
 
-- bit-width ("6 bits integers") used in the program; we remind that for the moment, the compiler only supports a single precision, i.e. that all PBS are promoted to the same bit-width (the largest one). Therefore, this bit-width highly drives the speed of the program, and it is essential to try to reduce it as much as possible for fast execution
-- maximal norm2 ("7 manp"), which has an impact on the crypto parameters which can be found. The larger this norm2, the slower PBS will be. The norm2 is related to norm of some constants appearing in your program, in a way which will be clarified in the compiler documentation
-- probability of error of an individual PBS which was requested by the user ("3.300000e-02 error per pbs call" in User Config)
-- probability of error of the full circuit which was requested by the user  ("1.000000e+00 error per circuit call" in User Config); here, the probability 1 stands for "not used", since we had set the individual probability
-- probability of error of an individual PBS which is found by the optimizer ("1/30 errors (3.234529e-02)")
-- probability of error of the full circuit which is found by the optimizer  ("1/10 errors (9.390887e-02)")
-- an estimation of the cost of the circuit ("4.214000e+02 Millions Operations"): large values indicate a circuit that will execute more slowly
+- The bit-width ("6 bits integers") used in the program: for the moment, the compiler only supports a single precision (i.e. that all PBS are promoted to the same bit-width - the largest one). Therefore, this bit-width predominantly drives the speed of the program, and it is essential to attempt to reduce it as much as possible for fast execution.
+- The maximal norm2 ("7 manp"), which has an impact on the crypto parameters: The larger this norm2, the slower PBS will be. The norm2 is related to the norm of some constants appearing in your program, in a way which will be clarified in the compiler documentation.
+- The probability of error of an individual PBS, which was requested by the user ("3.300000e-02 error per pbs call" in User Config)
+- The probability of error of the full circuit, which was requested by the user ("1.000000e+00 error per circuit call" in User Config): Here, the probability 1 stands for "not used", since we had set the individual probability.
+- The probability of error of an individual PBS, which is found by the optimizer ("1/30 errors (3.234529e-02)"
+- The probability of error of the full circuit which is found by the optimizer ("1/10 errors (9.390887e-02)")
+- An estimation of the cost of the circuit ("4.214000e+02 Millions Operations"): Large values indicate a circuit that will execute more slowly.
 
 and, for cryptographers only, some information about cryptographic parameters:
 
@@ -211,4 +211,4 @@ and, for cryptographers only, some information about cryptographic parameters:
 - blindrota l,b=2,15
 - wopPbs : false
 
-Once again, this optimizer feedback is a work in progress and will be modified and improved in  future releases.
+Once again, this optimizer feedback is a work in progress and will be modified and improved in future releases.

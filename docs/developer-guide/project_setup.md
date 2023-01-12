@@ -4,12 +4,12 @@ Concrete-ML is a `Python` library, so `Python` should be installed to develop Co
 
 First of all, you need to `git clone` the project:
 
-<!--
-```bash
-cd /tmp
-rm -rf concrete-ml
-```
--->
+<!--	
+```bash	
+cd /tmp	
+rm -rf concrete-ml	
+```	
+-->	
 
 <!--pytest-codeblocks:cont-->
 
@@ -24,7 +24,7 @@ Some tests require files tracked by git-lfs to be downloaded. To do so, please f
 A simple way to have everything installed is to use the development Docker (see the [Docker setup](docker_setup.md) guide). On Linux and macOS, you have to run the script in `./script/make_utils/setup_os_deps.sh`. Specify the `--linux-install-python` flag if you want to install python3.8 as well on apt-enabled Linux distributions. The script should install everything you need for Docker and bare OS development (you can first review the content of the file to check what it will do).
 
 {% hint style="danger" %}
-For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are/lack of a single package manager.
+For Windows users, the `setup_os_deps.sh` script does not install dependencies because of how many different installation methods there are due to the lack of a single package manager.
 
 The first step is to [install Python](project_setup.md#python) (as some of the dev tools depend on it), then [Poetry](project_setup.md#poetry). In addition to installing Python, you are still going to need the following software available on path on Windows, as some of the basic dev tools depend on them:
 
@@ -49,9 +49,9 @@ To manually install Python, you can follow [this](https://realpython.com/install
 As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires Poetry >= 1.2.
 {% endhint %}
 
-### Make
+### make
 
-The dev tools use `make` to launch the various commands.
+The dev tools use `make` to launch various commands.
 
 On Linux, you can install `make` from your distribution's preferred package manager.
 
@@ -78,7 +78,7 @@ In the following sections, be sure to use the proper `make` tool for your system
 
 ### Cloning the repository
 
-To get the source code of Concrete-ML, clone the code repository using the link for your favourite communication protocol (ssh or https).
+To get the source code of Concrete-ML, clone the code repository using the link for your favorite communication protocol (ssh or https).
 
 ## Setting up environment on your host OS
 
@@ -113,7 +113,7 @@ source .venv/Scripts/activate
 
 Docker automatically creates and sources a venv in ~/dev_venv/
 
-The venv persists thanks to volumes. It also creates a volume for ~/.cache to speed up later reinstallations. You can check which Docker volumes exist with:
+The venv persists thanks to volumes. It also creates a volume for ~/.cache to speedup later reinstallations. You can check which Docker volumes exist with:
 
 ```shell
 docker volume ls

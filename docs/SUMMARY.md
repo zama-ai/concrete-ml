@@ -21,7 +21,7 @@
 
 - [Using Torch](deep-learning/torch_support.md)
 - [Using ONNX](deep-learning/onnx_support.md)
-- [Step-by-Step Guide](deep-learning/fhe_friendly_models.md)
+- [Step-by-step Guide](deep-learning/fhe_friendly_models.md)
 - [Deep Learning Examples](deep-learning/examples.md)
 - [Debugging Models](deep-learning/fhe_assistant.md)
 
@@ -41,10 +41,10 @@
   - [Documentation](developer-guide/documenting.md)
   - [Support and Issues](developer-guide/debug_support_submit_issues.md)
   - [Contributing](developer-guide/contributing.md)
-- [Inner workings](developer-guide/inner-workings/README.md)
+- [Inner Workings](developer-guide/inner-workings/README.md)
   - [Importing ONNX](developer-guide/onnx_pipeline.md)
-  - [Quantization tools](developer-guide/quantization_internal.md)
-  - [FHE Op-graph design](developer-guide/fhe-op-graphs.md)
+  - [Quantization Tools](developer-guide/quantization_internal.md)
+  - [FHE Op-graph Design](developer-guide/fhe-op-graphs.md)
   - [External Libraries](developer-guide/external_libraries.md)
 - [API](developer-guide/api/README.md)
   <!-- auto-created, do not edit, begin -->

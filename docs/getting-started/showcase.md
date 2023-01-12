@@ -33,7 +33,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td><strong>Neural Network Fine-tuning</strong> </td>
          <td>
             <p></p>
-            <p>Fine-tune a VGG network to classify the CIFAR image datasets and predict on encrypted data</p>
+            <p>Fine-tune a VGG network to classify the CIFAR image data-sets and predict on encrypted data</p>
          </td>
          <td></td>
          <!--- start -->

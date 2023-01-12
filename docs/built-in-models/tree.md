@@ -11,10 +11,10 @@ Concrete-ML provides several of the most popular `classification` and `regressio
 
 In addition to support for scikit-learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
-|                                      Concrete-ML                                       |                                                XGboost                                                 |
-| :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
-| [XGBClassifier](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
-|  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
+|                                      Concrete-ML                                       |                                                  XGboost                                                  |
+| :------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
+| [XGBClassifier](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python%5C_api.html#xgboost.XGBClassifier) |
+|  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python%5C_api.html#xgboost.XGBRegressor)  |
 
 ## Example
 
@@ -52,7 +52,7 @@ param_grid = {
     "model__n_estimators": [5, 10, 20],
 }
 
-# Instantiate the grid search with 5-fold cross validation on all available cores
+# Instantiate the grid search with 5-fold cross validation on all available cores:
 grid = GridSearchCV(pipeline, param_grid, cv=5, n_jobs=-1, scoring="accuracy")
 
 # Launch the grid search
@@ -102,7 +102,7 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have a FHE inference equal to the clear inference
 ```
 
-In a similar usage, the decision boundaries of the Concrete-ML model can be plotted, and, then, compared to the results of the classical XGBoost model executed in the clear. A 6-bits model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
+In a similar example, the decision boundaries of the Concrete-ML model can be plotted, and, then, compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
 
 ![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 

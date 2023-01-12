@@ -1,8 +1,8 @@
 # Pandas
 
-Concrete-ML provides partial support for Pandas, with most available models (linear and tree-based models) usable on Pandas dataframes the same way they would be used with NumPy arrays.
+Concrete-ML provides partial support for Pandas, with most available models (linear and tree-based models) usable on Pandas dataframes just as they would be used with NumPy arrays.
 
-The table below summarizes the current compatibility:
+The table below summarizes current compatibility:
 
 |            Methods             | Support Pandas dataframe |
 | :----------------------------: | :----------------------: |
