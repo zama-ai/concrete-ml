@@ -36,6 +36,7 @@ Then, install required packages:
 <!--pytest-codeblocks:skip-->
 
 ```bash
+pip3 install pip --upgrade
 pip3 install -U pip wheel setuptools --ignore-installed
 pip3 install -r requirements.txt --ignore-installed
 ```
