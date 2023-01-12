@@ -10,7 +10,6 @@ CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
-APIDOCS_OUTPUT?=./docs/developer-guide/api
 
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
@@ -350,11 +349,7 @@ docs: clean_docs
 .PHONY: apidocs # Builds API docs
 apidocs:
 	@# At release time, one needs to change --src-base-url (to be a public release/A.B.x branch)
-	poetry run lazydocs --output-path="$(APIDOCS_OUTPUT)" \
-		--overview-file="README.md" \
-		--src-base-url="https://github.com/zama-ai/concrete-ml-internal/tree/main/" \
-		--no-watermark \
-		concrete.ml
+	./script/doc_utils/update_apidocs.sh
 
 	# Update our summary
 	./script/doc_utils/update_apidocs_files_in_SUMMARY.sh
