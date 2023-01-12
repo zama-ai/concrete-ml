@@ -30,6 +30,7 @@
 - [Quantization](advanced-topics/quantization.md)
 - [Pruning](advanced-topics/pruning.md)
 - [Compilation](advanced-topics/compilation.md)
+- [Prediction with FHE](advanced-topics/prediction_with_fhe.md)
 - [Production Deployment](advanced-topics/client_server.md)
 - [Advanced Features](advanced-topics/advanced_features.md)
 

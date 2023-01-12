@@ -44,6 +44,7 @@
     advanced-topics/quantization.md
     advanced-topics/pruning.md
     advanced-topics/compilation.md
+    advanced-topics/prediction_with_fhe.md
     advanced-topics/client_server.md
     advanced-topics/advanced_features.md
 
