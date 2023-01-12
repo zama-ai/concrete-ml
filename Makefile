@@ -352,7 +352,7 @@ apidocs:
 	@# At release time, one needs to change --src-base-url (to be a public release/A.B.x branch)
 	poetry run lazydocs --output-path="$(APIDOCS_OUTPUT)" \
 		--overview-file="README.md" \
-		--src-base-url="https://github.com/zama-ai/concrete-ml-internal/tree/main/" \
+		--src-base-url="https://github.com/zama-ai/concrete-ml-internal/tree/release/0.6.x" \
 		--no-watermark \
 		concrete.ml
 

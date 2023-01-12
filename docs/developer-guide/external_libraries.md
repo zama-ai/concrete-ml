@@ -89,9 +89,9 @@ class QATnetwork(nn.Module):
 
 For examples of such a _"mixed integer"_ network design, please see the Quantization Aware Training examples:
 
-- [QuantizationAwareTraining.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb)
-- [ConvolutionalNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
+- [QuantizationAwareTraining.ipynb](https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/docs/advanced_examples/QuantizationAwareTraining.ipynb)
+- [ConvolutionalNeuralNetwork.ipynb](https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
 
-or go to the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
+or go to the [MNIST use-case example](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/use_case_examples/mnist/mnist_in_fhe.ipynb).
 
 You can also refer to the [`SparseQuantNeuralNetImpl`](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl) class which is the basis of the built-in `NeuralNetworkClassifier`.

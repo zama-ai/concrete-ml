@@ -26,7 +26,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_titanic.png">titanic.png</a></td>
-         <td><a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/titanic">https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/titanic</a></td>
+         <td><a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/titanic">https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/titanic</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -38,7 +38,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_nn_finetuning.png">nn.png</a></td>
-         <td><a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/cifar_brevitas_finetuning">https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/cifar_brevitas_finetuning</a></td>
+         <td><a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/cifar_brevitas_finetuning">https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/cifar_brevitas_finetuning</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -50,7 +50,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_nn_splitting.png">client-server-1.png</a></td>
-         <td><a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/cifar_10_with_model_splitting">https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/cifar_10_with_model_splitting</a></td>
+         <td><a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/cifar_10_with_model_splitting">https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/cifar_10_with_model_splitting</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -62,7 +62,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_mnist.png">mnist.png</a></td>
-         <td><a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/mnist">https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/mnist</a></td>
+         <td><a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/mnist">https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/mnist</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -74,7 +74,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_filtering.png">blurring.png</a></td>
-         <td><a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/image_filtering">https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/image_filtering</a></td>
+         <td><a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/image_filtering">https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/image_filtering</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -86,7 +86,7 @@ the [built-in models](../built-in-models/ml_examples.md) and for [deep learning]
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_sentiment.png">sentiment.png</a></td>
-         <td><a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/sentiment-analysis-with-transformer">https://github.com/zama-ai/concrete-ml-internal/tree/main/use_case_examples/sentiment-analysis-with-transformer</a></td>
+         <td><a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/sentiment-analysis-with-transformer">https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/use_case_examples/sentiment-analysis-with-transformer</a></td>
          <!--- end -->
       </tr>
    </tbody>
