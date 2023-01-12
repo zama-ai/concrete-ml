@@ -4,7 +4,7 @@
 
 [Hummingbird](https://microsoft.github.io/hummingbird/) is a third-party, open-source library that converts machine learning models into tensor computations, and it can export these models to ONNX. The list of supported models can be found in [the Hummingbird documentation](https://microsoft.github.io/hummingbird/api/hummingbird.ml.supported.html).
 
-Concrete-ML allows the conversion of an ONNX inference to NumPy inference (note that NumPy is always the entry point to run models in FHE with Concrete ML).
+Concrete-ML allows the conversion of an ONNX inference to NumPy inference (note that NumPy is always the entry point to run models in FHE with Concrete-ML).
 
 Hummingbird exposes a `convert` function that can be imported as follows from the `hummingbird.ml` package:
 
@@ -44,11 +44,11 @@ In practice, there are some steps needed to clean the ONNX output and make the g
 
 ## Skorch
 
-Concrete-ML uses [Skorch](https://skorch.readthedocs.io/en/stable/) to implement multi-layer, fully-connected PyTorch neural networks in a way that is compatible with the Scikit-learn API.
+Concrete-ML uses [Skorch](https://skorch.readthedocs.io/en/stable/) to implement multi-layer, fully-connected PyTorch neural networks in a way that is compatible with the scikit-learn API.
 
-This wrapper implements Torch training boilerplate code, alleviating the work that needs to be done by the user. It is possible to add hooks during the training phase, for example once an epoch is finished.
+This wrapper implements Torch training boilerplate code, lessening the work required of the user. It is possible to add hooks during the training phase, for example once an epoch is finished.
 
-Skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete-ML to provide a fully-connected multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../advanced-topics/pruning.md) and the [neural network documentation](../built-in-models/neural-networks.md) for more information).
+Skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete-ML to provide a fully-connected, multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../advanced-topics/pruning.md) and the [neural network documentation](../built-in-models/neural-networks.md) for more information).
 
 Under the hood, Concrete-ML uses a Skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetImpl`. More information can be found [in the API guide](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl).
 
@@ -63,9 +63,8 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
 While Brevitas provides many types of quantization, for Concrete-ML, a custom _"mixed integer"_ quantization applies. This _"mixed integer"_ quantization is much simpler than the _"integer only"_ mode of Brevitas. The _"mixed integer"_ network design is defined as:
 
-- all weights and activations of convolutional, linear and pooling layers must be quantized
-  (e.g. using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
-- PyTorch floating point versions of univariate functions can be used. E.g. `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`. See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
+- all weights and activations of convolutional, linear and pooling layers must be quantized (e.g. using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
+- PyTorch floating-point versions of univariate functions can be used. E.g. `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`. See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
 
 The _"mixed integer"_ mode used in Concrete-ML neural networks is based on the [_"integer only"_ Brevitas quantization](https://github.com/Xilinx/brevitas#low-precision-integer-only-lenet) that makes both weights and activations representable as integers during training. However, through the use of lookup tables in Concrete-ML, floating point univariate PyTorch functions are supported.
 
@@ -94,4 +93,4 @@ For examples of such a _"mixed integer"_ network design, please see the Quantiza
 
 or go to the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
 
-You can also refer to the [`SparseQuantNeuralNetImpl`](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl) class which is the basis of the built-in `NeuralNetworkClassifier`.
+You can also refer to the [`SparseQuantNeuralNetImpl`](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl) class, which is the basis of the built-in `NeuralNetworkClassifier`.

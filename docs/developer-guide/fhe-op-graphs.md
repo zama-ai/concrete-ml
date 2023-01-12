@@ -1,13 +1,13 @@
 # FHE Op-graph Design
 
-The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to a FHE compatible Concrete-ML op-graph. This section describes the implementation of operations in the Concrete-ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
+The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to a FHE-compatible Concrete-ML op-graph. This section describes the implementation of operations in the Concrete-ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
 
 ## Float vs. quantized operations
 
 Concrete, the underlying implementation of TFHE that powers Concrete-ML, enables two types of operations on integers:
 
-- **arithmetic operations**: the addition of two encrypted values and multiplication of encrypted values with clear scalars. These are used, for example, in dot-products, matrix multiplication (linear layers) and convolution.
-- **table lookup operations (TLU)**: using an encrypted value as an index, return the value of a lookup table at that index. This is implemented using Programmable Bootstrapping. This operation is used to perform any non-linear computation such as activation functions, quantization and normalization.
+1. **arithmetic operations**: the addition of two encrypted values and multiplication of encrypted values with clear scalars. These are used, for example, in dot-products, matrix multiplication (linear layers), and convolution.
+1. **table lookup operations (TLU)**: using an encrypted value as an index, return the value of a lookup table at that index. This is implemented using Programmable Bootstrapping. This operation is used to perform any non-linear computation such as activation functions, quantization, and normalization.
 
 Since machine learning models use floating point inputs and weights, they first need to be converted to integers using [quantization](../advanced-topics/quantization.md).
 
@@ -23,12 +23,12 @@ Concrete-ML implements ONNX operations using Concrete-Numpy, which can handle fl
 
 There are two modes of creation of a single table lookup for a chain of ONNX operations:
 
-- float mode: when the operation can be fused
-- mixed float/integer: when the ONNX operation needs to perform arithmetic operations
+1. **float mode**: when the operation can be fused
+1. **mixed float/integer**: when the ONNX operation needs to perform arithmetic operations
 
 Thus, `QuantizedOp` instances may need to quantize their inputs or the result of their computation, depending on their position in the graph.
 
-The `QuantizedOp` class provides a generic implementation of an ONNX operation, including the quantization of inputs and outputs, with the computation implemented in NumPy in `ops_impl.py`. It is possible to picture at the architecture of the `QuantizedOp` as the following structure:
+The `QuantizedOp` class provides a generic implementation of an ONNX operation, including the quantization of inputs and outputs, with the computation implemented in NumPy in `ops_impl.py`. It is possible to picture the architecture of the `QuantizedOp` as the following structure:
 
 ![](../.gitbook/assets/image_4.png)
 
@@ -56,7 +56,7 @@ Finally, some operations produce graph outputs, which must be integers. These op
 
 ![](../.gitbook/assets/image_9.png)
 
-The diagram above shows that both float ops and integer ops need to quantize their outputs to integers, when placed at the end of the graph.
+The diagram above shows that both float ops and integer ops need to quantize their outputs to integers when placed at the end of the graph.
 
 ### Putting it all together
 
@@ -74,16 +74,16 @@ Note that the input is slightly different from the `QuantizedOp`. Since the encr
 
 ### Determining if the operation can be fused
 
-The `QuantizedOp` class exposes a function `can_fuse` that
+The `QuantizedOp` class exposes a function `can_fuse` that:
 
-- helps to determine the type of implementation that will be traced
-- determines whether operations further in the graph, that depend on the results of this operation, can fuse
+- helps to determine the type of implementation that will be traced.
+- determines whether operations further in the graph, that depend on the results of this operation, can fuse.
 
 In most cases, ONNX ops have a single variable input and one or more constant inputs.
 
-When the op implements elementwise operations between the inputs and constants (addition, subtract, multiplication, etc), the operation can be fused to a TLU. Thus, by default in `QuantizedOp`, the `can_fuse` function returns `True`.
+When the op implements element-wise operations between the inputs and constants (addition, subtract, multiplication, etc), the operation can be fused to a TLU. Thus, by default in `QuantizedOp`, the `can_fuse` function returns `True`.
 
-When the op implements operations that mix the various scalars in the input encrypted tensor, the operation cannot fuse, as table lookups are univariate. Thus, operations such as `QuantizedGemm`, `QuantizedConv` return `False` in `can_fuse`.
+When the op implements operations that mix the various scalars in the input encrypted tensor, the operation cannot fuse, as table lookups are univariate. Thus, operations such as `QuantizedGemm` and `QuantizedConv` return `False` in `can_fuse`.
 
 Some operations may be found in both settings above. A mechanism is implemented in Concrete-ML to determine if the inputs of a `QuantizedOp` are produced by a unique integer tensor. Therefore, the `can_fuse` function of some `QuantizedOp` types (addition, subtraction) will allow fusion to take place if both operands are produced by a unique integer tensor:
 
@@ -96,11 +96,11 @@ def can_fuse(self) -> bool:
 
 You can check `ops_impl.py` to see how some operations are implemented in NumPy. The declaration convention for these operations is as follows:
 
-- The required inputs should be positional arguments only before the `/`, which marks the limit of the positional arguments
-- The optional inputs should be positional or keyword arguments between the `/` and `*`, which marks the limits of positional or keyword arguments
-- The operator attributes should be keyword arguments only after the `*`
+- The required inputs should be positional arguments only before the `/`, which marks the limit of the positional arguments.
+- The optional inputs should be positional or keyword arguments between the `/` and `*`, which marks the limits of positional or keyword arguments.
+- The operator attributes should be keyword arguments only after the `*`.
 
-The proper use of positional/keyword arguments is required to allow the `QuantizedOp` class to properly populate metadata automatically. It uses Python inspect modules and stores relevant information for each argument related to its positional/keyword status. This allows using the Concrete-NumPy implementation as specifications for `QuantizedOp`, which removes some data duplication and allows having a single source of truth for `QuantizedOp` and ONNX-NumPy implementations.
+The proper use of positional/keyword arguments is required to allow the `QuantizedOp` class to properly populate metadata automatically. It uses Python inspect modules and stores relevant information for each argument related to its positional/keyword status. This allows using the Concrete-Numpy implementation as specifications for `QuantizedOp`, which removes some data duplication and generates a single source of truth for `QuantizedOp` and ONNX-NumPy implementations.
 
 In that case (unless the quantized implementation requires special handling like `QuantizedGemm`), you can just set `_impl_for_op_named` to the name of the ONNX op for which the quantized class is implemented (this uses the mapping `ONNX_OPS_TO_NUMPY_IMPL` in `onnx_utils.py` to get the correct implementation).
 
@@ -108,7 +108,7 @@ In that case (unless the quantized implementation requires special handling like
 
 Providing an integer implementation requires sub-classing `QuantizedOp` to create a new operation. This sub-class must override `q_impl` in order to provide an integer implementation. `QuantizedGemm` is an example of such a case where quantized matrix multiplication requires proper handling of scales and zero points. The `q_impl` of that class reflects this.
 
-In the body of `q_impl`, in order to obtain quantized integer values you can use the `_prepare_inputs_with_constants` function as such:
+In the body of `q_impl`, you can use the `_prepare_inputs_with_constants` function in order to obtain quantized integer values:
 
 ```python
 from concrete.ml.quantization import QuantizedArray
@@ -125,7 +125,7 @@ def q_impl(
     )
 ```
 
-Here, `prepared_inputs` will contain one or more `QuantizedArray` of which the `qvalues` are the quantized integers.
+Here, `prepared_inputs` will contain one or more `QuantizedArray`, of which the `qvalues` are the quantized integers.
 
 Once the required integer processing code is implemented, the output of the `q_impl` function must be implemented as a single `QuantizedArray`. Most commonly, this is built using the de-quantized results of the processing done in `q_impl`.
 
@@ -148,7 +148,7 @@ Once the required integer processing code is implemented, the output of the `q_i
 
 ### Case 3: Both a floating point and an integer implementation are necessary
 
-In this case, in `q_impl` you can check whether the current operation can be fused by calling `self.can_fuse()`. You can then have both a floating point and an integer implementation. The traced execution path will depend on `can_fuse()`:
+In this case, in `q_impl` you can check whether the current operation can be fused by calling `self.can_fuse()`. You can then have both a floating-point and an integer implementation. The traced execution path will depend on `can_fuse()`:
 
 <!--pytest-codeblocks:skip-->
 

@@ -13,7 +13,7 @@ The overall communications protocol to enable cloud deployment of machine learni
 The steps detailed above are as follows:
 
 1. The model developer deploys the compiled machine learning model to the server. This model includes the cryptographic parameters. The server is now ready to provide private inference.
-1. The client requests the cryptographic parameters (also called "client specs"). Once it gets them from the server, the _secret_ and _evaluation_ keys are generated.
+1. The client requests the cryptographic parameters (also called "client specs"). Once it receives them from the server, the _secret_ and _evaluation_ keys are generated.
 1. The client sends the _evaluation_ key to the server. The server is now ready to accept requests from this client. The client sends their encrypted data.
 1. The server uses the _evaluation_ key to securely run inference on the user's data and sends back the encrypted result.
 1. The client now decrypts the result and can send back new requests.

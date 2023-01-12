@@ -47,7 +47,6 @@ Let's use following conventions for the docs. If a new convention needs to be de
 
 - Main titles (with a single #) are `Capitalized at Each Letter`
 - Sub titles (with two or more #s) are `Capitalized only for first letter`
-- ### titles: must have a . at the end
 
 ## Links
 

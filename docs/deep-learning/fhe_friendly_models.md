@@ -1,12 +1,12 @@
-# Step-by-Step Guide
+# Step-by-step Guide
 
-This guide provides a complete example of converting a Pytorch neural network into its FHE-friendly quantized counterpart. It focuses on Quantization Aware Training a simple network on a synthetic data-set.
+This guide provides a complete example of converting a PyTorch neural network into its FHE-friendly, quantized counterpart. It focuses on Quantization Aware Training a simple network on a synthetic data-set.
 
-In general, quantization can be carried out in two different ways: either during training with Quantization Aware Training (QAT), or after the training phase with Post-Training Quantization (PTQ).
+In general, quantization can be carried out in two different ways: either during training with Quantization Aware Training (QAT) or after the training phase with Post-Training Quantization (PTQ).
 
-Regarding FHE-friendly neural networks, Quantization Aware Training is the best way to reach optimal accuracy under [FHE constrains](../README.md#current-limitations). This technique allows weights and activations to be reduced to very low bit-widths (e.g. 2-3 bits), which, combined with pruning, can keep accumulator bit-widths low.
+Regarding FHE-friendly neural networks, QAT is the best way to reach optimal accuracy under [FHE constrains](../README.md#current-limitations). This technique allows weights and activations to be reduced to very low bit-widths (e.g. 2-3 bits), which, combined with pruning, can keep accumulator bit-widths low.
 
-Concrete-ML uses a third party library, [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for Pytorch NNs, but other options exist for other frameworks such as Keras/Tensorflow.
+Concrete-ML uses the third party library [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for PyTorch NNs, but options exist for other frameworks such as Keras/Tensorflow.
 
 Several [demos and tutorials](../getting-started/showcase.md) that use Brevitas are available in Concrete-ML library, such as the [CIFAR classification tutorial](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
 
@@ -14,7 +14,7 @@ This guide is based on a [notebook tutorial](https://github.com/zama-ai/concrete
 
 For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 
-## Baseline Torch model
+## Baseline PyTorch model
 
 In PyTorch, using standard layers, a fully connected neural network would look as follows:
 
@@ -45,11 +45,9 @@ class SimpleNet(nn.Module):
 
 The [notebook tutorial](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb), example shows how to train a fully-connected neural network, similar to the one above, on a synthetic 2D data-set with a checkerboard grid pattern of 100 x 100 points. The data is split into 9500 training and 500 test samples.
 
-Once trained, this Pytorch network can be imported using the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_torch_model) function. This function uses simple Post-Training Quantization.
+Once trained, this PyTorch network can be imported using the [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_torch_model) function. This function uses simple Post-Training Quantization.
 
-The network was trained using different numbers of neurons in the hidden layers, and quantized using 3-bits weights and activations. The mean accumulator size shown below was extracted using the [Virtual Library](fhe_assistant.md) and is measured
-as the mean over 10 runs of the experiment. An accumulator of 6.6 means that 4 times out of 10 the accumulator
-measured was 6 bits while 6 times it was 7 bits.
+The network was trained using different numbers of neurons in the hidden layers, and quantized using 3-bits weights and activations. The mean accumulator size shown below was extracted using the [Virtual Library](fhe_assistant.md) and is measured as the mean over 10 runs of the experiment. An accumulator of 6.6 means that 4 times out of 10 the accumulator measured was 6 bits while 6 times it was 7 bits.
 
 | neurons               | 10     | 30     | 100    |
 | --------------------- | ------ | ------ | ------ |
@@ -57,24 +55,24 @@ measured was 6 bits while 6 times it was 7 bits.
 | 3-bit accuracy        | 56.44% | 55.54% | 56.50% |
 | mean accumulator size | 6.6    | 6.9    | 7.4    |
 
-This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of to the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 16 bits), it is often preferable to have a lower accumulator size in order to speed up the inference time.
+This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 16 bits), it is often preferable to have a lower accumulator size in order to speed up the inference time.
 
 {% hint style="info" %}
-The accumulator size is determined by Concrete-Numpy as being the maximum bit-width encountered anywhere in the encrypted circuit
+The accumulator size is determined by Concrete-Numpy as being the maximum bit-width encountered anywhere in the encrypted circuit.
 {% endhint %}
 
 ## Quantization Aware Training:
 
 [Quantization Aware Training](../advanced-topics/quantization.md) using [Brevitas](https://github.com/Xilinx/brevitas) is the best way to guarantee a good accuracy for Concrete-ML compatible neural networks.
 
-Brevitas provides a quantized version of almost all Pytorch layers (`Linear` layer becomes `QuantLinear`, `ReLU` layer becomes `QuantReLU` and so one), plus some extra quantization parameters, such as :
+Brevitas provides a quantized version of almost all PyTorch layers (`Linear` layer becomes `QuantLinear`, `ReLU` layer becomes `QuantReLU` and so one), plus some extra quantization parameters, such as :
 
 - `bit_width`: precision quantization bits for activations
 - `act_quant`: quantization protocol for the activations
 - `weight_bit_width`: precision quantization bits for weights
 - `weight_quant`: quantization protocol for the weights
 
-In order to use FHE, the network must be quantized from end to end, and thanks to the Brevitas's `QuantIdentity` layer, it's possible to quantize the input by placing it at the entry point of the network. Moreover, it's also possible to combine Pytorch and Brevitas layers, provided that a `QuantIdentity` is placed after this Pytorch layer. The following table gives the replacements to be made to convert a Pytorch NN for Concrete-ML compatibility.
+In order to use FHE, the network must be quantized from end to end, and thanks to the Brevitas's `QuantIdentity` layer, it is possible to quantize the input by placing it at the entry point of the network. Moreover, it is also possible to combine PyTorch and Brevitas layers, provided that a `QuantIdentity` is placed after this PyTorch layer. The following table gives the replacements to be made to convert a PyTorch NN for Concrete-ML compatibility.
 
 | Pytorch fp32 layer   | Concrete-ML model with Pytorch/Brevitas               |
 | -------------------- | ----------------------------------------------------- |
@@ -83,9 +81,9 @@ In order to use FHE, the network must be quantized from end to end, and thanks t
 | `torch.nn.AvgPool2d` | `torch.nn.AvgPool2d` + `brevitas.quant.QuantIdentity` |
 | `torch.nn.ReLU`      | `brevitas.quant.QuantReLU`                            |
 
-Furthermore, some Torch operators (from the Torch functional API), require a `brevitas.quant.QuantIdentity` to be applied on their inputs.
+Furthermore, some PyTorch operators (from the PyTorch functional API), require a `brevitas.quant.QuantIdentity` to be applied on their inputs.
 
-| Pytorch ops that require QuantIdentity       |
+| PyTorch ops that require QuantIdentity       |
 | -------------------------------------------- |
 | `torch.transpose`                            |
 | `torch.add` (between two activation tensors) |
@@ -96,7 +94,7 @@ Furthermore, some Torch operators (from the Torch functional API), require a `br
 The QAT import tool in Concrete-ML is a work in progress. While it has been tested with some networks built with Brevitas, it is possible to use other tools to obtain QAT networks.
 {% endhint %}
 
-For instance with Brevitas, the network above becomes :
+For instance, with Brevitas, the network above becomes :
 
 <!--pytest-codeblocks:cont-->
 
@@ -163,7 +161,7 @@ The PyTorch QAT training loop is the same as the standard floating point trainin
 Quantization Aware Training is somewhat slower than normal training. QAT introduces quantization during both the forward and backward passes. The quantization process is inefficient on GPUs as its computational intensity is low with respect to data transfer time.
 {% endhint %}
 
-### Pruning using Torch
+### Pruning using torch
 
 Considering that FHE only works with limited integer precision, there is a risk of overflowing in the accumulator, which will make Concrete-ML raise an error.
 
@@ -173,7 +171,7 @@ By default, Concrete-ML uses symmetric quantization for model weights, with valu
 
 However, in a typical setting, the weights will not all have the maximum or minimum values (e.g. $$-2^{n_{bits}-1}$$). Instead, weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
 
-This fact can be leveraged to train a network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../advanced-topics/pruning.md), where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) out of the box.
+This fact can be leveraged to train a network with more neurons, while not overflowing the accumulator, using a technique called [pruning](../advanced-topics/pruning.md), where the developer can impose a number of zero-valued weights. Torch [provides support for pruning](https://pytorch.org/tutorials/intermediate/pruning%5C_tutorial.html) out of the box.
 
 The following code shows how to use pruning in the previous example:
 
@@ -215,4 +213,4 @@ Results with `PrunedQuantNet`, a pruned version of the `QuantSimpleNet` with 100
 
 This shows that the fp32 accuracy has been improved while maintaining constant mean accumulator size.
 
-When pruning a larger neural network during training, it is easier to obtain a low bit-width accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar smaller network.
+When pruning a larger neural network during training, it is easier to obtain a low bit-width accumulator while maintaining better final accuracy. Thus, pruning is more robust than training a similar, smaller network.

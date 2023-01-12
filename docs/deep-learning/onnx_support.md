@@ -1,15 +1,15 @@
 # Using ONNX
 
-In addition to Concrete-ML models and to [custom models in torch](torch_support.md), it is also possible to directly compile [ONNX](https://onnx.ai/) models. This can be particularly appealing, notably to import models trained with Keras.
+In addition to Concrete-ML models and [custom models in torch](torch_support.md), it is also possible to directly compile [ONNX](https://onnx.ai/) models. This can be particularly appealing, notably to import models trained with Keras.
 
-ONNX models can be compiled by directly importing models that are already quantized with Quantization Aware Training (QAT). or by performing Post-Training Quantization (PTQ) with Concrete-ML.
+ONNX models can be compiled by directly importing models that are already quantized with Quantization Aware Training (QAT) or by performing Post-Training Quantization (PTQ) with Concrete-ML.
 
 ## Simple example
 
 The following example shows how to compile an ONNX model using PTQ. The model was initially trained using Keras before being exported to ONNX. The training code is not shown here.
 
 {% hint style="warning" %}
-This example uses Post-Training Quantization, i.e. the quantization is not performed during training. Thus this model would not have good performance in FHE. Quantization Aware Training should be added by the model developer and importing QAT ONNX models can be done [as shown below](onnx_support.md#quantization-aware-training).
+This example uses Post-Training Quantization, i.e. the quantization is not performed during training. Thus, this model would not have good performance in FHE. Quantization Aware Training should be added by the model developer. Additionally, importing QAT ONNX models can be done [as shown below](onnx_support.md#quantization-aware-training).
 {% endhint %}
 
 ```python
@@ -105,7 +105,7 @@ quantized_numpy_module = compile_onnx_model(
 
 ## Supported operators
 
-The following operators are supported for evaluation and conversion to an equivalent FHE circuit. Other operators were not implemented either due to FHE constraints, or because they are rarely used in PyTorch activations or scikit-learn models.
+The following operators are supported for evaluation and conversion to an equivalent FHE circuit. Other operators were not implemented, either due to FHE constraints or because they are rarely used in PyTorch activations or scikit-learn models.
 
 <!--- gen_supported_ops.py: inject supported operations for evaluation [BEGIN] -->
 

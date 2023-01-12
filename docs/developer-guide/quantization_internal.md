@@ -6,7 +6,7 @@ Concrete-ML has support for quantized ML models and also provides quantization t
 
 The [`QuantizedArray`](../developer-guide/api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
 
-- `n_bits` that defines the precision of the quantization
+- `n_bits` define the precision of the quantization
 - `values` are floating point values that will be converted to integers
 - `is_signed` determines if the quantized integer values should allow negative values
 - `is_symmetric` determines if the range of floating point values to be quantized should be taken as symmetric around zero
@@ -76,20 +76,20 @@ QuantizedArray(
 
 ## Quantized modules
 
-Machine learning models are implemented with a diverse set of operations, such as convolution, linear transformations, activation functions and element-wise operations. When working with quantized values, these operations cannot be carried out in an equivalent way as for floating point values. With quantization, it is necessary to re-scale the input and output values of each operation to fit in the quantization domain.
+Machine learning models are implemented with a diverse set of operations, such as convolution, linear transformations, activation functions, and element-wise operations. When working with quantized values, these operations cannot be carried out in an equivalent way to floating point values. With quantization, it is necessary to re-scale the input and output values of each operation to fit in the quantization domain.
 
 In Concrete-ML, the quantized equivalent of a scikit-learn model or a PyTorch `nn.Module` is the `QuantizedModule`. Note that only inference is implemented in the `QuantizedModule`, and it is built through a conversion of the inference function of the corresponding scikit-learn or PyTorch module.
 
 Built-in neural networks expose the `quantized_module` member, while a `QuantizedModule` is also the result of the compilation of custom models through `compile_torch_model` and `compile_brevitas_qat_model`.
 
-The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary maps ONNX floating point operators (e.g. Gemm) to their quantized equivalent (e.g. QuantizedGemm). For more information on implementing these operations, please see the [FHE compatible op-graph section](fhe-op-graphs.md).
+The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary maps ONNX floating point operators (e.g. Gemm) to their quantized equivalent (e.g. QuantizedGemm). For more information on implementing these operations, please see the [FHE-compatible op-graph section](fhe-op-graphs.md).
 
 The computation graph is taken from the corresponding floating point ONNX graph exported from scikit-learn [using HummingBird](external_libraries.md#hummingbird), or from the ONNX graph exported by PyTorch. Calibration is used to obtain quantized parameters for the operations in the `QuantizedModule`. Parameters are also determined for the quantization of inputs during model deployment.
 
 {% hint style="info" %}
 Calibration is the process of determining the typical distributions of values encountered for the intermediate values of a model during inference.
 
-To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
+To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological%5C_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
 {% endhint %}
 
 That `QuantizedModule` generates the Concrete-Numpy function that is compiled to FHE. The compilation will succeed if the intermediate values conform to the 16-bits precision limit of the Concrete stack. See [the compilation section](../advanced-topics/compilation.md) for details.
