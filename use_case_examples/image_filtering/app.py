@@ -159,6 +159,9 @@ def encrypt(user_id, input_image, image_filter):
     if user_id == "":
         raise gr.Error("Please generate the private key first.")
 
+    if input_image is None:
+        raise gr.Error("Please choose an image first.")
+
     # Retrieve the client API
     client = get_client(user_id, image_filter)
 

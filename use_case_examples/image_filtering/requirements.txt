@@ -2,4 +2,3 @@ concrete-ml==0.6.1
 gradio==3.11.0
 uvicorn==0.20.0
 fastapi==0.87.0
-jupyter==1.0.0
