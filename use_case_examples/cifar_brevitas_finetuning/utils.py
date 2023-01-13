@@ -393,7 +393,6 @@ def fhe_compatibility(model: Callable, bit: int, data: DataLoader) -> Callable:
         model.to("cpu"),
         # Training
         torch_inputset=data,
-        n_bits={"model_inputs": bit, "op_inputs": bit, "op_weights": bit, "model_outputs": bit},
         configuration=configuration,
         show_mlir=False,
         # Set use_virtual_lib to False to use the real FHE execution.

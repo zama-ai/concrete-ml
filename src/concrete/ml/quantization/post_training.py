@@ -108,8 +108,6 @@ class ONNXConverter:
             of the network's inputs. "op_inputs" and "op_weights" both control the quantization for
             inputs and weights of all layers.
         y_model (NumpyModule): Model in numpy.
-        is_signed (bool): Whether the weights of the layers can be signed. Currently, only the
-            weights can be signed.
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
@@ -117,16 +115,12 @@ class ONNXConverter:
     quant_params: Dict[str, QuantizedArray]
     numpy_model: NumpyModule
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2369
-    is_signed: bool
-
-    def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule, is_signed: bool = False):
+    def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule):
         self.quant_ops_dict = {}
 
         self.n_bits = get_n_bits_dict(n_bits)
         self.quant_params = {}
         self.numpy_model = numpy_model
-        self.is_signed = is_signed
 
     @property
     def n_bits_model_outputs(self):
@@ -635,6 +629,12 @@ class ONNXConverter:
                         quantizers_for_input[inp_idx].output_quant_params,
                     )
                 )
+
+                # Propagate the quantization options to non-fusable ops down the line,
+                # since these ops were initialized with a default n_bits - not necessarily
+                # the n_bits set in the QuantizedBrevitasQuant layer
+                for q_op in layer_using_input[inp_idx]:
+                    q_op.input_quant_opts.copy_opts(quantizers_for_input[inp_idx].output_quant_opts)
             else:
                 # If the input is injected directly into a non-fusable op (conv, etc...),
                 # use that op's quantization options (ensures matching options that allows

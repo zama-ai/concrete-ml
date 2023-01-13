@@ -113,9 +113,9 @@ def _compile_torch_or_onnx_model(
     # Quantize with post-training static method, to have a model with integer weights
     post_training_quant: Union[PostTrainingAffineQuantization, PostTrainingQATImporter]
     if import_qat:
-        post_training_quant = PostTrainingQATImporter(n_bits, numpy_model, is_signed=True)
+        post_training_quant = PostTrainingQATImporter(n_bits, numpy_model)
     else:
-        post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model, is_signed=True)
+        post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_model)
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
     quantized_numpy_inputset = quantized_module.quantize_input(*inputset_as_numpy_tuple)
@@ -269,7 +269,7 @@ def compile_onnx_model(
 def compile_brevitas_qat_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
-    n_bits: Union[int, dict],
+    n_bits: Optional[Union[int, dict]] = None,
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -289,7 +289,13 @@ def compile_brevitas_qat_model(
         torch_model (torch.nn.Module): the model to quantize
         torch_inputset (Dataset): the calibration inputset, can contain either torch
             tensors or numpy.ndarray.
-        n_bits (Union[int,dict]): the number of bits for the quantization
+        n_bits (Optional[Union[int, dict]): the number of bits for the quantization. By default,
+            for most models, a value of None should be given, which instructs Concrete-ML to use the
+            bit-widths configured using Brevitas quantization options. For some networks, that
+            perform a non-linear operation on an input on an output, if None is given, a default
+            value of 8 bits is used for the input/output quantization. For such models the user can
+            also specify a dictionary with model_inputs/model_outputs keys to override
+            the 8-bit default or a single integer for both values.
         configuration (Configuration): Configuration object to use
             during compilation
         compilation_artifacts (DebugArtifacts): Artifacts object to fill
@@ -344,6 +350,38 @@ def compile_brevitas_qat_model(
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
     )
     onnx_model = remove_initializer_from_input(onnx_model)
+
+    if n_bits is None:
+        n_bits = {
+            "model_inputs": 8,
+            "op_weights": 8,
+            "op_inputs": 8,
+            "model_outputs": 8,
+        }
+    elif isinstance(n_bits, int):
+        n_bits = {
+            "model_inputs": n_bits,
+            "op_weights": n_bits,
+            "op_inputs": n_bits,
+            "model_outputs": n_bits,
+        }
+    elif isinstance(n_bits, dict):
+        assert_true(
+            isinstance(n_bits, dict) and set(n_bits.keys()) == {"model_inputs", "model_outputs"},
+            "When importing a Brevitas QAT network, n_bits can only contain the following keys: "
+            '"model_inputs", "model_outputs"',
+        )
+
+        n_bits = {
+            "model_inputs": n_bits["model_inputs"],
+            "op_weights": n_bits["model_inputs"],
+            "op_inputs": n_bits["model_inputs"],
+            "model_outputs": n_bits["model_outputs"],
+        }
+    assert_true(
+        n_bits is None or isinstance(n_bits, (int, dict)),
+        "The n_bits parameter must be either a dictionary, an integer or None",
+    )
 
     # Compile using the ONNX conversion flow, in QAT mode
     q_module_vl = compile_onnx_model(

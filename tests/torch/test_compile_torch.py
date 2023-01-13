@@ -621,6 +621,76 @@ def test_pretrained_mnist_qat(
     assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8
 
 
+def test_qat_import_bits_check(default_configuration):
+    """Test that compile_brevitas_qat_model does not need an n_bits config."""
+
+    input_features = 10
+
+    model = SingleMixNet(False, True, 10, 2)
+
+    n_examples = 50
+
+    # All these n_bits configurations should be valid
+    # and produce the same result, as the input/output bit-widths for this network
+    # are ignored due to the input/output TLU elimination
+    n_bits_valid = [
+        8,
+        2,
+        {"model_inputs": 8, "model_outputs": 8},
+        {"model_inputs": 2, "model_outputs": 2},
+    ]
+
+    # Create random input
+    inputset = numpy.random.uniform(-100, 100, size=(n_examples, input_features))
+
+    # Compile with no quantization bitwidth, defaults are used
+    quantized_numpy_module = compile_brevitas_qat_model(
+        model,
+        inputset,
+        configuration=default_configuration,
+        use_virtual_lib=True,
+    )
+
+    # Create test data from the same distribution and quantize using.
+    n_examples_test = 100
+    x_test = numpy.random.uniform(-100, 100, size=(n_examples_test, input_features))
+
+    # The result of compiling without any n_bits (default)
+    q_out = quantized_numpy_module.forward(quantized_numpy_module.quantize_input(x_test))
+
+    # Compare the results of running with n_bits=None to the results running with
+    # all the other n_bits configs. The results should be the same as bit-widths
+    # are ignored for this network (they are overridden with Brevitas values stored in ONNX).
+    for n_bits in n_bits_valid:
+        quantized_numpy_module = compile_brevitas_qat_model(
+            model,
+            inputset,
+            n_bits=n_bits,
+            configuration=default_configuration,
+            use_virtual_lib=True,
+        )
+
+        q_out_2 = quantized_numpy_module.forward(quantized_numpy_module.quantize_input(x_test))
+
+        assert numpy.all(q_out == q_out_2)
+
+    n_bits_invalid = [
+        {"XYZ": 8, "model_inputs": 8},
+        {"XYZ": 8},
+    ]
+
+    # Test that giving a dictionary with invalid keys does not work
+    for n_bits in n_bits_invalid:
+        with pytest.raises(AssertionError, match=".*n_bits can only contain the following keys.*"):
+            quantized_numpy_module = compile_brevitas_qat_model(
+                model,
+                inputset,
+                n_bits=n_bits,
+                configuration=default_configuration,
+                use_virtual_lib=True,
+            )
+
+
 def test_qat_import_check(default_configuration, check_is_good_execution_for_cml_vs_circuit):
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
     qat_bits = 4
@@ -725,7 +795,6 @@ def test_net_has_no_tlu(
         quantized_numpy_module = compile_brevitas_qat_model(
             net,
             inputset,
-            n_bits=n_bits,
             configuration=default_configuration,
             use_virtual_lib=use_virtual_lib,
         )

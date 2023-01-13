@@ -291,7 +291,7 @@ def test_post_training_quantization_constant_folding():
 
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(
-        MAX_BITWIDTH_BACKWARD_COMPATIBLE, numpy_model, is_signed=True
+        MAX_BITWIDTH_BACKWARD_COMPATIBLE, numpy_model
     )
 
     numpy_input = numpy.random.random(size=(10, 10))

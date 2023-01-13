@@ -71,7 +71,7 @@ def acc_diff_objective(
     return match, meta_output
 
 
-def compile(model, inputs, p_error: float, n_bits=8) -> QuantizedModule:
+def compile(model, inputs, p_error: float) -> QuantizedModule:
     configuration = Configuration(
         dump_artifacts_on_unexpected_failures=True,
         enable_unsafe_features=True,  # This is for our tests in Virtual Library only
@@ -84,7 +84,6 @@ def compile(model, inputs, p_error: float, n_bits=8) -> QuantizedModule:
     quantized_numpy_module = compile_brevitas_qat_model(
         torch_model=model,
         torch_inputset=inputs,
-        n_bits=n_bits,
         p_error=p_error,
         use_virtual_lib=True,
         configuration=configuration,

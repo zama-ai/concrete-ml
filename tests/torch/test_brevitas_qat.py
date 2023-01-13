@@ -138,12 +138,6 @@ def test_brevitas_tinymnist_cnn(
     q_module_vl = compile_brevitas_qat_model(
         net,
         x_train,
-        n_bits={
-            "model_inputs": 7,
-            "op_inputs": qat_bits,
-            "op_weights": qat_bits,
-            "model_outputs": 7,
-        },
         configuration=default_configuration,
         use_virtual_lib=True,
     )

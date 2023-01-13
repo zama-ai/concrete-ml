@@ -130,7 +130,6 @@ def main():
     quantized_numpy_module = compile_brevitas_qat_model(
         torch_model=net.encrypted_module,  # our model
         torch_inputset=train_features_sub_set,  # a representative inputset to be used for compilation
-        n_bits=8,
         **optional_kwargs,
         output_onnx_file=compilation_onnx_path,
     )

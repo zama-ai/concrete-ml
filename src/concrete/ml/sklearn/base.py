@@ -349,7 +349,7 @@ class QuantizedTorchEstimatorMixin:
         n_bits = self.n_bits_quant
 
         # Import the quantization aware trained model
-        qat_model = PostTrainingQATImporter(n_bits, numpy_model, is_signed=True)
+        qat_model = PostTrainingQATImporter(n_bits, numpy_model)
 
         self.quantized_module_ = qat_model.quantize_module(X)
 

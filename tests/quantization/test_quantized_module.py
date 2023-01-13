@@ -67,10 +67,7 @@ N_BITS_LIST = [
         # pytest.param(nn.GLU, id="GLU"),
     ],
 )
-@pytest.mark.parametrize("is_signed", [pytest.param(True), pytest.param(False)])
-def test_quantized_linear(
-    model, input_shape, n_bits, activation_function, is_signed, check_r2_score
-):
+def test_quantized_linear(model, input_shape, n_bits, activation_function, check_r2_score):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
@@ -96,9 +93,7 @@ def test_quantized_linear(
     check_r2_score(torch_prediction, numpy_prediction)
 
     # Quantize with post-training static method
-    post_training_quant = PostTrainingAffineQuantization(
-        n_bits, numpy_fc_model, is_signed=is_signed
-    )
+    post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
     # Quantize input
