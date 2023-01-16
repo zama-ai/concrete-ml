@@ -29,15 +29,10 @@ on:
         type: boolean
       instance_type:
         description: Instance type on which to launch benchmarks
-        default: "c5.4xlarge"
+        default: "m6i.metal"
         type: choice
         options:
-          - "c5.large"
-          - "c5.xlarge"
-          - "c5.2xlarge"
-          - "c5.4xlarge"
-          - "c5.12xlarge"
-          - "c6i.metal"
+          - "c5.large"  # For cheaper debugging
           - "m6i.metal"
   # FIXME: Add recurrent launching
   # https://github.com/zama-ai/concrete-ml-internal/issues/1851

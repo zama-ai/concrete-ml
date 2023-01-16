@@ -18,7 +18,7 @@ on:
         type: string
       instance_type:
         description: Instance type on which to launch benchmarks
-        default: "c5.4xlarge"
+        default: "m6i.metal"
         type: string
     secrets:
       NEW_ML_PROGRESS_TRACKER_TOKEN:
