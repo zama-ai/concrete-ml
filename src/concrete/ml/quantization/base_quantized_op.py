@@ -492,7 +492,6 @@ class QuantizedOp:
 
         return quantized_samples.values
 
-    # TODO: manage multiple inputs if it becomes necessary
     def prepare_output(self, qoutput_activation: numpy.ndarray) -> QuantizedArray:
         """Quantize the output of the activation function.
 

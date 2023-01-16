@@ -34,8 +34,8 @@ source "${PYPI_VENV}/bin/activate"
 
 # Install additional dependencies that are required in order to run our tests but are not included
 # in PyPI
-# FIXME: Investigate a better way of managing these dependencies 
-# https://github.com/zama-ai/concrete-ml-internal/issues/2685
+# Investigate a better way of managing these dependencies 
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2685
 python -m pip install --upgrade pip
 python -m pip install poetry==1.2.1 pytest==7.1.1 pandas==1.3.5 tensorflow==2.10.0 tf2onnx==1.13.0
 

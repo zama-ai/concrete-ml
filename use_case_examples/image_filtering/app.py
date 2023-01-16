@@ -121,8 +121,6 @@ def keygen(image_filter):
     user_id = numpy.random.randint(0, 2**32)
 
     # Retrieve the client API
-    # Currently, the key generation needs to be done after choosing a filter
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2258
     client = get_client(user_id, image_filter)
 
     # Generate a private key
@@ -367,8 +365,8 @@ with demo:
 
         user_id = gr.Textbox(label="", max_lines=2, interactive=False, visible=False)
 
-        # Display an image representation
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
+        # Display an image representation if possible
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2262
         encrypted_image = gr.Textbox(
             label="Encrypted image representation:", max_lines=2, interactive=False
         )
@@ -395,8 +393,8 @@ with demo:
     with gr.Row():
         get_output_button = gr.Button("Step 7. Receive the encrypted output image from the server.")
 
-        # Display an image representation
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
+        # Display an image representation if possible
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2262
         encrypted_output_image = gr.Textbox(
             label="Encrypted output image representation:", max_lines=2, interactive=False
         )

@@ -34,8 +34,8 @@ on:
         options:
           - "c5.large"  # For cheaper debugging
           - "m6i.metal"
-  # FIXME: Add recurrent launching
-  # https://github.com/zama-ai/concrete-ml-internal/issues/1851
+  # Add recurrent launching
+  # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1851
 
 # Global environnement variables
 env:

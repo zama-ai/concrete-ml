@@ -362,8 +362,8 @@ class NeuralNetClassifier(
     # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
-    # FIXME: make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
-    # see https://github.com/zama-ai/concrete-ml-internal/issues/327
+    # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/327
     def __init__(
         self,
         *args,
@@ -465,8 +465,8 @@ class NeuralNetRegressor(
     # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
-    # FIXME: make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
-    # see https://github.com/zama-ai/concrete-ml-internal/issues/327
+    # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/327
     def __init__(
         self,
         *args,

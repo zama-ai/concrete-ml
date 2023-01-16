@@ -36,7 +36,9 @@ To do so, we divided this use case in 3 notebooks :
 
 ## Accuracy
 
-<!-- FIXME: Add FHE inference: https://github.com/zama-ai/concrete-ml-internal/issues/2420 -->
+<!-- Add FHE inference accuracy -->
+
+<!-- FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2420 -->
 
 CIFAR-100:
 

@@ -2,7 +2,8 @@
 
 # pylint: disable=too-many-lines
 
-# FIXME: #1018
+# This file is too long and should be splitted
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1018
 
 from typing import Any, Dict, Optional, Sequence, Set, Union
 
@@ -458,10 +459,10 @@ class QuantizedReshape(QuantizedOp):
             result (QuantizedArray): reshaped encrypted integer tensor
         """
 
-        # FIXME: Currently reshape quantizes the inputs, but this is unnecessary if the reshape
+        # Currently reshape quantizes the inputs, but this is unnecessary if the reshape
         # operation could be fused into a Gemm/Add/Conv that follows it. We should reshape
         # here only if the reshaped result is returned directly from the FHE program.
-        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1257,10 +1258,10 @@ class QuantizedFlatten(QuantizedOp):
             result (QuantizedArray): reshaped encrypted integer tensor
         """
 
-        # FIXME: Currently reshape quantizes the inputs, but this is unnecessary if the reshape
+        # Currently reshape quantizes the inputs, but this is unnecessary if the reshape
         # operation could be fused into a Gemm/Add/Conv that follows it. We should reshape
         # here only if the reshaped result is returned directly from the FHE program.
-        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1510,9 +1511,9 @@ class QuantizedBrevitasQuant(QuantizedOp):
     """Brevitas uniform quantization with encrypted input."""
 
     _impl_for_op_named: str = "onnx.brevitas.Quant"
-    # FIXME: Note that this should be reset when the correctness test that finds
+    # Note that this should be reset when the correctness test that finds
     # all mismatches between CML and Brevitas is fixed
-    # https://github.com/zama-ai/concrete-ml-internal/issues/2373
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2373
     quantize_inputs_with_model_outputs_precision = True
     output_quant_opts: QuantizationOptions
 
@@ -1723,10 +1724,10 @@ class QuantizedTranspose(QuantizedOp):
             result (QuantizedArray): reshaped encrypted integer tensor
         """
 
-        # FIXME: Currently Transpose quantizes the inputs, but this is unnecessary if the reshape
+        # Currently Transpose quantizes the inputs, but this is unnecessary if the reshape
         # operation could be fused into a Gemm/Add/Conv that follows it. We should transpose
         # here only if the transpose result is returned directly from the FHE program.
-        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1789,10 +1790,10 @@ class QuantizedUnsqueeze(QuantizedOp):
             result (QuantizedArray): unsqueezed encrypted integer tensor
         """
 
-        # FIXME: Currently Unsqueeze quantizes the inputs, but this is unnecessary if the reshape
+        # Currently Unsqueeze quantizes the inputs, but this is unnecessary if the reshape
         # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
         # here only if the concatenated result is returned directly from the FHE program.
-        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1828,10 +1829,10 @@ class QuantizedConcat(QuantizedOp):
             result (QuantizedArray): concatenated encrypted integer tensor
         """
 
-        # FIXME: Currently Concatenate quantizes the inputs, but this is unnecessary if the reshape
+        # Currently Concatenate quantizes the inputs, but this is unnecessary if the reshape
         # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
         # here only if the concatenated result is returned directly from the FHE program.
-        # See https://github.com/zama-ai/concrete-ml-internal/issues/527
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )

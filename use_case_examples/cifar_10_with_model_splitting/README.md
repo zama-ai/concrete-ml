@@ -62,6 +62,8 @@ which are decent metrics for a traditional VGG model under such constraints.
 The accuracy of the model running in FHE was not measured because of the computational cost it would require.
 This is something we plan on measuring once FHE runtimes become more acceptable.
 
-<!-- FIXME: Add more metrics: https://github.com/zama-ai/concrete-ml-internal/issues/2377 -->
+<!-- Add more metrics and training script -->
 
-<!-- FIXME: Add training scripts https://github.com/zama-ai/concrete-ml-internal/issues/2383 -->
+<!-- FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2377 -->
+
+<!-- FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2383 -->

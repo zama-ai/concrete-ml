@@ -11,7 +11,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-# FIXME #2320: remaining factorization to be done
+# Use the new list of models
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2320
 from concrete.ml.sklearn import (
     ElasticNet,
     GammaRegressor,

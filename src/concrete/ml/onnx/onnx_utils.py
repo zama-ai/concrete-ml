@@ -372,13 +372,10 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
 }
 
 
-# Creating the following dictionaries was introduced following the performance regression issues
-# observed in https://github.com/zama-ai/concrete-ml-internal/issues/1357.
 # Comparison operators from numpy return boolean values, which is a specific subtype of numpy
-# integer types. However, the problem lies in the fact that while this is the expected behavior for
-# tree-based models, QuantizedOps only handle float values in order to properly quantize. The
-# current solution therefore dissociates the numpy operators used in both cases.
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
+# integer types. However, while this is the expected behavior for tree-based models, QuantizedOps
+# can only handle float values in order to properly quantize. The current solution therefore
+# dissociates the numpy operators used in both cases.
 
 # Comparison operators needed for QuantizedOps as they cast the boolean outputs into floats.
 ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {

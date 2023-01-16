@@ -54,10 +54,9 @@ N_BITS_LIST = [
         pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.GELU, id="GELU"),
-        # Works but accuracy issues sometimes in compilation
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
-        # Works within the conversion but will not compile
-        # FIXME, #335: still some issues with these activations
+        # Some issues are still encountered with some activations
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/335
         #
         # Other problems, certainly related to tests:
         # Required positional arguments: 'embed_dim' and 'num_heads' and fails with a partial

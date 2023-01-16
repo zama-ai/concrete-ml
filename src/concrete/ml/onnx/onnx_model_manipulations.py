@@ -48,8 +48,8 @@ def remove_unused_constant_nodes(onnx_model: onnx.ModelProto):
         onnx_model.graph.node.remove(node)
 
 
-# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/410
-# Improve that algorithm which is O(N^2) for now
+# This algorithm needs to be improved, currently it runs in O(N^2)
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/410
 def remove_identity_nodes(onnx_model: onnx.ModelProto):
     """Remove identity nodes from a model.
 

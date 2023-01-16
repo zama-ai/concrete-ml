@@ -313,9 +313,9 @@ def check_double_fit(model_class, n_bits, x, y):
         model_params["random_state"] = numpy.random.randint(0, 2**15)
     model.set_params(**model_params)
 
+    # Neural Networks are not handling double fit properly
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
     if "NeuralNet" in model_name:
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
-        # This fails and needs to be fixed
         return
 
     # Sometimes, we miss convergence, which is not a problem for our test
@@ -337,13 +337,13 @@ def check_offset(model_class, n_bits, x, y):
     """Check offset."""
     model_name = get_model_name(model_class)
 
+    # Offsets are not supported by XGBoost
     if "XGB" in model_name:
-        # Offsets are not supported by XGBoost
         return
 
+    # Offsets don't seem to be supported by Neural Networks
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2404
     if "NeuralNet" in model_name:
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2404
-        # Check it is not supported
         return
 
     model = model_class(n_bits=n_bits)

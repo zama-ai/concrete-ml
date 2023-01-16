@@ -145,8 +145,8 @@ def test_univariate_ops_no_attrs(
     check_r2_score(dequant_values, expected_output)
 
 
-# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/229
 # Manage ranges/improve tests for exponential
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/229
 @pytest.mark.parametrize(
     "n_bits",
     [pytest.param(n_bits) for n_bits in N_BITS_LIST],
@@ -931,10 +931,10 @@ def test_quantized_pad():
     q_pad_output = q_op(q_data, pad_value)
     assert numpy.array_equal(q_pad_output.qvalues, q_data.qvalues)
 
-    # Test that we can't actually pad an input tensor
-    # this is not yet supported, this operation is only a stub for now
-    # FIXME: Change this when we have a real solution for the Pad operator
-    # see https://github.com/zama-ai/concrete-ml-internal/issues/747
+    # Test that padding an input tensor is not yet supported, this operation is
+    # only a stub for now
+    # Change this when we have a real solution for the Pad operator
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/747
 
     pads_invalid = numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0])
     with pytest.raises(AssertionError):

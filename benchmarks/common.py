@@ -38,11 +38,9 @@ except ImportError:  # For backward compatibility purposes
 
 # Hack to import all models currently implemented in CML
 # (but that might not be implemented in targeted version)
-# FIXME: Add list of models as text somewhere
 # Since we can make no assumption about which models are
 # imported and that one model not existing would cause the
 # whole suite to crash we dynamically import our models
-# https://github.com/zama-ai/concrete-ml-internal/issues/1852
 
 # Classification imports
 CLASSIFIERS = []
@@ -540,8 +538,8 @@ def train_and_test_classifier(
     x_test = normalizer.transform(x_test)
 
     # Now instantiate the classifier, provide it with a custom configuration if we specify one
-    # FIXME: these parameters could be inferred from the data given to .fit
-    # see https://github.com/zama-ai/concrete-ml-internal/issues/325
+    # These parameters could be inferred from the data given to .fit
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/325
 
     if classifier.__name__ == "NeuralNetClassifier":
         classes = np.unique(y_all)
@@ -749,10 +747,11 @@ def benchmark_name_generator(
     return model.__name__.replace("_", "-") + config_str + joiner + dataset_name.replace("_", "-")
 
 
-# FIXME: Add tests:
+# Add tests:
 # - Bijection between both functions
 # - The functions support all models
-# https://github.com/zama-ai/concrete-ml-internal/issues/1866
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1866
+
 # pylint: disable-next=too-many-branches, redefined-outer-name
 def benchmark_name_to_config(
     benchmark_name: str, joiner: str = "_"

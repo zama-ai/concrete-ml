@@ -20,7 +20,11 @@ from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name,too-many-instance-attributes
 class XGBClassifier(BaseTreeClassifierMixin):
-    """Implements the XGBoost classifier."""
+    """Implements the XGBoost classifier.
+
+    See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
+    for more information about the parameters used.
+    """
 
     sklearn_alg = xgboost.sklearn.XGBClassifier
     q_x_byfeatures: List[QuantizedArray]
@@ -70,10 +74,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
         ] = None,
         verbosity: Optional[int] = None,
     ):
-        # See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
-        # for more information about the parameters used.
-
-        # base_score != 0.5 or None seems to not pass our tests (see #474)
+        # base_score != 0.5 or None does not seem to not pass our tests
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/474
         assert_true(
             base_score in [0.5, None],
             f"Currently, only 0.5 or None are supported for base_score. Got {base_score}",
@@ -185,7 +187,11 @@ class XGBClassifier(BaseTreeClassifierMixin):
 # Disabling invalid-name to use uppercase X
 # pylint: disable=invalid-name,too-many-instance-attributes
 class XGBRegressor(BaseTreeRegressorMixin):
-    """Implements the XGBoost regressor."""
+    """Implements the XGBoost regressor.
+
+    See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
+    for more information about the parameters used.
+    """
 
     sklearn_alg = xgboost.sklearn.XGBRegressor
     q_x_byfeatures: List[QuantizedArray]
@@ -233,10 +239,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         ] = None,
         verbosity: Optional[int] = None,
     ):
-        # See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn
-        # for more information about the parameters used.
-
-        # base_score != 0.5 or None seems to not pass our tests (see #474)
+        # base_score != 0.5 or None does not seem to not pass our tests
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/474
         assert_true(
             base_score in [0.5, None],
             f"Currently, only 0.5 or None are supported for base_score. Got {base_score}",

@@ -347,10 +347,6 @@ class UniformQuantizationParameters:
                     and stats.uvalues is not None
                     and stats.check_is_uniform_quantized(options)
                 ):
-
-                    # FIXME: this crashes when a model is poorly trained
-                    # the code crashes later on without this check
-                    # https://github.com/zama-ai/concrete-ml-internal/issues/1620
                     assert_true(
                         len(stats.uvalues) > 1,
                         "A single unique value was detected in a tensor of "
@@ -383,8 +379,8 @@ class UniformQuantizationParameters:
                     ).astype(numpy.int64)
 
 
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1434
 # Change UniformQuantizer inheritance from UniformQuantizationParameters to composition.
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1434
 class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMaxQuantizationStats):
     """Uniform quantizer.
 
@@ -575,8 +571,6 @@ class QuantizedArray:
                     f"got {values.dtype}: {values}",
                 )
 
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
-            # To be seen what should be done in the long run (refactor of this class or Tracers)
             self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
 
             # If no stats are provided, compute them.
@@ -608,8 +602,6 @@ class QuantizedArray:
                     "when int/uint was required",
                 )
 
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
-            # To be seen what should be done in the long run (refactor of this class or Tracers)
             self.qvalues = deepcopy(values) if isinstance(values, numpy.ndarray) else values
 
             # Populate self.values
@@ -627,8 +619,6 @@ class QuantizedArray:
         Returns:
             qvalues (numpy.ndarray): Corresponding qvalues
         """
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
-        # To be seen what should be done in the long run (refactor of this class or Tracers)
         self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
         self.quant()
         return self.qvalues
@@ -642,8 +632,6 @@ class QuantizedArray:
         Returns:
             values (numpy.ndarray): Corresponding values
         """
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/303
-        # To be seen what should be done in the long run (refactor of this class or Tracers)
         self.qvalues = deepcopy(qvalues) if isinstance(qvalues, numpy.ndarray) else qvalues
         self.dequant()
         return self.values
@@ -664,8 +652,6 @@ class QuantizedArray:
         Returns:
             numpy.ndarray: Dequantized values.
         """
-        # TODO: https://github.com/zama-ai/concrete-numpy-internal/issues/721
-        # remove this + (-x) when the above issue is done
         self.values = self.quantizer.dequant(self.qvalues)
         assert_true(
             not isinstance(self.values, numpy.ndarray) or self.values.dtype == numpy.float64,

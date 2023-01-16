@@ -285,9 +285,6 @@ class ONNXConverter:
             QuantizationOptions: quantization options set, specific to the network conversion method
         """
 
-    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/195
-    # probably could work by calling layer.quantize_params on each layer just before quantizing them
-    # layer to have weight quantization that manages all that by itself.
     def _quantize_params(self):
         """Transform all floating points initializers to integers."""
         graph: onnx.GraphProto = self.numpy_model.onnx_model.graph
@@ -370,9 +367,6 @@ class ONNXConverter:
 
             output_name = node.output[0]
             if op_type == "Constant":
-
-                # FIXME: Do not handle constants with QuantizedArray, use numpy.ndarray
-                # let the ops quantize their own inputs
                 constant_values = ONNX_OPS_TO_NUMPY_IMPL["Constant"](**attributes)[0]
                 node_results[output_name] = constant_values
                 constants.add(output_name)

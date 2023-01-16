@@ -59,11 +59,10 @@ from concrete.ml.torch import NumpyModule
         pytest.param(nn.Softshrink, id="Softshrink"),
         pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
-        # Works but accuracy issues sometimes in compilation
         pytest.param(nn.LogSigmoid, id="LogSigmoid"),
-        # Works within the conversion but will not compile
-        pytest.param(nn.GELU, id="GELU"),  # Missing Div
-        # FIXME, #335: still some issues with these activations
+        pytest.param(nn.GELU, id="GELU"),
+        # Some issues are still encountered with some activations
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/335
         #
         # Other problems, certainly related to tests:
         # Required positional arguments: 'embed_dim' and 'num_heads' and fails with a partial

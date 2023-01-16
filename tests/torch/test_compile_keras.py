@@ -94,7 +94,10 @@ def compile_and_test_keras(
     assert quantized_numpy_module.is_compiled
     quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
     check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
-    # FIXME: add tests of results
+
+
+# We should also have some correctness tests
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2749
 
 
 @pytest.mark.parametrize(

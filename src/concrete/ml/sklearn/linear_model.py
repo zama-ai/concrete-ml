@@ -35,7 +35,6 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         n_jobs=None,
         positive=False,
     ):
-        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
         self.fit_intercept = fit_intercept
         self.normalize = normalize
@@ -82,7 +81,6 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         random_state=None,
         selection="cyclic",
     ):
-        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
         self.alpha = alpha
         self.l1_ratio = l1_ratio
@@ -135,7 +133,6 @@ class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         random_state=None,
         selection="cyclic",
     ):
-        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
         self.alpha = alpha
         self.fit_intercept = fit_intercept
@@ -185,7 +182,6 @@ class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         positive=False,
         random_state=None,
     ):
-        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.n_bits = n_bits
         self.alpha = alpha
         self.fit_intercept = fit_intercept
@@ -239,7 +235,6 @@ class LogisticRegression(SklearnLinearClassifierMixin, sklearn.base.ClassifierMi
         n_jobs=None,
         l1_ratio=None,
     ):
-        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.penalty = penalty
         self.dual = dual
         self.tol = tol

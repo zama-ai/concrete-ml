@@ -10,8 +10,6 @@ from typing import List, Union
 # used to find all links made in our markdown files.
 MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\".*\"")]
 
-# FIXME: add target check https://github.com/zama-ai/concrete-ml-internal/issues/1435
-
 
 def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
     """Check the content of a markdown file for dead links.

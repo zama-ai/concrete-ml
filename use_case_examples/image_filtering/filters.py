@@ -14,9 +14,6 @@ from concrete.ml.onnx.convert import get_equivalent_numpy_forward
 from concrete.ml.torch.numpy_module import NumpyModule
 from concrete.ml.version import __version__ as CML_VERSION
 
-# Add a "black and white" filter
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2277
-
 
 class _TorchIdentity(nn.Module):
     """Torch identity model."""
@@ -189,9 +186,6 @@ class Filter:
             self.torch_model = _TorchConv2D(kernel, n_out_channels=3, groups=3)
 
         elif image_filter == "ridge detection":
-            # Make the filter properly grayscaled, as it is commonly used
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2265
-
             kernel = torch.tensor(
                 [
                     [-1, -1, -1],

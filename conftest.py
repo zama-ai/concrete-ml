@@ -225,8 +225,8 @@ def check_graph_has_no_input_output_tlu_impl(graph: CNPGraph):
     check_graph_output_has_no_tlu_impl(graph)
 
 
-# FIXME: To update when the https://github.com/zama-ai/concrete-numpy-internal/issues/1714 feature
-# becomes available in CN
+# To update when the feature becomes available in CN
+# FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1714
 def check_circuit_has_no_tlu_impl(circuit: Circuit):
     if "apply_" in circuit.mlir and "_lookup_table" in circuit.mlir:
         raise AssertionError("The circuit contains at least one TLU")
@@ -408,9 +408,9 @@ def check_is_good_execution_for_cml_vs_circuit():
 
     def batch_circuit_inference(inputs: numpy.ndarray, circuit: Circuit):
         """Execute a circuit on a batch of data."""
-        # FIXME for now, only allow VL with p_error = 0 since want to make sure the VL
+        # For now, only allow VL with p_error = 0 since want to make sure the VL
         # (without randomness) matches perfectly CML's predictions.
-        # (see https://github.com/zama-ai/concrete-ml-internal/issues/2519)
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2519
         if circuit.configuration.virtual and circuit.configuration.p_error not in (
             None,
             0.0,

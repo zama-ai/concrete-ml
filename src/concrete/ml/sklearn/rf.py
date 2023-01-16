@@ -49,8 +49,6 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
 
         # noqa: DAR101
         """
-
-        # FIXME #893
         BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
         self.n_estimators = n_estimators
         self.bootstrap = bootstrap
@@ -112,8 +110,6 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
 
         # noqa: DAR101
         """
-
-        # FIXME #893
         BaseTreeRegressorMixin.__init__(self, n_bits=n_bits)
         self.n_estimators = n_estimators
         self.bootstrap = bootstrap

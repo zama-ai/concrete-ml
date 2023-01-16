@@ -525,16 +525,6 @@ show_scope:
 .PHONY: show_type # Show the accepted types and optional scopes (for git conventional commits)
 show_type:show_scope
 
-# grep recursively, ignore binary files, print file line, print file name
-# exclude dot dirs, exclude pylintrc (would match the notes)
-# exclude notebooks (sometimes matches in svg text), match the notes in this directory
-.PHONY: todo # List all todo left in the code
-todo:
-	@NOTES_ARGS=$$(poetry run python ./script/make_utils/get_pylintrc_notes.py \
-	--pylintrc-path pylintrc) && \
-	grep -rInH --exclude-dir={'.[^.]*',_build} \
-	--exclude={pylintrc,'*.ipynb'} "$${NOTES_ARGS}" .
-
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
 	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)"

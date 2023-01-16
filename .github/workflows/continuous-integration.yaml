@@ -314,8 +314,6 @@ jobs:
 
   build-linux:
     needs: [start-runner-linux]
-    # Hard to put a precise timeout, since for weekly, the build is really slower
-    # FIXME  #1655 timeout-minutes: 180
     runs-on: ${{ matrix.runs_on }}
     # Run in a clean container
     container:
@@ -645,7 +643,6 @@ jobs:
 
   build-macos:
     needs: [matrix-preparation]
-    # FIXME  #1655 timeout-minutes: 240
     if: ${{ needs.matrix-preparation.outputs.macos-matrix != '[]' }}
 
     runs-on: ${{ matrix.runs_on }}
@@ -707,7 +704,6 @@ jobs:
       # changed. Remark also that, for mac, due to unexpected issues with GitHub, we have a
       # slightly different way to launch pytest
       - name: PyTest Source Code
-        # FIXME  #1655 timeout-minutes: 240
         run: |
           make pytest_macOS_for_GitHub
 

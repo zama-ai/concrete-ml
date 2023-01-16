@@ -192,11 +192,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 
         check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
 
-        # FIXME implement a test specific to torch vs CML quantization and use it here #1248
-        # See commit 6c40a0c7c3765012766592a74db99430c5a373e5 for
-        # the implementation of dynamic quantization.
-        # (ref issues: #1230 #1218 #1147 #1073)
-
         onnx_model = quantized_numpy_module.onnx_model
 
         if dump_onnx:
@@ -329,7 +324,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         pytest.param(nn.Softplus, id="Softplus"),
         pytest.param(nn.PReLU, id="PReLU"),
         pytest.param(nn.Hardswish, id="Hardswish"),
-        pytest.param(nn.SiLU, id="SiLU"),  # Sometimes bad accuracy
+        pytest.param(nn.SiLU, id="SiLU"),
         pytest.param(nn.Mish, id="Mish"),
         pytest.param(nn.Tanhshrink, id="Tanhshrink"),
         pytest.param(partial(nn.Threshold, threshold=0, value=0), id="Threshold"),
@@ -337,7 +332,8 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.GELU, id="GELU"),
-        # FIXME, #335: still some issues with these activations
+        # Some issues are still encountered with some activations
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/335
         #
         # - Works but sometimes issues with the accuracy
         # pytest.param(nn.LogSigmoid, id="LogSigmoid"),

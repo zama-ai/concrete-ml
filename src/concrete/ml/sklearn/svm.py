@@ -39,7 +39,6 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         random_state=None,
         max_iter=1000,
     ):
-        # FIXME: Figure out how to add scikit-learn documentation into our object #893
         self.epsilon = epsilon
         self.tol = tol
         self.C = C

@@ -89,8 +89,8 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         y_preds = self.post_processing(y_preds, already_dequantized=True)
         return y_preds
 
-    # FIXME: #2080 Remove this method when Hummingbird releases its next update as they will make
-    # converting GLMs available
+    # Remove the following method once Hummingbird's latest version is integrated in Concrete-ML
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2080
     def _set_onnx_model(self, test_input: numpy.ndarray):
         """Retrieve the model's ONNX graph using Hummingbird conversion.
 

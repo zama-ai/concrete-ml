@@ -21,7 +21,6 @@ from .onnx_impl_utils import (
 )
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 # This function is only used for comparison operators that return boolean values by default.
 def cast_to_float(inputs):
     """Cast values to floating points.
@@ -128,10 +127,9 @@ def numpy_where_body(
         numpy.ndarray: numpy.where(c, t, f)
 
     """
-
-    # FIXME: can it be improved with a native numpy.where in Concrete Numpy?
-    # https://github.com/zama-ai/concrete-numpy-internal/issues/1429
-
+    # Use numpy.where (it is currently supported by CN) once we investigate why it outputs a
+    # a different dtype then the following workaround
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2738
     return c * t + (1.0 - c) * f
 
 
@@ -720,8 +718,8 @@ def numpy_div(
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # FIXME: remove this once https://github.com/zama-ai/concrete-ml-internal/issues/857 is
-    # explained
+    # Remove the where op once the following issue is explained
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/857
     bp = numpy_where_body(b != 0, b, 1)
     ans = numpy.divide(a, bp)
 
@@ -900,7 +898,6 @@ def numpy_not(
     return (numpy.logical_not(x),)
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 def numpy_not_float(
     x: numpy.ndarray,
 ) -> Tuple[numpy.ndarray]:
@@ -937,7 +934,6 @@ def numpy_greater(
     return (numpy.greater(x, y),)
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 def numpy_greater_float(
     x: numpy.ndarray,
     y: numpy.ndarray,
@@ -976,7 +972,6 @@ def numpy_greater_or_equal(
     return (numpy.greater_equal(x, y),)
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 def numpy_greater_or_equal_float(
     x: numpy.ndarray,
     y: numpy.ndarray,
@@ -1015,7 +1010,6 @@ def numpy_less(
     return (numpy.less(x, y),)
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 def numpy_less_float(
     x: numpy.ndarray,
     y: numpy.ndarray,
@@ -1054,7 +1048,6 @@ def numpy_less_or_equal(
     return (numpy.less_equal(x, y),)
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 def numpy_less_or_equal_float(
     x: numpy.ndarray,
     y: numpy.ndarray,
@@ -1124,8 +1117,7 @@ def numpy_transpose(x: numpy.ndarray, *, perm=None) -> Tuple[numpy.ndarray]:
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-    # FIXME: #931, remove the no-cover once #931 is done
-    return (numpy.transpose(x, axes=perm),)  # pragma: no cover
+    return (numpy.transpose(x, axes=perm),)
 
 
 @onnx_func_raw_args("b")
@@ -1484,7 +1476,6 @@ def numpy_or(
     return (numpy.logical_or(a, b),)
 
 
-# FIXME: to remove once https://github.com/zama-ai/concrete-ml-internal/issues/1117 is done.
 def numpy_or_float(
     a: numpy.ndarray,
     b: numpy.ndarray,
@@ -1585,7 +1576,8 @@ def numpy_reduce_sum(
     # Numpy's keepdims parameter is a boolean while ONNX's one is an int (0 or 1). Even though
     # Python handles them equivalently, we need to manually convert it as mypy doesn't accept this
     # type difference
-    # FIXME #2050 : Find a way to make axis of type Union[SupportsIndex, Sequence[SupportsIndex]
+    # Find a way to make axis of type Union[SupportsIndex, Sequence[SupportsIndex]
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2050
     return (numpy.sum(a, axis=axis, keepdims=bool(keepdims)),)  # type: ignore
 
 

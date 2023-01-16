@@ -131,8 +131,9 @@ def tree_to_numpy(
     else:
         keep_following_outputs_discard_others(onnx_model, ("variable",))
 
-    # TODO remove Transpose from the list when #931 is done
-    # TODO remove Gather from the list when #345 is done
+    # Remove Transpose and Gather from the list once integrated in Concrete-ML
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/345
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/931
     op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast", "Gather"]
     remove_node_types(onnx_model, op_type_to_remove)
 

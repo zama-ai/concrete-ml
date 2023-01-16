@@ -117,9 +117,9 @@ def manage_parameters_for_pbs_errors(
         ValueError: if the two parameters are set (this is _not_ as in Concrete-Numpy)
 
     """
-
     # Default probability of error of a circuit. Only used if p_error is set to None
-    # FIXME #2223: we'll find the most appropriate value for default_global_p_error_pbs
+    # We also need to find the most appropriate value for default_global_p_error_pbs
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2223
     default_global_p_error_pbs = 0.01
 
     if (p_error, global_p_error) == (None, None):

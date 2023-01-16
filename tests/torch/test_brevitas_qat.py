@@ -150,19 +150,20 @@ def test_brevitas_tinymnist_cnn(
     )
 
     # Accept, at most, 5 examples that are classified differently
-    # This can be due to the 7b input output quantization.
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1572
+    # For now, the correctness test has been disabled as it was too flaky, it should however be put
+    # back at one point
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2550
     # assert abs(vl_correct - torch_correct) <= 5
+
     assert vl_correct.shape == torch_correct.shape
 
     check_graph_input_has_no_tlu(q_module_vl.fhe_circuit.graph)
     check_graph_output_has_no_tlu(q_module_vl.fhe_circuit.graph)
 
 
-# FIXME: Note that this test is currently disabled until the pytorch dtype issue is found
+# Note that this test is currently disabled until the pytorch dtype issue is found
 # and all mismatches between CML and Brevitas are fixed
-# https://github.com/zama-ai/concrete-ml-internal/issues/2373
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2373
 @pytest.mark.parametrize(
     "n_layers",
     [3],
