@@ -626,6 +626,63 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         """Update the post processing parameters."""
         self.post_processing_params = {}
 
+    def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
+        """Fit the tree-based estimator.
+
+        Args:
+            X : training data
+                By default, you should be able to pass:
+                * numpy arrays
+                * torch tensors
+                * pandas DataFrame or Series
+            y (numpy.ndarray): The target data.
+            **kwargs: args for super().fit
+
+        Returns:
+            Any: The fitted model.
+        """
+        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
+
+        # mypy
+        assert self.n_bits is not None
+
+        qX = numpy.zeros_like(X)
+        self.input_quantizers = []
+
+        # Quantization of each feature in X
+        for i in range(X.shape[1]):
+            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
+            self.input_quantizers.append(q_x_)
+            qX[:, i] = q_x_.quant(X[:, i])
+
+        # Retrieve the init parameters
+        params = self.get_params()
+        params.pop("n_bits", None)
+
+        # Initialize the sklearn model
+        self.sklearn_model = self.sklearn_alg(**params)
+
+        # Fit the sklearn model
+        self.sklearn_model.fit(qX, y, **kwargs)
+
+        # Set post-processing parameters
+        self._update_post_processing_params()
+
+        # Convert the tree inference with Numpy operators
+        self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
+            self.sklearn_model,
+            qX[:1],
+            framework=self.framework,
+            output_n_bits=self.n_bits,
+            task=(
+                Task.REGRESSION
+                if sklearn.base.is_regressor(self.sklearn_model)
+                else Task.CLASSIFICATION
+            ),
+        )
+
+        return self
+
     def fit_benchmark(
         self,
         X: numpy.ndarray,
@@ -697,6 +754,37 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         y_preds_array = numpy.concatenate(y_preds, axis=-1)
 
         return y_preds_array
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict values for X.
+
+        Args:
+            X (numpy.ndarray): The input data.
+            execute_in_fhe (bool): Whether to execute in FHE or not. Defaults to False.
+
+        Returns:
+            numpy.ndarray: The predicted values.
+        """
+        X = check_array_and_assert(X)
+
+        # mypy
+        assert self._tensor_tree_predict is not None
+
+        # Quantize the input
+        qX = self.quantize_input(X)
+
+        # If the inference should be executed in FHE
+        if execute_in_fhe:
+            y_preds = self._execute_in_fhe(qX)
+
+        # Else, the prediction is simulated in the clear
+        else:
+            y_preds = self._tensor_tree_predict(qX)[0]
+
+        # Apply some post-processing to the predictions in the clear
+        y_preds = self.post_processing(y_preds)
+
+        return y_preds
 
     def compile(
         self,
@@ -778,6 +866,28 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
 
         return self.fhe_circuit
 
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Apply post-processing to the predictions.
+
+        Args:
+            y_preds (numpy.ndarray): The predictions.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
+        """
+        y_preds = self.dequantize_output(y_preds)
+
+        # Sum all tree outputs.
+        # Remove the sum once we handle multi-precision circuits
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
+        y_preds = numpy.sum(y_preds, axis=0)
+        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+
+        # Remove the transpose operator once it gets back into the ONNX graph
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/931
+        y_preds = numpy.transpose(y_preds)
+        return y_preds
+
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin):
     """Mixin class for tree-based regressors.
@@ -793,99 +903,6 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
             if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
                 _TREE_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
-
-    def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
-        """Fit the tree-based estimator.
-
-        Args:
-            X : training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The target data.
-            **kwargs: args for super().fit
-
-        Returns:
-            Any: The fitted model.
-        """
-        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
-
-        # mypy
-        assert self.n_bits is not None
-
-        qX = numpy.zeros_like(X)
-        self.input_quantizers = []
-
-        # Quantization of each feature in X
-        for i in range(X.shape[1]):
-            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
-            self.input_quantizers.append(q_x_)
-            qX[:, i] = q_x_.quant(X[:, i])
-
-        # Initialize the sklearn model
-        params = self.get_params()
-        params.pop("n_bits", None)
-
-        self.sklearn_model = self.sklearn_alg(**params)
-
-        self.sklearn_model.fit(qX, y, **kwargs)
-        self._update_post_processing_params()
-
-        # Tree ensemble inference to numpy
-        self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
-            self.sklearn_model,
-            qX[:1],
-            framework=self.framework,
-            output_n_bits=self.n_bits,
-            task=Task.REGRESSION,
-        )
-        return self
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-        y_preds = self.dequantize_output(y_preds)
-
-        # Sum all tree outputs.
-        # FIXME Remove this once #451 is done :
-        # https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=0)
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-
-        # FIXME transpose workaround see #931
-        # https://github.com/zama-ai/concrete-ml-internal/issues/931
-        y_preds = numpy.transpose(y_preds)
-        return y_preds
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict the probability.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted probabilities.
-        """
-
-        X = check_array_and_assert(X)
-
-        # mypy
-        assert self._tensor_tree_predict is not None
-        qX = self.quantize_input(X)
-        if execute_in_fhe:
-            y_preds = self._execute_in_fhe(qX)
-        else:
-            y_preds = self._tensor_tree_predict(qX)[0]
-        y_preds = self.post_processing(y_preds)
-        return y_preds
 
 
 class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
@@ -923,40 +940,12 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         # Make sure y contains at least two classes.
         assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
 
+        # Keep track of the classes' order if they are not sorted
         self.class_mapping_ = None
         if not numpy.array_equal(numpy.arange(len(self.classes_)), self.classes_):
             self.class_mapping_ = dict(enumerate(self.classes_))
 
-        # mypy
-        assert self.n_bits is not None
-
-        qX = numpy.zeros_like(X)
-        self.input_quantizers = []
-
-        # Quantization of each feature in X
-        for i in range(X.shape[1]):
-            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
-            self.input_quantizers.append(q_x_)
-            qX[:, i] = q_x_.quant(X[:, i])
-
-        # Initialize the sklearn model
-        params = self.get_params()
-        params.pop("n_bits", None)
-
-        self.sklearn_model = self.sklearn_alg(**params)
-
-        self.sklearn_model.fit(qX, y, **kwargs)
-        self._update_post_processing_params()
-
-        # Tree ensemble inference to numpy
-        self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
-            self.sklearn_model,
-            qX[:1],
-            framework=self.framework,
-            output_n_bits=self.n_bits,
-            task=Task.CLASSIFICATION,
-        )
-        return self
+        return super().fit(X, y, **kwargs)
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict the class with highest probability.
@@ -970,10 +959,16 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         """
         X = check_array_and_assert(X)
 
+        # Compute the predicted probabilities
         y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+
+        # Retrieve the class with the highest probability
         y_preds = numpy.argmax(y_preds, axis=1)
+
+        # Order the output classes in order to be consistent with Scikit-learn's model
         if self.class_mapping_ is not None:
             y_preds = numpy.array([self.class_mapping_[y_pred] for y_pred in y_preds])
+
         return y_preds
 
     def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
@@ -986,39 +981,7 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
-        X = check_array_and_assert(X)
-
-        # mypy
-        assert self._tensor_tree_predict is not None
-        qX = self.quantize_input(X)
-        if execute_in_fhe:
-            y_preds = self._execute_in_fhe(qX)
-        else:
-            y_preds = self._tensor_tree_predict(qX)[0]
-        y_preds = self.post_processing(y_preds)
-        return y_preds
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-        y_preds = self.dequantize_output(y_preds)
-
-        # Sum all tree outputs.
-        # FIXME Remove this once #451 is done :
-        # https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=0)
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-
-        # FIXME transpose workaround see #931
-        # https://github.com/zama-ai/concrete-ml-internal/issues/931
-        y_preds = numpy.transpose(y_preds)
-        return y_preds
+        return super().predict(X, execute_in_fhe=execute_in_fhe)
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
