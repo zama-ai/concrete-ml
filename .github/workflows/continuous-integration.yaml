@@ -355,7 +355,7 @@ jobs:
           lfs: true
 
       - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         id: setup-python
         with:
           python-version: ${{ matrix.python_version }}
@@ -670,7 +670,7 @@ jobs:
           lfs: true
 
       - name: Set up Python ${{ matrix.python_version }}
-        uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
         with:
           python-version: ${{ matrix.python_version }}
 
