@@ -79,10 +79,11 @@ class XGBClassifier(BaseTreeClassifierMixin):
             f"Currently, only 0.5 or None are supported for base_score. Got {base_score}",
         )
 
-        # FIXME: see https://github.com/zama-ai/concrete-ml-internal/issues/503, there is currently
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/503, there is currently
         # an issue with n_jobs != 1 on macOS
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/506, remove this workaround
-        # once https://github.com/zama-ai/concrete-ml-internal/issues/503 is fixed
+        #
+        # When it gets fixed, we'll remove this workaround
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2747
         if platform.system() == "Darwin":
             if n_jobs != 1:  # pragma: no cover
                 warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
@@ -241,10 +242,11 @@ class XGBRegressor(BaseTreeRegressorMixin):
             f"Currently, only 0.5 or None are supported for base_score. Got {base_score}",
         )
 
-        # FIXME: see https://github.com/zama-ai/concrete-ml-internal/issues/503, there is currently
+        # See https://github.com/zama-ai/concrete-ml-internal/issues/503, there is currently
         # an issue with n_jobs != 1 on macOS
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/506, remove this workaround
-        # once https://github.com/zama-ai/concrete-ml-internal/issues/503 is fixed
+        #
+        # When it gets fixed, we'll remove this workaround
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2747
         if platform.system() == "Darwin":
             if n_jobs != 1:  # pragma: no cover
                 warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
