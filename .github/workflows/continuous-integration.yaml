@@ -1,4 +1,4 @@
-name: CML weekly builds
+name: CML builds (weekly or not)
 on:
   pull_request:
 
