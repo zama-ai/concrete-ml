@@ -20,25 +20,29 @@ from concrete.ml.torch.compile import compile_torch_model
 @pytest.mark.parametrize(
     "keepdims", [pytest.param(keepdims, id=f"keepdims-{keepdims}") for keepdims in [True, False]]
 )
+# For the following tests, we need to make sure all circuits don't reach more than 16 bits of
+# precision as some have a PBS.
+# Besides, the associated PBS model (TorchSumMod) needs an extra bit when executed, meaning that the
+# maximum n_bits value possible to consider is 15, even if a single value is summed
 @pytest.mark.parametrize(
-    "size, axes",
+    "n_bits, size, axes",
     [
-        pytest.param(size, axes, id=f"size-{size}-axes-{axes}")
-        for (size, axes) in [
-            ((1,), (0,)),
-            ((50, 1), (0,)),
-            ((50, 1), (1,)),
-            ((10, 5), None),
-            ((10, 10, 50), (2,)),
-            ((5, 10, 10), (0, 2)),
+        pytest.param(n_bits, size, axes, id=f"n_bits-{n_bits}-size-{size}-axes-{axes}")
+        for (n_bits, size, axes) in [
+            (15, (1,), (0,)),
+            (10, (50, 1), (0,)),
+            (15, (50, 1), (1,)),
+            (10, (10, 5), None),
+            (10, (10, 10, 50), (2,)),
+            (10, (5, 10, 10), (0, 2)),
         ]
     ],
 )
 @pytest.mark.parametrize(
-    "model, n_bits, use_virtual_lib, has_tlu",
+    "model, use_virtual_lib, has_tlu",
     [
-        pytest.param(TorchSum, 10, False, False, id="sum_leveled_in_FHE"),
-        pytest.param(TorchSumMod, 10, True, True, id="sum_with_pbs_in_VL"),
+        pytest.param(TorchSum, False, False, id="sum_leveled_in_FHE"),
+        pytest.param(TorchSumMod, True, True, id="sum_with_pbs_in_VL"),
     ],
 )
 # pylint: disable-next=too-many-arguments
