@@ -49,7 +49,8 @@ We see a 20x improvement with a simple change in the `p_error` parameter, for mo
 
 ## Results
 
-Anyone can reproduce the FHE inference results using the [dedicated script](./fhe_inference.py).
+Anyone can reproduce the FHE inference results using the [dedicated script](./infer_fhe.py).
+We also provide `infer_vl.py` and `infer_torch.py` to infer using the Virtual Library or PyTorch.
 
 The PyTorch model and the inference using PyTorch for the first layer and the Virtual Library for the encrypted part yielded the same top-k accuracies:
 
