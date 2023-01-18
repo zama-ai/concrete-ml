@@ -6,6 +6,7 @@
 
 from typing import Any, Dict, Optional, Sequence, Set, Union
 
+import concrete.numpy as cnp
 import numpy
 from concrete.onnx import conv as cnp_conv
 from concrete.onnx import maxpool as cnp_maxpool
@@ -125,12 +126,20 @@ class QuantizedGemm(QuantizedMixingOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         alpha = self.attrs.get("alpha", 1)
         beta = self.attrs.get("beta", 1)
@@ -175,7 +184,10 @@ class QuantizedGemm(QuantizedMixingOp):
         transpose_inputs = attrs.get("transA", False)
         transpose_w = attrs.get("transB", False)
 
-        input_q_values = numpy.transpose(q_input.qvalues) if transpose_inputs else q_input.qvalues
+        with cnp.tag(self.op_instance_name + ".input"):
+            input_q_values = (
+                numpy.transpose(q_input.qvalues) if transpose_inputs else q_input.qvalues
+            )
         weights_q_values = numpy.transpose(q_weights.qvalues) if transpose_w else q_weights.qvalues
 
         # For mypy
@@ -199,19 +211,22 @@ class QuantizedGemm(QuantizedMixingOp):
         p = weights_q_values.shape[0]
 
         # Core matmul operation in full integers with a shape change (INTEGERS)
-        matmul = input_q_values @ weights_q_values
+        with cnp.tag(self.op_instance_name + ".matmul"):
+            matmul = input_q_values @ weights_q_values
 
         # If the weights have symmetric quantization, their zero point will be 0
         # The following check avoids the computation of the sum of the inputs, which may have
         # large bitwidth, in the case where it would be multiplied by zero
         if q_weights.quantizer.zero_point != 0:
             # Sum operation in full integers resulting in large integers (INTEGERS)
-            sum_input = -q_weights.quantizer.zero_point * numpy.sum(
-                input_q_values, axis=1, keepdims=True
-            )
+            with cnp.tag(self.op_instance_name + ".matmul_inputsum"):
+                sum_input = -q_weights.quantizer.zero_point * numpy.sum(
+                    input_q_values, axis=1, keepdims=True
+                )
 
-            # Last part that has to be done in integer
-            numpy_q_out = matmul + sum_input
+            with cnp.tag(self.op_instance_name + ".matmul_add_inputsum"):
+                # Last part that has to be done in integer
+                numpy_q_out = matmul + sum_input
         else:
             numpy_q_out = matmul
 
@@ -478,6 +493,7 @@ class QuantizedConv(QuantizedMixingOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
@@ -487,6 +503,10 @@ class QuantizedConv(QuantizedMixingOp):
 
         Args:
             n_bits_output: number of bits for the quantization of the outputs of this operator
+            op_instance_name (str): The name that should be assigned to this operation, used
+                to retrieve it later or get debugging information about this op (bitwidth, value
+                range, integer intermediary values, op-specific error messages). Usually this name
+                is the same as the ONNX operation name for which this operation is constructed.
             int_input_names: names of integer tensors that are taken as input for this operation
             constant_inputs: the weights and activations
             input_quant_opts: options for the input quantizer
@@ -498,7 +518,14 @@ class QuantizedConv(QuantizedMixingOp):
                 strides (Tuple[int]): stride of the convolution on each axis
         """
 
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # Get the ONNX parameters
         self.group = attrs.get("group", 1)
@@ -598,15 +625,17 @@ class QuantizedConv(QuantizedMixingOp):
         # Force padding to 0 as padding needs to use a custom padding initializer
         # and is thus manually performed in the code above
         fake_pads = [0] * len(self.pads)
-        conv_wx = cnp_conv(
-            q_input_pad,
-            q_weights.qvalues,
-            bias=None,
-            pads=fake_pads,
-            strides=self.strides,
-            dilations=self.dilations,
-            group=self.group,
-        )
+
+        with cnp.tag(self.op_instance_name + ".conv"):
+            conv_wx = cnp_conv(
+                q_input_pad,
+                q_weights.qvalues,
+                bias=None,
+                pads=fake_pads,
+                strides=self.strides,
+                dilations=self.dilations,
+                group=self.group,
+            )
 
         # The total number of elements that are convolved by the application of a single kernel
         n_weights = numpy.prod(q_weights.qvalues.shape[1:])
@@ -621,16 +650,19 @@ class QuantizedConv(QuantizedMixingOp):
                 f"Zero point of weights tensor in {self.op_type} "
                 f"op {self.op_instance_name} must be integer",
             )
-            zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
-                q_input_pad,
-                q_weights_1,
-                bias=None,
-                pads=[0, 0, 0, 0],
-                strides=self.strides,
-                dilations=self.dilations,
-                group=self.group,
-            )
-            numpy_q_out = conv_wx + zw_conv_1x
+            with cnp.tag(self.op_instance_name + ".conv_inputsum"):
+                zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
+                    q_input_pad,
+                    q_weights_1,
+                    bias=None,
+                    pads=[0, 0, 0, 0],
+                    strides=self.strides,
+                    dilations=self.dilations,
+                    group=self.group,
+                )
+
+            with cnp.tag(self.op_instance_name + ".conv_add_inputsum"):
+                numpy_q_out = conv_wx + zw_conv_1x
         else:
             numpy_q_out = conv_wx
 
@@ -707,13 +739,21 @@ class QuantizedAvgPool(QuantizedMixingOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # Get the ONNX parameters
         self.ceil_mode = attrs.get("ceil_mode", None)
@@ -827,13 +867,21 @@ class QuantizedMaxPool(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # Get the ONNX parameters
         self.auto_pad = attrs.get("auto_pad", "NOTSET")
@@ -941,13 +989,21 @@ class QuantizedPad(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
 
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # Get the ONNX parameters
         self.mode = attrs.get("mode", None)
@@ -983,12 +1039,20 @@ class QuantizedWhere(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # Remember that there are examples of where with more than 1 variable which are going to be
         # well managed, thanks to fusing:
@@ -1024,12 +1088,20 @@ class QuantizedGreater(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # We do not support testing a > b where a,b are encrypted
         # only comparing to a constant is supported
@@ -1048,12 +1120,20 @@ class QuantizedGreaterOrEqual(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # We do not support testing a >= b where a,b are encrypted
         # only comparing to a constant is supported
@@ -1072,12 +1152,20 @@ class QuantizedLess(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # We do not support testing a < b where a,b are encrypted
         # only comparing to a constant is supported
@@ -1096,12 +1184,20 @@ class QuantizedLessOrEqual(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: QuantizationOptions = None,
         **attrs,
     ) -> None:
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # We do not support testing a <= b where a,b are encrypted
         # only comparing to a constant is supported
@@ -1218,6 +1314,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: Optional[QuantizationOptions] = None,
@@ -1227,6 +1324,10 @@ class QuantizedReduceSum(QuantizedMixingOp):
 
         Args:
             n_bits_output (int): Number of bits for the operator's quantization of outputs.
+            op_instance_name (str): The name that should be assigned to this operation, used
+                to retrieve it later or get debugging information about this op (bitwidth, value
+                range, integer intermediary values, op-specific error messages). Usually this name
+                is the same as the ONNX operation name for which this operation is constructed.
             int_input_names (Optional[Set[str]]): Names of input integer tensors. Default to None.
             constant_inputs (Optional[Dict]): Input constant tensor.
                 axes (Optional[numpy.ndarray]): Array of integers along which to reduce.
@@ -1244,7 +1345,14 @@ class QuantizedReduceSum(QuantizedMixingOp):
                     attribute is set to true 1, input tensor will not be reduced, and the output
                     tensor would be equivalent to input tensor. Default to 0.
         """
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         # Retrieve and set the ONNX parameters
         # Numpy's keepdims parameter is a boolean while ONNX's one is an int (0 or 1). Even though
@@ -1421,6 +1529,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Set[str] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: Optional[QuantizationOptions] = None,
@@ -1431,6 +1540,10 @@ class QuantizedBrevitasQuant(QuantizedOp):
         Args:
             n_bits_output (int): Number of bits for the operator's quantization of outputs.
                 Not used, will be overridden by the bit_width in ONNX
+            op_instance_name (str): The name that should be assigned to this operation, used
+                to retrieve it later or get debugging information about this op (bitwidth, value
+                range, integer intermediary values, op-specific error messages). Usually this name
+                is the same as the ONNX operation name for which this operation is constructed.
             int_input_names (Optional[Set[str]]): Names of input integer tensors. Default to None.
             constant_inputs (Optional[Dict]): Input constant tensor.
                 scale (float): Quantizer scale
@@ -1445,7 +1558,14 @@ class QuantizedBrevitasQuant(QuantizedOp):
                     e.g. [-2**n_bits-1 .. 2**n_bits-1] (default 0),
         """
 
-        super().__init__(n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs)
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
 
         def check_float(v, err_msg):
             assert_true(

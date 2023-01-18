@@ -433,6 +433,7 @@ class ONNXConverter:
                 # Thus the quantized op outputs are quantized to the network output bitwidth
                 quantized_op_instance = quantized_op_class(
                     self.n_bits_model_outputs,
+                    node.name,
                     node_integer_inputs,
                     curr_cst_inputs,
                     self._get_input_quant_opts(curr_calibration_data, quantized_op_class),
@@ -442,9 +443,6 @@ class ONNXConverter:
                 # Determine if this op computes a tensor that is a graph output, i.e. a tensor
                 # that will be decrypted and dequantized in the clear
                 quantized_op_instance.produces_graph_output = output_name in graph_output_names
-
-                # Set the operation name to be able to link errors to specific ops
-                quantized_op_instance.op_instance_name = node.name
 
                 # Store the output tensor's integer producers
                 tensor_int_producers[output_name] = set()
@@ -492,6 +490,7 @@ class ONNXConverter:
                     list_real_cst_inputs = list(real_cst_inputs)
                     quantizer = QuantizedBrevitasQuant(
                         self.n_bits_model_outputs,
+                        node.name,
                         node_integer_inputs,
                         {
                             1: list_real_cst_inputs[1],

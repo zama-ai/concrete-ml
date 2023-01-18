@@ -1,5 +1,6 @@
 """QuantizedModule API."""
 import copy
+import re
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy
@@ -452,3 +453,36 @@ class QuantizedModule:
         self._is_compiled = True
 
         return self.forward_fhe
+
+    def bitwidth_and_range_report(
+        self,
+    ) -> Optional[Dict[str, Dict[str, Union[Tuple[int, ...], int]]]]:
+        """Report the ranges and bitwidths for layers that mix encrypted integer values.
+
+        Returns:
+            result (Dict): a dictionary with operation names as keys. For each operation,
+                (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned. The range
+                contains the min/max values encountered when computing the operation and
+                the bitwidth gives the number of bits needed to represent this range.
+        """
+
+        if self.forward_fhe is None:
+            return None
+
+        result: Dict[str, Dict[str, Union[Tuple[int, ...], int]]] = {}
+        for (_, op_inst) in self.quant_layers_dict.values():
+            # Get the value range of this tag and all its subtags
+            # The potential tags for this op start with the op instance name
+            # and are, sometimes, followed by a subtag starting with a period:
+            # ex: abc, abc.cde, abc.cde.fgh
+            # so first craft a regex to match all such tags.
+            pattern = re.compile(re.escape(op_inst.op_instance_name) + "(\\..*)?")
+            value_range = self.forward_fhe.graph.integer_range(pattern)
+            bitwidth = self.forward_fhe.graph.maximum_integer_bit_width(pattern)
+
+            # Only store the range and bit-width if there are valid ones,
+            # as some ops (fusable ones) do not have tags
+            if value_range is not None and bitwidth >= 0:
+                result[op_inst.op_instance_name] = {"range": value_range, "bitwidth": bitwidth}
+
+        return result

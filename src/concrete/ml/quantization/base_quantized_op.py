@@ -35,6 +35,10 @@ class QuantizedOp:
 
     Args:
         n_bits_output (int): The number of bits to use for the quantization of the output
+        op_instance_name (str): The name that should be assigned to this operation, used
+            to retrieve it later or get debugging information about this op (bitwidth, value range,
+            integer intermediary values, op-specific error messages). Usually this name is the same
+            as the ONNX operation name for which this operation is constructed.
         int_input_names (Set[str]): The set of names of integer tensors that are inputs to this op
         constant_inputs (Optional[Union[Dict[str, Any], Dict[int, Any]]]): The constant tensors
             that are inputs to this op
@@ -70,7 +74,7 @@ class QuantizedOp:
     _has_attr: bool
     _inputs_not_quantized: Set[str] = set()
     quantize_inputs_with_model_outputs_precision: bool = False
-    op_instance_name: Optional[str] = None
+    op_instance_name: str
 
     # Determines if this op computes a tensor that is a graph output, i.e. a tensor
     # that will be decrypted and dequantized in the clear
@@ -91,6 +95,7 @@ class QuantizedOp:
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Optional[Set[str]] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: Optional[QuantizationOptions] = None,
@@ -164,6 +169,10 @@ class QuantizedOp:
         # Only use QAT for layers that need it (that mix encrypted values: conv, dense, add, etc...)
         if self.can_fuse():
             self.input_quant_opts.is_qat = False
+
+        # Set the operation's name, which is used to identify this op in the CML op graph
+        # with respect to the ONNX graph (usually we keep use ONNX op name)
+        self.op_instance_name = op_instance_name
 
     @classmethod
     def op_type(cls):
@@ -586,6 +595,7 @@ class QuantizedOpUnivariateOfEncrypted(QuantizedOp, is_utility=True):
     def __init__(
         self,
         n_bits_output: int,
+        op_instance_name: str,
         int_input_names: Optional[Set[str]] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
         input_quant_opts: Optional[QuantizationOptions] = None,
@@ -593,7 +603,12 @@ class QuantizedOpUnivariateOfEncrypted(QuantizedOp, is_utility=True):
     ) -> None:
         # Disable mypy which is failing for mixins
         super().__init__(
-            n_bits_output, int_input_names, constant_inputs, input_quant_opts, **attrs
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
         )  # type: ignore
 
         # We do not support this type of operation between encrypted tensors, only between:

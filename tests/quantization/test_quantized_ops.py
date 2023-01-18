@@ -79,6 +79,8 @@ INPUT_RANGES = [
 
 IS_SIGNED = [pytest.param(True), pytest.param(False)]
 
+OP_DEBUG_NAME = "Test_"
+
 
 @pytest.mark.parametrize(
     "n_bits",
@@ -127,7 +129,7 @@ def test_univariate_ops_no_attrs(
     """Test activation functions."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
     q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
-    quantized_op = quantized_op_type(n_bits)
+    quantized_op = quantized_op_type(n_bits, quantized_op_type.__name__)
     expected_output = quantized_op.calibrate(values)
     q_output = quantized_op(q_inputs)
     qvalues = q_output.qvalues
@@ -168,7 +170,7 @@ def test_exp_op(
     """Test activation functions."""
     values = numpy.random.uniform(input_range[0], input_range[1], size=input_shape)
     q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
-    quantized_op = QuantizedExp(n_bits)
+    quantized_op = QuantizedExp(n_bits, OP_DEBUG_NAME + "QuantizedExp")
     expected_output = quantized_op.calibrate(values)
     q_output = quantized_op(q_inputs)
     qvalues = q_output.qvalues
@@ -208,7 +210,9 @@ def test_clip_op(
     q_inputs = QuantizedArray(n_bits, values, is_signed=is_signed)
 
     q_cst_inputs = (numpy.asarray([inp_value]) for inp_value in cst_inputs)
-    quantized_op = QuantizedClip(n_bits, constant_inputs=dict(zip([1, 2], q_cst_inputs)))
+    quantized_op = QuantizedClip(
+        n_bits, OP_DEBUG_NAME + "QuantizedClip", constant_inputs=dict(zip([1, 2], q_cst_inputs))
+    )
     expected_output = quantized_op.calibrate(values)
     q_output = quantized_op(q_inputs)
     qvalues = q_output.qvalues
@@ -297,7 +301,7 @@ def test_all_arith_ops(
 
     if supports_enc_with_enc:
         # Variable+Variable (V+V) test
-        q_op = operator(n_bits, int_input_names={"0", "1"})
+        q_op = operator(n_bits, operator.__name__, int_input_names={"0", "1"})
 
         # Calibrate the layer
         raw_output_vv = q_op.calibrate(input_0, input_1)
@@ -310,10 +314,12 @@ def test_all_arith_ops(
     else:
         with pytest.raises(Exception):
             # Variable+Variable (V+V) test
-            q_op = operator(n_bits, int_input_names={"0", "1"})
+            q_op = operator(n_bits, operator.__name__, int_input_names={"0", "1"})
 
     # Variable + Constant test (V+C)
-    q_op = operator(n_bits, int_input_names={"0"}, constant_inputs={"b": q_inputs_1})
+    q_op = operator(
+        n_bits, operator.__name__, int_input_names={"0"}, constant_inputs={"b": q_inputs_1}
+    )
 
     # Calibrate the layer
     raw_output_vc = q_op.calibrate(input_0)
@@ -325,7 +331,9 @@ def test_all_arith_ops(
     check_r2_score(raw_output_vc, quantized_output_vc)
 
     # Constant + Variable test (C+V)
-    q_op = operator(n_bits, int_input_names={"0"}, constant_inputs={"a": q_inputs_0})
+    q_op = operator(
+        n_bits, operator.__name__, int_input_names={"0"}, constant_inputs={"a": q_inputs_0}
+    )
 
     # Calibrate the layer
     raw_output_cv = q_op.calibrate(input_1)
@@ -397,7 +405,10 @@ def test_all_gemm_ops(
 
     # 1- Test our QuantizedGemm layer
     q_gemm = QuantizedGemm(
-        n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights, "c": bias}
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedGemm",
+        int_input_names={"0"},
+        constant_inputs={"b": q_weights, "c": bias},
     )
     q_gemm.produces_graph_output = produces_output
 
@@ -409,10 +420,20 @@ def test_all_gemm_ops(
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
 
     # 2- Same test without bias
-    q_gemm = QuantizedGemm(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
+    q_gemm = QuantizedGemm(
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedGemm",
+        int_input_names={"0"},
+        constant_inputs={"b": q_weights},
+    )
     q_gemm.produces_graph_output = produces_output
 
-    q_mm = QuantizedMatMul(n_bits, int_input_names={"0"}, constant_inputs={"b": q_weights})
+    q_mm = QuantizedMatMul(
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedMatmul",
+        int_input_names={"0"},
+        constant_inputs={"b": q_weights},
+    )
     q_mm.produces_graph_output = produces_output
 
     # Calibrate the quantized layers
@@ -429,6 +450,7 @@ def test_all_gemm_ops(
     # 3- Same test but with (alpha, beta) = (1, 0)
     q_gemm = QuantizedGemm(
         n_bits,
+        OP_DEBUG_NAME + "QuantizedGemm",
         int_input_names={"0"},
         constant_inputs={"b": q_weights, "c": bias},
         alpha=1,
@@ -452,7 +474,7 @@ def test_all_gemm_ops(
 def test_identity_op(x, n_bits):
     """Tests for the identity op"""
     q_x = QuantizedArray(n_bits=n_bits, values=x)
-    qx_bis = QuantizedIdentity(n_bits)(q_x)
+    qx_bis = QuantizedIdentity(n_bits, OP_DEBUG_NAME + "QuantizedIdentity")(q_x)
     assert numpy.array_equal(qx_bis.qvalues, q_x.qvalues)
 
 
@@ -581,6 +603,7 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     # Create the operator, specifying weights & biases as constants
     q_op = QuantizedConv(
         n_bits,
+        OP_DEBUG_NAME + "QuantizedConv",
         int_input_names={"0"},
         constant_inputs={1: q_weights, 2: biases},
         strides=strides,
@@ -695,6 +718,7 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
     q_op = QuantizedAvgPool(
         n_bits,
+        OP_DEBUG_NAME + "QuantizedAvgPool",
         strides=strides,
         pads=pads,
         kernel_shape=kernel_shape,
@@ -808,6 +832,7 @@ def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
     q_op = QuantizedMaxPool(
         n_bits,
+        OP_DEBUG_NAME + "QuantizedMaxPool",
         dilations=dilations,
         strides=strides,
         pads=pads,
@@ -874,6 +899,7 @@ def test_quantized_conv_args():
         with pytest.raises(AssertionError, match=error):
             QuantizedConv(
                 n_bits,
+                "QuantizedConv",
                 int_input_names={"0"},
                 constant_inputs={1: q_weights, 2: q_bias},
                 **kwargs_op,
@@ -890,7 +916,13 @@ def test_quantized_pad():
     q_data = QuantizedArray(2, data)
 
     pads = numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0])
-    q_op = QuantizedPad(2, int_input_names={"0"}, constant_inputs={1: pads}, mode="constant")
+    q_op = QuantizedPad(
+        2,
+        OP_DEBUG_NAME + "QuantizedPad",
+        int_input_names={"0"},
+        constant_inputs={1: pads},
+        mode="constant",
+    )
 
     pad_value = QuantizedArray(2, numpy.asarray([0]).astype(numpy.float64))
 
@@ -906,11 +938,17 @@ def test_quantized_pad():
 
     pads_invalid = numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0])
     with pytest.raises(AssertionError):
-        QuantizedPad(2, int_input_names={"0"}, constant_inputs={1: pads_invalid}, mode="constant")
+        QuantizedPad(
+            2,
+            OP_DEBUG_NAME + "QuantizedPad",
+            int_input_names={"0"},
+            constant_inputs={1: pads_invalid},
+            mode="constant",
+        )
 
     # Now check that we assert when a different padding mode is given
     with pytest.raises(AssertionError):
-        QuantizedPad(2, int_input_names={"0"}, mode="reflect")
+        QuantizedPad(2, OP_DEBUG_NAME + "QuantizedPad", int_input_names={"0"}, mode="reflect")
 
 
 @pytest.mark.parametrize("shape", [(1,), (10, 5), (10, 5, 2)])
@@ -928,6 +966,7 @@ def test_quantized_reshape(shape):
     new_shape = numpy.asarray((num_values,))
     reshape = QuantizedReshape(
         n_bits_reshape,
+        OP_DEBUG_NAME + "QuantizedReshape",
         constant_inputs={1: new_shape},
         input_quant_opts=q_arr0.quantizer.quant_options,
     )
@@ -940,6 +979,7 @@ def test_quantized_reshape(shape):
 
     reshape_back = QuantizedReshape(
         n_bits_reshape,
+        OP_DEBUG_NAME + "QuantizedReshape",
         constant_inputs={1: numpy.asarray(shape)},
         input_quant_opts=q_arr0.quantizer.quant_options,
     )
@@ -972,7 +1012,9 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
 
     q_cst_inputs = numpy.asarray(slope).astype(numpy.float64)
 
-    quantized_op = QuantizedPRelu(n_bits, constant_inputs={"slope": q_cst_inputs})
+    quantized_op = QuantizedPRelu(
+        n_bits, OP_DEBUG_NAME + "QuantizedPRelu", constant_inputs={"slope": q_cst_inputs}
+    )
     expected_output = quantized_op.calibrate(values)
     q_output = quantized_op(q_inputs)
     qvalues = q_output.qvalues
@@ -1020,10 +1062,15 @@ def test_quantized_comparators_and_where(params, n_bits, comparator, check_r2_sc
     values, threshold, val_if_true, val_if_false = params
 
     q_values = QuantizedArray(n_bits, values)
-    q_op_comparator = comparator(n_bits, constant_inputs={1: QuantizedArray(n_bits, threshold)})
-    q_cast = QuantizedCast(n_bits, to=onnx.TensorProto.BOOL)
+    q_op_comparator = comparator(
+        n_bits,
+        OP_DEBUG_NAME + comparator.__name__,
+        constant_inputs={1: QuantizedArray(n_bits, threshold)},
+    )
+    q_cast = QuantizedCast(n_bits, OP_DEBUG_NAME + "QuantizedCast", to=onnx.TensorProto.BOOL)
     q_op_where = QuantizedWhere(
         n_bits,
+        OP_DEBUG_NAME + "QuantizedWhere",
         constant_inputs={
             1: QuantizedArray(n_bits, float(val_if_true)),
             2: QuantizedArray(n_bits, float(val_if_false)),
@@ -1065,7 +1112,9 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
     scale = QuantizedArray(n_bits, numpy.random.uniform(size=(tensor_shape[1],)))
 
     q_op = QuantizedBatchNormalization(
-        n_bits, constant_inputs={"input_mean": mean, "input_var": var, "scale": scale, "bias": bias}
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedBatchNormalization",
+        constant_inputs={"input_mean": mean, "input_var": var, "scale": scale, "bias": bias},
     )
 
     # Compute the fp32 results
@@ -1120,6 +1169,7 @@ def test_reduce_sum(
     # Instantiate the operator
     quantized_reduce_sum = QuantizedReduceSum(
         n_bits,
+        OP_DEBUG_NAME + "QuantizedReduceSum",
         constant_inputs={"axes": numpy.array(axes) if axes is not None else None},
         keepdims=keepdims,
         noop_with_empty_axes=noop_with_empty_axes,
@@ -1223,7 +1273,10 @@ def test_quantized_flatten(input_shape, expected_shape, axis, is_signed):
 
     # Create the operator and calibrate
     flatten_op = QuantizedFlatten(
-        n_bits_reshape, axis=axis, input_quant_opts=q_data.quantizer.quant_options
+        n_bits_reshape,
+        OP_DEBUG_NAME + "QuantizedFlatten",
+        axis=axis,
+        input_quant_opts=q_data.quantizer.quant_options,
     )
     flatten_op.calibrate(data)
 
@@ -1252,6 +1305,7 @@ def test_brevitas_quant(check_r2_score, is_signed: bool, narrow: bool):
     def create_layer(is_signed, narrow):
         return QuantizedBrevitasQuant(
             7,
+            OP_DEBUG_NAME + "QuantizedBrevitasQuant",
             constant_inputs={
                 idx_name["scale"]: numpy.random.uniform(0.1, 10),
                 idx_name["zero_point"]: float(numpy.random.randint(-10, 10)),
@@ -1277,11 +1331,25 @@ def test_brevitas_quant(check_r2_score, is_signed: bool, narrow: bool):
 
     # Verify that "signed" is checked
     with pytest.raises(AssertionError):
-        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="ROUND", signed=5, narrow=0)
+        QuantizedBrevitasQuant(
+            7,
+            OP_DEBUG_NAME + "QuantizedBrevitasQuant",
+            constant_inputs=cinp,
+            rounding_mode="ROUND",
+            signed=5,
+            narrow=0,
+        )
 
     # Verify that "rounding_mode" is checked
     with pytest.raises(AssertionError):
-        QuantizedBrevitasQuant(7, constant_inputs=cinp, rounding_mode="FLOOR", signed=1, narrow=0)
+        QuantizedBrevitasQuant(
+            7,
+            OP_DEBUG_NAME + "QuantizedBrevitasQuant",
+            constant_inputs=cinp,
+            rounding_mode="FLOOR",
+            signed=1,
+            narrow=0,
+        )
 
     x = numpy.random.randn(100)
     q_data = QuantizedArray(7, x, is_signed=True)
@@ -1306,7 +1374,10 @@ def test_quantized_transpose(shape, axes):
     q_arr0 = QuantizedArray(n_bits_transpose, data)
 
     transpose = QuantizedTranspose(
-        n_bits_transpose, input_quant_opts=q_arr0.quantizer.quant_options, perm=axes
+        n_bits_transpose,
+        OP_DEBUG_NAME + "QuantizedTranspose",
+        input_quant_opts=q_arr0.quantizer.quant_options,
+        perm=axes,
     )
 
     q_transposed = transpose(q_arr0)
@@ -1332,7 +1403,10 @@ def test_quantized_concat(shape1, shape2, axis):
     q_arr_to_concat = QuantizedArray(n_bits=n_bits_concat_output, values=data_to_concatenate)
 
     q_concatenated = QuantizedConcat(
-        n_bits_concat_output, input_quant_opts=q_arr.quantizer.quant_options, axis=axis
+        n_bits_concat_output,
+        OP_DEBUG_NAME + "QuantizedConcat",
+        input_quant_opts=q_arr.quantizer.quant_options,
+        axis=axis,
     )
 
     with pytest.raises(
@@ -1369,6 +1443,7 @@ def test_quantized_unsqueeze(shape, axis):
 
     q_unsqueeze = QuantizedUnsqueeze(
         n_bits_concat_output,
+        OP_DEBUG_NAME + "QuantizedUnsqueeze",
         input_quant_opts=q_arr.quantizer.quant_options,
         constant_inputs={1: axis},
     )

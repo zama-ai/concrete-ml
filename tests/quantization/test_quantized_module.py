@@ -10,6 +10,7 @@ from torch import nn
 from concrete.ml.pytest.torch_models import CNN, FC, CNNMaxPool
 from concrete.ml.quantization import PostTrainingAffineQuantization
 from concrete.ml.torch import NumpyModule
+from concrete.ml.torch.compile import compile_torch_model
 
 N_BITS_LIST = [
     20,
@@ -201,3 +202,99 @@ def test_intermediary_values(n_bits, model, input_shape, activation_function):
 
     # Make sure we have debug output for all conv/gemm layers in CML
     assert num_gemm_conv == num_torch_gemm_conv
+
+
+@pytest.mark.parametrize(
+    "model, input_shape",
+    [
+        pytest.param(FC, (100, 32 * 32 * 3)),
+        pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
+    ],
+)
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.ReLU, id="ReLU"),
+    ],
+)
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
+def test_bitwidth_report(
+    model, input_shape, activation_function, default_configuration, use_virtual_lib
+):
+    """Check that the quantized module bit-width report executes without error."""
+    torch.manual_seed(42)
+    torch.use_deterministic_algorithms(True)
+    numpy.random.seed(42)
+
+    torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model.eval()
+
+    # Create random input
+    numpy_input = numpy.random.uniform(size=input_shape)
+    torch_input = torch.from_numpy(numpy_input).float()
+
+    # First test a model that is not compiled
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input)
+    post_training_quant = PostTrainingAffineQuantization(2, numpy_fc_model)
+    quantized_model = post_training_quant.quantize_module(numpy_input)
+
+    # A QuantizedModule that is not compiled can not report bitwidths and value ranges
+    assert quantized_model.bitwidth_and_range_report() is None
+
+    # Finally test a compiled  QuantizedModule
+    quantized_model = compile_torch_model(
+        torch_fc_model,
+        torch_input,
+        False,
+        default_configuration,
+        n_bits=2,
+        use_virtual_lib=use_virtual_lib,
+        p_error=0.01,
+    )
+
+    # Get all ops for which the user would want to know the bitwidths
+    ops_check_have_report = set()
+    for node in quantized_model.onnx_model.graph.node:
+        if "Gemm" in node.op_type or "Conv" in node.op_type:
+            ops_check_have_report.add(node.name)
+
+    # Get the report
+    report = quantized_model.bitwidth_and_range_report()
+
+    # Check that all interesting ops are in the report
+    assert ops_check_have_report.issubset(report.keys())
+
+    expected = {
+        FC: {
+            "Gemm_0": {"range": (-251, 208), "bitwidth": 9},
+            "Gemm_2": {"range": (-20, 20), "bitwidth": 6},
+            "Gemm_4": {"range": (-14, 15), "bitwidth": 5},
+            "Gemm_6": {"range": (-17, 16), "bitwidth": 6},
+            "Gemm_8": {"range": (-9, 9), "bitwidth": 5},
+        }
+    }
+
+    # Check that the report includes the correct information
+    for key in report:
+        # Ensure the report contains the right info
+        assert "range" in report[key] and "bitwidth" in report[key]
+
+        # If we have actual values for this trained model
+        if model in expected:
+            # Find the expected values for this layer
+            expected = expected[model]
+            expected_key = None
+            for potential_key in expected.keys():
+                # Expected key name should be contained in the ONNX layer name
+                if potential_key in key:
+                    expected_key = potential_key
+                    break
+
+            # Ensure we find the expected layer name though it maybe be transformed
+            # with a prefix or suffix
+            assert expected_key
+
+            # Ensure the value are the expected ones
+            assert report[key]["range"][0] == expected[expected_key]["range"][0]
+            assert report[key]["range"][1] == expected[expected_key]["range"][1]
+            assert report[key]["bitwidth"] == expected[expected_key]["bitwidth"]
