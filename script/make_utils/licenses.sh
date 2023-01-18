@@ -110,7 +110,7 @@ then
 
     # In --format=csv such that the column length (and so, the diff) do not change with longer
     # names
-    pip-licenses --format=csv | tr -d "\"" | grep -v "pkg\-resources\|concrete-ml," | \
+    pip-licenses --format=csv | tr -d "\"" | grep -v "pkg-resources\|pkg_resources\|concrete-ml," | \
         tee "${NEW_LICENSES_FILENAME}"
 
     # Remove trailing whitespaces and replace "," by ", "
