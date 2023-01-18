@@ -88,13 +88,13 @@ check_poetry_version:
 python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
 	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources \
-	--dir use_case_examples
+	--dir use_case_examples --file conftest.py
 
 .PHONY: check_python_format # Check python format
 check_python_format:
 	poetry run env bash ./script/source_format/format_python.sh \
 	--dir $(SRC_DIR) --dir tests --dir benchmarks --dir script --dir docker/release_resources \
-	--dir use_case_examples \
+	--dir use_case_examples --file conftest.py \
 	--check
 
 .PHONY: check_finalize_nb # Check sanitization of notebooks
@@ -118,6 +118,9 @@ pylint_tests:
 	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801,W0108,C0412 \
 		--rcfile=pylintrc
 
+	poetry run pylint --disable=R0801,W0108,C0412 conftest.py \
+		--rcfile=pylintrc
+
 .PHONY: pylint_benchmarks # Run pylint on benchmarks
 pylint_benchmarks:
 	@# Disable duplicate code detection (R0801) in benchmarks
@@ -137,11 +140,11 @@ flake8:
 
 	@# --extend-ignore=DAR is because we don't want to run darglint on tests/ script/ benchmarks/
 	poetry run flake8 --config flake8_others.cfg tests/ script/ benchmarks/ \
-		docker/release_resources/
+		docker/release_resources/ conftest.py
 
 .PHONY: ruff # Run ruff
 ruff:
-	poetry run ruff $(SRC_DIR) script tests
+	poetry run ruff $(SRC_DIR) script tests conftest.py
 
 .PHONY: ruff # Run ruff fix
 fix_ruff:
@@ -259,6 +262,7 @@ mypy_ns:
 .PHONY: mypy_test # Run mypy on test files
 mypy_test:
 	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional
+	poetry run mypy conftest.py --ignore-missing-imports
 
 .PHONY: mypy_script # Run mypy on scripts
 mypy_script:
@@ -389,6 +393,8 @@ docs_and_open: docs open_docs
 pydocstyle:
 	@# From http://www.pydocstyle.org/en/stable/error_codes.html
 	poetry run pydocstyle $(SRC_DIR) --convention google --add-ignore=D1,D202 --add-select=D401
+	poetry run pydocstyle tests --convention google --add-ignore=D1,D202 --add-select=D401
+	poetry run pydocstyle conftest.py --convention google --add-ignore=D1,D202 --add-select=D401
 
 .PHONY: finalize_nb # Sanitize notebooks
 finalize_nb:

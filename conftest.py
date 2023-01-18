@@ -1,28 +1,28 @@
-"""PyTest configuration file"""
+"""PyTest configuration file."""
 import json
 import random
 import re
-import shutil
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional, Union
-from concrete.ml.quantization.quantized_module import QuantizedModule
+from typing import Any, Callable, Optional, Union
 
 import numpy
 import pytest
 import torch
-from concrete.numpy.compilation import (
-    Circuit,
-    Configuration,
-    configuration,
-)
+from concrete.numpy import Graph as CNPGraph
+from concrete.numpy.compilation import Circuit, Configuration
 from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 
-from concrete.numpy import Graph as CNPGraph
+from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.sklearn.base import (
+    BaseTreeEstimatorMixin,
+    QuantizedTorchEstimatorMixin,
+    SklearnLinearModelMixin,
+)
 
 
 def pytest_addoption(parser):
-    """Options for pytest"""
+    """Options for pytest."""
 
     parser.addoption(
         "--global-coverage-infos-json",
@@ -110,7 +110,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
 
 @pytest.fixture
 def default_configuration():
-    """Return the default test compilation configuration"""
+    """Return the default test compilation configuration."""
 
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
@@ -125,7 +125,7 @@ def default_configuration():
 
 @pytest.fixture
 def default_configuration_no_jit():
-    """Return the default test compilation configuration"""
+    """Return the default test compilation configuration."""
 
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
@@ -143,12 +143,12 @@ REMOVE_COLOR_CODES_RE = re.compile(r"\x1b[^m]*m")
 
 @pytest.fixture
 def remove_color_codes():
-    """Return the re object to remove color codes"""
+    """Return the re object to remove color codes."""
     return lambda x: REMOVE_COLOR_CODES_RE.sub("", x)
 
 
 def function_to_seed_torch(seed):
-    """Function to seed torch"""
+    """Seed torch, for determinism."""
 
     # Seed torch with something which is seed by pytest-randomly
     torch.manual_seed(seed)
@@ -157,7 +157,7 @@ def function_to_seed_torch(seed):
 
 @pytest.fixture(autouse=True)
 def autoseeding_of_everything(record_property, request):
-    """Function to seed everything we can"""
+    """Seed everything we can, for determinism."""
     main_seed = request.config.getoption("--forcing_random_seed", default=None)
 
     if main_seed is None:
@@ -191,14 +191,14 @@ def autoseeding_of_everything(record_property, request):
 
 @pytest.fixture
 def is_weekly_option(request):
-    """Function to see if we are in --weekly configuration"""
+    """Say if we are in --weekly configuration."""
     is_weekly = request.config.getoption("--weekly")
     return is_weekly
 
 
 @pytest.fixture
 def is_vl_only_option(request):
-    """Function to see if we are in --only_vl_tests configuration"""
+    """Say if we are in --only_vl_tests configuration."""
     only_vl_tests = request.config.getoption("--only_vl_tests")
     return only_vl_tests
 
@@ -206,6 +206,7 @@ def is_vl_only_option(request):
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
+    """Check that the graph's input node does not contain a TLU."""
     succ = list(graph.graph.successors(graph.input_nodes[0]))
     if any(s.converted_to_table_lookup for s in succ):
         raise AssertionError(f"Graph contains a TLU on an input node: {str(graph.format())}")
@@ -214,6 +215,7 @@ def check_graph_input_has_no_tlu_impl(graph: CNPGraph):
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_output_has_no_tlu_impl(graph: CNPGraph):
+    """Check that the graph's output node does not contain a TLU."""
     if graph.output_nodes[0].converted_to_table_lookup:
         raise AssertionError(f"Graph output is produced by a TLU: {str(graph.format())}")
 
@@ -221,6 +223,7 @@ def check_graph_output_has_no_tlu_impl(graph: CNPGraph):
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2381
 def check_graph_has_no_input_output_tlu_impl(graph: CNPGraph):
+    """Check that the graph's input and output nodes do not contain a TLU."""
     check_graph_input_has_no_tlu_impl(graph)
     check_graph_output_has_no_tlu_impl(graph)
 
@@ -228,11 +231,13 @@ def check_graph_has_no_input_output_tlu_impl(graph: CNPGraph):
 # To update when the feature becomes available in CN
 # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1714
 def check_circuit_has_no_tlu_impl(circuit: Circuit):
+    """Check a circuit has no TLU."""
     if "apply_" in circuit.mlir and "_lookup_table" in circuit.mlir:
         raise AssertionError("The circuit contains at least one TLU")
 
 
 def check_circuit_precision_impl(circuit: Circuit):
+    """Check a circuit doesn't need too much precision."""
     circuit_precision = circuit.graph.maximum_integer_bit_width()
     if circuit_precision > MAXIMUM_TLU_BIT_WIDTH:
         raise AssertionError(
@@ -243,26 +248,31 @@ def check_circuit_precision_impl(circuit: Circuit):
 
 @pytest.fixture
 def check_graph_input_has_no_tlu():
+    """Check a circuit has no TLU on input."""
     return check_graph_input_has_no_tlu_impl
 
 
 @pytest.fixture
 def check_graph_output_has_no_tlu():
+    """Check a circuit has no TLU on output."""
     return check_graph_output_has_no_tlu_impl
 
 
 @pytest.fixture
 def check_graph_has_no_input_output_tlu():
+    """Check a circuit has no TLU on input or output."""
     return check_graph_has_no_input_output_tlu_impl
 
 
 @pytest.fixture
 def check_circuit_has_no_tlu():
+    """Check a circuit has no TLU."""
     return check_circuit_has_no_tlu_impl
 
 
 @pytest.fixture
 def check_circuit_precision():
+    """Check that the circuit is valid."""
     return check_circuit_precision_impl
 
 
@@ -288,14 +298,14 @@ Actual Output
 
 @pytest.fixture
 def check_array_equality():
-    """Fixture to check array equality"""
+    """Fixture to check array equality."""
 
     return check_array_equality_impl
 
 
 @pytest.fixture
 def check_float_arrays_equal():
-    """Fixture to check if two float arrays are equal with epsilon precision tolerance"""
+    """Fixture to check if two float arrays are equal with epsilon precision tolerance."""
 
     def check_float_arrays_equal_impl(a, b):
         assert numpy.all(numpy.isclose(a, b, rtol=0, atol=0.001))
@@ -305,7 +315,7 @@ def check_float_arrays_equal():
 
 @pytest.fixture
 def check_r2_score():
-    """Fixture to check r2 score"""
+    """Fixture to check r2 score."""
 
     def check_r2_score_impl(expected, actual, acceptance_score=0.99):
         expected = expected.ravel()
@@ -335,7 +345,7 @@ def check_r2_score():
 
 @pytest.fixture
 def check_accuracy():
-    """Fixture to check the accuracy"""
+    """Fixture to check the accuracy."""
 
     def check_accuracy_impl(expected, actual, threshold=0.9):
         accuracy = numpy.mean(expected == actual)
@@ -358,8 +368,9 @@ def load_data():
         """Generate a random regression or classification problem.
 
         Sklearn's make_regression() method generates a random regression problem without any domain
-        restrictions. However, some models can only handle non negative or (strictly) positive target
-        values. This function therefore adapts it in order to make it work for any tested regressors.
+        restrictions. However, some models can only handle non negative or (strictly) positive
+        target values. This function therefore adapts it in order to make it work for any tested
+        regressors.
 
         For classifier, Sklearn's make_classification() method is directly called.
 
@@ -381,7 +392,7 @@ def load_data():
             return make_classification(*args, **kwargs, random_state=random_state)
 
         # If the dataset should be generated for a regression problem.
-        elif dataset == "regression":
+        if dataset == "regression":
             generated_regression = list(make_regression(*args, **kwargs, random_state=random_state))
 
             # Some regressors can only handle positive target values, often strictly positive.
@@ -396,8 +407,8 @@ def load_data():
             return tuple(generated_regression)
 
         # Any other dataset to generate.
-        else:
-            return dataset()
+        assert not isinstance(dataset, str)
+        return dataset()
 
     return custom_load_data
 
@@ -406,7 +417,7 @@ def load_data():
 def check_is_good_execution_for_cml_vs_circuit():
     """Compare quantized module or built-in inference vs Concrete-Numpy circuit."""
 
-    def batch_circuit_inference(inputs: numpy.ndarray, circuit: Circuit):
+    def batch_circuit_inference(inputs: Union[tuple, numpy.ndarray], circuit: Circuit):
         """Execute a circuit on a batch of data."""
         # For now, only allow VL with p_error = 0 since want to make sure the VL
         # (without randomness) matches perfectly CML's predictions.
@@ -429,17 +440,17 @@ def check_is_good_execution_for_cml_vs_circuit():
 
     def check_is_good_execution_for_cml_vs_circuit_impl(
         inputs: Union[tuple, numpy.ndarray],
-        model_function: Union[Callable, QuantizedModule],
+        model_function: Union[Callable, QuantizedModule, QuantizedTorchEstimatorMixin],
         n_allowed_runs: int = 5,
     ):
         """Check that a model or a quantized module give the same output as the circuit.
 
         Args:
             inputs (tuple, numpy.ndarray): inputs for the model.
-            model_function (Callable, QuantizedModule): either the Concrete-ML sklearn built-in model
-                or a quantized module.
-            n_allowed_runs (int): in case of FHE execution randomness can make the output slightly different
-                this allows to run the evaluation multiple times
+            model_function (Callable, QuantizedModule, QuantizedTorchEstimatorMixin): either the
+                Concrete-ML sklearn built-in model or a quantized module.
+            n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
+                different this allows to run the evaluation multiple times
         """
         inputs = (inputs,) if not isinstance(inputs, tuple) else inputs
 
@@ -452,22 +463,31 @@ def check_is_good_execution_for_cml_vs_circuit():
                 results_cnp_circuit = batch_circuit_inference(inputs, model_function.fhe_circuit)
                 results_model_function = model_function.forward(*inputs)
 
-            elif model_function._is_a_public_cml_model:
-                # In the case of a model, floating point inputs are expected.
-                assert numpy.all(
-                    [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
-                )
-                results_cnp_circuit = model_function.predict(*inputs, execute_in_fhe=True)
-                results_model_function = model_function.predict(*inputs, execute_in_fhe=False)
             else:
-                raise ValueError(
-                    "numpy_function should be a built-in concrete sklearn model or a QuantizedModule object."
+                assert isinstance(
+                    model_function,
+                    (QuantizedTorchEstimatorMixin, BaseTreeEstimatorMixin, SklearnLinearModelMixin),
                 )
+
+                if model_function._is_a_public_cml_model:  # pylint: disable=protected-access
+                    # In the case of a model, floating point inputs are expected.
+                    assert numpy.all(
+                        [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
+                    )
+                    results_cnp_circuit = model_function.predict(*inputs, execute_in_fhe=True)
+                    results_model_function = model_function.predict(*inputs, execute_in_fhe=False)
+                else:
+                    raise ValueError(
+                        "numpy_function should be a built-in concrete sklearn model or "
+                        "a QuantizedModule object."
+                    )
+
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2806
             # fp64 comparisons do not pass the numpy.array_equal while the quantized
             # int64 values do.
             if numpy.isclose(results_cnp_circuit, results_model_function).all():
                 return
+
         raise RuntimeError(
             f"Mismatch between circuit results:\n{results_cnp_circuit}\n"
             f"and model function results:\n{results_model_function}"
