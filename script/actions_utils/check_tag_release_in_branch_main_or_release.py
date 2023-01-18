@@ -8,7 +8,15 @@ from semver import VersionInfo
 
 
 def main(args):
-    """Entry point"""
+    """Entry point
+
+    Args:
+        args (List[str]): a list of arguments
+
+    Raises:
+        RuntimeError: if invalid version
+        ValueError: if sha error
+    """
 
     repo = Repo(args.repo_path)
     to_commit = repo.commit()

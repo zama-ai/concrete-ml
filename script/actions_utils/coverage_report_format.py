@@ -4,10 +4,17 @@
 import argparse
 import json
 from pathlib import Path
+from typing import List
 
 
-def write_coverage_file(coverage_file_path: Path, exit_code: int, coverage_content):
-    """Write the formatted coverage to file."""
+def write_coverage_file(coverage_file_path: Path, exit_code: int, coverage_content: List[str]):
+    """Write the formatted coverage to file.
+
+    Args:
+        coverage_file_path (Path): path to coverage file
+        exit_code (int): exit code of coverage run
+        coverage_content (List[str]): coverage report
+    """
     with open(coverage_file_path, "w", encoding="utf-8") as f:
         if exit_code == 0:
             f.write("## Coverage passed ✅\n\n")
@@ -26,9 +33,12 @@ def write_coverage_file(coverage_file_path: Path, exit_code: int, coverage_conte
 
 
 def diff_coverage(args):
-    """diff-coverage entry point."""
+    """diff-coverage entry point.
+
+    Args:
+        args (str): list of arguments
+    """
     diff_cover_file_path = Path(args.diff_cover_output).resolve()
-    diff_cover_content = None
 
     with open(diff_cover_file_path, "r", encoding="utf-8") as f:
         diff_cover_content = f.readlines()
@@ -37,7 +47,11 @@ def diff_coverage(args):
 
 
 def global_coverage(args):
-    """global-coverage entry point."""
+    """global-coverage entry point.
+
+    Args:
+        args (List[str]): a list of arguments
+    """
     global_coverage_json_path = Path(args.global_coverage_json_file).resolve()
     global_coverage_infos = None
     with open(global_coverage_json_path, "r", encoding="utf-8") as f:
@@ -50,7 +64,11 @@ def global_coverage(args):
 
 
 def main(args):
-    """Entry point"""
+    """Entry point
+
+    Args:
+        args (List[str]): a list of arguments
+    """
     args.entry_point(args)
 
 

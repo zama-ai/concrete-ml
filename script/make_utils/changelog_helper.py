@@ -14,24 +14,52 @@ from semver import VersionInfo
 
 
 def log_msg(*args, file=sys.stderr, **kwargs):
-    """Shortcut to print to sys.stderr."""
+    """Shortcut to print to sys.stderr.
+
+    Args:
+        *args: print args
+        file: where to log message
+        **kwargs: print kwargs
+    """
     print(*args, file=file, **kwargs)
 
 
 def strip_leading_v(version_str: str):
-    """Strip leading v of a version which is not SemVer compatible."""
+    """Strip leading v of a version which is not SemVer compatible.
+
+    Args:
+        version_str: version as string (i.e. either `vX.Y.Z` or `X.Y.Z`)
+
+    Returns:
+        str: version without v
+
+    """
     return version_str[1:] if version_str.startswith("v") else version_str
 
 
 def get_poetry_project_version() -> VersionInfo:
-    """Run poetry version and get the project version"""
+    """Run poetry version and get the project version
+
+    Returns:
+        VersionInfo
+
+    """
     command = ["poetry", "version"]
     poetry_version_output = subprocess.check_output(command, text=True)
     return version_string_to_version_info(poetry_version_output.split(" ")[1])
 
 
 def raise_exception_or_print_warning(is_error: bool, message_body: str):
-    """Raise an exception if is_error is true else print a warning to stderr"""
+    """Raise an exception if is_error is true else print a warning to stderr
+
+    Args:
+        is_error (bool): if it's an error
+        message_body (str): message of error
+
+    Raises:
+        RuntimeError: if is_error
+
+    """
     msg_start = "Error" if is_error else "Warning"
     msg = f"{msg_start}: {message_body}"
     if is_error:
@@ -40,7 +68,15 @@ def raise_exception_or_print_warning(is_error: bool, message_body: str):
 
 
 def version_string_to_version_info(version_string: str) -> VersionInfo:
-    """Convert git tag to VersionInfo."""
+    """Convert git tag to VersionInfo.
+
+    Args:
+        version_string (str): version as string
+
+    Returns:
+        VersionInfo
+
+    """
     return VersionInfo.parse(strip_leading_v(version_string))
 
 
@@ -105,7 +141,12 @@ def generate_changelog(repo: Repo, from_commit_excluded: str, to_commit_included
 
 
 def main(args):
-    """Entry point"""
+    """Entry point
+
+    Args:
+        args (List[str]): a list of strings
+
+    """
 
     repo = Repo(args.repo_root)
 

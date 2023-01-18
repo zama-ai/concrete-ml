@@ -40,7 +40,11 @@ def check_image_is_used(image, files):
 
 
 def main(args):
-    """Entry point."""
+    """Entry point.
+
+    Args:
+        args (List[str]): a list of arguments
+    """
 
     print("Starting to check for unused images in the given files\n")
 

@@ -1068,7 +1068,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # These models are not natively supported by Hummingbird
         # The trick is to hide their type to Hummingbird, it should be removed once HummingBird's
         # latest version is integrated in Concrete-ML
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1473
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2792
         if self.sklearn_alg in {
             sklearn.linear_model.Lasso,
             sklearn.linear_model.Ridge,

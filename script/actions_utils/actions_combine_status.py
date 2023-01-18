@@ -15,7 +15,11 @@ DISPLAY_LEVEL_TO_RESULTS = {val: key for key, val in RESULTS_TO_DISPLAY_LEVEL.it
 
 
 def main(args):
-    """Entry point"""
+    """Entry point
+
+    Args:
+        args (List[str]): a list of arguments
+    """
 
     need_context_data = None
     with open(args.needs_context_json, encoding="utf-8") as f:

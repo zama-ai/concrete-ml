@@ -6,11 +6,28 @@ import os
 import sys
 from functools import partial
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 
-def check_forbidden_construction(forbidden_word_construction, forbidden_word, line, file, nline):
-    """Check forbidden construction in a line"""
+def check_forbidden_construction(
+    forbidden_word_construction: str,
+    forbidden_word: str,
+    line: str,
+    file: Union[str, Path],
+    nline: int,
+) -> bool:
+    """Check forbidden construction in a line
+
+    Args:
+        forbidden_word_construction (str): forbidden word construction
+        forbidden_word (str): forbidden word
+        line (str): line
+        file (Union[str, Path]): file
+        nline (int): line number
+
+    Returns:
+        bool: False if forbidden_word_construction in line
+    """
     if forbidden_word_construction in line:
         print(f"-> `{forbidden_word}` in {file}:{nline}={line}")
         return False
@@ -19,7 +36,16 @@ def check_forbidden_construction(forbidden_word_construction, forbidden_word, li
 
 
 def process_file(file_str: str, do_open_problematic_files=False):
-    """Check forbidden words in a file"""
+    """Check forbidden words in a file
+
+    Args:
+        file_str (str): path to file as string
+        do_open_problematic_files (bool): if files with problem will be open or not
+
+    Returns:
+        Tuple[bool, int]: if everything is okay, and the number of errors
+
+    """
     file_path = Path(file_str).resolve()
 
     # Don't do it on API files
@@ -171,7 +197,11 @@ def process_file(file_str: str, do_open_problematic_files=False):
 
 
 def main(args):
-    """Entry point."""
+    """Entry point.
+
+    Args:
+        args (Namespace): list of arguments
+    """
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
         res = pool.map(partial(process_file, do_open_problematic_files=args.open), args.files)
         res_first = [r[0] for r in res]

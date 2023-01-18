@@ -13,12 +13,25 @@ from semver import VersionInfo
 
 
 def strip_leading_v(version_str: str):
-    """Strip leading v of a version which is not SemVer compatible."""
+    """Strip leading v of a version which is not SemVer compatible."
+
+    Args:
+        version_str: version as string
+
+    Returns:
+        str: version without v
+
+    """
     return version_str[1:] if version_str.startswith("v") else version_str
 
 
 def islatest(args):
-    """islatest command entry point."""
+    """ "islatest command entry point.
+
+    Args:
+        args: a Namespace object
+
+    """
     print(args, file=sys.stderr)
 
     # This is the safest default
@@ -52,7 +65,14 @@ def islatest(args):
 
 
 def update_variable_in_py_file(file_path: Path, var_name: str, version_str: str):
-    """Update the version in a .py file."""
+    """Update the version in a .py file.
+
+    Args:
+        file_path: path to file
+        var_name: variable name
+        version_str: version as string
+
+    """
 
     file_content = None
     with open(file_path, encoding="utf-8") as f:
@@ -69,24 +89,40 @@ def update_variable_in_py_file(file_path: Path, var_name: str, version_str: str)
 
 
 def update_variable_in_toml_file(file_path: Path, var_name: str, version_str: str):
-    """Update the version in a .toml file."""
+    """Update the version in a .toml file.
+
+    Args:
+        file_path: path to file
+        var_name: variable name
+        version_str: version as string
+
+    """
     toml_content = None
     with open(file_path, encoding="utf-8") as f:
         toml_content = tomlkit.loads(f.read())
 
     toml_keys = var_name.split(".")
-    current_content = toml_content
+    current_content = toml_content  # type: ignore
     for toml_key in toml_keys[:-1]:
-        current_content = current_content[toml_key]
+        current_content = current_content[toml_key]  # type: ignore
     last_toml_key = toml_keys[-1]
-    current_content[last_toml_key] = version_str
+    current_content[last_toml_key] = version_str  # type: ignore
 
     with open(file_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(tomlkit.dumps(toml_content))
 
 
 def load_file_vars_set(pyproject_path: os.PathLike, cli_file_vars: Optional[List[str]]):
-    """Load files and their version variables set-up in pyproject.toml and passed as arguments."""
+    """Load files and their version variables set-up in pyproject.toml and passed as arguments.
+
+    Args:
+        pyproject_path: path to pyproject
+        cli_file_vars: cli file variables
+
+    Returns:
+        set[unknown]: file variables
+
+    """
 
     file_vars_set = set()
     if cli_file_vars is not None:
@@ -101,10 +137,11 @@ def load_file_vars_set(pyproject_path: os.PathLike, cli_file_vars: Optional[List
             pyproject_content = tomlkit.loads(f.read())
 
         try:
-            sr_conf = pyproject_content["tool"]["semantic_release"]
-            sr_version_toml: str = sr_conf.get("version_toml", "")
+            tool = pyproject_content["tool"]
+            sr_conf = tool["semantic_release"]  # type: ignore
+            sr_version_toml: str = sr_conf.get("version_toml", "")  # type: ignore
             file_vars_set.update(sr_version_toml.split(","))
-            sr_version_variable: str = sr_conf.get("version_variable", "")
+            sr_version_variable: str = sr_conf.get("version_variable", "")  # type: ignore
             file_vars_set.update(sr_version_variable.split(","))
         except KeyError:
             print("No configuration for semantic release in pyproject.toml")
@@ -113,7 +150,15 @@ def load_file_vars_set(pyproject_path: os.PathLike, cli_file_vars: Optional[List
 
 
 def set_version(args):
-    """set-version command entry point."""
+    """set-version command entry point.
+
+    Args:
+        args: a Namespace
+
+    Raises:
+        RuntimeError: If unable to validate version
+
+    """
 
     version_str = strip_leading_v(args.version)
     if not VersionInfo.isvalid(version_str):
@@ -135,7 +180,16 @@ def set_version(args):
 
 
 def get_variable_from_py_file(file_path: Path, var_name: str):
-    """Read variable value from a .py file."""
+    """Read variable value from a .py file.
+
+    Args:
+        file_path: path to file
+        var_name: variable name
+
+    Returns:
+        Set[str]: all values of the variables
+
+    """
     file_content = None
     with open(file_path, encoding="utf-8") as f:
         file_content = f.read()
@@ -159,7 +213,16 @@ def get_variable_from_py_file(file_path: Path, var_name: str):
 
 
 def get_variable_from_toml_file(file_path: Path, var_name: str):
-    """Read variable value from a .toml file."""
+    """Read variable value from a .toml file.
+
+    Args:
+        file_path: path to file
+        var_name: variable name
+
+    Returns:
+        value of the variable
+
+    """
 
     toml_content = None
     with open(file_path, encoding="utf-8") as f:
@@ -168,13 +231,21 @@ def get_variable_from_toml_file(file_path: Path, var_name: str):
     toml_keys = var_name.split(".")
     current_content = toml_content
     for toml_key in toml_keys:
-        current_content = current_content[toml_key]
+        current_content = current_content[toml_key]  # type: ignore
 
     return current_content
 
 
 def check_version(args):
-    """check-version command entry point."""
+    """check-version command entry point.
+
+    Args:
+        args: Namespace
+
+    Raises:
+        RuntimeError: either wrong file extension or error with the version
+
+    """
 
     version_str_set = set()
 
@@ -208,7 +279,12 @@ def check_version(args):
 
 
 def main(args):
-    """Entry point"""
+    """Entry point
+
+    Args:
+        args: a Namespace object
+
+    """
     args.entry_point(args)
 
 

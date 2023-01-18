@@ -13,6 +13,9 @@ def process_file(file_str: str, args=None):
     Args:
         file_str (str): the path to the file to process.
         args: the arguments of the call.
+
+    Returns:
+        True if function succeeded
     """
     verbose = False
 
@@ -94,7 +97,12 @@ def process_file(file_str: str, args=None):
 
 
 def main(args):
-    """Entry point."""
+    """Entry point.
+
+    Args:
+        args: a Namespace object
+
+    """
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
         res = pool.map(partial(process_file, args=args), args.files)
         # Exit 0 if all went well as True == 1

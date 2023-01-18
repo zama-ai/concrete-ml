@@ -6,7 +6,14 @@ import mistletoe  # Markdown to AST
 
 
 def ast_iterator(root):
-    """Iterate on all children of a node"""
+    """Iterate on all children of a node
+
+    Args:
+        root: Base node of the ast on which to iterate
+
+    Yields:
+        Unknown
+    """
     nodes = [root]
     while nodes:
         current_node = nodes.pop(0)
@@ -16,7 +23,14 @@ def ast_iterator(root):
 
 
 def is_web_link(target: str) -> bool:
-    """Check if the link points to http or https"""
+    """Check if the link points to http or https
+
+    Arguments:
+        target (str): string to check
+
+    Returns:
+        bool
+    """
     if target.startswith("http://"):
         return True
     if target.startswith("https://"):
@@ -25,14 +39,30 @@ def is_web_link(target: str) -> bool:
 
 
 def is_mailto_link(target: str) -> bool:
-    """Check if the link points to a mailto"""
+    """Check if the link points to a mailto
+
+    Arguments:
+        target (str): string to check
+
+    Returns:
+        bool
+    """
     if "mailto:" in target:
         return True
     return False
 
 
 def contains_header(ast, header) -> bool:
-    """Check if the ast-represented document contains the header"""
+    """Check if the ast-represented document contains the header
+
+    Arguments:
+        ast: ast to check if contains the header
+        header: header to check
+
+    Returns:
+        bool
+    """
+
     for node in ast_iterator(ast):
         if isinstance(node, mistletoe.block_token.Heading):
 
@@ -63,7 +93,11 @@ def contains_header(ast, header) -> bool:
 
 # pylint: disable-next=too-many-branches
 def main():
-    """Main function that checks for all files that the header exists in the linked file"""
+    """Main function that checks for all files that the header exists in the linked file
+
+    Raises:
+        ValueError: if a missing link is found
+    """
     # Get files
     current_path = Path(os.getcwd())
     markdown_files = [

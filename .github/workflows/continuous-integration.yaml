@@ -58,6 +58,7 @@ env:
   IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   matrix-preparation:

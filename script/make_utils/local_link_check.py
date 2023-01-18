@@ -16,12 +16,12 @@ def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:
 
     This checks a markdown file for dead-links to local files.
 
-    Inputs:
+    Args:
         content (str): The content of the file.
-        file_path (pathlib.Path): The path to the file.
-    Outputs:
-        List[str]: a list of errors (dead-links) found.
+        file_path (Path): The path to the file.
 
+    Returns:
+        List[str]: a list of errors (dead-links) found.
     """
     errors: List[str] = []
     links = []
@@ -75,6 +75,13 @@ def is_relative_to(path: Path, other_path: Union[str, Path]) -> bool:
 
     is_relative_to is not available until python 3.9
     https://docs.python.org/3.9/library/pathlib.html#pathlib.PurePath.is_relative_to
+
+    Args:
+        path (Path): some path.
+        other_path (str or Path): some other path.
+
+    Returns:
+        True if some path is relative to another.
     """
     try:
         path.relative_to(other_path)

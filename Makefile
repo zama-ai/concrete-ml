@@ -133,7 +133,7 @@ pylint_script:
 
 .PHONY: flake8 # Run flake8 (including darglint)
 flake8:
-	poetry run flake8 --config flake8_src.cfg $(SRC_DIR)/
+	poetry run flake8 --config flake8_src.cfg $(SRC_DIR) script/
 
 	@# --extend-ignore=DAR is because we don't want to run darglint on tests/ script/ benchmarks/
 	poetry run flake8 --config flake8_others.cfg tests/ script/ benchmarks/ \
@@ -141,17 +141,21 @@ flake8:
 
 .PHONY: ruff # Run ruff
 ruff:
-	poetry run ruff $(SRC_DIR) tests
+	poetry run ruff $(SRC_DIR) script tests
 
 .PHONY: ruff # Run ruff fix
 fix_ruff:
-	poetry run ruff $(SRC_DIR) tests --fix
+	poetry run ruff $(SRC_DIR) tests script --fix
 
 .PHONY: python_linting # Run python linters
 python_linting: ruff pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
 conformance: finalize_nb python_format licenses nbqa supported_ops mdformat
+
+.PHONY: check_issues # Run command to check if all referenced issues are opened
+check_issues:
+	python ./script/make_utils/check_issues.py
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
@@ -166,14 +170,14 @@ spcc:
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
-PCC_DEPS += check_forbidden_words check_unused_images gitleaks
+PCC_DEPS += check_forbidden_words check_unused_images gitleaks check_issues
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
 pcc_internal: $(PCC_DEPS)
 
 # flake8 has been removed since it is too slow
-SPCC_DEPS := check_python_format pylint_src pylint_tests mypy_ci pydocstyle ruff
+SPCC_DEPS := check_python_format pylint_src pylint_tests mypy_ci pydocstyle ruff check_issues
 
 # Not commented on purpose for make help, since internal
 .PHONY: spcc_internal

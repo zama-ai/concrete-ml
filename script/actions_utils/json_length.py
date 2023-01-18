@@ -5,7 +5,11 @@ from pathlib import Path
 
 
 def main():
-    """Main function: computes the length of a json file"""
+    """Main function: computes the length of a json file.
+
+    Raises:
+        ValueError: if the json content is not a list.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--json-file", dest="json_file", type=Path, required=True)
     args = parser.parse_args()

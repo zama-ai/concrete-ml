@@ -38,7 +38,11 @@ OS_VERSIONS = {
 
 
 def main(args):
-    """Entry point to generate CI test matrix."""
+    """Entry point to generate CI test matrix.
+
+    Args:
+        args (List[str]): a list of arguments
+    """
     github_action_matrix = []
 
     for python_version in args.linux_python_versions:

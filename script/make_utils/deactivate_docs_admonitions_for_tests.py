@@ -12,6 +12,9 @@ def process_file(file_str: str):
 
     Args:
         file_str (str): the path to the file to process.
+
+    Returns:
+        True if everything went alright.
     """
     verbose = False
     file_path = Path(file_str).resolve()
@@ -34,7 +37,11 @@ def process_file(file_str: str):
 
 
 def main(args):
-    """Entry point."""
+    """Entry point.
+
+    Args:
+        args: a Namespace object
+    """
     with multiprocessing.Pool(multiprocessing.cpu_count()) as pool:
         res = pool.map(process_file, args.files)
         # Exit 0 if all went well as True == 1

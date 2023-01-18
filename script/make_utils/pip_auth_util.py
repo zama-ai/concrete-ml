@@ -72,7 +72,11 @@ METHOD_TO_FUNC = {
 
 
 def main(args):
-    """Entry point."""
+    """Entry point.
+
+    Args:
+        args (List[str]): a list of arguments
+    """
 
     parsed_url = urlparse(args.get_credentials_for)
     netloc = parsed_url.netloc

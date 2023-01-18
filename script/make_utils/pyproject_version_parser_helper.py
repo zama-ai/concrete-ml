@@ -44,7 +44,15 @@ def format_extras(extras_list: List[str]) -> str:
 
 
 def main(args):
-    """Entry point."""
+    """Entrypoint
+
+    Args:
+        args (Namespace): arguments
+
+    Raises:
+        RuntimeError: if can't find package in dependencies.
+
+    """
 
     pkg_name = args.get_pip_install_spec_for_dependency
     pyproject_path = Path(args.pyproject_toml_file)

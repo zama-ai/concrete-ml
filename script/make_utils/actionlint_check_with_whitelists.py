@@ -26,7 +26,11 @@ whitelisted_pattern: Set[str] = {
 
 
 def main():
-    """Do the test"""
+    """Do the test
+
+    Raises:
+        ValueError: if non whitelisted error occured
+    """
     status = 0
     bad_lines = []
     for line in sys.stdin:

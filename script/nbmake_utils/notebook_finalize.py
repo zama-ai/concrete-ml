@@ -6,7 +6,11 @@ from pathlib import Path
 
 # pylint: disable=too-many-nested-blocks
 def main():
-    """Finalize"""
+    """Finalize
+
+    Raises:
+        Exception: if notebooks are not sanitized.
+    """
 
     parser = argparse.ArgumentParser(description="Sanitizer for Jupyter Notebooks")
 
@@ -45,9 +49,10 @@ def main():
                         if "metadata" in cell:
                             assert len(cell["metadata"]) == 0
 
-                except Exception:
-                    print("Notebooks are not sanitized. Please run `make conformance`.")
-                    raise
+                except Exception as exception:
+                    message = "Notebooks are not sanitized. Please run `make conformance`."
+                    print(message)
+                    raise Exception(message) from exception
             else:
                 content["metadata"] = {
                     "execution": {

@@ -15,7 +15,11 @@ CONVERSION_OPS_END_HEADER = (
 
 
 def main(file_to_update):
-    """Update list of supported functions in file_to_update"""
+    """Update list of supported functions in file_to_update
+
+    Args:
+        file_to_update (str): file to update
+    """
     supported_ops = sorted(ONNX_OPS_TO_NUMPY_IMPL)
 
     with open(file_to_update, "r", encoding="utf-8") as file:

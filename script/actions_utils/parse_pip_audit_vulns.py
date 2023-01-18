@@ -8,7 +8,16 @@ from typing import List
 
 
 def format_vulnerability(pkg_name, pkg_version, vuln_info: dict) -> List[str]:
-    """Format a vulnerability info."""
+    """Format a vulnerability info.
+
+    Args:
+        pkg_name (str): the name of the package
+        pkg_version (str): the version of the package
+        vuln_info (dict): some information about the vulnerability
+
+    Returns:
+        List[str]: A list of formatted vulnerabilities.
+    """
 
     vuln_strs = [
         f"{pkg_name}({pkg_version}) - ID: {vuln['id']} "
@@ -23,7 +32,11 @@ NEW_LINE = "\n"
 
 
 def main(args):
-    """Entry point"""
+    """Entry point
+
+    Args:
+        args (List[str]): a list of arguments
+    """
 
     vulns_json_path = Path(args.vulns_json).resolve()
     json_content = []

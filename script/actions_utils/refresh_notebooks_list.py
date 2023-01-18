@@ -31,7 +31,11 @@ NO_EDIT_MESSAGE = "# --- do not edit, auto generated part by `make refresh_noteb
 
 # pylint: disable-next=too-many-statements
 def main(file_to_update):
-    """Update list of currently available notebooks in file_to_update"""
+    """Update list of currently available notebooks in file_to_update
+
+    Args:
+        file_to_update (str): file to update
+    """
 
     # Look for all available notebooks needing a refresh
     notebook_paths = [

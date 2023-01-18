@@ -11,7 +11,17 @@ MAX_NUMBER_OF_JOBS = 50  # Theoretical limit is 256
 
 
 def int_range(x: str) -> int:
-    """Cast string to int and raises an error if not in range."""
+    """Cast string to int and raises an error if not in range.
+
+    Args:
+        x (str): a string to cast as int.
+
+    Raises:
+        ValueError: if the value is not in the bounds.
+
+    Returns:
+        int: the value casted as int.
+    """
     x_int = int(x)
     if x_int > MAX_VALUE:
         raise ValueError(f"{x_int} > {MAX_VALUE}")
@@ -23,7 +33,15 @@ def int_range(x: str) -> int:
 def batchify_commands(
     commands: List[str], max_number_of_jobs: int = MAX_NUMBER_OF_JOBS
 ) -> List[List]:
-    """Make batches of elements such"""
+    """Make batches of elements
+
+    Args:
+        commands: a list of commands as strings
+        max_number_of_jobs: the maximum number of jobs on which to dispatch the commands
+
+    Returns:
+        List[List]: A list of the batches of commands
+    """
     number_of_jobs = len(commands)
 
     # Easy packing (1 by 1 packing)
@@ -42,6 +60,9 @@ def main():
     """Generate the list of commands to be launched.
 
     One command == one benchmark (one model + one set of hyper-parameters + one dataset)
+
+    Raises:
+        ValueError: if the list_length parameter is not `short` or `long`.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--list_length", dest="list_length", choices=["short", "long"])
