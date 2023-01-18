@@ -82,7 +82,8 @@ _classifiers_and_datasets = [
             "n_samples": 1000,
             "n_features": 10,
             # Remove the following if statement once QNNs support multi-class data sets
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2402
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2819
+            # Related to: https://github.com/zama-ai/concrete-ml-internal/issues/2402
             "n_classes": 2 if "NeuralNet" in get_model_name(model) else n_classes,
             "n_informative": 10,
             "n_redundant": 0,

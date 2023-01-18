@@ -1,0 +1,170 @@
+name: CIFAR-10 8-bit benchmark CML
+
+on:
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Repo reference (branch, tag or SHA)
+        default: "main"
+        required: true
+        type: string
+      instance_type:
+        description: Instance type on which to launch benchmarks
+        default: "m6i.metal"
+        type: choice
+        options:
+          - "m6i.metal"
+          - "u-6tb1.112xlarge"
+      num_samples:
+        description: Number of samples to use
+        default: "10"
+        type: string
+        required: true
+
+  # FIXME: Add recurrent launching
+  # https://github.com/zama-ai/concrete-ml-internal/issues/1851
+
+# Global environnement variables
+env:
+  # Github action url (used by slack notification)
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
+  RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+
+# Jobs
+jobs:
+  start-cifar-runner:
+    name: Launch AWS instances
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+    container:
+      image: ubuntu:20.04
+    outputs:
+      label: ${{ steps.start-cifar10-8bit-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-cifar10-8bit-runner.outputs.ec2-instance-id || '' }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Start CIFAR-10 8-bit runner
+        id: start-cifar10-8bit-runner
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: ${{ github.event.inputs.instance_type }}
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-benchmark-cifar10-8bit"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
+
+  # Use machulav
+  run-cifar-10:
+    needs: [start-cifar-runner]
+    name: Prepare scripts to launch on individual AWS instances
+    runs-on: ${{ needs.start-cifar-runner.outputs.label }}
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
+
+      # We don't need to specify the git-ref here since he are just generating the cli arguments 
+      - name: Checkout code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          lfs: true
+
+      - name: Set up Python
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        with:
+          python-version: "3.8"
+
+      - name: Install dependencies
+        id: install-deps
+        run: |
+          apt update
+          apt install --no-install-recommends -y gnome-keyring
+          apt install -y graphviz* graphviz-dev libgraphviz-dev pkg-config python3-dev
+          apt-mark hold docker.io
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
+      - name: Prepare scripts to launch on individual AWS instances
+        id: prepare-commands
+        run: |
+          source .venv/bin/activate
+          # TODO: Install torchvision according to torch version
+          # Should be able to take into account all versions of torch
+          python3 -m pip install torchvision==0.13.1
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_10_with_model_splitting/infer_fhe.py
+          python3 ./benchmarks/convert_cifar.py
+
+      - name: Upload results
+        id: upload-results
+        run: |
+          curl \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d @to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+  stop-runner:
+    name: Stop EC2 runner
+    needs: [run-cifar-10, start-cifar-runner]
+    runs-on: ubuntu-20.04
+    timeout-minutes: 2
+    if: ${{ always() }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        if: ${{ always() }}
+        with:
+          mode: stop
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-cifar-runner.outputs.label }}
+          ec2-instance-id: ${{ needs.start-cifar-runner.outputs.ec2-instance-id }}
+
+  slack-notification:
+    runs-on: ubuntu-20.04
+    needs: [run-cifar-10]
+    steps:
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ needs.run-cifar-10.result }}
+          SLACK_MESSAGE: "Benchmark action: (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-cifar-10.result }}"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
