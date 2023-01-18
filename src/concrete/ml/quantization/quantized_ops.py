@@ -253,11 +253,6 @@ class QuantizedGemm(QuantizedMixingOp):
                 # Reshape the biases to broadcast them to each neuron
                 out_zp = out_zp + q_bias / (-m_matmul)
 
-            # FIXME: remove when CNP fixes the return type of cnp_conv in non-tracing mode
-            # https://github.com/zama-ai/concrete-numpy-internal/issues/1739
-            if isinstance(numpy_q_out, numpy.ndarray):
-                numpy_q_out = numpy_q_out.astype(numpy.int64)
-
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
             # to properly dequantize numpy_q_out
@@ -696,11 +691,6 @@ class QuantizedConv(QuantizedMixingOp):
             if q_bias is not None:
                 # Reshape the biases to broadcast them to each channel
                 out_zp = out_zp - q_bias.reshape((1, -1, 1, 1)) / m_matmul
-
-            # FIXME: remove when CNP fixes the return type of cnp_conv in non-tracing mode
-            # https://github.com/zama-ai/concrete-numpy-internal/issues/1739
-            if isinstance(numpy_q_out, numpy.ndarray):
-                numpy_q_out = numpy_q_out.astype(numpy.int64)
 
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
