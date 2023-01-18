@@ -4,7 +4,7 @@
 # pylint: disable=invalid-name
 
 from abc import abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 import brevitas.nn as qnn
 import numpy
@@ -15,10 +15,12 @@ from skorch.regressor import NeuralNetRegressor as SKNeuralNetRegressor
 from torch import nn
 
 from ..common.debugging import assert_true
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, check_dtype_and_cast
 from .base import QuantizedTorchEstimatorMixin
 
 QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
+QNN_FLOAT_DTYPE = numpy.float32
+QNN_INT_DTYPE = numpy.int64
 
 
 def _check_input_output_kwargs(kwargs: Dict[str, Any]) -> None:
@@ -389,6 +391,10 @@ class NeuralNetClassifier(
     The datatypes that are allowed for prediction by this wrapper are more restricted than
     standard scikit-learn estimators as this class needs to predict in FHE and network inference
     executor is the NumpyModule.
+
+    Inputs that are float64 will be casted to float32 before training as this should
+    not have a significant impact on the model's performances. If the targets are integers of
+    lower bitwidth, they will be safely casted to int64. Else, an error is raised.
     """
 
     # pylint: disable-next=protected-access
@@ -466,10 +472,13 @@ class NeuralNetClassifier(
         #  * a list/tuple of the former three
         #  * a Dataset
         # which is a bit much since they don't necessarily have the same interfaces to handle types
-        if isinstance(X, numpy.ndarray) and (X.dtype != numpy.float32):
-            X = X.astype(numpy.float32)
-        if isinstance(y, numpy.ndarray) and (y.dtype != numpy.int64):
-            y = y.astype(numpy.int64)
+
+        # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
+        # casted to float32 as this should not have a great impact on the model's performances. If
+        # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
+        # error is raised.
+        X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
+        y = check_dtype_and_cast(y, "int64", error_information="Neural Network classifier target")
 
         cls, y = numpy.unique(y, return_inverse=True)
 
@@ -491,6 +500,21 @@ class NeuralNetClassifier(
 
         return super().fit(X, y, **fit_params)
 
+    def fit_benchmark(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> Tuple[Any, Any]:
+        # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
+        # casted to float32 as this should not have a great impact on the model's performances. If
+        # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
+        # error is raised.
+        X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
+        y = check_dtype_and_cast(y, "int64", error_information="Neural Network classifier target")
+        return super().fit_benchmark(X, y, *args, **kwargs)
+
+    def predict_proba(self, X, execute_in_fhe=False):
+        # Check that inputs are float32. If they are, they will be casted to float32 as this
+        # should not have a great impact on the model's performances. Else, an error is raised.
+        X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
+        return super().predict_proba(X, execute_in_fhe)
+
 
 class NeuralNetRegressor(
     FixedTypeSkorchNeuralNet, QuantizedSkorchEstimatorMixin, SKNeuralNetRegressor
@@ -505,6 +529,10 @@ class NeuralNetRegressor(
     The datatypes that are allowed for prediction by this wrapper are more restricted than
     standard scikit-learn estimators as this class needs to predict in FHE and network inference
     executor is the NumpyModule.
+
+    Inputs and targets that are float64 will be casted to float32 before training as this should
+    not have a significant impact on the model's performances. An error is raised if these values
+    are not floating points.
     """
 
     # pylint: disable-next=protected-access
@@ -551,10 +579,12 @@ class NeuralNetRegressor(
         #  * a list/tuple of the former three
         #  * a Dataset
         # which is a bit much since they don't necessarily have the same interfaces to handle types
-        if isinstance(X, numpy.ndarray) and (X.dtype != numpy.float32):
-            X = X.astype(numpy.float32)
-        if isinstance(y, numpy.ndarray) and (y.dtype != numpy.float32):
-            y = y.astype(numpy.float32)
+
+        # Check that inputs and targets are float32. If they are float64, they will be casted to
+        # float32 as this should not have a great impact on the model's performances. Else, an error
+        # is raised.
+        X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")
+        y = check_dtype_and_cast(y, "float32", error_information="Neural Network regressor target")
 
         # The number of outputs for regressions is the number of regression targets
         # We use y.shape which works for all supported datatype (including numpy array, pandas
@@ -565,3 +595,17 @@ class NeuralNetRegressor(
         self.module__input_dim = X.shape[1]
 
         return super().fit(X, y, **fit_params)
+
+    def fit_benchmark(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> Tuple[Any, Any]:
+        # Check that inputs and targets are float32. If they are float64, they will be casted to
+        # float32 as this should not have a great impact on the model's performances. Else, an error
+        # is raised.
+        X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")
+        y = check_dtype_and_cast(y, "float32", error_information="Neural Network regressor target")
+        return super().fit_benchmark(X, y, *args, **kwargs)
+
+    def predict_proba(self, X, execute_in_fhe=False):
+        # Check that inputs are float32. If they are float64, they will be casted to float32 as
+        # this should not have a great impact on the model's performances. Else, an error is raised.
+        X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")
+        return super().predict_proba(X, execute_in_fhe)

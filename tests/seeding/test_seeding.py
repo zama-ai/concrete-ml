@@ -8,9 +8,8 @@ import pytest
 from sklearn import tree
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
-from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
 def test_seed_1():
@@ -90,9 +89,6 @@ def test_seed_sklearn(model, parameters, load_data, default_configuration):
     model_class = model
     model_name = get_model_name(model_class)
     x, y = load_data(**parameters, model_name=model_name)
-
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        x = x.astype(numpy.float32)
 
     # Force "random_state": if it was there, it is overwritten; if it was not there, it is added
     model_params = {}

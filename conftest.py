@@ -350,6 +350,8 @@ def check_accuracy():
     return check_accuracy_impl
 
 
+# Refactor this fixture in order to simplify the code
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2831
 @pytest.fixture
 def load_data():
     """Fixture for generating random regression or classification problem."""
@@ -378,7 +380,6 @@ def load_data():
             model_name (Optional[str]): If NeuralNetRegressor, a specific change on y will be
                 applied.
         """
-
         # Create a random_state value in order to seed the data generation functions. This enables
         # all tests that use this fixture to be deterministic and thus reproducible.
         random_state = numpy.random.randint(0, 2**15)
@@ -395,10 +396,10 @@ def load_data():
             if strictly_positive:
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
 
-            if model_name == "NeuralNetRegressor":
-                generated_regression[1] = (
-                    generated_regression[1].reshape(-1, 1).astype(numpy.float32)
-                )
+            # If the model is a neural network and if the dataset only contains a single target
+            # (e.g. of shape (n,)), reshape the target array (e.g. to shape (n,1))
+            if model_name == "NeuralNetRegressor" and len(generated_regression[1].shape) == 1:
+                generated_regression[1] = generated_regression[1].reshape(-1, 1)
 
             return tuple(generated_regression)
 

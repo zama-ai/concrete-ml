@@ -8,7 +8,7 @@ from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
-@pytest.mark.parametrize("model", [m[0][0] for m in sklearn_models_and_datasets])
+@pytest.mark.parametrize("model_class", [m[0][0] for m in sklearn_models_and_datasets])
 @pytest.mark.parametrize(
     "bad_value, expected_error",
     [
@@ -17,11 +17,12 @@ from concrete.ml.sklearn.base import get_sklearn_neural_net_models
         ("this", "could not convert string to float: 'this'"),
     ],
 )
-def test_failure_bad_param(model, bad_value, expected_error):
+def test_failure_bad_param(model_class, bad_value, expected_error):
     """Check our checks see if ever the Panda dataset is not correct."""
 
-    # Works differently for neural nets
-    if is_model_class_in_a_list(model, get_sklearn_neural_net_models()):
+    # For NeuralNetworks, a type error will be raised, which is tested
+    # in test_failure_bad_data_types
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         return
 
     dic = {
@@ -34,7 +35,7 @@ def test_failure_bad_param(model, bad_value, expected_error):
     x_train = pandas.DataFrame(dic)
     y_train = x_train["Col Three"]
 
-    model = model(n_bits=2)
+    model = model_class(n_bits=2)
 
     with pytest.raises(ValueError, match=expected_error):
         model.fit(x_train, y_train)

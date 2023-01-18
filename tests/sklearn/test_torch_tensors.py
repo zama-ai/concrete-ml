@@ -6,14 +6,15 @@ import pytest
 import torch
 from sklearn.exceptions import ConvergenceWarning
 
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
-from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
+from concrete.ml.sklearn import NeuralNetRegressor
 
 
-@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
-def test_torch_tensors(model, parameters, load_data):
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_torch_tensors(model_class, parameters, load_data):
     """Tests that we can use Torch tensors as inputs to fit and predict."""
-    model = model()
+    model = model_class()
 
     # Some models use a bit of randomness while fitting under scikit-learn, making the
     # outputs always different after each fit. In order to avoid that problem, their random_state
@@ -23,7 +24,8 @@ def test_torch_tensors(model, parameters, load_data):
         model_params["random_state"] = numpy.random.randint(0, 2**15)
     model.set_params(**model_params)
 
-    x, y = load_data(**parameters)
+    model_name = get_model_name(model_class)
+    x, y = load_data(**parameters, model_name=model_name)
 
     # Turn data and targets to Torch tensors
     x, y = torch.tensor(x), torch.tensor(y)
@@ -35,15 +37,5 @@ def test_torch_tensors(model, parameters, load_data):
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-        # Issues with Torch having Double type as default type for floats, which we don't handle
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2327
-        x_train = (
-            x
-            if not isinstance(model, (NeuralNetClassifier, NeuralNetRegressor))
-            else x.type(torch.FloatTensor)
-        )
-        y_train = y if not isinstance(model, NeuralNetRegressor) else y.type(torch.FloatTensor)
-
-        model.fit(x_train, y_train)
+        model.fit(x, y)
         model.predict(x)

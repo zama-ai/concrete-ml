@@ -302,9 +302,6 @@ def check_correctness_with_sklearn(
     model_name = get_model_name(model_class)
     model = model_class(**hyper_parameters_including_n_bits)
 
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        x = x.astype(numpy.float32)
-
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
@@ -312,7 +309,7 @@ def check_correctness_with_sklearn(
 
     y_pred = model.predict(x)
 
-    y_pred_sklearn = sklearn_model.predict(x)
+    y_pred_sklearn = sklearn_model.predict(x.astype(numpy.float32))
     y_pred_cml = model.predict(x, execute_in_fhe=execute_in_fhe)
 
     # Check that the output shapes are correct
@@ -507,12 +504,12 @@ def check_pandas(model_class, n_bits, x, y):
     model = model_class(n_bits=n_bits)
 
     # Turn to Pandas
-    xpandas = pandas.DataFrame(x)
+    x_pandas = pandas.DataFrame(x)
 
     if y.ndim == 1:
-        ypandas = pandas.Series(y)
+        y_pandas = pandas.Series(y)
     else:
-        ypandas = pandas.DataFrame(y)
+        y_pandas = pandas.DataFrame(y)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -522,19 +519,15 @@ def check_pandas(model_class, n_bits, x, y):
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x_pandas, y_pandas)
 
+        # If the model is a neural network, cas the input values to a numpy array as their predict
+        # method currently don't handle pandas DataFrames as inputs
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2339
         if "NeuralNet" in model_name:
-            # Pandas data frames are not properly handle yet
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2327
-            xpandas = xpandas.astype(numpy.float32)
+            x_pandas = x_pandas.to_numpy()
 
-            # Here, we really need to fit, we can't reuse an already fitted model
-            model.fit(xpandas, ypandas)
-            model.predict(xpandas.to_numpy())
-        else:
-            # Here, we really need to fit, we can't reuse an already fitted model
-            model.fit(xpandas, ypandas)
-            model.predict(xpandas)
+        model.predict(x_pandas)
 
 
 def check_pipeline(model_class, x, y):
@@ -644,9 +637,6 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
     if "random_state" in model_params:
         model_params["random_state"] = numpy.random.randint(0, 2**15)
     model.set_params(**model_params)
-
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        x = x.astype(numpy.float32)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():

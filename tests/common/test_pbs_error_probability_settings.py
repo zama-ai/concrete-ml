@@ -7,10 +7,9 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
-from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
-from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.torch.compile import compile_torch_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
@@ -34,9 +33,6 @@ def test_config_sklearn(model, parameters, kwargs, load_data):
     model_class = model
     model_name = get_model_name(model_class)
     x, y = load_data(**parameters, model_name=model_name)
-
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        x = x.astype(numpy.float32)
 
     clf = model()
 

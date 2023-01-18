@@ -4,7 +4,9 @@ from itertools import product
 
 import brevitas.nn as qnn
 import numpy
+import pandas
 import pytest
+import torch
 from sklearn.base import is_classifier, is_regressor
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, train_test_split
@@ -13,9 +15,17 @@ from sklearn.preprocessing import StandardScaler
 from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
 from torch import nn
 
-from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
+from concrete.ml.common.utils import (
+    MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    check_dtype_and_cast,
+    get_model_name,
+)
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
-from concrete.ml.sklearn.qnn import QuantizedSkorchEstimatorMixin
+from concrete.ml.sklearn.qnn import (
+    NeuralNetClassifier,
+    NeuralNetRegressor,
+    QuantizedSkorchEstimatorMixin,
+)
 
 
 @pytest.mark.parametrize("model", get_sklearn_neural_net_models())
@@ -198,17 +208,17 @@ def test_compile_and_calib(
 
     # Predicting in FHE with a model that is not trained and calibrated should fail
     with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
-        x_test_q = numpy.zeros((1, n_features), dtype=numpy.int64)
+        x_test_q = numpy.zeros((1, n_features), dtype=numpy.float32)
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Train the model
     # Needed for coverage
-    if is_classifier(model):
+    if is_regressor(model):
         for x_d_type, y_d_type in product(
             [numpy.float32, numpy.float64], [numpy.float32, numpy.float64]
         ):
             clf.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
-    elif is_regressor(model):
+    elif is_classifier(model):
         for x_d_type, y_d_type in product(
             [numpy.float32, numpy.float64], [numpy.int32, numpy.int64]
         ):
@@ -224,7 +234,7 @@ def test_compile_and_calib(
 
     # Predicting with a model that is not compiled should fail
     with pytest.raises(ValueError, match=".* not yet compiled .*"):
-        x_test_q = numpy.zeros((1, n_features), dtype=numpy.int64)
+        x_test_q = numpy.zeros((1, n_features), dtype=numpy.float32)
         clf.predict(x_test_q, execute_in_fhe=True)
 
     # Compile the model
@@ -301,10 +311,16 @@ def test_custom_net_classifier(load_data):
             #  * a Dataset
             # which is a bit much since they don't necessarily
             # have the same interfaces to handle types
-            if isinstance(X, numpy.ndarray) and (X.dtype != numpy.float32):
-                X = X.astype(numpy.float32)
-            if isinstance(y, numpy.ndarray) and (y.dtype != numpy.int64):
-                y = y.astype(numpy.int64)
+            X = check_dtype_and_cast(
+                X,
+                "float32",
+                error_information="MiniCustomNeuralNetClassifier input",
+            )
+            y = check_dtype_and_cast(
+                y,
+                "int64",
+                error_information="MiniCustomNeuralNetClassifier target",
+            )
             return super().fit(X, y, **fit_params)
 
         def predict(self, X, execute_in_fhe=False):
@@ -358,3 +374,73 @@ def test_custom_net_classifier(load_data):
         error_score="raise",
     )
     clf.fit(x_train, y_train)
+
+
+@pytest.mark.parametrize(
+    "model_classes, bad_types, expected_error",
+    [
+        pytest.param(
+            [NeuralNetClassifier],
+            ("float32", "uint8"),
+            "Neural Network classifier target dtype .* int64 .*",
+            id="NeuralNetClassifier-target-uint8",
+        ),
+        pytest.param(
+            [NeuralNetRegressor],
+            ("float64", "complex64"),
+            "Neural Network regressor target dtype .* float32 .*",
+            id="NeuralNetRegressor-target-complex64",
+        ),
+        pytest.param(
+            get_sklearn_neural_net_models(),
+            ("complex64", "int64"),
+            "Neural Network .* input dtype .* float32 .*",
+            id="NeuralNets-input-complex64",
+        ),
+        pytest.param(
+            get_sklearn_neural_net_models(),
+            ("int64", "int64"),
+            "Neural Network .* input dtype .* float32 .*",
+            id="NeuralNets-input-int64",
+        ),
+        pytest.param(
+            get_sklearn_neural_net_models(),
+            ("str", "int64"),
+            "Neural Network .* input dtype .* float32 .*",
+            id="NeuralNets-input-str",
+        ),
+        pytest.param(
+            get_sklearn_neural_net_models(),
+            ("float32", "str"),
+            "Neural Network .* target dtype .* (float32|int64) .*",
+            id="NeuralNets-target-str",
+        ),
+    ],
+)
+@pytest.mark.parametrize("container", ["numpy", "pandas", "torch"])
+def test_failure_bad_data_types(model_classes, container, bad_types, expected_error, load_data):
+    """Check that training using data with unsupported dtypes raises an expected error."""
+    for model_class in model_classes:
+        # Generate the data
+        model_name = get_model_name(model_class)
+        dataset = "regression" if is_regressor(model_class) else "classification"
+        x, y = load_data(dataset, model_name=model_name)
+
+        x, y = x.astype(bad_types[0]), y.astype(bad_types[1])
+
+        if container == "torch":
+            # Convert input and target to Torch tensors if the values are not string, as torch
+            # Tensors only handles numerical values
+            if "str" not in bad_types:
+                x, y = torch.tensor(x), torch.tensor(y)
+
+        elif container == "pandas":
+            # Convert input to a Pandas DataFrame or Pandas Series
+            x, y = pandas.DataFrame(x), pandas.DataFrame(y)
+
+        # Instantiate the model
+        model = model_class()
+
+        # Train the model, which should raise the expected error
+        with pytest.raises(ValueError, match=expected_error):
+            model.fit(x, y)
