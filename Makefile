@@ -765,6 +765,10 @@ actionlint:
 check_forbidden_words:
 	./script/make_utils/check_forbidden_words.sh
 
+.PHONY: check_forbidden_words_and_open # Check forbidden words and open bad files
+check_forbidden_words_and_open:
+	./script/make_utils/check_forbidden_words.sh --open
+
 .PHONY: update_dependabot_prs # Update all dependabot PRs on origin
 update_dependabot_prs:
 	/bin/bash ./script/make_utils/update_dependabot_prs.sh

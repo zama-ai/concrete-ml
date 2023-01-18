@@ -87,8 +87,7 @@ While Concrete-ML hides away all the Concrete-Numpy code that performs model inf
 import numpy
 from concrete.numpy import compiler
 
-# Let's assume Quantization has been applied and we are left with integers only.
-# This is essentially the work of Concrete-ML
+# Assume Quantization has been applied and we are left with integers only. This is essentially the work of Concrete-ML
 
 # Some parameters (weight and bias) for our model taking a single feature
 w = [2]

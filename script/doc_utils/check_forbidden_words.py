@@ -104,12 +104,20 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("Scikit-learn", []),  # use Scikit-Learn
         ("it's", []),  # use `it is`
         ("It's", []),  # use `It is`
+        ("let's", []),  # keep a consistent impersonal style
+        ("Let's", []),  # keep a consistent impersonal style
+        ("let us", ["feel free to let us know"]),  # keep a consistent impersonal style
+        ("Let us", []),  # keep a consistent impersonal style
         ("github", []),
         ("elementwise", []),
         ("favourite", []),
-        ("speed up", ["to speed up", "will speed up", "will not speed up"]),
+        (
+            "speed up",
+            ["to speed up", "will speed up", "will not speed up", "it speeds up", "this speeds up"],
+        ),
         ("de-activate", []),
         ("Skorch", []),
+        ("fhe", []),  # use `FHE`
     ]
     # For later
     #   "We" or "Our", or more generally, passive form

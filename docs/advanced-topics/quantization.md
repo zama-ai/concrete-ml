@@ -25,7 +25,7 @@ Let $$[\alpha, \beta ]$$ be the range of a value to quantize where $$\alpha$$ is
 
 $$S = \frac{\beta - \alpha}{2^n - 1}$$
 
-where $$n$$ is the number of bits ($$n \leq 8$$). For the sake of example, let's take $$n = 8$$.
+where $$n$$ is the number of bits ($$n \leq 8$$). In the following, $$n = 8$$ is assumed.
 
 In practice, the quantization scale is then $$S = \frac{\beta - \alpha}{255}$$. This means the gap between consecutive representable values cannot be smaller than $$S$$, which, in turn, means there can be a substantial loss of precision. Every interval of length $$S$$ will be represented by a value within the range $$[0..255]$$.
 
