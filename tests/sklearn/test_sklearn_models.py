@@ -3,6 +3,7 @@ import warnings
 from typing import Any, Dict, List
 
 import numpy
+import pandas
 import pytest
 from sklearn.base import is_classifier, is_regressor
 from sklearn.exceptions import ConvergenceWarning
@@ -64,6 +65,7 @@ def check_generic(
     test_double_fit=True,
     test_offset=True,
     test_correctness_in_clear=True,
+    test_pandas=True,
     verbose=True,
 ):
     """Generic tests.
@@ -86,7 +88,6 @@ def check_generic(
 
     Are currently missing
       - quantization
-      - pandas
       - pipeline
 
     More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
@@ -189,6 +190,13 @@ def check_generic(
             print("Run check_offset")
 
         check_offset(model_class, n_bits, x, y)
+
+    # Test with pandas
+    if test_pandas:
+        if verbose:
+            print("Run check_pandas")
+
+        check_pandas(model_class, n_bits, x, y)
 
     # Do some inferences in clear
     y_pred = model.predict(x[:NUMBER_OF_TESTS_IN_NON_FHE])
@@ -354,6 +362,40 @@ def check_offset(model_class, n_bits, x, y):
         # Another offset
         y -= 2
         model.fit(x, y)
+
+
+def check_pandas(model_class, n_bits, x, y):
+    """Check panda support."""
+    model_name = get_model_name(model_class)
+
+    model = model_class(n_bits=n_bits)
+
+    # Turn to Pandas
+    xpandas = pandas.DataFrame(x)
+
+    if y.ndim == 1:
+        ypandas = pandas.Series(y)
+    else:
+        ypandas = y
+
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+    model.set_params(**model_params)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        if "NeuralNet" in model_name:
+            # Pandas data frames are not properly handle yet
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2327
+            xpandas = xpandas.astype(numpy.float32)
+            model.fit(xpandas, ypandas)
+            model.predict(xpandas.to_numpy())
+        else:
+            model.fit(xpandas, ypandas)
+            model.predict(xpandas)
 
 
 def check_grid_search(model, model_name, model_class, x, y):
