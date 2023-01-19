@@ -10,9 +10,11 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
+from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.torch.compile import compile_torch_model
 
 # pylint: disable=too-many-statements
@@ -85,10 +87,18 @@ def test_client_server_sklearn(
                 pytest.skip("Waiting for #2756 fix")
 
     # Generate random data
-    x, y = load_data(**parameters)
-    model_params, x, _, x_train, y_train, x_test = sanitize_test_and_train_datasets(model, x, y)
+    model_class = model
+    model_name = get_model_name(model_class)
+    x, y = load_data(**parameters, model_name=model_name)
 
-    model = model(**model_params)
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        x = x.astype(numpy.float32)
+
+    x_train = x[:-1]
+    y_train = y[:-1]
+    x_test = x[-1:]
+
+    model = model_class()
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)

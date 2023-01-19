@@ -7,8 +7,10 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
+from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.torch.compile import compile_torch_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
@@ -29,25 +31,26 @@ INPUT_OUTPUT_FEATURE = [5, 10]
 def test_config_sklearn(model, parameters, kwargs, load_data):
     """Testing with p_error and global_p_error configs with sklearn models."""
 
-    x, y = load_data(**parameters)
-    x_train = x[:-1]
-    y_train = y[:-1]
+    model_class = model
+    model_name = get_model_name(model_class)
+    x, y = load_data(**parameters, model_name=model_name)
 
-    model_params, x, _, x_train, y_train, _ = sanitize_test_and_train_datasets(model, x, y)
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        x = x.astype(numpy.float32)
 
-    clf = model(**model_params)
+    clf = model()
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         # Fit the model
-        clf.fit(x_train, y_train)
+        clf.fit(x, y)
 
     if kwargs.get("p_error", None) is not None and kwargs.get("global_p_error", None) is not None:
         with pytest.raises(ValueError) as excinfo:
-            clf.compile(x_train, verbose_compilation=True, **kwargs)
+            clf.compile(x, verbose_compilation=True, **kwargs)
         assert "Please only set one of (p_error, global_p_error) values" in str(excinfo.value)
     else:
-        clf.compile(x_train, verbose_compilation=True, **kwargs)
+        clf.compile(x, verbose_compilation=True, **kwargs)
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2206
     #

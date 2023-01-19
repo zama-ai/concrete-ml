@@ -8,7 +8,9 @@ import pytest
 from sklearn import tree
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.pytest.utils import classifiers, regressors, sanitize_test_and_train_datasets
+from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
+from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
 def test_seed_1():
@@ -84,23 +86,32 @@ def test_seed_sklearn(model, parameters, load_data, default_configuration):
     """Test seeding of sklearn models"""
 
     x, y = load_data(**parameters)
-    model_params, x, _, x_train, y_train, _ = sanitize_test_and_train_datasets(model, x, y)
+
+    model_class = model
+    model_name = get_model_name(model_class)
+    x, y = load_data(**parameters, model_name=model_name)
+
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        x = x.astype(numpy.float32)
 
     # Force "random_state": if it was there, it is overwritten; if it was not there, it is added
+    model_params = {}
     if "random_state" in inspect.getfullargspec(model).args:
         model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model = model(**model_params)
+
+    # First case: user gives his own random_state
+    model = model_class(**model_params)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         # Fit the model
-        model, sklearn_model = model.fit_benchmark(x_train, y_train)
+        model, sklearn_model = model.fit_benchmark(x, y)
 
     lpvoid_ptr_plot_tree = getattr(model, "plot_tree", None)
     if callable(lpvoid_ptr_plot_tree):
         print("model", tree.plot_tree(model.sklearn_model))
 
-    print("model", sklearn_model)
+    print(f"{sklearn_model=}")
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:
