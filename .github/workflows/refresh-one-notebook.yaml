@@ -38,7 +38,7 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
-  Cifar10: "use_case_examples/cifar_10_with_model_splitting/Cifar10.ipynb" 
+  Cifar10: "use_case_examples/cifar_brevitas_with_model_splitting/Cifar10.ipynb" 
   CifarInFhe: "use_case_examples/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
   CifarQuantizationAwareTraining: "use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb" 
   ClassifierComparison: "docs/advanced_examples/ClassifierComparison.ipynb" 
@@ -55,7 +55,7 @@ env:
   mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
-  SentimentClassification: "use_case_examples/sentiment-analysis-with-transformer/SentimentClassification.ipynb" 
+  SentimentClassification: "use_case_examples/sentiment_analysis_with_transformer/SentimentClassification.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
