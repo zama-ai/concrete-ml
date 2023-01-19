@@ -1,4 +1,4 @@
-"""Tests for the sklearn decision trees."""
+"""Tests for the sklearn models."""
 import warnings
 from typing import Any, Dict, List
 
@@ -49,7 +49,7 @@ NUMBER_OF_TESTS_IN_FHE = 5
 NUMBER_OF_TESTS_IN_NON_FHE = 50
 
 
-# pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
 def check_generic(
     model_class,
     parameters,
@@ -60,6 +60,7 @@ def check_generic(
     check_is_good_execution_for_cml_vs_circuit,
     check_r2_score,
     check_accuracy,
+    check_circuit_has_no_tlu,
     test_hyper_parameters=True,
     test_grid_search=True,
     test_double_fit=True,
@@ -130,12 +131,14 @@ def check_generic(
 
     with warnings.catch_warnings():
         # Use virtual lib to not have issues with precision
-        model.compile(
+        fhe_circuit = model.compile(
             x,
             default_configuration,
             use_virtual_lib=use_virtual_lib,
             show_mlir=verbose,
         )
+
+        check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
 
     if verbose:
         print("Compilation done")
@@ -435,6 +438,14 @@ def check_grid_search(model, model_name, model_class, x, y):
         ).fit(x, y)
 
 
+def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
+    """Check some properties of circuit, depending on the model class"""
+
+    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        # Check that no TLUs are found within the MLIR
+        check_circuit_has_no_tlu(fhe_circuit)
+
+
 def check_hyper_parameters(
     model_class,
     n_bits,
@@ -557,8 +568,9 @@ def test_generic(
     check_is_good_execution_for_cml_vs_circuit,
     check_r2_score,
     check_accuracy,
+    check_circuit_has_no_tlu,
 ):
-    """Test in a generic way."""
+    """Test in a generic way our sklearn models."""
 
     if n_bits > N_BITS_THRESHOLD_TO_FORCE_VL and not use_virtual_lib:
         # Skip this, we can't use FHE for too large precision
@@ -574,4 +586,5 @@ def test_generic(
         check_is_good_execution_for_cml_vs_circuit,
         check_r2_score,
         check_accuracy,
+        check_circuit_has_no_tlu,
     )
