@@ -332,11 +332,9 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         pytest.param(nn.Hardshrink, id="Hardshrink"),
         pytest.param(nn.Softsign, id="Softsign"),
         pytest.param(nn.GELU, id="GELU"),
+        pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         # Some issues are still encountered with some activations
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/335
-        #
-        # - Works but sometimes issues with the accuracy
-        # pytest.param(nn.LogSigmoid, id="LogSigmoid"),
         #
         # Other problems, certainly related to tests:
         # Required positional arguments: 'embed_dim' and 'num_heads' and fails with a partial
