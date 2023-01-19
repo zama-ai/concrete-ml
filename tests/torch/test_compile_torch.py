@@ -447,7 +447,8 @@ def test_compile_torch_qat(
     [
         pytest.param(
             FC,
-            """graph torch_jit (
+            (
+                """graph torch_jit (
   %onnx::Gemm_0[FLOAT, 1x7]
 ) initializers (
   %fc1.weight[FLOAT, 128x7]
@@ -461,17 +462,22 @@ def test_compile_torch_qat(
   %fc5.weight[FLOAT, 10x64]
   %fc5.bias[FLOAT, 10]
 ) {
-  %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_0, %fc1.weight, %fc1.bias)
-  %onnx::Gemm_12 = Relu(%input)
-  %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_12, %fc2.weight, %fc2.bias)
-  %onnx::Gemm_14 = Relu(%input.3)
-  %input.7 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_14, %fc3.weight, %fc3.bias)
-  %onnx::Gemm_16 = Relu(%input.7)
-  %input.11 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_16, %fc4.weight, %fc4.bias)
-  %onnx::Gemm_18 = Relu(%input.11)
-  %19 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_18, %fc5.weight, %fc5.bias)
+  %/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
+                """(%onnx::Gemm_0, %fc1.weight, %fc1.bias)
+  %/act_1/Relu_output_0 = Relu(%/fc1/Gemm_output_0)
+  %/fc2/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
+                """(%/act_1/Relu_output_0, %fc2.weight, %fc2.bias)
+  %/act_2/Relu_output_0 = Relu(%/fc2/Gemm_output_0)
+  %/fc3/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
+                """(%/act_2/Relu_output_0, %fc3.weight, %fc3.bias)
+  %/act_3/Relu_output_0 = Relu(%/fc3/Gemm_output_0)
+  %/fc4/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
+                """(%/act_3/Relu_output_0, %fc4.weight, %fc4.bias)
+  %/act_4/Relu_output_0 = Relu(%/fc4/Gemm_output_0)
+  %19 = Gemm[alpha = 1, beta = 1, transB = 1](%/act_4/Relu_output_0, %fc5.weight, %fc5.bias)
   return %19
-}""",
+}"""
+            ),
         ),
     ],
 )

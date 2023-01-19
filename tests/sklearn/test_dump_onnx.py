@@ -92,77 +92,121 @@ def test_dump(
     # Ignore long lines here
     # ruff: noqa: E501
     expected_strings = {
-        "XGBRegressor": """graph torch_jit (
+        "LinearSVC": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
-  %_operators.0.base_prediction[INT64, 1]
-  %_operators.0.weight_1[INT64, 140x10]
-  %_operators.0.bias_1[INT64, 140x1]
-  %_operators.0.weight_2[INT64, 20x8x7]
-  %_operators.0.bias_2[INT64, 160x1]
-  %_operators.0.weight_3[INT64, 20x1x8]
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %onnx::Less_8 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %onnx::Reshape_9 = Less(%onnx::Less_8, %_operators.0.bias_1)
-  %onnx::Reshape_10 = Constant[value = <Tensor>]()
-  %onnx::Cast_11 = Reshape[allowzero = 0](%onnx::Reshape_9, %onnx::Reshape_10)
-  %onnx::Reshape_13 = MatMul(%_operators.0.weight_2, %onnx::Cast_11)
-  %onnx::Reshape_14 = Constant[value = <Tensor>]()
-  %onnx::Equal_15 = Reshape[allowzero = 0](%onnx::Reshape_13, %onnx::Reshape_14)
-  %onnx::Reshape_16 = Equal(%_operators.0.bias_2, %onnx::Equal_15)
-  %onnx::Reshape_17 = Constant[value = <Tensor>]()
-  %onnx::Cast_18 = Reshape[allowzero = 0](%onnx::Reshape_16, %onnx::Reshape_17)
-  %onnx::Reshape_20 = MatMul(%_operators.0.weight_3, %onnx::Cast_18)
-  %onnx::Reshape_21 = Constant[value = <Tensor>]()
-  %x = Reshape[allowzero = 0](%onnx::Reshape_20, %onnx::Reshape_21)
-  return %x
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %/_operators.0/Gemm_output_0
 }""",
-        "XGBClassifier": """graph torch_jit (
+        "NeuralNetClassifier": """graph torch_jit (
+  %inp.1[FLOAT, 1x10]
+) initializers (
+  %features.fc0.bias[FLOAT, 40]
+  %features.fc1.bias[FLOAT, 40]
+  %features.fc2.bias[FLOAT, 2]
+  %/features/quant0/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
+  %/features/fc0/weight_quant/export_handler/Constant_output_0[FLOAT, 40x10]
+  %/features/fc0/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant1/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc1/weight_quant/export_handler/Constant_output_0[FLOAT, 40x40]
+  %/features/fc1/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant2/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, 2x40]
+  %/features/fc2/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+) {
+  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc0/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant0/act_quant/export_handler/Quant_output_0, %/features/fc0/weight_quant/export_handler/Quant_output_0, %features.fc0.bias)
+  %/features/act0/Relu_output_0 = Relu(%/features/fc0/Gemm_output_0)
+  %/features/quant1/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act0/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc1/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant1/act_quant/export_handler/Quant_output_0, %/features/fc1/weight_quant/export_handler/Quant_output_0, %features.fc1.bias)
+  %/features/act1/Relu_output_0 = Relu(%/features/fc1/Gemm_output_0)
+  %/features/quant2/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act1/Relu_output_0, %/features/quant2/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc2/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %31 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %features.fc2.bias)
+  return %31
+}""",
+        "NeuralNetRegressor": """graph torch_jit (
+  %inp.1[FLOAT, 1x10]
+) initializers (
+  %features.fc0.bias[FLOAT, 10]
+  %features.fc1.bias[FLOAT, 10]
+  %features.fc2.bias[FLOAT, 1]
+  %/features/quant0/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
+  %/features/fc0/weight_quant/export_handler/Constant_output_0[FLOAT, 10x10]
+  %/features/fc0/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant1/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc1/weight_quant/export_handler/Constant_output_0[FLOAT, 10x10]
+  %/features/fc1/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant2/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, 1x10]
+  %/features/fc2/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+) {
+  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc0/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant0/act_quant/export_handler/Quant_output_0, %/features/fc0/weight_quant/export_handler/Quant_output_0, %features.fc0.bias)
+  %/features/act0/Relu_output_0 = Relu(%/features/fc0/Gemm_output_0)
+  %/features/quant1/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act0/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc1/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant1/act_quant/export_handler/Quant_output_0, %/features/fc1/weight_quant/export_handler/Quant_output_0, %features.fc1.bias)
+  %/features/act1/Relu_output_0 = Relu(%/features/fc1/Gemm_output_0)
+  %/features/quant2/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act1/Relu_output_0, %/features/quant2/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc2/weight_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %31 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %features.fc2.bias)
+  return %31
+}""",
+        "LogisticRegression": """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %/_operators.0/Gemm_output_0
+}""",
+        "DecisionTreeRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
-  %onnx::Less_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %onnx::Reshape_8 = Less(%onnx::Less_7, %_operators.0.bias_1)
-  %onnx::Reshape_9 = Constant[value = <Tensor>]()
-  %onnx::Cast_10 = Reshape[allowzero = 0](%onnx::Reshape_8, %onnx::Reshape_9)
-  %onnx::Reshape_12 = MatMul(%_operators.0.weight_2, %onnx::Cast_10)
-  %onnx::Reshape_13 = Constant[value = <Tensor>]()
-  %onnx::Equal_14 = Reshape[allowzero = 0](%onnx::Reshape_12, %onnx::Reshape_13)
-  %onnx::Reshape_15 = Equal(%_operators.0.bias_2, %onnx::Equal_14)
-  %onnx::Reshape_16 = Constant[value = <Tensor>]()
-  %onnx::Cast_17 = Reshape[allowzero = 0](%onnx::Reshape_15, %onnx::Reshape_16)
-  %onnx::Reshape_19 = MatMul(%_operators.0.weight_3, %onnx::Cast_17)
-  %onnx::Reshape_20 = Constant[value = <Tensor>]()
-  %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
-  return %x
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
+  return %/_operators.0/Reshape_3_output_0
 }""",
-        "GammaRegressor": """graph torch_jit (
-  %onnx::MatMul_0[DOUBLE, 10]
-) initializers (
-  %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_6[DOUBLE, 10x1]
-) {
-  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
-  %5 = Add(%linear.bias, %onnx::Add_4)
-  return %5
-}""",
-        "LinearRegression": """graph torch_jit (
+        "RandomForestClassifier": """graph torch_jit (
   %input_0[DOUBLE, symx10]
-) initializers (
-  %_operators.0.coefficients[FLOAT, 10x2]
-  %_operators.0.intercepts[FLOAT, 2]
 ) {
-  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
-  return %variable
-}""",
-        "TweedieRegressor": """graph torch_jit (
-  %onnx::MatMul_0[DOUBLE, 10]
-) initializers (
-  %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_6[DOUBLE, 10x1]
-) {
-  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
-  %5 = Add(%linear.bias, %onnx::Add_4)
-  return %5
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
+  return %/_operators.0/Reshape_3_output_0
 }""",
         "PoissonRegressor": """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
@@ -170,27 +214,65 @@ def test_dump(
   %linear.bias[DOUBLE, scalar]
   %onnx::MatMul_6[DOUBLE, 10x1]
 ) {
-  %onnx::Add_4 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
-  %5 = Add(%linear.bias, %onnx::Add_4)
+  %/linear/MatMul_output_0 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
+  %5 = Add(%linear.bias, %/linear/MatMul_output_0)
   return %5
+}""",
+        "TweedieRegressor": """graph torch_jit (
+  %onnx::MatMul_0[DOUBLE, 10]
+) initializers (
+  %linear.bias[DOUBLE, scalar]
+  %onnx::MatMul_6[DOUBLE, 10x1]
+) {
+  %/linear/MatMul_output_0 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
+  %5 = Add(%linear.bias, %/linear/MatMul_output_0)
+  return %5
+}""",
+        "Ridge": """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
 }""",
         "DecisionTreeClassifier": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
-  %onnx::LessOrEqual_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %onnx::Reshape_8 = LessOrEqual(%onnx::LessOrEqual_7, %_operators.0.bias_1)
-  %onnx::Reshape_9 = Constant[value = <Tensor>]()
-  %onnx::Cast_10 = Reshape[allowzero = 0](%onnx::Reshape_8, %onnx::Reshape_9)
-  %onnx::Reshape_12 = MatMul(%_operators.0.weight_2, %onnx::Cast_10)
-  %onnx::Reshape_13 = Constant[value = <Tensor>]()
-  %onnx::Equal_14 = Reshape[allowzero = 0](%onnx::Reshape_12, %onnx::Reshape_13)
-  %onnx::Reshape_15 = Equal(%_operators.0.bias_2, %onnx::Equal_14)
-  %onnx::Reshape_16 = Constant[value = <Tensor>]()
-  %onnx::Cast_17 = Reshape[allowzero = 0](%onnx::Reshape_15, %onnx::Reshape_16)
-  %onnx::Reshape_19 = MatMul(%_operators.0.weight_3, %onnx::Cast_17)
-  %onnx::Reshape_20 = Constant[value = <Tensor>]()
-  %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
-  return %x
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
+  return %/_operators.0/Reshape_3_output_0
+}""",
+        "GammaRegressor": """graph torch_jit (
+  %onnx::MatMul_0[DOUBLE, 10]
+) initializers (
+  %linear.bias[DOUBLE, scalar]
+  %onnx::MatMul_6[DOUBLE, 10x1]
+) {
+  %/linear/MatMul_output_0 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
+  %5 = Add(%linear.bias, %/linear/MatMul_output_0)
+  return %5
+}""",
+        "ElasticNet": """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
 }""",
         "LinearSVR": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -201,113 +283,72 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
-        "LogisticRegression": """graph torch_jit (
+        "XGBClassifier": """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) {
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/Less_output_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
+  return %/_operators.0/Reshape_3_output_0
+}""",
+        "RandomForestRegressor": """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) {
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
+  return %/_operators.0/Reshape_3_output_0
+}""",
+        "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
-  %_operators.0.coefficients[FLOAT, 10x1]
-  %_operators.0.intercepts[FLOAT, 1]
+  %_operators.0.base_prediction[INT64, 1]
+  %_operators.0.weight_1[INT64, 140x10]
+  %_operators.0.bias_1[INT64, 140x1]
+  %_operators.0.weight_2[INT64, 20x8x7]
+  %_operators.0.bias_2[INT64, 160x1]
+  %_operators.0.weight_3[INT64, 20x1x8]
 ) {
-  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
-  return %onnx::Sigmoid_6
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
+  %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/Less_output_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
+  return %/_operators.0/Reshape_3_output_0
 }""",
-        "LinearSVC": """graph torch_jit (
+        "LinearRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
-  %_operators.0.coefficients[FLOAT, 10x1]
-  %_operators.0.intercepts[FLOAT, 1]
-) {
-  %onnx::Sigmoid_6 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
-  return %onnx::Sigmoid_6
-}""",
-        "RandomForestClassifier": "Not tested",
-        "RandomForestRegressor": "Not tested",
-        "NeuralNetClassifier": """graph torch_jit (
-  %inp.1[FLOAT, 1x10]
-) initializers (
-  %features.fc0.bias[FLOAT, 40]
-  %features.fc1.bias[FLOAT, 40]
-  %features.fc2.bias[FLOAT, 2]
-  %bit_width[FLOAT, scalar]
-  %scale[FLOAT, scalar]
-  %zero_point[FLOAT, scalar]
-  %bit_width.3[FLOAT, scalar]
-  %x[FLOAT, 40x10]
-  %scale.3[FLOAT, scalar]
-  %zero_point.3[FLOAT, scalar]
-  %bit_width.7[FLOAT, scalar]
-  %scale.7[FLOAT, scalar]
-  %zero_point.7[FLOAT, scalar]
-  %bit_width.11[FLOAT, scalar]
-  %x.3[FLOAT, 40x40]
-  %scale.11[FLOAT, scalar]
-  %zero_point.11[FLOAT, scalar]
-  %bit_width.15[FLOAT, scalar]
-  %scale.15[FLOAT, scalar]
-  %zero_point.15[FLOAT, scalar]
-  %bit_width.19[FLOAT, scalar]
-  %x.7[FLOAT, 2x40]
-  %scale.19[FLOAT, scalar]
-  %zero_point.19[FLOAT, scalar]
-) {
-  %onnx::Gemm_13 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %scale, %zero_point, %bit_width)
-  %onnx::Gemm_18 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
-  %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_13, %onnx::Gemm_18, %features.fc0.bias)
-  %inp = Relu(%input)
-  %onnx::Gemm_24 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp, %scale.7, %zero_point.7, %bit_width.7)
-  %onnx::Gemm_29 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
-  %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_24, %onnx::Gemm_29, %features.fc1.bias)
-  %inp.4 = Relu(%input.3)
-  %onnx::Gemm_35 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.4, %scale.15, %zero_point.15, %bit_width.15)
-  %onnx::Gemm_40 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
-  %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
-  return %41
-}""",
-        "NeuralNetRegressor": """graph torch_jit (
-  %inp.1[FLOAT, 1x10]
-) initializers (
-  %features.fc0.bias[FLOAT, 10]
-  %features.fc1.bias[FLOAT, 10]
-  %features.fc2.bias[FLOAT, 1]
-  %bit_width[FLOAT, scalar]
-  %scale[FLOAT, scalar]
-  %zero_point[FLOAT, scalar]
-  %bit_width.3[FLOAT, scalar]
-  %x[FLOAT, 10x10]
-  %scale.3[FLOAT, scalar]
-  %zero_point.3[FLOAT, scalar]
-  %bit_width.7[FLOAT, scalar]
-  %scale.7[FLOAT, scalar]
-  %zero_point.7[FLOAT, scalar]
-  %bit_width.11[FLOAT, scalar]
-  %x.3[FLOAT, 10x10]
-  %scale.11[FLOAT, scalar]
-  %zero_point.11[FLOAT, scalar]
-  %bit_width.15[FLOAT, scalar]
-  %scale.15[FLOAT, scalar]
-  %zero_point.15[FLOAT, scalar]
-  %bit_width.19[FLOAT, scalar]
-  %x.7[FLOAT, 1x10]
-  %scale.19[FLOAT, scalar]
-  %zero_point.19[FLOAT, scalar]
-) {
-  %onnx::Gemm_13 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %scale, %zero_point, %bit_width)
-  %onnx::Gemm_18 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x, %scale.3, %zero_point.3, %bit_width.3)
-  %input = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_13, %onnx::Gemm_18, %features.fc0.bias)
-  %inp = Relu(%input)
-  %onnx::Gemm_24 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp, %scale.7, %zero_point.7, %bit_width.7)
-  %onnx::Gemm_29 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.3, %scale.11, %zero_point.11, %bit_width.11)
-  %input.3 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_24, %onnx::Gemm_29, %features.fc1.bias)
-  %inp.4 = Relu(%input.3)
-  %onnx::Gemm_35 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.4, %scale.15, %zero_point.15, %bit_width.15)
-  %onnx::Gemm_40 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%x.7, %scale.19, %zero_point.19, %bit_width.19)
-  %41 = Gemm[alpha = 1, beta = 1, transB = 1](%onnx::Gemm_35, %onnx::Gemm_40, %features.fc2.bias)
-  return %41
-}""",
-        "Ridge": """graph torch_jit (
-  %input_0[DOUBLE, symx10]
-) initializers (
-  %_operators.0.coefficients[FLOAT, 10x1]
-  %_operators.0.intercepts[FLOAT, 1]
+  %_operators.0.coefficients[FLOAT, 10x2]
+  %_operators.0.intercepts[FLOAT, 2]
 ) {
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
@@ -320,33 +361,6 @@ def test_dump(
 ) {
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
-}""",
-        "ElasticNet": """graph torch_jit (
-  %input_0[DOUBLE, symx10]
-) initializers (
-  %_operators.0.coefficients[FLOAT, 10x1]
-  %_operators.0.intercepts[FLOAT, 1]
-) {
-  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
-  return %variable
-}""",
-        "DecisionTreeRegressor": """graph torch_jit (
-  %input_0[DOUBLE, symx10]
-) {
-  %onnx::LessOrEqual_7 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %onnx::Reshape_8 = LessOrEqual(%onnx::LessOrEqual_7, %_operators.0.bias_1)
-  %onnx::Reshape_9 = Constant[value = <Tensor>]()
-  %onnx::Cast_10 = Reshape[allowzero = 0](%onnx::Reshape_8, %onnx::Reshape_9)
-  %onnx::Reshape_12 = MatMul(%_operators.0.weight_2, %onnx::Cast_10)
-  %onnx::Reshape_13 = Constant[value = <Tensor>]()
-  %onnx::Equal_14 = Reshape[allowzero = 0](%onnx::Reshape_12, %onnx::Reshape_13)
-  %onnx::Reshape_15 = Equal(%_operators.0.bias_2, %onnx::Equal_14)
-  %onnx::Reshape_16 = Constant[value = <Tensor>]()
-  %onnx::Cast_17 = Reshape[allowzero = 0](%onnx::Reshape_15, %onnx::Reshape_16)
-  %onnx::Reshape_19 = MatMul(%_operators.0.weight_3, %onnx::Cast_17)
-  %onnx::Reshape_20 = Constant[value = <Tensor>]()
-  %x = Reshape[allowzero = 0](%onnx::Reshape_19, %onnx::Reshape_20)
-  return %x
 }""",
     }
 

@@ -241,7 +241,7 @@ def test_bitwidth_report(
     # A QuantizedModule that is not compiled can not report bitwidths and value ranges
     assert quantized_model.bitwidth_and_range_report() is None
 
-    # Finally test a compiled  QuantizedModule
+    # Finally test a compiled QuantizedModule
     quantized_model = compile_torch_model(
         torch_fc_model,
         torch_input,
@@ -266,11 +266,11 @@ def test_bitwidth_report(
 
     expected = {
         FC: {
-            "Gemm_0": {"range": (-251, 208), "bitwidth": 9},
-            "Gemm_2": {"range": (-20, 20), "bitwidth": 6},
-            "Gemm_4": {"range": (-14, 15), "bitwidth": 5},
-            "Gemm_6": {"range": (-17, 16), "bitwidth": 6},
-            "Gemm_8": {"range": (-9, 9), "bitwidth": 5},
+            "/fc1/Gemm": {"range": (-251, 208), "bitwidth": 9},
+            "/fc2/Gemm": {"range": (-20, 20), "bitwidth": 6},
+            "/fc3/Gemm": {"range": (-14, 15), "bitwidth": 5},
+            "/fc4/Gemm": {"range": (-17, 16), "bitwidth": 6},
+            "/fc5/Gemm": {"range": (-9, 9), "bitwidth": 5},
         }
     }
 
