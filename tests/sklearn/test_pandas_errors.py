@@ -1,15 +1,14 @@
 """Tests with Pandas."""
-from functools import partial
-
 import numpy
 import pandas
 import pytest
 
-from concrete.ml.pytest.utils import classifier_models, regressor_models
+from concrete.ml.common.utils import is_model_class_in_a_list
+from concrete.ml.pytest.utils import classifiers, regressors
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 
-@pytest.mark.parametrize("model", classifier_models + regressor_models)
+@pytest.mark.parametrize("model", [m[0][0] for m in classifiers + regressors])
 @pytest.mark.parametrize(
     "bad_value, expected_error",
     [
@@ -20,10 +19,10 @@ from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 )
 def test_failure_bad_param(model, bad_value, expected_error):
     """Check our checks see if ever the Panda dataset is not correct."""
-    if isinstance(model, partial):
-        # Works differently for neural nets
-        if model.func in get_sklearn_neural_net_models():
-            return
+
+    # Works differently for neural nets
+    if is_model_class_in_a_list(model, get_sklearn_neural_net_models()):
+        return
 
     dic = {
         "Col One": [1, 2, bad_value, 3],

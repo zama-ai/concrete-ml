@@ -26,7 +26,7 @@ from concrete.ml.sklearn import (
     XGBRegressor,
 )
 
-regressor_models = [
+_regressor_models = [
     XGBRegressor,
     GammaRegressor,
     LinearRegression,
@@ -57,7 +57,7 @@ regressor_models = [
     ),
 ]
 
-classifier_models = [
+_classifier_models = [
     DecisionTreeClassifier,
     RandomForestClassifier,
     XGBClassifier,
@@ -93,7 +93,7 @@ classifiers = [
         },
         id=get_model_name(model),
     )
-    for model in classifier_models
+    for model in _classifier_models
     for n_classes in [2, 4]
 ]
 
@@ -116,5 +116,5 @@ regressors = [
         },
         id=get_model_name(model),
     )
-    for model in regressor_models
+    for model in _regressor_models
 ]
