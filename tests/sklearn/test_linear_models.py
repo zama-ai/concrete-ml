@@ -5,11 +5,7 @@ from typing import Any, List
 
 import numpy
 import pytest
-from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 # Use the new list of models
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2320
@@ -286,33 +282,3 @@ def test_linear_model_quantization(
 
     # Check that predictions, probabilities or confidence scores are similar using the R2 score
     check_r2_score(y_pred_sklearn, y_pred_quantized)
-
-
-@pytest.mark.parametrize("model_class, data_parameters", models_datasets)
-@pytest.mark.parametrize("fit_intercept", [True, False])
-def test_pipeline_sklearn(model_class, data_parameters, fit_intercept, load_data):
-    """Tests that the linear models work well within sklearn pipelines."""
-    x, y = load_data(**data_parameters)
-
-    # Define the model's hyper-parameters
-    model_hyperparameters = {"n_bits": 2, "fit_intercept": fit_intercept}
-
-    pipe_cv = Pipeline(
-        [
-            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
-            ("scaler", StandardScaler()),
-            ("model", model_class(**model_hyperparameters)),
-        ]
-    )
-
-    # Do a grid search to find the best hyper-parameters
-    param_grid = {
-        "model__n_bits": [2, 3],
-    }
-    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
-
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-        grid_search.fit(x, y)

@@ -6,9 +6,12 @@ import numpy
 import pandas
 import pytest
 from sklearn.base import is_classifier, is_regressor
+from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import make_scorer, matthews_corrcoef, mean_squared_error
 from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from torch import nn
 
 from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
@@ -66,7 +69,9 @@ def check_generic(
     test_double_fit=True,
     test_offset=True,
     test_correctness_in_clear=True,
+    test_predict_correctness=True,
     test_pandas=True,
+    test_pipeline=True,
     verbose=True,
 ):
     """Generic tests.
@@ -89,7 +94,6 @@ def check_generic(
 
     Are currently missing
       - quantization
-      - pipeline
 
     More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 
@@ -201,11 +205,18 @@ def check_generic(
 
         check_pandas(model_class, n_bits, x, y)
 
+    # Test with pipelines
+    if test_pipeline:
+        if verbose:
+            print("Run check_pipeline")
+
+        check_pipeline(model_class, x, y)
+
     # Do some inferences in clear
     y_pred = model.predict(x[:NUMBER_OF_TESTS_IN_NON_FHE])
 
     # Check correct execution, if there is sufficiently n_bits
-    if n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS:
+    if test_predict_correctness and n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS:
 
         for test_with_execute_in_fhe in [False, True]:
 
@@ -401,6 +412,55 @@ def check_pandas(model_class, n_bits, x, y):
             model.predict(xpandas)
 
 
+def check_pipeline(model_class, x, y):
+    """Check pipeline support."""
+
+    # Will need some help to make it work
+    # FIXME:
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        return
+
+    # Looks like it fails for some models, is it expected?
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
+    if is_model_class_in_a_list(
+        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
+    ):
+        return
+
+    hyper_param_combinations = get_hyper_param_combinations(model_class)
+
+    # Prepare the list of all hyper parameters
+    hyperparameters_list = [
+        {key: value} for key, values in hyper_param_combinations.items() for value in values
+    ]
+
+    # Take one of the hyper_parameters randomly (testing everything would be too long)
+    if len(hyperparameters_list) == 0:
+        hyper_parameters = {}
+    else:
+        hyper_parameters = hyperparameters_list[numpy.random.randint(0, len(hyperparameters_list))]
+
+    pipe_cv = Pipeline(
+        [
+            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
+            ("scaler", StandardScaler()),
+            ("model", model_class(**hyper_parameters)),
+        ]
+    )
+
+    # Do a grid search to find the best hyper-parameters
+    param_grid = {
+        "model__n_bits": [2, 3],
+    }
+    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        grid_search.fit(x, y)
+
+
 def check_grid_search(model, model_name, model_class, x, y):
     """Check grid search."""
     if is_classifier(model_class):
@@ -446,16 +506,8 @@ def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_t
         check_circuit_has_no_tlu(fhe_circuit)
 
 
-def check_hyper_parameters(
-    model_class,
-    n_bits,
-    x,
-    y,
-    test_correctness_in_clear,
-    check_r2_score,
-    check_accuracy,
-):
-    """Check hyper parameters."""
+def get_hyper_param_combinations(model_class):
+    """Return the hyper_param_combinations, depending on the model class"""
     hyper_param_combinations: Dict[str, List[Any]]
 
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
@@ -500,6 +552,21 @@ def check_hyper_parameters(
 
     # Don't put n_bits in hyper_parameters, it comes from the test itself
     assert "n_bits" not in hyper_param_combinations
+
+    return hyper_param_combinations
+
+
+def check_hyper_parameters(
+    model_class,
+    n_bits,
+    x,
+    y,
+    test_correctness_in_clear,
+    check_r2_score,
+    check_accuracy,
+):
+    """Check hyper parameters."""
+    hyper_param_combinations = get_hyper_param_combinations(model_class)
 
     # Prepare the list of all hyper parameters
     hyperparameters_list = [
