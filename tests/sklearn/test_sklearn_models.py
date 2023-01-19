@@ -72,6 +72,7 @@ def check_generic(
     test_predict_correctness=True,
     test_pandas=True,
     test_pipeline=True,
+    test_subfunctions=True,
     verbose=True,
 ):
     """Generic tests.
@@ -91,9 +92,15 @@ def check_generic(
       the compiler or minimal number of bits for precise computations
       - fit_benchmark
       - r2 score / accuracies
+      - pandas
+      - pipeline
+      - calls to predict_proba
+      - calls to decision_function
 
     Are currently missing
       - quantization
+      - check of predict_proba
+      - check of decision_function
 
     More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 
@@ -204,6 +211,13 @@ def check_generic(
             print("Run check_pandas")
 
         check_pandas(model_class, n_bits, x, y)
+
+    # Test subfunctions
+    if test_subfunctions:
+        if verbose:
+            print("Run check_subfunctions")
+
+        check_subfunctions(model_class, n_bits, x, y)
 
     # Test with pipelines
     if test_pipeline:
@@ -376,6 +390,30 @@ def check_offset(model_class, n_bits, x, y):
         # Another offset
         y -= 2
         model.fit(x, y)
+
+
+def check_subfunctions(model_class, n_bits, x, y):
+    """Check subfunctions."""
+    model = model_class(n_bits=n_bits)
+
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+    model.set_params(**model_params)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        model.fit(x, y)
+        model.predict(x[:1])
+
+        if is_classifier(model_class):
+
+            model.predict_proba(x)
+
+            if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
+                model.decision_function(x)
 
 
 def check_pandas(model_class, n_bits, x, y):
