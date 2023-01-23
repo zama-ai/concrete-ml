@@ -8,7 +8,7 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import get_model_name
-from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn.base import (
     get_sklearn_linear_models,
     get_sklearn_neural_net_models,
@@ -37,7 +37,7 @@ def test_sklearn_args():
     assert skipped == ["NeuralNetClassifier", "NeuralNetRegressor"]
 
 
-@pytest.mark.parametrize("model, parameters", classifiers + regressors)
+@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
 def test_seed_sklearn(model, parameters, load_data):
     """Tests the random_state parameter."""
     model_class = model

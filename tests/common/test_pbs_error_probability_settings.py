@@ -9,14 +9,14 @@ from torch import nn
 
 from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.torch.compile import compile_torch_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
 
 
-@pytest.mark.parametrize("model, parameters", classifiers + regressors)
+@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "kwargs",
     [

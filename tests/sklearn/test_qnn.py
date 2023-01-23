@@ -216,7 +216,7 @@ def test_compile_and_calib(
 
     # Execute in FHE, but don't check the value.
     # Since FHE execution introduces some stochastic errors,
-    # accuracy of FHE compiled classifiers is measured in the benchmarks
+    # accuracy of FHE compiled classifiers and regressors is measured in the benchmarks
     clf.predict(x_test[0, :], execute_in_fhe=True)
 
 

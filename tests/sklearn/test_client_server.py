@@ -13,7 +13,7 @@ from torch import nn
 from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.torch.compile import compile_torch_model
 
@@ -69,7 +69,7 @@ class OnDiskNetwork:
         self.dev_dir.cleanup()
 
 
-@pytest.mark.parametrize("model, parameters", classifiers + regressors)
+@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
 def test_client_server_sklearn(
     default_configuration_no_jit,
     model,

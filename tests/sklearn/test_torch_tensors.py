@@ -6,11 +6,11 @@ import pytest
 import torch
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn import NeuralNetClassifier, NeuralNetRegressor
 
 
-@pytest.mark.parametrize("model, parameters", classifiers + regressors)
+@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
 def test_torch_tensors(model, parameters, load_data):
     """Tests that we can use Torch tensors as inputs to fit and predict."""
     model = model()

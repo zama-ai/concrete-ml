@@ -78,7 +78,7 @@ _classifier_models = [
 ]
 
 # Get the datasets. The data generation is seeded in load_data.
-classifiers = [
+_classifiers_and_datasets = [
     pytest.param(
         model,
         {
@@ -100,7 +100,7 @@ classifiers = [
 # Get the datasets. The data generation is seeded in load_data.
 # Only LinearRegression supports multi targets
 # GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
-regressors = [
+_regressors_and_datasets = [
     pytest.param(
         model,
         {
@@ -118,3 +118,6 @@ regressors = [
     )
     for model in _regressor_models
 ]
+
+# All scikit-learn models in Concrete-ML
+sklearn_models_and_datasets = _classifiers_and_datasets + _regressors_and_datasets

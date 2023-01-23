@@ -9,7 +9,7 @@ import onnx
 import pytest
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.pytest.utils import classifiers, regressors
+from concrete.ml.pytest.utils import sklearn_models_and_datasets
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 
@@ -66,7 +66,7 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
         assert str_model == str_expected
 
 
-@pytest.mark.parametrize("model, parameters", classifiers + regressors)
+@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
 def test_dump(
     model,
     parameters,
