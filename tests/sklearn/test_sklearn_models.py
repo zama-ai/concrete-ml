@@ -428,7 +428,7 @@ def check_pandas(model_class, n_bits, x, y):
     if y.ndim == 1:
         ypandas = pandas.Series(y)
     else:
-        ypandas = y
+        ypandas = pandas.DataFrame(y)
 
     model_params = model.get_params()
     if "random_state" in model_params:
