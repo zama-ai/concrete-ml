@@ -315,7 +315,26 @@ class QuantizedTorchEstimatorMixin:
         self.quantized_module_ = None
         X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
 
+        # A helper for users so they don't need to import torch directly
+        args_to_convert_to_tensor = ["criterion__weight"]
+        for arg_name in args_to_convert_to_tensor:
+            if hasattr(self, arg_name):
+                attr_value = getattr(self, arg_name)
+                # The parameter could be a list, numpy.ndaray or tensor
+                if isinstance(attr_value, list):
+                    attr_value = numpy.asarray(attr_value, numpy.float32)
+
+                if isinstance(attr_value, numpy.ndarray):
+                    setattr(self, arg_name, torch.from_numpy(attr_value).float())
+
+                assert_true(
+                    isinstance(getattr(self, arg_name), torch.Tensor),
+                    f"NeuralNetClassifier parameter `{arg_name}` must "
+                    "be a numpy.ndarray, list or torch.Tensor",
+                )
+
         # Call skorch fit that will train the network
+        # This will instantiate the model class if it's not already done.
         super().fit(X, y, **fit_params)
 
         # Export the brevitas model to ONNX

@@ -206,7 +206,7 @@ class QuantizedModule:
 
     def forward(
         self, *qvalues: numpy.ndarray, debug: bool = False
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, Dict[str, numpy.ndarray]]]:
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, Optional[Dict[Any, Any]]]]:
         """Forward pass with numpy function only.
 
         Args:
@@ -236,7 +236,9 @@ class QuantizedModule:
         )
 
         if debug:
-            debug_value_tracker: Dict[str, Any] = {}
+            debug_value_tracker: Optional[
+                Dict[str, Dict[Union[int, str], Optional[Union[QuantizedArray, numpy.ndarray]]]]
+            ] = {}
             for (_, layer) in self.quant_layers_dict.values():
                 layer.debug_value_tracker = debug_value_tracker
             result = self._forward(*qvalues)

@@ -74,17 +74,18 @@ class QuantizedOp:
     _has_attr: bool
     _inputs_not_quantized: Set[str] = set()
     quantize_inputs_with_model_outputs_precision: bool = False
+
+    # The ONNX name of this op instance (e.g. "Conv_9", "MatMul_5" etc.)
     op_instance_name: str
 
     # Determines if this op computes a tensor that is a graph output, i.e. a tensor
     # that will be decrypted and dequantized in the clear
     produces_graph_output = False
 
-    # The ONNX name of this op instance (e.g. "Conv_9", "MatMul_5" etc.)
-    op_instance_name = None
-
     error_tracker: Optional[List[int]] = None
-    debug_value_tracker: Optional[Dict[str, Any]] = None
+    debug_value_tracker: Optional[
+        Dict[str, Dict[Union[int, str], Optional[Union[QuantizedArray, numpy.ndarray]]]]
+    ] = None
 
     POSITIONAL_ARGUMENTS_KINDS = {
         Parameter.POSITIONAL_ONLY,

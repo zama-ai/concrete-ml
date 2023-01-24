@@ -27,8 +27,6 @@ def test_parameter_validation(model, load_data):
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
         "module__n_accum_bits": MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-        "module__n_outputs": 2,
-        "module__input_dim": 10,
         "module__activation_function": nn.ReLU,
         "max_epochs": 10,
         "verbose": 0,
@@ -47,6 +45,8 @@ def test_parameter_validation(model, load_data):
             class_sep=2,
         )
 
+        valid_params["criterion__weight"] = [1, 1]
+
     # Get the dataset. The data generation is seeded in load_data.
     elif is_regressor(model):
         x, y, _ = load_data(
@@ -61,14 +61,18 @@ def test_parameter_validation(model, load_data):
         raise ValueError(f"Data generator not implemented for {str(model)}")
 
     invalid_params_and_exception_pattern = {
-        ("module__n_layers", 0, ".* number of layers.*"),
-        ("module__n_w_bits", 0, ".* quantization bitwidth.*"),
-        ("module__n_a_bits", 0, ".* quantization bitwidth.*"),
-        ("module__n_accum_bits", 0, ".* accumulator bitwidth.*"),
-        ("module__n_outputs", 0, ".* number of (outputs|classes).*"),
-        ("module__input_dim", 0, ".* number of input dimensions.*"),
+        "init": [
+            ("module__n_outputs", 0, ".*module__n_outputs.*"),
+            ("module__input_dim", 0, ".*module__input_dim.*"),
+        ],
+        "fit": [
+            ("module__n_layers", 0, ".* number of layers.*"),
+            ("module__n_w_bits", 0, ".* quantization bitwidth.*"),
+            ("module__n_a_bits", 0, ".* quantization bitwidth.*"),
+            ("module__n_accum_bits", 0, ".* accumulator bitwidth.*"),
+        ],
     }
-    for inv_param in invalid_params_and_exception_pattern:
+    for inv_param in invalid_params_and_exception_pattern["init"]:
         params = deepcopy(valid_params)
         params[inv_param[0]] = inv_param[1]
 
@@ -78,12 +82,22 @@ def test_parameter_validation(model, load_data):
         ):
             concrete_classifier = model(**params)
 
-            with pytest.raises(
-                ValueError,
-                match=".* must be trained.*",
-            ):
-                _ = concrete_classifier.n_bits_quant
+    for inv_param in invalid_params_and_exception_pattern["fit"]:
+        params = deepcopy(valid_params)
+        params[inv_param[0]] = inv_param[1]
 
+        concrete_classifier = model(**params)
+
+        with pytest.raises(
+            ValueError,
+            match=".* must be trained.*",
+        ):
+            _ = concrete_classifier.n_bits_quant
+
+        with pytest.raises(
+            ValueError,
+            match=inv_param[2],
+        ):
             concrete_classifier.fit(x, y)
 
 
@@ -121,6 +135,9 @@ def test_compile_and_calib(
             n_classes=2,
             class_sep=2,
         )
+
+        # Add an offset to the labels to check that it is supported
+        y += 10
 
     # Get the dataset. The data generation is seeded in load_data.
     elif is_regressor(model):
@@ -161,8 +178,6 @@ def test_compile_and_calib(
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
         "module__n_accum_bits": 5,
-        "module__n_outputs": 2,
-        "module__input_dim": n_features,
         "module__activation_function": activation_function,
         "max_epochs": 10,
         "verbose": 0,
@@ -201,6 +216,11 @@ def test_compile_and_calib(
 
     # Train normally
     clf.fit(x_train, y_train)
+
+    if is_classifier(model):
+        y_pred_clear = clf.predict(x_train, execute_in_fhe=False)
+        # Check that the predicted classes are all contained in the model class list
+        assert set(numpy.unique(y_pred_clear)).issubset(set(clf.classes_))
 
     # Predicting with a model that is not compiled should fail
     with pytest.raises(ValueError, match=".* not yet compiled .*"):

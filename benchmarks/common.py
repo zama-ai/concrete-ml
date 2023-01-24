@@ -376,9 +376,6 @@ def train_and_test_regressor(
         x_train = normalizer.fit_transform(x_train)
         x_test = normalizer.transform(x_test)
 
-        config["module__input_dim"] = x_train.shape[1]
-        config["module__n_outputs"] = y_train.shape[1] if y_train.ndim == 2 else 1
-
     concrete_regressor = regressor(**config)
 
     if local_args.verbose:
@@ -543,8 +540,6 @@ def train_and_test_classifier(
 
     if classifier.__name__ == "NeuralNetClassifier":
         classes = np.unique(y_all)
-        config["module__input_dim"] = x_train.shape[1]
-        config["module__n_outputs"] = len(classes)
         config["criterion__weight"] = compute_class_weight("balanced", classes=classes, y=y_train)
 
     concrete_classifier = classifier(**config)

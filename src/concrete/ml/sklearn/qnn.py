@@ -4,6 +4,7 @@
 # pylint: disable=invalid-name
 
 from abc import abstractmethod
+from typing import Any, Dict, Optional
 
 import brevitas.nn as qnn
 import numpy
@@ -13,8 +14,30 @@ from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
 from skorch.regressor import NeuralNetRegressor as SKNeuralNetRegressor
 from torch import nn
 
+from ..common.debugging import assert_true
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from .base import QuantizedTorchEstimatorMixin
+
+QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
+
+
+def _check_input_output_kwargs(kwargs: Dict[str, Any]) -> None:
+    """Check that a QNN model is not constructed with automatically computed parameters.
+
+    Args:
+        kwargs (dict): The keyword arguments to check
+
+    Raises:
+        ValueError: if the automatically computed parameters are present in the keyword args
+    """
+
+    for kwarg in QNN_AUTO_KWARGS:
+        if kwarg in kwargs:
+            raise ValueError(
+                f"The number of inputs and outputs of the neural network "
+                "are determined automatically in .fit, based on the data-set. Setting "
+                f"`{kwarg}` manually is forbidden."
+            )
 
 
 class SparseQuantNeuralNetImpl(nn.Module):
@@ -75,19 +98,9 @@ class SparseQuantNeuralNetImpl(nn.Module):
         self.features = nn.Sequential()
         in_features = input_dim
 
-        if input_dim <= 0:
-            raise ValueError(
-                f"Invalid number of input dimensions: {input_dim}, input_dim must be greater than 0"
-            )
-
         if n_layers <= 0:
             raise ValueError(
                 f"Invalid number of layers: {n_layers}, at least one intermediary layers is needed"
-            )
-
-        if n_outputs < 1:
-            raise ValueError(
-                f"Invalid number of outputs: {n_outputs}, n_outputs should be larger than one"
             )
 
         if n_w_bits <= 0 or n_a_bits <= 0:
@@ -95,7 +108,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
         for idx in range(n_layers):
             out_features = (
-                n_outputs if idx == n_layers - 1 else input_dim * n_hidden_neurons_multiplier
+                n_outputs if idx == n_layers - 1 else int(input_dim * n_hidden_neurons_multiplier)
             )
 
             quant_name = f"quant{idx}"
@@ -129,6 +142,12 @@ class SparseQuantNeuralNetImpl(nn.Module):
         self.n_w_bits = n_w_bits
         self.n_a_bits = n_a_bits
         self.n_accum_bits = n_accum_bits
+
+        # Store input/output dimensions to check they are correct during .fit(X,y).
+        # The X passed to .fit must not have different dimensions than the one given in this
+        # constructor.
+        self.n_outputs = n_outputs
+        self.input_dim = input_dim
 
         self.pruned_layers = set()
 
@@ -164,9 +183,11 @@ class SparseQuantNeuralNetImpl(nn.Module):
                 continue
 
             s = layer.weight.shape
+            st = [s[0], numpy.prod(s[1:])]
+
             # If this is a layer that should be pruned and is currently being pruned,
             # Make the pruning permanent
-            if s[0] > max_neuron_connections and layer in self.pruned_layers:
+            if st[1] > max_neuron_connections and layer in self.pruned_layers:
                 pruning.remove(layer, "weight")
                 self.pruned_layers.remove(layer)
 
@@ -191,11 +212,13 @@ class SparseQuantNeuralNetImpl(nn.Module):
                 continue
 
             s = layer.weight.shape
+            st = [s[0], numpy.prod(s[1:])]
+
             # To satisfy accumulator bitwidth constraints each dot-product between an input line and
             # weight column must not exceed n_accum_bits bits. We thus prune the layer to have
             # at most max_neuron_connections non-zero weights
-            if s[0] > max_neuron_connections and layer not in self.pruned_layers:
-                pruning.l1_unstructured(layer, "weight", (s[0] - max_neuron_connections) * s[1])
+            if st[1] > max_neuron_connections and layer not in self.pruned_layers:
+                pruning.l1_unstructured(layer, "weight", (st[1] - max_neuron_connections) * st[0])
                 self.pruned_layers.add(layer)
 
     def forward(self, x):
@@ -319,6 +342,10 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
 class FixedTypeSkorchNeuralNet:
     """A mixin with a helpful modification to a skorch estimator that fixes the module type."""
 
+    # The number of outputs of the underlying neural-net
+    module__n_outputs: Optional[int] = None
+    module__input_dim: Optional[int] = None
+
     def get_params(self, deep=True, **kwargs):
         """Get parameters for this estimator.
 
@@ -339,6 +366,11 @@ class FixedTypeSkorchNeuralNet:
         # the NN model type. Therefore, when cloning this estimator we don't need to pass
         # module again, it's passed by this class's constructor
         params.pop("module")
+
+        # Remove the parameters that are auto-computed by .fit()
+        for kwarg in QNN_AUTO_KWARGS:
+            params.pop(kwarg, None)
+
         return params
 
 
@@ -380,20 +412,10 @@ class NeuralNetClassifier(
         # Used to load the model class from json
         if len(args) == 0 and len(kwargs) == 0:
             return
-        # A helper for users so they don't need to import torch directly
-        args_to_convert_to_tensor = ["criterion__weight"]
-        for arg_name in args_to_convert_to_tensor:
-            if arg_name in kwargs and isinstance(kwargs[arg_name], numpy.ndarray):
-                kwargs[arg_name] = torch.from_numpy(kwargs[arg_name]).float()
-
-        n_classes = kwargs["module__n_outputs"]
-        if n_classes < 2:
-            raise ValueError(
-                f"Invalid number of classes: {str(n_classes)}, "
-                "n_outputs should be larger than one"
-            )
 
         kwargs.pop("n_bits", None)
+
+        _check_input_output_kwargs(kwargs)
 
         # Note that our default optimizer is Adam which was found to be more stable when pruning
         SKNeuralNetClassifier.__init__(
@@ -428,7 +450,11 @@ class NeuralNetClassifier(
         """
 
         # We just need to do argmax on the predicted probabilities
-        return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
+        # First we get the predicted class indices
+        y_index_pred = self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
+
+        # Finally, return the class names corresponding to the indices
+        return self.classes_[y_index_pred]
 
     def fit(self, X, y, **fit_params):
         # We probably can't handle all cases since per Skorch documentation they handle:
@@ -444,6 +470,25 @@ class NeuralNetClassifier(
             X = X.astype(numpy.float32)
         if isinstance(y, numpy.ndarray) and (y.dtype != numpy.int64):
             y = y.astype(numpy.int64)
+
+        cls, y = numpy.unique(y, return_inverse=True)
+
+        # Check that at least two classes are given
+        n_classes = len(cls)
+        assert_true(
+            n_classes >= 2,
+            f"Invalid number of classes: {str(n_classes)}, " "n_outputs should be larger than one",
+        )
+
+        # Set the number of outputs of the nn.Module to the number of classes
+        self.module__n_outputs = n_classes
+
+        # Set the number of input dimensions to use
+        self.module__input_dim = X.shape[1]
+
+        # Set the Skorch classes
+        self.classes = cls
+
         return super().fit(X, y, **fit_params)
 
 
@@ -481,6 +526,8 @@ class NeuralNetRegressor(
 
         kwargs.pop("n_bits", None)
 
+        _check_input_output_kwargs(kwargs)
+
         # Note that our default optimizer is Adam which was found to be more stable when pruning
         SKNeuralNetRegressor.__init__(
             self,
@@ -508,4 +555,13 @@ class NeuralNetRegressor(
             X = X.astype(numpy.float32)
         if isinstance(y, numpy.ndarray) and (y.dtype != numpy.float32):
             y = y.astype(numpy.float32)
+
+        # The number of outputs for regressions is the number of regression targets
+        # We use y.shape which works for all supported datatype (including numpy array, pandas
+        # dataframe and torch tensor).
+        self.module__n_outputs = y.shape[1] if y.ndim == 2 else 1
+
+        # Set the number of input dimensions to use
+        self.module__input_dim = X.shape[1]
+
         return super().fit(X, y, **fit_params)

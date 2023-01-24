@@ -21,6 +21,13 @@ Good quantization parameter values are critical to make models [respect FHE cons
 
 To create an instance of a Fully Connected Neural Network (FCNN), you need to instantiate one of the `NeuralNetClassifier` and `NeuralNetRegressor` classes and configure a number of parameters that are passed to their constructor. Note that some parameters need to be prefixed by `module__`, while others don't. Basically, the parameters that are related to the model, i.e. the underlying `nn.Module`, must have the prefix. The parameters that are related to training options do not require the prefix.
 
+<!-- 
+FIXME: Restore the test for this codeblock in the next RC
+see: https://github.com/zama-ai/concrete-ml-internal/issues/2807
+ -->
+
+<!-- pytest-codeblocks:skip -->
+
 ```python
 from concrete.ml.sklearn import NeuralNetClassifier
 import torch.nn as nn
@@ -33,8 +40,6 @@ params = {
     "module__n_a_bits": 2,
     "module__n_accum_bits": 8,
     "module__n_hidden_neurons_multiplier": 1,
-    "module__n_outputs": n_outputs,
-    "module__input_dim": n_inputs,
     "module__activation_function": nn.ReLU,
     "max_epochs": 10,
 }
@@ -51,8 +56,6 @@ The figure above shows, on the right, the Concrete-ML neural network, trained wi
 ### Architecture parameters
 
 - `module__n_layers`: number of layers in the FCNN, must be at least 1. Note that this is the total number of layers. For a single, hidden layer NN model, set `module__n_layers=2`
-- `module__n_outputs`: number of outputs (classes or targets)
-- `module__input_dim`: dimensionality of the input
 - `module__activation_function`: can be one of the Torch activations (e.g. nn.ReLU, see the full list [here](../deep-learning/torch_support.md#activations))
 
 ### Quantization parameters
@@ -71,19 +74,7 @@ Other parameters from skorch are in the [skorch documentation](https://skorch.re
 
 ### Advanced parameters
 
-- `module__n_hidden_neurons_multiplier`: The number of hidden neurons will be automatically set proportional to the dimensionality of the input (i.e. the value for `module__input_dim`). This parameter controls the proportionality factor and is set to 4 by default. This value gives good accuracy while avoiding accumulator overflow. See the [pruning](../advanced-topics/pruning.md) and [quantization](../advanced-topics/quantization.md) sections for more info.
-
-### Network input/output
-
-When you have training data in the form of a NumPy array, and targets in a NumPy 1D array, you can set:
-
-<!--pytest-codeblocks:skip-->
-
-```python
-    classes = np.unique(y_all)
-    params["module__input_dim"] = x_train.shape[1]
-    params["module__n_outputs"] = len(classes)
-```
+- `module__n_hidden_neurons_multiplier`: The number of hidden neurons will be automatically set proportional to the dimensionality of the input. This parameter controls the proportionality factor and is set to 4 by default. This value gives good accuracy while avoiding accumulator overflow. See the [pruning](../advanced-topics/pruning.md) and [quantization](../advanced-topics/quantization.md) sections for more info.
 
 ### Class weights
 

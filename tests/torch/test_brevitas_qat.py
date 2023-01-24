@@ -252,8 +252,6 @@ def test_brevitas_intermediary_values(
         "module__n_w_bits": n_bits_w_a,
         "module__n_a_bits": n_bits_w_a,
         "module__n_accum_bits": n_accum_bits,
-        "module__n_outputs": n_outputs,
-        "module__input_dim": x_train.shape[1],
         "module__activation_function": activation_function,
         "module__quant_signed": signed,
         "module__quant_narrow": narrow,

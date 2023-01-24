@@ -231,6 +231,10 @@ class QuantizedGemm(QuantizedMixingOp):
         else:
             numpy_q_out = matmul
 
+        if self.debug_value_tracker is not None:
+            # pylint: disable-next=unsubscriptable-object
+            self.debug_value_tracker[self.op_instance_name]["output"] = numpy_q_out  # type: ignore
+
         # sum_weights is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
             weights_q_values, axis=0, keepdims=True
@@ -662,6 +666,10 @@ class QuantizedConv(QuantizedMixingOp):
         else:
             numpy_q_out = conv_wx
 
+        if self.debug_value_tracker is not None:
+            # pylint: disable-next=unsubscriptable-object
+            self.debug_value_tracker[self.op_instance_name]["output"] = numpy_q_out
+
         # Compute the third term, the sum of the weights which is a constant
         sum_weights = q_input.quantizer.zero_point * numpy.sum(
             q_weights.qvalues, axis=(1, 2, 3), keepdims=True
@@ -834,6 +842,10 @@ class QuantizedAvgPool(QuantizedMixingOp):
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
         sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
+
+        if self.debug_value_tracker is not None:
+            # pylint: disable-next=unsubscriptable-object
+            self.debug_value_tracker[self.op_instance_name]["output"] = sum_result
 
         result = (
             sum_result.astype(numpy.float64) * norm_const - q_input.quantizer.zero_point
