@@ -2,7 +2,7 @@
 
 # pylint: disable=too-many-lines
 from inspect import signature
-from typing import List, Optional, Sequence, Set, Tuple, Union
+from typing import Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy
 import onnx
@@ -1726,18 +1726,47 @@ def numpy_concatenate(*x: numpy.ndarray, axis: int) -> Tuple[numpy.ndarray]:
 
 
 @onnx_func_raw_args("axis")
-def numpy_unsqueeze(x: numpy.ndarray, axis: list) -> Tuple[numpy.ndarray]:
+def numpy_unsqueeze(x: numpy.ndarray, axis: Iterable) -> Tuple[numpy.ndarray]:
     """Apply the unsqueeze operator in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#unsqueeze-13
 
     Args:
         x (numpy.ndarray): Input tensor.
-        axis (list): List of the axis to unsqueeze.
+        axis (Iterable): Tuple of the axis to unsqueeze.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor.
     """
-    for ax in axis:
-        x = numpy.expand_dims(x, axis=ax)
+    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1818
+    # replace the following by numpy.unsqueeze
+    for i, ax in enumerate(sorted(axis)):
+        # Add a dimension to x following the axis.
+        # The axis must be shifted by the number of dimensions already
+        # added to x (thus the ax + i).
+        x = numpy.expand_dims(x, axis=ax + i)
     return (x,)
+
+
+@onnx_func_raw_args("axis")
+def numpy_squeeze(x: numpy.ndarray, axis: Optional[Iterable] = None) -> Tuple[numpy.ndarray]:
+    """Apply the squeeze operator in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#squeeze-13
+
+    Args:
+        x (numpy.ndarray): Input tensor.
+        axis (Optional[Iterable]): Tuple of the axis to squeeze.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor.
+    """
+
+    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1818
+    # replace by numpy.squeeze
+    if not axis:
+        axis = [i for i, size in enumerate(x.shape) if size == 1]
+    shape = list(x.shape)
+    for i, ax in enumerate(axis):
+        shape.pop(ax - i)
+    return (numpy.reshape(x, tuple(shape)),)

@@ -167,6 +167,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Sin
 - Sinh
 - Softplus
+- Squeeze
 - Sub
 - Tan
 - Tanh

@@ -747,12 +747,14 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
 
         y_preds = []
         for qX_i in qX:
-            # expected x shape is (n_features, n_samples)
+            # expected encrypt_run_decrypt output shape is
+            # (1, n_features) but qX_i is (n_features,)
             qX_i = numpy.expand_dims(qX_i, 0)
             fhe_pred = self.fhe_circuit.encrypt_run_decrypt(qX_i)
             y_preds.append(fhe_pred)
-        y_preds_array = numpy.concatenate(y_preds, axis=-1)
 
+        # Concatenate on the n_examples dimension where shape is (n_examples, n_classes, n_trees)
+        y_preds_array = numpy.concatenate(y_preds, axis=0)
         return y_preds_array
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
@@ -880,12 +882,8 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         # Sum all tree outputs.
         # Remove the sum once we handle multi-precision circuits
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=0)
+        y_preds = numpy.sum(y_preds, axis=-1)
         assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-
-        # Remove the transpose operator once it gets back into the ONNX graph
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/931
-        y_preds = numpy.transpose(y_preds)
         return y_preds
 
 

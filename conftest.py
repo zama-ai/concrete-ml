@@ -463,8 +463,10 @@ def check_is_good_execution_for_cml_vs_circuit():
                 raise ValueError(
                     "numpy_function should be a built-in concrete sklearn model or a QuantizedModule object."
                 )
-
-            if numpy.array_equal(results_cnp_circuit, results_model_function):
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2806
+            # fp64 comparisons do not pass the numpy.array_equal while the quantized
+            # int64 values do.
+            if numpy.isclose(results_cnp_circuit, results_model_function).all():
                 return
         raise RuntimeError(
             f"Mismatch between circuit results:\n{results_cnp_circuit}\n"

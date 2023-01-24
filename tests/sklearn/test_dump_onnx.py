@@ -188,7 +188,8 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  return %/_operators.0/Reshape_3_output_0
+  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
+  return %transposed_output
 }""",
         "RandomForestClassifier": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -206,7 +207,8 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  return %/_operators.0/Reshape_3_output_0
+  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
+  return %transposed_output
 }""",
         "PoissonRegressor": """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
@@ -253,7 +255,8 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  return %/_operators.0/Reshape_3_output_0
+  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
+  return %transposed_output
 }""",
         "GammaRegressor": """graph torch_jit (
   %onnx::MatMul_0[DOUBLE, 10]
@@ -299,7 +302,11 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  return %/_operators.0/Reshape_3_output_0
+  %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
+  %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
+  %/_operators.0/Constant_4_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
+  return %/_operators.0/Reshape_4_output_0
 }""",
         "RandomForestRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -317,7 +324,8 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  return %/_operators.0/Reshape_3_output_0
+  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
+  return %transposed_output
 }""",
         "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -328,6 +336,7 @@ def test_dump(
   %_operators.0.weight_2[INT64, 20x8x7]
   %_operators.0.bias_2[INT64, 160x1]
   %_operators.0.weight_3[INT64, 20x1x8]
+  %axes_squeeze[INT64, 1]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
@@ -342,7 +351,11 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  return %/_operators.0/Reshape_3_output_0
+  %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
+  %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
+  %/_operators.0/Constant_4_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
+  return %/_operators.0/Reshape_4_output_0
 }""",
         "LinearRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]

@@ -70,11 +70,6 @@ def remove_identity_nodes(onnx_model: onnx.ModelProto):
                 for input_idx, input_ in enumerate(next_nodes.input):
                     if input_ == identity_output:
                         next_nodes.input[input_idx] = identity_input
-
-            for output in onnx_model.graph.output:
-                if output.name == identity_output:
-                    output.name = identity_input
-
             onnx_model.graph.node.pop(node_idx)
         else:
             node_idx += 1

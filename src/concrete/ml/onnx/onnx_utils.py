@@ -285,6 +285,7 @@ from .ops_impl import (
     numpy_sin,
     numpy_sinh,
     numpy_softplus,
+    numpy_squeeze,
     numpy_sub,
     numpy_tan,
     numpy_tanh,
@@ -369,6 +370,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Sign": numpy_sign,
     "Concat": numpy_concatenate,
     "Unsqueeze": numpy_unsqueeze,
+    "Squeeze": numpy_squeeze,
 }
 
 

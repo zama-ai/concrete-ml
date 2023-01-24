@@ -1799,7 +1799,6 @@ class QuantizedUnsqueeze(QuantizedOp):
         )
 
         axes = prepared_inputs[1]
-        assert_true(isinstance(axes, list))
 
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
@@ -1851,6 +1850,44 @@ class QuantizedConcat(QuantizedOp):
         return QuantizedArray(
             q_inputs[0].quantizer.n_bits,
             self.call_impl(*tensors_to_concat, **attrs),
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )
+
+
+class QuantizedSqueeze(QuantizedOp):
+    """Squeeze operator."""
+
+    _impl_for_op_named: str = "Squeeze"
+    quantize_inputs_with_model_outputs_precision = True
+
+    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+        """Squeeze the input tensors on a given axis.
+
+        Args:
+            q_inputs: an encrypted integer tensor
+            attrs: additional optional squeeze options
+
+        Returns:
+            result (QuantizedArray): squeezed encrypted integer tensor
+        """
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
+        # Currently Squeeze quantizes the inputs, but this is unnecessary if the reshape
+        # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
+        # here only if the concatenated result is returned directly from the FHE program.
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        axes = prepared_inputs[1]
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].quantizer.n_bits,
+            self.call_impl(prepared_inputs[0].qvalues, axes, **attrs),
             value_is_float=False,
             options=self._get_output_quant_opts(),
             stats=prepared_inputs[0].quantizer.quant_stats,

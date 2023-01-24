@@ -61,6 +61,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedSigmoid,
     QuantizedSign,
     QuantizedSoftplus,
+    QuantizedSqueeze,
     QuantizedSub,
     QuantizedTanh,
     QuantizedTranspose,
@@ -1241,6 +1242,7 @@ def test_all_ops_were_tested():
         QuantizedTranspose: test_quantized_transpose,
         QuantizedUnsqueeze: test_quantized_unsqueeze,
         QuantizedConcat: test_quantized_concat,
+        QuantizedSqueeze: test_quantized_squeeze,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
@@ -1392,7 +1394,7 @@ def test_quantized_transpose(shape, axes):
     [pytest.param((10, 5), (10, 5), 1), pytest.param((50, 40), (50, 40), 1)],
 )
 def test_quantized_concat(shape1, shape2, axis):
-    """Test quantized reshape."""
+    """Test quantized concat."""
 
     n_bits_concat_output = MAX_BITWIDTH_BACKWARD_COMPATIBLE
     data = numpy.random.randn(*shape1)
@@ -1427,13 +1429,16 @@ def test_quantized_concat(shape1, shape2, axis):
     )
 
 
-@pytest.mark.parametrize("shape, axis", [pytest.param((10, 5), [1]), pytest.param((50, 40), [0])])
+@pytest.mark.parametrize(
+    "shape, axis",
+    [pytest.param((10, 5), (1,)), pytest.param((50, 40), (0,)), pytest.param((50, 40), (1, 2))],
+)
 def test_quantized_unsqueeze(shape, axis):
-    """Test quantized reshape."""
+    """Test quantized unsqueeze."""
 
     def custom_numpy_unsqueeze(x, axes):
-        for axis in axes:
-            x = numpy.expand_dims(x, axis=axis)
+        for i, axis_ in enumerate(sorted(axes)):
+            x = numpy.expand_dims(x, axis=axis_ + i)
         return x
 
     n_bits_concat_output = MAX_BITWIDTH_BACKWARD_COMPATIBLE
@@ -1452,3 +1457,32 @@ def test_quantized_unsqueeze(shape, axis):
     assert q_result.quantizer.zero_point == q_arr.quantizer.zero_point
     assert q_result.quantizer.scale == q_arr.quantizer.scale
     assert numpy.all(custom_numpy_unsqueeze(q_arr.qvalues, axes=axis) == q_result.qvalues)
+
+
+@pytest.mark.parametrize(
+    "shape, axis",
+    [
+        pytest.param((10, 1, 5), (1,)),
+        pytest.param((1, 50, 40), (0,)),
+        pytest.param((1, 50, 1, 40), None),
+    ],
+)
+def test_quantized_squeeze(shape, axis):
+    """Test quantized squeeze."""
+
+    n_bits_concat_output = MAX_BITWIDTH_BACKWARD_COMPATIBLE
+    data = numpy.random.randn(*shape)
+
+    q_arr = QuantizedArray(n_bits=n_bits_concat_output, values=data)
+
+    q_squeeze = QuantizedSqueeze(
+        n_bits_concat_output,
+        OP_DEBUG_NAME + "QuantizedSqueeze",
+        input_quant_opts=q_arr.quantizer.quant_options,
+        constant_inputs={1: axis},
+    )
+    q_result = q_squeeze(q_arr)
+
+    assert q_result.quantizer.zero_point == q_arr.quantizer.zero_point
+    assert q_result.quantizer.scale == q_arr.quantizer.scale
+    assert numpy.all(numpy.squeeze(q_arr.qvalues, axis=axis) == q_result.qvalues)

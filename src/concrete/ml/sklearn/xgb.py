@@ -141,31 +141,10 @@ class XGBClassifier(BaseTreeClassifierMixin):
         Returns:
             numpy.ndarray: The post-processed predictions.
         """
-        assert self.output_quantizers is not None
+        y_preds = super().post_processing(y_preds)
 
         # Update post-processing params with their current values
         self.__dict__.update(self.post_processing_params)
-
-        y_preds = self.output_quantizers[0].dequant(y_preds)
-
-        # Apply transpose
-        # XGBoost returns a shape (n_examples, n_classes, n_trees) when self.n_classes_ >= 3
-        # otherwise it returns a shape (n_examples, 1, n_trees)
-        # Remove the transpose operator once it gets back into the ONNX graph
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/931
-        y_preds = numpy.transpose(y_preds, axes=(2, 1, 0))
-
-        # Reshape to (-1, n_classes, n_trees)
-        # No need to reshape if n_classes = 2
-        if self.n_classes_ > 2:
-            y_preds = y_preds.reshape((-1, self.n_classes_, self.n_estimators))  # type: ignore
-
-        # Sum all tree outputs.
-        # Remove the sum once we handle multi-precision circuits
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=2)
-
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
 
         # If this binary classification problem
         if self.n_classes_ == 2:
@@ -313,12 +292,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         # Dequantize the output
         y_preds = self.dequantize_output(y_preds)
 
-        # Apply transpose
-        # XGBoost returns a shape (n_examples, n_classes, n_trees) if self.n_classes_ >= 3, else
-        # it returns a shape (n_examples, 1, n_trees)
-        # Remove the transpose operator once it gets back into the ONNX graph
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/931
-        y_preds = numpy.transpose(y_preds, axes=(2, 1, 0))
+        # XGBoost returns a shape (n_examples, n_classes, n_trees) when self.n_classes_ >= 3
+        # otherwise it returns a shape (n_examples, 1, n_trees)
 
         # Sum all tree outputs.
         # Remove the sum once we handle multi-precision circuits

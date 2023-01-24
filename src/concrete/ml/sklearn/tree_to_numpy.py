@@ -10,11 +10,7 @@ from onnx import numpy_helper
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, get_onnx_opset_version
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
-from ..onnx.onnx_model_manipulations import (
-    clean_graph_after_node_name,
-    keep_following_outputs_discard_others,
-    remove_node_types,
-)
+from ..onnx.onnx_model_manipulations import clean_graph_after_node_name, remove_node_types
 from ..quantization import QuantizedArray
 from ..quantization.quantizers import UniformQuantizer
 
@@ -39,6 +35,7 @@ class Task(Enum):
 EXPECTED_NUMBER_OF_OUTPUTS_PER_TASK = {Task.CLASSIFICATION: 2, Task.REGRESSION: 1}
 
 
+# pylint: disable=too-many-locals,too-many-statements
 def tree_to_numpy(
     model: onnx.ModelProto,
     x: numpy.ndarray,
@@ -113,28 +110,60 @@ def tree_to_numpy(
 
     # If the framework used is XGBoost, remove all the ONNX graph's nodes that follow the last
     # MatMul operator
+
+    # Find ReduceSum node
+    target_optype = "ReduceSum"
+    target_node_list = [node for node in onnx_model.graph.node if node.op_type == target_optype]
+    assert_true(
+        len(target_node_list) == 1,
+        "Multiple ReduceSum node found which is unexpected in tree-based models",
+    )
+    target_node = target_node_list[0]
+
+    # Get the input to ReduceSum where index 0 is the data
+    # and index 1: are the attributes
+    input_name = target_node.input[0]
+
+    # Find the node that has the input_name as output name
+    node_to_cut = next(node for node in onnx_model.graph.node if node.output[0] == input_name)
+    node_name_to_cut = node_to_cut.name
+    clean_graph_after_node_name(onnx_model=onnx_model, node_name=node_name_to_cut)
+
     if framework == "xgboost":
-        # Find Reshape node after last MatMul node
-        # (last MatMul node takes an input with "weight_3" in the name)
-        node_cut_id = ""
-        for node in onnx_model.graph.node:
-            if node_cut_id != "" and node.op_type == "Reshape" and node_cut_id in node.input:
-                node_name_to_cut = node.name
-                break
+        # FIXME https://github.com/zama-ai/concrete-ml-internal/issues/2778
+        # The squeeze ops does not have the proper dimensions.
+        # remove the following workaround when the issue is fixed
+        # Add the axis attribute to the Squeeze node
+        target_node_id_list = [
+            i for i, node in enumerate(onnx_model.graph.node) if node.op_type == "Squeeze"
+        ]
+        assert_true(
+            len(target_node_id_list) == 1,
+            "Multiple Squeeze node found which is unexpected in tree-based models",
+        )
+        axes_input_name = "axes_squeeze"
+        axes_input = onnx.helper.make_tensor(axes_input_name, onnx.TensorProto.INT64, [1], (1,))
 
-            if len(node.input) > 0 and "weight_3" in node.input[0] and node.op_type == "MatMul":
-                node_cut_id = node.output[0]
-
-        clean_graph_after_node_name(onnx_model=onnx_model, node_name=node_name_to_cut)
-
-    # Else, keep track of the last output
+        onnx_model.graph.initializer.append(axes_input)
+        onnx_model.graph.node[target_node_id_list[0]].input.insert(1, axes_input_name)
     else:
-        keep_following_outputs_discard_others(onnx_model, ("variable",))
+        # Add a transpose node before the output
 
-    # Remove Transpose and Gather from the list once integrated in Concrete-ML
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/345
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/931
-    op_type_to_remove = ["Transpose", "ArgMax", "ReduceSum", "Cast", "Gather"]
+        # Get the output node
+        output_node = onnx_model.graph.output[0]
+
+        # Create the node with perm attribute equal to (2, 1, 0)
+        transpose_node = onnx.helper.make_node(
+            "Transpose",
+            inputs=[output_node.name],
+            outputs=["transposed_output"],
+            perm=[2, 1, 0],
+        )
+
+        onnx_model.graph.node.append(transpose_node)
+        onnx_model.graph.output[0].name = "transposed_output"
+
+    op_type_to_remove = ["Cast"]
     remove_node_types(onnx_model, op_type_to_remove)
 
     # Modify onnx graph to fit in FHE
