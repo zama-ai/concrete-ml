@@ -25,7 +25,7 @@ from concrete.ml.sklearn.base import (
 # 0. If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, we check correctness against
 # scikit-learn in the clear, via check_correctness_with_sklearn function. This is because we need
 # sufficiently number of bits for precision
-N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS = 16
+N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS = 26
 
 # 1. We force the use of the VL if n_bits > N_BITS_THRESHOLD_TO_FORCE_VL. This is because compiler
 # limits to 16b in FHE
@@ -50,6 +50,13 @@ NUMBER_OF_TESTS_IN_FHE = 5
 
 # 5. How many samples for tests in quantized module (ie, predict with execute_in_fhe = False)
 NUMBER_OF_TESTS_IN_NON_FHE = 50
+
+# 6. n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
+# FHE which are not too long (relation with N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS and
+# N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE). 26 is in relation with
+# N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with check_correctness_with_sklearn
+N_BITS_REGULAR_BUILDS = [6, 26]
+N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 
 
 # pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
@@ -134,26 +141,6 @@ def check_generic(
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
 
-    if verbose:
-        print("Inference in the clear")
-
-    if verbose:
-        print(f"Compile {use_virtual_lib=}")
-
-    with warnings.catch_warnings():
-        # Use virtual lib to not have issues with precision
-        fhe_circuit = model.compile(
-            x,
-            default_configuration,
-            use_virtual_lib=use_virtual_lib,
-            show_mlir=verbose,
-        )
-
-        check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
-
-    if verbose:
-        print("Compilation done")
-
     # Check correctness with sklearn (if we have sufficiently bits of precision)
     if test_correctness_in_clear and n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS:
         if verbose:
@@ -227,6 +214,9 @@ def check_generic(
         check_pipeline(model_class, x, y)
 
     # Do some inferences in clear
+    if verbose:
+        print("Inference in the clear")
+
     y_pred = model.predict(x[:NUMBER_OF_TESTS_IN_NON_FHE])
 
     # Check correct execution, if there is sufficiently n_bits
@@ -239,6 +229,24 @@ def check_generic(
                 test_with_execute_in_fhe = False
 
             if test_with_execute_in_fhe:
+
+                if verbose:
+                    print(f"Compile {use_virtual_lib=}")
+
+                with warnings.catch_warnings():
+                    # Use virtual lib to not have issues with precision
+                    fhe_circuit = model.compile(
+                        x,
+                        default_configuration,
+                        use_virtual_lib=use_virtual_lib,
+                        show_mlir=verbose,
+                    )
+
+                    check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
+
+                if verbose:
+                    print("Compilation done")
+
                 if verbose:
                     print("Run check_is_good_execution_for_cml_vs_circuit")
 
@@ -653,16 +661,9 @@ def check_hyper_parameters(
 )
 @pytest.mark.parametrize(
     "n_bits",
-    [
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2761
-        # restore these tests when compilation time for 16b program has been reduced
-        #
-        # Make it back when compilation is fast pytest.param(16, id="n_bits_16"),
-        # Make it back when compilation is fast pytest.param(8, id="n_bits_8"),
-        pytest.param(6, id="n_bits_6"),
-        pytest.param(2, id="n_bits_2"),
-    ],
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
+# pylint: disable=too-many-arguments
 def test_generic(
     model,
     parameters,
@@ -674,12 +675,17 @@ def test_generic(
     check_r2_score,
     check_accuracy,
     check_circuit_has_no_tlu,
+    is_weekly_option,
 ):
     """Test in a generic way our sklearn models."""
 
     if n_bits > N_BITS_THRESHOLD_TO_FORCE_VL and not use_virtual_lib:
-        # Skip this, we can't use FHE for too large precision
         pytest.skip("We can't use FHE for too large precision")
+
+    # Except for weeklies, just do few tests
+    if not is_weekly_option:
+        if n_bits in N_BITS_WEEKLY_ONLY_BUILDS:
+            pytest.skip(f"We test precision {n_bits=} only in weekly builds")
 
     check_generic(
         model,
