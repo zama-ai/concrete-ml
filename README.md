@@ -12,7 +12,7 @@
     <img src="https://img.shields.io/badge/read-documentation-yellow?style=flat-square">
   </a>
 <!-- Link to tutorials badge using shields.io -->
-  <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.3.x/docs/advanced_examples">
+  <a href="https://github.com/zama-ai/concrete-ml/tree/release/0.6.x/docs/advanced_examples">
     <img src="https://img.shields.io/badge/tutorials-and%20demos-orange?style=flat-square">
   </a>
 <!-- Community forum badge using shields.io -->
@@ -25,7 +25,7 @@
   </a>
 <!-- Follow on twitter badge using shields.io -->
   <a href="https://twitter.com/zama_fhe">
-    <img src="https://img.shields.io/twitter/follow/zama_fhe?color=blue&style=flat-square">
+    <img src="https://img.shields.io/badge/follow-zama%20fhe-1DA1F2?logo=twitter&style=flat-square">
   </a>
 </p>
 

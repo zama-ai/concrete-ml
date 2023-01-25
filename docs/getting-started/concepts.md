@@ -21,7 +21,7 @@ You can see some examples of the model development workflow [here](../built-in-m
    - provides a compiled model that can run on the server to perform inference on encrypted data.
 1. **key generation:** The data owner (client) needs to generate a pair of private keys (to encrypt/decrypt their data and results) and a public evaluation key (for the model's FHE evaluation on the server).
 
-You can see an example of the model deployment workflow [here](https://github.com/zama-ai/concrete-ml/blob/release/0.4.x/docs/advanced_examples/ClientServer.ipynb).
+You can see an example of the model deployment workflow [here](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/docs/advanced_examples/ClientServer.ipynb).
 
 ## Cryptography concepts
 
@@ -45,4 +45,4 @@ However, these methods may cause a reduction in the accuracy of the model since 
 
 Additional specific methods can help to make models compatible with FHE constraints. For instance, dimensionality reduction can reduce the number of input features and, thus, the maximum accumulator bit-width reached within a circuit. Similarly, sparsity-inducing training methods, such as pruning, deactivate some features during inference, which also helps. For now, dimensionality reduction is considered as a pre-processing step, while pruning is used in the [built-in neural networks](../built-in-models/neural-networks.md).
 
-The configuration of model quantization parameters is illustrated in the advanced examples for [Linear and Logistic Regressions](../built-in-models/ml_examples.md) and dimensionality reduction is shown in the [Poisson regression example](https://github.com/zama-ai/concrete-ml/blob/release/0.3.x/docs/advanced_examples/PoissonRegression.ipynb).
+The configuration of model quantization parameters is illustrated in the advanced examples for [Linear and Logistic Regressions](../built-in-models/ml_examples.md) and dimensionality reduction is shown in the [Poisson regression example](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/docs/advanced_examples/PoissonRegression.ipynb).
