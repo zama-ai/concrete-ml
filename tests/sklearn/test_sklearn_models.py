@@ -58,6 +58,9 @@ NUMBER_OF_TESTS_IN_NON_FHE = 50
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 
+# 7. If n_bits >= N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS, we check quantization
+N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS = 16
+
 
 # pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
 def check_generic(
@@ -80,6 +83,7 @@ def check_generic(
     test_pandas=True,
     test_pipeline=True,
     test_subfunctions=True,
+    test_quantization=True,
     verbose=True,
 ):
     """Generic tests.
@@ -105,7 +109,6 @@ def check_generic(
       - calls to decision_function
 
     Are currently missing
-      - quantization
       - check of predict_proba
       - check of decision_function
 
@@ -212,6 +215,13 @@ def check_generic(
             print("Run check_pipeline")
 
         check_pipeline(model_class, x, y)
+
+    # Test quantization
+    if test_quantization and n_bits >= N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS:
+        if verbose:
+            print("Run check_quantization")
+
+        check_quantization(model_class, n_bits, x, y, check_accuracy, check_r2_score)
 
     # Do some inferences in clear
     if verbose:
@@ -542,6 +552,66 @@ def check_grid_search(model, model_name, model_class, x, y):
         _ = GridSearchCV(
             model, param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
         ).fit(x, y)
+
+
+def check_quantization(model_class, n_bits, x, y, check_accuracy, check_r2_score):
+    """Check quantization."""
+    model_name = get_model_name(model_class)
+
+    # Still some problems to fix
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2841
+    if model_name in ["LinearSVC", "LogisticRegression"]:
+        return
+
+    # Still some problems to fix
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2842
+    if model_name in ["NeuralNetRegressor", "NeuralNetClassifier"]:
+        return
+
+    model = model_class(n_bits=n_bits)
+
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+    model.set_params(**model_params)
+
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        x = x.astype(numpy.float32)
+
+    # Sometimes, we miss convergence, which is not a problem for our test
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        # Random state should be taken from the method parameter
+        model, sklearn_model = model.fit_benchmark(x, y)
+
+    # If the model is a classifier
+    if is_classifier(model):
+
+        # Check that accuracies are similar
+        y_pred_quantized = model.predict(x)
+        y_pred_sklearn = sklearn_model.predict(x)
+        check_accuracy(y_pred_sklearn, y_pred_quantized)
+
+        # If the model is a LinearSVC model, compute its predicted confidence score
+        # This is done separately as scikit-learn doesn't provide a predict_proba method for
+        # LinearSVC models
+        if model_name == "LinearSVC":
+            y_pred_quantized = model.decision_function(x)
+            y_pred_sklearn = sklearn_model.decision_function(x)
+
+        # Else, compute the model's predicted probabilities
+        else:
+            y_pred_quantized = model.predict_proba(x)
+            y_pred_sklearn = sklearn_model.predict_proba(x)
+
+    # If the model is a regressor, compute its predictions
+    else:
+        y_pred_quantized = model.predict(x)
+        y_pred_sklearn = sklearn_model.predict(x)
+
+    # Check that predictions, probabilities or confidence scores are similar using the R2 score
+    check_r2_score(y_pred_sklearn, y_pred_quantized)
 
 
 def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
