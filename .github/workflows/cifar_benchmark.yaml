@@ -76,7 +76,7 @@ jobs:
   # Use machulav
   run-cifar-10:
     needs: [start-cifar-runner]
-    name: Prepare scripts to launch on individual AWS instances
+    name: Run benchmark
     runs-on: ${{ needs.start-cifar-runner.outputs.label }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
@@ -117,7 +117,7 @@ jobs:
           # TODO: Install torchvision according to torch version
           # Should be able to take into account all versions of torch
           python3 -m pip install torchvision==0.13.1
-          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_10_with_model_splitting/infer_fhe.py
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_brevitas_with_model_splitting/infer_fhe.py
           python3 ./benchmarks/convert_cifar.py
 
       - name: Upload results
@@ -128,6 +128,19 @@ jobs:
           -H "Content-Type: application/json" \
           -d @to_upload.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
+      - name: Archive raw predictions
+        uses: actions/upload-artifact@v3
+        with:
+          name: predictions
+          path: inference_results.csv
+
+      - name: Archive metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: metrics
+          path: to_upload.json
+
 
   stop-runner:
     name: Stop EC2 runner
