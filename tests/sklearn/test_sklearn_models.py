@@ -52,7 +52,7 @@ assert (
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 
-# 7. If n_bits >= N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS, we check quantization
+# 5. If n_bits >= N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS, we check quantization
 N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS = 16
 
 
@@ -79,6 +79,7 @@ def check_generic(
     test_pandas=True,
     test_pipeline=True,
     test_subfunctions=True,
+    test_subfunctions_in_fhe=True,
     test_quantization=True,
     verbose=True,
 ):
@@ -263,6 +264,14 @@ def check_generic(
                     x[:number_of_tests_in_fhe], model_function=model
                 )
 
+                if test_subfunctions_in_fhe and (not use_virtual_lib):
+                    if verbose:
+                        print("Testing subfunctions in FHE")
+
+                    check_subfunctions_in_fhe(
+                        model, model_name, fhe_circuit, x[:number_of_tests_in_fhe]
+                    )
+
             else:
                 if verbose:
                     print(
@@ -434,6 +443,71 @@ def check_subfunctions(model_class, n_bits, x, y):
 
             if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
                 model.decision_function(x)
+
+
+def check_subfunctions_in_fhe(model, model_name, fhe_circuit, x):
+    """Check subfunctions in FHE: calls and correctness."""
+
+    # Some problems to be fixed for some models
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2840
+    if model_name in [
+        "ElasticNet",
+        "Lasso",
+        "Ridge",
+        "LinearRegression",
+        "LinearSVR",
+        "DecisionTreeClassifier",
+        "DecisionTreeRegressor",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+        "XGBClassifier",
+        "XGBRegressor",
+        "NeuralNetClassifier",
+        "NeuralNetRegressor",
+    ]:
+        return
+
+    # Generate the keys
+    fhe_circuit.keygen()
+
+    y_pred_fhe_step = []
+
+    for f_input in x:
+        # Quantize an input (float)
+        q_input = model.quantize_input([f_input])
+
+        # Encrypt the input
+        q_input_enc = fhe_circuit.encrypt(q_input)
+
+        # Execute the linear product in FHE
+        q_y_enc = fhe_circuit.run(q_input_enc)
+
+        # Decrypt the result (integer)
+        q_y = fhe_circuit.decrypt(q_y_enc)
+
+        # Dequantize the result
+        y = model.dequantize_output(q_y)
+
+        # Apply either the sigmoid if it is a binary classification task, which is the case in this
+        # example, or a softmax function in order to get the probabilities (in the clear)
+        y_proba = model.post_processing(y, already_dequantized=True)
+
+        # Apply the argmax to get the class predictions (in the clear)
+        if is_classifier(model):
+            y_class = numpy.argmax(y_proba, axis=1)
+            y_pred_fhe_step += list(y_class)
+        else:
+            y_pred_fhe_step += list(y_proba)
+
+    y_pred_fhe_step = numpy.array(y_pred_fhe_step)
+
+    # Compare with VL
+    y_pred_expected_in_vl = model.predict(x, execute_in_fhe=False)
+
+    assert numpy.isclose(y_pred_fhe_step, y_pred_expected_in_vl).all(), (
+        "computations are not the same between individual functions (in FHE) "
+        "and predict function (in VL)"
+    )
 
 
 def check_pandas(model_class, n_bits, x, y):
