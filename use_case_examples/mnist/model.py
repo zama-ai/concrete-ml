@@ -157,7 +157,7 @@ class CommonQuant(ExtendedInjector):
 
 class CommonWeightQuant(CommonQuant, WeightQuantSolver):
     scaling_const = 1.0
-    signed = False
+    signed = True
 
 
 class CommonActQuant(CommonQuant, ActQuantSolver):

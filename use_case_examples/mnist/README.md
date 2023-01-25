@@ -11,7 +11,7 @@ In this directory, ie `mnist`, you can do the following steps.
 <!--pytest-codeblocks:skip-->
 
 ```bash
-python3.9 -m venv .venv
+python3.8 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -38,7 +38,13 @@ mkdir -p .checkpoints
 
 ```bash
 source .venv/bin/activate
-python mnist_in_fhe.py
+python use_case_examples/mnist/mnist_in_fhe.py
+```
+
+### If you want to use PyTorch with CUDA in Concrete-ML
+
+```bash
+pip3 install --upgrade torch==1.12.1 torchvision torchsummary --extra-index-url https://download.pytorch.org/whl/cu113
 ```
 
 Remark that you may want to change some options in `mnist_in_fhe.py`, and notably:

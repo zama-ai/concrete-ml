@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-import onnx
 import torch
 
 # Concrete-Numpy and Concrete-ML
@@ -14,7 +13,7 @@ from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms
 from tqdm import tqdm
 
-from concrete.ml.torch.compile import compile_torch_model
+from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
 def train(model, device, train_loader, optimizer, epoch, criterion):
@@ -30,19 +29,16 @@ def train(model, device, train_loader, optimizer, epoch, criterion):
         loss.backward()
         optimizer.step()
 
-        if batch_idx % 500 == 0:
+        if epoch % 4 == 0 and batch_idx % 500 == 0:
             print(
-                "Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}".format(
-                    epoch,
-                    batch_idx,
-                    len(train_loader.dataset) // len(data),
-                    100.0 * batch_idx / len(train_loader),
-                    loss.item(),
-                )
+                f"Train Epoch: {epoch + 1} [{batch_idx}/"
+                f"{len(train_loader.dataset) // len(data)}"
+                f" ({100.0 * batch_idx / len(train_loader):.0f}%)]{'':5}"
+                f"\tLoss: {loss.item():.6f}"
             )
 
 
-def test(model, device, test_loader, criterion):
+def test(model, device, test_loader, epoch, criterion):
     """Test the model."""
 
     model.eval()
@@ -59,11 +55,13 @@ def test(model, device, test_loader, criterion):
 
     test_loss /= len(test_loader.dataset)
 
-    print(
-        f"Test set: Average loss: {test_loss:.4f}, "
-        "Accuracy: "
-        f"{correct}/{len(test_loader.dataset)} ({100.0 * correct / len(test_loader.dataset):.0f}%)"
-    )
+    if epoch % 4 == 0:
+        print(
+            f"Test set: Average loss: {test_loss:.4f}, "
+            "Accuracy: "
+            f"{correct}/{len(test_loader.dataset)} "
+            f"({100.0 * correct / len(test_loader.dataset):.0f}%)"
+        )
 
     return test_loss
 
@@ -71,19 +69,11 @@ def test(model, device, test_loader, criterion):
 def manage_dataset(train_kwargs, test_kwargs):
     """Get training and test parts of MNIST dataset."""
 
-    # Pre-transform
-    class ReshapeTransform:
-        def __init__(self, new_size):
-            self.new_size = new_size
-
-        def __call__(self, img):
-            return torch.reshape(img, self.new_size)
-
     transform = transforms.Compose(
         [
             transforms.ToTensor(),
             transforms.Normalize((0.1307,), (0.3081,)),
-            ReshapeTransform((28 * 28,)),
+            transforms.Lambda(torch.flatten),
         ]
     )
 
@@ -99,8 +89,6 @@ def manage_dataset(train_kwargs, test_kwargs):
 def compile_and_test(
     model,
     use_virtual_lib,
-    np_inputs,
-    quantization_bits,
     test_data,
     test_data_length,
     test_target,
@@ -121,19 +109,10 @@ def compile_and_test(
     else:
         print(f"\n{current_index}. Compiling in FHE")
 
-    q_module = compile_torch_model(
+    q_module = compile_brevitas_qat_model(
         model,
-        np_inputs,
-        import_qat=True,
+        test_data,
         configuration=configuration,
-        # Note that in CML 0.4, fixing net_inputs and net_outputs to 5 will no more be needed,
-        # since it will be the default
-        n_bits={
-            "net_inputs": 5,
-            "op_inputs": quantization_bits,
-            "op_weights": quantization_bits,
-            "net_outputs": 5,
-        },
         use_virtual_lib=use_virtual_lib,
         show_mlir=show_mlir,
     )
@@ -197,7 +176,7 @@ def main():
     torch.autograd.set_detect_anomaly(True)
 
     # Options: the most important ones
-    epochs = 1
+    epochs = 20
     sparsity = 4
     quantization_bits = 2
     do_test_in_fhe = True
@@ -205,7 +184,7 @@ def main():
     show_mlir = False
 
     # Options: can be changed
-    lr = 0.02
+    lr = 0.06
     gamma = 0.33
     test_data_length_reduced = 2  # This is notably the length of the computation in FHE
     test_data_length_full = 10000
@@ -238,6 +217,7 @@ def main():
 
     # Manage dataset
     train_loader, test_loader = manage_dataset(train_kwargs, test_kwargs)
+    img_size = train_loader.dataset.data[0].shape[0]
 
     # Model definition
     model = MNISTQATModel(quantization_bits, quantization_bits)
@@ -254,37 +234,28 @@ def main():
         print("\n1. Training")
         optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=0.0001)
         scheduler = StepLR(optimizer, step_size=1, gamma=gamma)
-        test_loss = 1e10
 
-        for epoch in range(1, epochs + 1):
+        for epoch in range(epochs):
             train(model, device, train_loader, optimizer, epoch, criterion)
-            cur_loss = test(model, device, test_loader, criterion)
+            _ = test(model, device, test_loader, epoch, criterion)
 
             scheduler.step()
 
         model.prune(sparsity, False)
 
         # Export to ONNX
-        print("\n2. Exporting to ONNX")
-        input = torch.rand((1, 784)).to(device)
+        print("\n2. Exporting to ONNX and saving the Brevitas model")
+        input = torch.rand((1, img_size * img_size)).to(device)
         torch.onnx.export(model, input, "mnist.qat.onnx", opset_version=14)
+        torch.save(model.state_dict(), "state_dict.pt")
 
     else:
         print("\n1. Loading pre-trained model")
-
-    # Reload the model
-    model = onnx.load("mnist.qat.onnx")
+        checkpoint = torch.load("state_dict.pt", map_location=device)
+        model.load_state_dict(checkpoint)
 
     # Test in FHE
     if do_test_in_fhe:
-
-        list_inputs = []
-
-        for inputs in test_loader:
-            inputs_var, targets = inputs
-            list_inputs.append(inputs_var.detach().cpu().numpy())
-
-        np_inputs = np.concatenate(list_inputs, axis=0)
 
         test_data = np.zeros((len(test_loader.dataset), 784))
         test_target = np.zeros((len(test_loader.dataset), 1))
@@ -306,10 +277,8 @@ def main():
             )
 
             correct_fhe, test_data_shape_0, max_bit_width = compile_and_test(
-                model,
+                model.cpu(),
                 use_virtual_lib,
-                np_inputs,
-                quantization_bits,
                 test_data,
                 test_data_length,
                 test_target,
