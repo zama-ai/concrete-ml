@@ -45,13 +45,7 @@ assert (
     N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS <= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE
 )
 
-# 4. How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
-NUMBER_OF_TESTS_IN_FHE = 5
-
-# 5. How many samples for tests in quantized module (ie, predict with execute_in_fhe = False)
-NUMBER_OF_TESTS_IN_NON_FHE = 50
-
-# 6. n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
+# 4. n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
 # FHE which are not too long (relation with N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS and
 # N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE). 26 is in relation with
 # N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with check_correctness_with_sklearn
@@ -74,6 +68,8 @@ def check_generic(
     check_r2_score,
     check_accuracy,
     check_circuit_has_no_tlu,
+    number_of_tests_in_fhe,
+    number_of_tests_in_non_fhe,
     test_hyper_parameters=True,
     test_grid_search=True,
     test_double_fit=True,
@@ -225,9 +221,9 @@ def check_generic(
 
     # Do some inferences in clear
     if verbose:
-        print("Inference in the clear")
+        print(f"Inference in the clear (with {number_of_tests_in_non_fhe=})")
 
-    y_pred = model.predict(x[:NUMBER_OF_TESTS_IN_NON_FHE])
+    y_pred = model.predict(x[:number_of_tests_in_non_fhe])
 
     # Check correct execution, if there is sufficiently n_bits
     if test_predict_correctness and n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS:
@@ -258,17 +254,23 @@ def check_generic(
                     print("Compilation done")
 
                 if verbose:
-                    print("Run check_is_good_execution_for_cml_vs_circuit")
+                    print(
+                        "Run check_is_good_execution_for_cml_vs_circuit "
+                        + f"(with {number_of_tests_in_fhe=})"
+                    )
 
                 check_is_good_execution_for_cml_vs_circuit(
-                    x[:NUMBER_OF_TESTS_IN_FHE], model_function=model
+                    x[:number_of_tests_in_fhe], model_function=model
                 )
+
             else:
                 if verbose:
-                    print("Run predict in execute_in_fhe=False")
+                    print(
+                        f"Run predict in execute_in_fhe=False (with {number_of_tests_in_non_fhe=})"
+                    )
 
                 # At least, check without execute_in_fhe
-                y_pred_fhe = model.predict(x[:NUMBER_OF_TESTS_IN_NON_FHE], execute_in_fhe=False)
+                y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], execute_in_fhe=False)
 
                 # Check that the output shape is correct
                 assert y_pred_fhe.shape == y_pred.shape
@@ -757,6 +759,18 @@ def test_generic(
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS:
             pytest.skip(f"We test precision {n_bits=} only in weekly builds")
 
+    # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
+    if is_weekly_option:
+        number_of_tests_in_fhe = 5
+    else:
+        number_of_tests_in_fhe = 1
+
+    # How many samples for tests in quantized module (ie, predict with execute_in_fhe = False)
+    if is_weekly_option:
+        number_of_tests_in_non_fhe = 50
+    else:
+        number_of_tests_in_non_fhe = 10
+
     check_generic(
         model,
         parameters,
@@ -768,4 +782,6 @@ def test_generic(
         check_r2_score,
         check_accuracy,
         check_circuit_has_no_tlu,
+        number_of_tests_in_fhe,
+        number_of_tests_in_non_fhe,
     )
