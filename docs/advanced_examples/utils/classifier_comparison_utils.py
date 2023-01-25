@@ -34,8 +34,6 @@ ALWAYS_USE_VL = False
 COMPIL_CONFIG_VL = Configuration(
     dump_artifacts_on_unexpected_failures=False,
     enable_unsafe_features=True,
-    p_error=None,  # To avoid any confusion: we are always using kwarg p_error
-    global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
 )
 
 from IPython.display import clear_output

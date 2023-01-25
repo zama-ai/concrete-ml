@@ -118,8 +118,6 @@ def default_configuration():
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         jit=True,
-        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
-        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
 
 
@@ -133,8 +131,6 @@ def default_configuration_no_jit():
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         jit=False,
-        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
-        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
 
 

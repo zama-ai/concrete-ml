@@ -118,8 +118,6 @@ def main():
         show_graph=False,
         show_mlir=False,
         show_optimizer=False,
-        p_error=None,
-        global_p_error=None,
     )
     optional_kwargs["use_virtual_lib"] = True
 

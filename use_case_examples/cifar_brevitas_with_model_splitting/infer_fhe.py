@@ -55,8 +55,6 @@ def main():
         show_graph=False,
         show_mlir=False,
         show_optimizer=False,
-        p_error=None,  # To avoid any confusion: we are always using kwarg p_error
-        global_p_error=None,  # To avoid any confusion: we are always using kwarg global_p_error
     )
 
     # Compile the model
