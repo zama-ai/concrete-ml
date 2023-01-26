@@ -180,7 +180,7 @@ PCC_DEPS += check_forbidden_words check_unused_images gitleaks check_issues
 pcc_internal: $(PCC_DEPS)
 
 # flake8 has been removed since it is too slow
-SPCC_DEPS := check_python_format pylint_src pylint_tests mypy_ci pydocstyle ruff check_issues
+SPCC_DEPS := check_python_format pylint_src pylint_tests mypy mypy_test pydocstyle ruff
 
 # Not commented on purpose for make help, since internal
 .PHONY: spcc_internal
