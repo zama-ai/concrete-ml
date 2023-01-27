@@ -1,6 +1,7 @@
 """APIs for FHE deployment."""
 
 import json
+import zipfile
 from copy import deepcopy
 from pathlib import Path
 from typing import Any
@@ -146,8 +147,12 @@ class FHEModelDev:
             d.pop(key)
         return d
 
-    def _export_model_to_json(self):
-        """Export the quantizers to a json file."""
+    def _export_model_to_json(self) -> Path:
+        """Export the quantizers to a json file.
+
+        Returns:
+            Path: the path to the json file
+        """
         serialized_processing = {
             "model_type": self.model.__class__.__name__,
             "model_post_processing_params": self.model.post_processing_params,
@@ -170,10 +175,12 @@ class FHEModelDev:
 
         # Add the version of the current CML library
         serialized_processing["cml_version"] = CML_VERSION
-        with open(
-            Path(self.path_dir).joinpath("serialized_processing.json"), "w", encoding="utf-8"
-        ) as f:
-            json.dump(serialized_processing, f)
+
+        # Dump json
+        json_path = Path(self.path_dir).joinpath("serialized_processing.json")
+        with open(json_path, "w", encoding="utf-8") as file:
+            json.dump(serialized_processing, file)
+        return json_path
 
     def save(self):
         """Export all needed artifacts for the client and server.
@@ -201,7 +208,7 @@ class FHEModelDev:
         )
 
         # Export the quantizers
-        self._export_model_to_json()
+        json_path = self._export_model_to_json()
 
         # First save the circuit for the server
         path_circuit_server = Path(self.path_dir).joinpath("server.zip")
@@ -210,6 +217,9 @@ class FHEModelDev:
         # Save the circuit for the client
         path_circuit_client = Path(self.path_dir).joinpath("client.zip")
         self.model.fhe_circuit.client.save(path_circuit_client)
+
+        with zipfile.ZipFile(path_circuit_client, "a") as zip_file:
+            zip_file.write(filename=json_path, arcname="serialized_processing.json")
 
 
 class FHEModelClient:
@@ -240,10 +250,9 @@ class FHEModelClient:
         self.client = cnp.Client.load(Path(self.path_dir).joinpath("client.zip"), self.key_dir)
 
         # Load the quantizers
-        with open(
-            Path(self.path_dir).joinpath("serialized_processing.json"), "r", encoding="utf-8"
-        ) as f:
-            serialized_processing = json.load(f)
+        with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
+            with client_zip.open("serialized_processing.json", mode="r") as file:
+                serialized_processing = json.load(file)
 
         # Make sure the version in serialized_model is the same as CML_VERSION
         assert_true(

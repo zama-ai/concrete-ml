@@ -1,8 +1,11 @@
 """Tests the deployment APIs."""
 
+import json
 import tempfile
 import warnings
+import zipfile
 from functools import partial
+from pathlib import Path
 from shutil import copyfile
 
 import numpy
@@ -154,6 +157,11 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     # Instantiate the dev client and server FHEModel client server API
     fhemodel_dev = FHEModelDev(path_dir=network.dev_dir.name, model=model)
     fhemodel_dev.save()
+
+    # Check that the processing json file is in the client.zip file
+    with zipfile.ZipFile(Path(network.dev_dir.name) / "client.zip") as client_zip:
+        with client_zip.open("serialized_processing.json", "r") as file:
+            assert isinstance(json.load(file), dict)
 
     # Send necessary files to server and client
     network.dev_send_clientspecs_and_modelspecs_to_client()
