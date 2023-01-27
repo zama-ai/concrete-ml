@@ -64,3 +64,7 @@ fi
 set +x
 
 rm -rf "${TEST_DIR}"
+
+# Remove onnx files created while running the codeblocks
+rm -f "tmp.model.onnx"
+rm -f "tmp.onnx"
