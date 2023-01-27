@@ -52,8 +52,9 @@ assert (
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 
-# 5. If n_bits >= N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS, we check quantization
-N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS = 16
+# 5. If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
+# returned by fit_benchmark (the CML model and the scikit-learn model) are equivalent
+N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 
 
 # pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
@@ -214,11 +215,11 @@ def check_generic(
         check_pipeline(model_class, x, y)
 
     # Test quantization
-    if test_quantization and n_bits >= N_BITS_THRESHOLD_FOR_QUANTIZATION_TESTS:
+    if test_quantization and n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS:
         if verbose:
-            print("Run check_quantization")
+            print("Run check_sklearn_equivalence")
 
-        check_quantization(model_class, n_bits, x, y, check_accuracy, check_r2_score)
+        check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score)
 
     # Do some inferences in clear
     if verbose:
@@ -630,8 +631,9 @@ def check_grid_search(model, model_name, model_class, x, y):
         ).fit(x, y)
 
 
-def check_quantization(model_class, n_bits, x, y, check_accuracy, check_r2_score):
-    """Check quantization."""
+def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score):
+    """Check equivalence between the two models returned by fit_benchmark: the CML model and
+    the scikit-learn model."""
     model_name = get_model_name(model_class)
 
     # Still some problems to fix
@@ -665,29 +667,29 @@ def check_quantization(model_class, n_bits, x, y, check_accuracy, check_r2_score
     if is_classifier(model):
 
         # Check that accuracies are similar
-        y_pred_quantized = model.predict(x)
+        y_pred_cml = model.predict(x)
         y_pred_sklearn = sklearn_model.predict(x)
-        check_accuracy(y_pred_sklearn, y_pred_quantized)
+        check_accuracy(y_pred_sklearn, y_pred_cml)
 
         # If the model is a LinearSVC model, compute its predicted confidence score
         # This is done separately as scikit-learn doesn't provide a predict_proba method for
         # LinearSVC models
         if model_name == "LinearSVC":
-            y_pred_quantized = model.decision_function(x)
+            y_pred_cml = model.decision_function(x)
             y_pred_sklearn = sklearn_model.decision_function(x)
 
         # Else, compute the model's predicted probabilities
         else:
-            y_pred_quantized = model.predict_proba(x)
+            y_pred_cml = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
 
     # If the model is a regressor, compute its predictions
     else:
-        y_pred_quantized = model.predict(x)
+        y_pred_cml = model.predict(x)
         y_pred_sklearn = sklearn_model.predict(x)
 
     # Check that predictions, probabilities or confidence scores are similar using the R2 score
-    check_r2_score(y_pred_sklearn, y_pred_quantized)
+    check_r2_score(y_pred_sklearn, y_pred_cml)
 
 
 def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
