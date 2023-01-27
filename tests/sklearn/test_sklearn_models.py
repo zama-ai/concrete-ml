@@ -205,7 +205,7 @@ def check_generic(
         if verbose:
             print("Run check_subfunctions")
 
-        check_subfunctions(model_class, n_bits, x, y)
+        check_subfunctions(model, model_class, x)
 
     # Test with pipelines
     if test_pipeline:
@@ -377,11 +377,11 @@ def check_double_fit(model_class, n_bits, x, y):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
-        # First fit
+        # First fit: here, we really need to fit, we can't reuse an already fitted model
         model.fit(x, y)
         y_pred_one = model.predict(x)
 
-        # Second fit
+        # Second fit: here, we really need to fit, we can't reuse an already fitted model
         model.fit(x, y)
         y_pred_two = model.predict(x)
 
@@ -412,38 +412,27 @@ def check_offset(model_class, n_bits, x, y):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
-        # Add the offset
+        # Add the offset: here, we really need to fit, we can't reuse an already fitted model
         y += 3
         model.fit(x, y)
         model.predict(x[:1])
 
-        # Another offset
+        # Another offset: here, we really need to fit, we can't reuse an already fitted model
         y -= 2
         model.fit(x, y)
 
 
-def check_subfunctions(model_class, n_bits, x, y):
+def check_subfunctions(fitted_model, model_class, x):
     """Check subfunctions."""
-    model = model_class(n_bits=n_bits)
 
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model.set_params(**model_params)
+    fitted_model.predict(x[:1])
 
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
+    if is_classifier(model_class):
 
-        model.fit(x, y)
-        model.predict(x[:1])
+        fitted_model.predict_proba(x)
 
-        if is_classifier(model_class):
-
-            model.predict_proba(x)
-
-            if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
-                model.decision_function(x)
+        if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
+            fitted_model.decision_function(x)
 
 
 def check_subfunctions_in_fhe(model, model_name, fhe_circuit, x):
@@ -538,9 +527,12 @@ def check_pandas(model_class, n_bits, x, y):
             # Pandas data frames are not properly handle yet
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2327
             xpandas = xpandas.astype(numpy.float32)
+
+            # Here, we really need to fit, we can't reuse an already fitted model
             model.fit(xpandas, ypandas)
             model.predict(xpandas.to_numpy())
         else:
+            # Here, we really need to fit, we can't reuse an already fitted model
             model.fit(xpandas, ypandas)
             model.predict(xpandas)
 
@@ -784,6 +776,8 @@ def check_hyper_parameters(
         with warnings.catch_warnings():
             # Sometimes, we miss convergence, which is not a problem for our test
             warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+            # Here, we really need to fit, to take into account hyper parameters
             model.fit(x, y)
 
         # Check correctness with sklearn (if we have sufficiently bits of precision)
