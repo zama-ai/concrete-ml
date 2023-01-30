@@ -43,7 +43,7 @@ from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from ..quantization import PostTrainingQATImporter, QuantizedArray, get_n_bits_dict
 from ..torch import NumpyModule
 from .protocols import Quantizer
-from .tree_to_numpy import Task, tree_to_numpy
+from .tree_to_numpy import tree_to_numpy
 
 # Disable pylint to import hummingbird while ignoring the warnings
 # pylint: disable=wrong-import-position,wrong-import-order
@@ -693,11 +693,6 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
             qX[:1],
             framework=self.framework,
             output_n_bits=self.n_bits,
-            task=(
-                Task.REGRESSION
-                if sklearn.base.is_regressor(self.sklearn_model)
-                else Task.CLASSIFICATION
-            ),
         )
 
         return self
