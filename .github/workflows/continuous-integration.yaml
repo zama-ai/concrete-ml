@@ -507,7 +507,7 @@ jobs:
 
       - name: PyTest Source Code (regular)
         id: pytest_regular
-        if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest
 
