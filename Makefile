@@ -11,6 +11,7 @@ COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 POETRY_VERSION:=1.2.2
+APIDOCS_OUTPUT?="./docs/developer-guide/api"
 
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
@@ -154,7 +155,7 @@ fix_ruff:
 python_linting: ruff pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses nbqa supported_ops mdformat
+conformance: finalize_nb python_format licenses nbqa supported_ops mdformat apidocs
 
 .PHONY: check_issues # Run command to check if all referenced issues are opened
 check_issues:
@@ -162,6 +163,9 @@ check_issues:
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
+	@# Doesn't work well if done directly in pcc_internal
+	@"$(MAKE)" check_apidocs
+
 	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
 
@@ -367,7 +371,7 @@ docs: clean_docs
 .PHONY: apidocs # Builds API docs
 apidocs:
 	@# At release time, one needs to change --src-base-url (to be a public release/A.B.x branch)
-	./script/doc_utils/update_apidocs.sh
+	./script/doc_utils/update_apidocs.sh "$(APIDOCS_OUTPUT)"
 
 	# Update our summary
 	./script/doc_utils/update_apidocs_files_in_SUMMARY.sh
@@ -603,7 +607,7 @@ mdformat:
 # Remark we need to remove .md's in venv
 check_mdformat:
 	"$(MAKE)" mdformat
-	find docs -name "*.md" | xargs git diff --quiet
+	find docs -name "*.md" | grep -v docs/developer-guide/tmp.api_for_check | xargs git diff --quiet
 
 .PHONY: benchmark # Perform benchmarks
 benchmark:

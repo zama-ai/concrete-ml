@@ -10,20 +10,149 @@ Implements the conversion of a tree model to a numpy function.
 
 - **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
 - **OPSET_VERSION_FOR_ONNX_EXPORT**
-- **EXPECTED_NUMBER_OF_OUTPUTS_PER_TASK**
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_onnx_model`
+
+```python
+get_onnx_model(model: Callable, x: ndarray, framework: str) → ModelProto
+```
+
+Create ONNX model with Hummingbird convert method.
+
+**Args:**
+
+- <b>`model`</b> (Callable):  The tree model to convert.
+- <b>`x`</b> (numpy.ndarray):  Dataset used to trace the tree inference and convert the model to ONNX.
+- <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
+- <b>`(options`</b>:  'xgboost', 'sklearn')
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `workaround_squeeze_node_xgboost`
+
+```python
+workaround_squeeze_node_xgboost(onnx_model: ModelProto)
+```
+
+Workaround to fix torch issue that does not export the proper axis in the ONNX squeeze node.
+
+FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2778 The squeeze ops does not have the proper dimensions. remove the following workaround when the issue is fixed Add the axis attribute to the Squeeze node
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L85"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `add_transpose_after_last_node`
+
+```python
+add_transpose_after_last_node(onnx_model: ModelProto)
+```
+
+Add transpose after last node.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `preprocess_tree_predictions`
+
+```python
+preprocess_tree_predictions(
+    init_tensor: ndarray,
+    output_n_bits: int
+) → QuantizedArray
+```
+
+Apply post-processing from the graph.
+
+**Args:**
+
+- <b>`init_tensor`</b> (numpy.ndarray):  Model parameters to be pre-processed.
+- <b>`output_n_bits`</b> (int):  The number of bits of the output.
+
+**Returns:**
+
+- <b>`QuantizedArray`</b>:  Quantizer for the tree predictions.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `tree_onnx_graph_preprocessing`
+
+```python
+tree_onnx_graph_preprocessing(
+    onnx_model: ModelProto,
+    framework: str,
+    expected_number_of_outputs: int
+)
+```
+
+Apply pre-precessing onto the ONNX graph.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model.
+- <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
+- <b>`(options`</b>:  'xgboost', 'sklearn')
+- <b>`expected_number_of_outputs`</b> (int):  The expected number of outputs in the ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `tree_values_preprocessing`
+
+```python
+tree_values_preprocessing(
+    onnx_model: ModelProto,
+    framework: str,
+    output_n_bits: int
+) → QuantizedArray
+```
+
+Pre-process tree values.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model.
+- <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
+- <b>`(options`</b>:  'xgboost', 'sklearn')
+- <b>`output_n_bits`</b> (int):  The number of bits of the output.
+
+**Returns:**
+
+- <b>`QuantizedArray`</b>:  Quantizer for the tree predictions.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L249"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_to_numpy`
 
 ```python
 tree_to_numpy(
-    model: ModelProto,
+    model: Callable,
     x: ndarray,
     framework: str,
-    task: Task,
     output_n_bits: Optional[int] = 8
 ) → Tuple[Callable, List[UniformQuantizer], ModelProto]
 ```
@@ -32,21 +161,12 @@ Convert the tree inference to a numpy functions using Hummingbird.
 
 **Args:**
 
-- <b>`model`</b> (onnx.ModelProto):  The model to convert.
+- <b>`model`</b> (Callable):  The tree model to convert.
 - <b>`x`</b> (numpy.ndarray):  The input data.
-- <b>`framework`</b> (str):  The framework from which the onnx_model is generated.
+- <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
 - <b>`(options`</b>:  'xgboost', 'sklearn')
-- <b>`task`</b> (Task):  The task the model is solving
 - <b>`output_n_bits`</b> (int):  The number of bits of the output.
 
 **Returns:**
 
 - <b>`Tuple[Callable, List[QuantizedArray], onnx.ModelProto]`</b>:  A tuple with a function that takes a  numpy array and returns a numpy array, QuantizedArray object to quantize and dequantize  the output of the tree, and the ONNX model.
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/tree_to_numpy.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>class</kbd> `Task`
-
-Task enumerate.

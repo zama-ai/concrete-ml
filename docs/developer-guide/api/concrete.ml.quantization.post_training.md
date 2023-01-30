@@ -52,18 +52,13 @@ This class should be sub-classed to provide specific calibration and quantizatio
   \- "op_inputs" and "op_weights" (mandatory)
   \- "model_inputs" and "model_outputs" (optional, default to 5 bits).  When using a single integer for n_bits, its value is assigned to "op_inputs" and  "op_weights" bits. The maximum between this value and a default value (5) is then  assigned to the number of "model_inputs" "model_outputs". This default value is a  compromise between model accuracy and runtime performance in FHE. "model_outputs" gives  the precision of the final network's outputs, while "model_inputs" gives the precision  of the network's inputs. "op_inputs" and "op_weights" both control the quantization for  inputs and weights of all layers.
 - <b>`y_model`</b> (NumpyModule):  Model in numpy.
-- <b>`is_signed`</b> (bool):  Whether the weights of the layers can be signed. Currently, only the  weights can be signed.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(
-    n_bits: Union[int, Dict],
-    numpy_model: NumpyModule,
-    is_signed: bool = False
-)
+__init__(n_bits: Union[int, Dict], numpy_model: NumpyModule)
 ```
 
 ______________________________________________________________________
@@ -108,7 +103,7 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
@@ -130,7 +125,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L650"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L643"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingAffineQuantization`
 
@@ -152,16 +147,12 @@ Create the quantized version of the passed numpy module.
 
 - <b>`QuantizedModule`</b>:  A quantized version of the numpy model.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(
-    n_bits: Union[int, Dict],
-    numpy_model: NumpyModule,
-    is_signed: bool = False
-)
+__init__(n_bits: Union[int, Dict], numpy_model: NumpyModule)
 ```
 
 ______________________________________________________________________
@@ -206,7 +197,7 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 
@@ -228,7 +219,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L788"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L781"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingQATImporter`
 
@@ -236,16 +227,12 @@ Converter of Quantization Aware Training networks.
 
 This class provides specific configuration for QAT networks during ONNX network conversion to Concrete ML computation graphs.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L118"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(
-    n_bits: Union[int, Dict],
-    numpy_model: NumpyModule,
-    is_signed: bool = False
-)
+__init__(n_bits: Union[int, Dict], numpy_model: NumpyModule)
 ```
 
 ______________________________________________________________________
@@ -290,7 +277,7 @@ Get the number of bits to use for the quantization of any constants (usually wei
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/post_training.py#L520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_module`
 

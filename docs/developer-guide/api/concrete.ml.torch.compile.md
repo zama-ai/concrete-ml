@@ -131,7 +131,7 @@ ______________________________________________________________________
 compile_brevitas_qat_model(
     torch_model: Module,
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
-    n_bits: Union[int, dict],
+    n_bits: Optional[int, dict] = None,
     configuration: Optional[Configuration] = None,
     compilation_artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -151,7 +151,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 
 - <b>`torch_model`</b> (torch.nn.Module):  the model to quantize
 - <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
-- <b>`n_bits`</b> (Union\[int,dict\]):  the number of bits for the quantization
+- <b>`n_bits`</b> (Optional\[Union\[int, dict\]):  the number of bits for the quantization. By default,  for most models, a value of None should be given, which instructs Concrete-ML to use the  bit-widths configured using Brevitas quantization options. For some networks, that  perform a non-linear operation on an input on an output, if None is given, a default  value of 8 bits is used for the input/output quantization. For such models the user can  also specify a dictionary with model_inputs/model_outputs keys to override  the 8-bit default or a single integer for both values.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo

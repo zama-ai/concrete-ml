@@ -125,6 +125,7 @@
 - [`quantized_ops.QuantizedSigmoid`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsigmoid): Quantized sigmoid op.
 - [`quantized_ops.QuantizedSign`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsign): Quantized Neg op.
 - [`quantized_ops.QuantizedSoftplus`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsoftplus): Quantized Softplus op.
+- [`quantized_ops.QuantizedSqueeze`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsqueeze): Squeeze operator.
 - [`quantized_ops.QuantizedSub`](./concrete.ml.quantization.quantized_ops.md#class-quantizedsub): Subtraction operator.
 - [`quantized_ops.QuantizedTanh`](./concrete.ml.quantization.quantized_ops.md#class-quantizedtanh): Quantized Tanh op.
 - [`quantized_ops.QuantizedTranspose`](./concrete.ml.quantization.quantized_ops.md#class-quantizedtranspose): Transpose operator for quantized inputs.
@@ -164,7 +165,6 @@
 - [`svm.LinearSVR`](./concrete.ml.sklearn.svm.md#class-linearsvr): A Regression Support Vector Machine (SVM).
 - [`tree.DecisionTreeClassifier`](./concrete.ml.sklearn.tree.md#class-decisiontreeclassifier): Implements the sklearn DecisionTreeClassifier.
 - [`tree.DecisionTreeRegressor`](./concrete.ml.sklearn.tree.md#class-decisiontreeregressor): Implements the sklearn DecisionTreeClassifier.
-- [`tree_to_numpy.Task`](./concrete.ml.sklearn.tree_to_numpy.md#class-task): Task enumerate.
 - [`xgb.XGBClassifier`](./concrete.ml.sklearn.xgb.md#class-xgbclassifier): Implements the XGBoost classifier.
 - [`xgb.XGBRegressor`](./concrete.ml.sklearn.xgb.md#class-xgbregressor): Implements the XGBoost regressor.
 - [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
@@ -178,7 +178,9 @@
 - [`custom_assert.assert_true`](./concrete.ml.common.debugging.custom_assert.md#function-assert_true): Provide a custom assert to check that the condition is True.
 - [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
 - [`utils.generate_proxy_function`](./concrete.ml.common.utils.md#function-generate_proxy_function): Generate a proxy function for a function accepting only \*args type arguments.
+- [`utils.get_model_name`](./concrete.ml.common.utils.md#function-get_model_name): Return a model (which may be a partial()) name.
 - [`utils.get_onnx_opset_version`](./concrete.ml.common.utils.md#function-get_onnx_opset_version): Return the ONNX opset_version.
+- [`utils.is_model_class_in_a_list`](./concrete.ml.common.utils.md#function-is_model_class_in_a_list): Say if model_class (which may be a partial()) is an element of a_list.
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
@@ -187,8 +189,8 @@
 - [`onnx_impl_utils.compute_onnx_pool_padding`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_onnx_pool_padding): Compute any additional padding needed to compute pooling layers.
 - [`onnx_impl_utils.numpy_onnx_pad`](./concrete.ml.onnx.onnx_impl_utils.md#function-numpy_onnx_pad): Pad a tensor according to ONNX spec, using an optional custom pad value.
 - [`onnx_impl_utils.onnx_avgpool_compute_norm_const`](./concrete.ml.onnx.onnx_impl_utils.md#function-onnx_avgpool_compute_norm_const): Compute the average pooling normalization constant.
-- [`onnx_model_manipulations.clean_graph_after_node_name`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_name): Clean the graph of the onnx model by removing nodes after the given node name.
 - [`onnx_model_manipulations.clean_graph_after_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_op_type): Clean the graph of the onnx model by removing nodes after the given node type.
+- [`onnx_model_manipulations.clean_graph_at_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_at_node_op_type): Clean the graph of the onnx model by removing nodes at the given node type.
 - [`onnx_model_manipulations.keep_following_outputs_discard_others`](./concrete.ml.onnx.onnx_model_manipulations.md#function-keep_following_outputs_discard_others): Keep the outputs given in outputs_to_keep and remove the others from the model.
 - [`onnx_model_manipulations.remove_identity_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_identity_nodes): Remove identity nodes from a model.
 - [`onnx_model_manipulations.remove_node_types`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_node_types): Remove unnecessary nodes from the ONNX graph.
@@ -263,14 +265,19 @@
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
-- [`utils.sanitize_test_and_train_datasets`](./concrete.ml.pytest.utils.md#function-sanitize_test_and_train_datasets): Sanitize datasets depending on the model type.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`base.get_sklearn_linear_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_linear_models): Return the list of available linear models in Concrete-ML.
 - [`base.get_sklearn_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_models): Return the list of available models in Concrete-ML.
 - [`base.get_sklearn_neural_net_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_neural_net_models): Return the list of available neural net models in Concrete-ML.
 - [`base.get_sklearn_tree_models`](./concrete.ml.sklearn.base.md#function-get_sklearn_tree_models): Return the list of available tree models in Concrete-ML.
+- [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
+- [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
+- [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.
+- [`tree_to_numpy.tree_onnx_graph_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_onnx_graph_preprocessing): Apply pre-precessing onto the ONNX graph.
 - [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a numpy functions using Hummingbird.
+- [`tree_to_numpy.tree_values_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_values_preprocessing): Pre-process tree values.
+- [`tree_to_numpy.workaround_squeeze_node_xgboost`](./concrete.ml.sklearn.tree_to_numpy.md#function-workaround_squeeze_node_xgboost): Workaround to fix torch issue that does not export the proper axis in the ONNX squeeze node.
 - [`compile.compile_brevitas_qat_model`](./concrete.ml.torch.compile.md#function-compile_brevitas_qat_model): Compile a Brevitas Quantization Aware Training model.
 - [`compile.compile_onnx_model`](./concrete.ml.torch.compile.md#function-compile_onnx_model): Compile a torch module into a FHE equivalent.
 - [`compile.compile_torch_model`](./concrete.ml.torch.compile.md#function-compile_torch_model): Compile a torch module into a FHE equivalent.
