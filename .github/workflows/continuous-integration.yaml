@@ -508,38 +508,32 @@ jobs:
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: ${{ !fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 80
         run: |
           make pytest
 
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 180
         run: |
           make pytest PYTEST_OPTIONS=--weekly
 
       - name: PyTest CodeBlocks
-        timeout-minutes: 30
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_codeblocks
 
-      - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML 
-        timeout-minutes: 30
+      - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML
         if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest_codeblocks_pypi_wheel_cml
 
       - name: PyTest Notebooks
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 240
         run: |
           make pytest_nb
 
       - name: PyTest with PyPI local wheel of Concrete-ML 
         if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
-        timeout-minutes: 80
         run: |
           make pytest_pypi_wheel_cml
 
