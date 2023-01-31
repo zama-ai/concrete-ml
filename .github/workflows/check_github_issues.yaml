@@ -8,6 +8,7 @@ on:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
@@ -30,7 +31,7 @@ jobs:
       - name: Install dependencies
         id: install-deps
         run: |
-          ./script/make_utils/setup_os_deps.sh
+          sudo ./script/make_utils/setup_os_deps.sh
 
       - name: Check GitHub actions
         run: |
