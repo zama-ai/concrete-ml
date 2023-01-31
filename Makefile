@@ -792,3 +792,7 @@ pytest_pypi_wheel_cml:
 .PHONY: pytest_pip_cml # Run tests using PyPI Concrete-ML
 pytest_pip_cml:
 	./script/make_utils/pytest_pypi_cml.sh
+
+.PHONY: clean_pycache # Clean __pycache__ directories
+clean_pycache:
+	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
