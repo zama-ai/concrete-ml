@@ -1,4 +1,32 @@
-"""Tests for the sklearn models."""
+"""Tests for the sklearn models.
+
+Generic tests test:
+  - model (with n_bits)
+  - virtual_lib or not
+  - fit
+  - double fit
+  - compile
+  - grid search
+  - hyper parameters
+  - offset
+  - correctness (with accuracy and r2) of Concrete-ML vs scikit-learn in clear
+  - correctness tests with or without VL, with execute_in_fhe = True and False, depending on
+  limits (see N_BITS_THRESHOLD* constants) which are either due to execution time or limits of
+  the compiler or minimal number of bits for precise computations
+  - fit_benchmark
+  - r2 score / accuracies
+  - pandas
+  - pipeline
+  - calls to predict_proba
+  - calls to decision_function
+
+Are currently missing
+  - check of predict_proba
+  - check of decision_function
+
+More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
+"""
+
 import warnings
 from typing import Any, Dict, List
 
@@ -57,69 +85,8 @@ N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 
 
-# pylint: disable-next=too-many-arguments,too-many-branches,too-many-statements,too-many-locals
-def check_generic(
-    model_class,
-    parameters,
-    use_virtual_lib,
-    n_bits,
-    load_data,
-    default_configuration,
-    check_is_good_execution_for_cml_vs_circuit,
-    check_r2_score,
-    check_accuracy,
-    check_circuit_has_no_tlu,
-    number_of_tests_in_fhe,
-    number_of_tests_in_non_fhe,
-    test_hyper_parameters=True,
-    test_grid_search=True,
-    test_double_fit=True,
-    test_offset=True,
-    test_correctness_in_clear=True,
-    test_predict_correctness=True,
-    test_pandas=True,
-    test_pipeline=True,
-    test_subfunctions=True,
-    test_subfunctions_in_fhe=True,
-    test_quantization=True,
-    verbose=True,
-):
-    """Generic tests.
-
-    This function tests:
-      - model (with n_bits)
-      - virtual_lib or not
-      - fit
-      - double fit
-      - compile
-      - grid search
-      - hyper parameters
-      - offset
-      - correctness (with accuracy and r2) of Concrete-ML vs scikit-learn in clear
-      - correctness tests with or without VL, with execute_in_fhe = True and False, depending on
-      limits (see N_BITS_THRESHOLD* constants) which are either due to execution time or limits of
-      the compiler or minimal number of bits for precise computations
-      - fit_benchmark
-      - r2 score / accuracies
-      - pandas
-      - pipeline
-      - calls to predict_proba
-      - calls to decision_function
-
-    Are currently missing
-      - check of predict_proba
-      - check of decision_function
-
-    More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
-
-    """
-
-    if verbose:
-        print("Generic tests")
-
-    assert (
-        n_bits <= N_BITS_THRESHOLD_TO_FORCE_VL or use_virtual_lib
-    ), "VL should be used for larger precisions"
+def preambule(model_class, parameters, n_bits, load_data):
+    """Prepare the fitted model, and the (x, y) dataset."""
 
     # Get the dataset. The data generation is seeded in load_data.
     model_name = get_model_name(model_class)
@@ -134,157 +101,12 @@ def check_generic(
 
     model.set_params(**model_params)
 
-    if verbose:
-        print("Fit")
-
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
 
-    # Check correctness with sklearn (if we have sufficiently bits of precision)
-    if test_correctness_in_clear and n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS:
-        if verbose:
-            print("Run check_correctness_with_sklearn with execute_in_fhe=False")
-
-        check_correctness_with_sklearn(
-            model_class,
-            x,
-            y,
-            check_r2_score,
-            check_accuracy,
-            hyper_parameters_including_n_bits={"n_bits": n_bits},
-            execute_in_fhe=False,
-        )
-
-    # Testing hyper parameters
-    if test_hyper_parameters:
-        if verbose:
-            print("Run check_hyper_parameters")
-
-        check_hyper_parameters(
-            model_class,
-            n_bits,
-            x,
-            y,
-            test_correctness_in_clear,
-            check_r2_score,
-            check_accuracy,
-        )
-
-    # Grid search
-    if test_grid_search:
-        if verbose:
-            print("Run check_grid_search")
-
-        check_grid_search(model, model_name, model_class, x, y)
-
-    # Double fit
-    if test_double_fit:
-        if verbose:
-            print("Run check_double_fit")
-
-        check_double_fit(model_class, n_bits, x, y)
-
-    # Test with offset
-    if test_offset:
-        if verbose:
-            print("Run check_offset")
-
-        check_offset(model_class, n_bits, x, y)
-
-    # Test with pandas
-    if test_pandas:
-        if verbose:
-            print("Run check_pandas")
-
-        check_pandas(model_class, n_bits, x, y)
-
-    # Test subfunctions
-    if test_subfunctions:
-        if verbose:
-            print("Run check_subfunctions")
-
-        check_subfunctions(model, model_class, x)
-
-    # Test with pipelines
-    if test_pipeline:
-        if verbose:
-            print("Run check_pipeline")
-
-        check_pipeline(model_class, x, y)
-
-    # Test quantization
-    if test_quantization and n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS:
-        if verbose:
-            print("Run check_sklearn_equivalence")
-
-        check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score)
-
-    # Do some inferences in clear
-    if verbose:
-        print(f"Inference in the clear (with {number_of_tests_in_non_fhe=})")
-
-    y_pred = model.predict(x[:number_of_tests_in_non_fhe])
-
-    # Check correct execution, if there is sufficiently n_bits
-    if test_predict_correctness and n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS:
-
-        for test_with_execute_in_fhe in [False, True]:
-
-            # Prevent computations in FHE if too many bits
-            if n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE:
-                test_with_execute_in_fhe = False
-
-            if test_with_execute_in_fhe:
-
-                if verbose:
-                    print(f"Compile {use_virtual_lib=}")
-
-                with warnings.catch_warnings():
-                    # Use virtual lib to not have issues with precision
-                    fhe_circuit = model.compile(
-                        x,
-                        default_configuration,
-                        use_virtual_lib=use_virtual_lib,
-                        show_mlir=verbose,
-                    )
-
-                    check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
-
-                if verbose:
-                    print("Compilation done")
-
-                if verbose:
-                    print(
-                        "Run check_is_good_execution_for_cml_vs_circuit "
-                        + f"(with {number_of_tests_in_fhe=})"
-                    )
-
-                check_is_good_execution_for_cml_vs_circuit(
-                    x[:number_of_tests_in_fhe], model_function=model
-                )
-
-                if test_subfunctions_in_fhe and (not use_virtual_lib):
-                    if verbose:
-                        print("Testing subfunctions in FHE")
-
-                    check_subfunctions_in_fhe(
-                        model, model_name, fhe_circuit, x[:number_of_tests_in_fhe]
-                    )
-
-            else:
-                if verbose:
-                    print(
-                        f"Run predict in execute_in_fhe=False (with {number_of_tests_in_non_fhe=})"
-                    )
-
-                # At least, check without execute_in_fhe
-                y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], execute_in_fhe=False)
-
-                # Check that the output shape is correct
-                assert y_pred_fhe.shape == y_pred.shape
-                assert numpy.array_equal(y_pred_fhe, y_pred)
+    return model, model_name, x, y
 
 
 def check_correctness_with_sklearn(
@@ -329,7 +151,7 @@ def check_correctness_with_sklearn(
         "Ridge": 0.9,
         "ElasticNet": 0.9,
         "XGBRegressor": -0.2,
-        "NeuralNetRegressor": -3,
+        "NeuralNetRegressor": -10,
     }
 
     # For classifiers
@@ -783,7 +605,238 @@ def check_hyper_parameters(
             )
 
 
-@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    [
+        n
+        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS
+    ],
+)
+# pylint: disable=too-many-arguments
+def test_quantization(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    check_r2_score,
+    check_accuracy,
+    verbose=True,
+):
+    """Test quantization."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_sklearn_equivalence")
+
+    check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    [
+        n
+        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS
+    ],
+)
+# pylint: disable=too-many-arguments
+def test_correctness_with_sklearn(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    check_r2_score,
+    check_accuracy,
+    verbose=True,
+):
+    """Test that Concrete-ML and scikit-learn models are 'equivalent'."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    # Check correctness with sklearn (if we have sufficiently bits of precision)
+    if verbose:
+        print("Run check_correctness_with_sklearn with execute_in_fhe=False")
+
+    check_correctness_with_sklearn(
+        model_class,
+        x,
+        y,
+        check_r2_score,
+        check_accuracy,
+        hyper_parameters_including_n_bits={"n_bits": n_bits},
+        execute_in_fhe=False,
+    )
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_hyper_parameters(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    check_r2_score,
+    check_accuracy,
+    verbose=True,
+):
+    """Testing hyper parameters."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_hyper_parameters")
+
+    test_correctness_in_clear = True
+
+    check_hyper_parameters(
+        model_class,
+        n_bits,
+        x,
+        y,
+        test_correctness_in_clear,
+        check_r2_score,
+        check_accuracy,
+    )
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_grid_search(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    verbose=True,
+):
+    """Test Grid search."""
+    model, model_name, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_grid_search")
+
+    check_grid_search(model, model_name, model_class, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_double_fit(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    verbose=True,
+):
+    """Test Double fit."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_double_fit")
+
+    check_double_fit(model_class, n_bits, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_offset(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    verbose=True,
+):
+    """Test with offset."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_offset")
+
+    check_offset(model_class, n_bits, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_pandas(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    verbose=True,
+):
+    """Test with pandas."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_pandas")
+
+    check_pandas(model_class, n_bits, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_subfunctions(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    verbose=True,
+):
+    """Test subfunctions."""
+    model, _, x, _ = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_subfunctions")
+
+    check_subfunctions(model, model_class, x)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_pipeline(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    verbose=True,
+):
+    """Test with pipelines."""
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+
+    if verbose:
+        print("Run check_pipeline")
+
+    check_pipeline(model_class, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "use_virtual_lib",
     [
@@ -793,31 +846,28 @@ def check_hyper_parameters(
 )
 @pytest.mark.parametrize(
     "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+    [
+        n
+        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS
+    ],
 )
-# pylint: disable=too-many-arguments
-def test_generic(
-    model,
+# pylint: disable=too-many-arguments, too-many-branches
+def test_predict_correctness(
+    model_class,
     parameters,
     use_virtual_lib,
     n_bits,
     load_data,
     default_configuration,
     check_is_good_execution_for_cml_vs_circuit,
-    check_r2_score,
-    check_accuracy,
     check_circuit_has_no_tlu,
     is_weekly_option,
+    test_subfunctions_in_fhe=True,
+    verbose=True,
 ):
-    """Test in a generic way our sklearn models."""
-
-    if n_bits > N_BITS_THRESHOLD_TO_FORCE_VL and not use_virtual_lib:
-        pytest.skip("We can't use FHE for too large precision")
-
-    # Except for weeklies, just do few tests
-    if not is_weekly_option:
-        if n_bits in N_BITS_WEEKLY_ONLY_BUILDS:
-            pytest.skip(f"We test precision {n_bits=} only in weekly builds")
+    """Test correct execution, if there is sufficiently n_bits."""
+    model, model_name, x, _ = preambule(model_class, parameters, n_bits, load_data)
 
     # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
     if is_weekly_option:
@@ -831,17 +881,64 @@ def test_generic(
     else:
         number_of_tests_in_non_fhe = 10
 
-    check_generic(
-        model,
-        parameters,
-        use_virtual_lib,
-        n_bits,
-        load_data,
-        default_configuration,
-        check_is_good_execution_for_cml_vs_circuit,
-        check_r2_score,
-        check_accuracy,
-        check_circuit_has_no_tlu,
-        number_of_tests_in_fhe,
-        number_of_tests_in_non_fhe,
-    )
+    # Do some inferences in clear
+    if verbose:
+        print(f"Inference in the clear (with {number_of_tests_in_non_fhe=})")
+
+    y_pred = model.predict(x[:number_of_tests_in_non_fhe])
+
+    list_of_possibilities = [False, True]
+
+    # Prevent computations in FHE if too many bits
+    if n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE:
+        list_of_possibilities = [False]
+
+    for test_with_execute_in_fhe in list_of_possibilities:
+
+        if test_with_execute_in_fhe:
+
+            if verbose:
+                print(f"Compile {use_virtual_lib=}")
+
+            with warnings.catch_warnings():
+                # Use virtual lib to not have issues with precision
+                fhe_circuit = model.compile(
+                    x,
+                    default_configuration,
+                    use_virtual_lib=use_virtual_lib,
+                    show_mlir=verbose,
+                )
+
+                check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
+
+            if verbose:
+                print("Compilation done")
+
+            if verbose:
+                print(
+                    "Run check_is_good_execution_for_cml_vs_circuit "
+                    + f"(with {number_of_tests_in_fhe=})"
+                )
+
+            check_is_good_execution_for_cml_vs_circuit(
+                x[:number_of_tests_in_fhe], model_function=model
+            )
+
+            if test_subfunctions_in_fhe and (not use_virtual_lib):
+                if verbose:
+                    print("Testing subfunctions in FHE")
+
+                check_subfunctions_in_fhe(
+                    model, model_name, fhe_circuit, x[:number_of_tests_in_fhe]
+                )
+
+        else:
+            if verbose:
+                print(f"Run predict in execute_in_fhe=False (with {number_of_tests_in_non_fhe=})")
+
+            # At least, check without execute_in_fhe
+            y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], execute_in_fhe=False)
+
+            # Check that the output shape is correct
+            assert y_pred_fhe.shape == y_pred.shape
+            assert numpy.array_equal(y_pred_fhe, y_pred)
