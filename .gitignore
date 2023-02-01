@@ -154,3 +154,6 @@ docs/index.rst
 
 # Debug artifacts
 .artifacts 
+
+# Docs: Advance Examples data
+docs/advanced_examples/data/
