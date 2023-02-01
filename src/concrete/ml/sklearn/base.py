@@ -42,7 +42,6 @@ from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remo
 from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from ..quantization import PostTrainingQATImporter, QuantizedArray, get_n_bits_dict
 from ..torch import NumpyModule
-from .protocols import Quantizer
 from .tree_to_numpy import tree_to_numpy
 
 # Disable pylint to import hummingbird while ignoring the warnings
@@ -100,7 +99,7 @@ class QuantizedTorchEstimatorMixin:
         return self.get_params()
 
     @property
-    def input_quantizers(self) -> List[Quantizer]:
+    def input_quantizers(self) -> List[UniformQuantizer]:
         """Get the input quantizers.
 
         Returns:
@@ -109,7 +108,7 @@ class QuantizedTorchEstimatorMixin:
         return self.quantized_module_.input_quantizers
 
     @input_quantizers.setter
-    def input_quantizers(self, value: List[Quantizer]):
+    def input_quantizers(self, value: List[UniformQuantizer]):
         """Set the input quantizers.
 
         Args:
