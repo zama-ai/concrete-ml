@@ -85,7 +85,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("PyTest", []),
         ("pyTest", []),
         ("Pytest", []),
-        ("python", []),
+        ("python", ["python client.py"]),
         ("Pytorch", []),
         ("pytorch", []),
         ("HummingBird", []),

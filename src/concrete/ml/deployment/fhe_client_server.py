@@ -4,7 +4,7 @@ import json
 import zipfile
 from copy import deepcopy
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import concrete.numpy as cnp
 import numpy
@@ -80,18 +80,18 @@ class FHEModelServer:
 
     def run(
         self,
-        serialized_encrypted_quantized_data: cnp.PublicArguments,
-        serialized_evaluation_keys: cnp.EvaluationKeys,
-    ) -> cnp.PublicResult:
+        serialized_encrypted_quantized_data: bytes,
+        serialized_evaluation_keys: bytes,
+    ) -> bytes:
         """Run the model on the server over encrypted data.
 
         Args:
-            serialized_encrypted_quantized_data (cnp.PublicArguments): the encrypted, quantized
+            serialized_encrypted_quantized_data (bytes): the encrypted, quantized
                 and serialized data
-            serialized_evaluation_keys (cnp.EvaluationKeys): the serialized evaluation keys
+            serialized_evaluation_keys (bytes): the serialized evaluation keys
 
         Returns:
-            cnp.PublicResult: the result of the model
+            bytes: the result of the model
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
@@ -227,7 +227,7 @@ class FHEModelClient:
 
     client: cnp.Client
 
-    def __init__(self, path_dir: str, key_dir: str = None):
+    def __init__(self, path_dir: str, key_dir: Optional[str] = None):
         """Initialize the FHE API.
 
         Args:
@@ -285,22 +285,22 @@ class FHEModelClient:
         """
         self.client.keygen(force)
 
-    def get_serialized_evaluation_keys(self) -> cnp.EvaluationKeys:
+    def get_serialized_evaluation_keys(self) -> bytes:
         """Get the serialized evaluation keys.
 
         Returns:
-            cnp.EvaluationKeys: the evaluation keys
+            bytes: the evaluation keys
         """
         return self.client.evaluation_keys.serialize()
 
-    def quantize_encrypt_serialize(self, x: numpy.ndarray) -> cnp.PublicArguments:
+    def quantize_encrypt_serialize(self, x: numpy.ndarray) -> bytes:
         """Quantize, encrypt and serialize the values.
 
         Args:
             x (numpy.ndarray): the values to quantize, encrypt and serialize
 
         Returns:
-            cnp.PublicArguments: the quantized, encrypted and serialized values
+            bytes: the quantized, encrypted and serialized values
         """
         # Quantize the values
         quantized_x = self.model.quantize_input(x)
@@ -312,13 +312,11 @@ class FHEModelClient:
         serialized_enc_qx = self.client.specs.serialize_public_args(enc_qx)
         return serialized_enc_qx
 
-    def deserialize_decrypt(
-        self, serialized_encrypted_quantized_result: cnp.PublicArguments
-    ) -> numpy.ndarray:
+    def deserialize_decrypt(self, serialized_encrypted_quantized_result: bytes) -> numpy.ndarray:
         """Deserialize and decrypt the values.
 
         Args:
-            serialized_encrypted_quantized_result (cnp.PublicArguments): the serialized, encrypted
+            serialized_encrypted_quantized_result (bytes): the serialized, encrypted
                 and quantized result
 
         Returns:
@@ -333,15 +331,16 @@ class FHEModelClient:
         deserialized_decrypted_quantized_result = self.client.decrypt(
             deserialized_encrypted_quantized_result
         )
+        assert isinstance(deserialized_decrypted_quantized_result, numpy.ndarray)
         return deserialized_decrypted_quantized_result
 
     def deserialize_decrypt_dequantize(
-        self, serialized_encrypted_quantized_result: cnp.PublicArguments
+        self, serialized_encrypted_quantized_result: bytes
     ) -> numpy.ndarray:
         """Deserialize, decrypt and dequantize the values.
 
         Args:
-            serialized_encrypted_quantized_result (cnp.PublicArguments): the serialized, encrypted
+            serialized_encrypted_quantized_result (bytes): the serialized, encrypted
                 and quantized result
 
         Returns:

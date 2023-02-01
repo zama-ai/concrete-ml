@@ -53,21 +53,21 @@ ______________________________________________________________________
 
 ```python
 run(
-    serialized_encrypted_quantized_data: PublicArguments,
-    serialized_evaluation_keys: EvaluationKeys
-) → PublicResult
+    serialized_encrypted_quantized_data: bytes,
+    serialized_evaluation_keys: bytes
+) → bytes
 ```
 
 Run the model on the server over encrypted data.
 
 **Args:**
 
-- <b>`serialized_encrypted_quantized_data`</b> (cnp.PublicArguments):  the encrypted, quantized  and serialized data
-- <b>`serialized_evaluation_keys`</b> (cnp.EvaluationKeys):  the serialized evaluation keys
+- <b>`serialized_encrypted_quantized_data`</b> (bytes):  the encrypted, quantized  and serialized data
+- <b>`serialized_evaluation_keys`</b> (bytes):  the serialized evaluation keys
 
 **Returns:**
 
-- <b>`cnp.PublicResult`</b>:  the result of the model
+- <b>`bytes`</b>:  the result of the model
 
 ______________________________________________________________________
 
@@ -121,7 +121,7 @@ Client API to encrypt and decrypt FHE data.
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(path_dir: str, key_dir: str = None)
+__init__(path_dir: str, key_dir: Optional[str] = None)
 ```
 
 Initialize the FHE API.
@@ -138,16 +138,14 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `deserialize_decrypt`
 
 ```python
-deserialize_decrypt(
-    serialized_encrypted_quantized_result: PublicArguments
-) → ndarray
+deserialize_decrypt(serialized_encrypted_quantized_result: bytes) → ndarray
 ```
 
 Deserialize and decrypt the values.
 
 **Args:**
 
-- <b>`serialized_encrypted_quantized_result`</b> (cnp.PublicArguments):  the serialized, encrypted  and quantized result
+- <b>`serialized_encrypted_quantized_result`</b> (bytes):  the serialized, encrypted  and quantized result
 
 **Returns:**
 
@@ -155,13 +153,13 @@ Deserialize and decrypt the values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/fhe_client_server.py#L338"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/fhe_client_server.py#L337"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize_decrypt_dequantize`
 
 ```python
 deserialize_decrypt_dequantize(
-    serialized_encrypted_quantized_result: PublicArguments
+    serialized_encrypted_quantized_result: bytes
 ) → ndarray
 ```
 
@@ -169,7 +167,7 @@ Deserialize, decrypt and dequantize the values.
 
 **Args:**
 
-- <b>`serialized_encrypted_quantized_result`</b> (cnp.PublicArguments):  the serialized, encrypted  and quantized result
+- <b>`serialized_encrypted_quantized_result`</b> (bytes):  the serialized, encrypted  and quantized result
 
 **Returns:**
 
@@ -198,14 +196,14 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `get_serialized_evaluation_keys`
 
 ```python
-get_serialized_evaluation_keys() → EvaluationKeys
+get_serialized_evaluation_keys() → bytes
 ```
 
 Get the serialized evaluation keys.
 
 **Returns:**
 
-- <b>`cnp.EvaluationKeys`</b>:  the evaluation keys
+- <b>`bytes`</b>:  the evaluation keys
 
 ______________________________________________________________________
 
@@ -226,7 +224,7 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `quantize_encrypt_serialize`
 
 ```python
-quantize_encrypt_serialize(x: ndarray) → PublicArguments
+quantize_encrypt_serialize(x: ndarray) → bytes
 ```
 
 Quantize, encrypt and serialize the values.
@@ -237,4 +235,4 @@ Quantize, encrypt and serialize the values.
 
 **Returns:**
 
-- <b>`cnp.PublicArguments`</b>:  the quantized, encrypted and serialized values
+- <b>`bytes`</b>:  the quantized, encrypted and serialized values
