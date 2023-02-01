@@ -2,10 +2,9 @@ Name, Version, License
 Pillow, 9.4.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
 coloredlogs, 15.0.1, MIT License
-concrete-compiler, 0.23.3, BSD-3
+concrete-compiler, 0.23.4, BSD-3
 concrete-ml-extensions-brevitas, 0.1.0, UNKNOWN
-concrete-numpy, 0.10.0rc1, BSD License
-contourpy, 1.0.7, BSD License
+concrete-numpy, 0.10.0, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
@@ -16,9 +15,9 @@ humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.4, MIT License
 joblib, 1.2.0, BSD License
 kiwisolver, 1.4.4, BSD License
-matplotlib, 3.6.3, Python Software Foundation License
+matplotlib, 3.5.3, Python Software Foundation License
 mpmath, 1.2.1, BSD License
-networkx, 2.8.8, BSD License
+networkx, 2.6.3, BSD License
 numpy, 1.21.6, BSD License
 nvidia-cublas-cu11, 11.10.3.66, Other/Proprietary License
 nvidia-cuda-nvrtc-cu11, 11.7.99, Other/Proprietary License
@@ -36,6 +35,7 @@ pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.0.2, new BSD
 scipy, 1.7.3, BSD License
+setuptools-scm, 6.4.2, MIT License
 six, 1.16.0, MIT License
 skl2onnx, 1.13, Apache Software License
 skorch, 0.11.0, new BSD 3-Clause
@@ -43,6 +43,7 @@ sympy, 1.10.1, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.1.0, BSD License
 tokenize-rt, 5.0.0, MIT License
+tomli, 2.0.1, MIT License
 torch, 1.13.1, BSD License
 tqdm, 4.64.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 typing_extensions, 4.4.0, Python Software Foundation License
