@@ -64,21 +64,22 @@ def process_file(file_str: str, do_open_problematic_files=False):
     #           an error
     forbidden_word_list: List[Tuple[str, List]]
     forbidden_word_list = [
-        ("Concrete-ml", []),
+        ("Concrete-ml", []),  # use `Concrete-ML`
         ("Concrete-Ml", []),
         ("Concrete ML", []),
         ("concrete ml", []),
         ("concrete-ml", []),
-        ("pytorch", []),
-        ("bitwidth", []),
+        ("pytorch", []),  # use `Pytorch`
+        ("bitwidth", []),  # use `bit-width`
         ("bit width", []),
-        ("inputset", []),
-        ("dataset", []),
-        ("data-base", []),
-        ("code-base", []),
+        ("inputset", []),  # use `input-set`
+        ("dataset", []),  # use `data-set`
+        ("data set", []),
+        ("data-base", []),  # use `database`
+        ("code-base", []),  # use `codebase`
         ("dequantize", []),
         ("requantize", []),
-        ("an FHE", []),
+        ("an FHE", []),  # use `a FHE`
         ("can Google", []),
         ("jupyter", []),
         ("PyTest", []),

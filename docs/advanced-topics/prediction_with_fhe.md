@@ -3,7 +3,7 @@
 Concrete-ML offers the possibility to easily encrypt the inputs with a dedicated function, to execute
 the inference on these inputs encrypted, and, finally, to decrypt the outputs with another dedicated function.
 
-The following example shows how to create a synthetic data set and how to use it
+The following example shows how to create a synthetic data-set and how to use it
 to train a LogisticRegression model from Concrete-ML.
 Next, the dedicated functions for encryption, inference and decryption are discussed.
 

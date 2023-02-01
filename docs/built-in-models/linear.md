@@ -25,7 +25,7 @@ The `n_bits` parameter controls the bit-width of the inputs and weights of the l
 
 ## Example
 
-Here is an example below of how to use a LogisticRegression model in FHE on a simple data set for classification. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
+Here is an example below of how to use a LogisticRegression model in FHE on a simple data-set for classification. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ```python
 import numpy

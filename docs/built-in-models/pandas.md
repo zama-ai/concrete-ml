@@ -23,7 +23,7 @@ from concrete.ml.sklearn import LogisticRegression
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
-# Create the data set as a Pandas dataframe
+# Create the data-set as a Pandas dataframe
 X, y = make_classification(
     n_samples=250,
     n_features=30,
