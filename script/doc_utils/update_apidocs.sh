@@ -4,6 +4,9 @@ set -e
 
 APIDOCS_OUTPUT="$1"
 
+# Clean
+rm -rf "$APIDOCS_OUTPUT"
+
 # Courtesy of https://stackoverflow.com/questions/6245570/how-do-i-get-the-current-branch-name-in-git
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
