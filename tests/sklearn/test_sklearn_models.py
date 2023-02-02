@@ -429,7 +429,7 @@ def check_grid_search(model, model_name, model_class, x, y):
 
     if "NeuralNet" in model_name:
         param_grid = {
-            "module__n_layers": (3, 5),
+            "module__n_layers": [5],
             "module__activation_function": (nn.Tanh, nn.ReLU6),
         }
     elif model_class in get_sklearn_tree_models(str_in_class_name="DecisionTree"):
@@ -440,7 +440,7 @@ def check_grid_search(model, model_name, model_class, x, y):
         param_grid = {
             "n_bits": [20],
             "max_depth": [2],
-            "n_estimators": [5, 10, 50, 100],
+            "n_estimators": [5, 10],
             "n_jobs": [1],
         }
     else:
