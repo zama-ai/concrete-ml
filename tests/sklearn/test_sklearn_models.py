@@ -116,8 +116,11 @@ def instantiate_model_generic(model_class, **parameters):
     return model_name, model_class(n_bits=n_bits, **extra_kwargs)
 
 
-def preambule(model_class, parameters, n_bits, load_data):
+def preambule(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) dataset."""
+
+    if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
+        pytest.skip("Skipping some tests in non-weekly builds")
 
     # Get the dataset. The data generation is seeded in load_data.
     model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
@@ -635,10 +638,11 @@ def test_quantization(
     load_data,
     check_r2_score,
     check_accuracy,
+    is_weekly_option,
     verbose=True,
 ):
     """Test quantization."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_sklearn_equivalence")
@@ -663,10 +667,11 @@ def test_correctness_with_sklearn(
     load_data,
     check_r2_score,
     check_accuracy,
+    is_weekly_option,
     verbose=True,
 ):
     """Test that Concrete-ML and scikit-learn models are 'equivalent'."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check correctness with sklearn (if we have sufficiently bits of precision)
     if verbose:
@@ -696,10 +701,11 @@ def test_hyper_parameters(
     load_data,
     check_r2_score,
     check_accuracy,
+    is_weekly_option,
     verbose=True,
 ):
     """Testing hyper parameters."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_hyper_parameters")
@@ -728,10 +734,13 @@ def test_grid_search(
     parameters,
     n_bits,
     load_data,
+    is_weekly_option,
     verbose=True,
 ):
     """Test Grid search."""
-    model, model_name, x, y = preambule(model_class, parameters, n_bits, load_data)
+    model, model_name, x, y = preambule(
+        model_class, parameters, n_bits, load_data, is_weekly_option
+    )
 
     if verbose:
         print("Run check_grid_search")
@@ -750,10 +759,11 @@ def test_double_fit(
     parameters,
     n_bits,
     load_data,
+    is_weekly_option,
     verbose=True,
 ):
     """Test Double fit."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_double_fit")
@@ -772,10 +782,11 @@ def test_offset(
     parameters,
     n_bits,
     load_data,
+    is_weekly_option,
     verbose=True,
 ):
     """Test with offset."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_offset")
@@ -794,10 +805,11 @@ def test_pandas(
     parameters,
     n_bits,
     load_data,
+    is_weekly_option,
     verbose=True,
 ):
     """Test with pandas."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_pandas")
@@ -816,10 +828,11 @@ def test_subfunctions(
     parameters,
     n_bits,
     load_data,
+    is_weekly_option,
     verbose=True,
 ):
     """Test subfunctions."""
-    model, _, x, _ = preambule(model_class, parameters, n_bits, load_data)
+    model, _, x, _ = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_subfunctions")
@@ -838,10 +851,11 @@ def test_pipeline(
     parameters,
     n_bits,
     load_data,
+    is_weekly_option,
     verbose=True,
 ):
     """Test with pipelines."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data)
+    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_pipeline")
@@ -880,7 +894,9 @@ def test_predict_correctness(
     verbose=True,
 ):
     """Test correct execution, if there is sufficiently n_bits."""
-    model, model_name, x, _ = preambule(model_class, parameters, n_bits, load_data)
+    model, model_name, x, _ = preambule(
+        model_class, parameters, n_bits, load_data, is_weekly_option
+    )
 
     # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
     if is_weekly_option:
