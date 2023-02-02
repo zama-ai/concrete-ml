@@ -160,6 +160,7 @@ class QuantizedGemm(QuantizedMixingOp):
     def q_impl(
         self,
         *q_inputs: QuantizedArray,
+        calibrate_rounding: bool = False,
         **attrs,
     ) -> QuantizedArray:
 
@@ -262,6 +263,10 @@ class QuantizedGemm(QuantizedMixingOp):
             # the scale/zero-point of the in-the-clear quantizer should be
             # to properly dequantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
+
+        with cnp.tag(self.op_instance_name + ".matmul_rounding"):
+            # Apply Concrete rounding (if relevant)
+            numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
 
         # Quantization scales and zero points (FLOATS involved)
         # This is going to be compiled with a PBS (along with the following activation function)
@@ -557,6 +562,7 @@ class QuantizedConv(QuantizedMixingOp):
     def q_impl(
         self,
         *q_inputs: QuantizedArray,
+        calibrate_rounding: bool = False,
         **attrs,
     ) -> QuantizedArray:
         """Compute the quantized convolution between two quantized tensors.
@@ -568,6 +574,7 @@ class QuantizedConv(QuantizedMixingOp):
                 x (numpy.ndarray): input data. Shape is N x C x H x W for 2d
                 w (numpy.ndarray): weights tensor. Shape is (O x I x Kh x Kw) for 2d
                 b (numpy.ndarray, Optional): bias tensor, Shape is (O,)
+            calibrate_rounding (bool): Whether to calibrate rounding
             attrs: convolution options handled in constructor
 
         Returns:
@@ -706,6 +713,10 @@ class QuantizedConv(QuantizedMixingOp):
             # to properly dequantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
+        with cnp.tag(self.op_instance_name + ".conv_rounding"):
+            # Apply Concrete rounding (if relevant)
+            numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
+
         # Now compute the whole sum (sum of the four terms)
         numpy_q_out = numpy_q_out.astype(numpy.float64) + final_term - sum_weights
 
@@ -783,6 +794,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
     def q_impl(
         self,
         *q_inputs: QuantizedArray,
+        calibrate_rounding: bool = False,
         **attrs,
     ) -> QuantizedArray:
 
@@ -841,7 +853,12 @@ class QuantizedAvgPool(QuantizedMixingOp):
         # 0's while we want to pad with zero-point's. So, instead, he have done the padding
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
-        sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
+        with cnp.tag(self.op_instance_name + ".avgpool"):
+            sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
+
+        with cnp.tag(self.op_instance_name + ".avgpool_rounding"):
+            # Apply Concrete rounding (if relevant)
+            sum_result = self.cnp_round(sum_result, calibrate_rounding)
 
         if self.debug_value_tracker is not None:
             # pylint: disable-next=unsubscriptable-object

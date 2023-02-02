@@ -59,6 +59,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     use_virtual_lib,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
+    rounding_threshold_bits=None,
     dump_onnx=False,
     expected_onnx_str=None,
     verbose_compilation=False,
@@ -90,6 +91,11 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
     if not use_virtual_lib:
+
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
+        # Rounding isn't supported in FHE yet
+        rounding_threshold_bits = None
+
         n_bits = (
             {"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2}
             if qat_bits == 0
@@ -169,6 +175,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             n_bits=n_bits,
             use_virtual_lib=use_virtual_lib,
             verbose_compilation=verbose_compilation,
+            rounding_threshold_bits=rounding_threshold_bits,
         )
 
         # Create test data from the same distribution and quantize using.
@@ -227,6 +234,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
+@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_or_onnx_networks(
     input_output_feature,
     model,
@@ -236,6 +244,7 @@ def test_compile_torch_or_onnx_networks(
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
     is_vl_only_option,
+    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -255,6 +264,7 @@ def test_compile_torch_or_onnx_networks(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
+        rounding_threshold_bits=rounding_threshold_bits,
     )
 
 
@@ -273,6 +283,7 @@ def test_compile_torch_or_onnx_networks(
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
+@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     model,
     activation_function,
@@ -283,6 +294,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
+    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -302,6 +314,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
+        rounding_threshold_bits=rounding_threshold_bits,
     )
 
     check_graph_input_has_no_tlu(q_module.fhe_circuit.graph)
@@ -357,6 +370,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
+@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_or_onnx_activations(
     input_output_feature,
     model,
@@ -366,6 +380,7 @@ def test_compile_torch_or_onnx_activations(
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
     is_vl_only_option,
+    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -385,6 +400,7 @@ def test_compile_torch_or_onnx_activations(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
+        rounding_threshold_bits=rounding_threshold_bits,
     )
 
 
@@ -403,6 +419,7 @@ def test_compile_torch_or_onnx_activations(
     [pytest.param(n_bits) for n_bits in [1, 2]],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_qat(
     input_output_feature,
     model,
@@ -411,6 +428,7 @@ def test_compile_torch_qat(
     use_virtual_lib,
     is_vl_only_option,
     check_is_good_execution_for_cml_vs_circuit,
+    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -433,6 +451,7 @@ def test_compile_torch_qat(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
+        rounding_threshold_bits=rounding_threshold_bits,
     )
 
 

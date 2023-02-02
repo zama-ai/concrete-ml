@@ -4,9 +4,11 @@ from copy import deepcopy
 from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
+import concrete.numpy as cnp
 import numpy
 
 from ..common.debugging import assert_true
+from ..common.utils import compute_bits_precision
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
 from ..onnx.ops_impl import ONNXMixedFunction
 from .quantizers import (
@@ -641,6 +643,20 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
     Mixing operators cannot be fused to TLUs.
     """
 
+    lsbs_to_remove: Optional[int] = None
+    rounding_threshold_bits: Optional[int] = None
+
+    def __init__(self, *args, rounding_threshold_bits: Optional[int] = None, **kwargs) -> None:
+        """Initialize quantized ops parameters plus specific parameters.
+
+        Args:
+            rounding_threshold_bits (Optional[int]): Number of bits to round to.
+            *args: positional argument to pass to the parent class.
+            **kwargs: named argument to pass to the parent class.
+        """
+        self.rounding_threshold_bits = rounding_threshold_bits
+        super().__init__(*args, **kwargs)
+
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
@@ -693,3 +709,41 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
             stats=self.output_quant_stats,
             params=out_params,
         )
+
+    def cnp_round(
+        self, x: Union[numpy.ndarray, cnp.tracing.Tracer], calibrate_rounding: bool
+    ) -> numpy.ndarray:
+        """Round the input array to the specified number of bits.
+
+        Args:
+            x (Union[numpy.ndarray, cnp.tracing.Tracer]): The input array to be rounded.
+            calibrate_rounding (bool): Whether to calibrate the rounding
+                (compute the lsbs_to_remove)
+
+        Returns:
+            numpy.ndarray: The rounded array.
+        """
+
+        # Rounding is applied only if specified by user
+        if self.rounding_threshold_bits is not None:
+            if calibrate_rounding:
+                assert_true(
+                    not isinstance(x, cnp.tracing.Tracer),
+                    "Can't compute lsbs_to_remove at compilation time.",
+                )
+                assert_true(
+                    self.lsbs_to_remove is None,
+                    "Rounding has already been calibrated.",
+                )
+
+                current_n_bits_accumulator = compute_bits_precision(x)
+                self.lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
+
+            # mypy
+            assert self.lsbs_to_remove is not None
+
+            # Apply rounding if needed
+            if self.lsbs_to_remove > 0:
+                x = cnp.round_bit_pattern(x, lsbs_to_remove=self.lsbs_to_remove)
+
+        return x

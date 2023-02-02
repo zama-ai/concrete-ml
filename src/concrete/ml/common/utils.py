@@ -8,6 +8,7 @@ from typing import Callable, Dict, Iterable, Optional, Tuple
 import numpy
 import onnx
 import torch
+from concrete.numpy.dtypes import Integer
 
 from ..common.debugging import assert_true
 
@@ -373,3 +374,15 @@ def check_dtype_and_cast(values, expected_dtype, error_information=None):
 
     # Return the values if their dtype matches the expected one
     return values
+
+
+def compute_bits_precision(x: numpy.ndarray) -> int:
+    """Compute the number of bits required to represent x.
+
+    Args:
+        x (numpy.ndarray): Integer data
+
+    Returns:
+        int: the number of bits required to represent x
+    """
+    return Integer.that_can_represent([x.min(), x.max()]).bit_width

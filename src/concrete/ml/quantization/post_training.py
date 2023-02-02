@@ -10,7 +10,12 @@ from onnx import numpy_helper
 from ..common.debugging import assert_true
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL, get_attribute, get_op_type
 from ..torch.numpy_module import NumpyModule
-from .base_quantized_op import DEFAULT_MODEL_BITS, ONNX_OPS_TO_QUANTIZED_IMPL, QuantizedOp
+from .base_quantized_op import (
+    DEFAULT_MODEL_BITS,
+    ONNX_OPS_TO_QUANTIZED_IMPL,
+    QuantizedMixingOp,
+    QuantizedOp,
+)
 from .quantized_module import QuantizedModule
 from .quantized_ops import QuantizedBrevitasQuant
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
@@ -107,20 +112,29 @@ class ONNXConverter:
             the precision of the final network's outputs, while "model_inputs" gives the precision
             of the network's inputs. "op_inputs" and "op_weights" both control the quantization for
             inputs and weights of all layers.
-        y_model (NumpyModule): Model in numpy.
+        numpy_model (NumpyModule): Model in numpy.
+        rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
+            to the given bits of precision
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     n_bits: Union[int, Dict]
     quant_params: Dict[str, QuantizedArray]
     numpy_model: NumpyModule
+    rounding_threshold_bits: Optional[int]
 
-    def __init__(self, n_bits: Union[int, Dict], numpy_model: NumpyModule):
+    def __init__(
+        self,
+        n_bits: Union[int, Dict],
+        numpy_model: NumpyModule,
+        rounding_threshold_bits: Optional[int] = None,
+    ):
         self.quant_ops_dict = {}
 
         self.n_bits = get_n_bits_dict(n_bits)
         self.quant_params = {}
         self.numpy_model = numpy_model
+        self.rounding_threshold_bits = rounding_threshold_bits
 
     @property
     def n_bits_model_outputs(self):
@@ -237,8 +251,17 @@ class ONNXConverter:
                 params=quantizer.quant_params,
             )
 
+        # Enable rounding calibration if used has set a rounding_threshold_bits
+        calibrate_attr = (
+            {"calibrate_rounding": True} if isinstance(quantized_op, QuantizedMixingOp) else {}
+        )
+
+        # Add calibrate_attr to list of attr for q_impl method
+        q_impl_attr = quantized_op.attrs.copy()
+        q_impl_attr.update(calibrate_attr)
+
         # Dequantize to have the value in clear and ready for next calibration
-        quant_result = quantized_op(*q_calibration_data)
+        quant_result = quantized_op.q_impl(*q_calibration_data, **q_impl_attr)
         if quantized_op.produces_graph_output:
             assert quantized_op.output_quant_stats is not None
             assert quantized_op.output_quant_params is not None
@@ -373,6 +396,10 @@ class ONNXConverter:
                 continue
 
             quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
+
+            # Add rounding_threshold_bits to the attributes if available in quantized_op_class
+            if issubclass(quantized_op_class, QuantizedMixingOp):
+                attributes.update({"rounding_threshold_bits": self.rounding_threshold_bits})
 
             # All inputs
             curr_inputs = {input_name: node_results[input_name] for input_name in node.input}
@@ -657,6 +684,8 @@ class PostTrainingAffineQuantization(ONNXConverter):
                                         - op_weights: learned parameters or constants in the network
                                         - model_outputs: final model output quantization bits
         numpy_model (NumpyModule):      Model in numpy.
+        rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
+            to the given bits of precision
         is_signed:                      Whether the weights of the layers can be signed.
                                         Currently, only the weights can be signed.
 
