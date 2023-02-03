@@ -30,7 +30,6 @@
 - [`concrete.ml.sklearn.base`](./concrete.ml.sklearn.base.md#module-concretemlsklearnbase): Module that contains base classes for our libraries estimators.
 - [`concrete.ml.sklearn.glm`](./concrete.ml.sklearn.glm.md#module-concretemlsklearnglm): Implement sklearn's Generalized Linear Models (GLM).
 - [`concrete.ml.sklearn.linear_model`](./concrete.ml.sklearn.linear_model.md#module-concretemlsklearnlinear_model): Implement sklearn linear model.
-- [`concrete.ml.sklearn.protocols`](./concrete.ml.sklearn.protocols.md#module-concretemlsklearnprotocols): Protocols.
 - [`concrete.ml.sklearn.qnn`](./concrete.ml.sklearn.qnn.md#module-concretemlsklearnqnn): Scikit-learn interface for concrete quantized neural networks.
 - [`concrete.ml.sklearn.rf`](./concrete.ml.sklearn.rf.md#module-concretemlsklearnrf): Implements RandomForest models.
 - [`concrete.ml.sklearn.svm`](./concrete.ml.sklearn.svm.md#module-concretemlsklearnsvm): Implement Support Vector Machine.
@@ -150,10 +149,6 @@
 - [`linear_model.LinearRegression`](./concrete.ml.sklearn.linear_model.md#class-linearregression): A linear regression model with FHE.
 - [`linear_model.LogisticRegression`](./concrete.ml.sklearn.linear_model.md#class-logisticregression): A logistic regression model with FHE.
 - [`linear_model.Ridge`](./concrete.ml.sklearn.linear_model.md#class-ridge): A Ridge regression model with FHE.
-- [`protocols.ConcreteBaseClassifierProtocol`](./concrete.ml.sklearn.protocols.md#class-concretebaseclassifierprotocol): Concrete classifier protocol.
-- [`protocols.ConcreteBaseEstimatorProtocol`](./concrete.ml.sklearn.protocols.md#class-concretebaseestimatorprotocol): A Concrete Estimator Protocol.
-- [`protocols.ConcreteBaseRegressorProtocol`](./concrete.ml.sklearn.protocols.md#class-concretebaseregressorprotocol): Concrete regressor protocol.
-- [`protocols.Quantizer`](./concrete.ml.sklearn.protocols.md#class-quantizer): Quantizer Protocol.
 - [`qnn.FixedTypeSkorchNeuralNet`](./concrete.ml.sklearn.qnn.md#class-fixedtypeskorchneuralnet): A mixin with a helpful modification to a skorch estimator that fixes the module type.
 - [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): Scikit-learn interface for quantized FHE compatible neural networks.
 - [`qnn.NeuralNetRegressor`](./concrete.ml.sklearn.qnn.md#class-neuralnetregressor): Scikit-learn interface for quantized FHE compatible neural networks.
@@ -176,11 +171,15 @@
 - [`custom_assert.assert_false`](./concrete.ml.common.debugging.custom_assert.md#function-assert_false): Provide a custom assert to check that the condition is False.
 - [`custom_assert.assert_not_reached`](./concrete.ml.common.debugging.custom_assert.md#function-assert_not_reached): Provide a custom assert to check that a piece of code is never reached.
 - [`custom_assert.assert_true`](./concrete.ml.common.debugging.custom_assert.md#function-assert_true): Provide a custom assert to check that the condition is True.
+- [`utils.check_dtype_and_cast`](./concrete.ml.common.utils.md#function-check_dtype_and_cast): Check that the values' dtype(s) match(es) the given expected dtype.
 - [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
+- [`utils.compute_bits_precision`](./concrete.ml.common.utils.md#function-compute_bits_precision): Compute the number of bits required to represent x.
 - [`utils.generate_proxy_function`](./concrete.ml.common.utils.md#function-generate_proxy_function): Generate a proxy function for a function accepting only \*args type arguments.
 - [`utils.get_model_name`](./concrete.ml.common.utils.md#function-get_model_name): Return a model (which may be a partial()) name.
 - [`utils.get_onnx_opset_version`](./concrete.ml.common.utils.md#function-get_onnx_opset_version): Return the ONNX opset_version.
 - [`utils.is_model_class_in_a_list`](./concrete.ml.common.utils.md#function-is_model_class_in_a_list): Say if model_class (which may be a partial()) is an element of a_list.
+- [`utils.is_pandas_dataframe`](./concrete.ml.common.utils.md#function-is_pandas_dataframe): Indicate if the input container is a Pandas DataFrame.
+- [`utils.is_pandas_series`](./concrete.ml.common.utils.md#function-is_pandas_series): Indicate if the input container is a Pandas Series.
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.

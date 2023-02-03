@@ -85,15 +85,43 @@ N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 
 
+def instantiate_model_generic(model_class, **parameters):
+    """Instantiate any Concrete-ML model type.
+
+    Args:
+        model_class (class): The type of the model to instantiate
+        parameters (dict): Hyper-parameters for the model instantiation
+
+    Returns:
+        model_name (str): The type of the model as a string
+        model (object): The model instance
+    """
+    model_name = get_model_name(model_class)
+
+    assert "n_bits" in parameters
+    n_bits = parameters["n_bits"]
+
+    extra_kwargs = {}
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if n_bits > 8:
+            extra_kwargs["module__n_w_bits"] = 3
+            extra_kwargs["module__n_a_bits"] = 3
+            extra_kwargs["module__n_accum_bits"] = 12
+        else:
+            extra_kwargs["module__n_w_bits"] = 2
+            extra_kwargs["module__n_a_bits"] = 2
+            extra_kwargs["module__n_accum_bits"] = 7
+
+    # Set the model
+    return model_name, model_class(n_bits=n_bits, **extra_kwargs)
+
+
 def preambule(model_class, parameters, n_bits, load_data):
     """Prepare the fitted model, and the (x, y) dataset."""
 
     # Get the dataset. The data generation is seeded in load_data.
-    model_name = get_model_name(model_class)
+    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = load_data(**parameters, model_name=model_name)
-
-    # Set the model
-    model = model_class(n_bits=n_bits)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -121,8 +149,7 @@ def check_correctness_with_sklearn(
     """Check that Concrete-ML and scikit-learn models are 'equivalent'."""
     assert "n_bits" in hyper_parameters_including_n_bits
 
-    model_name = get_model_name(model_class)
-    model = model_class(**hyper_parameters_including_n_bits)
+    model_name, model = instantiate_model_generic(model_class, **hyper_parameters_including_n_bits)
 
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
@@ -178,9 +205,7 @@ def check_correctness_with_sklearn(
 
 def check_double_fit(model_class, n_bits, x, y):
     """Check double fit."""
-    model_name = get_model_name(model_class)
-
-    model = model_class(n_bits=n_bits)
+    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -209,18 +234,11 @@ def check_double_fit(model_class, n_bits, x, y):
 
 def check_offset(model_class, n_bits, x, y):
     """Check offset."""
-    model_name = get_model_name(model_class)
+    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Offsets are not supported by XGBoost
     if "XGB" in model_name:
         return
-
-    # Offsets don't seem to be supported by Neural Networks
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2404
-    if "NeuralNet" in model_name:
-        return
-
-    model = model_class(n_bits=n_bits)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -320,10 +338,8 @@ def check_subfunctions_in_fhe(model, model_name, fhe_circuit, x):
 
 
 def check_pandas(model_class, n_bits, x, y):
-    """Check panda support."""
-    model_name = get_model_name(model_class)
-
-    model = model_class(n_bits=n_bits)
+    """Check pandas support."""
+    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Turn to Pandas
     x_pandas = pandas.DataFrame(x)
@@ -441,7 +457,7 @@ def check_grid_search(model, model_name, model_class, x, y):
 def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score):
     """Check equivalence between the two models returned by fit_benchmark: the CML model and
     the scikit-learn model."""
-    model_name = get_model_name(model_class)
+    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Still some problems to fix
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2841
@@ -452,8 +468,6 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2842
     if model_name in ["NeuralNetRegressor", "NeuralNetClassifier"]:
         return
-
-    model = model_class(n_bits=n_bits)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -576,11 +590,10 @@ def check_hyper_parameters(
         # Add n_bits
         hyper_parameters["n_bits"] = n_bits
 
-        model = model_class(**hyper_parameters)
+        model_name, model = instantiate_model_generic(model_class, **hyper_parameters)
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2450
         # does not work for now, issue in HummingBird
-        model_name = get_model_name(model_class)
         if model_name == "RandomForestClassifier" and hyper_parameters["n_bits"] == 2:
             continue
 

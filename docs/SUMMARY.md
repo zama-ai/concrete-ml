@@ -75,7 +75,6 @@
   - [concrete.ml.sklearn.glm.md](developer-guide/api/concrete.ml.sklearn.glm.md)
   - [concrete.ml.sklearn.linear_model.md](developer-guide/api/concrete.ml.sklearn.linear_model.md)
   - [concrete.ml.sklearn.md](developer-guide/api/concrete.ml.sklearn.md)
-  - [concrete.ml.sklearn.protocols.md](developer-guide/api/concrete.ml.sklearn.protocols.md)
   - [concrete.ml.sklearn.qnn.md](developer-guide/api/concrete.ml.sklearn.qnn.md)
   - [concrete.ml.sklearn.rf.md](developer-guide/api/concrete.ml.sklearn.rf.md)
   - [concrete.ml.sklearn.svm.md](developer-guide/api/concrete.ml.sklearn.svm.md)

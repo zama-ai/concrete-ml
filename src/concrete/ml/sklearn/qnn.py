@@ -10,6 +10,7 @@ import brevitas.nn as qnn
 import numpy
 import torch
 import torch.nn.utils.prune as pruning
+from sklearn.base import clone
 from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
 from skorch.regressor import NeuralNetRegressor as SKNeuralNetRegressor
 from torch import nn
@@ -60,6 +61,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
         n_w_bits=3,
         n_a_bits=3,
         n_accum_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+        n_prune_neurons_percentage=0.0,
         activation_function=nn.ReLU,
         quant_narrow=False,
         quant_signed=True,
@@ -73,18 +75,18 @@ class SparseQuantNeuralNetImpl(nn.Module):
             n_w_bits: Number of weight bits
             n_a_bits: Number of activation and input bits
             n_accum_bits: Maximal allowed bitwidth of intermediate accumulators
-            n_hidden_neurons_multiplier: A factor that is multiplied by the maximal number of
-                active (non-zero weight) neurons for every layer. The maximal number of neurons in
-                the worst case scenario is:
-                                                                      2^n_max-1
-                       max_active_neurons(n_max, n_w, n_a) = floor(---------------------)
-                                                                   (2^n_w-1)*(2^n_a-1) )
-                The worst case scenario for the bitwidth of the accumulator is when all weights and
-                activations are maximum simultaneously. We set, for each layer, the total number of
-                neurons to be:
-                 n_hidden_neurons_multiplier * max_active_neurons(n_accum_bits, n_w_bits, n_a_bits)
-                Through experiments, for typical distributions of weights and activations,
-                the default value for n_hidden_neurons_multiplier, 4, is safe to avoid overflow.
+            n_hidden_neurons_multiplier: The number of neurons on the hidden will be the number
+                of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note that
+                pruning is used to adjust the accumulator size to attempt to
+                keep the maximum accumulator bitwidth to
+                `n_accum_bits`, meaning that not all hidden layer neurons will be active.
+                The default value for `n_hidden_neurons_multiplier` is chosen for small dimensions
+                of the input. Reducing this value decreases the FHE inference time considerably
+                but also decreases the robustness and accuracy of model training.
+            n_prune_neurons_percentage: How many neurons to prune on the hidden layers. This
+                should be used mostly through the dedicated `.prune()` mechanism. This can
+                be used in when setting `n_hidden_neurons_multiplier` high (3-4), once good accuracy
+                is obtained, to speed up the model in FHE.
             activation_function: a torch class that is used to construct activation functions in
                 the network (e.g. torch.ReLU, torch.SELU, torch.Sigmoid, etc)
             quant_narrow : whether this network should use narrow range quantized integer values
@@ -99,6 +101,8 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
         self.features = nn.Sequential()
         in_features = input_dim
+
+        self.n_layers = n_layers
 
         if n_layers <= 0:
             raise ValueError(
@@ -151,6 +155,13 @@ class SparseQuantNeuralNetImpl(nn.Module):
         self.n_outputs = n_outputs
         self.input_dim = input_dim
 
+        self.n_prune_neurons_percentage = n_prune_neurons_percentage
+
+        assert_true(
+            self.n_prune_neurons_percentage >= 0 and self.n_prune_neurons_percentage < 1.0,
+            "Pruning percentage must be expressed as a fraction between 0 and 1. A value of "
+            " zero (0) means pruning is disabled",
+        )
         self.pruned_layers = set()
 
         self.enable_pruning()
@@ -179,9 +190,11 @@ class SparseQuantNeuralNetImpl(nn.Module):
         """Make the learned pruning permanent in the network."""
         max_neuron_connections = self.max_active_neurons()
 
+        prev_layer_keep_idxs = None
+        layer_idx = 0
         # Iterate over all layers that have weights (Linear ones)
         for layer in self.features:
-            if not isinstance(layer, nn.Linear):
+            if not isinstance(layer, (nn.Linear, qnn.QuantLinear)):
                 continue
 
             s = layer.weight.shape
@@ -189,9 +202,55 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
             # If this is a layer that should be pruned and is currently being pruned,
             # Make the pruning permanent
-            if st[1] > max_neuron_connections and layer in self.pruned_layers:
+            if layer in self.pruned_layers and st[1] > max_neuron_connections:
                 pruning.remove(layer, "weight")
                 self.pruned_layers.remove(layer)
+
+            if self.n_prune_neurons_percentage > 0.0:
+                weights = layer.weight.detach().numpy()
+
+                # Pruning all layers except the last one, but for the last one
+                # we still need to remove synapses of the previous layer's pruned neurons
+                if layer_idx < self.n_layers - 1:
+                    # Once pruning is disabled, the weights of some neurons become 0
+                    # We need to find those neurons (columns in the weight matrix).
+                    # Testing for floats equal to 0 is done using an epsilon
+                    neurons_removed_idx = numpy.where(numpy.sum(numpy.abs(weights), axis=1) < 0.001)
+                    idx = numpy.arange(weights.shape[0])
+                    keep_idxs = numpy.setdiff1d(idx, neurons_removed_idx)
+                else:
+                    keep_idxs = numpy.arange(weights.shape[0])
+
+                # Now we take the indices of the neurons kept for the previous layer
+                # If this is the first layer all neurons are kept
+                if prev_layer_keep_idxs is None:
+                    prev_layer_keep_idxs = numpy.arange(weights.shape[1])
+
+                # Remove the pruned neurons and the weights/synapses
+                # that apply to neurons removed in the previous layer
+                orig_weight = layer.weight.data.clone()
+                transform_weight = orig_weight[keep_idxs]
+                transform_weight = transform_weight[:, prev_layer_keep_idxs]
+
+                # Replace the weight matrix of the current layer
+                layer.weight = torch.nn.Parameter(transform_weight)
+
+                # Eliminate the biases of the neurons that were removed in this layer
+                if layer.bias is not None:
+                    orig_bias = layer.bias.data.clone()
+                    transform_bias = orig_bias[keep_idxs]
+                    layer.bias = torch.nn.Parameter(transform_bias)
+
+                # Save the indices of the neurons removed in this layer to
+                # remove synapses in the next layer
+                prev_layer_keep_idxs = keep_idxs
+
+            layer_idx += 1
+
+        assert_true(
+            layer_idx == self.n_layers,
+            "Not all layers in the network were examined as candidates for pruning",
+        )
 
     def enable_pruning(self):
         """Enable pruning in the network. Pruning must be made permanent to recover pruned weights.
@@ -209,8 +268,9 @@ class SparseQuantNeuralNetImpl(nn.Module):
             )
 
         # Iterate over all layers that have weights (Linear ones)
+        layer_idx = 0
         for layer in self.features:
-            if not isinstance(layer, nn.Linear) and not isinstance(layer, qnn.QuantLinear):
+            if not isinstance(layer, (nn.Linear, qnn.QuantLinear)):
                 continue
 
             s = layer.weight.shape
@@ -222,6 +282,21 @@ class SparseQuantNeuralNetImpl(nn.Module):
             if st[1] > max_neuron_connections and layer not in self.pruned_layers:
                 pruning.l1_unstructured(layer, "weight", (st[1] - max_neuron_connections) * st[0])
                 self.pruned_layers.add(layer)
+
+            # If enabled, prune neurons for all layers except the last one,
+            # which outputs the prediction
+            if layer_idx < self.n_layers - 1 and self.n_prune_neurons_percentage > 0.0:
+                # Use L2-norm structured pruning, using the torch ln_structured
+                # function, with norm=2 and axis=0 (output/neuron axis)
+                pruning.ln_structured(layer, "weight", self.n_prune_neurons_percentage, 2, 0)
+
+            # Note this is counting only Linear layers
+            layer_idx += 1
+
+        assert_true(
+            layer_idx == self.n_layers,
+            "Not all layers in the network were examined as candidates for pruning",
+        )
 
     def forward(self, x):
         """Forward pass.
@@ -375,6 +450,79 @@ class FixedTypeSkorchNeuralNet:
 
         return params
 
+    def prune(self, X, y, n_prune_neurons_percentage, **fit_params):
+        """Prune a copy of this NeuralNetwork model.
+
+        This can be used when the number of neurons on the hidden layers is too high. For example,
+        when creating a Neural Network model with `n_hidden_neurons_multiplier` high (3-4), it
+        can be used to speed up the model inference in FHE. Many times, up to 50% of
+        neurons can be pruned without losing accuracy, when using this function to fine-tune
+        an already trained model with good accuracy. This method should be used
+        once good accuracy is obtained.
+
+        Args:
+            X : training data, can be a torch.tensor, numpy.ndarray or pandas DataFrame
+            y : training targets, can be a torch.tensor, numpy.ndarray or pandas DataFrame
+            n_prune_neurons_percentage : percentage of neurons to remove. A value of 0 means
+                no neurons are removed and a value of 1.0 means 100% of neurons would be removed.
+            fit_params: additional parameters to pass to the forward method of the underlying
+                nn.Module
+
+        Returns:
+            result: a new pruned copy of this NeuralNetClassifier or NeuralNetRegressor
+
+        Raises:
+            ValueError: if the model has not been trained or if the model is one that has already
+                been pruned
+        """
+
+        if not self.initialized_:  # pylint: disable=no-member
+            raise ValueError("Can only prune another NeuralNet model that is already already fit.")
+
+        if self.module_.n_prune_neurons_percentage > 0.0:  # pylint: disable=no-member
+            raise ValueError(
+                "Cannot apply structured pruning optimization to an already pruned model"
+            )
+
+        if n_prune_neurons_percentage >= 1.0 or n_prune_neurons_percentage < 0:
+            raise ValueError(
+                f"Valid values for `n_prune_neurons_percentage` are in the [0..1) range, but "
+                f"{n_prune_neurons_percentage} was given."
+            )
+
+        model_copy = clone(self)
+
+        # Copy the input/output dims, as they are kept constant. These
+        # are usually computed by .fit, but here we want to manually instantiate the model
+        # before .fit() in order to fine-tune the original model
+        model_copy.module__input_dim = self.module__input_dim
+        model_copy.module__n_outputs = self.module__n_outputs
+
+        # Create .module_ if the .module is a class (not an instance)
+        model_copy.initialize()
+
+        # Deactivate the default pruning
+        model_copy.module_.make_pruning_permanent()  # pylint: disable=no-member
+
+        # Load the original model
+        model_copy.module_.load_state_dict(self.module_.state_dict())  # pylint: disable=no-member
+
+        # Set the new pruning amount
+        model_copy.module_.n_prune_neurons_percentage = (
+            n_prune_neurons_percentage  # pylint: disable=no-member
+        )
+
+        # Enable pruning again, this time with structured pruning
+        model_copy.module_.enable_pruning()  # pylint: disable=no-member
+
+        # The .module_ was initialized manually, prevent .fit from creating a new one
+        model_copy.warm_start = True  # pylint: disable=attribute-defined-outside-init
+
+        # Now, fine-tune the original module with structured pruning
+        model_copy.fit(X, y, **fit_params)
+
+        return model_copy
+
 
 class NeuralNetClassifier(
     FixedTypeSkorchNeuralNet,
@@ -420,6 +568,9 @@ class NeuralNetClassifier(
             return
 
         kwargs.pop("n_bits", None)
+
+        verbose = kwargs.pop("verbose", False)
+        kwargs["verbose"] = verbose
 
         _check_input_output_kwargs(kwargs)
 

@@ -8,7 +8,6 @@ Import sklearn models.
 
 ## **Global Variables**
 
-- **protocols**
 - **tree_to_numpy**
 - **base**
 - **torch_modules**

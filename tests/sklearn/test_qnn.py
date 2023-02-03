@@ -25,6 +25,7 @@ from concrete.ml.sklearn.qnn import (
     NeuralNetClassifier,
     NeuralNetRegressor,
     QuantizedSkorchEstimatorMixin,
+    SparseQuantNeuralNetImpl,
 )
 
 
@@ -184,7 +185,7 @@ def test_compile_and_calib(
 
     # Configure a minimal neural network and train it quickly
     params = {
-        "module__n_layers": 1,
+        "module__n_layers": 2,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
         "module__n_accum_bits": 5,
@@ -444,3 +445,124 @@ def test_failure_bad_data_types(model_classes, container, bad_types, expected_er
         # Train the model, which should raise the expected error
         with pytest.raises(ValueError, match=expected_error):
             model.fit(x, y)
+
+
+@pytest.mark.parametrize("activation_function", [pytest.param(nn.ReLU)])
+@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
+def test_structured_pruning(activation_function, model, load_data, default_configuration):
+    """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
+    inputs"""
+    n_features = 10
+
+    # Get the dataset. The data generation is seeded in load_data.
+    if is_classifier(model):
+        x, y = load_data(
+            dataset="classification",
+            n_samples=1000,
+            n_features=n_features,
+            n_redundant=0,
+            n_repeated=0,
+            n_informative=n_features,
+            n_classes=2,
+            class_sep=2,
+        )
+
+        # Add an offset to the labels to check that it is supported
+        y += 10
+
+    # Get the dataset. The data generation is seeded in load_data.
+    elif is_regressor(model):
+        x, y, _ = load_data(
+            dataset="regression",
+            n_samples=1000,
+            n_features=n_features,
+            n_informative=n_features,
+            n_targets=2,
+            noise=2,
+            coef=True,
+        )
+        if y.ndim == 1:
+            y = numpy.expand_dims(y, 1)
+    else:
+        raise ValueError(f"Data generator not implemented for {str(model)}")
+
+    # Perform a classic test-train split (deterministic by fixing the seed)
+    x_train, x_test, y_train, _ = train_test_split(
+        x,
+        y,
+        test_size=0.25,
+        random_state=numpy.random.randint(0, 2**15),
+    )
+
+    # Compute mean/stdev on training set and normalize both train and test sets with them
+    # Optimization algorithms for Neural networks work well on 0-centered inputs
+    normalizer = StandardScaler()
+    x_train = normalizer.fit_transform(x_train)
+    x_test = normalizer.transform(x_test)
+
+    # Setup dummy class weights that will be converted to a tensor
+    class_weights = numpy.asarray([1, 1]).reshape((-1,))
+
+    # Configure a minimal neural network and train it quickly
+    params = {
+        "module__n_layers": 2,
+        "module__n_w_bits": 2,
+        "module__n_a_bits": 2,
+        "module__n_accum_bits": 5,
+        "module__activation_function": activation_function,
+        "max_epochs": 10,
+        "verbose": 0,
+    }
+
+    if is_classifier(model):
+        params["criterion__weight"] = class_weights
+
+    clf = model(**params)
+
+    with pytest.raises(ValueError, match=""):
+        clf.prune(x_train, y_train, 0.5)
+
+    clf.fit(x_train, y_train)
+
+    with pytest.raises(ValueError, match=".*Valid values.*"):
+        clf.prune(x_train, y_train, -0.1)
+
+    with pytest.raises(ValueError, match=".*Valid values.*"):
+        clf.prune(x_train, y_train, 1.0)
+
+    pruned_clf = clf.prune(x_train, y_train, 0.5)
+
+    def _get_number_of_neurons(module: SparseQuantNeuralNetImpl):
+        neurons = {}
+        idx = 0
+        for layer in module.features:
+            if not isinstance(layer, nn.Linear) and not isinstance(layer, qnn.QuantLinear):
+                continue
+            neurons[idx] = layer.weight.shape[0]
+            idx += 1
+        return neurons
+
+    neurons_orig = _get_number_of_neurons(clf.module_)
+    neurons_pruned = _get_number_of_neurons(pruned_clf.module_)
+
+    # Compile the model
+    clf.compile(
+        x_train,
+        configuration=default_configuration,
+        use_virtual_lib=True,
+    )
+
+    # Compile the pruned model, this will also perform ONNX export and calibration
+    pruned_clf.compile(
+        x_train,
+        configuration=default_configuration,
+        use_virtual_lib=True,
+    )
+
+    with pytest.raises(ValueError, match=".*Cannot apply.*"):
+        pruned_clf.prune(x_train, y_train, 0.5)
+
+    # Test prediction with QuantizedModule
+    pruned_clf.predict(x_test)
+
+    assert neurons_pruned[0] < neurons_orig[0]

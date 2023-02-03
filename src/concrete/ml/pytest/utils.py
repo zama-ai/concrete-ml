@@ -64,9 +64,6 @@ _classifier_models = [
     partial(
         NeuralNetClassifier,
         module__n_layers=3,
-        module__n_w_bits=2,
-        module__n_a_bits=2,
-        module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time.
         module__activation_function=nn.ReLU,
         max_epochs=10,
         verbose=0,
@@ -81,10 +78,7 @@ _classifiers_and_datasets = [
             "dataset": "classification",
             "n_samples": 1000,
             "n_features": 10,
-            # Remove the following if statement once QNNs support multi-class data sets
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2819
-            # Related to: https://github.com/zama-ai/concrete-ml-internal/issues/2402
-            "n_classes": 2 if "NeuralNet" in get_model_name(model) else n_classes,
+            "n_classes": n_classes,
             "n_informative": 10,
             "n_redundant": 0,
         },

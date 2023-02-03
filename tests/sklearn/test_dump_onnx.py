@@ -89,6 +89,8 @@ def test_dump(
     ]:
         return
 
+    n_classes = parameters.get("n_classes", 2)
+
     # Ignore long lines here
     # ruff: noqa: E501
     expected_strings = {
@@ -106,7 +108,9 @@ def test_dump(
 ) initializers (
   %features.fc0.bias[FLOAT, 40]
   %features.fc1.bias[FLOAT, 40]
-  %features.fc2.bias[FLOAT, 2]
+  """
+        + f"%features.fc2.bias[FLOAT, {n_classes}]"
+        + """
   %/features/quant0/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
   %/features/quant0/act_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
   %/features/quant0/act_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
@@ -116,7 +120,9 @@ def test_dump(
   %/features/fc1/weight_quant/export_handler/Constant_output_0[FLOAT, 40x40]
   %/features/fc1/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
   %/features/quant2/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
-  %/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, 2x40]
+  """
+        + f"%/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, {n_classes}x40]"
+        + """
   %/features/fc2/weight_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
 ) {
   %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)

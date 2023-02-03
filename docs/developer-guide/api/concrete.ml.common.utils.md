@@ -8,11 +8,12 @@ Utils that can be re-used by other pieces of code in the module.
 
 ## **Global Variables**
 
+- **SUPPORTED_TORCH_DTYPES**
 - **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replace_invalid_arg_name_chars`
 
@@ -34,7 +35,7 @@ This does not check that the starting character of arg_name is valid.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_proxy_function`
 
@@ -60,7 +61,7 @@ This returns a runtime compiled function with the sanitized argument names passe
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_opset_version`
 
@@ -80,7 +81,7 @@ Return the ONNX opset_version.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `manage_parameters_for_pbs_errors`
 
@@ -117,7 +118,7 @@ Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_there_is_no_p_error_options_in_configuration`
 
@@ -135,7 +136,7 @@ It would be dangerous, since we set them in direct arguments in our calls to Con
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_model_class_in_a_list`
 
@@ -155,7 +156,7 @@ whether the class is in the list
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L177"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_model_name`
 
@@ -171,3 +172,95 @@ Return a model (which may be a partial()) name.
 
 **Returns:**
 the class name
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_pandas_dataframe`
+
+```python
+is_pandas_dataframe(input_container)
+```
+
+Indicate if the input container is a Pandas DataFrame.
+
+This function is inspired from Scikit-Learn's test validation tools and avoids the need to add and import Pandas as an additional dependency to the project. See https://github.com/scikit-learn/scikit-learn/blob/98cf537f5/sklearn/utils/validation.py#L629
+
+**Args:**
+
+- <b>`input_container`</b> (Any):  The input container to consider
+
+**Returns:**
+
+- <b>`bool`</b>:  If the input container is a DataFrame
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_pandas_series`
+
+```python
+is_pandas_series(input_container)
+```
+
+Indicate if the input container is a Pandas Series.
+
+This function is inspired from Scikit-Learn's test validation tools and avoids the need to add and import Pandas as an additional dependency to the project. See https://github.com/scikit-learn/scikit-learn/blob/98cf537f5/sklearn/utils/validation.py#L629
+
+**Args:**
+
+- <b>`input_container`</b> (Any):  The input container to consider
+
+**Returns:**
+
+- <b>`bool`</b>:  If the input container is a Series
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L314"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `check_dtype_and_cast`
+
+```python
+check_dtype_and_cast(values, expected_dtype, error_information=None)
+```
+
+Check that the values' dtype(s) match(es) the given expected dtype.
+
+If they don't match, cast the values to the expected dtype if possible, else raise a ValueError.
+
+**Args:**
+
+- <b>`values`</b> (Union\[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor\]):  The values  to consider
+- <b>`expected_dtype`</b> (str):  The expected dtype, either "float32" or "int64"
+- <b>`error_information`</b> (str):  Additional information to put in front of the error message when  raising a ValueError. Default to None.
+
+**Returns:**
+
+- <b>`Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]`</b>:  The values with  proper dtype.
+
+**Raises:**
+
+- <b>`ValueError`</b>:  If the values' dtype don't match the expected one and casting is not possible.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `compute_bits_precision`
+
+```python
+compute_bits_precision(x: ndarray) → int
+```
+
+Compute the number of bits required to represent x.
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  Integer data
+
+**Returns:**
+
+- <b>`int`</b>:  the number of bits required to represent x
