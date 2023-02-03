@@ -174,7 +174,7 @@ spcc:
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
-PCC_DEPS += check_forbidden_words check_unused_images gitleaks check_issues
+PCC_DEPS += check_forbidden_words check_unused_images gitleaks
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
