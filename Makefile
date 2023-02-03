@@ -163,9 +163,6 @@ check_issues:
 
 .PHONY: pcc # Run pre-commit checks
 pcc:
-	@# Doesn't work well if done directly in pcc_internal
-	@"$(MAKE)" check_apidocs
-
 	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
 
