@@ -277,6 +277,23 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         self.power = power
         self.link = link
 
+    @property
+    def _is_fitted(self):
+        return (
+            self.post_processing_params.get("link", None) is not None
+            and self.post_processing_params.get("power", None) is not None
+        )
+
+    def _update_post_processing_params(self):
+        """Update the post processing parameters."""
+        super()._update_post_processing_params()
+        self.post_processing_params.update(
+            {
+                "link": self.link,
+                "power": self.power,
+            }
+        )
+
     def _inverse_link(self, y_preds) -> numpy.ndarray:
         """Apply the link function's inverse on the inputs.
 
@@ -289,16 +306,16 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
             The model's final predictions.
         """
 
-        if self.link == "auto":
+        if self.post_processing_params["link"] == "auto":
 
             # Identity link
-            if self.power <= 0:
+            if self.post_processing_params["power"] <= 0:
                 return y_preds
 
             # Log link
             return numpy.exp(y_preds)
 
-        if self.link == "log":
+        if self.post_processing_params["link"] == "log":
             return numpy.exp(y_preds)
 
         return y_preds

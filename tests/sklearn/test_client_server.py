@@ -4,7 +4,6 @@ import json
 import tempfile
 import warnings
 import zipfile
-from functools import partial
 from pathlib import Path
 from shutil import copyfile
 
@@ -71,25 +70,16 @@ class OnDiskNetwork:
         self.dev_dir.cleanup()
 
 
-@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 def test_client_server_sklearn(
     default_configuration_no_jit,
-    model,
+    model_class,
     parameters,
     load_data,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Tests the encrypt decrypt api."""
-
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2756
-    # We currently have issues with some TweedieRegressor's
-    if isinstance(model, partial):
-        if model.func.__name__ == "TweedieRegressor":
-            if model.keywords.get("link") == "log" or model.keywords.get("power") != 0:
-                pytest.skip("Waiting for #2756 fix")
-
     # Generate random data
-    model_class = model
     model_name = get_model_name(model_class)
     x, y = load_data(**parameters, model_name=model_name)
 
