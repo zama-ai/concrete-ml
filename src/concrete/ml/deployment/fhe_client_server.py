@@ -352,8 +352,13 @@ class FHEModelClient:
             serialized_encrypted_quantized_result
         )
 
-        # Dequantize the values and apply the model post processing
-        deserialized_decrypted_dequantized_result = self.model.post_processing(
+        # Dequantize the values
+        deserialized_decrypted_dequantized_result = self.model.dequantize_output(
             deserialized_decrypted_quantized_result
+        )
+
+        # Apply post-processing the to dequantized values
+        deserialized_decrypted_dequantized_result = self.model.post_processing(
+            deserialized_decrypted_dequantized_result
         )
         return deserialized_decrypted_dequantized_result

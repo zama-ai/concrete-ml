@@ -275,27 +275,8 @@ def check_subfunctions(fitted_model, model_class, x):
             fitted_model.decision_function(x)
 
 
-def check_subfunctions_in_fhe(model, model_name, fhe_circuit, x):
+def check_subfunctions_in_fhe(model, fhe_circuit, x):
     """Check subfunctions in FHE: calls and correctness."""
-
-    # Some problems to be fixed for some models
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2840
-    if model_name in [
-        "ElasticNet",
-        "Lasso",
-        "Ridge",
-        "LinearRegression",
-        "LinearSVR",
-        "DecisionTreeClassifier",
-        "DecisionTreeRegressor",
-        "RandomForestClassifier",
-        "RandomForestRegressor",
-        "XGBClassifier",
-        "XGBRegressor",
-        "NeuralNetClassifier",
-        "NeuralNetRegressor",
-    ]:
-        return
 
     # Generate the keys
     fhe_circuit.keygen()
@@ -304,7 +285,7 @@ def check_subfunctions_in_fhe(model, model_name, fhe_circuit, x):
 
     for f_input in x:
         # Quantize an input (float)
-        q_input = model.quantize_input([f_input])
+        q_input = model.quantize_input(f_input.reshape(1, -1))
 
         # Encrypt the input
         q_input_enc = fhe_circuit.encrypt(q_input)
@@ -320,7 +301,7 @@ def check_subfunctions_in_fhe(model, model_name, fhe_circuit, x):
 
         # Apply either the sigmoid if it is a binary classification task, which is the case in this
         # example, or a softmax function in order to get the probabilities (in the clear)
-        y_proba = model.post_processing(y, already_dequantized=True)
+        y_proba = model.post_processing(y)
 
         # Apply the argmax to get the class predictions (in the clear)
         if is_classifier(model):
@@ -894,9 +875,7 @@ def test_predict_correctness(
     verbose=True,
 ):
     """Test correct execution, if there is sufficiently n_bits."""
-    model, model_name, x, _ = preambule(
-        model_class, parameters, n_bits, load_data, is_weekly_option
-    )
+    model, _, x, _ = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
     if is_weekly_option:
@@ -957,9 +936,7 @@ def test_predict_correctness(
                 if verbose:
                     print("Testing subfunctions in FHE")
 
-                check_subfunctions_in_fhe(
-                    model, model_name, fhe_circuit, x[:number_of_tests_in_fhe]
-                )
+                check_subfunctions_in_fhe(model, fhe_circuit, x[:number_of_tests_in_fhe])
 
         else:
             if verbose:

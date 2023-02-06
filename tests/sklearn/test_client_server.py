@@ -243,7 +243,8 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     # Predict based on the model we are testing
     qtest = model.quantize_input(x_test)
     y_pred_model_server_ds_quantized = model.fhe_circuit.encrypt_run_decrypt(qtest)
-    y_pred_model_server_ds_dequantized = model.post_processing(y_pred_model_server_ds_quantized)
+    y_pred_model_server_ds_dequantized = model.dequantize_output(y_pred_model_server_ds_quantized)
+    y_pred_model_server_ds_dequantized = model.post_processing(y_pred_model_server_ds_dequantized)
 
     # Make sure the quantized predictions are the same for the dev model and server
     numpy.testing.assert_array_equal(y_pred_on_client_quantized, y_pred_model_server_ds_quantized)

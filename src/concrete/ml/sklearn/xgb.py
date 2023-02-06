@@ -133,14 +133,6 @@ class XGBClassifier(BaseTreeClassifierMixin):
         }
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
         y_preds = super().post_processing(y_preds)
 
         # Update post-processing params with their current values
@@ -276,21 +268,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         }
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-        assert self.output_quantizers is not None
-
         # Update post-processing params with their current values
         self.__dict__.update(self.post_processing_params)
-
-        # Dequantize the output
-        y_preds = self.dequantize_output(y_preds)
 
         # XGBoost returns a shape (n_examples, n_classes, n_trees) when self.n_classes_ >= 3
         # otherwise it returns a shape (n_examples, 1, n_trees)

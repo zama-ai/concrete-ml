@@ -51,25 +51,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
-    def post_processing(
-        self, y_preds: numpy.ndarray, already_dequantized: bool = False
-    ) -> numpy.ndarray:
-        """Post-processing the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions to post-process.
-            already_dequantized (bool): Whether the inputs were already dequantized or not. Default
-                to False.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-        # If y_preds were already dequantized previously, there is no need to do so once again.
-        # This step is necessary for the client-server workflow as the post_processing method
-        # is directly called on the quantized outputs, contrary to the base class' predict method.
-        if not already_dequantized:
-            y_preds = self.dequantize_output(y_preds)
-
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return self._inverse_link(y_preds)
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
@@ -86,7 +68,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
             numpy.ndarray: The model's predictions.
         """
         y_preds = super().predict(X, execute_in_fhe=execute_in_fhe)
-        y_preds = self.post_processing(y_preds, already_dequantized=True)
+        y_preds = self.post_processing(y_preds)
         return y_preds
 
     # Remove the following method once Hummingbird's latest version is integrated in Concrete-ML

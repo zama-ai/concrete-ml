@@ -223,16 +223,6 @@ Get the input quantizers.
 
 ______________________________________________________________________
 
-#### <kbd>property</kbd> quantize_input
-
-Get the input quantization function.
-
-**Returns:**
-
-- <b>`Callable `</b>:  function that quantizes the input
-
-______________________________________________________________________
-
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_params_for_benchmark`
@@ -457,16 +447,6 @@ Get the input quantizers.
 **Returns:**
 
 - <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> quantize_input
-
-Get the input quantization function.
-
-**Returns:**
-
-- <b>`Callable `</b>:  function that quantizes the input
 
 ______________________________________________________________________
 
@@ -729,16 +709,6 @@ Get the input quantizers.
 **Returns:**
 
 - <b>`List[QuantizedArray]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> quantize_input
-
-Get the input quantization function.
-
-**Returns:**
-
-- <b>`Callable `</b>:  function that quantizes the input
 
 ______________________________________________________________________
 

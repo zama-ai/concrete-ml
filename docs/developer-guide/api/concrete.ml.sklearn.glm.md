@@ -8,7 +8,7 @@ Implement sklearn's Generalized Linear Models (GLM).
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PoissonRegressor`
 
@@ -22,7 +22,7 @@ A Poisson regression model with FHE.
 
 For more details on PoissonRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -45,26 +45,12 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `post_processing`
 
 ```python
-post_processing(
-    y_preds: 'ndarray',
-    already_dequantized: 'bool' = False
-) → ndarray
+post_processing(y_preds: 'ndarray') → ndarray
 ```
-
-Post-processing the predictions.
-
-**Args:**
-
-- <b>`y_preds`</b> (numpy.ndarray):  The predictions to post-process.
-- <b>`already_dequantized`</b> (bool):  Whether the inputs were already dequantized or not. Default  to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The post-processed predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -87,7 +73,7 @@ Predict on user data using either the quantized clear model, implemented with te
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GammaRegressor`
 
@@ -101,7 +87,7 @@ A Gamma regression model with FHE.
 
 For more details on GammaRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -124,26 +110,12 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `post_processing`
 
 ```python
-post_processing(
-    y_preds: 'ndarray',
-    already_dequantized: 'bool' = False
-) → ndarray
+post_processing(y_preds: 'ndarray') → ndarray
 ```
-
-Post-processing the predictions.
-
-**Args:**
-
-- <b>`y_preds`</b> (numpy.ndarray):  The predictions to post-process.
-- <b>`already_dequantized`</b> (bool):  Whether the inputs were already dequantized or not. Default  to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The post-processed predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -166,7 +138,7 @@ Predict on user data using either the quantized clear model, implemented with te
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TweedieRegressor`
 
@@ -180,7 +152,7 @@ A Tweedie regression model with FHE.
 
 For more details on TweedieRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L249"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -205,26 +177,12 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `post_processing`
 
 ```python
-post_processing(
-    y_preds: 'ndarray',
-    already_dequantized: 'bool' = False
-) → ndarray
+post_processing(y_preds: 'ndarray') → ndarray
 ```
-
-Post-processing the predictions.
-
-**Args:**
-
-- <b>`y_preds`</b> (numpy.ndarray):  The predictions to post-process.
-- <b>`already_dequantized`</b> (bool):  Whether the inputs were already dequantized or not. Default  to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The post-processed predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L75"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L57"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 

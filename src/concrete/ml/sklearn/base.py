@@ -58,7 +58,98 @@ _TREE_MODELS: Set[Type] = set()
 _NEURALNET_MODELS: Set[Type] = set()
 
 
-class QuantizedTorchEstimatorMixin:
+class BaseEstimator:
+    """For all estimators in Concrete-ML."""
+
+    @property
+    @abstractmethod
+    def _is_fitted(self) -> bool:
+        """Indicate if the model is fitted.
+
+        Returns:
+            bool: If the model is fitted.
+        """
+
+    @abstractmethod
+    def _quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
+        """Quantize the input.
+
+        Args:
+            X (numpy.ndarray): The input values to quantize.
+
+        Returns:
+            numpy.ndarray: The quantized input values.
+        """
+
+    @abstractmethod
+    def _dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Dequantize the output.
+
+        Args:
+            q_y_preds (numpy.ndarray): The quantized output values to dequantize.
+
+        Returns:
+            numpy.ndarray: The dequantized output values.
+        """
+
+    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
+        """Quantize the input.
+
+        This step ensures that the fit method has been called.
+
+        Args:
+            X (numpy.ndarray): The input values to quantize.
+
+        Returns:
+            numpy.ndarray: The quantized input values.
+        """
+        assert_true(
+            self._is_fitted,
+            f"The {self.__class__.__name__} model is not fitted."
+            "Please run fit(...) on proper arguments first.",
+        )
+        return self._quantize_input(X)
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Dequantize the output.
+
+        This step ensures that the fit method has been called.
+
+        Args:
+            q_y_preds (numpy.ndarray): The quantized output values to dequantize.
+
+        Returns:
+            numpy.ndarray: The dequantized output values.
+        """
+        assert_true(
+            self._is_fitted,
+            f"The {self.__class__.__name__} model is not fitted."
+            "Please run fit(...) on proper arguments first.",
+        )
+        return self._dequantize_output(q_y_preds)
+
+    # pylint: disable-next=no-self-use
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Apply post-processing to the dequantized predictions.
+
+        This post-processing step can include operations such as applying the sigmoid or softmax
+        function for classifiers, or summing an ensemble's outputs. These steps are done in the
+        clear because of current technical constraints. They most likely will be integrated in the
+        FHE computations in the future.
+
+        For some simple models such a linear regression, there is no post-processing step but the
+        method is kept to make the API consistent for the client-server API.
+
+        Args:
+            y_preds (numpy.ndarray): The dequantized predictions to post-process.
+
+        Returns:
+            numpy.ndarray: The post-processed predictions.
+        """
+        return y_preds
+
+
+class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API.
 
     This class should be mixed in with another that provides the full Estimator API. This class
@@ -139,14 +230,14 @@ class QuantizedTorchEstimatorMixin:
         return self._onnx_model_
 
     @property
-    def quantize_input(self) -> Callable:
-        """Get the input quantization function.
+    def _is_fitted(self):
+        return self.quantized_module_ is not None
 
-        Returns:
-            Callable : function that quantizes the input
-        """
-        assert self.quantized_module_ is not None
-        return self.quantized_module_.quantize_input
+    def _quantize_input(self, X: numpy.ndarray):
+        return self.quantized_module_.quantize_input(X)
+
+    def _dequantize_output(self, q_y_preds: numpy.ndarray):
+        return self.quantized_module_.dequantize_output(q_y_preds)
 
     @property
     def fhe_circuit(self) -> Circuit:
@@ -185,19 +276,17 @@ class QuantizedTorchEstimatorMixin:
         self.quantized_module_.output_quantizers = value
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Post-processing the output.
+        """Apply post-processing to the dequantized predictions.
 
         Args:
-            y_preds (numpy.ndarray): the output to post-process
+            y_preds (numpy.ndarray): The dequantized predictions to post-process.
 
         Raises:
-            ValueError: if unknown post-processing function
+            ValueError: If the post-processing function is unknown.
 
         Returns:
-            numpy.ndarray: the post-processed output
+            numpy.ndarray: The post-processed dequantized predictions.
         """
-        y_preds = self.quantized_module_.dequantize_output(y_preds)
-
         if self.post_processing_params["post_processing_function_name"] == "softmax":
             # Get dim argument
             dim = self.post_processing_params["post_processing_function_keywords"]["dim"]
@@ -261,7 +350,7 @@ class QuantizedTorchEstimatorMixin:
             )
 
         # Quantize the compilation input set using the quantization parameters computed in .fit()
-        quantized_numpy_inputset = self.quantized_module_.quantize_input(X)
+        quantized_numpy_inputset = self.quantize_input(X)
 
         # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
         # configuration and in direct arguments
@@ -442,11 +531,11 @@ class QuantizedTorchEstimatorMixin:
             if X.ndim == 1:
                 X = X.reshape((1, -1))
             X = check_array_and_assert(X)
-            y_pred = None
+            q_y_pred = None
             for idx, x in enumerate(X):
-                q_x = self.quantized_module_.quantize_input(x).reshape(1, -1)
+                q_x = self.quantize_input(x).reshape(1, -1)
                 q_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(q_x)
-                if y_pred is None:
+                if q_y_pred is None:
                     assert_true(
                         isinstance(q_pred, numpy.ndarray),
                         f"bad type {q_pred}, expected np.ndarray",
@@ -454,9 +543,12 @@ class QuantizedTorchEstimatorMixin:
                     # pylint is lost: Instance of 'tuple' has no 'size' member (no-member)
                     # because it doesn't understand the Union in encrypt_run_decrypt
                     # pylint: disable=no-member
-                    y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
+                    q_y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
                     # pylint: enable=no-member
-                y_pred[idx, :] = q_pred
+                q_y_pred[idx, :] = q_pred
+
+            # Dequantize the outputs and apply post processing
+            y_pred = self.dequantize_output(q_y_pred)
             y_pred = self.post_processing(y_pred)
             return y_pred
 
@@ -561,7 +653,7 @@ class QuantizedTorchEstimatorMixin:
         return float_module
 
 
-class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
+class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
     """Mixin class for tree-based estimators.
 
     A place to share methods that are used on all tree-based estimators.
@@ -611,34 +703,22 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         """
         return self._onnx_model_
 
-    def quantize_input(self, X: numpy.ndarray):
-        """Quantize the input.
+    @property
+    def _is_fitted(self):
+        return self.input_quantizers and self.output_quantizers
 
-        Args:
-            X (numpy.ndarray): the input
-
-        Returns:
-            the quantized input
-        """
+    def _quantize_input(self, X: numpy.ndarray):
         qX = numpy.zeros_like(X)
+
         # Quantize using the learned quantization parameters for each feature
         for i, q_x_ in enumerate(self.input_quantizers):
             qX[:, i] = q_x_.quant(X[:, i])
+
         return qX.astype(numpy.int64)
 
-    def dequantize_output(self, y_preds: numpy.ndarray):
-        """Dequantize the integer predictions.
-
-        Args:
-            y_preds (numpy.ndarray): the predictions
-
-        Returns:
-            the dequantized predictions
-        """
-        # mypy
-        assert self.output_quantizers is not None
-        y_preds = self.output_quantizers[0].dequant(y_preds)
-        return y_preds
+    def _dequantize_output(self, q_y_preds: numpy.ndarray):
+        q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
+        return q_y_preds
 
     def _update_post_processing_params(self):
         """Update the post processing parameters."""
@@ -790,16 +870,17 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
 
         # If the inference should be executed in FHE
         if execute_in_fhe:
-            y_preds = self._execute_in_fhe(qX)
+            q_y_pred = self._execute_in_fhe(qX)
 
         # Else, the prediction is simulated in the clear
         else:
-            y_preds = self._tensor_tree_predict(qX)[0]
+            q_y_pred = self._tensor_tree_predict(qX)[0]
 
-        # Apply some post-processing to the predictions in the clear
-        y_preds = self.post_processing(y_preds)
+        # Dequantize the predicted values and apply some post-processing in the clear
+        y_pred = self.dequantize_output(q_y_pred)
+        y_pred = self.post_processing(y_pred)
 
-        return y_preds
+        return y_pred
 
     def compile(
         self,
@@ -882,16 +963,6 @@ class BaseTreeEstimatorMixin(sklearn.base.BaseEstimator):
         return self.fhe_circuit
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-        y_preds = self.dequantize_output(y_preds)
-
         # Sum all tree outputs.
         # Remove the sum once we handle multi-precision circuits
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
@@ -996,7 +1067,7 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
-class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
+class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
     """A Mixin class for sklearn linear models with FHE."""
 
     sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
@@ -1254,7 +1325,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         ), "The model is not fitted. Please run fit(...) on proper arguments first."
 
         # Quantize the inputs
-        q_X = self.input_quantizers[0].quant(X)
+        q_X = self.quantize_input(X)
 
         # Make the input set an generator yielding values with proper dimensions
         inputset = _get_inputset_generator((q_X,), self.input_quantizers)
@@ -1340,52 +1411,27 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 
         return y_preds
 
-    def quantize_input(self, X: numpy.ndarray):
-        """Quantize the input.
+    @property
+    def _is_fitted(self):
+        return (
+            self.input_quantizers
+            and self.post_processing_params.get("output_scale", None) is not None
+            and self.post_processing_params.get("output_zero_point", None) is not None
+        )
 
-        Args:
-            X (numpy.ndarray): The input to quantize
-
-        Returns:
-            numpy.ndarray: The quantized input
-        """
+    def _quantize_input(self, X: numpy.ndarray):
         return self.input_quantizers[0].quant(X)
 
-    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Dequantize the output.
-
-        Args:
-            q_y_preds (numpy.ndarray): The quantized output to dequantize
-
-        Returns:
-            numpy.ndarray: The dequantized output
-        """
+    def _dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         # Retrieve the post-processing parameters
         output_scale = self.post_processing_params["output_scale"]
         output_zero_point = self.post_processing_params["output_zero_point"]
-
-        assert (
-            output_scale is not None and output_zero_point is not None
-        ), "The model is not fitted. Please run fit(...) on proper arguments first."
 
         # Dequantize the output.
         # Since the matmul and the bias both use the same scale and zero-points, we obtain that
         # y = S*(q_y - 2*Z)
         y_preds = output_scale * (q_y_preds - 2 * output_zero_point)
         return y_preds
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Post-processing the quantized output.
-
-        For linear models, post-processing only considers a dequantization step.
-
-        Args:
-            y_preds (numpy.ndarray): The quantized outputs to post-process
-
-        Returns:
-            numpy.ndarray: The post-processed output
-        """
-        return self.dequantize_output(y_preds)
 
     def _set_onnx_model(self, test_input: numpy.ndarray):
         """Retrieve the model's ONNX graph using Hummingbird conversion.
@@ -1455,27 +1501,7 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
 class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
     """A Mixin class for sklearn linear classifiers with FHE."""
 
-    def post_processing(self, y_preds: numpy.ndarray, already_dequantized: bool = False):
-        """Post-processing the predictions.
-
-        This step may include a dequantization of the inputs if not done previously, in particular
-        within the client-server workflow.
-
-        Args:
-            y_preds (numpy.ndarray): The predictions to post-process.
-            already_dequantized (bool): Whether the inputs were already dequantized or not. Default
-                to False.
-
-        Returns:
-            numpy.ndarray: The post-processed predictions.
-        """
-
-        # If y_preds were already dequantized previously, there is no need to do so once again.
-        # This step is necessary for the client-server workflow as the post_processing method
-        # is directly called on the quantized outputs, contrary to the base class' predict method.
-        if not already_dequantized:
-            y_preds = self.dequantize_output(y_preds)
-
+    def post_processing(self, y_preds: numpy.ndarray):
         # If the predictions only has one dimension (i.e. binary classification problem), apply the
         # sigmoid operator
         if y_preds.shape[1] == 1:
@@ -1515,7 +1541,7 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
             numpy.ndarray: Class probabilities for samples.
         """
         y_preds = self.decision_function(X, execute_in_fhe=execute_in_fhe)
-        y_preds = self.post_processing(y_preds, already_dequantized=True)
+        y_preds = self.post_processing(y_preds)
         return y_preds
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:

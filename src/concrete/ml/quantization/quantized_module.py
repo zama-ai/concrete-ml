@@ -153,16 +153,20 @@ class QuantizedModule:
         """
         self._post_processing_params = post_processing_params
 
-    def post_processing(self, qvalues: numpy.ndarray) -> numpy.ndarray:
-        """Post-processing of the quantized output.
+    # pylint: disable-next=no-self-use
+    def post_processing(self, values: numpy.ndarray) -> numpy.ndarray:
+        """Apply post-processing to the dequantized values.
+
+        For quantized modules, there is no post-processing step but the method is kept to make the
+        API consistent for the client-server API.
 
         Args:
-            qvalues (numpy.ndarray): numpy.ndarray containing the quantized input values.
+            values (numpy.ndarray): The dequantized values to post-process.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model
+            numpy.ndarray: The post-processed values.
         """
-        return self.dequantize_output(qvalues)
+        return values
 
     def _set_output_quantizers(self) -> List[UniformQuantizer]:
         """Get the output quantizers.

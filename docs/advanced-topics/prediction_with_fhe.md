@@ -70,7 +70,7 @@ for f_input in x_test:
 
     # Apply either the sigmoid if it is a binary classification task, which is the case in this 
     # example, or a softmax function in order to get the probabilities (in the clear)
-    y_proba = model.post_processing(y, already_dequantized=True)
+    y_proba = model.post_processing(y)
 
     # Apply the argmax to get the class predictions (in the clear)
     y_class = numpy.argmax(y_proba, axis=1)

@@ -135,6 +135,7 @@
 - [`quantizers.QuantizedArray`](./concrete.ml.quantization.quantizers.md#class-quantizedarray): Abstraction of quantized array.
 - [`quantizers.UniformQuantizationParameters`](./concrete.ml.quantization.quantizers.md#class-uniformquantizationparameters): Quantization parameters for uniform quantization.
 - [`quantizers.UniformQuantizer`](./concrete.ml.quantization.quantizers.md#class-uniformquantizer): Uniform quantizer.
+- [`base.BaseEstimator`](./concrete.ml.sklearn.base.md#class-baseestimator): For all estimators in Concrete-ML.
 - [`base.BaseTreeClassifierMixin`](./concrete.ml.sklearn.base.md#class-basetreeclassifiermixin): Mixin class for tree-based classifiers.
 - [`base.BaseTreeEstimatorMixin`](./concrete.ml.sklearn.base.md#class-basetreeestimatormixin): Mixin class for tree-based estimators.
 - [`base.BaseTreeRegressorMixin`](./concrete.ml.sklearn.base.md#class-basetreeregressormixin): Mixin class for tree-based regressors.
