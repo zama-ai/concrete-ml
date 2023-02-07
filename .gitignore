@@ -154,6 +154,8 @@ docs/index.rst
 
 # Debug artifacts
 .artifacts 
+execution_time_of_individual_pytest_files.txt
 
 # Docs: Advance Examples data
 docs/advanced_examples/data/
+
