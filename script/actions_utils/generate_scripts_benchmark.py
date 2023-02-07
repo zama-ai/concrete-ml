@@ -95,7 +95,7 @@ def main():
         command_start = f"python3 benchmarks/{script}.py --fhe_samples {args.fhe_samples}"
         now = datetime.datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
         script_commands = [
-            elt.replace('"', '\\"')  # Needed to escape " when calling eval
+            elt.replace('"', '\\"').replace("'", "")  # Needed to escape " when calling eval
             for elt in subprocess.check_output(
                 f"{command_start} {list_arg}",
                 shell=True,
@@ -115,7 +115,6 @@ def main():
             "label": f"ml_bench_{now}_{index}",
             "index": index,
             "commands": commands,
-            "time_to_wait": f"{index}s",  # We might want to decrease or change this in the future
         }
         result.append(element)
 

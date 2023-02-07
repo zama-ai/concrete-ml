@@ -1,0 +1,12 @@
+# This file is parsed by Slab Zama's CI bot to handle AWS EC2 resources.
+[profile.m6i]
+region = "eu-west-3"
+image_id = "ami-0be33931bc16f7a85"
+instance_type = "m6i.metal"
+subnet_id = "subnet-a029b7ed"
+security_group= ["sg-0bf1c1d79c97bc88f", ]
+
+# Trigger benchmarks.
+[command.bench]
+workflow = "single_benchmark.yaml"
+profile = "m6i"

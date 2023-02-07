@@ -1,25 +1,31 @@
 # This workflow is called by new_generation_benchmarks.yaml
 name: Single benchmark
+
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      commands:
+      instance_id:
+        description: 'Instance ID'
         type: string
         required: true
-        description: "The list of commands to launch the benchmark. (like: python3 benchmarks/classification.py --classifiers RandomForestClassifier --datasets credit-g --configs '{\\\"max_depth\\\": 3, \\\"n_estimators\\\": 10, \\\"n_bits\\\": 2}')"
-      git-ref:
-        description: "Repo reference (branch, tag or SHA)"
-        default: "main"
-        required: true
-        type: string
-      time-to-wait:
-        description: "Time to wait before starting workflow (to avoid AWS limit)"
-        default: "0s"
+      instance_image_id:
+        description: 'Instance AMI ID'
         type: string
       instance_type:
-        description: Instance type on which to launch benchmarks
-        default: "m6i.metal"
+        description: 'Instance product type'
         type: string
+      runner_name:
+        description: 'Action runner name'
+        type: string
+        required: true
+      request_id:
+        description: 'Slab request ID'
+        type: string
+      user_inputs:
+        description: 'User inputs formatted as JSON string'
+        type: string
+        required: true
+
     secrets:
       NEW_ML_PROGRESS_TRACKER_TOKEN:
         description: "ML progress tracker token"
@@ -61,67 +67,10 @@ env:
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
 
 jobs:
-  wait:  # Needed to avoid launching too many instances at once
-    name: Wait
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Wait
-        run: |
-          # From inputs
-          echo ${{ inputs.time-to-wait }}
-          sleep ${{ inputs.time-to-wait }}
-
-  start-ec2:
-    name: Start EC2
-    runs-on: ubuntu-20.04
-    outputs:
-      # Needed to shutdown the proper instance
-      label: ${{ steps.start-ec2-runner.outputs.label }}
-      instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
-    steps:
-      - name: Add masks
-        run: |
-          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
-          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
-          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
-          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Start EC2 runner
-        id: start-ec2-runner
-        if: ${{ !cancelled() }}
-        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
-        with:
-          mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ github.event.inputs.instance_type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-benchmark-ec2-github-runner"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.9"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "TargetGitRef", "Value": "${{ github.event.inputs.git-ref }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
-
   run-command:
     name: Run benchmarks
-    runs-on: ${{ needs.start-ec2.outputs.label }}
-    needs: [start-ec2]
+    runs-on: ${{ inputs.runner_name }}
+    if: ${{ !cancelled() }}
     container:
       image: ubuntu:20.04
     defaults:
@@ -131,6 +80,15 @@ jobs:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
     steps:
+      - name: Instance configuration used
+        run: |
+          echo "IDs: ${{ inputs.instance_id }}"
+          echo "AMI: ${{ inputs.instance_image_id }}"
+          echo "Type: ${{ inputs.instance_type }}"
+          echo "Request ID: ${{ inputs.request_id }}"
+          echo "Matrix item: ${{ inputs.matrix_item }}"
+          echo "User inputs: ${{ inputs.user_inputs }}"
+
       - name: Add masks
         id: masks
         run: |
@@ -149,14 +107,29 @@ jobs:
           apt update && apt install git git-lfs -y
           apt -y install sudo
 
+      # Run with current version
+      - name: Checkout CML to run
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          fetch-depth: 1
+          lfs: false
+          path: cml_to_run
+
+      - name: Sanitize Python commands
+        run: |
+          cd ./cml_to_run
+          apt install -y python3
+          USER_INPUTS=$(echo ${{ inputs.user_inputs }})
+          echo USER_INPUTS=$(python3 script/actions_utils/escape_quotes.py "$USER_INPUTS") >> "$GITHUB_ENV"
+
       # Install specific version
       - name: Checkout CML to install
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           fetch-depth: 1
           lfs: false
-          ref: ${{ github.event.inputs.git-ref }}
-          path: ./cml_to_install
+          ref: ${{ fromJSON(env.USER_INPUTS).git-ref }}
+          path: cml_to_install
 
       - name: Set up Python
         uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
@@ -183,14 +156,6 @@ jobs:
             source ./.venv/bin/activate
             python -m pip show concrete-numpy
 
-      # Run with current version
-      - name: Checkout CML to run
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        with:
-          fetch-depth: 1
-          lfs: false
-          path: ./cml_to_run
-
       # Now we get our most up to date version
       - name: Run the benchmark command
         # 34 days * 24 hours * 60 minutes 
@@ -203,8 +168,7 @@ jobs:
         run: |
           source ./cml_to_install/.venv/bin/activate
           cd ./cml_to_run
-
-          printf '%s' '${{ inputs.commands }}' >> commands.json
+          python3 script/actions_utils/escape_quotes.py --curly-braces-only """$(echo ${{ fromJSON(env.USER_INPUTS).commands }})""" | sed 's|\\\\||g' >> commands.json
           python ./script/actions_utils/run_commands.py --file commands.json
 
       - name: Convert progress.json
@@ -222,26 +186,3 @@ jobs:
           -H "Content-Type: application/json" \
           -d @converted.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
-
-  shutdown-ec2:
-    name: Shutdown EC2
-    runs-on: ubuntu-20.04
-    needs: [start-ec2, run-command]
-    if: ${{ always() }}  # Always shutdown instances
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@67fbcbb121271f7775d2e7715933280b06314838
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Shutdown EC2 runner
-        id: shutdown-ec2-runner
-        if: ${{ always() }}
-        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
-        with:
-          mode: stop
-          label: ${{ needs.start-ec2.outputs.label }}
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-instance-id: ${{ needs.start-ec2.outputs.instance-id }}
