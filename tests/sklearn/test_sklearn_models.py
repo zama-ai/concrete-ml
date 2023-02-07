@@ -117,15 +117,28 @@ def instantiate_model_generic(model_class, **parameters):
     return model_name, model_class(n_bits=n_bits, **extra_kwargs)
 
 
-def preambule(model_class, parameters, n_bits, load_data, is_weekly_option):
+def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
+    """Prepare the the (x, y) dataset."""
+
+    if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
+        pytest.skip("Skipping some tests in non-weekly builds")
+
+    # Get the dataset. The data generation is seeded in load_data.
+    model_name = get_model_name(model_class)
+    x, y = load_data(**parameters, model_name=model_name)
+
+    return x, y
+
+
+def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) dataset."""
 
     if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
         pytest.skip("Skipping some tests in non-weekly builds")
 
     # Get the dataset. The data generation is seeded in load_data.
-    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
-    x, y = load_data(**parameters, model_name=model_name)
+    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -138,7 +151,7 @@ def preambule(model_class, parameters, n_bits, load_data, is_weekly_option):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
 
-    return model, model_name, x, y
+    return model, x
 
 
 def check_correctness_with_sklearn(
@@ -209,7 +222,7 @@ def check_correctness_with_sklearn(
 
 def check_double_fit(model_class, n_bits, x, y):
     """Check double fit."""
-    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -218,8 +231,8 @@ def check_double_fit(model_class, n_bits, x, y):
 
     # Neural Networks are not handling double fit properly
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
-    if "NeuralNet" in model_name:
-        return
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        pytest.skip("Skipping double-fit test for NN, doesn't work for now")
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -242,6 +255,7 @@ def check_offset(model_class, n_bits, x, y):
 
     # Offsets are not supported by XGBoost
     if "XGB" in model_name:
+        # No pytest.skip, since it is not a bug but something which is inherent to XGB
         return
 
     model_params = model.get_params()
@@ -322,7 +336,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
     )
 
 
-def check_input_support(model_class, n_bits, x, y, model_name, input_type):
+def check_input_support(model_class, n_bits, x, y, input_type):
     """Test all models with Pandas, List or Torch inputs."""
 
     def cast_input(x, y, input_type):
@@ -363,7 +377,7 @@ def check_input_support(model_class, n_bits, x, y, model_name, input_type):
 
         # Neural networks handle only numpy arrays in predict and compile methods.
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2339
-        if "NeuralNet" in model_name and input_type.lower() in ["pandas", "list"]:
+        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
             pytest.skip("For NNs, predict and compile methods support only input tensors")
         else:
             model.predict(x)
@@ -373,17 +387,17 @@ def check_input_support(model_class, n_bits, x, y, model_name, input_type):
 def check_pipeline(model_class, x, y):
     """Check pipeline support."""
 
-    # Will need some help to make it work
-    # FIXME:
+    # Pipeline test fails with QNN
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2943
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        return
+        pytest.skip("Skipping pipeline test for NN, doesn't work for now")
 
-    # Looks like it fails for some models, is it expected?
+    # Pipeline test fails with RF
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
     if is_model_class_in_a_list(
         model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
     ):
-        return
+        pytest.skip("Skipping pipeline test for RF, doesn't work for now")
 
     hyper_param_combinations = get_hyper_param_combinations(model_class)
 
@@ -419,14 +433,14 @@ def check_pipeline(model_class, x, y):
         grid_search.fit(x, y)
 
 
-def check_grid_search(model, model_name, model_class, x, y):
+def check_grid_search(model_class, x, y):
     """Check grid search."""
     if is_classifier(model_class):
         grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
     else:
         grid_scorer = make_scorer(mean_squared_error, greater_is_better=True)
 
-    if "NeuralNet" in model_name:
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         param_grid = {
             "module__n_layers": [5],
             "module__activation_function": (nn.Tanh, nn.ReLU6),
@@ -452,7 +466,7 @@ def check_grid_search(model, model_name, model_class, x, y):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
         _ = GridSearchCV(
-            model, param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
+            model_class(), param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
         ).fit(x, y)
 
 
@@ -464,12 +478,14 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
     # Still some problems to fix
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2841
     if model_name in ["LinearSVC", "LogisticRegression"]:
-        return
+        pytest.skip(
+            "Skipping sklearn-equivalence test for some linear models, doesn't work for now"
+        )
 
     # Still some problems to fix
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2842
-    if model_name in ["NeuralNetRegressor", "NeuralNetClassifier"]:
-        return
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        pytest.skip("Skipping sklearn-equivalence test for NN, doesn't work for now")
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -641,7 +657,7 @@ def test_quantization(
     verbose=True,
 ):
     """Test quantization."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_sklearn_equivalence")
@@ -670,7 +686,7 @@ def test_correctness_with_sklearn(
     verbose=True,
 ):
     """Test that Concrete-ML and scikit-learn models are 'equivalent'."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check correctness with sklearn (if we have sufficiently bits of precision)
     if verbose:
@@ -704,7 +720,7 @@ def test_hyper_parameters(
     verbose=True,
 ):
     """Testing hyper parameters."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_hyper_parameters")
@@ -737,14 +753,12 @@ def test_grid_search(
     verbose=True,
 ):
     """Test Grid search."""
-    model, model_name, x, y = preambule(
-        model_class, parameters, n_bits, load_data, is_weekly_option
-    )
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_grid_search")
 
-    check_grid_search(model, model_name, model_class, x, y)
+    check_grid_search(model_class, x, y)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
@@ -762,7 +776,7 @@ def test_double_fit(
     verbose=True,
 ):
     """Test Double fit."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_double_fit")
@@ -785,7 +799,7 @@ def test_offset(
     verbose=True,
 ):
     """Test with offset."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_offset")
@@ -814,12 +828,12 @@ def test_input_support(
     verbose=True,
 ):
     """Test all models with Pandas, List or Torch inputs."""
-    _, model_name, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run input_support")
 
-    check_input_support(model_class, n_bits, x, y, model_name, input_type)
+    check_input_support(model_class, n_bits, x, y, input_type)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
@@ -837,7 +851,7 @@ def test_subfunctions(
     verbose=True,
 ):
     """Test subfunctions."""
-    model, _, x, _ = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_subfunctions")
@@ -860,7 +874,7 @@ def test_pipeline(
     verbose=True,
 ):
     """Test with pipelines."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_pipeline")
@@ -899,7 +913,7 @@ def test_predict_correctness(
     verbose=True,
 ):
     """Test correct execution, if there is sufficiently n_bits."""
-    model, _, x, _ = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
     if is_weekly_option:
