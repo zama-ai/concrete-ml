@@ -301,10 +301,12 @@ class XGBRegressor(BaseTreeRegressorMixin):
 
         # HummingBird and XGBoost don't properly manage multi-outputs cases
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1856
-        assert_true(
-            len(y.shape) == 1 or y.shape[1] == 1, "XGBRegressor doesn't support multi-output cases."
-        )
 
+        assert_true(
+            (isinstance(y, list) and (not isinstance(y[0], list) or (len(y[0]) == 1)))
+            or (not isinstance(y, list) and (len(y.shape) == 1 or y.shape[1] == 1)),
+            "XGBRegressor doesn't support multi-output cases.",
+        )
         # Fit the model
         super().fit(X, y, **kwargs)
         return self

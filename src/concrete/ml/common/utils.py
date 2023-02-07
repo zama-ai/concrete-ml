@@ -341,12 +341,16 @@ def check_dtype_and_cast(values, expected_dtype, error_information=None):
     )
 
     assert_true(
-        isinstance(values, (numpy.ndarray, torch.Tensor))
+        isinstance(values, (numpy.ndarray, torch.Tensor, list))
         or is_pandas_dataframe(values)
         or is_pandas_series(values),
-        "Unsupported type. Expected numpy.ndarray, pandas.DataFrame, pandas.Series "
+        "Unsupported type. Expected numpy.ndarray, pandas.DataFrame, pandas.Series, list "
         f"or torch.Tensor but got {type(values)}.",
     )
+
+    # Convert the list to a float32 torch tensor if it is X or an int64 tensor if it is y
+    if isinstance(values, list):
+        return _cast_to_dtype(torch.tensor(values), expected_dtype)
 
     # If the expected dtype is an int64 and the values are integers of lower precision, we can
     # safely cast them to int64

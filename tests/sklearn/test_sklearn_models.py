@@ -33,6 +33,7 @@ from typing import Any, Dict, List
 import numpy
 import pandas
 import pytest
+import torch
 from sklearn.base import is_classifier, is_regressor
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
@@ -321,17 +322,34 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
     )
 
 
-def check_pandas(model_class, n_bits, x, y):
-    """Check pandas support."""
-    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
+def check_input_support(model_class, n_bits, x, y, model_name, input_type):
+    """Test all models with Pandas, List or Torch inputs."""
 
-    # Turn to Pandas
-    x_pandas = pandas.DataFrame(x)
+    def cast_input(x, y, input_type):
+        "Convert x and y either in Pandas, List, Numpy or Torch type."
 
-    if y.ndim == 1:
-        y_pandas = pandas.Series(y)
-    else:
-        y_pandas = pandas.DataFrame(y)
+        assert input_type in ["pandas", "torch", "list", "numpy"], "Not a valid type casting"
+
+        if input_type.lower() == "pandas":
+            # Turn into Pandas
+            x = pandas.DataFrame(x)
+            y = pandas.Series(y) if y.ndim == 1 else pandas.DataFrame(y)
+        elif input_type.lower() == "torch":
+            # Turn into Torch
+            x = torch.tensor(x)
+            y = torch.tensor(y)
+        elif input_type.lower() == "list":
+            # Turn into List
+            x = x.tolist()
+            y = y.tolist()
+        elif input_type.lower() == "numpy":
+            assert isinstance(x, numpy.ndarray), f"Wrong type {type(x)}"
+            assert isinstance(y, numpy.ndarray), f"Wrong type {type(y)}"
+        return x, y
+
+    model = model_class(n_bits=n_bits)
+
+    x, y = cast_input(x, y, input_type=input_type)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -341,15 +359,15 @@ def check_pandas(model_class, n_bits, x, y):
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-        model.fit(x_pandas, y_pandas)
+        model.fit(x, y)
 
-        # If the model is a neural network, cas the input values to a numpy array as their predict
-        # method currently don't handle pandas DataFrames as inputs
+        # Neural networks handle only numpy arrays in predict and compile methods.
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2339
-        if "NeuralNet" in model_name:
-            x_pandas = x_pandas.to_numpy()
-
-        model.predict(x_pandas)
+        if "NeuralNet" in model_name and input_type.lower() in ["pandas", "list"]:
+            pytest.skip("For NNs, predict and compile methods support only input tensors")
+        else:
+            model.predict(x)
+            model.compile(x)
 
 
 def check_pipeline(model_class, x, y):
@@ -778,24 +796,30 @@ def test_offset(
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+    [
+        n
+        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n < N_BITS_THRESHOLD_TO_FORCE_VL
+    ],
 )
+@pytest.mark.parametrize("input_type", ["numpy", "torch", "pandas", "list"])
 # pylint: disable=too-many-arguments
-def test_pandas(
+def test_input_support(
     model_class,
     parameters,
     n_bits,
     load_data,
+    input_type,
     is_weekly_option,
     verbose=True,
 ):
-    """Test with pandas."""
-    _, _, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
+    """Test all models with Pandas, List or Torch inputs."""
+    _, model_name, x, y = preambule(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
-        print("Run check_pandas")
+        print("Run input_support")
 
-    check_pandas(model_class, n_bits, x, y)
+    check_input_support(model_class, n_bits, x, y, model_name, input_type)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)

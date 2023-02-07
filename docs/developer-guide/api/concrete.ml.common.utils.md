@@ -247,7 +247,7 @@ If they don't match, cast the values to the expected dtype if possible, else rai
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L379"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_bits_precision`
 

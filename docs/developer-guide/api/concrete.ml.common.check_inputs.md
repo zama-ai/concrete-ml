@@ -31,7 +31,7 @@ The converted and validated array
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/check_inputs.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/check_inputs.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_X_y_and_assert`
 

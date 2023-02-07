@@ -349,6 +349,9 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
                 " please call .fit() first!"
             )
 
+        # Cast pandas or torch to numpy
+        X = check_array_and_assert(X)
+
         # Quantize the compilation input set using the quantization parameters computed in .fit()
         quantized_numpy_inputset = self.quantize_input(X)
 
@@ -401,7 +404,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
         self.quantized_module_ = None
-        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
+        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
+        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
 
         # A helper for users so they don't need to import torch directly
         args_to_convert_to_tensor = ["criterion__weight"]
@@ -739,8 +743,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         Returns:
             Any: The fitted model.
         """
-        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
-
+        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
+        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
         # mypy
         assert self.n_bits is not None
 
@@ -924,6 +928,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
             self._tensor_tree_predict, ["inputs"]
         )
 
+        # Return a numpy array, because compile method supports only arrays
+        X = check_array_and_assert(X)
+
         X = self.quantize_input(X)
         compiler = Compiler(
             _tensor_tree_predict_proxy,
@@ -1012,7 +1019,8 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             Any: The fitted model.
         """
-        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
+        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
+        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
 
         self.classes_ = numpy.unique(y)
 
@@ -1129,8 +1137,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         X = copy.deepcopy(X)
 
         # LinearRegression handles multi-labels data
-        X, y = check_X_y_and_assert(X, y, multi_output=len(y.shape) > 1)
-
+        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
+        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
         # Retrieve sklearn's init parameters and remove the ones specific to Concrete-ML
         params = self.get_params()  # type: ignore
         params.pop("n_bits", None)
@@ -1323,6 +1331,9 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         assert (
             self.input_quantizers
         ), "The model is not fitted. Please run fit(...) on proper arguments first."
+
+        # Cast pandas or torch to numpy
+        X = check_array_and_assert(X)
 
         # Quantize the inputs
         q_X = self.quantize_input(X)
