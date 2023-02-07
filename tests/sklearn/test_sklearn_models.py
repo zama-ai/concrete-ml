@@ -61,39 +61,35 @@ from concrete.ml.sklearn import (
     get_sklearn_tree_models,
 )
 
-# 0. If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, we check correctness against
+# If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, we check correctness against
 # scikit-learn in the clear, via check_correctness_with_sklearn function. This is because we need
 # sufficiently number of bits for precision
 N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS = 26
 
-# 1. We force the use of the VL if n_bits > N_BITS_THRESHOLD_TO_FORCE_VL. This is because compiler
-# limits to 16b in FHE
-N_BITS_THRESHOLD_TO_FORCE_VL = 16
-
-# 2. We check correctness with check_is_good_execution_for_cml_vs_circuit or predict in
+# We check correctness with check_is_good_execution_for_cml_vs_circuit or predict in
 # execute_in_fhe=False only if n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS. This is
 # because we need sufficiently number of bits for precision
 N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS = 6
 
-# 3. We never do checks with check_is_good_execution_for_cml_vs_circuit if
+# We never do checks with check_is_good_execution_for_cml_vs_circuit if
 # n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE. This is because computations are very
 # slow
-N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE = 7
+N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE = 17
 
 assert (
     N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS <= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE
 )
 
-# 4. n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
+# If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
+# returned by fit_benchmark (the CML model and the scikit-learn model) are equivalent
+N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
+
+# n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
 # FHE which are not too long (relation with N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS and
 # N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE). 26 is in relation with
 # N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with check_correctness_with_sklearn
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
-
-# 5. If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
-# returned by fit_benchmark (the CML model and the scikit-learn model) are equivalent
-N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
@@ -304,7 +300,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
     )
 
 
-def check_input_support(model_class, n_bits, x, y, input_type):
+def check_input_support(model_class, n_bits, default_configuration, x, y, input_type):
     """Test all models with Pandas, List or Torch inputs."""
 
     def cast_input(x, y, input_type):
@@ -337,7 +333,9 @@ def check_input_support(model_class, n_bits, x, y, input_type):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
         model.predict(x)
-        model.compile(x)
+
+        use_virtual_lib = n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE
+        model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
 
 
 def check_pipeline(model_class, x, y):
@@ -864,11 +862,7 @@ def test_offset(
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
-    [
-        n
-        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n < N_BITS_THRESHOLD_TO_FORCE_VL
-    ],
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
 @pytest.mark.parametrize("input_type", ["numpy", "torch", "pandas", "list"])
 # pylint: disable=too-many-arguments
@@ -878,6 +872,7 @@ def test_input_support(
     n_bits,
     load_data,
     input_type,
+    default_configuration,
     is_weekly_option,
     verbose=True,
 ):
@@ -887,7 +882,7 @@ def test_input_support(
     if verbose:
         print("Run input_support")
 
-    check_input_support(model_class, n_bits, x, y, input_type)
+    check_input_support(model_class, n_bits, default_configuration, x, y, input_type)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
@@ -967,6 +962,13 @@ def test_predict_correctness(
     verbose=True,
 ):
     """Test correct execution, if there is sufficiently n_bits."""
+
+    # Will be reverted when it works
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3118
+    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1859
+    if model_class in get_sklearn_tree_models():
+        pytest.skip("Skipping while bug concrete-numpy-internal/issues/1859 is being investigated")
+
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
