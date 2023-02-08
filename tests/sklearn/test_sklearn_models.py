@@ -120,8 +120,9 @@ def instantiate_model_generic(model_class, **parameters):
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the the (x, y) dataset."""
 
-    if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
-        pytest.skip("Skipping some tests in non-weekly builds")
+    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
+            pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
 
     # Get the dataset. The data generation is seeded in load_data.
     model_name = get_model_name(model_class)
@@ -133,8 +134,9 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
 def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) dataset."""
 
-    if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
-        pytest.skip("Skipping some tests in non-weekly builds")
+    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
+            pytest.skip("Skipping some tests in non-weekly builds")
 
     # Get the dataset. The data generation is seeded in load_data.
     _, model = instantiate_model_generic(model_class, n_bits=n_bits)
