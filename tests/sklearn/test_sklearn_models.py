@@ -114,7 +114,16 @@ def instantiate_model_generic(model_class, **parameters):
             extra_kwargs["module__n_accum_bits"] = 7
 
     # Set the model
-    return model_name, model_class(n_bits=n_bits, **extra_kwargs)
+    model = model_class(n_bits=n_bits, **extra_kwargs)
+
+    # Seed the model
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+
+    model.set_params(**model_params)
+
+    return model_name, model
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
@@ -141,12 +150,6 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     # Get the dataset. The data generation is seeded in load_data.
     _, model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
-
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-
-    model.set_params(**model_params)
 
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
@@ -226,11 +229,6 @@ def check_double_fit(model_class, n_bits, x, y):
     """Check double fit."""
     _, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model.set_params(**model_params)
-
     # Neural Networks are not handling double fit properly
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
@@ -259,11 +257,6 @@ def check_offset(model_class, n_bits, x, y):
     if "XGB" in model_name:
         # No pytest.skip, since it is not a bug but something which is inherent to XGB
         return
-
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model.set_params(**model_params)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -363,14 +356,8 @@ def check_input_support(model_class, n_bits, x, y, input_type):
             assert isinstance(y, numpy.ndarray), f"Wrong type {type(y)}"
         return x, y
 
-    model = model_class(n_bits=n_bits)
-
+    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = cast_input(x, y, input_type=input_type)
-
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model.set_params(**model_params)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -488,11 +475,6 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2842
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         pytest.skip("Skipping sklearn-equivalence test for NN, doesn't work for now")
-
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model.set_params(**model_params)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
