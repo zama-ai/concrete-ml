@@ -1,7 +1,13 @@
 """Implement RandomForest models."""
+from typing import Any, Dict
 
 import numpy
-import sklearn
+from sklearn.ensemble import RandomForestClassifier as SklearnRandomForestClassifier
+from sklearn.ensemble import RandomForestRegressor as SklearnRandomForestRegressor
+
+from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
+from concrete.ml.quantization.quantizers import UniformQuantizer
+from concrete.ml.sklearn.tree_to_numpy import tree_to_numpy
 
 from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegressorMixin
 
@@ -10,7 +16,7 @@ from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegre
 class RandomForestClassifier(BaseTreeClassifierMixin):
     """Implements the RandomForest classifier."""
 
-    underlying_model_class = sklearn.ensemble.RandomForestClassifier
+    underlying_model_class = SklearnRandomForestClassifier
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -69,12 +75,101 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         # to apply a sigmoid or softmax in post-processing
         return BaseTreeEstimatorMixin.post_processing(self, y_preds)
 
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["framework"] = self.framework
+
+        # Classifier
+        metadata["classes_"] = self.classes_
+        metadata["n_classes_"] = self.n_classes_
+
+        metadata["n_estimators"] = self.n_estimators
+        metadata["bootstrap"] = self.bootstrap
+        metadata["oob_score"] = self.oob_score
+        metadata["n_jobs"] = self.n_jobs
+        metadata["random_state"] = self.random_state
+        metadata["verbose"] = self.verbose
+        metadata["warm_start"] = self.warm_start
+        metadata["class_weight"] = self.class_weight
+        metadata["max_samples"] = self.max_samples
+        metadata["criterion"] = self.criterion
+        metadata["max_depth"] = self.max_depth
+        metadata["min_samples_split"] = self.min_samples_split
+        metadata["min_samples_leaf"] = self.min_samples_leaf
+        metadata["min_weight_fraction_leaf"] = self.min_weight_fraction_leaf
+        metadata["max_features"] = self.max_features
+        metadata["max_leaf_nodes"] = self.max_leaf_nodes
+        metadata["min_impurity_decrease"] = self.min_impurity_decrease
+        metadata["ccp_alpha"] = self.ccp_alpha
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = RandomForestClassifier(n_bits=metadata["n_bits"])
+
+        # Tree
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+        obj.framework = metadata["framework"]
+
+        obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
+            obj.sklearn_model,
+            numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            framework=obj.framework,
+            output_n_bits=obj.n_bits,
+        )
+
+        obj.post_processing_params = metadata["post_processing_params"]
+
+        # Classifier
+        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.n_classes_ = metadata["n_classes_"]
+
+        obj.n_estimators = metadata["n_estimators"]
+        obj.bootstrap = metadata["bootstrap"]
+        obj.oob_score = metadata["oob_score"]
+        obj.n_jobs = metadata["n_jobs"]
+        obj.random_state = metadata["random_state"]
+        obj.verbose = metadata["verbose"]
+        obj.warm_start = metadata["warm_start"]
+        obj.class_weight = metadata["class_weight"]
+        obj.max_samples = metadata["max_samples"]
+        obj.criterion = metadata["criterion"]
+        obj.max_depth = metadata["max_depth"]
+        obj.min_samples_split = metadata["min_samples_split"]
+        obj.min_samples_leaf = metadata["min_samples_leaf"]
+        obj.min_weight_fraction_leaf = metadata["min_weight_fraction_leaf"]
+        obj.max_features = metadata["max_features"]
+        obj.max_leaf_nodes = metadata["max_leaf_nodes"]
+        obj.min_impurity_decrease = metadata["min_impurity_decrease"]
+        obj.ccp_alpha = metadata["ccp_alpha"]
+
+        return obj
+
 
 # pylint: disable=too-many-instance-attributes
 class RandomForestRegressor(BaseTreeRegressorMixin):
     """Implements the RandomForest regressor."""
 
-    underlying_model_class = sklearn.ensemble.RandomForestRegressor
+    underlying_model_class = SklearnRandomForestRegressor
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -124,3 +219,82 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         self.max_leaf_nodes = max_leaf_nodes
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["framework"] = self.framework
+
+        metadata["n_estimators"] = self.n_estimators
+        metadata["bootstrap"] = self.bootstrap
+        metadata["oob_score"] = self.oob_score
+        metadata["n_jobs"] = self.n_jobs
+        metadata["random_state"] = self.random_state
+        metadata["verbose"] = self.verbose
+        metadata["warm_start"] = self.warm_start
+        metadata["max_samples"] = self.max_samples
+        metadata["criterion"] = self.criterion
+        metadata["max_depth"] = self.max_depth
+        metadata["min_samples_split"] = self.min_samples_split
+        metadata["min_samples_leaf"] = self.min_samples_leaf
+        metadata["min_weight_fraction_leaf"] = self.min_weight_fraction_leaf
+        metadata["max_features"] = self.max_features
+        metadata["max_leaf_nodes"] = self.max_leaf_nodes
+        metadata["min_impurity_decrease"] = self.min_impurity_decrease
+        metadata["ccp_alpha"] = self.ccp_alpha
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = RandomForestRegressor(n_bits=metadata["n_bits"])
+
+        # Tree
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+        obj.framework = metadata["framework"]
+
+        obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
+            obj.sklearn_model,
+            numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            framework=obj.framework,
+            output_n_bits=obj.n_bits,
+        )
+
+        obj.post_processing_params = metadata["post_processing_params"]
+
+        obj.n_estimators = metadata["n_estimators"]
+        obj.bootstrap = metadata["bootstrap"]
+        obj.oob_score = metadata["oob_score"]
+        obj.n_jobs = metadata["n_jobs"]
+        obj.random_state = metadata["random_state"]
+        obj.verbose = metadata["verbose"]
+        obj.warm_start = metadata["warm_start"]
+        obj.max_samples = metadata["max_samples"]
+        obj.criterion = metadata["criterion"]
+        obj.max_depth = metadata["max_depth"]
+        obj.min_samples_split = metadata["min_samples_split"]
+        obj.min_samples_leaf = metadata["min_samples_leaf"]
+        obj.min_weight_fraction_leaf = metadata["min_weight_fraction_leaf"]
+        obj.max_features = metadata["max_features"]
+        obj.max_leaf_nodes = metadata["max_leaf_nodes"]
+        obj.min_impurity_decrease = metadata["min_impurity_decrease"]
+        obj.ccp_alpha = metadata["ccp_alpha"]
+
+        return obj

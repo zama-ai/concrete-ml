@@ -1,5 +1,8 @@
 """Module that contains base classes for our libraries estimators."""
+from __future__ import annotations
+
 import functools
+import json
 import tempfile
 
 # https://github.com/zama-ai/concrete-ml-internal/issues/942
@@ -7,9 +10,9 @@ import tempfile
 # We use names like X and q_X
 # pylint: disable=too-many-lines,invalid-name
 import warnings
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import IO, Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
 import brevitas.nn as qnn
 import numpy
@@ -23,6 +26,7 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
+from concrete.ml.common.serialization import CustomEncoder
 from concrete.ml.quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from concrete.ml.quantization.quantizers import QuantizationOptions, UniformQuantizer
 
@@ -92,8 +96,9 @@ class BaseEstimator:
         #: empty if the model is not fitted
         self.output_quantizers: List[UniformQuantizer] = []
 
-        #: The parameters needed for post-processing the outputs. Can be empty if no post-processing
-        #: operations are needed for the associated model
+        #: The parameters needed for post-processing the outputs.
+        #: Can be empty if no post-processing operations are needed for the associated model
+        #: This attribute is typically used for serving models
         self.post_processing_params: Dict[str, Any] = {}
 
         self.fhe_circuit_: Optional[onnx.ModelProto] = None
@@ -476,6 +481,70 @@ class BaseEstimator:
             numpy.ndarray: The post-processed predictions.
         """
         return y_preds
+
+    @abstractmethod
+    def dump_dict(self) -> Dict[str, Any]:
+        """Dump the object as a dict.
+
+        Returns:
+            Dict[str, Any]: a dict representing the object
+        """
+
+    def dumps(self) -> str:
+        """Dump itelf to a string.
+
+        Returns:
+            metadata (str): string of serialized object
+        """
+        metadata: Dict[str, Any] = self.dump_dict()
+        return json.dumps(metadata, cls=CustomEncoder)
+
+    def dump(self, file: IO[str]):
+        """Dump itelf to a file.
+
+        Args:
+            file (IO[str]): file of where to dump.
+        """
+        metadata: Dict[str, Any] = self.dump_dict()
+        json.dump(metadata, file, cls=CustomEncoder)
+
+    @classmethod
+    @abstractmethod
+    def load_dict(cls, metadata: Dict[str, Any]) -> BaseEstimator:
+        """Load itelf from a dict.
+
+        Args:
+            metadata (Dict[str, Any]): dict of metadata of the object
+
+        Returns:
+            BaseEstimator: the loaded object
+        """
+
+    @classmethod
+    def load(cls, file: IO[str]) -> BaseEstimator:
+        """Load itelf from a file.
+
+        Args:
+            file (IO[str]): file of serialized object
+
+        Returns:
+            BaseEstimator: the loaded object
+        """
+        metadata: Dict[str, Any] = json.load(file)
+        return cls.load_dict(metadata=metadata)
+
+    @classmethod
+    def loads(cls, metadata: str) -> BaseEstimator:
+        """Load itelf from a string.
+
+        Args:
+            metadata (str): serialized object
+
+        Returns:
+            BaseEstimator: the loaded object
+        """
+        _metadata: Dict = json.loads(metadata)
+        return cls.load_dict(metadata=_metadata)
 
 
 # This class only is an equivalent of BaseEstimator applied to classifiers, therefore not all
@@ -907,7 +976,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return y_preds.astype(numpy.float32)
 
 
-class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
+class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """Mixin class for tree-based estimators.
 
     This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's
@@ -1041,7 +1110,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         return y_preds
 
 
-class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin):
+class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):
     """Mixin class for tree-based regressors.
 
     This class is used to create a tree-based regressor class that inherits from
@@ -1050,7 +1119,9 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
     """
 
 
-class BaseTreeClassifierMixin(BaseClassifier, BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
+class BaseTreeClassifierMixin(
+    BaseClassifier, BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin, ABC
+):
     """Mixin class for tree-based classifiers.
 
     This class is used to create a tree-based classifier class that inherits from
@@ -1063,7 +1134,7 @@ class BaseTreeClassifierMixin(BaseClassifier, BaseTreeEstimatorMixin, sklearn.ba
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
-class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
+class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """A Mixin class for sklearn linear models with FHE.
 
     This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's
@@ -1101,7 +1172,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         self._output_scale: numpy.float64 = None  # type: ignore[assignment]
 
         #: The zero-point to use for dequantizing the predicted outputs
-        self._output_zero_point: int = None  # type: ignore[assignment]
+        self._output_zero_point: Union[numpy.ndarray, int, None] = None  # type: ignore[assignment]
 
         #: The model's quantized weights
         self._q_weights: numpy.ndarray = None  # type: ignore[assignment]
@@ -1245,7 +1316,10 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         # Dequantize the output.
         # Since the matmul and the bias both use the same scale and zero-points, we obtain that
         # y = S*(q_y - 2*Z)
-        y_preds = output_scale * (q_y_preds - 2 * output_zero_point)
+        y_preds = output_scale * (
+            q_y_preds - 2 * numpy.asarray(output_zero_point, dtype=numpy.float64)
+        )
+
         return y_preds
 
     def _get_compiler(self) -> Compiler:
@@ -1277,7 +1351,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         return y_pred
 
 
-class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.RegressorMixin, ABC):
     """A Mixin class for sklearn linear regressors with FHE.
 
     This class is used to create a linear regressor class that inherits from
@@ -1287,7 +1361,7 @@ class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.Regresso
 
 
 class SklearnLinearClassifierMixin(
-    BaseClassifier, SklearnLinearModelMixin, sklearn.base.ClassifierMixin
+    BaseClassifier, SklearnLinearModelMixin, sklearn.base.ClassifierMixin, ABC
 ):
     """A Mixin class for sklearn linear classifiers with FHE.
 

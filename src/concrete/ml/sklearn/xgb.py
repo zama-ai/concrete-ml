@@ -6,6 +6,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy
 import xgboost.sklearn
 
+from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
+from concrete.ml.quantization.quantizers import UniformQuantizer
+from concrete.ml.sklearn.tree_to_numpy import tree_to_numpy
+
 from ..common.debugging.custom_assert import assert_true
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
@@ -110,6 +114,118 @@ class XGBClassifier(BaseTreeClassifierMixin):
         self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["framework"] = self.framework
+
+        # Classifier
+        metadata["classes_"] = self.classes_
+        metadata["n_classes_"] = self.n_classes_
+
+        metadata["max_depth"] = self.max_depth
+        metadata["learning_rate"] = self.learning_rate
+        metadata["n_estimators"] = self.n_estimators
+        metadata["objective"] = self.objective
+        metadata["booster"] = self.booster
+        metadata["tree_method"] = self.tree_method
+        metadata["n_jobs"] = self.n_jobs
+        metadata["gamma"] = self.gamma
+        metadata["min_child_weight"] = self.min_child_weight
+        metadata["max_delta_step"] = self.max_delta_step
+        metadata["subsample"] = self.subsample
+        metadata["colsample_bytree"] = self.colsample_bytree
+        metadata["colsample_bylevel"] = self.colsample_bylevel
+        metadata["colsample_bynode"] = self.colsample_bynode
+        metadata["reg_alpha"] = self.reg_alpha
+        metadata["reg_lambda"] = self.reg_lambda
+        metadata["scale_pos_weight"] = self.scale_pos_weight
+        metadata["base_score"] = self.base_score
+        metadata["missing"] = self.missing
+        metadata["num_parallel_tree"] = self.num_parallel_tree
+        metadata["monotone_constraints"] = self.monotone_constraints
+        metadata["interaction_constraints"] = self.interaction_constraints
+        metadata["importance_type"] = self.importance_type
+        metadata["gpu_id"] = self.gpu_id
+        metadata["validate_parameters"] = self.validate_parameters
+        metadata["predictor"] = self.predictor
+        metadata["enable_categorical"] = self.enable_categorical
+        metadata["use_label_encoder"] = self.use_label_encoder
+        metadata["random_state"] = self.random_state
+        metadata["verbosity"] = self.verbosity
+        metadata["post_processing_params"] = self.post_processing_params
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = XGBClassifier(n_bits=metadata["n_bits"])
+
+        # Tree
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+        obj.framework = metadata["framework"]
+
+        obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
+            obj.sklearn_model,
+            numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            framework=obj.framework,
+            output_n_bits=obj.n_bits,
+        )
+
+        # Classifier
+        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.n_classes_ = metadata["n_classes_"]
+
+        obj.max_depth = metadata["max_depth"]
+        obj.learning_rate = metadata["learning_rate"]
+        obj.n_estimators = metadata["n_estimators"]
+        obj.objective = metadata["objective"]
+        obj.booster = metadata["booster"]
+        obj.tree_method = metadata["tree_method"]
+        obj.n_jobs = metadata["n_jobs"]
+        obj.gamma = metadata["gamma"]
+        obj.min_child_weight = metadata["min_child_weight"]
+        obj.max_delta_step = metadata["max_delta_step"]
+        obj.subsample = metadata["subsample"]
+        obj.colsample_bytree = metadata["colsample_bytree"]
+        obj.colsample_bylevel = metadata["colsample_bylevel"]
+        obj.colsample_bynode = metadata["colsample_bynode"]
+        obj.reg_alpha = metadata["reg_alpha"]
+        obj.reg_lambda = metadata["reg_lambda"]
+        obj.scale_pos_weight = metadata["scale_pos_weight"]
+        obj.base_score = metadata["base_score"]
+        obj.missing = metadata["missing"]
+        obj.num_parallel_tree = metadata["num_parallel_tree"]
+        obj.monotone_constraints = metadata["monotone_constraints"]
+        obj.interaction_constraints = metadata["interaction_constraints"]
+        obj.importance_type = metadata["importance_type"]
+        obj.gpu_id = metadata["gpu_id"]
+        obj.validate_parameters = metadata["validate_parameters"]
+        obj.predictor = metadata["predictor"]
+        obj.enable_categorical = metadata["enable_categorical"]
+        obj.use_label_encoder = metadata["use_label_encoder"]
+        obj.random_state = metadata["random_state"]
+        obj.verbosity = metadata["verbosity"]
+        obj.post_processing_params = metadata["post_processing_params"]
+
+        return obj
 
 
 # Disabling invalid-name to use uppercase X
@@ -227,3 +343,108 @@ class XGBRegressor(BaseTreeRegressorMixin):
         # Call BaseTreeEstimatorMixin's fit method
         super().fit(X, y, *args, **kwargs)
         return self
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["framework"] = self.framework
+
+        # Specific
+        metadata["max_depth"] = self.max_depth
+        metadata["learning_rate"] = self.learning_rate
+        metadata["n_estimators"] = self.n_estimators
+        metadata["objective"] = self.objective
+        metadata["booster"] = self.booster
+        metadata["tree_method"] = self.tree_method
+        metadata["n_jobs"] = self.n_jobs
+        metadata["gamma"] = self.gamma
+        metadata["min_child_weight"] = self.min_child_weight
+        metadata["max_delta_step"] = self.max_delta_step
+        metadata["subsample"] = self.subsample
+        metadata["colsample_bytree"] = self.colsample_bytree
+        metadata["colsample_bylevel"] = self.colsample_bylevel
+        metadata["colsample_bynode"] = self.colsample_bynode
+        metadata["reg_alpha"] = self.reg_alpha
+        metadata["reg_lambda"] = self.reg_lambda
+        metadata["scale_pos_weight"] = self.scale_pos_weight
+        metadata["base_score"] = self.base_score
+        metadata["missing"] = self.missing
+        metadata["num_parallel_tree"] = self.num_parallel_tree
+        metadata["monotone_constraints"] = self.monotone_constraints
+        metadata["interaction_constraints"] = self.interaction_constraints
+        metadata["importance_type"] = self.importance_type
+        metadata["gpu_id"] = self.gpu_id
+        metadata["validate_parameters"] = self.validate_parameters
+        metadata["predictor"] = self.predictor
+        metadata["enable_categorical"] = self.enable_categorical
+        metadata["use_label_encoder"] = self.use_label_encoder
+        metadata["random_state"] = self.random_state
+        metadata["verbosity"] = self.verbosity
+        metadata["post_processing_params"] = self.post_processing_params
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = XGBRegressor(n_bits=metadata["n_bits"])
+
+        # Tree
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+        obj.framework = metadata["framework"]
+
+        obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
+            obj.sklearn_model,
+            numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            framework=obj.framework,
+            output_n_bits=obj.n_bits,
+        )
+
+        obj.max_depth = metadata["max_depth"]
+        obj.learning_rate = metadata["learning_rate"]
+        obj.n_estimators = metadata["n_estimators"]
+        obj.objective = metadata["objective"]
+        obj.booster = metadata["booster"]
+        obj.tree_method = metadata["tree_method"]
+        obj.n_jobs = metadata["n_jobs"]
+        obj.gamma = metadata["gamma"]
+        obj.min_child_weight = metadata["min_child_weight"]
+        obj.max_delta_step = metadata["max_delta_step"]
+        obj.subsample = metadata["subsample"]
+        obj.colsample_bytree = metadata["colsample_bytree"]
+        obj.colsample_bylevel = metadata["colsample_bylevel"]
+        obj.colsample_bynode = metadata["colsample_bynode"]
+        obj.reg_alpha = metadata["reg_alpha"]
+        obj.reg_lambda = metadata["reg_lambda"]
+        obj.scale_pos_weight = metadata["scale_pos_weight"]
+        obj.base_score = metadata["base_score"]
+        obj.missing = metadata["missing"]
+        obj.num_parallel_tree = metadata["num_parallel_tree"]
+        obj.monotone_constraints = metadata["monotone_constraints"]
+        obj.interaction_constraints = metadata["interaction_constraints"]
+        obj.importance_type = metadata["importance_type"]
+        obj.gpu_id = metadata["gpu_id"]
+        obj.validate_parameters = metadata["validate_parameters"]
+        obj.predictor = metadata["predictor"]
+        obj.enable_categorical = metadata["enable_categorical"]
+        obj.use_label_encoder = metadata["use_label_encoder"]
+        obj.random_state = metadata["random_state"]
+        obj.verbosity = metadata["verbosity"]
+        obj.post_processing_params = metadata["post_processing_params"]
+
+        return obj

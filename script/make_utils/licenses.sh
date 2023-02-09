@@ -180,10 +180,12 @@ then
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache Software License; BSD License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Historical Permission Notice and Disclaimer (HPND)"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};MIT License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};MIT"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};MIT License; Mozilla Public License 2.0 (MPL 2.0)"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Other/Proprietary License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Python Software Foundation License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};ISC License (ISCL)"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};The Unlicense (Unlicense)"
 
     pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources pkg_resources concrete-ml-extensions-brevitas
 

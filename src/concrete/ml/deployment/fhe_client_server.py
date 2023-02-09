@@ -2,16 +2,16 @@
 
 import json
 import zipfile
-from copy import deepcopy
 from pathlib import Path
 from typing import Any, Optional
 
 import concrete.numpy as cnp
 import numpy
 
+from concrete.ml.common.serialization import CustomEncoder, load_dict
+
 from ..common.debugging.custom_assert import assert_true
 from ..quantization.quantized_module import QuantizedModule
-from ..quantization.quantizers import UniformQuantizer
 from ..sklearn import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,
@@ -124,29 +124,6 @@ class FHEModelDev:
 
         Path(self.path_dir).mkdir(parents=True, exist_ok=True)
 
-    def _clean_dict_types_for_json(self, d: dict) -> dict:
-        """Clean all values in the dict to be json serializable.
-
-        Args:
-            d (dict): the dict to clean
-
-        Returns:
-            dict: the cleaned dict
-        """
-        key_to_delete = []
-        for key, value in d.items():
-            if isinstance(value, list) and len(value) > 0 and isinstance(value[0], dict):
-                d[key] = [self._clean_dict_types_for_json(v) for v in value]
-            elif isinstance(value, dict):
-                d[key] = self._clean_dict_types_for_json(value)
-            elif isinstance(value, (numpy.generic, numpy.ndarray)):
-                d[key] = d[key].tolist()
-            elif isinstance(value, (UniformQuantizer)):
-                key_to_delete.append(key)
-        for key in key_to_delete:
-            d.pop(key)
-        return d
-
     def _export_model_to_json(self) -> Path:
         """Export the quantizers to a json file.
 
@@ -156,30 +133,15 @@ class FHEModelDev:
         serialized_processing = {
             "model_type": self.model.__class__.__name__,
             "model_post_processing_params": self.model.post_processing_params,
-            "input_quantizers": [],
-            "output_quantizers": [],
+            "input_quantizers": self.model.input_quantizers,
+            "output_quantizers": self.model.output_quantizers,
+            "cml_version": CML_VERSION,
         }
-        for quantizer in self.model.input_quantizers:
-            # The object __dict__ is not a copy and the values in the dict are the same instances
-            # as the original values. Modifying the __dict__ modifies the original values
-            quantizer_dict = deepcopy(quantizer.__dict__)
-            serialized_processing["input_quantizers"].append(quantizer_dict)
-
-        for quantizer in self.model.output_quantizers:
-            # The object __dict__ is not a copy and the values in the dict are the same instances
-            # as the original values. Modifying the __dict__ modifies the original values
-            quantizer_dict = deepcopy(quantizer.__dict__)
-            serialized_processing["output_quantizers"].append(quantizer_dict)
-
-        serialized_processing = self._clean_dict_types_for_json(serialized_processing)
-
-        # Add the version of the current CML library
-        serialized_processing["cml_version"] = CML_VERSION
 
         # Dump json
         json_path = Path(self.path_dir).joinpath("serialized_processing.json")
         with open(json_path, "w", encoding="utf-8") as file:
-            json.dump(serialized_processing, file)
+            json.dump(serialized_processing, file, cls=CustomEncoder)
         return json_path
 
     def save(self):
@@ -266,14 +228,16 @@ class FHEModelClient:
 
         # Initialize the model
         self.model = model_dict[serialized_processing["model_type"]]()
-        self.model.input_quantizers = []
-        self.model.output_quantizers = []
-        for quantizer_dict in serialized_processing["input_quantizers"]:
-            self.model.input_quantizers.append(UniformQuantizer(**quantizer_dict))
-        for quantizer_dict in serialized_processing["output_quantizers"]:
-            self.model.output_quantizers.append(UniformQuantizer(**quantizer_dict))
+        self.model.input_quantizers = [
+            load_dict(elt) for elt in serialized_processing["input_quantizers"]
+        ]
+        self.model.output_quantizers = [
+            load_dict(elt) for elt in serialized_processing["output_quantizers"]
+        ]
 
         # Load model parameters
+        # Add some checks on post-processing-params
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3131
         self.model.post_processing_params = serialized_processing["model_post_processing_params"]
 
     def generate_private_and_evaluation_keys(self, force=False):
@@ -359,4 +323,5 @@ class FHEModelClient:
         deserialized_decrypted_dequantized_result = self.model.post_processing(
             deserialized_decrypted_dequantized_result
         )
+
         return deserialized_decrypted_dequantized_result

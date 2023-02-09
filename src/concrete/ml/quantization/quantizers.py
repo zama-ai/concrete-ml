@@ -1,9 +1,14 @@
 """Quantization utilities for a numpy array/tensor."""
+# pylint: disable=too-many-lines
+from __future__ import annotations
 
+import json
 from copy import deepcopy
-from typing import Any, Optional, Union, get_type_hints
+from typing import IO, Any, Dict, Optional, Union, get_type_hints
 
 import numpy
+
+from concrete.ml.common.serialization import CustomEncoder
 
 from ..common.debugging import assert_true
 
@@ -95,8 +100,89 @@ class QuantizationOptions:
     # quantization layer that has pre-computed scale and zero-point (i.e. ONNX brevitas quant layer)
     is_precomputed_qat: bool = False
 
+    def dump_dict(self) -> Dict:
+        """Dump itelf to a dict.
+
+        Returns:
+            metadata (Dict): dict of serialized object
+        """
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["is_signed"] = self.is_signed
+        metadata["is_symmetric"] = self.is_symmetric
+        metadata["is_qat"] = self.is_qat
+        metadata["is_narrow"] = self.is_narrow
+        metadata["is_precomputed_qat"] = self.is_precomputed_qat
+        return metadata
+
+    def dumps(self) -> str:
+        """Dump itelf to a string.
+
+        Returns:
+            metadata (str): string of serialized object
+        """
+
+        return json.dumps(self.dump_dict(), cls=CustomEncoder)
+
+    def dump(self, file: IO[str]):
+        """Dump itelf to a file.
+
+        Args:
+            file (IO[str]): file of where to dump.
+        """
+        metadata = self.dump_dict()
+        json.dump(metadata, file, cls=CustomEncoder)
+
+    # Loading
+    @staticmethod
+    def load_dict(metadata: Dict):
+        """Load itelf from a string.
+
+        Args:
+            metadata (Dict): dict of serialized object
+
+        Returns:
+            QuantizationOptions: the loaded object
+        """
+        to_return = QuantizationOptions(
+            n_bits=metadata["n_bits"],
+            is_symmetric=metadata["is_symmetric"],
+            is_signed=metadata["is_signed"],
+            is_qat=metadata["is_qat"],
+        )
+        for attr_name in ["is_narrow", "is_precomputed_qat"]:
+            setattr(to_return, attr_name, metadata[attr_name])
+        return to_return
+
+    @staticmethod
+    def load(file: IO[str]) -> QuantizationOptions:
+        """Load itelf from a file.
+
+        Args:
+            file (IO[str]): file of serialized object
+
+        Returns:
+            QuantizationOptions: the loaded object
+        """
+        metadata = json.load(file)
+        return QuantizationOptions.load_dict(metadata=metadata)
+
+    @staticmethod
+    def loads(metadata: str) -> QuantizationOptions:
+        """Load itelf from a string.
+
+        Args:
+            metadata (str): serialized object
+
+        Returns:
+            QuantizationOptions: the loaded object
+        """
+        _metadata: Dict = json.loads(metadata)
+        return QuantizationOptions.load_dict(metadata=_metadata)
+
     def __init__(
-        self, n_bits, is_signed: bool = False, is_symmetric: bool = False, is_qat: bool = False
+        self, n_bits: int, is_signed: bool = False, is_symmetric: bool = False, is_qat: bool = False
     ) -> None:
         self.n_bits = n_bits
         self.is_signed = is_signed
@@ -166,6 +252,80 @@ class MinMaxQuantizationStats:
     rmax: Optional[float] = None
     rmin: Optional[float] = None
     uvalues: Optional[numpy.ndarray] = None
+
+    def dump_dict(self) -> Dict:
+        """Dump itelf to a dict.
+
+        Returns:
+            metadata (Dict): dict of serialized object
+        """
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["rmax"] = self.rmax
+        metadata["rmin"] = self.rmin
+        metadata["uvalues"] = self.uvalues
+        return metadata
+
+    def dumps(self) -> str:
+        """Dump itelf to a string.
+
+        Returns:
+            metadata (str): string of serialized object
+        """
+
+        return json.dumps(self.dump_dict(), cls=CustomEncoder)
+
+    def dump(self, file: IO[str]):
+        """Dump itelf to a file.
+
+        Args:
+            file (IO[str]): file of where to dump.
+        """
+        metadata = self.dump_dict()
+        json.dump(metadata, file, cls=CustomEncoder)
+
+    # Loading
+    @staticmethod
+    def load_dict(metadata: Dict):
+        """Load itelf from a string.
+
+        Args:
+            metadata (Dict): dict of serialized object
+
+        Returns:
+            QuantizationOptions: the loaded object
+        """
+        to_return = MinMaxQuantizationStats()
+        to_return.rmax = metadata["rmax"]
+        to_return.rmin = metadata["rmin"]
+        to_return.uvalues = numpy.array(metadata["uvalues"])
+        return to_return
+
+    @staticmethod
+    def load(file: IO[str]) -> MinMaxQuantizationStats:
+        """Load itelf from a file.
+
+        Args:
+            file (IO[str]): file of serialized object
+
+        Returns:
+            MinMaxQuantizationStats: the loaded object
+        """
+        metadata = json.load(file)
+        return MinMaxQuantizationStats.load_dict(metadata=metadata)
+
+    @staticmethod
+    def loads(metadata: str) -> MinMaxQuantizationStats:
+        """Load itelf from a string.
+
+        Args:
+            metadata (str): serialized object
+
+        Returns:
+            MinMaxQuantizationStats: the loaded object
+        """
+        _metadata: Dict = json.loads(metadata)
+        return MinMaxQuantizationStats.load_dict(metadata=_metadata)
 
     def compute_quantization_stats(self, values: numpy.ndarray) -> None:
         """Compute the calibration set quantization statistics.
@@ -250,6 +410,81 @@ class UniformQuantizationParameters:
     scale: Optional[numpy.float64] = None
     zero_point: Optional[Union[int, float, numpy.ndarray]] = None
     offset: Optional[int] = None
+
+    def dump_dict(self) -> Dict:
+        """Dump itelf to a dict.
+
+        Returns:
+            metadata (Dict): dict of serialized object
+        """
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = type(self).__name__
+        metadata["scale"] = self.scale
+        metadata["zero_point"] = self.zero_point
+        metadata["offset"] = self.offset
+        return metadata
+
+    def dumps(self) -> str:
+        """Dump itelf to a string.
+
+        Returns:
+            metadata (str): string of serialized object
+        """
+
+        return json.dumps(self.dump_dict(), cls=CustomEncoder)
+
+    def dump(self, file: IO[str]):
+        """Dump itelf to a file.
+
+        Args:
+            file (IO[str]): file of where to dump.
+        """
+        metadata = self.dump_dict()
+        json.dump(metadata, file, cls=CustomEncoder)
+
+    # Loading
+    @staticmethod
+    def load_dict(metadata: Dict) -> UniformQuantizationParameters:
+        """Load itelf from a string.
+
+        Args:
+            metadata (Dict): dict of serialized object
+
+        Returns:
+            UniformQuantizationParameters: the loaded object
+        """
+        to_return = UniformQuantizationParameters()
+        to_return.scale = metadata["scale"]
+
+        to_return.zero_point = metadata["zero_point"]
+        to_return.offset = metadata["offset"]
+        return to_return
+
+    @staticmethod
+    def load(file: IO[str]) -> UniformQuantizationParameters:
+        """Load itelf from a file.
+
+        Args:
+            file (IO[str]): file of serialized object
+
+        Returns:
+            UniformQuantizationParameters: the loaded object
+        """
+        metadata = json.load(file)
+        return UniformQuantizationParameters.load_dict(metadata=metadata)
+
+    @staticmethod
+    def loads(metadata: str) -> UniformQuantizationParameters:
+        """Load itelf from a string.
+
+        Args:
+            metadata (str): serialized object
+
+        Returns:
+            UniformQuantizationParameters: the loaded object
+        """
+        _metadata: Dict = json.loads(metadata)
+        return UniformQuantizationParameters.load_dict(metadata=_metadata)
 
     def copy_params(self, params) -> None:
         """Copy the parameters from a different structure.
@@ -396,10 +631,9 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
     def __init__(  # pylint: disable=super-init-not-called
         self,
-        options: QuantizationOptions = None,
+        options: Optional[QuantizationOptions] = None,
         stats: Optional[MinMaxQuantizationStats] = None,
         params: Optional[UniformQuantizationParameters] = None,
-        **kwargs,
     ):
         if options is not None:
             self.copy_opts(options)
@@ -410,17 +644,9 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         if params is not None:
             self.copy_params(params)
 
-        if kwargs:
-            self.options, kwargs = fill_from_kwargs(self, QuantizationOptions, **kwargs)
-            self.stats, kwargs = fill_from_kwargs(self, MinMaxQuantizationStats, **kwargs)
-            self.params, kwargs = fill_from_kwargs(self, UniformQuantizationParameters, **kwargs)
-
         # Force scale to be a float64
         if self.scale is not None:
             self.scale = numpy.float64(self.scale)
-
-        # All kwargs should belong to one of the parameter sets, anything else is unsupported
-        assert_true(len(kwargs) == 0, f"Unexpected kwargs: {kwargs}")
 
     def quant(self, values: numpy.ndarray) -> numpy.ndarray:
         """Quantize values.
@@ -470,16 +696,95 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.scale is not None
 
         assert_true(
-            isinstance(self.scale, numpy.float64)
+            isinstance(self.scale, (numpy.floating, float))
             or (isinstance(self.scale, numpy.ndarray) and self.scale.dtype is numpy.float64),
-            "Scale is a "
-            + str(type(self.scale))
+            "Scale is a of type "
+            + type(self.scale).__name__
             + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
         )
 
         ans = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 
         return ans
+
+    def dump_dict(self) -> Dict:
+        """Dump itelf to a dict.
+
+        Returns:
+            metadata (Dict): dict of serialized object
+        """
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["zero_point"] = self.zero_point
+        metadata["scale"] = self.scale
+        metadata["offset"] = self.offset
+        metadata["n_bits"] = self.n_bits
+        return metadata
+
+    def dumps(self) -> str:
+        """Dump itelf to a string.
+
+        Returns:
+            metadata (str): string of serialized object
+        """
+        metadata = self.dump_dict()
+        return json.dumps(metadata, cls=CustomEncoder)
+
+    def dump(self, file: IO[str]) -> None:
+        """Dump itelf to a file.
+
+        Args:
+            file (IO[str]): file of where to dump.
+        """
+        metadata = self.dump_dict()
+        json.dump(metadata, file, cls=CustomEncoder)
+
+    # Loading
+    @staticmethod
+    def load_dict(metadata: Dict) -> UniformQuantizer:
+        """Load itelf from a string.
+
+        Args:
+            metadata (Dict): dict of serialized object
+
+        Returns:
+            UniformQuantizer: the loaded object
+        """
+        obj = UniformQuantizer()
+
+        obj.zero_point = metadata["zero_point"]
+
+        obj.scale = metadata["scale"]
+        obj.offset = metadata["offset"]
+        obj.n_bits = metadata["n_bits"]
+
+        return obj
+
+    @staticmethod
+    def load(file: IO[str]) -> UniformQuantizer:
+        """Load itelf from a file.
+
+        Args:
+            file (IO[str]): file of serialized object
+
+        Returns:
+            UniformQuantizer: the loaded object
+        """
+        metadata = json.load(file)
+        return UniformQuantizer.load_dict(metadata=metadata)
+
+    @staticmethod
+    def loads(metadata: str) -> UniformQuantizer:
+        """Load itelf from a string.
+
+        Args:
+            metadata (str): serialized object
+
+        Returns:
+            UniformQuantizer: the loaded object
+        """
+        _metadata: Dict = json.loads(metadata)
+        return UniformQuantizer.load_dict(metadata=_metadata)
 
 
 class QuantizedArray:
@@ -518,7 +823,7 @@ class QuantizedArray:
         n_bits,
         values: Optional[numpy.ndarray],
         value_is_float: bool = True,
-        options: QuantizationOptions = None,
+        options: Optional[QuantizationOptions] = None,
         stats: Optional[MinMaxQuantizationStats] = None,
         params: Optional[UniformQuantizationParameters] = None,
         **kwargs,
@@ -529,6 +834,7 @@ class QuantizedArray:
         # Override the options number of bits if an options structure was provided
         # with the number of bits specified by the caller.
         options.n_bits = n_bits
+        self.n_bits = n_bits
 
         options, kwargs = fill_from_kwargs(options, QuantizationOptions, **kwargs)
         stats, kwargs = fill_from_kwargs(stats, MinMaxQuantizationStats, **kwargs)
@@ -660,3 +966,83 @@ class QuantizedArray:
             "Dequantized values must be float64",
         )
         return self.values
+
+    def dump_dict(self) -> Dict:
+        """Dump itelf to a dict.
+
+        Returns:
+            metadata (Dict): dict of serialized object
+        """
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["STABILITY_CONST"] = self.STABILITY_CONST
+        metadata["quantizer"] = self.quantizer
+        metadata["n_bits"] = self.n_bits
+        metadata["values"] = self.values
+        metadata["qvalues"] = self.qvalues
+        metadata["values"] = self.values
+        return metadata
+
+    def dumps(self) -> str:
+        """Dump itelf to a string.
+
+        Returns:
+            metadata (str): string of serialized object
+        """
+        metadata = self.dump_dict()
+        return json.dumps(metadata, cls=CustomEncoder)
+
+    def dump(self, file: IO[str]) -> None:
+        """Dump itelf to a file.
+
+        Args:
+            file (IO[str]): file of where to dump.
+        """
+        metadata = self.dump_dict()
+        json.dump(metadata, file, cls=CustomEncoder)
+
+    # Loading
+    @staticmethod
+    def load_dict(metadata: Dict) -> QuantizedArray:
+        """Load itelf from a string.
+
+        Args:
+            metadata (Dict): dict of serialized object
+
+        Returns:
+            QuantizedArray: the loaded object
+        """
+        obj = QuantizedArray(n_bits=metadata["n_bits"], values=metadata["values"])
+        # pylint: disable-next=invalid-name
+        obj.STABILITY_CONST = metadata["STABILITY_CONST"]
+        obj.quantizer = metadata["quantizer"]
+        obj.values = metadata["values"]
+        obj.qvalues = metadata["qvalues"]
+
+        return obj
+
+    @staticmethod
+    def load(file: IO[str]) -> QuantizedArray:
+        """Load itelf from a file.
+
+        Args:
+            file (IO[str]): file of serialized object
+
+        Returns:
+            QuantizedArray: the loaded object
+        """
+        metadata = json.load(file)
+        return QuantizedArray.load_dict(metadata=metadata)
+
+    @staticmethod
+    def loads(metadata: str) -> QuantizedArray:
+        """Load itelf from a string.
+
+        Args:
+            metadata (str): serialized object
+
+        Returns:
+            QuantizedArray: the loaded object
+        """
+        _metadata: Dict = json.loads(metadata)
+        return QuantizedArray.load_dict(metadata=_metadata)

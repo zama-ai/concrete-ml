@@ -1,5 +1,10 @@
 """Implement Support Vector Machine."""
+from typing import Any, Dict
+
+import numpy
 import sklearn.linear_model
+
+from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
 
@@ -52,6 +57,84 @@ class LinearSVR(SklearnLinearRegressorMixin):
         self.verbose = verbose
         self.random_state = random_state
         self.max_iter = max_iter
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["epsilon"] = self.epsilon
+        metadata["tol"] = self.tol
+        metadata["C"] = self.C
+        metadata["loss"] = self.loss
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["intercept_scaling"] = self.intercept_scaling
+        metadata["dual"] = self.dual
+        metadata["verbose"] = self.verbose
+        metadata["random_state"] = self.random_state
+        metadata["max_iter"] = self.max_iter
+        metadata["n_bits"] = self.n_bits
+        metadata["onnx_model_"] = self.onnx_model_
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = LinearSVR()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.epsilon = metadata["epsilon"]
+        obj.tol = metadata["tol"]
+        obj.C = metadata["C"]
+        obj.loss = metadata["loss"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.intercept_scaling = metadata["intercept_scaling"]
+        obj.dual = metadata["dual"]
+        obj.verbose = metadata["verbose"]
+        obj.random_state = metadata["random_state"]
+        obj.max_iter = metadata["max_iter"]
+        obj.n_bits = metadata["n_bits"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+
+        return obj
 
 
 class LinearSVC(SklearnLinearClassifierMixin):
@@ -106,6 +189,97 @@ class LinearSVC(SklearnLinearClassifierMixin):
         self.verbose = verbose
         self.random_state = random_state
         self.max_iter = max_iter
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Classifier
+        metadata["classes_"] = self.classes_
+        metadata["n_classes_"] = self.n_classes_
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["penalty"] = self.penalty
+        metadata["loss"] = self.loss
+        metadata["dual"] = self.dual
+        metadata["tol"] = self.tol
+        metadata["C"] = self.C
+        metadata["multi_class"] = self.multi_class
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["intercept_scaling"] = self.intercept_scaling
+        metadata["class_weight"] = self.class_weight
+        metadata["verbose"] = self.verbose
+        metadata["random_state"] = self.random_state
+        metadata["max_iter"] = self.max_iter
+        metadata["n_bits"] = self.n_bits
+        metadata["onnx_model_"] = self.onnx_model_
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = LinearSVC()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Classifier
+        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.n_classes_ = metadata["n_classes_"]
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.penalty = metadata["penalty"]
+        obj.loss = metadata["loss"]
+        obj.dual = metadata["dual"]
+        obj.tol = metadata["tol"]
+        obj.C = metadata["C"]
+        obj.multi_class = metadata["multi_class"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.intercept_scaling = metadata["intercept_scaling"]
+        obj.class_weight = metadata["class_weight"]
+        obj.verbose = metadata["verbose"]
+        obj.random_state = metadata["random_state"]
+        obj.max_iter = metadata["max_iter"]
+        obj.n_bits = metadata["n_bits"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+
+        return obj
 
 
 # pylint: enable=invalid-name,too-many-instance-attributes

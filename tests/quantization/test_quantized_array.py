@@ -1,4 +1,6 @@
 """Tests for the quantized array/tensors."""
+import io
+
 import numpy
 import pytest
 
@@ -60,6 +62,15 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
 
     # Check that the __call__ returns also the qvalues.
     check_array_equality(quant_array(), new_qvalues)
+
+    # Check that we can load the quantized array
+    with io.StringIO() as buffer:
+        quant_array.dump(buffer)
+        buffer.seek(0, 0)
+        loaded_quant_array = QuantizedArray.load(buffer)
+
+    assert (loaded_quant_array.values == quant_array.values).all()
+    assert (loaded_quant_array.qvalues == quant_array.qvalues).all()
 
 
 @pytest.mark.parametrize(

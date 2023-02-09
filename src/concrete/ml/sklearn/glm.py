@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import Union
+from typing import Any, Dict, Union
 
 import numpy
-import sklearn
 import torch
+from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
+from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
+from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
+
+from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
+from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
 from ..torch.numpy_module import NumpyModule
@@ -96,6 +101,79 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
             y_preds (numpy.ndarray): The input data.
         """
 
+    def dump_dict(self) -> Dict:
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["n_bits"] = self.n_bits
+        metadata["alpha"] = self.alpha
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["solver"] = self.solver
+        metadata["max_iter"] = self.max_iter
+        metadata["tol"] = self.tol
+        metadata["warm_start"] = self.warm_start
+        metadata["verbose"] = self.verbose
+        metadata["onnx_model_"] = self.onnx_model_
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = cls(n_bits=metadata["n_bits"])
+
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
+        obj.post_processing_params = metadata["post_processing_params"]
+        # Needs to be an array and not a list
+        for key, value in obj.post_processing_params.items():
+            if isinstance(value, list):
+                obj.post_processing_params[key] = numpy.array(value)
+
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        if isinstance(obj._output_zero_point, list):
+            obj._output_zero_point = numpy.array(obj._output_zero_point)
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.n_bits = metadata["n_bits"]
+        obj.alpha = metadata["alpha"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.solver = metadata["solver"]
+        obj.max_iter = metadata["max_iter"]
+        obj.tol = metadata["tol"]
+        obj.warm_start = metadata["warm_start"]
+        obj.verbose = metadata["verbose"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+
+        return obj
+
 
 class PoissonRegressor(_GeneralizedLinearRegressor):
     """A Poisson regression model with FHE.
@@ -113,7 +191,7 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
     """
 
-    underlying_model_class = sklearn.linear_model.PoissonRegressor
+    underlying_model_class = SklearnPoissonRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -157,7 +235,7 @@ class GammaRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
     """
 
-    underlying_model_class = sklearn.linear_model.GammaRegressor
+    underlying_model_class = SklearnGammaRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -185,6 +263,7 @@ class GammaRegressor(_GeneralizedLinearRegressor):
         return numpy.exp(y_preds)
 
 
+# pylint: disable-next=too-many-instance-attributes
 class TweedieRegressor(_GeneralizedLinearRegressor):
     """A Tweedie regression model with FHE.
 
@@ -201,7 +280,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
     """
 
-    underlying_model_class = sklearn.linear_model.TweedieRegressor
+    underlying_model_class = SklearnTweedieRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -268,3 +347,59 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
             return numpy.exp(y_preds)
 
         return y_preds
+
+    def dump_dict(self) -> Dict:
+        metadata: Dict[str, Any] = {}
+        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["power"] = self.power
+        metadata["link"] = self.link
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = cls(n_bits=metadata["n_bits"])
+
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
+        obj.post_processing_params = metadata["post_processing_params"]
+        # Needs to be an array and not a list
+        for key, value in obj.post_processing_params.items():
+            if isinstance(value, list):
+                obj.post_processing_params[key] = numpy.array(value)
+
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.power = metadata["power"]
+        obj.link = metadata["link"]
+
+        return obj

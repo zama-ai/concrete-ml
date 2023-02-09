@@ -28,7 +28,9 @@ More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
 # pylint: disable=too-many-lines
-
+import functools
+import json
+import tempfile
 import warnings
 from typing import Any, Dict, List
 
@@ -44,6 +46,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
+from concrete.ml.common.serialization import dump, dumps, load, loads
 from concrete.ml.common.utils import (
     get_model_name,
     is_classifier_or_partial_classifier,
@@ -215,6 +218,84 @@ def check_double_fit(model_class, n_bits, x, y):
         y_pred_two = model.predict(x)
 
     assert numpy.array_equal(y_pred_one, y_pred_two)
+
+
+def check_serialization(model_class, n_bits, x, y):
+    """Check serialization."""
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model_name = type(model).__name__
+
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+    model.set_params(**model_params)
+
+    if isinstance(model_class, functools.partial):
+        model_class_ = model_class.func
+    else:
+        model_class_ = model_class
+
+    # Neural Networks are not handling double fit properly
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
+    if is_model_class_in_a_list(model_class_, get_sklearn_neural_net_models()):
+        pytest.skip(
+            f"Serializaton not supported yet for class={model_class_}, model_name={model_name}"
+        )
+
+    # IO dump
+    with tempfile.TemporaryFile("w+") as temp_dump:
+        for (dump_method, load_method) in [
+            (functools.partial(dump, file=temp_dump), functools.partial(load, file=temp_dump)),
+            (
+                functools.partial(model_class_.dump, file=temp_dump),
+                functools.partial(model_class_.load, file=temp_dump),
+            ),
+        ]:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+                model.fit(x, y)
+                y_pred_one = model.predict(x)
+
+                temp_dump.seek(0, 0)
+                temp_dump.truncate(0)
+                serialized_model = dump_method(model)
+
+                temp_dump.seek(0, 0)
+                loaded_model = load_method()
+
+                y_pred_two = loaded_model.predict(x)
+                temp_dump.seek(0, 0)
+                temp_dump.truncate(0)
+                re_serialized_model: str = dump_method(loaded_model)
+
+            assert numpy.array_equal(y_pred_one, y_pred_two)
+
+    # Dumps
+    for (dumps_method, loads_method) in [
+        (dumps, loads),
+        (model_class_.dumps, model_class_.loads),
+    ]:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+            model.fit(x, y)
+            y_pred_one = model.predict(x)
+
+            serialized_model = dumps_method(model)
+            loaded_model = loads_method(serialized_model)
+            y_pred_two = loaded_model.predict(x)
+            re_serialized_model: str = dumps_method(loaded_model)
+
+            # For testing
+            re_serialized_model_dict: Dict = json.loads(re_serialized_model)
+            serialized_model_dict: Dict = json.loads(serialized_model)
+
+            del re_serialized_model_dict["sklearn_model"]
+            del serialized_model_dict["sklearn_model"]
+
+        assert re_serialized_model_dict == serialized_model_dict
+        assert numpy.array_equal(y_pred_one, y_pred_two)
 
 
 def check_offset(model_class, n_bits, x, y):
@@ -811,6 +892,29 @@ def test_grid_search(
         print("Run check_grid_search")
 
     check_grid_search(model_class, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "n_bits",
+    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+)
+# pylint: disable=too-many-arguments
+def test_serialization(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test Serialization."""
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    if verbose:
+        print("Run check_serialization")
+
+    check_serialization(model_class, n_bits, x, y)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)

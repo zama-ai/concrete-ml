@@ -7,6 +7,28 @@ from torch import nn
 from torch.nn.utils import prune
 
 
+class SimpleNet(torch.nn.Module):
+    """Fake torch model used to generate some onnx."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.scale = 2.2
+        self.offset = 1.1
+
+    def forward(self, inputs):
+        """Forward function.
+
+        Arguments:
+            inputs: the inputs of the model.
+
+        Returns:
+            torch.Tensor: the result of the computation
+        """
+        res = (inputs * self.scale) + self.offset
+        res = torch.relu(inputs)
+        return res
+
+
 class FCSmall(nn.Module):
     """Torch model for the tests."""
 

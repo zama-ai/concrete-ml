@@ -1,6 +1,11 @@
 """Implement sklearn linear model."""
+from typing import Any, Dict
+
+import numpy
 import sklearn
 import sklearn.linear_model
+
+from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
 
@@ -43,6 +48,72 @@ class LinearRegression(SklearnLinearRegressorMixin):
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.positive = positive
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["normalize"] = self.normalize
+        metadata["copy_X"] = self.copy_X
+        metadata["n_jobs"] = self.n_jobs
+        metadata["positive"] = self.positive
+        metadata["onnx_model_"] = self.onnx_model_
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = LinearRegression()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        # Custom
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.normalize = metadata["normalize"]
+        obj.copy_X = metadata["copy_X"]
+        obj.n_jobs = metadata["n_jobs"]
+        obj.positive = metadata["positive"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+        return obj
 
 
 class ElasticNet(SklearnLinearRegressorMixin):
@@ -97,6 +168,86 @@ class ElasticNet(SklearnLinearRegressorMixin):
         self.random_state = random_state
         self.selection = selection
 
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["alpha"] = self.alpha
+        metadata["l1_ratio"] = self.l1_ratio
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["normalize"] = self.normalize
+        metadata["copy_X"] = self.copy_X
+        metadata["positive"] = self.positive
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["precompute"] = self.precompute
+        metadata["max_iter"] = self.max_iter
+        metadata["tol"] = self.tol
+        metadata["warm_start"] = self.warm_start
+        metadata["random_state"] = self.random_state
+        metadata["selection"] = self.selection
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = ElasticNet()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.alpha = metadata["alpha"]
+        obj.l1_ratio = metadata["l1_ratio"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.normalize = metadata["normalize"]
+        obj.copy_X = metadata["copy_X"]
+        obj.positive = metadata["positive"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.precompute = metadata["precompute"]
+        obj.max_iter = metadata["max_iter"]
+        obj.tol = metadata["tol"]
+        obj.warm_start = metadata["warm_start"]
+        obj.random_state = metadata["random_state"]
+        obj.selection = metadata["selection"]
+
+        return obj
+
 
 class Lasso(SklearnLinearRegressorMixin):
     """A Lasso regression model with FHE.
@@ -148,6 +299,86 @@ class Lasso(SklearnLinearRegressorMixin):
         self.precompute = precompute
         self.random_state = random_state
 
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["n_bits"] = self.n_bits
+        metadata["alpha"] = self.alpha
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["normalize"] = self.normalize
+        metadata["copy_X"] = self.copy_X
+        metadata["positive"] = self.positive
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["max_iter"] = self.max_iter
+        metadata["warm_start"] = self.warm_start
+        metadata["selection"] = self.selection
+        metadata["tol"] = self.tol
+        metadata["precompute"] = self.precompute
+        metadata["random_state"] = self.random_state
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = Lasso()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.n_bits = metadata["n_bits"]
+        obj.alpha = metadata["alpha"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.normalize = metadata["normalize"]
+        obj.copy_X = metadata["copy_X"]
+        obj.positive = metadata["positive"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.max_iter = metadata["max_iter"]
+        obj.warm_start = metadata["warm_start"]
+        obj.selection = metadata["selection"]
+        obj.tol = metadata["tol"]
+        obj.precompute = metadata["precompute"]
+        obj.random_state = metadata["random_state"]
+
+        return obj
+
 
 class Ridge(SklearnLinearRegressorMixin):
     """A Ridge regression model with FHE.
@@ -194,6 +425,81 @@ class Ridge(SklearnLinearRegressorMixin):
         self.tol = tol
         self.solver = solver
         self.random_state = random_state
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        metadata["n_bits"] = self.n_bits
+        metadata["alpha"] = self.alpha
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["normalize"] = self.normalize
+        metadata["copy_X"] = self.copy_X
+        metadata["positive"] = self.positive
+        metadata["max_iter"] = self.max_iter
+        metadata["tol"] = self.tol
+        metadata["solver"] = self.solver
+        metadata["random_state"] = self.random_state
+        metadata["onnx_model_"] = self.onnx_model_
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = Ridge()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.n_bits = metadata["n_bits"]
+        obj.alpha = metadata["alpha"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.normalize = metadata["normalize"]
+        obj.copy_X = metadata["copy_X"]
+        obj.positive = metadata["positive"]
+        obj.max_iter = metadata["max_iter"]
+        obj.tol = metadata["tol"]
+        obj.solver = metadata["solver"]
+        obj.random_state = metadata["random_state"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+        return obj
 
 
 class LogisticRegression(SklearnLinearClassifierMixin):
@@ -253,6 +559,102 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         self.warm_start = warm_start
         self.n_jobs = n_jobs
         self.l1_ratio = l1_ratio
+
+    def dump_dict(self) -> Dict[str, Any]:
+        metadata: Dict[str, Any] = {}
+
+        metadata["post_processing_params"] = self.post_processing_params
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Classifier
+        metadata["classes_"] = self.classes_
+        metadata["n_classes_"] = self.n_classes_
+        metadata["cml_dumped_class_name"] = type(self).__name__
+
+        # Linear
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
+        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
+        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_output_scale"] = self._output_scale
+        metadata["_output_zero_point"] = self._output_zero_point
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+
+        # Specific
+        metadata["penalty"] = self.penalty
+        metadata["dual"] = self.dual
+        metadata["tol"] = self.tol
+        metadata["C"] = self.C
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["intercept_scaling"] = self.intercept_scaling
+        metadata["class_weight"] = self.class_weight
+        metadata["random_state"] = self.random_state
+        metadata["solver"] = self.solver
+        metadata["max_iter"] = self.max_iter
+        metadata["multi_class"] = self.multi_class
+        metadata["verbose"] = self.verbose
+        metadata["warm_start"] = self.warm_start
+        metadata["n_jobs"] = self.n_jobs
+        metadata["l1_ratio"] = self.l1_ratio
+        metadata["onnx_model_"] = self.onnx_model_
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+        obj = LogisticRegression()
+        obj.post_processing_params = metadata["post_processing_params"]
+        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
+            obj.post_processing_params["output_zero_point"], list
+        ):
+            obj.post_processing_params["output_zero_point"] = numpy.array(
+                obj.post_processing_params["output_zero_point"]
+            )
+
+        # Classifier
+        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.n_classes_ = metadata["n_classes_"]
+
+        # Linear
+        obj.n_bits = metadata["n_bits"]
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.fhe_circuit = metadata["fhe_circuit"]
+        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
+        obj.output_quantizers = [
+            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
+        ]
+        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._output_scale = metadata["_output_scale"]
+        obj._output_zero_point = metadata["_output_zero_point"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+
+        obj.penalty = metadata["penalty"]
+        obj.dual = metadata["dual"]
+        obj.tol = metadata["tol"]
+        obj.C = metadata["C"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.intercept_scaling = metadata["intercept_scaling"]
+        obj.class_weight = metadata["class_weight"]
+        obj.random_state = metadata["random_state"]
+        obj.solver = metadata["solver"]
+        obj.max_iter = metadata["max_iter"]
+        obj.multi_class = metadata["multi_class"]
+        obj.verbose = metadata["verbose"]
+        obj.warm_start = metadata["warm_start"]
+        obj.n_jobs = metadata["n_jobs"]
+        obj.l1_ratio = metadata["l1_ratio"]
+        # pylint: disable-next=protected-access
+        obj.onnx_model_ = metadata["onnx_model_"]
+
+        return obj
 
 
 # pylint: enable=too-many-instance-attributes,invalid-name
