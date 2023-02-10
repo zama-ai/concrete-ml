@@ -2,6 +2,7 @@
 import brevitas.nn as qnn
 import numpy
 import torch
+from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
 from torch import nn
 from torch.nn.utils import prune
 
@@ -914,3 +915,48 @@ class TorchSumMod(TorchSum):
         # handle a PBS without actually changing the results
         torch_sum = torch_sum + torch_sum % 2 - torch_sum % 2
         return torch_sum
+
+
+class NetWithConstantsFoldedBeforeOps(nn.Module):
+    """Torch QAT model that does not quantize the inputs."""
+
+    def __init__(
+        self,
+        hparams: dict,
+        bits: int,
+        act_quant=Int8ActPerTensorFloat,
+        weight_quant=Int8WeightPerTensorFloat,
+    ):
+        super().__init__()
+        self.hparams = hparams
+        self.dense1 = qnn.QuantLinear(
+            hparams["n_feats"],
+            hparams["hidden_dim"],
+            weight_quant=weight_quant,
+            weight_bit_width=bits,
+            bias=True,
+        )
+        self.dp1 = qnn.QuantDropout(0.1)
+        self.act1 = qnn.QuantReLU(act_quant=act_quant, bit_width=bits)
+
+        self.dense2 = qnn.QuantLinear(
+            hparams["hidden_dim"], 1, weight_bit_width=bits, weight_quant=weight_quant, bias=True
+        )
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model
+
+        Returns:
+            torch.tensor: Output of the network
+        """
+
+        # Note here that the input is not quantized, it is passed to the linear layer directly
+        x = self.dense1(x)
+        x = self.dp1(x)
+        x = self.act1(x)
+
+        x = self.dense2(x)
+        return x

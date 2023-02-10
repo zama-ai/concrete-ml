@@ -426,28 +426,28 @@ class ONNXConverter:
 
             has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
 
+            variable_input_names = [
+                input_name for input_name in curr_inputs if input_name not in constants
+            ]
+            curr_calibration_data = tuple(
+                curr_inputs[input_name] for input_name in variable_input_names
+            )
+
+            # For mypy
+            assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
+            curr_calibration_data = cast(Tuple[numpy.ndarray], curr_calibration_data)
+
+            # Find the unique integer producers of the current's op output tensor
+            node_integer_inputs = set.union(
+                *[tensor_int_producers.get(input_node, set()) for input_node in node.input]
+            )
+
             # If we depend on a variable input use the quantized version of the operator
             if has_variable_inputs:
 
                 assert_true(
                     op_type in ONNX_OPS_TO_QUANTIZED_IMPL,
                     f"{op_type} can't be found in {ONNX_OPS_TO_QUANTIZED_IMPL}",
-                )
-
-                variable_input_names = [
-                    input_name for input_name in curr_inputs if input_name not in constants
-                ]
-                curr_calibration_data = tuple(
-                    curr_inputs[input_name] for input_name in variable_input_names
-                )
-
-                # For mypy
-                assert_true(all(isinstance(val, numpy.ndarray) for val in curr_calibration_data))
-                curr_calibration_data = cast(Tuple[numpy.ndarray], curr_calibration_data)
-
-                # Find the unique integer producers of the current's op output tensor
-                node_integer_inputs = set.union(
-                    *[tensor_int_producers.get(input_node, set()) for input_node in node.input]
                 )
 
                 # Note that the output of a quantized op could be a network output

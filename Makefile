@@ -155,7 +155,7 @@ fix_ruff:
 python_linting: ruff pylint flake8
 
 .PHONY: conformance # Run command to fix some conformance issues automatically
-conformance: finalize_nb python_format licenses nbqa supported_ops mdformat apidocs
+conformance: finalize_nb python_format licenses nbqa supported_ops mdformat
 
 .PHONY: check_issues # Run command to check if all referenced issues are opened
 check_issues:

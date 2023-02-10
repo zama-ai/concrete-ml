@@ -11,7 +11,7 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from concrete.ml.pytest.torch_models import TinyQATCNN
+from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, TinyQATCNN
 from concrete.ml.sklearn.qnn import (
     NeuralNetClassifier,
     NeuralNetRegressor,
@@ -378,3 +378,29 @@ def test_brevitas_intermediary_values(
             )
 
         assert weights_ok, error
+
+
+def test_brevitas_constant_folding(default_configuration):
+    """Test that a network that does not quantize its inputs raises the right exception.
+
+    The network tested is not a valid QAT network for Concrete-ML as it does not
+    quantize its inputs. However, in previous versions of Concrete-ML a bug
+    in constant folding prevented the correct error being raised.
+    """
+
+    batch_size = 64
+    config = {
+        "n_feats": 12,
+        "hidden_dim": 32,
+    }
+    data = torch.randn((batch_size, config["n_feats"]))
+
+    model = NetWithConstantsFoldedBeforeOps(config, 2)
+
+    with pytest.raises(ValueError, match=".*Error occurred during quantization aware training.*"):
+        compile_brevitas_qat_model(
+            model.to("cpu"),
+            torch_inputset=data,
+            configuration=default_configuration,
+            use_virtual_lib=True,
+        )
