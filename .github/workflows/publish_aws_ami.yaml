@@ -15,9 +15,11 @@ jobs:
         run: |
           PAYLOAD='{"name": "zama-concrete-ml-${{ github.ref_name }}-py39-x86_64",\
           "description": "Zama Concrete ML ${{ github.ref_name }} (with Python 3.9 for x86_64 architecture)",\
+          "release_tag": "${{ github.ref_name }}",\
           "region": "eu-west-3",\
           "image_pipeline_arn": ${{ secrets.AMI_PIPELINE_ARN }},\
-          "distribution_configuration_arn": ${{ secrets.AMI_DISTRIB_CONFIG_ARN }}}'
+          "distribution_configuration_arn": ${{ secrets.AMI_DISTRIB_CONFIG_ARN }}, \
+          "component_user_data": "cat ci/aws_ami_build_component.yaml | sed -e 's|\(concrete-ml==\)${CML_VERSION}|\1${{ github.ref_name }}|' -e  's|${AWS_ACCOUNT_ID}|${{ secrets.AWS_ACCOUNT_ID }}|' | base64 | tr -d \"\n\""}'
 
           SIGNATURE="$(slab/scripts/hmac_calculator.sh ${PAYLOAD} '${{ secrets.JOB_SECRET }}')"
 

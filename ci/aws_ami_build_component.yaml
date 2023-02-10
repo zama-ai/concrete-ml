@@ -1,0 +1,90 @@
+name: CMLBuild
+description: Build concrete-ml with Python 3.9 for x86 plateform.
+schemaVersion: 1.0
+
+phases:
+  - name: build
+    steps:
+      - name: RestartDeamonsWithOutdatedLibsAutomatically
+        action: ExecuteBash
+        inputs:
+          commands:
+            - sed -i "/#\$nrconf{restart} = 'i';/s/.*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf
+
+      - name: AddDeadsnakePPA
+        action: ExecuteBash
+        inputs:
+          commands:
+            - add-apt-repository -y ppa:deadsnakes/ppa
+
+      - name: UpdatePackages
+        action: ExecuteBash
+        inputs:
+          commands:
+            - apt update
+            - apt upgrade -y
+
+      - name: InstallPythonVirtualenv
+        action: ExecuteBash
+        inputs:
+          commands:
+            - apt install -y python3-virtualenv
+
+      - name: InstallPython39
+        action: ExecuteBash
+        inputs:
+          commands:
+            - apt install -y python3.9 python3.9-distutils
+
+      - name: InstallConcreteML
+        action: ExecuteBash
+        inputs:
+          commands:
+            - virtualenv venv --python=python3.9
+            - echo "source $(pwd)/venv/bin/activate" >> .bashrc
+            - source venv/bin/activate
+            - python -m pip install concrete-ml==${CML_VERSION}
+
+  - name: test
+    steps:
+      - name: PrepareGithubDeployKeyFile
+        action: ExecuteBash
+        inputs:
+          commands:
+            - touch ~/.ssh/deploy_private_key
+            - chmod 600 ~/.ssh/deploy_private_key
+
+      - name: DownloadGithubDeployKey
+        action: S3Download
+        inputs:
+          - source: s3://concrete-ml-ami-build/github_deploy_private_key
+            destination: /root/.ssh/deploy_private_key
+            expectedBucketOwner: ${AWS_ACCOUNT_ID}
+
+      - name: SetupGithubDeployKey
+        action: ExecuteBash
+        inputs:
+          commands:
+            - chmod 400 ~/.ssh/deploy_private_key
+            - ssh-keyscan github.com >> ~/.ssh/known_hosts
+            - echo -e "Host github.com\n    HostName github.com\n    IdentityFile ~/.ssh/deploy_private_key" > ~/.ssh/config
+
+      - name: InstallDevDependencies
+        action: ExecuteBash
+        inputs:
+          commands:
+            - apt install -y git-lfs
+            - git lfs install
+            - source venv/bin/activate
+            - python -m pip install pytest==7.1.1 pandas==1.3.0 tensorflow==2.10.0 tf2onnx==1.13.0
+
+      - name: RunTests
+        action: ExecuteBash
+        inputs:
+          commands:
+            - source venv/bin/activate
+            - git clone git@github.com:zama-ai/concrete-ml-internal.git
+            - cd concrete-ml-internal
+            - git lfs pull
+            - git checkout v$(pip show concrete-ml | grep "Version" | cut -c 10-)
+            - pytest ./tests
