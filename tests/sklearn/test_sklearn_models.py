@@ -913,7 +913,10 @@ def test_predict_correctness(
 
     # Do some inferences in clear
     if verbose:
-        print(f"Inference in the clear (with {number_of_tests_in_non_fhe=})")
+        print(
+            "Inference in the clear (with "
+            f"number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
+        )
 
     y_pred = model.predict(x[:number_of_tests_in_non_fhe])
 
@@ -928,7 +931,7 @@ def test_predict_correctness(
         if test_with_execute_in_fhe:
 
             if verbose:
-                print(f"Compile {use_virtual_lib=}")
+                print(f"Compile use_virtual_lib = {use_virtual_lib}")
 
             with warnings.catch_warnings():
                 # Use virtual lib to not have issues with precision
@@ -947,7 +950,7 @@ def test_predict_correctness(
             if verbose:
                 print(
                     "Run check_is_good_execution_for_cml_vs_circuit "
-                    + f"(with {number_of_tests_in_fhe=})"
+                    + f"(with number_of_tests_in_fhe = {number_of_tests_in_fhe})"
                 )
 
             check_is_good_execution_for_cml_vs_circuit(
@@ -962,7 +965,10 @@ def test_predict_correctness(
 
         else:
             if verbose:
-                print(f"Run predict in execute_in_fhe=False (with {number_of_tests_in_non_fhe=})")
+                print(
+                    "Run predict in execute_in_fhe=False "
+                    f"(with number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
+                )
 
             # At least, check without execute_in_fhe
             y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], execute_in_fhe=False)

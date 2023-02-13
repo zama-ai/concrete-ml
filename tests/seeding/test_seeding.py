@@ -107,7 +107,7 @@ def test_seed_sklearn(model, parameters, load_data, default_configuration):
     if callable(lpvoid_ptr_plot_tree):
         print("model", tree.plot_tree(model.sklearn_model))
 
-    print(f"{sklearn_model=}")
+    print(f"sklearn_model = {sklearn_model}")
 
     # Test the determinism of our package (even if the bitwidth may be too large)
     try:
