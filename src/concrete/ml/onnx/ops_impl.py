@@ -1738,8 +1738,6 @@ def numpy_unsqueeze(x: numpy.ndarray, axis: Iterable) -> Tuple[numpy.ndarray]:
     Returns:
         Tuple[numpy.ndarray]: Output tensor.
     """
-    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1818
-    # replace the following by numpy.unsqueeze
     for i, ax in enumerate(sorted(axis)):
         # Add a dimension to x following the axis.
         # The axis must be shifted by the number of dimensions already
@@ -1749,24 +1747,16 @@ def numpy_unsqueeze(x: numpy.ndarray, axis: Iterable) -> Tuple[numpy.ndarray]:
 
 
 @onnx_func_raw_args("axis")
-def numpy_squeeze(x: numpy.ndarray, axis: Optional[Iterable] = None) -> Tuple[numpy.ndarray]:
+def numpy_squeeze(x: numpy.ndarray, axis=None) -> Tuple[numpy.ndarray]:
     """Apply the squeeze operator in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#squeeze-13
 
     Args:
         x (numpy.ndarray): Input tensor.
-        axis (Optional[Iterable]): Tuple of the axis to squeeze.
+        axis: Tuple of the axis to squeeze.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor.
     """
-
-    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1818
-    # replace by numpy.squeeze
-    if not axis:
-        axis = [i for i, size in enumerate(x.shape) if size == 1]
-    shape = list(x.shape)
-    for i, ax in enumerate(axis):
-        shape.pop(ax - i)
-    return (numpy.reshape(x, tuple(shape)),)
+    return (numpy.squeeze(x, axis=tuple(axis) if axis is not None else axis),)
