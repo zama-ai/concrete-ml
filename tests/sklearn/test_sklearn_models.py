@@ -44,7 +44,7 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 
 from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
+from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
 from concrete.ml.sklearn.base import (
     get_sklearn_linear_models,
     get_sklearn_neural_net_models,
@@ -84,46 +84,6 @@ N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 # 5. If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
 # returned by fit_benchmark (the CML model and the scikit-learn model) are equivalent
 N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
-
-
-def instantiate_model_generic(model_class, **parameters):
-    """Instantiate any Concrete-ML model type.
-
-    Args:
-        model_class (class): The type of the model to instantiate
-        parameters (dict): Hyper-parameters for the model instantiation
-
-    Returns:
-        model_name (str): The type of the model as a string
-        model (object): The model instance
-    """
-    model_name = get_model_name(model_class)
-
-    assert "n_bits" in parameters
-    n_bits = parameters["n_bits"]
-
-    extra_kwargs = {}
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        if n_bits > 8:
-            extra_kwargs["module__n_w_bits"] = 3
-            extra_kwargs["module__n_a_bits"] = 3
-            extra_kwargs["module__n_accum_bits"] = 12
-        else:
-            extra_kwargs["module__n_w_bits"] = 2
-            extra_kwargs["module__n_a_bits"] = 2
-            extra_kwargs["module__n_accum_bits"] = 7
-
-    # Set the model
-    model = model_class(n_bits=n_bits, **extra_kwargs)
-
-    # Seed the model
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-
-    model.set_params(**model_params)
-
-    return model_name, model
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):

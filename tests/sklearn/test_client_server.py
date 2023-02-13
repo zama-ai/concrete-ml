@@ -15,7 +15,7 @@ from torch import nn
 from concrete.ml.common.utils import get_model_name
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
+from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
 from concrete.ml.torch.compile import compile_torch_model
 
 # pylint: disable=too-many-statements
@@ -71,14 +71,17 @@ class OnDiskNetwork:
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("n_bits", [3])
 def test_client_server_sklearn(
     default_configuration_no_jit,
     model_class,
     parameters,
+    n_bits,
     load_data,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Tests the encrypt decrypt api."""
+
     # Generate random data
     model_name = get_model_name(model_class)
     x, y = load_data(**parameters, model_name=model_name)
@@ -87,7 +90,7 @@ def test_client_server_sklearn(
     y_train = y[:-1]
     x_test = x[-1:]
 
-    model = model_class()
+    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
