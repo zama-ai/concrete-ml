@@ -48,9 +48,7 @@ torch = "1.13.1"
 typing-extensions = "4.4.0"
 hummingbird-ml = {version="0.4.4", extras = ["onnx"]}
 protobuf = "3.19.4"
-# Update to remote brevitas repo after patches are merged
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2662
-concrete-ml-extensions-brevitas = "0.1.0"
+brevitas = "0.8.0"
 onnxoptimizer = "0.2.7"
 
 [tool.poetry.dev-dependencies]
