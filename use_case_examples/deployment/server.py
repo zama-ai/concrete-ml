@@ -10,7 +10,7 @@ Routes:
         - give encrypted input and 
 
 """
-import base64
+import io
 import os
 import uuid
 from pathlib import Path
@@ -18,16 +18,16 @@ from typing import Dict
 
 import concrete.numpy as cnp
 import uvicorn
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi import FastAPI, Form, UploadFile
+from fastapi.responses import FileResponse, StreamingResponse
 
 from concrete.ml.deployment import FHEModelServer
 
 app = FastAPI(debug=False)
 
-CLIENT_SERVER_PATH = Path("./dev")
-KEY_PATH = Path("./server_keys")
+FILE_FOLDER = Path(__file__).parent
+CLIENT_SERVER_PATH = FILE_FOLDER / Path("dev")
+KEY_PATH = FILE_FOLDER / Path("server_keys")
 PORT = os.environ.get("PORT", "5000")
 
 fhe = FHEModelServer(str(CLIENT_SERVER_PATH.resolve()))
@@ -49,31 +49,23 @@ def get_processing():
     )
 
 
-class EvaluationKey(BaseModel):
-    key: str
-
-
 @app.post("/add_key")
-def add_key(key: EvaluationKey):
-    key_bytes = base64.b64decode(key.key)
+async def add_key(key: UploadFile):
     uid = str(uuid.uuid4())
-    KEYS[uid] = key_bytes
+    KEYS[uid] = await key.read()
     return {"uid": uid}
 
 
-class Inputs(BaseModel):
-    uid: str
-    inputs: str
-
-
 @app.post("/compute")
-def compute(inputs: Inputs):
-    key = KEYS[inputs.uid]
+async def compute(model_input: UploadFile, uid: str = Form()):
+    key = KEYS[uid]
     encrypted_results = fhe.run(
-        serialized_encrypted_quantized_data=base64.b64decode(inputs.inputs),
+        serialized_encrypted_quantized_data=await model_input.read(),
         serialized_evaluation_keys=key,
     )
-    return {"result": base64.b64encode(encrypted_results).decode("ascii")}
+    return StreamingResponse(
+        io.BytesIO(encrypted_results),
+    )
 
 
 if __name__ == "__main__":

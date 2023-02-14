@@ -8,9 +8,10 @@ This script does the following:
     - Collect the data and decrypt it
     - De-quantize the decrypted results
 """
-import base64
+import io
 import os
 import sys
+from pathlib import Path
 
 import grequests
 import numpy
@@ -22,19 +23,21 @@ from concrete.ml.deployment import FHEModelClient
 
 URL = os.environ.get("URL", f"http://localhost:5000")
 STATUS_OK = 200
+ROOT = Path(__file__).parent / "client"
+ROOT.mkdir(exist_ok=True)
 
 if __name__ == "__main__":
     # Get the necessary data for the client
     # client.zip
     zip_response = requests.get(f"{URL}/get_client")
     assert zip_response.status_code == STATUS_OK
-    with open("./client.zip", "wb") as file:
+    with open(ROOT / "client.zip", "wb") as file:
         file.write(zip_response.content)
 
     # serialized_processing.json
     zip_response = requests.get(f"{URL}/get_processing")
     assert zip_response.status_code == STATUS_OK
-    with open("./serialized_processing.json", "wb") as file:
+    with open(ROOT / "serialized_processing.json", "wb") as file:
         file.write(zip_response.content)
 
     # Get the data to infer
@@ -48,7 +51,7 @@ if __name__ == "__main__":
     assert isinstance(y, numpy.ndarray)
 
     # Let's create the client
-    client = FHEModelClient(path_dir="./", key_dir="./keys")
+    client = FHEModelClient(path_dir=ROOT, key_dir=ROOT / "keys")
 
     # The client first need to create the private and evaluation keys.
     client.generate_private_and_evaluation_keys()
@@ -75,8 +78,7 @@ if __name__ == "__main__":
     # Update all base64 queries encodings with UploadFile
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2932
     response = requests.post(
-        f"{URL}/add_key",
-        json={"key": base64.b64encode(serialized_evaluation_keys).decode("ascii")},
+        f"{URL}/add_key", files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)}
     )
     assert response.status_code == STATUS_OK
     uid = response.json()["uid"]
@@ -93,7 +95,12 @@ if __name__ == "__main__":
         inferences.append(
             grequests.post(
                 f"{URL}/compute",
-                json={"uid": uid, "inputs": base64.b64encode(encrypted_input).decode("ascii")},
+                files={
+                    "model_input": io.BytesIO(encrypted_input),
+                },
+                data={
+                    "uid": uid,
+                },
             )
         )
 
@@ -101,8 +108,8 @@ if __name__ == "__main__":
     decrypted_predictions = []
     for result in grequests.map(inferences):
         assert result.status_code == STATUS_OK
-        result = result.json()["result"]
-        assert isinstance(result, str)
-        decrypted_prediction = client.deserialize_decrypt_dequantize(base64.b64decode(result))[0]
+
+        encrypted_result = result.content
+        decrypted_prediction = client.deserialize_decrypt_dequantize(encrypted_result)[0]
         decrypted_predictions.append(decrypted_prediction)
     print(decrypted_predictions)

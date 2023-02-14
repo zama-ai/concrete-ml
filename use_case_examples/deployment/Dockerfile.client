@@ -1,6 +1,6 @@
 FROM zamafhe/concrete-ml:v0.6.1
 WORKDIR /project
-COPY client.py .
 COPY client_requirements.txt .
 RUN python -m pip install -r client_requirements.txt
+COPY client.py .
 ENTRYPOINT /bin/bash
