@@ -181,6 +181,7 @@
 - [`utils.is_model_class_in_a_list`](./concrete.ml.common.utils.md#function-is_model_class_in_a_list): Say if model_class (which may be a partial()) is an element of a_list.
 - [`utils.is_pandas_dataframe`](./concrete.ml.common.utils.md#function-is_pandas_dataframe): Indicate if the input container is a Pandas DataFrame.
 - [`utils.is_pandas_series`](./concrete.ml.common.utils.md#function-is_pandas_series): Indicate if the input container is a Pandas Series.
+- [`utils.is_pandas_type`](./concrete.ml.common.utils.md#function-is_pandas_type): Indicate if the input container is a Pandas DataFrame or Series.
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.

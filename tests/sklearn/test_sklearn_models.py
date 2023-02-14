@@ -323,14 +323,8 @@ def check_input_support(model_class, n_bits, x, y, input_type):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
-
-        # Neural networks handle only numpy arrays in predict and compile methods.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2339
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-            pytest.skip("For NNs, predict and compile methods support only input tensors")
-        else:
-            model.predict(x)
-            model.compile(x)
+        model.predict(x)
+        model.compile(x)
 
 
 def check_pipeline(model_class, x, y):

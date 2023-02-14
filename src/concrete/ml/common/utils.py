@@ -202,7 +202,7 @@ def get_model_name(model_class):
     return model_class.__name__
 
 
-def is_pandas_dataframe(input_container):
+def is_pandas_dataframe(input_container) -> bool:
     """Indicate if the input container is a Pandas DataFrame.
 
     This function is inspired from Scikit-Learn's test validation tools and avoids the need to add
@@ -218,7 +218,7 @@ def is_pandas_dataframe(input_container):
     return hasattr(input_container, "dtypes") and hasattr(input_container.dtypes, "__array__")
 
 
-def is_pandas_series(input_container):
+def is_pandas_series(input_container) -> bool:
     """Indicate if the input container is a Pandas Series.
 
     This function is inspired from Scikit-Learn's test validation tools and avoids the need to add
@@ -234,6 +234,18 @@ def is_pandas_series(input_container):
     return hasattr(input_container, "iloc") and hasattr(input_container, "dtype")
 
 
+def is_pandas_type(input_container) -> bool:
+    """Indicate if the input container is a Pandas DataFrame or Series.
+
+    Args:
+        input_container (Any): The input container to consider
+
+    Returns:
+        bool: If the input container is a DataFrame orSeries
+    """
+    return is_pandas_dataframe(input_container) or is_pandas_series(input_container)
+
+
 def _get_dtype(values):
     """Get the values' dtype.
 
@@ -242,14 +254,14 @@ def _get_dtype(values):
             to consider
 
     Returns:
-        List[Union[torch.dtype, numpy.dtype]]: The values' dtype(s)
+        Union[torch.dtype, numpy.dtype, List[torch.dtype, numpy.dtype]]: The values' dtype(s)
     """
     # If the container is a pandas.DataFrame, retrieve all the different dtypes found in it
     if is_pandas_dataframe(values):
         return list(set(values.dtypes))
 
     # Note that numpy.ndarray, pandas.Series and torch.Tensor objects support the dtype attribute
-    return [values.dtype]
+    return values.dtype
 
 
 def _is_of_dtype(values, dtypes):
@@ -272,20 +284,21 @@ def _is_of_dtype(values, dtypes):
         # If the container is a pandas.DataFrame, check that is contains only one dtype in total
         # and compare it to the given one
         if is_pandas_dataframe(values):
-            matches.append(list(set(values.dtypes)) == [dtype])
+            matches.append(_get_dtype(values) == [dtype])
 
         # If the container is a torch.Tensor, check that the given dtype is expected and compare it
         # to the given one using a dictionary mapping string dtypes to torch dtypes
         elif isinstance(values, torch.Tensor):
             matches.append(
-                dtype in SUPPORTED_TORCH_DTYPES and values.dtype == SUPPORTED_TORCH_DTYPES[dtype]
+                dtype in SUPPORTED_TORCH_DTYPES
+                and _get_dtype(values) == SUPPORTED_TORCH_DTYPES[dtype]
             )
 
         # Else, if the container is a numpy.ndarray or pandas.Series, compare the value's dtype to
         # the given one, knowing that pandas dtypes are subinstances of numpy.dtype objects, which
         # can be compared to string dtypes (i.e. numpy.float64 == 'float64' is True)
         else:
-            matches.append(values.dtype == dtype)
+            matches.append(_get_dtype(values) == dtype)
 
     return any(matches)
 
@@ -341,9 +354,7 @@ def check_dtype_and_cast(values, expected_dtype, error_information=None):
     )
 
     assert_true(
-        isinstance(values, (numpy.ndarray, torch.Tensor, list))
-        or is_pandas_dataframe(values)
-        or is_pandas_series(values),
+        isinstance(values, (numpy.ndarray, torch.Tensor, list)) or is_pandas_type(values),
         "Unsupported type. Expected numpy.ndarray, pandas.DataFrame, pandas.Series, list "
         f"or torch.Tensor but got {type(values)}.",
     )
@@ -351,6 +362,12 @@ def check_dtype_and_cast(values, expected_dtype, error_information=None):
     # Convert the list to a float32 torch tensor if it is X or an int64 tensor if it is y
     if isinstance(values, list):
         return _cast_to_dtype(torch.tensor(values), expected_dtype)
+
+    # Convert the Pandas dataframe or series to a NumPy array
+    if is_pandas_type(values) and _is_of_dtype(
+        values, ["float32", "float64", "int8", "int32", "int16", "int8"]
+    ):
+        values = values.to_numpy()
 
     # If the expected dtype is an int64 and the values are integers of lower precision, we can
     # safely cast them to int64

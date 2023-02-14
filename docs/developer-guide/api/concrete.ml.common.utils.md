@@ -180,7 +180,7 @@ ______________________________________________________________________
 ## <kbd>function</kbd> `is_pandas_dataframe`
 
 ```python
-is_pandas_dataframe(input_container)
+is_pandas_dataframe(input_container) → bool
 ```
 
 Indicate if the input container is a Pandas DataFrame.
@@ -202,7 +202,7 @@ ______________________________________________________________________
 ## <kbd>function</kbd> `is_pandas_series`
 
 ```python
-is_pandas_series(input_container)
+is_pandas_series(input_container) → bool
 ```
 
 Indicate if the input container is a Pandas Series.
@@ -219,7 +219,27 @@ This function is inspired from Scikit-Learn's test validation tools and avoids t
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L314"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_pandas_type`
+
+```python
+is_pandas_type(input_container) → bool
+```
+
+Indicate if the input container is a Pandas DataFrame or Series.
+
+**Args:**
+
+- <b>`input_container`</b> (Any):  The input container to consider
+
+**Returns:**
+
+- <b>`bool`</b>:  If the input container is a DataFrame orSeries
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L327"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_dtype_and_cast`
 
@@ -247,7 +267,7 @@ If they don't match, cast the values to the expected dtype if possible, else rai
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_bits_precision`
 
