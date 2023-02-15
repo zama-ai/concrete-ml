@@ -159,3 +159,5 @@ execution_time_of_individual_pytest_files.txt
 # Docs: Advance Examples data
 docs/advanced_examples/data/
 
+use_case_examples/cifar_deployment/dev/
+use_case_examples/deployment/dev/
