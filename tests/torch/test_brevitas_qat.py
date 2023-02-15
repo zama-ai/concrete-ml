@@ -149,11 +149,11 @@ def test_brevitas_tinymnist_cnn(
         use_vl=True,
     )
 
-    # Accept, at most, 5 examples that are classified differently
+    # Accept, at most, 1% examples that are classified differently (currently 5)
     # For now, the correctness test has been disabled as it was too flaky, it should however be put
     # back at one point
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2550
-    # assert abs(vl_correct - torch_correct) <= 5
+    # assert abs(vl_correct - torch_correct) <= numpy.ceil(0.01 * len(y_test))
 
     assert vl_correct.shape == torch_correct.shape
 
@@ -180,7 +180,7 @@ def test_brevitas_tinymnist_cnn(
 @pytest.mark.parametrize("input_dim", [100])
 @pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
 @pytest.mark.parametrize("signed, narrow", [(True, False), (False, False), (True, True)])
-@pytest.mark.skip(reason="Torch dtype setting interferes with parallel test launch")
+@pytest.mark.skip(reason="Torch dtype setting interferes with parallel test launch, and flaky test")
 def test_brevitas_intermediary_values(
     n_layers,
     n_bits_w_a,
@@ -305,7 +305,7 @@ def test_brevitas_intermediary_values(
     torch.set_default_dtype(torch.float64)
 
     # Wrap the original model, and copy its weights
-    dbg_model = DebugQNNModel(**params_module)
+    dbg_model = DebugQNNModel(**params_module, input_dim=input_dim, n_outputs=n_outputs)
     dbg_model.load_state_dict(concrete_model.module_.state_dict())
 
     # Execute on the test set and capture debug values
@@ -378,6 +378,8 @@ def test_brevitas_intermediary_values(
             )
 
         assert weights_ok, error
+
+    torch.set_default_dtype(torch.float32)
 
 
 def test_brevitas_constant_folding(default_configuration):
