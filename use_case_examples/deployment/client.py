@@ -10,7 +10,6 @@ This script does the following:
 """
 import io
 import os
-import sys
 from pathlib import Path
 
 import grequests
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     # Evaluation keys can be quite large files but only have to be shared once with the server.
 
     # Check the size of the evaluation keys (in MB)
-    print(f"Evaluation keys size: {sys.getsizeof(serialized_evaluation_keys) / 1024 / 1024:.2f} MB")
+    print(f"Evaluation keys size: {len(serialized_evaluation_keys) / (10**6):.2f} MB")
 
     # Let's send this evaluation key to the server (this has to be done only once)
     # send_evaluation_key_to_server(serialized_evaluation_keys)

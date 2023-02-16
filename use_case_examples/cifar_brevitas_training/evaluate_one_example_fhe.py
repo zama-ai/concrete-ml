@@ -1,5 +1,3 @@
-import os
-import sys
 import time
 from pathlib import Path
 
@@ -133,7 +131,7 @@ q_x_numpy, execution_time = measure_execution_time(quantized_numpy_module.quanti
     one_x_numpy
 )
 print(f"Quantization of a single input (image) took {execution_time} seconds")
-print(f"Size of CLEAR input is {sys.getsizeof(q_x_numpy)}KB\n")
+print(f"Size of CLEAR input is {q_x_numpy.nbytes} bytes\n")
 
 expected_prediction = quantized_numpy_module.forward(q_x_numpy)
 
@@ -143,7 +141,7 @@ encrypted_q_x_numpy, execution_time = measure_execution_time(
 )(q_x_numpy)
 print(f"Encryption of a single input (image) took {execution_time} seconds")
 serialized_encrypted_q_x_numpy = encrypted_q_x_numpy.serialize()
-print(f"Size of ENCRYPTED input is {sys.getsizeof(serialized_encrypted_q_x_numpy)}KB\n")
+print(f"Size of ENCRYPTED input is {len(serialized_encrypted_q_x_numpy)} bytes\n")
 
 
 print("Running FHE inference")
@@ -152,7 +150,7 @@ prediction, execution_time = measure_execution_time(quantized_numpy_module.fhe_c
 )
 print(f"FHE inference over a single image took {execution_time} seconds")
 serialized_prediction = prediction.serialize()
-print(f"Size of the prediction is {sys.getsizeof(serialized_prediction)}KB\n")
+print(f"Size of the prediction is {len(serialized_prediction)} bytes\n")
 
 # Decrypt print the result
 decrypted_prediction = quantized_numpy_module.fhe_circuit.decrypt(prediction)
