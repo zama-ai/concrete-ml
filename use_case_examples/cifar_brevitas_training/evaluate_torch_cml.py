@@ -1,3 +1,4 @@
+import argparse
 import pathlib
 
 import numpy as np
@@ -95,7 +96,7 @@ def evaluate(torch_model, cml_model):
     print("CML accuracy top5:", np.mean(top5_cml))
 
 
-def main():
+def main(rounding_threshold_bits_list):
     model = cnv_2w2a(False)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -124,23 +125,31 @@ def main():
         verbose=True,
         show_optimizer=True,
     )
-    quantized_numpy_module = compile_brevitas_qat_model(
-        model,  # our torch model
-        x,  # a representative inputset to be used for both quantization and compilation
-        n_bits={"model_inputs": 8, "op_inputs": 2, "op_weights": 2, "model_outputs": 8},
-        use_virtual_lib=True,  # important to run in simulated FHE
-        configuration=cfg,
-    )
 
-    # Print max bitwidth in the circuit
-    print(
-        "Max bitwidth in the circuit: ",
-        quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width(),
-    )
+    for rounding_threshold_bits in rounding_threshold_bits_list:
+        print(f"Testing network with {rounding_threshold_bits} rounding bits")
 
-    # Evaluate torch and CML model
-    evaluate(model, quantized_numpy_module)
+        quantized_numpy_module = compile_brevitas_qat_model(
+            model,  # our torch model
+            x,  # a representative inputset to be used for both quantization and compilation
+            n_bits={"model_inputs": 8, "model_outputs": 8},
+            use_virtual_lib=True,  # important to run in simulated FHE
+            configuration=cfg,
+            rounding_threshold_bits=rounding_threshold_bits,
+        )
+
+        # Print max bitwidth in the circuit
+        print(
+            "Max bitwidth in the circuit: ",
+            quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width(),
+        )
+
+        # Evaluate torch and CML model
+        evaluate(model, quantized_numpy_module)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--rounding_threshold_bits", nargs="+", type=int, default=[None])
+    rounding_threshold_bits_list = parser.parse_args().rounding_threshold_bits
+    main(rounding_threshold_bits_list)

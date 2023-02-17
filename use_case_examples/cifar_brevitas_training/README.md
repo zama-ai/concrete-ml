@@ -60,6 +60,23 @@ python3 evaluate_torch_cml.py
 
 It evaluates the model with Torch and Concrete-ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
 
+
+Optionally, you can change the default rounding bits (default to 6) applied on the model as follows:
+
+<!--pytest-codeblocks:skip-->
+
+```bash
+python3 evaluate_torch_cml.py --rounding_threshold_bits 8
+```
+
+You can as well test different `rounding_threshold_bits` to check the final accuracy as follows:
+
+<!--pytest-codeblocks:skip-->
+
+```bash
+python3 evaluate_torch_cml.py --rounding_threshold_bits 1 2 3 4 5 6 7 8
+```
+
 ## Fully Homomorphic Encryption (FHE)
 
 Once the model has been proposed to have a correct performance, compilation to the FHE settings can be done.
@@ -76,13 +93,23 @@ Warning: this execution can be quite costly.
 
 While it is the ambition of Concrete-ML to execute such large CNNs in reasonable time on various hardware accelerators, currently on a CPU the execution times are very high, more than 10 hours for a large many-core machine. This is a work in progress and will be improved significantly in future releases
 
+<!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3007 -->
+
 ## Accuracy and performance
 
-| Runtime                | Accuracy |
-| ---------------------- | -------- |
-| VGG Torch              | 88.7     |
-| VGG FHE (simulation\*) | 88.7     |
-| VGG FHE                | NA\*\*   |
+| Runtime                | Rounding | Accuracy |
+| ---------------------- | -------- | -------- |
+| VGG Torch              | None     | 88.7     |
+| VGG FHE (simulation\*) | None     | 88.7     |
+| VGG FHE (simulation\*) | 8 bits   | 88.3     |
+| VGG FHE (simulation\*) | 7 bits   | 88.3     |
+| VGG FHE (simulation\*) | 6 bits   | 87.5     |
+| VGG FHE (simulation\*) | 5 bits   | 84.9     |
+| VGG FHE                | NA\*\*   | NA\*\*   |
+
+<!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3007 -->
+Rounding with 6 bits all accumulators offer a huge boost in FHE (TBD) while the loss compared to the original model is only $1.3\%$.
+
 
 \* The simulation is done using Virtual Library (VL) that simulates the FHE evaluation in the clear for faster debugging.
 \*\* Expected to match the VGG FHE simulation. It is a work in progress to assess the actual FHE accuracy on a subset of images.
