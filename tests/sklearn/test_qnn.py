@@ -313,14 +313,10 @@ def test_custom_net_classifier(load_data):
             # which is a bit much since they don't necessarily
             # have the same interfaces to handle types
             X = check_dtype_and_cast(
-                X,
-                "float32",
-                error_information="MiniCustomNeuralNetClassifier input",
+                X, "float32", error_information="MiniCustomNeuralNetClassifier input"
             )
             y = check_dtype_and_cast(
-                y,
-                "int64",
-                error_information="MiniCustomNeuralNetClassifier target",
+                y, "int64", error_information="MiniCustomNeuralNetClassifier target"
             )
             return super().fit(X, y, **fit_params)
 
@@ -418,7 +414,7 @@ def test_custom_net_classifier(load_data):
         ),
     ],
 )
-@pytest.mark.parametrize("container", ["numpy", "pandas", "torch"])
+@pytest.mark.parametrize("container", ["numpy", "pandas", "torch", "list"])
 def test_failure_bad_data_types(model_classes, container, bad_types, expected_error, load_data):
     """Check that training using data with unsupported dtypes raises an expected error."""
     for model_class in model_classes:

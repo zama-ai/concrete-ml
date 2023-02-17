@@ -1,22 +1,28 @@
 """Utils that can be re-used by other pieces of code in the module."""
 
+
 import string
 from functools import partial
 from types import FunctionType
-from typing import Callable, Dict, Iterable, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import numpy
 import onnx
 import torch
 from concrete.numpy.dtypes import Integer
 
+from ..common.check_inputs import check_array_and_assert
 from ..common.debugging import assert_true
 
 _VALID_ARG_CHARS = set(string.ascii_letters).union(str(i) for i in range(10)).union(("_",))
 
-SUPPORTED_TORCH_DTYPES = {
+
+SUPPORTED_FLOAT_TYPES = {
     "float64": torch.float64,
     "float32": torch.float32,
+}
+
+SUPPORTED_INT_TYPES = {
     "int64": torch.int64,
     "int32": torch.int32,
     "int16": torch.int16,
@@ -202,7 +208,7 @@ def get_model_name(model_class):
     return model_class.__name__
 
 
-def is_pandas_dataframe(input_container) -> bool:
+def is_pandas_dataframe(input_container: Any) -> bool:
     """Indicate if the input container is a Pandas DataFrame.
 
     This function is inspired from Scikit-Learn's test validation tools and avoids the need to add
@@ -218,7 +224,7 @@ def is_pandas_dataframe(input_container) -> bool:
     return hasattr(input_container, "dtypes") and hasattr(input_container.dtypes, "__array__")
 
 
-def is_pandas_series(input_container) -> bool:
+def is_pandas_series(input_container: Any) -> bool:
     """Indicate if the input container is a Pandas Series.
 
     This function is inspired from Scikit-Learn's test validation tools and avoids the need to add
@@ -234,7 +240,7 @@ def is_pandas_series(input_container) -> bool:
     return hasattr(input_container, "iloc") and hasattr(input_container, "dtype")
 
 
-def is_pandas_type(input_container) -> bool:
+def is_pandas_type(input_container: Any) -> bool:
     """Indicate if the input container is a Pandas DataFrame or Series.
 
     Args:
@@ -246,102 +252,105 @@ def is_pandas_type(input_container) -> bool:
     return is_pandas_dataframe(input_container) or is_pandas_series(input_container)
 
 
-def _get_dtype(values):
-    """Get the values' dtype.
+def _get_dtype(values: Any):
+    """Get a set of values' dtype in a string format to facilitate opetations between sets.
 
     Args:
-        values (Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]): The values
-            to consider
+        values (Any): The values to consider
 
     Returns:
-        Union[torch.dtype, numpy.dtype, List[torch.dtype, numpy.dtype]]: The values' dtype(s)
+        set[str]: The values' dtype(s) in string format.
+
+    Examples:
+        X_pandas = pandas.DataFrame([[1, 0.5, '1']])
+        X_tensor = torch.tensor([[12, 45, 747.00]])
+
+        >>> X_pandas.dtypes
+        0      int64
+        1    float64
+        2     object
+        dtype: object
+
+        >>> _get_dtype(X_pandas)
+        {'float64', 'int64', 'object'}
+
+        >>> X_tensor.dtype
+        torch.float32
+
+        >>> _get_dtype(X_tensor)
+        {'torch.float32'}
     """
-    # If the container is a pandas.DataFrame, retrieve all the different dtypes found in it
+    # Specific case: if `values` is a Dict, return all items in a string format and in a single set
+    if isinstance(values, Dict):
+        return set(map(str, sum(values.items(), ())))
+
+    # If the `values` is a pandas.DataFrame, retrieve all the different dtypes found in it
     if is_pandas_dataframe(values):
-        return list(set(values.dtypes))
+        return set(map(str, values.dtypes))
 
     # Note that numpy.ndarray, pandas.Series and torch.Tensor objects support the dtype attribute
-    return values.dtype
+    return set(map(str, (values.dtype,)))
 
 
-def _is_of_dtype(values, dtypes):
+def _is_of_dtype(values: Any, valid_dtypes: Dict) -> bool:
     """Indicate if the values' dtype(s) matches the given one(s).
 
     Args:
-        values (Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]): The values
-            to consider
-        dtypes (Union[str, List[str]]): The dtype(s) to consider.
+        values (Any): The values to consider.
+        valid_dtypes (Dict): The only dtype(s) to consider.
 
     Returns:
-        bool: If the values' dtype matches the given one. If several dtypes are given, indicates if
-            the values' dtype matches at least one of them.
+        bool: If the values' dtype(s) matche the given ones.
+
+    Examples:
+        values_types = _get_dtype(pandas.DataFrame([[1, 0.5, '1']]))
+        valid_dtypes = _get_dtype(SUPPORTED_INT_TYPE)
+
+        >>> values_types
+        {'float64', 'int64', 'object'}
+
+        >>> valid_dtypes
+        {'int16', 'int32', 'int64', 'int8', 'torch.int16',
+         'torch.int32', 'torch.int64', 'torch.int8'}
+
+        >>> values_types - valid_dtypes
+        {'float64', 'object'}
+        # The only supported types are integers, {'float64', 'object'} are not valid in this case.
+
     """
-    # Convert the dtype string to a list if only one is given
-    dtypes = [dtypes] if isinstance(dtypes, str) else dtypes
+    assert_true(isinstance(valid_dtypes, Dict))
 
-    matches = []
-    for dtype in dtypes:
-        # If the container is a pandas.DataFrame, check that is contains only one dtype in total
-        # and compare it to the given one
-        if is_pandas_dataframe(values):
-            matches.append(_get_dtype(values) == [dtype])
+    # Convert the list to numpy
+    if isinstance(values, list):
+        values = numpy.array(values)
 
-        # If the container is a torch.Tensor, check that the given dtype is expected and compare it
-        # to the given one using a dictionary mapping string dtypes to torch dtypes
-        elif isinstance(values, torch.Tensor):
-            matches.append(
-                dtype in SUPPORTED_TORCH_DTYPES
-                and _get_dtype(values) == SUPPORTED_TORCH_DTYPES[dtype]
-            )
+    # Get the values' types in string format + set type
+    values_types = _get_dtype(values)
+    valid_dtypes = _get_dtype(valid_dtypes)
 
-        # Else, if the container is a numpy.ndarray or pandas.Series, compare the value's dtype to
-        # the given one, knowing that pandas dtypes are subinstances of numpy.dtype objects, which
-        # can be compared to string dtypes (i.e. numpy.float64 == 'float64' is True)
-        else:
-            matches.append(_get_dtype(values) == dtype)
+    # All the elements in first set that are not present in the second set
+    uncommon_types = values_types - valid_dtypes
 
-    return any(matches)
+    return len(uncommon_types) == 0
 
 
-def _cast_to_dtype(values, dtype):
-    """Cast the values to the given dtype.
+# pylint: disable=unexpected-keyword-arg
+def check_dtype_and_cast(values: Any, expected_dtype: str, error_information: Optional[str] = ""):
+    """Convert any allowed type into an array and cast it if required.
+
+    If values types don't match with any supported type or the expected dtype, raise a ValueError.
 
     Args:
-        values (Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]): The values
-            to consider
-        dtype (str): The dtype to consider.
-
-    Returns:
-        Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]: The values casted to
-            the given dtype
-    """
-    # If the container is a torch.Tensor and if the given dtype is expected, cast the values to this
-    # dtype using a dictionary mapping string dtypes to torch dtypes
-    if isinstance(values, torch.Tensor) and dtype in SUPPORTED_TORCH_DTYPES:
-        return values.to(SUPPORTED_TORCH_DTYPES[dtype])
-
-    # Note that numpy.ndarray, pandas.Series and pandas.DataFrame objects support the astype method
-    return values.astype(dtype)
-
-
-def check_dtype_and_cast(values, expected_dtype, error_information=None):
-    """Check that the values' dtype(s) match(es) the given expected dtype.
-
-    If they don't match, cast the values to the expected dtype if possible, else raise a ValueError.
-
-    Args:
-        values (Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]): The values
-            to consider
+        values (Any): The values to consider
         expected_dtype (str): The expected dtype, either "float32" or "int64"
         error_information (str): Additional information to put in front of the error message when
             raising a ValueError. Default to None.
 
     Returns:
-        Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]: The values with
-            proper dtype.
+        (Union[numpy.ndarray, torch.utils.data.dataset.Subset]): The values with proper dtype.
 
     Raises:
-        ValueError: If the values' dtype don't match the expected one and casting is not possible.
+        ValueError: If the values' dtype don't match the expected one or casting is not possible.
     """
     # This case should not be handled here as this type appears when fitting a model (when calling
     # the predict_proba method), where inputs and targets already have the right dtypes
@@ -354,46 +363,32 @@ def check_dtype_and_cast(values, expected_dtype, error_information=None):
     )
 
     assert_true(
-        isinstance(values, (numpy.ndarray, torch.Tensor, list)) or is_pandas_type(values),
+        isinstance(values, (numpy.ndarray, torch.Tensor, List)) or is_pandas_type(values),
         "Unsupported type. Expected numpy.ndarray, pandas.DataFrame, pandas.Series, list "
         f"or torch.Tensor but got {type(values)}.",
     )
 
-    # Convert the list to a float32 torch tensor if it is X or an int64 tensor if it is y
-    if isinstance(values, list):
-        return _cast_to_dtype(torch.tensor(values), expected_dtype)
-
-    # Convert the Pandas dataframe or series to a NumPy array
-    if is_pandas_type(values) and _is_of_dtype(
-        values, ["float32", "float64", "int8", "int32", "int16", "int8"]
+    if (expected_dtype == "int64" and _is_of_dtype(values, SUPPORTED_INT_TYPES)) or (
+        expected_dtype == "float32" and _is_of_dtype(values, SUPPORTED_FLOAT_TYPES)
     ):
-        values = values.to_numpy()
+        # If the expected dtype is an int64 and the values are integers of lower precision, we can
+        # safely cast them to int64
+        # If the expected dtype is a float32 and the values are float64, we chose to cast them to
+        # float32 in order to give the user more flexibility. This should not have a great impact on
+        # the models' performances
+        values = check_array_and_assert(values, ensure_2d=False)
+        values = values.astype(expected_dtype)
 
-    # If the expected dtype is an int64 and the values are integers of lower precision, we can
-    # safely cast them to int64
-    if expected_dtype == "int64" and _is_of_dtype(values, ["int32", "int16", "int8"]):
-        return _cast_to_dtype(values, expected_dtype)
-
-    # If the expected dtype is a float32 and the values are float64, we chose to cast them to
-    # float32 in order to give the user more flexibility. This should not have a great impact on
-    # the models' performances
-    if expected_dtype == "float32" and _is_of_dtype(values, "float64"):
-        return _cast_to_dtype(values, expected_dtype)
-
-    # Else, if the values' dtype doesn't match the expected one, raise an error
-    if not _is_of_dtype(values, expected_dtype):
+    else:
+        # Else, if the values' dtype doesn't match the expected one, raise an error
         error_message = (
-            "dtype does not match the expected dtype and values cannot be properly casted "
-            f"using that latter. Expected dtype {expected_dtype} and got {_get_dtype(values)} "
-            f"with type {type(values)}."
+            f"{error_information} dtype does not match the expected dtype and values cannot be "
+            f"properly casted using that latter. Expected dtype {expected_dtype} and got "
+            f"{_get_dtype(values)} with type {type(values)}."
         )
-
-        if error_information is not None:
-            error_message = error_information + " " + error_message
 
         raise ValueError(error_message)
 
-    # Return the values if their dtype matches the expected one
     return values
 
 

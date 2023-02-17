@@ -13,7 +13,7 @@ from ..common.debugging.custom_assert import assert_true
 # pylint: disable=invalid-name
 
 
-def check_array_and_assert(X):
+def check_array_and_assert(X, *args, **kwargs):
     """sklearn.utils.check_array with an assert.
 
     Equivalent of sklearn.utils.check_array, with a final assert that the type is one which
@@ -21,14 +21,13 @@ def check_array_and_assert(X):
 
     Args:
         X (object): Input object to check / convert
+        *args: The arguments to pass to check_array
+        **kwargs: The keyword arguments to pass to check_array
 
     Returns:
         The converted and validated array
     """
-    if isinstance(X, list):
-        X = sklearn.utils.check_array(X, ensure_2d=False)
-    else:
-        X = sklearn.utils.check_array(X)
+    X = sklearn.utils.check_array(X, *args, **kwargs)
     assert_true(isinstance(X, numpy.ndarray), f"wrong type {type(X)}")
     return X
 
@@ -49,10 +48,7 @@ def check_X_y_and_assert(X, y, *args, **kwargs):
         The converted and validated arrays
     """
 
-    if isinstance(X, list):
-        X, y = sklearn.utils.check_X_y(X, y, ensure_2d=False, *args, **kwargs)
-    else:
-        X, y = sklearn.utils.check_X_y(X, y, *args, **kwargs)
+    X, y = sklearn.utils.check_X_y(X, y, *args, **kwargs)
     assert_true(isinstance(X, numpy.ndarray), f"wrong type {type(X)}")
     assert_true(isinstance(y, numpy.ndarray), f"wrong type {type(y)}")
     return X, y

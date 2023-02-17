@@ -349,7 +349,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
                 " please call .fit() first!"
             )
 
-        # Cast pandas or torch to numpy
+        # Cast pandas, list or torch to numpy
         X = check_array_and_assert(X)
 
         # Quantize the compilation input set using the quantization parameters computed in .fit()
@@ -1332,7 +1332,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
             self.input_quantizers
         ), "The model is not fitted. Please run fit(...) on proper arguments first."
 
-        # Cast pandas or torch to numpy
+        # Cast pandas, list or torch to numpy
         X = check_array_and_assert(X)
 
         # Quantize the inputs
