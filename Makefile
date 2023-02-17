@@ -793,3 +793,7 @@ pytest_pip_cml:
 .PHONY: clean_pycache # Clean __pycache__ directories
 clean_pycache:
 	find . -type f -name '*.py[co]' -delete -o -type d -name __pycache__ -delete
+
+.PHONY: clean_sklearn_cache # Clean sklearn cache directories, eg for benchmarks
+clean_sklearn_cache:
+	rm -rf ~/scikit_learn_data
