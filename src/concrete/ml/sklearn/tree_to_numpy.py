@@ -1,6 +1,6 @@
 """Implements the conversion of a tree model to a numpy function."""
 import warnings
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Tuple
 
 import numpy
 import onnx
@@ -250,7 +250,7 @@ def tree_to_numpy(
     model: Callable,
     x: numpy.ndarray,
     framework: str,
-    output_n_bits: Optional[int] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
@@ -259,7 +259,7 @@ def tree_to_numpy(
         x (numpy.ndarray): The input data.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
-        output_n_bits (int): The number of bits of the output.
+        output_n_bits (int): The number of bits of the output. Default to 8.
 
     Returns:
         Tuple[Callable, List[QuantizedArray], onnx.ModelProto]: A tuple with a function that takes a

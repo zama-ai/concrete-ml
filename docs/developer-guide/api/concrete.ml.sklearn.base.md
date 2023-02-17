@@ -12,7 +12,7 @@ Module that contains base classes for our libraries estimators.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1585"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_models`
 
@@ -27,7 +27,7 @@ the lists of models in Concrete-ML
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1612"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_linear_models`
 
@@ -52,7 +52,7 @@ the lists of linear models in Concrete-ML
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1657"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1630"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_tree_models`
 
@@ -77,7 +77,7 @@ the lists of tree models in Concrete-ML
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1675"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1648"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_neural_net_models`
 
@@ -106,11 +106,85 @@ ______________________________________________________________________
 
 ## <kbd>class</kbd> `BaseEstimator`
 
-For all estimators in Concrete-ML.
+Base class for all estimators in Concrete-ML.
+
+This class does not inherit from sklearn.base.BaseEstimator as it creates some conflicts with Skorch in QuantizedTorchEstimatorMixin's subclasses (more specifically, the `get_params` method is not properly inherited).
+
+**Attributes:**
+
+- <b>`_is_a_public_cml_model`</b> (bool):  Private attribute indicating if the class is a public model  (as opposed to base or mixin classes).
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__()
+```
+
+Initialize the base class with common attributes used in all estimators.
+
+An underscore "\_" is appended to attributes that were created while fitting the model. This is done in order to follow Scikit-Learn's standard format. More information available in their documentation: https://scikit-learn.org/stable/developers/develop.html#:~:text=Estimated%20Attributes%C2%B6
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> onnx_model
+
+Get the ONNX model.
+
+Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -132,7 +206,29 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -144,7 +240,7 @@ Apply post-processing to the dequantized predictions.
 
 This post-processing step can include operations such as applying the sigmoid or softmax function for classifiers, or summing an ensemble's outputs. These steps are done in the clear because of current technical constraints. They most likely will be integrated in the FHE computations in the future.
 
-For some simple models such a linear regression, there is no post-processing step but the method is kept to make the API consistent for the client-server API.
+For some simple models such a linear regression, there is no post-processing step but the method is kept to make the API consistent for the client-server API. Other models might need to use attributes stored in `post_processing_params`.
 
 **Args:**
 
@@ -156,7 +252,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -178,15 +274,13 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedTorchEstimatorMixin`
 
 Mixin that provides quantization for a torch module and follows the Estimator API.
 
-This class should be mixed in with another that provides the full Estimator API. This class only provides modifiers for .fit() (with quantization) and .predict() (optionally in FHE)
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -210,27 +304,15 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> fhe_circuit
 
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
 ______________________________________________________________________
 
 #### <kbd>property</kbd> input_quantizers
 
-Get the input quantizers.
+Get the input quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[Quantizer]`</b>:  the input quantizers
-
-______________________________________________________________________
-
-#### <kbd>property</kbd> n_bits_quant
-
-Get the number of quantization bits.
+- <b>`List[UniformQuantizer]`</b>:  The input quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
@@ -238,25 +320,57 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`_onnx_model_`</b> (onnx.ModelProto):  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> output_quantizers
 
-Get the input quantizers.
+Get the output quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The output quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -290,35 +404,19 @@ Compile the model.
 
 - <b>`Circuit`</b>:  the compiled Circuit.
 
-**Raises:**
-
-- <b>`ValueError`</b>:  if called before the model is trained
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
 ```python
-dequantize_output(q_y_preds: ndarray) → ndarray
+dequantize_output(q_y_preds: ndarray)
 ```
-
-Dequantize the output.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`q_y_preds`</b> (numpy.ndarray):  The quantized output values to dequantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The dequantized output values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -342,7 +440,7 @@ If the module was already initialized, by calling fit, the module will be re-ini
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L597"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -368,23 +466,29 @@ This function returns both the quantized estimator (itself) as well as its non-q
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L184"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>method</kbd> `get_params_for_benchmark`
+### <kbd>method</kbd> `get_sklearn_params`
 
 ```python
-get_params_for_benchmark()
+get_sklearn_params(deep=True)
 ```
 
-Get the parameters to instantiate the sklearn estimator trained by the child class.
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
 
 **Returns:**
 
-- <b>`params`</b> (dict):  dictionary with parameters that will initialize a new Estimator
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -408,7 +512,7 @@ Apply post-processing to the dequantized predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L531"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -431,7 +535,7 @@ Predicts using the quantized clear or FHE classifier
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L508"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -452,43 +556,27 @@ Predicts using the quantized clear or FHE classifier
 
 - <b>`y_pred `</b>:  numpy ndarray with probabilities (if applicable)
 
-**Raises:**
-
-- <b>`ValueError`</b>:  if the estimator was not yet trained or compiled
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L320"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
 ```python
-quantize_input(X: ndarray) → ndarray
+quantize_input(X: ndarray)
 ```
-
-Quantize the input.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input values to quantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The quantized input values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L660"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L675"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeEstimatorMixin`
 
 Mixin class for tree-based estimators.
 
-A place to share methods that are used on all tree-based estimators.
+This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's `get_params` and `set_params` methods.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L686"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L696"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -500,7 +588,19 @@ Initialize the TreeBasedEstimatorMixin.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  number of bits used for quantization
+- <b>`n_bits`</b> (int):  Number of bits used for quantization.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
 
 ______________________________________________________________________
 
@@ -508,15 +608,47 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`onnx.ModelProto`</b>:  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L889"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -552,29 +684,17 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
 ```python
-dequantize_output(q_y_preds: ndarray) → ndarray
+dequantize_output(q_y_preds: ndarray)
 ```
-
-Dequantize the output.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`q_y_preds`</b> (numpy.ndarray):  The quantized output values to dequantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The dequantized output values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L731"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L734"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -624,7 +744,29 @@ Tuple\[ConcreteEstimators, SklearnEstimators\]:  The FHE and sklearn tree-based 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L957"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -634,7 +776,7 @@ post_processing(y_preds: ndarray) → ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L857"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L849"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -655,37 +797,25 @@ Predict values for X.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
 ```python
-quantize_input(X: ndarray) → ndarray
+quantize_input(X: ndarray)
 ```
-
-Quantize the input.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input values to quantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The quantized input values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L981"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L966"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeRegressorMixin`
 
 Mixin class for tree-based regressors.
 
-A place to share methods that are used on all tree-based regressors.
+This class is used to created a tree-based regressor class that inherits from sklearn.base.RegressorMixin, which essentially gives access to Scikit-Learn's `score` method for regressors.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L686"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L696"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -697,7 +827,19 @@ Initialize the TreeBasedEstimatorMixin.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  number of bits used for quantization
+- <b>`n_bits`</b> (int):  Number of bits used for quantization.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
 
 ______________________________________________________________________
 
@@ -705,15 +847,47 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`onnx.ModelProto`</b>:  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L889"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -749,29 +923,17 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
 ```python
-dequantize_output(q_y_preds: ndarray) → ndarray
+dequantize_output(q_y_preds: ndarray)
 ```
-
-Dequantize the output.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`q_y_preds`</b> (numpy.ndarray):  The quantized output values to dequantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The dequantized output values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L731"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L734"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -821,7 +983,29 @@ Tuple\[ConcreteEstimators, SklearnEstimators\]:  The FHE and sklearn tree-based 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L957"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -831,7 +1015,7 @@ post_processing(y_preds: ndarray) → ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L857"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L849"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -852,37 +1036,27 @@ Predict values for X.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
 ```python
-quantize_input(X: ndarray) → ndarray
+quantize_input(X: ndarray)
 ```
-
-Quantize the input.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input values to quantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The quantized input values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L997"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L975"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeClassifierMixin`
 
 Mixin class for tree-based classifiers.
 
-A place to share methods that are used on all tree-based classifiers.
+This class is used to created a tree-based classifier class that inherits from sklearn.base.ClassifierMixin, which essentially gives access to Scikit-Learn's `score` method for classifiers.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L686"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+Additionally, this class adjusts some of the tree-based base class's methods in order to make them compliant with classification workflows.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L696"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -894,7 +1068,19 @@ Initialize the TreeBasedEstimatorMixin.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  number of bits used for quantization
+- <b>`n_bits`</b> (int):  Number of bits used for quantization.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
 
 ______________________________________________________________________
 
@@ -902,15 +1088,47 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`onnx.ModelProto`</b>:  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L889"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L880"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -946,29 +1164,17 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
 ```python
-dequantize_output(q_y_preds: ndarray) → ndarray
+dequantize_output(q_y_preds: ndarray)
 ```
-
-Dequantize the output.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`q_y_preds`</b> (numpy.ndarray):  The quantized output values to dequantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The dequantized output values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1007"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L990"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1018,7 +1224,29 @@ Tuple\[ConcreteEstimators, SklearnEstimators\]:  The FHE and sklearn tree-based 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L972"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L957"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1028,7 +1256,7 @@ post_processing(y_preds: ndarray) → ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1040"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1023"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1049,7 +1277,7 @@ Predict the class with highest probability.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1064"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1049"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -1070,40 +1298,30 @@ Predict the probability.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
 ```python
-quantize_input(X: ndarray) → ndarray
+quantize_input(X: ndarray)
 ```
-
-Quantize the input.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input values to quantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The quantized input values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1078"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1065"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearModelMixin`
 
 A Mixin class for sklearn linear models with FHE.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1093"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's `get_params` and `set_params` methods.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1088"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(*args, n_bits: Union[int, Dict[str, int]] = 8, **kwargs)
+__init__(n_bits: Union[int, Dict[str, int]] = 8)
 ```
 
 Initialize the FHE linear model.
@@ -1113,12 +1331,66 @@ Initialize the FHE linear model.
 - <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
   \- op_inputs : number of bits to quantize the input values
   \- op_weights: number of bits to quantize the learned parameters  Default to 8.
-- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.
-- <b>`**kwargs`</b>:  The keyword arguments to pass to the sklearn linear model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1468"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> onnx_model
+
+Get the ONNX model.
+
+Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clean_graph`
 
@@ -1132,7 +1404,7 @@ This will remove the Cast node in the model's onnx.graph since they have no use 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1168,7 +1440,7 @@ Compile the FHE linear model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1176,21 +1448,9 @@ ______________________________________________________________________
 dequantize_output(q_y_preds: ndarray) → ndarray
 ```
 
-Dequantize the output.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`q_y_preds`</b> (numpy.ndarray):  The quantized output values to dequantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The dequantized output values.
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1212,7 +1472,7 @@ Any
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1241,7 +1501,29 @@ Tuple\[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression\]:  The FH
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1253,7 +1535,7 @@ Apply post-processing to the dequantized predictions.
 
 This post-processing step can include operations such as applying the sigmoid or softmax function for classifiers, or summing an ensemble's outputs. These steps are done in the clear because of current technical constraints. They most likely will be integrated in the FHE computations in the future.
 
-For some simple models such a linear regression, there is no post-processing step but the method is kept to make the API consistent for the client-server API.
+For some simple models such a linear regression, there is no post-processing step but the method is kept to make the API consistent for the client-server API. Other models might need to use attributes stored in `post_processing_params`.
 
 **Args:**
 
@@ -1265,7 +1547,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1368"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1288,40 +1570,30 @@ Predict on user data using either the quantized clear model, implemented with te
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1397"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
 ```python
-quantize_input(X: ndarray) → ndarray
+quantize_input(X: ndarray)
 ```
-
-Quantize the input.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input values to quantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The quantized input values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1512"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1468"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `SklearnLinearClassifierMixin`
+## <kbd>class</kbd> `SklearnLineaRegressorMixin`
 
-A Mixin class for sklearn linear classifiers with FHE.
+A Mixin class for sklearn linear regressors with FHE.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1093"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+This class is used to created a linear regressor class that inherits from sklearn.base.RegressorMixin, which essentially gives access to Scikit-Learn's `score` method for regressors.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1088"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(*args, n_bits: Union[int, Dict[str, int]] = 8, **kwargs)
+__init__(n_bits: Union[int, Dict[str, int]] = 8)
 ```
 
 Initialize the FHE linear model.
@@ -1331,12 +1603,66 @@ Initialize the FHE linear model.
 - <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
   \- op_inputs : number of bits to quantize the input values
   \- op_weights: number of bits to quantize the learned parameters  Default to 8.
-- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.
-- <b>`**kwargs`</b>:  The keyword arguments to pass to the sklearn linear model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> onnx_model
+
+Get the ONNX model.
+
+Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `clean_graph`
 
@@ -1346,11 +1672,11 @@ clean_graph()
 
 Clean the graph of the onnx model.
 
-Any operators following gemm, including the sigmoid, softmax and argmax operators, are removed from the graph. They will be executed in clear in the post-processing method.
+This will remove the Cast node in the model's onnx.graph since they have no use in quantized or FHE models.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1386,28 +1712,7 @@ Compile the FHE linear model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1531"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `decision_function`
-
-```python
-decision_function(X: ndarray, execute_in_fhe: bool = False) → ndarray
-```
-
-Predict confidence scores for samples.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  Samples to predict.
-- <b>`execute_in_fhe`</b> (bool):  If True, the inference will be executed in FHE. Default to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  Confidence scores for samples.
-
-______________________________________________________________________
-
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1415,21 +1720,9 @@ ______________________________________________________________________
 dequantize_output(q_y_preds: ndarray) → ndarray
 ```
 
-Dequantize the output.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`q_y_preds`</b> (numpy.ndarray):  The quantized output values to dequantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The dequantized output values.
-
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1451,7 +1744,7 @@ Any
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1480,7 +1773,324 @@ Tuple\[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression\]:  The FH
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1515"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `post_processing`
+
+```python
+post_processing(y_preds: ndarray) → ndarray
+```
+
+Apply post-processing to the dequantized predictions.
+
+This post-processing step can include operations such as applying the sigmoid or softmax function for classifiers, or summing an ensemble's outputs. These steps are done in the clear because of current technical constraints. They most likely will be integrated in the FHE computations in the future.
+
+For some simple models such a linear regression, there is no post-processing step but the method is kept to make the API consistent for the client-server API. Other models might need to use attributes stored in `post_processing_params`.
+
+**Args:**
+
+- <b>`y_preds`</b> (numpy.ndarray):  The dequantized predictions to post-process.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  The post-processed predictions.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `predict`
+
+```python
+predict(X: ndarray, execute_in_fhe: bool = False) → ndarray
+```
+
+Predict on user data.
+
+Predict on user data using either the quantized clear model, implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
+
+**Args:**
+
+- <b>`X`</b> (numpy.ndarray):  The input data
+- <b>`execute_in_fhe`</b> (bool):  Whether to execute the inference in FHE
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  The prediction as ordinals
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1397"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `quantize_input`
+
+```python
+quantize_input(X: ndarray)
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1477"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `SklearnLinearClassifierMixin`
+
+A Mixin class for sklearn linear classifiers with FHE.
+
+This class is used to created a linear classifier class that inherits from sklearn.base.ClassifierMixin, which essentially gives access to Scikit-Learn's `score` method for classifiers.
+
+Additionally, this class adjusts some of the tree-based base class's methods in order to make them compliant with classification workflows.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1088"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(n_bits: Union[int, Dict[str, int]] = 8)
+```
+
+Initialize the FHE linear model.
+
+**Args:**
+
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> onnx_model
+
+Get the ONNX model.
+
+Is None if the model was not fitted.
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted()
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1548"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `clean_graph`
+
+```python
+clean_graph()
+```
+
+Clean the graph of the onnx model.
+
+Any operators following gemm, including the sigmoid, softmax and argmax operators, are removed from the graph. They will be executed in clear in the post-processing method.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `compile`
+
+```python
+compile(
+    X: ndarray,
+    configuration: Optional[Configuration] = None,
+    compilation_artifacts: Optional[DebugArtifacts] = None,
+    show_mlir: bool = False,
+    use_virtual_lib: bool = False,
+    p_error: Optional[float] = None,
+    global_p_error: Optional[float] = None,
+    verbose_compilation: bool = False
+) → Circuit
+```
+
+Compile the FHE linear model.
+
+**Args:**
+
+- <b>`X`</b> (numpy.ndarray):  The input data.
+- <b>`configuration`</b> (Optional\[Configuration\]):  Configuration object  to use during compilation
+- <b>`compilation_artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts object to fill during  compilation
+- <b>`show_mlir`</b> (bool):  If set, the MLIR produced by the converter and which is  going to be sent to the compiler backend is shown on the screen, e.g., for debugging  or demo. Defaults to False.
+- <b>`use_virtual_lib`</b> (bool):  Whether to compile using the virtual library that allows higher  bitwidths with simulated FHE computation. Defaults to False
+- <b>`p_error`</b> (Optional\[float\]):  Probability of error of a single PBS
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not  simulated by the VL, i.e., taken as 0
+- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The compiled Circuit.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1504"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `decision_function`
+
+```python
+decision_function(X: ndarray, execute_in_fhe: bool = False) → ndarray
+```
+
+Predict confidence scores for samples.
+
+**Args:**
+
+- <b>`X`</b> (numpy.ndarray):  Samples to predict.
+- <b>`execute_in_fhe`</b> (bool):  If True, the inference will be executed in FHE. Default to False.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  Confidence scores for samples.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dequantize_output`
+
+```python
+dequantize_output(q_y_preds: ndarray) → ndarray
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `fit`
+
+```python
+fit(X, y: ndarray, *args, **kwargs) → Any
+```
+
+Fit the FHE linear model.
+
+**Args:**
+
+- <b>`X `</b>:  Training data  By default, you should be able to pass:  * numpy arrays  * torch tensors  * pandas DataFrame or Series
+- <b>`y`</b> (numpy.ndarray):  The target data.
+- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.
+- <b>`**kwargs`</b>:  The keyword arguments to pass to the sklearn linear model.
+
+**Returns:**
+Any
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `fit_benchmark`
+
+```python
+fit_benchmark(
+    X: ndarray,
+    y: ndarray,
+    *args,
+    random_state: Optional[int] = None,
+    **kwargs
+) → Tuple[Any, Any]
+```
+
+Fit the sklearn linear model and the FHE linear model.
+
+**Args:**
+
+- <b>`X`</b> (numpy.ndarray):  The input data.
+- <b>`y`</b> (numpy.ndarray):  The target data. random_state (Optional\[Union\[int, numpy.random.RandomState, None\]\]):  The random state. Defaults to None.
+- <b>`*args`</b>:  The arguments to pass to the sklearn linear model.  or not (False). Default to False.
+- <b>`*args`</b>:  Arguments for super().fit
+- <b>`**kwargs`</b>:  Keyword arguments for super().fit
+
+**Returns:**
+Tuple\[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression\]:  The FHE and sklearn LinearRegression.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L173"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep=True)
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1488"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1490,7 +2100,7 @@ post_processing(y_preds: ndarray)
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1531"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1513,7 +2123,7 @@ Predict on user data using either the quantized clear model, implemented with te
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1544"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1517"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -1534,22 +2144,10 @@ Predict class probabilities for samples.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L95"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/base.py#L1397"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
 ```python
-quantize_input(X: ndarray) → ndarray
+quantize_input(X: ndarray)
 ```
-
-Quantize the input.
-
-This step ensures that the fit method has been called.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input values to quantize.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The quantized input values.

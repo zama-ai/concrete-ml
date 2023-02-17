@@ -80,6 +80,16 @@ class QuantizedModule:
         ordered_module_output_names: Iterable[str] = None,
         quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]] = None,
     ):
+        # Set base attributes for API consistency. This could be avoided if an abstract base class
+        # is created for both Concrete-ML models and QuantizedModule
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
+        self._is_compiled = False
+        self.forward_fhe = None
+        self.input_quantizers = []
+        self.output_quantizers = []
+        self._onnx_model = None
+        self._post_processing_params: Dict[str, Any] = {}
+
         # If any of the arguments are not provided, skip the init
         if not all([ordered_module_input_names, ordered_module_output_names, quant_layers_dict]):
             return
@@ -100,12 +110,7 @@ class QuantizedModule:
 
         assert quant_layers_dict is not None
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
-        self._is_compiled = False
-        self.forward_fhe = None
-        self.input_quantizers = []
         self.output_quantizers = self._set_output_quantizers()
-        self._onnx_model = None
-        self._post_processing_params: Dict[str, Any] = {}
 
     @property
     def is_compiled(self) -> bool:
@@ -115,6 +120,18 @@ class QuantizedModule:
             bool: the compiled status of the module.
         """
         return self._is_compiled
+
+    def check_model_is_compiled(self):
+        """Check if the quantized module is compiled.
+
+        Raises:
+            AttributeError: If the quantized module is not compiled.
+        """
+        if not self._is_compiled:
+            raise AttributeError(
+                "The quantized module is not compiled. Please run compile(...) first before "
+                "executing it in FHE."
+            )
 
     @property
     def fhe_circuit(self) -> Circuit:
@@ -264,9 +281,9 @@ class QuantizedModule:
         """
 
         n_qinputs = len(self.input_quantizers)
-        n_qvalues = len(qvalues) == n_qinputs
+        n_qvalues = len(qvalues)
         assert_true(
-            n_qvalues,
+            n_qvalues == n_qinputs,
             f"Got {n_qvalues} inputs, expected {n_qinputs}",
             TypeError,
         )
@@ -339,9 +356,9 @@ class QuantizedModule:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) values.
         """
         n_qinputs = len(self.input_quantizers)
-        n_values = len(values) == n_qinputs
+        n_values = len(values)
         assert_true(
-            n_values,
+            n_values == n_qinputs,
             f"Got {n_values} inputs, expected {n_qinputs}",
             TypeError,
         )

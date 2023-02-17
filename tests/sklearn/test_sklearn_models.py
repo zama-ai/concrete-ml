@@ -27,6 +27,8 @@ Are currently missing
 More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
+# pylint: disable=too-many-lines
+
 import warnings
 from typing import Any, Dict, List
 
@@ -574,6 +576,68 @@ def check_hyper_parameters(
             )
 
 
+def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
+    """Check that methods that require the model to be compiled or fitted raise proper errors."""
+
+    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    # Quantizing inputs with an untrained model should not be possible
+    with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+        model.quantize_input(x)
+
+    # Quantizing outputs with an untrained model should not be possible
+    with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+        model.dequantize_output(x)
+
+    # Compiling an untrained model should not be possible
+    with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+        model.compile(x)
+
+    # Predicting in FHE using an untrained model should not be possible
+    with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+        model.predict(x, execute_in_fhe=True)
+
+    # Predicting in clear using an untrained model should not be possible for linear and
+    # tree-based models
+    if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+            model.predict(x)
+
+    if is_classifier(model_class):
+        # Predicting probabilities using an untrained linear or tree-based classifier should not
+        # be possible
+        if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+            with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+                model.predict_proba(x)
+
+        # Predicting probabilities in FHE using an untrained QNN classifier should not be possible
+        else:
+            with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+                model.predict_proba(x, execute_in_fhe=True)
+
+        if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
+            # Computing the decision function using an untrained classifier should not be possible
+            with pytest.raises(AttributeError, match=".* model is not fitted.*"):
+                model.decision_function(x)
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    # Predicting in FHE using a trained model that is not compiled should not be possible
+    with pytest.raises(AttributeError, match=".* model is not compiled.*"):
+        model.predict(x, execute_in_fhe=True)
+
+    # Predicting probabilities in FHE using a trained QNN classifier that is not compiled should
+    # not be possible
+    if is_classifier(model_class) and is_model_class_in_a_list(
+        model_class, get_sklearn_neural_net_models()
+    ):
+        with pytest.raises(AttributeError, match=".* model is not compiled.*"):
+            model.predict_proba(x, execute_in_fhe=True)
+
+
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -930,3 +994,22 @@ def test_predict_correctness(
             # Check that the output shape is correct
             assert y_pred_fhe.shape == y_pred.shape
             assert numpy.array_equal(y_pred_fhe, y_pred)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_fitted_compiled_error_raises(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test Fit and Compile error raises."""
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    if verbose:
+        print("Run fitted_compiled_error_raises")
+
+    check_fitted_compiled_error_raises(model_class, n_bits, x, y)

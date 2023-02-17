@@ -195,10 +195,7 @@ class FHEModelDev:
                 f"path_dir: {self.path_dir} is not empty."
                 "Please delete it before saving a new model."
             )
-        assert_true(
-            hasattr(self.model, "fhe_circuit"),
-            "The model must be compiled and have a fhe_circuit object",
-        )
+        self.model.check_model_is_compiled()
 
         # Model must be compiled with jit=False
         # In a jit model, everything is in memory so it is not serializable.

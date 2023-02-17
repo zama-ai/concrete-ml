@@ -16,6 +16,7 @@ from concrete.ml.common.utils import get_model_name
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
+from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.torch.compile import compile_torch_model
 
 # pylint: disable=too-many-statements
@@ -92,13 +93,17 @@ def test_client_server_sklearn(
 
     _, model = instantiate_model_generic(model_class, n_bits=n_bits)
 
+    # Fit the model
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-        # Fit the model
         model.fit(x_train, y_train)
 
     # Compile
     extra_params = {"global_p_error": 1 / 100_000}
+
+    # Running the simulation using a model that is not compiled should not be possible
+    with pytest.raises(AttributeError, match=".* model is not compiled.*"):
+        client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
 
     fhe_circuit = model.compile(
         x_train, default_configuration_no_jit, **extra_params, show_mlir=True
@@ -119,6 +124,14 @@ def test_client_server_custom_model(
 
     # Generate random data
     x_train, x_test = numpy.random.rand(100, 2), numpy.random.rand(1, 2)
+
+    # Running the simulation using a QuantizedModule that is not compiled should not be possible
+    with pytest.raises(AttributeError, match=".* quantized module is not compiled.*"):
+        # Instantiate an empty QuantizedModule object
+        quantized_module = QuantizedModule()
+
+        client_server_simulation(x_train, x_test, quantized_module, default_configuration_no_jit)
+
     torch_model = FCSmall(2, nn.ReLU)
     n_bits = 2
 

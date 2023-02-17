@@ -59,7 +59,83 @@ _NEURALNET_MODELS: Set[Type] = set()
 
 
 class BaseEstimator:
-    """For all estimators in Concrete-ML."""
+    """Base class for all estimators in Concrete-ML.
+
+    This class does not inherit from sklearn.base.BaseEstimator as it creates some conflicts
+    with Skorch in QuantizedTorchEstimatorMixin's subclasses (more specifically, the `get_params`
+    method is not properly inherited).
+
+    Attributes:
+        _is_a_public_cml_model (bool): Private attribute indicating if the class is a public model
+            (as opposed to base or mixin classes).
+    """
+
+    input_quantizers: List[UniformQuantizer]
+    output_quantizers: List[UniformQuantizer]
+    fhe_circuit_: Optional[Circuit]
+    onnx_model_: Optional[onnx.ModelProto]
+    post_processing_params: Dict[str, Any]
+    _is_a_public_cml_model: bool = False
+
+    def __init__(self):
+        """Initialize the base class with common attributes used in all estimators.
+
+        An underscore "_" is appended to attributes that were created while fitting the model. This
+        is done in order to follow Scikit-Learn's standard format. More information available
+        in their documentation:
+        https://scikit-learn.org/stable/developers/develop.html#:~:text=Estimated%20Attributes%C2%B6
+        """
+        #: input_quantizers (List[UniformQuantizer]): List of quantizers, which contain all
+        #: information necessary for applying uniform quantization to inputs and provide
+        #: quantization/dequantization functionalities. Is empty if the model was not fitted
+        self.input_quantizers = []
+
+        #: output_quantizers (List[UniformQuantizer]): List of quantizers, which contain all
+        #: information necessary for applying uniform quantization to outputs and provide
+        #: quantization/dequantization functionalities. Is empty if the model was not fitted
+        self.output_quantizers = []
+
+        #: post_processing_params (Dict[str, Any]): Parameters needed for post-processing the
+        #: outputs. Can be empty if no post-processing operations are needed for the
+        #: associated model
+        self.post_processing_params = {}
+
+        self.fhe_circuit_ = None
+        self.onnx_model_ = None
+
+    @property
+    def onnx_model(self) -> Optional[onnx.ModelProto]:
+        """Get the ONNX model.
+
+        Is None if the model was not fitted.
+
+        Returns:
+            onnx.ModelProto: The ONNX model.
+        """
+        return self.onnx_model_
+
+    @property
+    def fhe_circuit(self) -> Optional[Circuit]:
+        """Get the FHE circuit.
+
+        The FHE circuit combines computational graph, mlir, client and server into a single object.
+        More information available in Concrete-Numpy documentation:
+        https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology
+        Is None if the model was not fitted.
+
+        Returns:
+            Circuit: The FHE circuit.
+        """
+        return self.fhe_circuit_
+
+    @fhe_circuit.setter
+    def fhe_circuit(self, value: Circuit):
+        """Set the FHE circuit.
+
+        Args:
+            value (Circuit): The FHE circuit to set.
+        """
+        self.fhe_circuit_ = value
 
     @property
     @abstractmethod
@@ -70,28 +146,55 @@ class BaseEstimator:
             bool: If the model is fitted.
         """
 
-    @abstractmethod
-    def _quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
-        """Quantize the input.
+    def check_model_is_fitted(self):
+        """Check if the model is fitted.
+
+        Raises:
+            AttributeError: If the model is not fitted.
+        """
+        if not self._is_fitted:
+            raise AttributeError(
+                f"The {self.__class__.__name__} model is not fitted. "
+                "Please run fit(...) on proper arguments first.",
+            )
+
+    def check_model_is_compiled(self):
+        """Check if the model is compiled.
+
+        Raises:
+            AttributeError: If the model is not compiled.
+        """
+        if self.fhe_circuit is None:
+            raise AttributeError(
+                f"The {self.__class__.__name__} model is not compiled. "
+                "Please run compile(...) first before executing the prediction in FHE."
+            )
+
+    def get_sklearn_params(self, deep=True):
+        """Get parameters for this estimator.
+
+        This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's
+        parameters. It does not override Scikit-Learn's existing `get_params` method in order to
+        not break its implementation of `set_params`.
 
         Args:
-            X (numpy.ndarray): The input values to quantize.
+            deep (bool): If True, will return the parameters for this estimator and contained
+                subobjects that are estimators. Default to True.
 
         Returns:
-            numpy.ndarray: The quantized input values.
+            params (dict): Parameter names mapped to their values.
         """
+        # Pylint doesn't properly handle classes mixed with classes from a different file
+        # Here, the `get_params` method is the `BaseEstimator.get_params` method from Scikit-Learn
+        # pylint: disable-next=no-member
+        params = super().get_params(deep=deep)
+
+        # Remove the n_bits parameters as this attribute is added by Concrete-ML
+        params.pop("n_bits", None)
+
+        return params
 
     @abstractmethod
-    def _dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Dequantize the output.
-
-        Args:
-            q_y_preds (numpy.ndarray): The quantized output values to dequantize.
-
-        Returns:
-            numpy.ndarray: The dequantized output values.
-        """
-
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
         """Quantize the input.
 
@@ -103,13 +206,8 @@ class BaseEstimator:
         Returns:
             numpy.ndarray: The quantized input values.
         """
-        assert_true(
-            self._is_fitted,
-            f"The {self.__class__.__name__} model is not fitted."
-            "Please run fit(...) on proper arguments first.",
-        )
-        return self._quantize_input(X)
 
+    @abstractmethod
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         """Dequantize the output.
 
@@ -121,12 +219,6 @@ class BaseEstimator:
         Returns:
             numpy.ndarray: The dequantized output values.
         """
-        assert_true(
-            self._is_fitted,
-            f"The {self.__class__.__name__} model is not fitted."
-            "Please run fit(...) on proper arguments first.",
-        )
-        return self._dequantize_output(q_y_preds)
 
     # pylint: disable-next=no-self-use
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -138,7 +230,8 @@ class BaseEstimator:
         FHE computations in the future.
 
         For some simple models such a linear regression, there is no post-processing step but the
-        method is kept to make the API consistent for the client-server API.
+        method is kept to make the API consistent for the client-server API. Other models might
+        need to use attributes stored in `post_processing_params`.
 
         Args:
             y_preds (numpy.ndarray): The dequantized predictions to post-process.
@@ -150,18 +243,10 @@ class BaseEstimator:
 
 
 class QuantizedTorchEstimatorMixin(BaseEstimator):
-    """Mixin that provides quantization for a torch module and follows the Estimator API.
-
-    This class should be mixed in with another that provides the full Estimator API. This class
-    only provides modifiers for .fit() (with quantization) and .predict() (optionally in FHE)
-    """
-
-    post_processing_params: Dict[str, Any] = {}
-    _is_a_public_cml_model = False
+    """Mixin that provides quantization for a torch module and follows the Estimator API."""
 
     def __init_subclass__(cls):
         for klass in cls.__mro__:
-
             # pylint: disable-next=protected-access
             if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
                 _NEURALNET_MODELS.add(cls)
@@ -170,43 +255,13 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def __init__(
         self,
     ):
-        # The quantized module variable appends "_" so that it is not registered as a sklearn
-        # parameter. Only training parameters should register, to enable easy cloning of untrained
-        # estimator
-        self.quantized_module_ = None
-        self._onnx_model_ = None
+        self.quantized_module_ = QuantizedModule()
+        super().__init__()
 
     @property
     @abstractmethod
     def base_estimator_type(self):
         """Get the sklearn estimator that should be trained by the child class."""
-
-    def get_params_for_benchmark(self):
-        """Get the parameters to instantiate the sklearn estimator trained by the child class.
-
-        Returns:
-            params (dict): dictionary with parameters that will initialize a new Estimator
-        """
-        return self.get_params()
-
-    @property
-    def input_quantizers(self) -> List[UniformQuantizer]:
-        """Get the input quantizers.
-
-        Returns:
-            List[Quantizer]: the input quantizers
-        """
-        return self.quantized_module_.input_quantizers
-
-    @input_quantizers.setter
-    def input_quantizers(self, value: List[UniformQuantizer]):
-        """Set the input quantizers.
-
-        Args:
-            value (List[Quantizer]): the input quantizers
-        """
-        self.quantized_module_ = QuantizedModule()
-        self.quantized_module_.input_quantizers = value
 
     @property
     @abstractmethod
@@ -214,66 +269,50 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         """Get the Torch module that should be compiled to FHE."""
 
     @property
-    @abstractmethod
-    def n_bits_quant(self):
-        """Get the number of quantization bits."""
-
-    @property
-    def onnx_model(self):
-        """Get the ONNX model.
-
-        .. # noqa: DAR201
-
-        Returns:
-           _onnx_model_ (onnx.ModelProto): the ONNX model
-        """
-        return self._onnx_model_
-
-    @property
-    def _is_fitted(self):
-        return self.quantized_module_ is not None
-
-    def _quantize_input(self, X: numpy.ndarray):
-        return self.quantized_module_.quantize_input(X)
-
-    def _dequantize_output(self, q_y_preds: numpy.ndarray):
-        return self.quantized_module_.dequantize_output(q_y_preds)
-
-    @property
-    def fhe_circuit(self) -> Circuit:
-        """Get the FHE circuit.
-
-        Returns:
-            Circuit: the FHE circuit
-        """
-        return self.quantized_module_.fhe_circuit
-
-    @fhe_circuit.setter
-    def fhe_circuit(self, value: Circuit):
-        """Set the FHE circuit.
-
-        Args:
-            value (Circuit): the FHE circuit
-        """
-        self.quantized_module_.fhe_circuit = value
-
-    @property
-    def output_quantizers(self) -> List[QuantizedArray]:
+    def input_quantizers(self) -> List[UniformQuantizer]:
         """Get the input quantizers.
 
         Returns:
-            List[QuantizedArray]: the input quantizers
+            List[UniformQuantizer]: The input quantizers.
+        """
+        return self.quantized_module_.input_quantizers
+
+    @input_quantizers.setter
+    def input_quantizers(self, value: List[UniformQuantizer]):
+        self.quantized_module_.input_quantizers = value
+
+    @property
+    def output_quantizers(self) -> List[UniformQuantizer]:
+        """Get the output quantizers.
+
+        Returns:
+            List[UniformQuantizer]: The output quantizers.
         """
         return self.quantized_module_.output_quantizers
 
     @output_quantizers.setter
-    def output_quantizers(self, value: List[QuantizedArray]):
-        """Set the input quantizers.
-
-        Args:
-            value (List[QuantizedArray]): the input quantizers
-        """
+    def output_quantizers(self, value: List[UniformQuantizer]):
         self.quantized_module_.output_quantizers = value
+
+    @property
+    def fhe_circuit(self) -> Circuit:
+        return self.quantized_module_.fhe_circuit
+
+    @fhe_circuit.setter
+    def fhe_circuit(self, value: Circuit):
+        self.quantized_module_.fhe_circuit = value
+
+    @property
+    def _is_fitted(self):
+        return self.quantized_module_.input_quantizers and self.quantized_module_.output_quantizers
+
+    def quantize_input(self, X: numpy.ndarray):
+        self.check_model_is_fitted()
+        return self.quantized_module_.quantize_input(X)
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray):
+        self.check_model_is_fitted()
+        return self.quantized_module_.dequantize_output(q_y_preds)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the dequantized predictions.
@@ -339,15 +378,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         Returns:
             Circuit: the compiled Circuit.
-
-        Raises:
-            ValueError: if called before the model is trained
         """
-        if self.quantized_module_ is None:
-            raise ValueError(
-                "The classifier needs to be calibrated before compilation,"
-                " please call .fit() first!"
-            )
+        self.check_model_is_fitted()
 
         # Cast pandas, list or torch to numpy
         X = check_array_and_assert(X)
@@ -403,7 +435,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Reset the quantized module since quantization is lost during refit
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
-        self.quantized_module_ = None
+        self.quantized_module_ = QuantizedModule()
         multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
         X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
 
@@ -447,14 +479,12 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Create corresponding numpy model
         numpy_model = NumpyModule(onnx_model, torch.tensor(X[[0], ::]))
 
-        self._onnx_model_ = numpy_model.onnx_model
+        self.onnx_model_ = numpy_model.onnx_model
 
         # Set the quantization bits for import
-
         # Note that the ONNXConverter will use a default value for network input bits
         # Furthermore, Brevitas ONNX contains bitwidths in the ONNX file
         # which override the bitwidth that we pass here
-
         # Thus, this parameter, set by the inheriting classes, such as NeuralNetClassifier
         # is only used to check consistency during import (onnx file vs import)
         n_bits = self.n_bits_quant
@@ -516,29 +546,20 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         Returns:
             y_pred : numpy ndarray with probabilities (if applicable)
-
-        Raises:
-            ValueError: if the estimator was not yet trained or compiled
         """
         if execute_in_fhe:
-            if self.quantized_module_ is None:
-                raise ValueError(
-                    "The classifier needs to be calibrated before compilation,"
-                    " please call .fit() first!"
-                )
-            if not self.quantized_module_.is_compiled:
-                raise ValueError(
-                    "The classifier is not yet compiled to FHE, please call .compile() first"
-                )
+            self.check_model_is_fitted()
+            self.check_model_is_compiled()
 
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:
                 X = X.reshape((1, -1))
+
             X = check_array_and_assert(X)
             q_y_pred = None
             for idx, x in enumerate(X):
                 q_x = self.quantize_input(x).reshape(1, -1)
-                q_pred = self.quantized_module_.forward_fhe.encrypt_run_decrypt(q_x)
+                q_pred = self.fhe_circuit.encrypt_run_decrypt(q_x)
                 if q_y_pred is None:
                     assert_true(
                         isinstance(q_pred, numpy.ndarray),
@@ -587,24 +608,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         self.fit(X, y, *args, **kwargs)
 
         # Retrieve the Skorch estimator's training parameters
-        # Following sklearn.base.clone's documentation, parameters are obtained with get_params()
-        # and then need to be copied using copy.deepcopy before passing them to the constructor
-        # Following sklearn.base.clone's documentation: "Clone does a deep copy of the model in an
-        # estimator without actually copying  attached data. It returns a new estimator with the
-        # same parameters that has not been fitted on any data."
-        # See: https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html
-        # We therefore obtained the parameters with get_params(), copy them using copy.deepcopy
-        # and then pass them to the constructor.
-        estimator_parameters = self.get_params_for_benchmark()
-
-        # The `module` parameter needs to be removed as we need to rebuild it separately
-        # This key is only present for NeuralNetClassifiers that don't fix the module type,
-        # otherwise, it may have already been removed (e.g. by FixedTypeSkorchNeuralNet)
-        estimator_parameters.pop("module", None)
-
-        # Copy the estimator's training parameters
-        for name, param in estimator_parameters.items():
-            estimator_parameters[name] = copy.deepcopy(param)
+        estimator_parameters = self.get_sklearn_params()
 
         # Retrieve the estimator's float equivalent module
         float_module = self._get_equivalent_float_module()
@@ -660,21 +664,16 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
     """Mixin class for tree-based estimators.
 
-    A place to share methods that are used on all tree-based estimators.
+    This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's
+    `get_params` and `set_params` methods.
     """
 
     n_bits: int
-    input_quantizers: List[UniformQuantizer]
-    output_quantizers: List[UniformQuantizer]
-    init_args: Dict[str, Any]
     random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
     sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
     sklearn_model: sklearn.base.BaseEstimator
-    _tensor_tree_predict: Optional[Callable]
+    _tensor_tree_predict: Callable
     framework: str
-    fhe_circuit: Optional[Circuit] = None
-    _onnx_model_: Optional[onnx.ModelProto] = None
-    _is_a_public_cml_model: bool = False
 
     def __init_subclass__(cls):
         for klass in cls.__mro__:
@@ -687,31 +686,18 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         """Initialize the TreeBasedEstimatorMixin.
 
         Args:
-            n_bits (int): number of bits used for quantization
+            n_bits (int): Number of bits used for quantization.
         """
-        self.n_bits = n_bits
-        self.input_quantizers = []
-        self.output_quantizers = []
-        self.fhe_circuit = None
-        self._onnx_model_ = None
-        self.post_processing_params: Dict[str, Any] = {}
-
-    @property
-    def onnx_model(self) -> onnx.ModelProto:
-        """Get the ONNX model.
-
-        .. # noqa: DAR201
-
-        Returns:
-           onnx.ModelProto: the ONNX model
-        """
-        return self._onnx_model_
+        self.n_bits: int = n_bits
+        super().__init__()
 
     @property
     def _is_fitted(self):
         return self.input_quantizers and self.output_quantizers
 
-    def _quantize_input(self, X: numpy.ndarray):
+    def quantize_input(self, X: numpy.ndarray):
+        self.check_model_is_fitted()
+
         qX = numpy.zeros_like(X)
 
         # Quantize using the learned quantization parameters for each feature
@@ -720,7 +706,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
 
         return qX.astype(numpy.int64)
 
-    def _dequantize_output(self, q_y_preds: numpy.ndarray):
+    def dequantize_output(self, q_y_preds: numpy.ndarray):
+        self.check_model_is_fitted()
+
         q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
         return q_y_preds
 
@@ -745,8 +733,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         """
         multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
         X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
-        # mypy
-        assert self.n_bits is not None
 
         qX = numpy.zeros_like(X)
         self.input_quantizers = []
@@ -758,8 +744,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
             qX[:, i] = q_x_.quant(X[:, i])
 
         # Retrieve the init parameters
-        params = self.get_params()
-        params.pop("n_bits", None)
+        params = self.get_sklearn_params()
 
         # Initialize the sklearn model
         self.sklearn_model = self.sklearn_alg(**params)
@@ -771,7 +756,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         self._update_post_processing_params()
 
         # Convert the tree inference with Numpy operators
-        self._tensor_tree_predict, self.output_quantizers, self._onnx_model_ = tree_to_numpy(
+        self._tensor_tree_predict, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
             self.sklearn_model,
             qX[:1],
             framework=self.framework,
@@ -802,9 +787,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
             Tuple[ConcreteEstimators, SklearnEstimators]:
                                                 The FHE and sklearn tree-based models.
         """
-
-        params = self.get_params()  # type: ignore
-        params.pop("n_bits", None)
+        params = self.get_sklearn_params()  # type: ignore
 
         # Make sure the random_state is set or both algorithms will diverge
         # due to randomness in the training.
@@ -833,21 +816,15 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         Returns:
             numpy.ndarray: the prediction as ordinals
         """
-        # Check that self.fhe_tree is not None
-        # mypy
-        assert self.fhe_circuit is not None, (
-            f"You must call {self.compile.__name__} "
-            f"before calling {self.predict.__name__} with execute_in_fhe=True."
-        )
-        # mypy
-        assert self.fhe_circuit is not None
+        self.check_model_is_compiled()
 
         y_preds = []
         for qX_i in qX:
-            # expected encrypt_run_decrypt output shape is
-            # (1, n_features) but qX_i is (n_features,)
+            # Expected encrypt_run_decrypt output shape is (1, n_features) but qX_i is (n_features,)
             qX_i = numpy.expand_dims(qX_i, 0)
-            fhe_pred = self.fhe_circuit.encrypt_run_decrypt(qX_i)
+
+            # Ignore mypy issue as `check_model_is_compiled` makes sure that fhe_circuit is not None
+            fhe_pred = self.fhe_circuit.encrypt_run_decrypt(qX_i)  # type: ignore[union-attr]
             y_preds.append(fhe_pred)
 
         # Concatenate on the n_examples dimension where shape is (n_examples, n_classes, n_trees)
@@ -864,10 +841,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         Returns:
             numpy.ndarray: The predicted values.
         """
-        X = check_array_and_assert(X)
+        self.check_model_is_fitted()
 
-        # mypy
-        assert self._tensor_tree_predict is not None
+        X = check_array_and_assert(X)
 
         # Quantize the input
         qX = self.quantize_input(X)
@@ -917,13 +893,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
             Circuit: the compiled Circuit.
 
         """
-        # Make sure that self.tree_predict is not None
-        assert_true(
-            self._tensor_tree_predict is not None, "You must fit the model before compiling it."
-        )
+        self.check_model_is_fitted()
 
-        # mypy bug fix
-        assert self._tensor_tree_predict is not None
         _tensor_tree_predict_proxy, parameters_mapping = generate_proxy_function(
             self._tensor_tree_predict, ["inputs"]
         )
@@ -954,8 +925,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
             global_p_error=global_p_error,
             verbose=verbose_compilation,
         )
-        # mypy
-        assert self.fhe_circuit is not None
+
         output_graph = self.fhe_circuit.graph.ordered_outputs()
         assert_true(
             len(output_graph) == 1,
@@ -981,23 +951,21 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin):
     """Mixin class for tree-based regressors.
 
-    A place to share methods that are used on all tree-based regressors.
+    This class is used to create a tree-based regressor class that inherits from
+    sklearn.base.RegressorMixin, which essentially gives access to Scikit-Learn's `score` method
+    for regressors.
     """
-
-    _is_a_public_cml_model: bool = False
-
-    def __init_subclass__(cls):
-        for klass in cls.__mro__:
-            # pylint: disable-next=protected-access
-            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
-                _TREE_MODELS.add(cls)
-                _ALL_SKLEARN_MODELS.add(cls)
 
 
 class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
     """Mixin class for tree-based classifiers.
 
-    A place to share methods that are used on all tree-based classifiers.
+    This class is used to create a tree-based classifier class that inherits from
+    sklearn.base.ClassifierMixin, which essentially gives access to Scikit-Learn's `score` method
+    for classifiers.
+
+    Additionally, this class adjusts some of the tree-based base class's methods in order to make
+    them compliant with classification workflows.
     """
 
     classes_: numpy.ndarray
@@ -1047,6 +1015,8 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             numpy.ndarray: The predicted target values.
         """
+        self.check_model_is_fitted()
+
         X = check_array_and_assert(X)
 
         # Compute the predicted probabilities
@@ -1071,17 +1041,27 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
         Returns:
             numpy.ndarray: The predicted probabilities.
         """
+        self.check_model_is_fitted()
+
         return super().predict(X, execute_in_fhe=execute_in_fhe)
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
-    """A Mixin class for sklearn linear models with FHE."""
+    """A Mixin class for sklearn linear models with FHE.
 
+    This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's
+    `get_params` and `set_params` methods.
+    """
+
+    n_bits: Union[int, Dict[str, int]]
     sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
     random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
-
-    _is_a_public_cml_model: bool = False
+    _weight_quantizer: UniformQuantizer
+    _output_scale: numpy.float64
+    _output_zero_point: int
+    _q_weights: numpy.ndarray
+    _q_bias: numpy.ndarray
 
     def __init_subclass__(cls):
         for klass in cls.__mro__:
@@ -1090,7 +1070,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
                 _LINEAR_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, *args, n_bits: Union[int, Dict[str, int]] = 8, **kwargs):
+    def __init__(self, n_bits: Union[int, Dict[str, int]] = 8):
         """Initialize the FHE linear model.
 
         Args:
@@ -1101,21 +1081,18 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
                     - op_inputs : number of bits to quantize the input values
                     - op_weights: number of bits to quantize the learned parameters
                 Default to 8.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
         """
-        super().__init__(*args, **kwargs)
         self.n_bits: Union[int, Dict[str, int]] = n_bits
-        self.post_processing_params: Dict[str, Any] = {}
-        self.fhe_circuit: Optional[Circuit] = None
-        self.input_quantizers: List[UniformQuantizer] = []
-        self.output_quantizers: List[UniformQuantizer] = []
-        self.weight_quantizers: List[UniformQuantizer] = []
-        self.onnx_model: onnx.ModelProto = None
-        self._output_scale: Optional[numpy.float64] = None
-        self._output_zero_point: Optional[int] = None
-        self._q_weights: Optional[numpy.ndarray] = None
-        self._q_bias: Optional[numpy.ndarray] = None
+
+        super().__init__()
+
+    @property
+    def _is_fitted(self):
+        return (
+            self.input_quantizers
+            and self.post_processing_params.get("output_scale", None) is not None
+            and self.post_processing_params.get("output_zero_point", None) is not None
+        )
 
     def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> Any:
         """Fit the FHE linear model.
@@ -1139,9 +1116,9 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         # LinearRegression handles multi-labels data
         multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
         X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
-        # Retrieve sklearn's init parameters and remove the ones specific to Concrete-ML
-        params = self.get_params()  # type: ignore
-        params.pop("n_bits", None)
+
+        # Retrieve sklearn's init parameters
+        params = self.get_sklearn_params()  # type: ignore
 
         # Initialize the sklearn model
         self.sklearn_model = self.sklearn_alg(**params)
@@ -1196,7 +1173,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         )
         self._q_weights = q_weights.qvalues
         weight_quantizer = q_weights.quantizer
-        self.weight_quantizers.append(weight_quantizer)
+        self._weight_quantizer = weight_quantizer
 
         # mypy
         assert input_quantizer.scale is not None
@@ -1249,10 +1226,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
             Tuple[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression]:
                 The FHE and sklearn LinearRegression.
         """
-
-        # Retrieve sklearn's init parameters and remove the ones specific to Concrete-ML
-        params = self.get_params()  # type: ignore
-        params.pop("n_bits", None)
+        # Retrieve sklearn's init parameters
+        params = self.get_sklearn_params()  # type: ignore
 
         # Make sure the random_state is set or both algorithms will diverge
         # due to randomness in the training.
@@ -1318,19 +1293,11 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
             Returns:
                 numpy.ndarray: The circuit's outputs.
             """
-            # mypy
-            assert (
-                self.weight_quantizers and self._q_weights is not None and self._q_bias is not None
-            ), "The model is not fitted. Please run fit(...) on proper arguments first."
-
             return self._inference(
-                q_X, self._q_weights, self._q_bias, self.weight_quantizers[0].zero_point
+                q_X, self._q_weights, self._q_bias, self._weight_quantizer.zero_point
             )
 
-        # mypy
-        assert (
-            self.input_quantizers
-        ), "The model is not fitted. Please run fit(...) on proper arguments first."
+        self.check_model_is_fitted()
 
         # Cast pandas, list or torch to numpy
         X = check_array_and_assert(X)
@@ -1378,43 +1345,32 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         Returns:
             numpy.ndarray: The prediction as ordinals
         """
+        self.check_model_is_fitted()
 
         X = check_array_and_assert(X)
-
-        # mypy
-        # The model is fitted if and only if the model's input quantizer is initialized
-        assert (
-            self.input_quantizers
-        ), "The model is not fitted. Please run fit(...) on proper arguments first."
 
         # Quantize the inputs
         q_X = self.quantize_input(X)
 
         # If the predictions are executed in FHE, we call the circuit on each sample
         if execute_in_fhe:
-
-            # mypy
-            # Make sure the model is compiled
-            assert (
-                self.fhe_circuit is not None
-            ), "The model is not compiled. Please run compile(...) first."
+            self.check_model_is_compiled()
 
             q_y_preds_list = []
             for q_X_i in q_X:
-                q_y_pred_i = self.fhe_circuit.encrypt_run_decrypt(q_X_i.reshape(1, q_X_i.shape[0]))
+                # Ignore mypy issue as `check_model_is_compiled` makes sure that fhe_circuit is
+                # not None
+                q_y_pred_i = self.fhe_circuit.encrypt_run_decrypt(  # type: ignore[union-attr]
+                    q_X_i.reshape(1, q_X_i.shape[0])
+                )
                 q_y_preds_list.append(q_y_pred_i[0])
 
             q_y_preds = numpy.array(q_y_preds_list)
 
         # If the predictions are not executed in FHE, we only need to call the inference
         else:
-            # mypy
-            assert (
-                self.weight_quantizers and self._q_weights is not None and self._q_bias is not None
-            ), "The model is not fitted. Please run fit(...) on proper arguments first."
-
             q_y_preds = self._inference(
-                q_X, self._q_weights, self._q_bias, self.weight_quantizers[0].zero_point
+                q_X, self._q_weights, self._q_bias, self._weight_quantizer.zero_point
             )
 
         # Dequantize the outputs
@@ -1422,18 +1378,13 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
 
         return y_preds
 
-    @property
-    def _is_fitted(self):
-        return (
-            self.input_quantizers
-            and self.post_processing_params.get("output_scale", None) is not None
-            and self.post_processing_params.get("output_zero_point", None) is not None
-        )
-
-    def _quantize_input(self, X: numpy.ndarray):
+    def quantize_input(self, X: numpy.ndarray):
+        self.check_model_is_fitted()
         return self.input_quantizers[0].quant(X)
 
-    def _dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+
         # Retrieve the post-processing parameters
         output_scale = self.post_processing_params["output_scale"]
         output_zero_point = self.post_processing_params["output_zero_point"]
@@ -1450,13 +1401,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
-
-        assert_true(
-            self.sklearn_model is not None,
-            "The model is not fitted. Please run fit(...) on proper arguments first.",
-        )
-
-        self.onnx_model = hb_convert(
+        self.onnx_model_ = hb_convert(
             self.sklearn_model,
             backend="onnx",
             test_input=test_input,
@@ -1471,15 +1416,10 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         This will remove the Cast node in the model's onnx.graph since they have no use in
         quantized or FHE models.
         """
-        remove_node_types(onnx_model=self.onnx_model, op_types_to_remove=["Cast"])
+        remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
 
     def _update_post_processing_params(self):
         """Update the post processing parameters."""
-
-        assert (
-            self._output_scale is not None and self._output_zero_point is not None
-        ), "The model is not fitted. Please run fit(...) on proper arguments first."
-
         self.post_processing_params = {
             "output_scale": self._output_scale,
             "output_zero_point": self._output_zero_point,
@@ -1509,8 +1449,25 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         return y_pred
 
 
-class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
-    """A Mixin class for sklearn linear classifiers with FHE."""
+class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+    """A Mixin class for sklearn linear regressors with FHE.
+
+    This class is used to create a linear regressor class that inherits from
+    sklearn.base.RegressorMixin, which essentially gives access to Scikit-Learn's `score` method
+    for regressors.
+    """
+
+
+class SklearnLinearClassifierMixin(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
+    """A Mixin class for sklearn linear classifiers with FHE.
+
+    This class is used to create a linear classifier class that inherits from
+    sklearn.base.ClassifierMixin, which essentially gives access to Scikit-Learn's `score` method
+    for classifiers.
+
+    Additionally, this class adjusts some of the tree-based base class's methods in order to make
+    them compliant with classification workflows.
+    """
 
     def post_processing(self, y_preds: numpy.ndarray):
         # If the predictions only has one dimension (i.e. binary classification problem), apply the
@@ -1578,7 +1535,7 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin):
         Any operators following gemm, including the sigmoid, softmax and argmax operators, are
         removed from the graph. They will be executed in clear in the post-processing method.
         """
-        clean_graph_after_node_op_type(self.onnx_model, node_op_type="Gemm")
+        clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
         super().clean_graph()
 
 

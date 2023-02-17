@@ -13,7 +13,7 @@ Scikit-learn interface for concrete quantized neural networks.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L46"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SparseQuantNeuralNetImpl`
 
@@ -21,7 +21,7 @@ Sparse Quantized Neural Network classifier.
 
 This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bitwidth and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L55"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -63,7 +63,7 @@ Sparse Quantized Neural Network constructor.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_pruning`
 
@@ -79,7 +79,7 @@ Enable pruning in the network. Pruning must be made permanent to recover pruned 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L302"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -99,7 +99,7 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L190"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `make_pruning_permanent`
 
@@ -111,7 +111,7 @@ Make the learned pruning permanent in the network.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `max_active_neurons`
 
@@ -129,7 +129,7 @@ The computation is done using the quantization parameters passed to the construc
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `on_train_end`
 
@@ -141,7 +141,7 @@ Call back when training is finished, can be useful to remove training hooks.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L318"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSkorchEstimatorMixin`
 
@@ -167,37 +167,27 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> fhe_circuit
 
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
 ______________________________________________________________________
 
 #### <kbd>property</kbd> input_quantizers
 
-Get the input quantizers.
+Get the input quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[Quantizer]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The input quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> n_bits_quant
 
-Return the number of quantization bits.
+Get the number of bits used for quantization.
 
 This is stored by the torch.nn.module instance and thus cannot be retrieved until this instance is created.
 
 **Returns:**
 
-- <b>`n_bits`</b> (int):  the number of bits to quantize the network
-
-**Raises:**
-
-- <b>`ValueError`</b>:  with skorch estimators, the `module_` is not instantiated until .fit() is  called. Thus this estimator needs to be .fit() before we get the quantization number  of bits. If it is not trained we raise an exception
+- <b>`int`</b>:  the number of bits to quantize the network
 
 ______________________________________________________________________
 
@@ -205,35 +195,39 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`_onnx_model_`</b> (onnx.ModelProto):  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> output_quantizers
 
-Get the input quantizers.
+Get the output quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The output quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>method</kbd> `get_params_for_benchmark`
+### <kbd>method</kbd> `get_sklearn_params`
 
 ```python
-get_params_for_benchmark()
+get_sklearn_params(deep=True)
 ```
 
 Get parameters for benchmark when cloning a skorch wrapped NN.
 
 We must remove all parameters related to the module. Skorch takes either a class or a class instance for the `module` parameter. We want to pass our trained model, a class instance. But for this to work, we need to remove all module related constructor params. If not, skorch will instantiate a new class instance of the same type as the passed module see skorch net.py NeuralNet::initialize_instance
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
 
 **Returns:**
 
@@ -241,7 +235,7 @@ We must remove all parameters related to the module. Skorch takes either a class
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `infer`
 
@@ -263,7 +257,7 @@ A torch tensor with the inference results for each item in the input
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `on_train_end`
 
@@ -284,7 +278,7 @@ Check if the underlying neural net has a callback for this event and, if so, cal
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L419"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L448"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FixedTypeSkorchNeuralNet`
 
@@ -292,7 +286,7 @@ A mixin with a helpful modification to a skorch estimator that fixes the module 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_params`
 
@@ -313,7 +307,7 @@ Get parameters for this estimator.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L453"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L482"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prune`
 
@@ -342,7 +336,7 @@ This can be used when the number of neurons on the hidden layers is too high. Fo
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L527"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NeuralNetClassifier`
 
@@ -354,7 +348,7 @@ The datatypes that are allowed for prediction by this wrapper are more restricte
 
 Inputs that are float64 will be casted to float32 before training as this should not have a significant impact on the model's performances. If the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an error is raised.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L553"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L582"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -390,12 +384,6 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> fhe_circuit
 
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
 ______________________________________________________________________
 
 #### <kbd>property</kbd> history
@@ -404,27 +392,23 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> input_quantizers
 
-Get the input quantizers.
+Get the input quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[Quantizer]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The input quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> n_bits_quant
 
-Return the number of quantization bits.
+Get the number of bits used for quantization.
 
 This is stored by the torch.nn.module instance and thus cannot be retrieved until this instance is created.
 
 **Returns:**
 
-- <b>`n_bits`</b> (int):  the number of bits to quantize the network
-
-**Raises:**
-
-- <b>`ValueError`</b>:  with skorch estimators, the `module_` is not instantiated until .fit() is  called. Thus this estimator needs to be .fit() before we get the quantization number  of bits. If it is not trained we raise an exception
+- <b>`int`</b>:  the number of bits to quantize the network
 
 ______________________________________________________________________
 
@@ -432,25 +416,25 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`_onnx_model_`</b> (onnx.ModelProto):  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> output_quantizers
 
-Get the input quantizers.
+Get the output quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The output quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L616"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L644"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -460,7 +444,7 @@ fit(X, y, **fit_params)
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L654"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L682"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -470,7 +454,7 @@ fit_benchmark(X: ndarray, y: ndarray, *args, **kwargs) → Tuple[Any, Any]
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_params`
 
@@ -491,17 +475,21 @@ Get parameters for this estimator.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>method</kbd> `get_params_for_benchmark`
+### <kbd>method</kbd> `get_sklearn_params`
 
 ```python
-get_params_for_benchmark()
+get_sklearn_params(deep=True)
 ```
 
 Get parameters for benchmark when cloning a skorch wrapped NN.
 
 We must remove all parameters related to the module. Skorch takes either a class or a class instance for the `module` parameter. We want to pass our trained model, a class instance. But for this to work, we need to remove all module related constructor params. If not, skorch will instantiate a new class instance of the same type as the passed module see skorch net.py NeuralNet::initialize_instance
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
 
 **Returns:**
 
@@ -509,7 +497,7 @@ We must remove all parameters related to the module. Skorch takes either a class
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `infer`
 
@@ -531,7 +519,7 @@ A torch tensor with the inference results for each item in the input
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `on_train_end`
 
@@ -552,7 +540,7 @@ Check if the underlying neural net has a callback for this event and, if so, cal
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L595"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -575,7 +563,7 @@ Predicts using the quantized clear or FHE classifier
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L663"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L691"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -585,7 +573,7 @@ predict_proba(X, execute_in_fhe=False)
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L453"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L482"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prune`
 
@@ -614,7 +602,7 @@ This can be used when the number of neurons on the hidden layers is too high. Fo
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L699"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `NeuralNetRegressor`
 
@@ -626,7 +614,7 @@ The datatypes that are allowed for prediction by this wrapper are more restricte
 
 Inputs and targets that are float64 will be casted to float32 before training as this should not have a significant impact on the model's performances. An error is raised if these values are not floating points.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L694"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L722"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -652,12 +640,6 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> fhe_circuit
 
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
 ______________________________________________________________________
 
 #### <kbd>property</kbd> history
@@ -666,27 +648,23 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> input_quantizers
 
-Get the input quantizers.
+Get the input quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[Quantizer]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The input quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> n_bits_quant
 
-Return the number of quantization bits.
+Get the number of bits used for quantization.
 
 This is stored by the torch.nn.module instance and thus cannot be retrieved until this instance is created.
 
 **Returns:**
 
-- <b>`n_bits`</b> (int):  the number of bits to quantize the network
-
-**Raises:**
-
-- <b>`ValueError`</b>:  with skorch estimators, the `module_` is not instantiated until .fit() is  called. Thus this estimator needs to be .fit() before we get the quantization number  of bits. If it is not trained we raise an exception
+- <b>`int`</b>:  the number of bits to quantize the network
 
 ______________________________________________________________________
 
@@ -694,25 +672,25 @@ ______________________________________________________________________
 
 Get the ONNX model.
 
-.. # noqa: DAR201
+Is None if the model was not fitted.
 
 **Returns:**
 
-- <b>`_onnx_model_`</b> (onnx.ModelProto):  the ONNX model
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
 
 ______________________________________________________________________
 
 #### <kbd>property</kbd> output_quantizers
 
-Get the input quantizers.
+Get the output quantizers if the model is fitted.
 
 **Returns:**
 
-- <b>`List[QuantizedArray]`</b>:  the input quantizers
+- <b>`List[UniformQuantizer]`</b>:  The output quantizers, if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L723"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -722,7 +700,7 @@ fit(X, y, **fit_params)
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L750"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L778"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -732,7 +710,7 @@ fit_benchmark(X: ndarray, y: ndarray, *args, **kwargs) → Tuple[Any, Any]
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_params`
 
@@ -753,17 +731,21 @@ Get parameters for this estimator.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-### <kbd>method</kbd> `get_params_for_benchmark`
+### <kbd>method</kbd> `get_sklearn_params`
 
 ```python
-get_params_for_benchmark()
+get_sklearn_params(deep=True)
 ```
 
 Get parameters for benchmark when cloning a skorch wrapped NN.
 
 We must remove all parameters related to the module. Skorch takes either a class or a class instance for the `module` parameter. We want to pass our trained model, a class instance. But for this to work, we need to remove all module related constructor params. If not, skorch will instantiate a new class instance of the same type as the passed module see skorch net.py NeuralNet::initialize_instance
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
 
 **Returns:**
 
@@ -771,7 +753,7 @@ We must remove all parameters related to the module. Skorch takes either a class
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `infer`
 
@@ -793,7 +775,7 @@ A torch tensor with the inference results for each item in the input
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L403"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `on_train_end`
 
@@ -814,7 +796,7 @@ Check if the underlying neural net has a callback for this event and, if so, cal
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L758"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -824,7 +806,7 @@ predict_proba(X, execute_in_fhe=False)
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L453"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn.py#L482"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prune`
 

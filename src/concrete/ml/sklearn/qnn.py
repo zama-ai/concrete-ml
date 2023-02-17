@@ -3,6 +3,7 @@
 # Disable pylint invalid name since scikit learn uses "X" as variable name for data
 # pylint: disable=invalid-name
 
+import copy
 from abc import abstractmethod
 from typing import Any, Dict, Optional, Tuple
 
@@ -338,18 +339,18 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
 
         # During training we infer the same as in the base class
         # Note that this supports more data types for x than we support in quantized mode
-        if self.quantized_module_ is None:
+        if not self._is_fitted:
             return super().infer(x, **fit_params)
 
         # Get a numpy array from the tensor to do quantization
         x = x.detach().cpu().numpy()
 
         # Once we finished the data type checks, quantize the input and perform quantized inference
-        q_x = self.quantized_module_.quantize_input(x)
+        q_x = self.quantize_input(x)
         q_out = self.quantized_module_(q_x)
 
         # Cast back to a tensor to keep a consistent API (tensor in, tensor out)
-        return torch.tensor(self.quantized_module_.dequantize_output(q_out))
+        return torch.tensor(self.dequantize_output(q_out))
 
     @property
     def base_module_to_compile(self):
@@ -361,27 +362,28 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         return self.module_
 
     @property
-    def n_bits_quant(self):
-        """Return the number of quantization bits.
+    def n_bits_quant(self) -> int:
+        """Get the number of bits used for quantization.
 
         This is stored by the torch.nn.module instance and thus cannot be retrieved until this
         instance is created.
 
         Returns:
-            n_bits (int): the number of bits to quantize the network
-
-        Raises:
-            ValueError: with skorch estimators, the `module_` is not instantiated until .fit() is
-                called. Thus this estimator needs to be .fit() before we get the quantization number
-                of bits. If it is not trained we raise an exception
+            int: the number of bits to quantize the network
         """
+        # Make sure the NeuralNet was correctly fitted
+        # Here we can't use the check_model_is_fitted because n_bits is called between Skorch's
+        # training and the quantized_module's initialization
+        # Hence, we use Skorch's `NeuralNet.check_is_fitted` method, which raises a
+        # NotInitializedError exception it the model is not fitted (by checking if the
+        # `module_` attribute is found)
+        # However, mypy does not see it
+        self.check_is_fitted()  # type: ignore[attr-defined]
 
-        module_attr = getattr(self, "module_", None)
-        if module_attr is None:
-            raise ValueError("NN Classifier must be trained before getting the number of bits")
-        return self.module_.n_a_bits
+        # Similarily, ignore mypy here
+        return self.module_.n_a_bits  # type: ignore[attr-defined]
 
-    def get_params_for_benchmark(self):
+    def get_sklearn_params(self, deep=True):
         """Get parameters for benchmark when cloning a skorch wrapped NN.
 
         We must remove all parameters related to the module. Skorch takes either a class or a
@@ -390,13 +392,40 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         If not, skorch will instantiate a new class instance of the same type as the passed module
         see skorch net.py NeuralNet::initialize_instance
 
+        Args:
+            deep (bool): If True, will return the parameters for this estimator and contained
+                subobjects that are estimators. Default to True.
+
         Returns:
             params (dict): parameters to create an equivalent fp32 sklearn estimator for benchmark
         """
-        new_object_params = super().get_params_for_benchmark()
-        module_params = [name for name in new_object_params.keys() if "module__" in name]
+        # Retrieve the Skorch estimator's training parameters
+        # Following sklearn.base.clone's documentation, parameters are obtained with get_params()
+        # and then need to be copied using copy.deepcopy before passing them to the constructor
+        # Following sklearn.base.clone's documentation: "Clone does a deep copy of the model in an
+        # estimator without actually copying attached data. It returns a new estimator with the
+        # same parameters that has not been fitted on any data."
+        # See: https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html
+        # We therefore obtained the parameters with get_params(), copy them using copy.deepcopy
+        # and then pass them to the constructor.
+        new_object_params = super().get_params(deep=deep)
+
+        # The `module` parameter needs to be removed as we need to rebuild it separately
+        # This key is only present for NeuralNetClassifiers that don't fix the module type,
+        # otherwise, it may have already been removed (e.g. by FixedTypeSkorchNeuralNet)
+        new_object_params.pop("module", None)
+
+        # Retrieve all parameters related to the module
+        module_params = [name for name in new_object_params if "module__" in name]
+
+        # Remove all parameters related to the module
         for name in module_params:
             new_object_params.pop(name)
+
+        # Deepcopy the estimator's training parameters
+        for name, param in new_object_params.items():
+            new_object_params[name] = copy.deepcopy(param)
+
         return new_object_params
 
     # pylint: disable=unused-argument
@@ -434,17 +463,17 @@ class FixedTypeSkorchNeuralNet:
         Returns:
             params : dict, Parameter names mapped to their values.
         """
-        # Known but with pylint when mixin is mixed with a class in a different file
-        # pylint: disable=no-member
+        # Pylint doesn't properly handle classes mixed with classes from a different file
+        # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch
+        # pylint: disable-next=no-member
         params = super().get_params(deep, **kwargs)
-        # pylint: enable=no-member
 
         # Remove the module key since our NN skorch class imposes SparseQuantNeuralNetImpl as
         # the NN model type. Therefore, when cloning this estimator we don't need to pass
         # module again, it's passed by this class's constructor
         params.pop("module")
 
-        # Remove the parameters that are auto-computed by .fit()
+        # Remove the parameters that are auto-computed by `fit`
         for kwarg in QNN_AUTO_KWARGS:
             params.pop(kwarg, None)
 
@@ -524,6 +553,7 @@ class FixedTypeSkorchNeuralNet:
         return model_copy
 
 
+# pylint: disable-next=too-many-ancestors
 class NeuralNetClassifier(
     FixedTypeSkorchNeuralNet,
     QuantizedSkorchEstimatorMixin,
@@ -545,7 +575,6 @@ class NeuralNetClassifier(
     lower bitwidth, they will be safely casted to int64. Else, an error is raised.
     """
 
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
@@ -558,7 +587,7 @@ class NeuralNetClassifier(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
-        # It basically just sets quantized_module_ and _onnx_model_ to None
+        # It basically just resets quantized_module_
         # It calls the init of QuantizedSkorchEstimatorMixin
         super().__init__()
 
@@ -605,7 +634,6 @@ class NeuralNetClassifier(
             y_pred : numpy ndarray with predictions
 
         """
-
         # We just need to do argmax on the predicted probabilities
         # First we get the predicted class indices
         y_index_pred = self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
@@ -667,6 +695,7 @@ class NeuralNetClassifier(
         return super().predict_proba(X, execute_in_fhe)
 
 
+# pylint: disable-next=too-many-ancestors
 class NeuralNetRegressor(
     FixedTypeSkorchNeuralNet, QuantizedSkorchEstimatorMixin, SKNeuralNetRegressor
 ):
@@ -686,7 +715,6 @@ class NeuralNetRegressor(
     are not floating points.
     """
 
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl

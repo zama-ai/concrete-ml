@@ -1,9 +1,7 @@
-"""Implements RandomForest models."""
-from typing import Any, Callable, List, Optional
+"""Implement RandomForest models."""
 
 import sklearn.ensemble
 
-from ..quantization import QuantizedArray
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
 
@@ -12,17 +10,10 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
     """Implements the RandomForest classifier."""
 
     sklearn_alg = sklearn.ensemble.RandomForestClassifier
-    q_x_byfeatures: List[QuantizedArray]
-    n_bits: int
-    q_y: QuantizedArray
-    _tensor_tree_predict: Optional[Callable]
-    sklearn_model: Any
     framework: str = "sklearn"
-
     _is_a_public_cml_model = True
 
-    # pylint: disable=too-many-arguments,protected-access
-
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits: int = 6,
@@ -75,16 +66,10 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
     """Implements the RandomForest regressor."""
 
     sklearn_alg = sklearn.ensemble.RandomForestRegressor
-    q_x_byfeatures: List[QuantizedArray]
-    n_bits: int
-    q_y: QuantizedArray
-    _tensor_tree_predict: Optional[Callable]
-    sklearn_model: Any
     framework: str = "sklearn"
     _is_a_public_cml_model = True
 
-    # pylint: disable=too-many-arguments,protected-access
-
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         n_bits: int = 6,

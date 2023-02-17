@@ -2,11 +2,11 @@
 import sklearn
 import sklearn.linear_model
 
-from .base import SklearnLinearClassifierMixin, SklearnLinearModelMixin
+from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
-class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class LinearRegression(SklearnLinearRegressorMixin):
     """A linear regression model with FHE.
 
     Parameters:
@@ -41,11 +41,10 @@ class LinearRegression(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.positive = positive
-        self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
 
-class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class ElasticNet(SklearnLinearRegressorMixin):
     """An ElasticNet regression model with FHE.
 
     Parameters:
@@ -88,7 +87,6 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.normalize = normalize
         self.copy_X = copy_X
         self.positive = positive
-        self._onnx_model_ = None
         self.precompute = precompute
         self.max_iter = max_iter
         self.tol = tol
@@ -98,7 +96,7 @@ class ElasticNet(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         super().__init__(n_bits=n_bits)
 
 
-class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class Lasso(SklearnLinearRegressorMixin):
     """A Lasso regression model with FHE.
 
     Parameters:
@@ -139,7 +137,6 @@ class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.normalize = normalize
         self.copy_X = copy_X
         self.positive = positive
-        self._onnx_model_ = None
         self.max_iter = max_iter
         self.warm_start = warm_start
         self.selection = selection
@@ -149,7 +146,7 @@ class Lasso(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         super().__init__(n_bits=n_bits)
 
 
-class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class Ridge(SklearnLinearRegressorMixin):
     """A Ridge regression model with FHE.
 
     Parameters:
@@ -192,11 +189,10 @@ class Ridge(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.tol = tol
         self.solver = solver
         self.random_state = random_state
-        self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
 
-class LogisticRegression(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
+class LogisticRegression(SklearnLinearClassifierMixin):
     """A logistic regression model with FHE.
 
     Parameters:
@@ -250,7 +246,6 @@ class LogisticRegression(SklearnLinearClassifierMixin, sklearn.base.ClassifierMi
         self.warm_start = warm_start
         self.n_jobs = n_jobs
         self.l1_ratio = l1_ratio
-        self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
 

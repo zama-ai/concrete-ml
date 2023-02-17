@@ -153,7 +153,7 @@ tree_to_numpy(
     model: Callable,
     x: ndarray,
     framework: str,
-    output_n_bits: Optional[int] = 8
+    output_n_bits: int = 8
 ) → Tuple[Callable, List[UniformQuantizer], ModelProto]
 ```
 
@@ -165,7 +165,7 @@ Convert the tree inference to a numpy functions using Hummingbird.
 - <b>`x`</b> (numpy.ndarray):  The input data.
 - <b>`framework`</b> (str):  The framework from which the ONNX model is generated.
 - <b>`(options`</b>:  'xgboost', 'sklearn')
-- <b>`output_n_bits`</b> (int):  The number of bits of the output.
+- <b>`output_n_bits`</b> (int):  The number of bits of the output. Default to 8.
 
 **Returns:**
 

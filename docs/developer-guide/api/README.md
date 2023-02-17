@@ -31,10 +31,10 @@
 - [`concrete.ml.sklearn.glm`](./concrete.ml.sklearn.glm.md#module-concretemlsklearnglm): Implement sklearn's Generalized Linear Models (GLM).
 - [`concrete.ml.sklearn.linear_model`](./concrete.ml.sklearn.linear_model.md#module-concretemlsklearnlinear_model): Implement sklearn linear model.
 - [`concrete.ml.sklearn.qnn`](./concrete.ml.sklearn.qnn.md#module-concretemlsklearnqnn): Scikit-learn interface for concrete quantized neural networks.
-- [`concrete.ml.sklearn.rf`](./concrete.ml.sklearn.rf.md#module-concretemlsklearnrf): Implements RandomForest models.
+- [`concrete.ml.sklearn.rf`](./concrete.ml.sklearn.rf.md#module-concretemlsklearnrf): Implement RandomForest models.
 - [`concrete.ml.sklearn.svm`](./concrete.ml.sklearn.svm.md#module-concretemlsklearnsvm): Implement Support Vector Machine.
 - [`concrete.ml.sklearn.torch_modules`](./concrete.ml.sklearn.torch_modules.md#module-concretemlsklearntorch_modules): Implement torch module.
-- [`concrete.ml.sklearn.tree`](./concrete.ml.sklearn.tree.md#module-concretemlsklearntree): Implement the sklearn tree models.
+- [`concrete.ml.sklearn.tree`](./concrete.ml.sklearn.tree.md#module-concretemlsklearntree): Implement DecisionTree models.
 - [`concrete.ml.sklearn.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#module-concretemlsklearntree_to_numpy): Implements the conversion of a tree model to a numpy function.
 - [`concrete.ml.sklearn.xgb`](./concrete.ml.sklearn.xgb.md#module-concretemlsklearnxgb): Implements XGBoost models.
 - [`concrete.ml.torch`](./concrete.ml.torch.md#module-concretemltorch): Modules for torch to numpy conversion.
@@ -135,11 +135,12 @@
 - [`quantizers.QuantizedArray`](./concrete.ml.quantization.quantizers.md#class-quantizedarray): Abstraction of quantized array.
 - [`quantizers.UniformQuantizationParameters`](./concrete.ml.quantization.quantizers.md#class-uniformquantizationparameters): Quantization parameters for uniform quantization.
 - [`quantizers.UniformQuantizer`](./concrete.ml.quantization.quantizers.md#class-uniformquantizer): Uniform quantizer.
-- [`base.BaseEstimator`](./concrete.ml.sklearn.base.md#class-baseestimator): For all estimators in Concrete-ML.
+- [`base.BaseEstimator`](./concrete.ml.sklearn.base.md#class-baseestimator): Base class for all estimators in Concrete-ML.
 - [`base.BaseTreeClassifierMixin`](./concrete.ml.sklearn.base.md#class-basetreeclassifiermixin): Mixin class for tree-based classifiers.
 - [`base.BaseTreeEstimatorMixin`](./concrete.ml.sklearn.base.md#class-basetreeestimatormixin): Mixin class for tree-based estimators.
 - [`base.BaseTreeRegressorMixin`](./concrete.ml.sklearn.base.md#class-basetreeregressormixin): Mixin class for tree-based regressors.
 - [`base.QuantizedTorchEstimatorMixin`](./concrete.ml.sklearn.base.md#class-quantizedtorchestimatormixin): Mixin that provides quantization for a torch module and follows the Estimator API.
+- [`base.SklearnLineaRegressorMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearegressormixin): A Mixin class for sklearn linear regressors with FHE.
 - [`base.SklearnLinearClassifierMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearclassifiermixin): A Mixin class for sklearn linear classifiers with FHE.
 - [`base.SklearnLinearModelMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearmodelmixin): A Mixin class for sklearn linear models with FHE.
 - [`glm.GammaRegressor`](./concrete.ml.sklearn.glm.md#class-gammaregressor): A Gamma regression model with FHE.

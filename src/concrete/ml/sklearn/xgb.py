@@ -1,19 +1,16 @@
 """Implements XGBoost models."""
 import platform
 import warnings
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy
 import xgboost.sklearn
-
-from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
 
 # The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
 # here in order to avoid duplicating them.
 from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
-from ..quantization import QuantizedArray
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
 
@@ -27,14 +24,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
     """
 
     sklearn_alg = xgboost.sklearn.XGBClassifier
-    q_x_byfeatures: List[QuantizedArray]
-    n_bits: int
-    output_quantizers: List[UniformQuantizer]
-    _tensor_tree_predict: Optional[Callable]
-    n_classes_: int
-    sklearn_model: Any
     framework: str = "xgboost"
-
     _is_a_public_cml_model = True
 
     # pylint: disable=too-many-arguments,too-many-locals
@@ -125,6 +115,14 @@ class XGBClassifier(BaseTreeClassifierMixin):
         self.verbosity = verbosity
         self.post_processing_params: Dict[str, Any] = {}
 
+    @property
+    def _is_fitted(self):
+        return (
+            super()._is_fitted
+            and self.post_processing_params.get("n_classes_", None) is not None
+            and self.post_processing_params.get("n_estimators", None) is not None
+        )
+
     def _update_post_processing_params(self):
         """Update the post processing params."""
         self.post_processing_params = {
@@ -133,6 +131,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
         }
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+
         y_preds = super().post_processing(y_preds)
 
         # Update post-processing params with their current values
@@ -165,11 +165,6 @@ class XGBRegressor(BaseTreeRegressorMixin):
     """
 
     sklearn_alg = xgboost.sklearn.XGBRegressor
-    q_x_byfeatures: List[QuantizedArray]
-    n_bits: int
-    output_quantizers: List[UniformQuantizer]
-    _tensor_tree_predict: Optional[Callable]
-    sklearn_model: Any
     framework: str = "xgboost"
     _is_a_public_cml_model = True
 
@@ -261,6 +256,12 @@ class XGBRegressor(BaseTreeRegressorMixin):
         self.verbosity = verbosity
         self.post_processing_params: Dict[str, Any] = {}
 
+    @property
+    def _is_fitted(self):
+        return (
+            super()._is_fitted and self.post_processing_params.get("n_estimators", None) is not None
+        )
+
     def _update_post_processing_params(self):
         """Update the post processing params."""
         self.post_processing_params = {
@@ -268,6 +269,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         }
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+
         # Update post-processing params with their current values
         self.__dict__.update(self.post_processing_params)
 

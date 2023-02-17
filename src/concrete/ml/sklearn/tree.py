@@ -1,10 +1,7 @@
-"""Implement the sklearn tree models."""
-from typing import Callable, Optional
+"""Implement DecisionTree models."""
 
 import sklearn
-from concrete.numpy.compilation.circuit import Circuit
 
-from ..quantization.quantizers import QuantizedArray
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
 
@@ -13,15 +10,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
     sklearn_alg = sklearn.tree.DecisionTreeClassifier
-    q_x_byfeatures: list
-    fhe_tree: Circuit
-    _tensor_tree_predict: Optional[Callable]
-    q_y: QuantizedArray
-    class_mapping_: Optional[dict]
-    n_classes_: int
     framework: str = "sklearn"
-
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -61,10 +50,6 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         self.ccp_alpha = ccp_alpha
 
         BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
-        self.q_x_byfeatures = []
-        self.n_bits = n_bits
-        self.fhe_tree = None
-        self.class_mapping_ = None
 
 
 # pylint: disable-next=too-many-instance-attributes
@@ -72,13 +57,7 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
     sklearn_alg = sklearn.tree.DecisionTreeRegressor
-    q_x_byfeatures: list
-    fhe_tree: Circuit
-    _tensor_tree_predict: Optional[Callable]
-    q_y: QuantizedArray
     framework: str = "sklearn"
-
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -116,7 +95,3 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         self.ccp_alpha = ccp_alpha
 
         BaseTreeRegressorMixin.__init__(self, n_bits=n_bits)
-        self.q_x_byfeatures = []
-        self.n_bits = n_bits
-        self.fhe_tree = None
-        self.class_mapping_ = None

@@ -13,6 +13,7 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
+from skorch.exceptions import NotInitializedError
 from torch import nn
 
 from concrete.ml.common.utils import (
@@ -100,8 +101,8 @@ def test_parameter_validation(model, load_data):
         concrete_classifier = model(**params)
 
         with pytest.raises(
-            ValueError,
-            match=".* must be trained.*",
+            NotInitializedError,
+            match=".* Call 'initialize' or 'fit' with appropriate arguments .*",
         ):
             _ = concrete_classifier.n_bits_quant
 
@@ -199,19 +200,6 @@ def test_compile_and_calib(
 
     clf = model(**params)
 
-    # Compiling a model that is not trained should fail
-    with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
-        clf.compile(
-            x_train,
-            configuration=default_configuration,
-            use_virtual_lib=use_virtual_lib,
-        )
-
-    # Predicting in FHE with a model that is not trained and calibrated should fail
-    with pytest.raises(ValueError, match=".* needs to be calibrated .*"):
-        x_test_q = numpy.zeros((1, n_features), dtype=numpy.float32)
-        clf.predict(x_test_q, execute_in_fhe=True)
-
     # Train the model
     # Needed for coverage
     if is_regressor(model):
@@ -232,11 +220,6 @@ def test_compile_and_calib(
         y_pred_clear = clf.predict(x_train, execute_in_fhe=False)
         # Check that the predicted classes are all contained in the model class list
         assert set(numpy.unique(y_pred_clear)).issubset(set(clf.classes_))
-
-    # Predicting with a model that is not compiled should fail
-    with pytest.raises(ValueError, match=".* not yet compiled .*"):
-        x_test_q = numpy.zeros((1, n_features), dtype=numpy.float32)
-        clf.predict(x_test_q, execute_in_fhe=True)
 
     # Compile the model
     clf.compile(

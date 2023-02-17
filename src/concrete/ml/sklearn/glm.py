@@ -48,7 +48,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self.tol = tol
         self.warm_start = warm_start
         self.verbose = verbose
-        self._onnx_model_ = None
         super().__init__(n_bits=n_bits)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -79,12 +78,6 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
-
-        assert_true(
-            self.sklearn_model is not None,
-            "The model is not fitted. Please run fit(...) on proper arguments first.",
-        )
-
         # Initialize the Torch model. Using a small Torch model that reproduces the proper
         # inference is necessary for GLMs. Indeed, the Hummingbird library does not support these
         # models and thus cannot be used to convert them into an ONNX form. Additionally, a
@@ -102,7 +95,7 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         )
 
         # Retrieve the ONNX graph
-        self.onnx_model = numpy_module.onnx_model
+        self.onnx_model_ = numpy_module.onnx_model
 
     @abstractmethod
     def _inverse_link(self, y_preds):
@@ -130,8 +123,6 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
     """
 
     sklearn_alg = sklearn.linear_model.PoissonRegressor
-
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     def __init__(
@@ -186,8 +177,6 @@ class GammaRegressor(_GeneralizedLinearRegressor):
     """
 
     sklearn_alg = sklearn.linear_model.GammaRegressor
-
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     def __init__(
@@ -242,8 +231,6 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
     """
 
     sklearn_alg = sklearn.linear_model.TweedieRegressor
-
-    # pylint: disable-next=protected-access
     _is_a_public_cml_model = True
 
     def __init__(
@@ -280,7 +267,8 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
     @property
     def _is_fitted(self):
         return (
-            self.post_processing_params.get("link", None) is not None
+            super()._is_fitted
+            and self.post_processing_params.get("link", None) is not None
             and self.post_processing_params.get("power", None) is not None
         )
 
@@ -305,6 +293,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         Returns:
             The model's final predictions.
         """
+        self.check_model_is_fitted()
 
         if self.post_processing_params["link"] == "auto":
 
