@@ -1,0 +1,8 @@
+FROM zamafhe/concrete-ml:v0.6.1
+WORKDIR /project
+COPY ./local_datasets ./local_datasets
+COPY ./train_requirements.txt ./train_requirements.txt
+RUN python -m pip install -r train_requirements.txt
+COPY ./train.py ./train.py
+COPY ./utils.py ./utils.py
+ENTRYPOINT python train.py
