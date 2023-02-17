@@ -243,14 +243,21 @@ def run_and_report_metric(y_gt, y_pred, metric, metric_id, metric_label):
     )
 
 
-def run_and_report_classification_metrics(y_gt, y_pred, metric_id_prefix, metric_label_prefix):
+def run_and_report_classification_metrics(
+    y_gt, y_pred, metric_id_prefix, metric_label_prefix, use_f1=True
+):
     """Run several metrics and report results to progress tracker with computed name and id"""
 
     metric_info = [
         (accuracy_score, "acc", "Accuracy"),
-        (f1_score, "f1", "F1Score"),
         (matthews_corrcoef, "mcc", "MCC"),
     ]
+
+    if use_f1:
+        metric_info += [
+            (f1_score, "f1", "F1Score"),
+        ]
+
     for (metric, metric_id, metric_label) in metric_info:
         run_and_report_metric(
             y_gt,

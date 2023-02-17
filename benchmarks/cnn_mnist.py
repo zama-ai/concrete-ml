@@ -1,4 +1,7 @@
+import argparse
 import os
+import random
+import time
 from pathlib import Path
 from typing import cast
 
@@ -6,7 +9,7 @@ import numpy as np
 import py_progress_tracker as progress
 import torch
 import torch.utils
-from common import BENCHMARK_CONFIGURATION, run_and_report_classification_metrics
+from common import BENCHMARK_CONFIGURATION, run_and_report_classification_metrics, seed_everything
 from concrete.numpy.compilation.circuit import Circuit
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
@@ -18,11 +21,8 @@ from tqdm import tqdm
 
 from concrete.ml.torch.compile import compile_torch_model
 
-N_EPOCHS = 30
-TINYCNN_CHECKPOINT_FILE = "tiny_mnist.pth"
-
+# To define the length of train sample for compilation
 N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
-N_MAX_RUN_FHE = int(os.environ.get("N_MAX_RUN_FHE", 100))
 
 
 class TinyCNN(nn.Module):
@@ -115,7 +115,7 @@ def train_one_epoch(epoch, net, optimizer, train_loader):
 
         avg_loss += loss_net.item()
 
-    print(f"Train epoch {epoch} loss: {avg_loss / len(train_loader)}")
+    print(f"Train epoch {epoch} loss: {avg_loss / len(train_loader):.2f}")
 
 
 def test_torch(net, test_loader, metric_id_prefix, metric_label_prefix, epoch=None):
@@ -143,21 +143,36 @@ def test_torch(net, test_loader, metric_id_prefix, metric_label_prefix, epoch=No
     # Print out the accuracy as a percentage
     if metric_id_prefix is not None and metric_label_prefix is not None:
         run_and_report_classification_metrics(
-            all_targets, all_y_pred, metric_id_prefix, metric_label_prefix
+            all_targets, all_y_pred, metric_id_prefix, metric_label_prefix, use_f1=False
         )
     else:
         # Print out the accuracy as a percentage, used during training
         n_correct = np.sum(all_targets == all_y_pred)
-        print(f"Training epoch {epoch} accuracy: {n_correct / len(test_loader) * 100}")
+        print(f"Training epoch {epoch} accuracy: {n_correct / len(test_loader) * 100:.2f}")
 
 
 def test_concrete(
-    quantized_module, test_loader, metric_id_prefix, metric_label_prefix, use_fhe, use_vl
+    quantized_module, test_loader, metric_id_prefix, metric_label_prefix, args, use_fhe, use_vl
 ):
     """Test a compiled network."""
+    assert use_fhe ^ use_vl
+
+    if args.mlir_only:
+        # If called with a virtual circuit, we don't do anything
+        if use_fhe:
+            print("MLIR:", quantized_module.forward_fhe.mlir)
+        return
 
     all_y_pred = np.zeros((len(test_loader)), dtype=np.int64)
     all_targets = np.zeros((len(test_loader)), dtype=np.int64)
+
+    if use_fhe:
+        t_start = time.time()
+        quantized_module.forward_fhe.keygen()
+        duration = time.time() - t_start
+        progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
+
+    t_start = time.time()
 
     # Iterate over the test batches and accumulate predictions and ground truth labels in a vector
     idx = 0
@@ -177,9 +192,10 @@ def test_concrete(
 
             # Execute either in FHE (compiled or VL) or just in quantized
             if use_fhe or use_vl:
-                out_fhe = quantized_module.forward_fhe.run(x_q)
+                out_fhe = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
                 output = quantized_module.dequantize_output(out_fhe)
             else:
+                # Here, that's with quantized module, but we could remove it, it will never be used
                 output = quantized_module.forward_and_dequant(x_q)
 
             # Take the predicted class from the outputs and store it
@@ -187,31 +203,26 @@ def test_concrete(
             all_y_pred[idx] = y_pred
             idx += 1
 
+    if use_fhe:
+        assert idx == args.fhe_samples, f"{idx=} {args.fhe_samples=}"
+
     # Compute and report results
     run_and_report_classification_metrics(
-        all_targets, all_y_pred, metric_id_prefix, metric_label_prefix
+        all_targets, all_y_pred, metric_id_prefix, metric_label_prefix, use_f1=False
+    )
+
+    duration = time.time() - t_start
+    duration_per_sample = duration / idx
+
+    progress.measure(
+        id=metric_id_prefix + "-execution-time-per-sample",
+        label="Execution Time per sample for " + metric_id_prefix,
+        value=duration_per_sample,
     )
 
 
-@progress.track(
-    [
-        {
-            "id": f"cnn_mnist_{n_bits}",
-            "name": f"CNN on MNIST {n_bits}b",
-            "parameters": {"n_bits": n_bits},
-            "samples": 1,
-        }
-        for n_bits in range(2, 10)
-    ]
-)
-def main(n_bits):
-    """Runs a CNN benchmark for the tiny CNN on the small MNIST dataset.
-
-    Train the network for 30 epochs to each about 80-85% accuracy. Then compile the network to FHE
-    and check that the results match with the quantized-clear version. Compute accuracies for
-    various quantization precisions.
-    """
-
+def train_mnist(args):
+    """Train the network for some epochs (typically 30 epochs reach about 80-85% accuracy"""
     X, y = make_dataset()
 
     # Standardize the data
@@ -235,27 +246,49 @@ def main(n_bits):
     test_dataloader = DataLoader(test_dataset)
 
     # If a checkpoint is available, we should use it
-    if Path(TINYCNN_CHECKPOINT_FILE).is_file():
+    pth_file = "tiny_mnist_" + "cnn.pth"
+
+    print()
+
+    if Path(pth_file).is_file() and args.use_checkpoint:
+
+        print(f"Skip training: use {pth_file}")
+
         # Disable pruning since we won't train the network
         net.toggle_pruning(False)
 
         # Load the state dictionary
-        state_dict = torch.load(TINYCNN_CHECKPOINT_FILE)
+        state_dict = torch.load(pth_file)
         net.load_state_dict(state_dict)
     else:
+
+        print(f"Training for {args.epochs} epochs")
+
         # Create a train data loader
         train_dataset = TensorDataset(torch.Tensor(x_train), torch.Tensor(y_train))
         train_dataloader = DataLoader(train_dataset, batch_size=64)
 
         # Train the network with Adam, output the test set accuracy every epoch
         optimizer = torch.optim.Adam(net.parameters())
-        for epoch in range(N_EPOCHS):
+        for epoch in range(args.epochs):
             train_one_epoch(epoch, net, optimizer, train_dataloader)
             test_torch(net, test_dataloader, None, None, epoch=epoch)
 
         # Finally save a checkpoint on the trained network to speed up further tests
         net.toggle_pruning(False)
-        torch.save(net.state_dict(), TINYCNN_CHECKPOINT_FILE)
+        torch.save(net.state_dict(), pth_file)
+
+    print()
+
+    return net, x_train, x_test, y_test, test_dataloader
+
+
+def test_cnn_mnist(args, net, x_train, x_test, y_test, test_dataloader, n_bits):
+    """Runs a CNN benchmark for the tiny CNN on the small MNIST dataset.
+
+    Run on VL the full test-set, then, if execute_in_fhe is set, run on VL and later in FHE the
+    partial test-set. Compute accuracies.
+    """
 
     # Run a test in fp32 to establish accuracy
     test_torch(net, test_dataloader, "torch-fp32", "Torch fp32")
@@ -273,53 +306,146 @@ def main(n_bits):
     vfhe_circuit = cast(Circuit, q_module_vl.forward_fhe)
     # Despite casting and the assert, pylint still does not consider this a Circuit
     # pylint: disable=no-member
-    print(f"Max n_bits during inference: {vfhe_circuit.get_max_bit_width()}")
+    print(f"Selected n_bits = {n_bits}")
+    print(f"Max numbers of bits during inference: {vfhe_circuit.graph.maximum_integer_bit_width()}")
     # pylint: enable=no-member
 
+    print("Testing in VL, full dataset")
     test_concrete(
         q_module_vl,
         test_dataloader,
         "quantized-clear",
         "Quantized Clear",
+        args,
         use_fhe=False,
         use_vl=True,
     )
 
-    # Only do FHE tests for 2 bits
-    if os.environ.get("BENCHMARK_NO_FHE", "0") == "0" and n_bits == 2:
+    # Do FHE tests
+    if args.execute_in_fhe:
         # Select a smaller set for FHE tests
         small_test_dataset = TensorDataset(
-            torch.Tensor(x_test[0:N_MAX_RUN_FHE, ::]), torch.Tensor(y_test[0:N_MAX_RUN_FHE])
+            torch.Tensor(x_test[0 : args.fhe_samples, ::]),
+            torch.Tensor(y_test[0 : args.fhe_samples]),
         )
         small_test_dataloader = DataLoader(small_test_dataset)
 
         # Now compile and run the FHE evaluation on a small set in virtual lib mode
-        q_module_2b_vl = compile_torch_model(
+        q_module_vl = compile_torch_model(
             net,
             x_train[0:N_MAX_COMPILE_FHE, ::],
-            n_bits=2,
+            n_bits=n_bits,
             use_virtual_lib=True,
             configuration=BENCHMARK_CONFIGURATION,
         )
 
+        print("Testing in VL, partial dataset")
         test_concrete(
-            q_module_2b_vl,
+            q_module_vl,
             small_test_dataloader,
             "quant-clear-fhe-set",
             "Quantized Clear on FHE set",
+            args,
             use_fhe=False,
             use_vl=True,
         )
 
         # Now compile and run the FHE evaluation on a small set
-        q_module_2b_fhe = compile_torch_model(
+        q_module_fhe = compile_torch_model(
             net,
             x_train[0:N_MAX_COMPILE_FHE, ::],
-            n_bits=2,
+            n_bits=n_bits,
             use_virtual_lib=False,
             configuration=BENCHMARK_CONFIGURATION,
         )
 
+        print("Testing in FHE, partial dataset")
         test_concrete(
-            q_module_2b_fhe, small_test_dataloader, "fhe", "FHE", use_fhe=True, use_vl=False
+            q_module_fhe, small_test_dataloader, "fhe", "FHE", args, use_fhe=True, use_vl=False
         )
+
+
+def argument_manager():
+    # Manage arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mlir_only", type=int, help="Only dump MLIR (no inference)")
+    parser.add_argument("--verbose", action="store_true", help="show more information on stdio")
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=random.randint(0, 2**32 - 1),
+        help="set the seed for reproducibility",
+    )
+    parser.add_argument(
+        "--n_bits",
+        type=int,
+        nargs="+",
+        default=range(2, 9),
+        help="n_bits values",
+    )
+    parser.add_argument(
+        "--model_samples",
+        type=int,
+        default=1,
+        help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+    )
+    parser.add_argument(
+        "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
+    )
+    parser.add_argument(
+        "--execute_in_fhe",
+        action="store_true",
+        help="force to execute in FHE (default is to use should_test_config_in_fhe function)",
+    )
+    parser.add_argument(
+        "--use_checkpoint",
+        action="store_true",
+        help="don't do training, reuse .pth file",
+    )
+    parser.add_argument("--epochs", type=int, default=1, help="number of epochs for the training")
+
+    args = parser.parse_args()
+
+    return args
+
+
+def main():
+
+    # Parameters by the user
+    args = argument_manager()
+
+    # Seed everything we can
+    seed_everything(args.seed)
+
+    print()
+    print(f"Using --seed {args.seed}")
+    print("Epochs:", args.epochs)
+    print("n_bits:", list(args.n_bits))
+    print("Do FHE:", args.execute_in_fhe)
+
+    if args.execute_in_fhe:
+        print("Number of FHE samples:", args.fhe_samples)
+
+    net, x_train, x_test, y_test, test_dataloader = train_mnist(args)
+
+    @progress.track(
+        [
+            {
+                "id": f"cnn_mnist_{n_bits}b",
+                "name": f"CNN on MNIST with {n_bits}b",
+                "samples": args.model_samples,
+                "parameters": {"n_bits": n_bits},
+            }
+            for n_bits in args.n_bits
+        ]
+    )
+    def perform_cnn_mnist_benchmark(n_bits):
+        """
+        This is the test function called by the py-progress module. It just calls the
+        benchmark function with the right parameter combination
+        """
+        test_cnn_mnist(args, net, x_train, x_test, y_test, test_dataloader, n_bits)
+
+
+if __name__ == "__main__":
+    main()
