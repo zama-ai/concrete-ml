@@ -26,14 +26,15 @@ N_MAX_COMPILE_FHE = int(os.environ.get("N_MAX_COMPILE_FHE", 1000))
 
 
 class TinyCNN(nn.Module):
-    """A very small CNN to classify the sklearn digits dataset.
+    """A very small CNN to classify the sklearn digits dataset. Typically 30 epochs reach
+    about 80-85% accuracy
 
     This class also allows pruning to a maximum of 10 active neurons, which
     should help with keeping the accumulator bitwidth low.
     """
 
     def __init__(self, n_classes) -> None:
-        """Construct the CNN with a configurable number of classes."""
+        """Construct the NN with a configurable number of classes."""
         super().__init__()
 
         # This network has a total complexity of 1216 MAC
@@ -72,13 +73,226 @@ class TinyCNN(nn.Module):
                     prune.remove(layer, "weight")
 
     def forward(self, x):
-        """Run inference on the tiny CNN, apply the decision layer on the reshaped conv output."""
+        """Run inference on the NN, apply the decision layer on the reshaped conv output."""
 
         x = self.conv1(x)
         x = torch.relu(x)
         x = self.conv2(x)
         x = torch.relu(x)
         x = self.conv3(x)
+        x = torch.relu(x)
+        x = x.view(-1, 16)
+        x = self.fc1(x)
+        return x
+
+
+class DeepAndNarrowNN(nn.Module):
+    """A deep and narrow NN to classify the sklearn digits dataset. Typically 30 epochs reach
+    about BCM% accuracy
+
+    This class also allows pruning to a maximum of 10 active neurons, which
+    should help with keeping the accumulator bitwidth low.
+    """
+
+    def __init__(self, n_classes) -> None:
+        """Construct the NN with a configurable number of classes."""
+        super().__init__()
+
+        # This network has a total complexity of BCM MAC
+        self.conv1 = nn.Conv2d(1, 2, 3, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(2, 3, 3, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(3, 16, 1, stride=1, padding=0)
+        self.conv4 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv5 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv6 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv7 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv8 = nn.Conv2d(16, 16, 2, stride=1, padding=0)
+        self.fc1 = nn.Linear(16, n_classes)
+
+        # Enable pruning, prepared for training
+        self.toggle_pruning(True)
+
+    def toggle_pruning(self, enable):
+        """Enables or removes pruning."""
+
+        # Maximum number of active neurons (i.e. corresponding weight != 0)
+        n_active = 10
+
+        # Go through all the convolution layers
+        for layer in (self.conv1, self.conv2, self.conv3):
+            s = layer.weight.shape
+
+            # Compute fan-in (number of inputs to a neuron)
+            # and fan-out (number of neurons in the layer)
+            st = [s[0], np.prod(s[1:])]
+
+            # The number of input neurons (fan-in) is the product of
+            # the kernel width x height x inChannels.
+            if st[1] > n_active:
+                if enable:
+                    # This will create a forward hook to create a mask tensor that is multiplied
+                    # with the weights during forward. The mask will contain 0s or 1s
+                    prune.l1_unstructured(layer, "weight", (st[1] - n_active) * st[0])
+                else:
+                    # When disabling pruning the mask is multiplied with the weights
+                    # and the result stored in the weights member
+                    prune.remove(layer, "weight")
+
+    def forward(self, x):
+        """Run inference on the NN, apply the decision layer on the reshaped conv output."""
+
+        x = self.conv1(x)
+        x = torch.relu(x)
+        x = self.conv2(x)
+        x = torch.relu(x)
+        x = self.conv3(x)
+        x = torch.relu(x)
+        x = self.conv4(x)
+        x = torch.relu(x)
+        x = self.conv5(x)
+        x = torch.relu(x)
+        x = self.conv6(x)
+        x = torch.relu(x)
+        x = self.conv7(x)
+        x = torch.relu(x)
+        x = self.conv8(x)
+        x = torch.relu(x)
+        x = x.view(-1, 16)
+        x = self.fc1(x)
+        return x
+
+
+class ShallowAndWideNN(nn.Module):
+    """A shallow and wide NN to classify the sklearn digits dataset. Typically 30 epochs reach
+    about 90-95% accuracy
+
+    This class also allows pruning to a maximum of 10 active neurons, which
+    should help with keeping the accumulator bitwidth low.
+    """
+
+    def __init__(self, n_classes) -> None:
+        """Construct the NN with a configurable number of classes."""
+        super().__init__()
+
+        # This network has a total complexity of BCM MAC
+        self.conv1 = nn.Conv2d(1, 2, 3, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(2, 50, 4, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(50, 16, 2, stride=1, padding=0)
+        self.fc1 = nn.Linear(16, n_classes)
+
+        # Enable pruning, prepared for training
+        self.toggle_pruning(True)
+
+    def toggle_pruning(self, enable):
+        """Enables or removes pruning."""
+
+        # Maximum number of active neurons (i.e. corresponding weight != 0)
+        n_active = 10
+
+        # Go through all the convolution layers
+        for layer in (self.conv1, self.conv2, self.conv3):
+            s = layer.weight.shape
+
+            # Compute fan-in (number of inputs to a neuron)
+            # and fan-out (number of neurons in the layer)
+            st = [s[0], np.prod(s[1:])]
+
+            # The number of input neurons (fan-in) is the product of
+            # the kernel width x height x inChannels.
+            if st[1] > n_active:
+                if enable:
+                    # This will create a forward hook to create a mask tensor that is multiplied
+                    # with the weights during forward. The mask will contain 0s or 1s
+                    prune.l1_unstructured(layer, "weight", (st[1] - n_active) * st[0])
+                else:
+                    # When disabling pruning the mask is multiplied with the weights
+                    # and the result stored in the weights member
+                    prune.remove(layer, "weight")
+
+    def forward(self, x):
+        """Run inference on the NN, apply the decision layer on the reshaped conv output."""
+
+        x = self.conv1(x)
+        x = torch.relu(x)
+        x = self.conv2(x)
+        x = torch.relu(x)
+        x = self.conv3(x)
+        x = torch.relu(x)
+        x = x.view(-1, 16)
+        x = self.fc1(x)
+        return x
+
+
+class DeepAndWideNN(nn.Module):
+    """A deep and wide NN to classify the sklearn digits dataset. Typically 30 epochs reach
+    about BCM% accuracy
+
+    This class also allows pruning to a maximum of 10 active neurons, which
+    should help with keeping the accumulator bitwidth low.
+    """
+
+    def __init__(self, n_classes) -> None:
+        """Construct the NN with a configurable number of classes."""
+        super().__init__()
+
+        # This network has a total complexity of BCM MAC
+        self.conv1 = nn.Conv2d(1, 2, 3, stride=1, padding=0)
+        self.conv2 = nn.Conv2d(2, 3, 3, stride=2, padding=0)
+        self.conv3 = nn.Conv2d(3, 16, 1, stride=1, padding=0)
+        self.conv4 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv5 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv6 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv7 = nn.Conv2d(16, 16, 1, stride=1, padding=0)
+        self.conv8 = nn.Conv2d(16, 16, 2, stride=1, padding=0)
+        self.fc1 = nn.Linear(16, n_classes)
+
+        # Enable pruning, prepared for training
+        self.toggle_pruning(True)
+
+    def toggle_pruning(self, enable):
+        """Enables or removes pruning."""
+
+        # Maximum number of active neurons (i.e. corresponding weight != 0)
+        n_active = 10
+
+        # Go through all the convolution layers
+        for layer in (self.conv1, self.conv2, self.conv3):
+            s = layer.weight.shape
+
+            # Compute fan-in (number of inputs to a neuron)
+            # and fan-out (number of neurons in the layer)
+            st = [s[0], np.prod(s[1:])]
+
+            # The number of input neurons (fan-in) is the product of
+            # the kernel width x height x inChannels.
+            if st[1] > n_active:
+                if enable:
+                    # This will create a forward hook to create a mask tensor that is multiplied
+                    # with the weights during forward. The mask will contain 0s or 1s
+                    prune.l1_unstructured(layer, "weight", (st[1] - n_active) * st[0])
+                else:
+                    # When disabling pruning the mask is multiplied with the weights
+                    # and the result stored in the weights member
+                    prune.remove(layer, "weight")
+
+    def forward(self, x):
+        """Run inference on the NN, apply the decision layer on the reshaped conv output."""
+
+        x = self.conv1(x)
+        x = torch.relu(x)
+        x = self.conv2(x)
+        x = torch.relu(x)
+        x = self.conv3(x)
+        x = torch.relu(x)
+        x = self.conv4(x)
+        x = torch.relu(x)
+        x = self.conv5(x)
+        x = torch.relu(x)
+        x = self.conv6(x)
+        x = torch.relu(x)
+        x = self.conv7(x)
+        x = torch.relu(x)
+        x = self.conv8(x)
         x = torch.relu(x)
         x = x.view(-1, 16)
         x = self.fc1(x)
@@ -221,8 +435,8 @@ def test_concrete(
     )
 
 
-def train_mnist(args):
-    """Train the network for some epochs (typically 30 epochs reach about 80-85% accuracy"""
+def train_mnist(args, net_name):
+    """Train the network for some epoch"""
     X, y = make_dataset()
 
     # Standardize the data
@@ -238,21 +452,30 @@ def train_mnist(args):
         X, y, test_size=0.25, shuffle=True, random_state=42
     )
 
-    # Create the tiny CNN with 10 output classes
-    net = TinyCNN(10)
+    # Create the model with 10 output classes
+    if net_name == "tiny_cnn":
+        net = TinyCNN(10)
+    elif net_name == "deep_and_narrow_nn":
+        net = DeepAndNarrowNN(10)
+    elif net_name == "shallow_and_wide_nn":
+        net = ShallowAndWideNN(10)
+    elif net_name == "deep_and_wide_nn":
+        net = DeepAndWideNN(10)
+    else:
+        raise ValueError(f"bad name {net_name}")
 
     # Create a test data loader to supply batches for network evaluation (test)
     test_dataset = TensorDataset(torch.Tensor(x_test), torch.Tensor(y_test))
     test_dataloader = DataLoader(test_dataset)
 
     # If a checkpoint is available, we should use it
-    pth_file = "tiny_mnist_" + "cnn.pth"
+    pth_file = "mnist_" + net_name
 
     print()
 
     if Path(pth_file).is_file() and args.use_checkpoint:
 
-        print(f"Skip training: use {pth_file}")
+        print(f"Skip training for {net_name}: use {pth_file}")
 
         # Disable pruning since we won't train the network
         net.toggle_pruning(False)
@@ -262,7 +485,7 @@ def train_mnist(args):
         net.load_state_dict(state_dict)
     else:
 
-        print(f"Training for {args.epochs} epochs")
+        print(f"Training for {net_name} for {args.epochs} epochs")
 
         # Create a train data loader
         train_dataset = TensorDataset(torch.Tensor(x_train), torch.Tensor(y_train))
@@ -283,8 +506,8 @@ def train_mnist(args):
     return net, x_train, x_test, y_test, test_dataloader
 
 
-def test_cnn_mnist(args, net, x_train, x_test, y_test, test_dataloader, n_bits):
-    """Runs a CNN benchmark for the tiny CNN on the small MNIST dataset.
+def test_net_mnist(args, net, x_train, x_test, y_test, test_dataloader, n_bits):
+    """Runs a NN benchmark on the small MNIST dataset.
 
     Run on VL the full test-set, then, if execute_in_fhe is set, run on VL and later in FHE the
     partial test-set. Compute accuracies.
@@ -384,6 +607,14 @@ def argument_manager():
         help="n_bits values",
     )
     parser.add_argument(
+        "--list_of_networks",
+        type=str,
+        nargs="+",
+        default=["tiny_cnn", "deep_and_narrow_nn", "shallow_and_wide_nn", "deep_and_wide_nn"],
+        choices=["tiny_cnn", "deep_and_narrow_nn", "shallow_and_wide_nn", "deep_and_wide_nn"],
+        help="which NN to benchmark",
+    )
+    parser.add_argument(
         "--model_samples",
         type=int,
         default=1,
@@ -419,6 +650,7 @@ def main():
 
     print()
     print(f"Using --seed {args.seed}")
+    print(f"Networks {args.list_of_networks}")
     print("Epochs:", args.epochs)
     print("n_bits:", list(args.n_bits))
     print("Do FHE:", args.execute_in_fhe)
@@ -426,25 +658,32 @@ def main():
     if args.execute_in_fhe:
         print("Number of FHE samples:", args.fhe_samples)
 
-    net, x_train, x_test, y_test, test_dataloader = train_mnist(args)
+    net = {}
+
+    for net_name in args.list_of_networks:
+        net[net_name], x_train, x_test, y_test, test_dataloader = train_mnist(args, net_name)
+
+    # There is a mistake by pylint in next loop, which believes that net_name may not be defined
+    net_name = ""
 
     @progress.track(
         [
             {
                 "id": f"cnn_mnist_{n_bits}b",
-                "name": f"CNN on MNIST with {n_bits}b",
+                "name": f"{net_name} on MNIST with {n_bits}b",
                 "samples": args.model_samples,
-                "parameters": {"n_bits": n_bits},
+                "parameters": {"n_bits": n_bits, "net_name": net_name},
             }
             for n_bits in args.n_bits
+            for net_name in args.list_of_networks
         ]
     )
-    def perform_cnn_mnist_benchmark(n_bits):
+    def perform_mnist_benchmark(n_bits, net_name):
         """
         This is the test function called by the py-progress module. It just calls the
         benchmark function with the right parameter combination
         """
-        test_cnn_mnist(args, net, x_train, x_test, y_test, test_dataloader, n_bits)
+        test_net_mnist(args, net[net_name], x_train, x_test, y_test, test_dataloader, n_bits)
 
 
 if __name__ == "__main__":
