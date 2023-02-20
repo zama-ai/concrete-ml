@@ -59,7 +59,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     use_virtual_lib,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
-    rounding_threshold_bits=None,
     dump_onnx=False,
     expected_onnx_str=None,
     verbose_compilation=False,
@@ -91,10 +90,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
     if not use_virtual_lib:
-
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-        # Rounding isn't supported in FHE yet
-        rounding_threshold_bits = None
 
         n_bits = (
             {"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2}
@@ -166,7 +161,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 "model_outputs": 16,
             }
 
-        # Compile with higher quantization bitwidth
         quantized_numpy_module = compile_torch_model(
             torch_model,
             inputset,
@@ -175,29 +169,21 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             n_bits=n_bits,
             use_virtual_lib=use_virtual_lib,
             verbose_compilation=verbose_compilation,
-            rounding_threshold_bits=rounding_threshold_bits,
         )
 
-        # Create test data from the same distribution and quantize using.
-        n_examples_test = 100
-        x_test = tuple(
-            numpy.random.uniform(-100, 100, size=(n_examples_test, *input_output_feature))
-            for _ in range(num_inputs)
+        accuracy_test_rounding(
+            torch_model,
+            quantized_numpy_module,
+            inputset,
+            import_qat=qat_bits != 0,
+            configuration=default_configuration,
+            n_bits=n_bits,
+            use_virtual_lib=use_virtual_lib,
+            verbose_compilation=verbose_compilation,
+            input_output_feature=input_output_feature,
+            num_inputs=num_inputs,
+            check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         )
-
-        # Check the forward works with the high bitwidth
-        qtest = quantized_numpy_module.quantize_input(*x_test)
-        if not isinstance(qtest, tuple):
-            qtest = (qtest,)
-        assert quantized_numpy_module.is_compiled
-        results = []
-        for i in range(n_examples_test):
-            q_x = tuple(qtest[input][[i]] for input in range(len(qtest)))
-            q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
-            result = quantized_numpy_module.dequantize_output(q_result)
-            results.append(result)
-
-        check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
 
         onnx_model = quantized_numpy_module.onnx_model
 
@@ -208,6 +194,130 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             assert str_model == expected_onnx_str
 
     return quantized_numpy_module
+
+
+# pylint: disable-next=too-many-arguments,too-many-locals
+def accuracy_test_rounding(
+    torch_model,
+    quantized_numpy_module,
+    inputset,
+    import_qat,
+    configuration,
+    n_bits,
+    use_virtual_lib,
+    verbose_compilation,
+    input_output_feature,
+    num_inputs,
+    check_is_good_execution_for_cml_vs_circuit,
+):
+    """Check rounding behavior.
+
+    The original quantized_numpy_module, compiled over the torch_model without rounding is
+    compared against quantized_numpy_module_round_low_precision, the torch_model compiled with
+    a rounding threshold of 2 bits, and quantized_numpy_module_round_high_precision,
+    the torch_model compiled with maximum bit-width computed in the quantized_numpy_module - 1.
+
+    The final assertion test whether the mean absolute error between
+    quantized_numpy_module_round_high_precision and quantized_numpy_module is lower than
+    quantized_numpy_module_round_low_precision and quantized_numpy_module making sure that the
+    rounding feature has the expected behavior on the model accuracy.
+    """
+
+    # Check that the maximum_integer_bit_width is at least 4 bits to compare the rounding
+    # feature with enough precision.
+    assert quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() >= 4
+
+    # Compile with a rounding threshold equal to the maximum bit-width
+    # computed in the original quantized_numpy_module
+    quantized_numpy_module_round_high_precision = compile_torch_model(
+        torch_model,
+        inputset,
+        import_qat=import_qat,
+        configuration=configuration,
+        n_bits=n_bits,
+        use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
+        rounding_threshold_bits=quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width()
+        - 1,
+    )
+
+    # and another quantized module with a rounding threshold equal to 2 bits
+    quantized_numpy_module_round_low_precision = compile_torch_model(
+        torch_model,
+        inputset,
+        import_qat=import_qat,
+        configuration=configuration,
+        n_bits=n_bits,
+        use_virtual_lib=use_virtual_lib,
+        verbose_compilation=verbose_compilation,
+        rounding_threshold_bits=2,
+    )
+
+    n_examples_test = 100
+    # Create some fake data
+    x_test = tuple(
+        numpy.random.uniform(-100, 100, size=(n_examples_test, *input_output_feature))
+        for _ in range(num_inputs)
+    )
+
+    # Make sure the two modules have the same quantization result
+
+    qtest = quantized_numpy_module.quantize_input(*x_test)
+    qtest_high = quantized_numpy_module_round_high_precision.quantize_input(*x_test)
+    qtest_low = quantized_numpy_module_round_low_precision.quantize_input(*x_test)
+    numpy.testing.assert_array_equal(qtest, qtest_high)
+    numpy.testing.assert_array_equal(qtest, qtest_low)
+
+    if not isinstance(qtest, tuple):
+        qtest = (qtest,)
+
+    results = []
+    results_high_precision = []
+    results_low_precision = []
+    for i in range(n_examples_test):
+
+        # Extract the i th example for each tensor in the tuple qtest
+        # while keeping the dimension of the original tensors.
+        # e.g. if qtest is a tuple of two (100, 10) tensors
+        # then q_x becomes a tuple of two tensors of shape (1, 10).
+        q_x = tuple(q[[i]] for q in qtest)
+
+        # encrypt, run, and decrypt with different precision modes
+        q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
+        q_result_high_precision = (
+            quantized_numpy_module_round_high_precision.forward_fhe.encrypt_run_decrypt(*q_x)
+        )
+        q_result_low_precision = (
+            quantized_numpy_module_round_low_precision.forward_fhe.encrypt_run_decrypt(*q_x)
+        )
+
+        # dequantize the results to obtain the actual output values
+        result = quantized_numpy_module.dequantize_output(q_result)
+        result_high_precision = quantized_numpy_module_round_high_precision.dequantize_output(
+            q_result_high_precision
+        )
+        result_low_precision = quantized_numpy_module_round_low_precision.dequantize_output(
+            q_result_low_precision
+        )
+
+        # append the results to respective lists
+        results.append(result)
+        results_high_precision.append(result_high_precision)
+        results_low_precision.append(result_low_precision)
+
+    # Check modules predictions VL vs CML.
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module_round_high_precision)
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module_round_low_precision)
+
+    # Check that high precision gives a better match than low precision
+    mae_high_precision = numpy.abs(
+        [results[i] - results_high_precision[i] for i in range(len(results))]
+    ).mean()
+    mae_low_precision = numpy.abs(
+        [results[i] - results_low_precision[i] for i in range(len(results))]
+    ).mean()
+    assert mae_high_precision <= mae_low_precision, "Rounding is not working as expected."
 
 
 @pytest.mark.parametrize(
@@ -232,9 +342,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
-@pytest.mark.parametrize("is_onnx", [True, False])
-@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
+@pytest.mark.parametrize("use_virtual_lib", [True, False], ids=["virtual", "FHE"])
+@pytest.mark.parametrize("is_onnx", [True, False], ids=["is_onnx", ""])
 def test_compile_torch_or_onnx_networks(
     input_output_feature,
     model,
@@ -244,7 +353,6 @@ def test_compile_torch_or_onnx_networks(
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
     is_vl_only_option,
-    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -264,7 +372,6 @@ def test_compile_torch_or_onnx_networks(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
-        rounding_threshold_bits=rounding_threshold_bits,
     )
 
 
@@ -283,7 +390,6 @@ def test_compile_torch_or_onnx_networks(
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
-@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     model,
     activation_function,
@@ -294,7 +400,6 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
-    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -314,7 +419,6 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
-        rounding_threshold_bits=rounding_threshold_bits,
     )
 
     check_graph_input_has_no_tlu(q_module.fhe_circuit.graph)
@@ -370,7 +474,6 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
-@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_or_onnx_activations(
     input_output_feature,
     model,
@@ -380,7 +483,6 @@ def test_compile_torch_or_onnx_activations(
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
     is_vl_only_option,
-    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -400,7 +502,6 @@ def test_compile_torch_or_onnx_activations(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
-        rounding_threshold_bits=rounding_threshold_bits,
     )
 
 
@@ -419,7 +520,6 @@ def test_compile_torch_or_onnx_activations(
     [pytest.param(n_bits) for n_bits in [1, 2]],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-@pytest.mark.parametrize("rounding_threshold_bits", [None, 4, 8])
 def test_compile_torch_qat(
     input_output_feature,
     model,
@@ -428,7 +528,6 @@ def test_compile_torch_qat(
     use_virtual_lib,
     is_vl_only_option,
     check_is_good_execution_for_cml_vs_circuit,
-    rounding_threshold_bits,
 ):
     """Test the different model architecture from torch numpy."""
     if not use_virtual_lib and is_vl_only_option:
@@ -451,7 +550,6 @@ def test_compile_torch_qat(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose_compilation=False,
-        rounding_threshold_bits=rounding_threshold_bits,
     )
 
 
@@ -603,7 +701,12 @@ def test_pretrained_mnist_qat(
     # Collect VL results
     results = []
     for i in range(inputset.shape[0]):
-        q_x = tuple(qtest[input][[i]] for input in range(len(qtest)))
+
+        # Extract the i th example for each tensor in the tuple qtest
+        # while keeping the dimension of the original tensors.
+        # e.g. if qtest is a tuple of two (100, 10) tensors
+        # then q_x becomes a tuple of two tensors of shape (1, 10).
+        q_x = tuple(q[[i]] for q in qtest)
         q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
         result = quantized_numpy_module.dequantize_output(q_result)
         result = numpy.argmax(result)
