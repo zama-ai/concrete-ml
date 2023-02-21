@@ -2,27 +2,27 @@
 
 
 import warnings
-from functools import partial
 
 import numpy
 import onnx
 import pytest
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
+from concrete.ml.common.utils import is_model_class_in_a_list
+from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
+from concrete.ml.sklearn.base import get_sklearn_tree_models
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 
 
-def check_onnx_file_dump(model, parameters, load_data, str_expected, default_configuration):
+def check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
 
     # Get the dataset. The data generation is seeded in load_data.
-    model_name = model.__name__ if not isinstance(model, partial) else model.func.__name__
-    x, y = load_data(**parameters, model_name=model_name)
+    x, y = load_data(model_class, **parameters)
 
     # Set the model
-    model = model(n_bits=6)
+    model = model_class(n_bits=6)
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -43,10 +43,8 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
     # Get ONNX model
     onnx_model = model.onnx_model
 
-    # Save locally on disk, if one wants to have a look
-    onnx.save(onnx_model, "/tmp/" + model_name + ".onnx")
-
     # Remove initializers, since they change from one seed to the other
+    model_name = get_model_name(model_class)
     if model_name in [
         "DecisionTreeRegressor",
         "DecisionTreeClassifier",
@@ -62,31 +60,25 @@ def check_onnx_file_dump(model, parameters, load_data, str_expected, default_con
     print(str_model)
 
     # Test equality when it does not depend on seeds
-    if model_name not in {"RandomForestClassifier", "RandomForestRegressor"}:
+    if not is_model_class_in_a_list(
+        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
+    ):
         assert str_model == str_expected
 
 
-@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 def test_dump(
-    model,
+    model_class,
     parameters,
     load_data,
     default_configuration,
 ):
     """Tests dump."""
 
-    if isinstance(model, partial):
-        model_class = model.func
-    else:
-        model_class = model
-
-    model_class_name = model_class.__name__
+    model_name = get_model_name(model_class)
 
     # Some models have been done with different n_classes which create different ONNX
-    if parameters.get("n_classes", 2) != 2 and model_class_name in [
-        "LinearSVC",
-        "LogisticRegression",
-    ]:
+    if parameters.get("n_classes", 2) != 2 and model_name in ["LinearSVC", "LogisticRegression"]:
         return
 
     n_classes = parameters.get("n_classes", 2)
@@ -383,5 +375,5 @@ def test_dump(
 }""",
     }
 
-    str_expected = expected_strings[model_class_name]
-    check_onnx_file_dump(model, parameters, load_data, str_expected, default_configuration)
+    str_expected = expected_strings[model_name]
+    check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration)

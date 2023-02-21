@@ -11,12 +11,13 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, TinyQATCNN
-from concrete.ml.sklearn.qnn import (
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    SparseQuantNeuralNetImpl,
+from concrete.ml.common.utils import (
+    is_classifier_or_partial_classifier,
+    is_regressor_or_partial_regressor,
 )
+from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, TinyQATCNN
+from concrete.ml.sklearn.base import get_sklearn_neural_net_models
+from concrete.ml.sklearn.qnn import SparseQuantNeuralNetImpl
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
@@ -178,7 +179,7 @@ def test_brevitas_tinymnist_cnn(
 )
 @pytest.mark.parametrize("n_outputs", [5])
 @pytest.mark.parametrize("input_dim", [100])
-@pytest.mark.parametrize("model", [NeuralNetClassifier, NeuralNetRegressor])
+@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
 @pytest.mark.parametrize("signed, narrow", [(True, False), (False, False), (True, True)])
 @pytest.mark.skip(reason="Torch dtype setting interferes with parallel test launch, and flaky test")
 def test_brevitas_intermediary_values(
@@ -188,7 +189,7 @@ def test_brevitas_intermediary_values(
     activation_function,
     n_outputs,
     input_dim,
-    model,
+    model_class,
     load_data,
     signed,
     narrow,
@@ -211,9 +212,9 @@ def test_brevitas_intermediary_values(
     """
 
     # Get the dataset. The data generation is seeded in load_data.
-    if model == NeuralNetClassifier:
+    if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
-            dataset="classification",
+            model_class,
             n_samples=1000,
             n_features=input_dim,
             n_redundant=0,
@@ -224,9 +225,9 @@ def test_brevitas_intermediary_values(
         )
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif model == NeuralNetRegressor:
+    elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
-            dataset="regression",
+            model_class,
             n_samples=1000,
             n_features=input_dim,
             n_informative=input_dim,
@@ -237,7 +238,7 @@ def test_brevitas_intermediary_values(
         if y.ndim == 1:
             y = numpy.expand_dims(y, 1)
     else:
-        raise ValueError(f"Data generator not implemented for {str(model)}")
+        raise ValueError(f"Data generator not implemented for {str(model_class)}")
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -259,7 +260,7 @@ def test_brevitas_intermediary_values(
         "verbose": 0,
     }
 
-    concrete_model = model(**params)
+    concrete_model = model_class(**params)
 
     # Compute mean/stdev on training set and normalize both train and test sets with them
     normalizer = StandardScaler()

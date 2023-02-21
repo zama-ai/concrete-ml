@@ -7,7 +7,6 @@ import numpy
 import pandas
 import pytest
 import torch
-from sklearn.base import is_classifier, is_regressor
 from sklearn.decomposition import PCA
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.pipeline import Pipeline
@@ -19,7 +18,8 @@ from torch import nn
 from concrete.ml.common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     check_dtype_and_cast,
-    get_model_name,
+    is_classifier_or_partial_classifier,
+    is_regressor_or_partial_regressor,
 )
 from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn import (
@@ -30,8 +30,8 @@ from concrete.ml.sklearn.qnn import (
 )
 
 
-@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
-def test_parameter_validation(model, load_data):
+@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+def test_parameter_validation(model_class, load_data):
     """Test that the sklearn quantized NN wrappers validate their parameters"""
 
     valid_params = {
@@ -45,9 +45,9 @@ def test_parameter_validation(model, load_data):
     }
 
     # Get the dataset. The data generation is seeded in load_data.
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
-            dataset="classification",
+            model_class,
             n_samples=1000,
             n_features=10,
             n_redundant=0,
@@ -60,9 +60,9 @@ def test_parameter_validation(model, load_data):
         valid_params["criterion__weight"] = [1, 1]
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif is_regressor(model):
+    elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
-            dataset="regression",
+            model_class,
             n_samples=1000,
             n_features=10,
             n_informative=10,
@@ -70,7 +70,7 @@ def test_parameter_validation(model, load_data):
             coef=True,
         )
     else:
-        raise ValueError(f"Data generator not implemented for {str(model)}")
+        raise ValueError(f"Data generator not implemented for {str(model_class)}")
 
     invalid_params_and_exception_pattern = {
         "init": [
@@ -92,13 +92,13 @@ def test_parameter_validation(model, load_data):
             ValueError,
             match=inv_param[2],
         ):
-            concrete_classifier = model(**params)
+            concrete_classifier = model_class(**params)
 
     for inv_param in invalid_params_and_exception_pattern["fit"]:
         params = deepcopy(valid_params)
         params[inv_param[0]] = inv_param[1]
 
-        concrete_classifier = model(**params)
+        concrete_classifier = model_class(**params)
 
         with pytest.raises(
             NotInitializedError,
@@ -123,9 +123,14 @@ def test_parameter_validation(model, load_data):
         pytest.param(nn.CELU),
     ],
 )
-@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
+@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
 def test_compile_and_calib(
-    activation_function, model, load_data, default_configuration, use_virtual_lib, is_vl_only_option
+    activation_function,
+    model_class,
+    load_data,
+    default_configuration,
+    use_virtual_lib,
+    is_vl_only_option,
 ):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
@@ -136,9 +141,9 @@ def test_compile_and_calib(
     n_features = 10
 
     # Get the dataset. The data generation is seeded in load_data.
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
-            dataset="classification",
+            model_class,
             n_samples=1000,
             n_features=n_features,
             n_redundant=0,
@@ -152,9 +157,9 @@ def test_compile_and_calib(
         y += 10
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif is_regressor(model):
+    elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
-            dataset="regression",
+            model_class,
             n_samples=1000,
             n_features=n_features,
             n_informative=n_features,
@@ -165,7 +170,7 @@ def test_compile_and_calib(
         if y.ndim == 1:
             y = numpy.expand_dims(y, 1)
     else:
-        raise ValueError(f"Data generator not implemented for {str(model)}")
+        raise ValueError(f"Data generator not implemented for {str(model_class)}")
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -195,34 +200,34 @@ def test_compile_and_calib(
         "verbose": 0,
     }
 
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model_class):
         params["criterion__weight"] = class_weights
 
-    clf = model(**params)
+    model = model_class(**params)
 
     # Train the model
     # Needed for coverage
-    if is_regressor(model):
+    if is_regressor_or_partial_regressor(model_class):
         for x_d_type, y_d_type in product(
             [numpy.float32, numpy.float64], [numpy.float32, numpy.float64]
         ):
-            clf.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
-    elif is_classifier(model):
+            model.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
+    elif is_classifier_or_partial_classifier(model_class):
         for x_d_type, y_d_type in product(
             [numpy.float32, numpy.float64], [numpy.int32, numpy.int64]
         ):
-            clf.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
+            model.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
 
     # Train normally
-    clf.fit(x_train, y_train)
+    model.fit(x_train, y_train)
 
-    if is_classifier(model):
-        y_pred_clear = clf.predict(x_train, execute_in_fhe=False)
+    if is_classifier_or_partial_classifier(model_class):
+        y_pred_clear = model.predict(x_train, execute_in_fhe=False)
         # Check that the predicted classes are all contained in the model class list
-        assert set(numpy.unique(y_pred_clear)).issubset(set(clf.classes_))
+        assert set(numpy.unique(y_pred_clear)).issubset(set(model.classes_))
 
     # Compile the model
-    clf.compile(
+    model.compile(
         x_train,
         configuration=default_configuration,
         use_virtual_lib=use_virtual_lib,
@@ -231,7 +236,7 @@ def test_compile_and_calib(
     # Execute in FHE, but don't check the value.
     # Since FHE execution introduces some stochastic errors,
     # accuracy of FHE compiled classifiers and regressors is measured in the benchmarks
-    clf.predict(x_test[0, :], execute_in_fhe=True)
+    model.predict(x_test[0, :], execute_in_fhe=True)
 
 
 def test_custom_net_classifier(load_data):
@@ -307,11 +312,11 @@ def test_custom_net_classifier(load_data):
             # We just need to do argmax on the predicted probabilities
             return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
 
-    clf = MiniCustomNeuralNetClassifier(MiniNet, **params)
+    model = MiniCustomNeuralNetClassifier(MiniNet, **params)
 
     # Get the dataset. The data generation is seeded in load_data.
     x, y = load_data(
-        dataset="classification",
+        model,
         n_samples=1000,
         n_features=2,
         n_redundant=0,
@@ -336,7 +341,7 @@ def test_custom_net_classifier(load_data):
     x_test = normalizer.transform(x_test)
 
     # Train the model
-    clf.fit(x_train, y_train)
+    model.fit(x_train, y_train)
 
     # Test the custom network wrapper in a pipeline with grid CV
     # This will clone the skorch estimator
@@ -348,12 +353,12 @@ def test_custom_net_classifier(load_data):
         ]
     )
 
-    clf = GridSearchCV(
+    model = GridSearchCV(
         pipe_cv,
         {"net__lr": [0.01, 0.1]},
         error_score="raise",
     )
-    clf.fit(x_train, y_train)
+    model.fit(x_train, y_train)
 
 
 @pytest.mark.parametrize(
@@ -402,9 +407,7 @@ def test_failure_bad_data_types(model_classes, container, bad_types, expected_er
     """Check that training using data with unsupported dtypes raises an expected error."""
     for model_class in model_classes:
         # Generate the data
-        model_name = get_model_name(model_class)
-        dataset = "regression" if is_regressor(model_class) else "classification"
-        x, y = load_data(dataset, model_name=model_name)
+        x, y = load_data(model_class)
 
         x, y = x.astype(bad_types[0]), y.astype(bad_types[1])
 
@@ -427,16 +430,16 @@ def test_failure_bad_data_types(model_classes, container, bad_types, expected_er
 
 
 @pytest.mark.parametrize("activation_function", [pytest.param(nn.ReLU)])
-@pytest.mark.parametrize("model", get_sklearn_neural_net_models())
-def test_structured_pruning(activation_function, model, load_data, default_configuration):
+@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+def test_structured_pruning(activation_function, model_class, load_data, default_configuration):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
     n_features = 10
 
     # Get the dataset. The data generation is seeded in load_data.
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
-            dataset="classification",
+            model_class,
             n_samples=1000,
             n_features=n_features,
             n_redundant=0,
@@ -450,9 +453,9 @@ def test_structured_pruning(activation_function, model, load_data, default_confi
         y += 10
 
     # Get the dataset. The data generation is seeded in load_data.
-    elif is_regressor(model):
+    elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
-            dataset="regression",
+            model_class,
             n_samples=1000,
             n_features=n_features,
             n_informative=n_features,
@@ -463,7 +466,7 @@ def test_structured_pruning(activation_function, model, load_data, default_confi
         if y.ndim == 1:
             y = numpy.expand_dims(y, 1)
     else:
-        raise ValueError(f"Data generator not implemented for {str(model)}")
+        raise ValueError(f"Data generator not implemented for {str(model_class)}")
 
     # Perform a classic test-train split (deterministic by fixing the seed)
     x_train, x_test, y_train, _ = train_test_split(
@@ -493,23 +496,23 @@ def test_structured_pruning(activation_function, model, load_data, default_confi
         "verbose": 0,
     }
 
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model_class):
         params["criterion__weight"] = class_weights
 
-    clf = model(**params)
+    model = model_class(**params)
 
     with pytest.raises(ValueError, match=""):
-        clf.prune(x_train, y_train, 0.5)
+        model.prune(x_train, y_train, 0.5)
 
-    clf.fit(x_train, y_train)
-
-    with pytest.raises(ValueError, match=".*Valid values.*"):
-        clf.prune(x_train, y_train, -0.1)
+    model.fit(x_train, y_train)
 
     with pytest.raises(ValueError, match=".*Valid values.*"):
-        clf.prune(x_train, y_train, 1.0)
+        model.prune(x_train, y_train, -0.1)
 
-    pruned_clf = clf.prune(x_train, y_train, 0.5)
+    with pytest.raises(ValueError, match=".*Valid values.*"):
+        model.prune(x_train, y_train, 1.0)
+
+    pruned_model = model.prune(x_train, y_train, 0.5)
 
     def _get_number_of_neurons(module: SparseQuantNeuralNetImpl):
         neurons = {}
@@ -521,27 +524,27 @@ def test_structured_pruning(activation_function, model, load_data, default_confi
             idx += 1
         return neurons
 
-    neurons_orig = _get_number_of_neurons(clf.module_)
-    neurons_pruned = _get_number_of_neurons(pruned_clf.module_)
+    neurons_orig = _get_number_of_neurons(model.module_)
+    neurons_pruned = _get_number_of_neurons(pruned_model.module_)
 
     # Compile the model
-    clf.compile(
+    model.compile(
         x_train,
         configuration=default_configuration,
         use_virtual_lib=True,
     )
 
     # Compile the pruned model, this will also perform ONNX export and calibration
-    pruned_clf.compile(
+    pruned_model.compile(
         x_train,
         configuration=default_configuration,
         use_virtual_lib=True,
     )
 
     with pytest.raises(ValueError, match=".*Cannot apply.*"):
-        pruned_clf.prune(x_train, y_train, 0.5)
+        pruned_model.prune(x_train, y_train, 0.5)
 
     # Test prediction with QuantizedModule
-    pruned_clf.predict(x_test)
+    pruned_model.predict(x_test)
 
     assert neurons_pruned[0] < neurons_orig[0]

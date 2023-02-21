@@ -4,11 +4,14 @@ from typing import Callable, List, Tuple
 
 import numpy
 import onnx
-import sklearn
 from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, get_onnx_opset_version
+from ..common.utils import (
+    MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    get_onnx_opset_version,
+    is_regressor_or_partial_regressor,
+)
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
 from ..onnx.onnx_model_manipulations import clean_graph_at_node_op_type, remove_node_types
 from ..quantization import QuantizedArray
@@ -277,7 +280,7 @@ def tree_to_numpy(
     onnx_model = get_onnx_model(model, x, framework)
 
     # Get the expected number of ONNX outputs in the sklearn model.
-    expected_number_of_outputs = 1 if sklearn.base.is_regressor(model) else 2
+    expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
 
     # ONNX graph pre-processing to make the model FHE friendly
     # i.e. delete irrelevant nodes and cut the graph before the final ensemble sum)

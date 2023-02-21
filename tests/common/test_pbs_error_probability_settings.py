@@ -7,7 +7,6 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
-from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.torch.compile import compile_torch_model
@@ -15,7 +14,7 @@ from concrete.ml.torch.compile import compile_torch_model
 INPUT_OUTPUT_FEATURE = [5, 10]
 
 
-@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "kwargs",
     [
@@ -27,26 +26,24 @@ INPUT_OUTPUT_FEATURE = [5, 10]
         {"global_p_error": 0.038, "p_error": 0.39},
     ],
 )
-def test_config_sklearn(model, parameters, kwargs, load_data):
+def test_config_sklearn(model_class, parameters, kwargs, load_data):
     """Testing with p_error and global_p_error configs with sklearn models."""
 
-    model_class = model
-    model_name = get_model_name(model_class)
-    x, y = load_data(**parameters, model_name=model_name)
+    x, y = load_data(model_class, **parameters)
 
-    clf = model()
+    model = model_class()
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         # Fit the model
-        clf.fit(x, y)
+        model.fit(x, y)
 
     if kwargs.get("p_error", None) is not None and kwargs.get("global_p_error", None) is not None:
         with pytest.raises(ValueError) as excinfo:
-            clf.compile(x, verbose_compilation=True, **kwargs)
+            model.compile(x, verbose_compilation=True, **kwargs)
         assert "Please only set one of (p_error, global_p_error) values" in str(excinfo.value)
     else:
-        clf.compile(x, verbose_compilation=True, **kwargs)
+        model.compile(x, verbose_compilation=True, **kwargs)
 
     # We still need to check that we have the expected probabilities
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2206

@@ -20,7 +20,7 @@ from concrete.ml.torch import NumpyModule
 
 
 @pytest.mark.parametrize(
-    "model, input_shape",
+    "model_class, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (5, 3, 32, 32)),
@@ -73,11 +73,11 @@ from concrete.ml.torch import NumpyModule
         # pytest.param(nn.GLU, id="GLU"),
     ],
 )
-def test_torch_to_numpy(model, input_shape, activation_function, check_r2_score):
+def test_torch_to_numpy(model_class, input_shape, activation_function, check_r2_score):
     """Test the different model architecture from torch numpy."""
 
     # Define the torch model
-    torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model = model_class(activation_function=activation_function)
 
     # Since we have networks with Batch Normalization, we need to manually set them to evaluation
     # mode. ONNX export does the same, so to ensure torch results are the same as the results
@@ -191,18 +191,18 @@ class ReluTest(nn.Module):
 
 
 @pytest.mark.parametrize(
-    "model,input_shape",
+    "model_class,input_shape",
     [
         pytest.param(AddTest, (10, 10)),
         pytest.param(MatmulTest, (10, 3)),
         pytest.param(ReluTest, (10, 10)),
     ],
 )
-def test_torch_to_numpy_onnx_ops(model, input_shape, check_r2_score):
+def test_torch_to_numpy_onnx_ops(model_class, input_shape, check_r2_score):
     """Test the different model architecture from torch numpy."""
 
     # Define the torch model
-    torch_fc_model = model()
+    torch_fc_model = model_class()
     # Create random input
     torch_input_1 = torch.randn(input_shape)
     # Predict with torch model

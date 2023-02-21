@@ -32,6 +32,8 @@ from ..common.debugging.custom_assert import assert_true
 from ..common.utils import (
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
+    is_classifier_or_partial_classifier,
+    is_regressor_or_partial_regressor,
     manage_parameters_for_pbs_errors,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
@@ -1580,10 +1582,10 @@ def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name
     answer = []
 
     if classifier:
-        answer += [m for m in prelist if sklearn.base.is_classifier(m)]
+        answer += [m for m in prelist if is_classifier_or_partial_classifier(m)]
 
     if regressor:
-        answer += [m for m in prelist if sklearn.base.is_regressor(m)]
+        answer += [m for m in prelist if is_regressor_or_partial_regressor(m)]
 
     if str_in_class_name is not None:
         answer = [m for m in answer if str_in_class_name in m.__name__]

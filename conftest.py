@@ -3,7 +3,7 @@ import json
 import random
 import re
 from pathlib import Path
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Union
 
 import numpy
 import pytest
@@ -13,11 +13,18 @@ from concrete.numpy.compilation import Circuit, Configuration
 from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 
+from concrete.ml.common.utils import (
+    is_classifier_or_partial_classifier,
+    is_model_class_in_a_list,
+    is_regressor_or_partial_regressor,
+)
 from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.sklearn import GammaRegressor, PoissonRegressor, TweedieRegressor
 from concrete.ml.sklearn.base import (
     BaseTreeEstimatorMixin,
     QuantizedTorchEstimatorMixin,
     SklearnLinearModelMixin,
+    get_sklearn_neural_net_models,
 )
 
 
@@ -350,17 +357,13 @@ def check_accuracy():
     return check_accuracy_impl
 
 
-# Refactor this fixture in order to simplify the code
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2831
 @pytest.fixture
 def load_data():
     """Fixture for generating random regression or classification problem."""
 
-    def custom_load_data(
-        dataset: Union[str, Callable],
+    def load_data_impl(
+        model_class: Callable,
         *args,
-        strictly_positive: bool = False,
-        model_name: Optional[str] = None,
         **kwargs,
     ):
         """Generate a random regression or classification problem.
@@ -373,41 +376,55 @@ def load_data():
         For classifier, Sklearn's make_classification() method is directly called.
 
         Args:
-            dataset (str, Callable): Either "classification" or "regression" generating synthetic
-                datasets or a callable for any other dataset generation.
-            strictly_positive (bool): If True, the regression data will be only composed of strictly
-                positive values. It has no effect on classification problems. Default to False.
-            model_name (Optional[str]): If NeuralNetRegressor, a specific change on y will be
-                applied.
+            model_class (Callable): The Concrete-ML model class to generate the data for.
+            *args: Positional arguments to consider for generating the data.
+            **kwargs: Keyword arguments to consider for generating the data.
         """
         # Create a random_state value in order to seed the data generation functions. This enables
         # all tests that use this fixture to be deterministic and thus reproducible.
         random_state = numpy.random.randint(0, 2**15)
 
         # If the dataset should be generated for a classification problem.
-        if dataset == "classification":
-            return make_classification(*args, **kwargs, random_state=random_state)
+        if is_classifier_or_partial_classifier(model_class):
+            generated_classifier = list(
+                make_classification(*args, **kwargs, random_state=random_state)
+            )
+
+            # Cast inputs to float32 as Skorch QNNs don't handle float64 values
+            if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+                generated_classifier[0] = generated_classifier[0].astype(numpy.float32)
+
+            return tuple(generated_classifier)
 
         # If the dataset should be generated for a regression problem.
-        if dataset == "regression":
+        if is_regressor_or_partial_regressor(model_class):
             generated_regression = list(make_regression(*args, **kwargs, random_state=random_state))
 
-            # Some regressors can only handle positive target values, often strictly positive.
-            if strictly_positive:
+            # Generalized Linear Models can only handle positive target values,
+            # often strictly positive.
+            if is_model_class_in_a_list(
+                model_class, [GammaRegressor, PoissonRegressor, TweedieRegressor]
+            ):
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
 
             # If the model is a neural network and if the dataset only contains a single target
             # (e.g. of shape (n,)), reshape the target array (e.g. to shape (n,1))
-            if model_name == "NeuralNetRegressor" and len(generated_regression[1].shape) == 1:
-                generated_regression[1] = generated_regression[1].reshape(-1, 1)
+            if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+                if len(generated_regression[1].shape) == 1:
+                    generated_regression[1] = generated_regression[1].reshape(-1, 1)
+
+                # Cast inputs and targets to float32 as Skorch QNNs don't handle float64 values
+                generated_regression[0] = generated_regression[0].astype(numpy.float32)
+                generated_regression[1] = generated_regression[1].astype(numpy.float32)
 
             return tuple(generated_regression)
 
-        # Any other dataset to generate.
-        assert not isinstance(dataset, str)
-        return dataset()
+        raise ValueError(
+            "Model class type is unsupported. Expected a Concrete-ML regressor or classifier, or "
+            f"a functool.partial version of it, but got {model_class}."
+        )
 
-    return custom_load_data
+    return load_data_impl
 
 
 @pytest.fixture

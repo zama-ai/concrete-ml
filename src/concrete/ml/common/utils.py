@@ -10,6 +10,7 @@ import numpy
 import onnx
 import torch
 from concrete.numpy.dtypes import Integer
+from sklearn.base import is_classifier, is_regressor
 
 from ..common.check_inputs import check_array_and_assert
 from ..common.debugging import assert_true
@@ -206,6 +207,36 @@ def get_model_name(model_class):
         return model_class.func.__name__
 
     return model_class.__name__
+
+
+def is_classifier_or_partial_classifier(model_class):
+    """Indicate if the model class represents a classifier.
+
+    Args:
+        model_class: The model class, which can be a functool's `partial` class.
+
+    Returns:
+        bool: If the model class represents a classifier.
+    """
+    if isinstance(model_class, partial):
+        return is_classifier(model_class.func)
+
+    return is_classifier(model_class)
+
+
+def is_regressor_or_partial_regressor(model_class):
+    """Indicate if the model class represents a regressor.
+
+    Args:
+        model_class: The model class, which can be a functool's `partial` class.
+
+    Returns:
+        bool: If the model class represents a regressor.
+    """
+    if isinstance(model_class, partial):
+        return is_regressor(model_class.func)
+
+    return is_regressor(model_class)
 
 
 def is_pandas_dataframe(input_container: Any) -> bool:

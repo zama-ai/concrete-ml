@@ -8,7 +8,6 @@ import pytest
 from sklearn import tree
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 
 
@@ -80,19 +79,15 @@ def test_seed_needing_randomly_seed_arg_3(random_inputs_1, random_inputs_2, rand
     print("Random inputs", random_inputs_3)
 
 
-@pytest.mark.parametrize("model, parameters", sklearn_models_and_datasets)
-def test_seed_sklearn(model, parameters, load_data, default_configuration):
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_seed_sklearn(model_class, parameters, load_data, default_configuration):
     """Test seeding of sklearn models"""
 
-    x, y = load_data(**parameters)
-
-    model_class = model
-    model_name = get_model_name(model_class)
-    x, y = load_data(**parameters, model_name=model_name)
+    x, y = load_data(model_class, **parameters)
 
     # Force "random_state": if it was there, it is overwritten; if it was not there, it is added
     model_params = {}
-    if "random_state" in inspect.getfullargspec(model).args:
+    if "random_state" in inspect.getfullargspec(model_class).args:
         model_params["random_state"] = numpy.random.randint(0, 2**15)
 
     # First case: user gives his own random_state

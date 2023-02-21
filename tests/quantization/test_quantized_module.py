@@ -23,7 +23,7 @@ N_BITS_LIST = [
 
 @pytest.mark.parametrize("n_bits", [pytest.param(n_bits) for n_bits in N_BITS_LIST])
 @pytest.mark.parametrize(
-    "model, input_shape",
+    "model_class, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
@@ -67,14 +67,14 @@ N_BITS_LIST = [
         # pytest.param(nn.GLU, id="GLU"),
     ],
 )
-def test_quantized_linear(model, input_shape, n_bits, activation_function, check_r2_score):
+def test_quantized_linear(model_class, input_shape, n_bits, activation_function, check_r2_score):
     """Test the quantized module with a post-training static quantization.
 
     With n_bits>>0 we expect the results of the quantized module
     to be the same as the standard module.
     """
     # Define the torch model
-    torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model = model_class(activation_function=activation_function)
     torch_fc_model.eval()
 
     # Create random input
@@ -112,7 +112,7 @@ def test_quantized_linear(model, input_shape, n_bits, activation_function, check
 
 
 @pytest.mark.parametrize(
-    "model, input_shape",
+    "model_class, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
     ],
@@ -129,11 +129,11 @@ def test_quantized_linear(model, input_shape, n_bits, activation_function, check
         ),
     ],
 )
-def test_raises_on_float_inputs(model, input_shape, dtype, err_msg):
+def test_raises_on_float_inputs(model_class, input_shape, dtype, err_msg):
     """Function to test incompatible inputs."""
 
     # Define the torch model
-    torch_fc_model = model(nn.ReLU)
+    torch_fc_model = model_class(nn.ReLU)
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape).astype(dtype)
     # Create corresponding numpy model
@@ -151,7 +151,7 @@ def test_raises_on_float_inputs(model, input_shape, dtype, err_msg):
 
 @pytest.mark.parametrize("n_bits", [2, 7])
 @pytest.mark.parametrize(
-    "model, input_shape",
+    "model_class, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
@@ -163,10 +163,10 @@ def test_raises_on_float_inputs(model, input_shape, dtype, err_msg):
         pytest.param(nn.ReLU, id="ReLU"),
     ],
 )
-def test_intermediary_values(n_bits, model, input_shape, activation_function):
+def test_intermediary_values(n_bits, model_class, input_shape, activation_function):
     """Check that all torch linear/conv layers return debug values in the QuantizedModule."""
 
-    torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model = model_class(activation_function=activation_function)
     torch_fc_model.eval()
 
     # Create random input
@@ -204,7 +204,7 @@ def test_intermediary_values(n_bits, model, input_shape, activation_function):
 
 
 @pytest.mark.parametrize(
-    "model, input_shape",
+    "model_class, input_shape",
     [
         pytest.param(FC, (100, 32 * 32 * 3)),
         pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
@@ -218,14 +218,14 @@ def test_intermediary_values(n_bits, model, input_shape, activation_function):
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
 def test_bitwidth_report(
-    model, input_shape, activation_function, default_configuration, use_virtual_lib
+    model_class, input_shape, activation_function, default_configuration, use_virtual_lib
 ):
     """Check that the quantized module bit-width report executes without error."""
     torch.manual_seed(42)
     torch.use_deterministic_algorithms(True)
     numpy.random.seed(42)
 
-    torch_fc_model = model(activation_function=activation_function)
+    torch_fc_model = model_class(activation_function=activation_function)
     torch_fc_model.eval()
 
     # Create random input
@@ -279,9 +279,9 @@ def test_bitwidth_report(
         assert "range" in report[key] and "bitwidth" in report[key]
 
         # If we have actual values for this trained model
-        if model in expected:
+        if model_class in expected:
             # Find the expected values for this layer
-            expected = expected[model]
+            expected = expected[model_class]
             expected_key = None
             for potential_key in expected.keys():
                 # Expected key name should be contained in the ONNX layer name

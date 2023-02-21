@@ -60,7 +60,6 @@ python3 evaluate_torch_cml.py
 
 It evaluates the model with Torch and Concrete-ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
 
-
 Optionally, you can change the default rounding bits (default to 6) applied on the model as follows:
 
 <!--pytest-codeblocks:skip-->
@@ -108,8 +107,8 @@ While it is the ambition of Concrete-ML to execute such large CNNs in reasonable
 | VGG FHE                | NA\*\*   | NA\*\*   |
 
 <!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3007 -->
-Rounding with 6 bits all accumulators offer a huge boost in FHE (TBD) while the loss compared to the original model is only $1.3\%$.
 
+Rounding with 6 bits all accumulators offer a huge boost in FHE (TBD) while the loss compared to the original model is only $1.3\%$.
 
 \* The simulation is done using Virtual Library (VL) that simulates the FHE evaluation in the clear for faster debugging.
 \*\* Expected to match the VGG FHE simulation. It is a work in progress to assess the actual FHE accuracy on a subset of images.

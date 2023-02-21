@@ -12,7 +12,6 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
-from concrete.ml.common.utils import get_model_name
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
@@ -84,14 +83,13 @@ def test_client_server_sklearn(
     """Tests the encrypt decrypt api."""
 
     # Generate random data
-    model_name = get_model_name(model_class)
-    x, y = load_data(**parameters, model_name=model_name)
+    x, y = load_data(model_class, **parameters)
 
     x_train = x[:-1]
     y_train = y[:-1]
     x_test = x[-1:]
 
-    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Fit the model
     with warnings.catch_warnings():

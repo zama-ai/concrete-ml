@@ -6,7 +6,6 @@ import pytest
 import torch
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn import NeuralNetRegressor
 
@@ -24,8 +23,7 @@ def test_torch_tensors(model_class, parameters, load_data):
         model_params["random_state"] = numpy.random.randint(0, 2**15)
     model.set_params(**model_params)
 
-    model_name = get_model_name(model_class)
-    x, y = load_data(**parameters, model_name=model_name)
+    x, y = load_data(model_class, **parameters)
 
     # Turn data and targets to Torch tensors
     x, y = torch.tensor(x), torch.tensor(y)

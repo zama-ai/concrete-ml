@@ -77,7 +77,6 @@ _classifiers_and_datasets = [
     pytest.param(
         model,
         {
-            "dataset": "classification",
             "n_samples": 1000,
             "n_features": 10,
             "n_classes": n_classes,
@@ -97,10 +96,6 @@ _regressors_and_datasets = [
     pytest.param(
         model,
         {
-            "dataset": "regression",
-            "strictly_positive": is_model_class_in_a_list(
-                model, [GammaRegressor, PoissonRegressor, TweedieRegressor]
-            ),
             "n_samples": 200,
             "n_features": 10,
             "n_informative": 10,
@@ -127,7 +122,6 @@ def instantiate_model_generic(model_class, **parameters):
         model_name (str): The type of the model as a string
         model (object): The model instance
     """
-    model_name = get_model_name(model_class)
 
     assert "n_bits" in parameters
     n_bits = parameters["n_bits"]
@@ -153,4 +147,4 @@ def instantiate_model_generic(model_class, **parameters):
 
     model.set_params(**model_params)
 
-    return model_name, model
+    return model

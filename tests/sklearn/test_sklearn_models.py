@@ -36,7 +36,6 @@ import numpy
 import pandas
 import pytest
 import torch
-from sklearn.base import is_classifier, is_regressor
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import make_scorer, matthews_corrcoef, mean_squared_error
@@ -45,7 +44,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
-from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
+from concrete.ml.common.utils import (
+    get_model_name,
+    is_classifier_or_partial_classifier,
+    is_model_class_in_a_list,
+    is_regressor_or_partial_regressor,
+)
 from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
 from concrete.ml.sklearn.base import (
     get_sklearn_linear_models,
@@ -96,8 +100,7 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
             pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
 
     # Get the dataset. The data generation is seeded in load_data.
-    model_name = get_model_name(model_class)
-    x, y = load_data(**parameters, model_name=model_name)
+    x, y = load_data(model_class, **parameters)
 
     return x, y
 
@@ -110,7 +113,7 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
             pytest.skip("Skipping some tests in non-weekly builds")
 
     # Get the dataset. The data generation is seeded in load_data.
-    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     with warnings.catch_warnings():
@@ -133,7 +136,7 @@ def check_correctness_with_sklearn(
     """Check that Concrete-ML and scikit-learn models are 'equivalent'."""
     assert "n_bits" in hyper_parameters_including_n_bits
 
-    model_name, model = instantiate_model_generic(model_class, **hyper_parameters_including_n_bits)
+    model = instantiate_model_generic(model_class, **hyper_parameters_including_n_bits)
 
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
@@ -142,7 +145,7 @@ def check_correctness_with_sklearn(
 
     y_pred = model.predict(x)
 
-    y_pred_sklearn = sklearn_model.predict(x.astype(numpy.float32))
+    y_pred_sklearn = sklearn_model.predict(x)
     y_pred_cml = model.predict(x, execute_in_fhe=execute_in_fhe)
 
     # Check that the output shapes are correct
@@ -174,22 +177,25 @@ def check_correctness_with_sklearn(
         "NeuralNetClassifier": 0.7,
     }
 
+    model_name = get_model_name(model_class)
     acceptance_r2score = acceptance_r2score_dic.get(model_name, 0.9)
     threshold_accuracy = threshold_accuracy_dic.get(model_name, 0.9)
 
     # If the model is a classifier, check that accuracies are similar
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model):
         check_accuracy(y_pred_sklearn, y_pred_cml, threshold=threshold_accuracy)
 
     # If the model is a regressor, check that R2 scores are similar
     else:
-        assert is_regressor(model), "not a regressor, not a classifier, really?"
+        assert is_regressor_or_partial_regressor(
+            model
+        ), "not a regressor, not a classifier, really?"
         check_r2_score(y_pred_sklearn, y_pred_cml, acceptance_score=acceptance_r2score)
 
 
 def check_double_fit(model_class, n_bits, x, y):
     """Check double fit."""
-    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Neural Networks are not handling double fit properly
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
@@ -213,10 +219,10 @@ def check_double_fit(model_class, n_bits, x, y):
 
 def check_offset(model_class, n_bits, x, y):
     """Check offset."""
-    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Offsets are not supported by XGBoost
-    if "XGB" in model_name:
+    if is_model_class_in_a_list(model_class, get_sklearn_tree_models(str_in_class_name="XGB")):
         # No pytest.skip, since it is not a bug but something which is inherent to XGB
         return
 
@@ -239,11 +245,12 @@ def check_subfunctions(fitted_model, model_class, x):
 
     fitted_model.predict(x[:1])
 
-    if is_classifier(model_class):
+    if is_classifier_or_partial_classifier(model_class):
 
         fitted_model.predict_proba(x)
 
-        if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
+        # Only linear classifiers have a decision function method
+        if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
             fitted_model.decision_function(x)
 
 
@@ -276,7 +283,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
         y_proba = model.post_processing(y)
 
         # Apply the argmax to get the class predictions (in the clear)
-        if is_classifier(model):
+        if is_classifier_or_partial_classifier(model):
             y_class = numpy.argmax(y_proba, axis=1)
             y_pred_fhe_step += list(y_class)
         else:
@@ -318,7 +325,7 @@ def check_input_support(model_class, n_bits, x, y, input_type):
             assert isinstance(y, numpy.ndarray), f"Wrong type {type(y)}"
         return x, y
 
-    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = cast_input(x, y, input_type=input_type)
 
     # Sometimes, we miss convergence, which is not a problem for our test
@@ -380,7 +387,7 @@ def check_pipeline(model_class, x, y):
 
 def check_grid_search(model_class, x, y):
     """Check grid search."""
-    if is_classifier(model_class):
+    if is_classifier_or_partial_classifier(model_class):
         grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
     else:
         grid_scorer = make_scorer(mean_squared_error, greater_is_better=True)
@@ -418,11 +425,11 @@ def check_grid_search(model_class, x, y):
 def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score):
     """Check equivalence between the two models returned by fit_benchmark: the CML model and
     the scikit-learn model."""
-    model_name, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Still some problems to fix
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2841
-    if model_name in ["LinearSVC", "LogisticRegression"]:
+    if get_model_name(model_class) in ["LinearSVC", "LogisticRegression"]:
         pytest.skip(
             "Skipping sklearn-equivalence test for some linear models, doesn't work for now"
         )
@@ -440,7 +447,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
         model, sklearn_model = model.fit_benchmark(x, y)
 
     # If the model is a classifier
-    if is_classifier(model):
+    if is_classifier_or_partial_classifier(model):
 
         # Check that accuracies are similar
         y_pred_cml = model.predict(x)
@@ -450,7 +457,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
         # If the model is a LinearSVC model, compute its predicted confidence score
         # This is done separately as scikit-learn doesn't provide a predict_proba method for
         # LinearSVC models
-        if model_name == "LinearSVC":
+        if get_model_name(model_class) == "LinearSVC":
             y_pred_cml = model.decision_function(x)
             y_pred_sklearn = sklearn_model.decision_function(x)
 
@@ -548,11 +555,14 @@ def check_hyper_parameters(
         # Add n_bits
         hyper_parameters["n_bits"] = n_bits
 
-        model_name, model = instantiate_model_generic(model_class, **hyper_parameters)
+        model = instantiate_model_generic(model_class, **hyper_parameters)
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2450
         # does not work for now, issue in HummingBird
-        if model_name == "RandomForestClassifier" and hyper_parameters["n_bits"] == 2:
+        if (
+            get_model_name(model_class) == "RandomForestClassifier"
+            and hyper_parameters["n_bits"] == 2
+        ):
             continue
 
         # Also fit with these hyper parameters to check it works fine
@@ -579,7 +589,7 @@ def check_hyper_parameters(
 def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
     """Check that methods that require the model to be compiled or fitted raise proper errors."""
 
-    _, model = instantiate_model_generic(model_class, n_bits=n_bits)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Quantizing inputs with an untrained model should not be possible
     with pytest.raises(AttributeError, match=".* model is not fitted.*"):
@@ -603,7 +613,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
         with pytest.raises(AttributeError, match=".* model is not fitted.*"):
             model.predict(x)
 
-    if is_classifier(model_class):
+    if is_classifier_or_partial_classifier(model_class):
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
         if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
@@ -615,8 +625,9 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.predict_proba(x, execute_in_fhe=True)
 
-        if not is_model_class_in_a_list(model_class, get_sklearn_tree_models()):
-            # Computing the decision function using an untrained classifier should not be possible
+        # Computing the decision function using an untrained classifier should not be possible.
+        # Note that the `decision_function` method is only available for linear models
+        if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.decision_function(x)
 
@@ -631,7 +642,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
     # Predicting probabilities in FHE using a trained QNN classifier that is not compiled should
     # not be possible
-    if is_classifier(model_class) and is_model_class_in_a_list(
+    if is_classifier_or_partial_classifier(model_class) and is_model_class_in_a_list(
         model_class, get_sklearn_neural_net_models()
     ):
         with pytest.raises(AttributeError, match=".* model is not compiled.*"):

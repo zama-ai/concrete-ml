@@ -39,7 +39,7 @@ from concrete.ml.torch.compile import compile_torch_model
     ],
 )
 @pytest.mark.parametrize(
-    "model, use_virtual_lib, has_tlu",
+    "model_class, use_virtual_lib, has_tlu",
     [
         pytest.param(TorchSum, False, False, id="sum_leveled_in_FHE"),
         pytest.param(TorchSumMod, True, True, id="sum_with_pbs_in_VL"),
@@ -47,7 +47,7 @@ from concrete.ml.torch.compile import compile_torch_model
 )
 # pylint: disable-next=too-many-arguments
 def test_sum(
-    model,
+    model_class,
     n_bits,
     size,
     axes,
@@ -72,7 +72,7 @@ def test_sum(
     # We also need to transform the dim parameter as Torch doesn't handle its value to be None
     # while keepdim being set to True
     dim = tuple(axis for axis in range(len(size))) if axes is None else axes
-    torch_model = model(dim=dim, keepdim=keepdims)
+    torch_model = model_class(dim=dim, keepdim=keepdims)
 
     # Generate the inputset with several samples
     inputset = data_generator(size=(200,) + size)

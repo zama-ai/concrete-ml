@@ -52,7 +52,7 @@ INPUT_OUTPUT_FEATURE = [5, 10]
 # pylint: disable-next=too-many-arguments
 def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many-statements
     input_output_feature,
-    model,
+    model_class,
     activation_function,
     qat_bits,
     default_configuration,
@@ -72,7 +72,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     if not isinstance(input_output_feature, tuple):
         input_output_feature = (input_output_feature,)
 
-    torch_model = model(
+    torch_model = model_class(
         input_output=input_output_feature[0], activation_function=activation_function
     )
 
@@ -554,7 +554,7 @@ def test_compile_torch_qat(
 
 
 @pytest.mark.parametrize(
-    "model, expected_onnx_str",
+    "model_class, expected_onnx_str",
     [
         pytest.param(
             FC,
@@ -599,7 +599,7 @@ def test_compile_torch_qat(
     ],
 )
 def test_dump_torch_network(
-    model,
+    model_class,
     expected_onnx_str,
     activation_function,
     default_configuration,
@@ -613,7 +613,7 @@ def test_dump_torch_network(
 
     compile_and_test_torch_or_onnx(
         input_output_feature,
-        model,
+        model_class,
         activation_function,
         qat_bits,
         default_configuration,
