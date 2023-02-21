@@ -74,7 +74,7 @@ test_set = builder(
     transform=transform_to_tensor,
 )
 
-test_loader = DataLoader(test_set, batch_size=100, shuffle=True)
+test_loader = DataLoader(test_set, batch_size=100, shuffle=False)
 
 x = next(iter(test_loader))[0]
 
@@ -112,14 +112,6 @@ print("Creation of the private and evaluation keys.")
 _, execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.keygen)(force=True)
 print(f"Keygen took {execution_time} seconds")
 
-# List the files in the directory
-files = KEYGEN_CACHE_DIR.glob("**/*")
-
-# Print the size of each file
-for file in files:
-    file_size = file.stat().st_size
-    print(f"{file}: {file_size} bytes")
-
 # Data torch to numpy
 x_numpy = x.numpy()
 
@@ -139,18 +131,20 @@ expected_prediction = quantized_numpy_module.forward(q_x_numpy)
 encrypted_q_x_numpy, execution_time = measure_execution_time(
     quantized_numpy_module.fhe_circuit.encrypt
 )(q_x_numpy)
-print(f"Encryption of a single input (image) took {execution_time} seconds")
-serialized_encrypted_q_x_numpy = encrypted_q_x_numpy.serialize()
-print(f"Size of ENCRYPTED input is {len(serialized_encrypted_q_x_numpy)} bytes\n")
+print(f"Encryption of a single input (image) took {execution_time} seconds\n")
 
+print(f"Size of ENCRYPTED input is {quantized_numpy_module.fhe_circuit.size_of_inputs} bytes")
+print(f"Size of ENCRYPTED output is {quantized_numpy_module.fhe_circuit.size_of_outputs} bytes")
+print(f"Size of keyswitch key is {quantized_numpy_module.fhe_circuit.size_of_keyswitch_keys} bytes")
+print(f"Size of bootstrap key is {quantized_numpy_module.fhe_circuit.size_of_bootstrap_keys} bytes")
+print(f"Size of secret key is {quantized_numpy_module.fhe_circuit.size_of_secret_keys} bytes")
+print(f"Complexity is {quantized_numpy_module.fhe_circuit.complexity}\n")
 
 print("Running FHE inference")
 prediction, execution_time = measure_execution_time(quantized_numpy_module.fhe_circuit.run)(
     encrypted_q_x_numpy
 )
 print(f"FHE inference over a single image took {execution_time} seconds")
-serialized_prediction = prediction.serialize()
-print(f"Size of the prediction is {len(serialized_prediction)} bytes\n")
 
 # Decrypt print the result
 decrypted_prediction = quantized_numpy_module.fhe_circuit.decrypt(prediction)
