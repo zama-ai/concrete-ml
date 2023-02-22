@@ -1,16 +1,15 @@
 Name, Version, License
 Pillow, 9.4.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
+brevitas, 0.8.0, UNKNOWN
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.23.4, BSD-3
-concrete-ml-extensions-brevitas, 0.1.0, UNKNOWN
 concrete-numpy, 0.10.0, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
 flatbuffers, 2.0.7, Apache Software License
 fonttools, 4.38.0, MIT License
-future-annotations, 1.0.0, MIT License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.4, MIT License
 joblib, 1.2.0, BSD License
@@ -23,7 +22,7 @@ onnx, 1.12.0, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
 onnxmltools, 1.11.1, Apache Software License
 onnxoptimizer, 0.2.7, Apache License v2.0
-onnxruntime, 1.13.1, MIT License
+onnxruntime, 1.14.0, MIT License
 packaging, 23.0, Apache Software License; BSD License
 protobuf, 3.19.4, 3-Clause BSD License
 psutil, 5.9.4, BSD License
@@ -38,7 +37,6 @@ skorch, 0.11.0, new BSD 3-Clause
 sympy, 1.10.1, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.1.0, BSD License
-tokenize-rt, 5.0.0, MIT License
 tomli, 2.0.1, MIT License
 torch, 1.13.1, BSD License
 tqdm, 4.64.1, MIT License; Mozilla Public License 2.0 (MPL 2.0)

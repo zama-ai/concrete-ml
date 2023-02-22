@@ -26,9 +26,9 @@ onnx, 1.12.0, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
 onnxmltools, 1.11.1, Apache Software License
 onnxoptimizer, 0.2.7, Apache License v2.0
-onnxruntime, 1.13.1, MIT License
+onnxruntime, 1.14.0, MIT License
 packaging, 23.0, Apache Software License; BSD License
-protobuf, 3.19.4, 3-Clause BSD License
+protobuf, 3.19.6, 3-Clause BSD License
 psutil, 5.9.4, BSD License
 pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
