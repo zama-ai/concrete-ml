@@ -12,8 +12,8 @@ from concrete.ml.sklearn import get_sklearn_neural_net_models
 @pytest.mark.parametrize(
     "bad_value, expected_error",
     [
-        (numpy.nan, "Input contains NaN*"),
-        (None, "Input contains NaN*"),
+        (numpy.nan, "Input X contains NaN."),
+        (None, "Input X contains NaN."),
         ("this", "could not convert string to float: 'this'"),
     ],
 )

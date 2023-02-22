@@ -151,7 +151,10 @@ then
     LICENSES_WHITELIST="${LICENSES_WHITELIST};new BSD"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD-3"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD 3-Clause"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};BSD-3-Clause"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache License v2.0"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache 2.0"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache Software License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Apache Software License; BSD License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Historical Permission Notice and Disclaimer (HPND)"
@@ -159,6 +162,7 @@ then
     LICENSES_WHITELIST="${LICENSES_WHITELIST};MIT License; Mozilla Public License 2.0 (MPL 2.0)"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Other/Proprietary License"
     LICENSES_WHITELIST="${LICENSES_WHITELIST};Python Software Foundation License"
+    LICENSES_WHITELIST="${LICENSES_WHITELIST};ISC License (ISCL)"
 
     pip-licenses --allow-only="${LICENSES_WHITELIST}" --ignore-packages brevitas pkg-resources pkg_resources concrete-ml-extensions-brevitas
 
