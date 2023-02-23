@@ -1,7 +1,0 @@
-.venv
-.playground/
-.artifacts
-.fhe_keys
-server_tmp/
-client_tmp/
-.artifacts
