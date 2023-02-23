@@ -217,7 +217,7 @@ def accuracy_test_rounding(
     a rounding threshold of 2 bits, and quantized_numpy_module_round_high_precision,
     the torch_model compiled with maximum bit-width computed in the quantized_numpy_module - 1.
 
-    The final assertion test whether the mean absolute error between
+    The final assertion tests whether the mean absolute error between
     quantized_numpy_module_round_high_precision and quantized_numpy_module is lower than
     quantized_numpy_module_round_low_precision and quantized_numpy_module making sure that the
     rounding feature has the expected behavior on the model accuracy.

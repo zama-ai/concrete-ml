@@ -86,6 +86,45 @@ The `global_p_error` parameter is only used for FHE evaluation and has **no** ef
 
 If neither `p_error` or `global_p_error` are set, Concrete-ML takes a default `global_p_error = 0.01`.
 
+### Using a rounding operator to approximate operations for faster computations
+
+To speed-up neural networks, a rounding operator can be used at a fixed bit-width value. This involves applying the rounding operator to intermediate values in the neural network to retain only the most significant $P$ bits, where $P$ is the desired precision for the subsequent TLU.
+
+The rounding operation is defined as follows:
+
+First, compute $t$ as the difference between $L$, the actual bit-width of the accumulator, and $P$:
+
+$$t = L - P$$
+
+Then, the rounding operation can be computed as:
+
+$$ \mathrm{round\_to\_t\_bits}(x, t) = \left\lfloor  \frac{x}{2^t} \right\rceil \cdot 2^t $$
+
+where $x$ is the input number, and $\lfloor \cdot \rceil$ denotes the operation that rounds to the nearest integer.
+
+In Concrete-ML, this feature is currently implemented for custom neural networks through the compile functions, including
+
+- `concrete.ml.torch.compile_torch_model`,
+- `concrete.ml.torch.compile_onnx_model` and
+- `concrete.ml.torch.compile_brevitas_qat_model`.
+
+using `rounding_threshold_bits` argument which can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors, we can speed-up computations while maintaining accuracy to some extent.
+
+{% hint style="warning" %}
+The `rounding_threshold_bits` parameter only works in FHE for bit-width **less or equal to 8 bits**.
+{% endhint %}
+
+To find the best trade-off between speed and accuracy, it is recommended to experiment with different thresholds and check the accuracy on an evaluation set after compiling the model.
+
+In practice, the process would look like this:
+
+1. Set a `rounding_threshold_bits` to a relatively high $P$. Say, 8 bits.
+1. Check the accuracy
+1. Update P = P - 1
+1. repeat 2. and 3. until th accuracy loss is above a certain, acceptable threshold.
+
+An example of such implementation is available in [use_case_examples/cifar_brevitas_training/evaluate_torch_cml.py](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/use_case_examples/cifar_brevitas_training/evaluate_one_example_fhe.py).
+
 ## Seeing compilation information
 
 By using `verbose_compilation = True` and `show_mlir = True` during compilation, the user receives a lot of information from the compiler and its inner optimizer. These options are, however, mainly meant for power-users, so they may be hard to understand.
