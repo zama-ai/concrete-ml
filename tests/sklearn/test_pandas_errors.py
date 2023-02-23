@@ -5,7 +5,7 @@ import pytest
 
 from concrete.ml.common.utils import is_model_class_in_a_list
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
-from concrete.ml.sklearn.base import get_sklearn_neural_net_models
+from concrete.ml.sklearn import get_sklearn_neural_net_models
 
 
 @pytest.mark.parametrize("model_class", [m[0][0] for m in sklearn_models_and_datasets])

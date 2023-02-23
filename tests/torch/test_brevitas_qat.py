@@ -16,7 +16,7 @@ from concrete.ml.common.utils import (
     is_regressor_or_partial_regressor,
 )
 from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, TinyQATCNN
-from concrete.ml.sklearn.base import get_sklearn_neural_net_models
+from concrete.ml.sklearn import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn import SparseQuantNeuralNetImpl
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 

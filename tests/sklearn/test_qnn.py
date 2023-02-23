@@ -21,7 +21,7 @@ from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
 )
-from concrete.ml.sklearn.base import get_sklearn_neural_net_models
+from concrete.ml.sklearn import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn import (
     NeuralNetClassifier,
     NeuralNetRegressor,

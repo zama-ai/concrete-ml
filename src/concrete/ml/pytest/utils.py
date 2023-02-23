@@ -25,8 +25,8 @@ from concrete.ml.sklearn import (
     TweedieRegressor,
     XGBClassifier,
     XGBRegressor,
+    get_sklearn_neural_net_models,
 )
-from concrete.ml.sklearn.base import get_sklearn_neural_net_models
 
 _regressor_models = [
     XGBRegressor,

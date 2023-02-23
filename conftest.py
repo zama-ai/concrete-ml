@@ -19,12 +19,16 @@ from concrete.ml.common.utils import (
     is_regressor_or_partial_regressor,
 )
 from concrete.ml.quantization.quantized_module import QuantizedModule
-from concrete.ml.sklearn import GammaRegressor, PoissonRegressor, TweedieRegressor
+from concrete.ml.sklearn import (
+    GammaRegressor,
+    PoissonRegressor,
+    TweedieRegressor,
+    get_sklearn_neural_net_models,
+)
 from concrete.ml.sklearn.base import (
     BaseTreeEstimatorMixin,
     QuantizedTorchEstimatorMixin,
     SklearnLinearModelMixin,
-    get_sklearn_neural_net_models,
 )
 
 

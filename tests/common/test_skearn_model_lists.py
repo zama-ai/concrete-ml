@@ -1,5 +1,5 @@
 """Tests lists of models in Concrete-ML."""
-from concrete.ml.sklearn.base import get_sklearn_models
+from concrete.ml.sklearn import get_sklearn_models
 from concrete.ml.sklearn.glm import GammaRegressor, PoissonRegressor, TweedieRegressor
 from concrete.ml.sklearn.linear_model import (
     ElasticNet,

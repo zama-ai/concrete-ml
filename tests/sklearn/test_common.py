@@ -8,7 +8,7 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
-from concrete.ml.sklearn.base import (
+from concrete.ml.sklearn import (
     get_sklearn_linear_models,
     get_sklearn_neural_net_models,
     get_sklearn_tree_models,

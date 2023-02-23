@@ -10,7 +10,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import is_model_class_in_a_list
 from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
-from concrete.ml.sklearn.base import get_sklearn_tree_models
+from concrete.ml.sklearn import get_sklearn_tree_models
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 
