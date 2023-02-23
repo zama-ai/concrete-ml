@@ -1,7 +1,7 @@
 """Quantization utilities for a numpy array/tensor."""
 
 from copy import deepcopy
-from typing import Optional, Union, get_type_hints
+from typing import Any, Optional, Union, get_type_hints
 
 import numpy
 
@@ -455,14 +455,14 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         return qvalues.astype(numpy.int64)
 
-    def dequant(self, qvalues: numpy.ndarray) -> numpy.ndarray:
+    def dequant(self, qvalues: numpy.ndarray) -> Union[Any, numpy.ndarray]:
         """Dequantize values.
 
         Args:
             qvalues (numpy.ndarray): integer values to dequantize
 
         Returns:
-            numpy.ndarray: Dequantized float values.
+            Union[Any, numpy.ndarray]: Dequantized float values.
         """
 
         # for mypy
@@ -477,7 +477,9 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
         )
 
-        return self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
+        ans = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
+
+        return ans
 
 
 class QuantizedArray:

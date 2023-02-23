@@ -112,7 +112,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 str(output_onnx_file_path),
                 opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
             )
-            onnx_model = onnx.load_model(output_onnx_file_path)
+            onnx_model = onnx.load_model(str(output_onnx_file_path))
             onnx.checker.check_model(onnx_model)
 
             quantized_numpy_module = compile_onnx_model(
