@@ -218,6 +218,8 @@ class FHEModelDev:
         with zipfile.ZipFile(path_circuit_client, "a") as zip_file:
             zip_file.write(filename=json_path, arcname="serialized_processing.json")
 
+        json_path.unlink()
+
 
 class FHEModelClient:
     """Client API to encrypt and decrypt FHE data."""

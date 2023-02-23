@@ -58,10 +58,6 @@ class OnDiskNetwork:
     def dev_send_clientspecs_and_modelspecs_to_client(self):
         """Send the clientspecs and evaluation key to the client."""
         copyfile(self.dev_dir.name + "/client.zip", self.client_dir.name + "/client.zip")
-        copyfile(
-            self.dev_dir.name + "/serialized_processing.json",
-            self.client_dir.name + "/serialized_processing.json",
-        )
 
     def cleanup(self):
         """Clean up the temporary folders."""
