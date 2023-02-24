@@ -13,7 +13,6 @@ import torch
 import torch.nn as nn
 from brevitas import config
 from concrete.numpy.compilation import Configuration
-from IPython.display import clear_output
 from models import Fp32VGG11
 from sklearn.metrics import top_k_accuracy_score
 from torch.utils.data.dataloader import DataLoader
@@ -34,13 +33,14 @@ def seed_worker(worker_id: int):
     random.seed(worker_seed)
 
 
-def get_dataloader(batch_size: int, param: Dict) -> Tuple[DataLoader, DataLoader]:
+def get_dataloader(
+    param: Dict,
+) -> Tuple[DataLoader, DataLoader]:
     """Returns the training and the test loaders of either CIFAR-10 or CIFAR-100 dataset.
 
     The CIFAR dataset contains of `32*32` colored images.
 
     Args:
-        batch_size (int): The batch size.
         param (Dict): Set of hyper-parameters to use depending on whether
            CIFAR-10 or CIFAR-100 is used.
     Return:
@@ -53,23 +53,49 @@ def get_dataloader(batch_size: int, param: Dict) -> Tuple[DataLoader, DataLoader
     torch.manual_seed(param["seed"])
     random.seed(param["seed"])
 
-    train_loader = torch.utils.data.DataLoader(
-        param["dataset"](
-            download=True,
-            root="./data",
-            train=True,
-            transform=transforms.Compose(
-                [
-                    transforms.ToTensor(),
-                    transforms.Normalize(param["mean"], param["std"]),
-                    # We apply data augmentation in order to prevent overfitting
-                    transforms.RandomRotation(5, fill=(1,)),
-                    transforms.GaussianBlur(kernel_size=(3, 3)),
-                    transforms.RandomHorizontalFlip(0.5),
-                ]
-            ),
+    train_dataset = param["dataset"](
+        download=True,
+        root="./data",
+        train=True,
+        transform=transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(param["mean"], param["std"]),
+                # We apply data augmentation in order to prevent overfitting
+                transforms.RandomRotation(5, fill=(1,)),
+                transforms.GaussianBlur(kernel_size=(3, 3)),
+                transforms.RandomHorizontalFlip(0.5),
+            ]
         ),
-        batch_size=batch_size,
+    )
+
+    test_dataset = param["dataset"](
+        download=True,
+        root="./data",
+        train=False,
+        transform=transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(param["mean"], param["std"])]
+        ),
+    )
+
+    if param.get("test_dataset_size", None):
+        test_dataset = torch.utils.data.random_split(
+            test_dataset,
+            [param["test_dataset_size"], len(test_dataset) - param["test_dataset_size"]],
+        )[0]
+
+    if param.get("calibration_dataset_size", None):
+        train_dataset = torch.utils.data.random_split(
+            train_dataset,
+            [
+                param["calibration_dataset_size"],
+                len(train_dataset) - param["calibration_dataset_size"],
+            ],
+        )[0]
+
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=param["batch_size"],
         shuffle=True,
         drop_last=True,
         worker_init_fn=seed_worker,
@@ -77,15 +103,8 @@ def get_dataloader(batch_size: int, param: Dict) -> Tuple[DataLoader, DataLoader
     )
 
     test_loader = torch.utils.data.DataLoader(
-        param["dataset"](
-            download=True,
-            root="./data",
-            train=False,
-            transform=transforms.Compose(
-                [transforms.ToTensor(), transforms.Normalize(param["mean"], param["std"])]
-            ),
-        ),
-        batch_size=batch_size,
+        test_dataset,
+        batch_size=param["batch_size"],
         shuffle=True,
         drop_last=True,
     )
@@ -329,7 +348,12 @@ def train(
 
 
 def torch_inference(
-    model: nn.Module, data: DataLoader, param: Dict, device: str = "cpu", k: int = 1
+    model: nn.Module,
+    data: DataLoader,
+    param: Dict,
+    device: str = "cpu",
+    k: int = 1,
+    verbose: bool = False,
 ) -> float:
 
     """Returns the `top_k` accuracy.
@@ -351,7 +375,7 @@ def torch_inference(
     with torch.no_grad():
         model.eval()
         start_time = time()
-        for x, y in tqdm(data):
+        for x, y in tqdm(data, disable=verbose is False):
             x, y = x.to(device), y.to(device)
             yhat = model(x)
             acc_top_k.append(
@@ -361,17 +385,17 @@ def torch_inference(
             )
             total_example += len(x)
 
-    print(f"Running time: {(time() - start_time) / total_example:.4f} sec.")
+    if verbose:
+        print(f"Running time: {(time() - start_time) / total_example:.4f} sec.")
 
-    return np.mean(acc_top_k)
+    return np.mean(acc_top_k, dtype="float64")
 
 
-def fhe_compatibility(model: Callable, bit: int, data: DataLoader) -> Callable:
+def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
     """Test if the model is FHE-compatible.
 
     Args:
         model (Callable): The Brevitas model.
-        bit (int): Bit of quantization.
         data (DataLoader): The data loader.
 
     Returns:
@@ -402,8 +426,6 @@ def fhe_compatibility(model: Callable, bit: int, data: DataLoader) -> Callable:
         p_error=6.3342483999973e-05,
         output_onnx_file="test.onnx",
     )
-
-    clear_output()
 
     return qmodel
 
@@ -438,7 +460,9 @@ def mapping_keys(pretrained_weights: Dict, model: nn.Module, device: str) -> nn.
     return model
 
 
-def fhe_simulation_inference(qmodel, data_loader, output_size: int, step: int = None) -> float:
+def fhe_simulation_inference(
+    qmodel, data_loader, output_size: int, step: int = None, verbose: bool = False
+) -> float:
     """Evaluate the model in FHE simulation mode.
 
     Args:
@@ -454,7 +478,7 @@ def fhe_simulation_inference(qmodel, data_loader, output_size: int, step: int = 
     total_example = 0
     start_time = time()
 
-    for j, (data, labels) in tqdm(enumerate((data_loader))):
+    for j, (data, labels) in tqdm(enumerate((data_loader)), disable=verbose is False):
 
         data, labels = data.detach().cpu().numpy(), labels.detach().cpu().numpy()
 
@@ -474,6 +498,7 @@ def fhe_simulation_inference(qmodel, data_loader, output_size: int, step: int = 
         if step and (j % step) == 0:
             print(f"Epoch {j:2}: VL_Acc = {np.mean(accuracy_vl)}")
 
-    print(f"Running time: {(time() - start_time) / total_example:.4f} sec.")
+    if verbose:
+        print(f"Running time: {(time() - start_time) / total_example:.4f} sec.")
 
-    return np.mean(accuracy_vl)
+    return np.mean(accuracy_vl, dtype="float64")
