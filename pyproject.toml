@@ -65,7 +65,6 @@ numpy = [
     {version = "1.23.5", python = ">=3.8.0"},
     {version = "1.21.6", python = "<3.8.0"}
 ]
-ipython = [{version = "8.10.0", python = ">=3.8.0"}]
 protobuf = [{version = "3.20.3", python = ">=3.8.0"},
     {version = "3.19.6", python = "<3.8.0"}
 ]

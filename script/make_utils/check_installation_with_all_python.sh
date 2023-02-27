@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+set -e
+
+METHOD="sync_env"
+VERSION_LIST=""
+
+while [ -n "$1" ]
+do
+   case "$1" in
+        "--sync_env" )
+            METHOD="sync_env"
+            ;;
+
+        "--wheel" )
+            METHOD="wheel"
+            ;;
+
+        "--pip" )
+            METHOD="pip"
+            ;;
+
+        "--all" )
+            VERSION_LIST="3.7 3.8 3.9 3.10"
+            ;;
+
+        "--version" )
+            shift
+            VERSION_LIST="${VERSION_LIST} $1"
+            ;;
+
+        *)
+            echo "Unknown param : $1"
+            exit 1
+            ;;
+
+   esac
+   shift
+done
+
+if [ "${VERSION_LIST}" == "" ]
+then
+    VERSION_LIST="3.8 3.9 3.10"
+fi
+
+for VERSION in $VERSION_LIST
+do
+    VENV=".tmp_venv_${VERSION}"
+    rm -rf "${VENV}"
+
+    python"${VERSION}" -m venv "${VENV}"
+
+    # shellcheck disable=SC1090,SC1091
+    source "${VENV}"/bin/activate
+    python --version
+
+    CHECK_VERSION=$(python --version)
+
+    if [[ "${CHECK_VERSION}" != *"${VERSION}"* ]]; then
+        echo "Issue in the version"
+        exit 255
+    fi
+
+    if [ "$METHOD" == "wheel" ]
+    then
+        # Delete the directory where the pypi wheel file will be created (if it already exists)
+        rm -rf dist
+
+        # Build the wheel file
+        poetry build -f wheel
+
+        # Install the dependencies as PyPI would do using the wheel file, inclusing the current
+        # Concrete-Numpy RC version
+        PYPI_WHEEL=$(find dist -type f -name "*.whl")
+        python -m pip install "${PYPI_WHEEL}"
+
+    elif [ "$METHOD" == "pip" ]
+    then
+        pip install concrete-ml
+
+    elif [ "$METHOD" == "sync_env" ]
+    then
+        make sync_env
+    else
+        echo "What is this method $METHOD"
+        exit 255
+    fi
+
+    rm -rf "${VENV}"
+done

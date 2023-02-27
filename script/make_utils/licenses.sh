@@ -92,6 +92,27 @@ then
     rm -rf $TMP_VENV_PATH/tmp_venv
     python3 -m venv $TMP_VENV_PATH/tmp_venv
 
+    # Check that we use a recent python (eg, if we were using an old one, it may create a deprecated
+    # license file)
+    CHECK_VERSION=$(python3 --version)
+    IS_CORRECT_PYTHON=0
+
+    if [[ "${CHECK_VERSION}" == *"3.8"* ]]; then
+        IS_CORRECT_PYTHON=1
+    elif [[ "${CHECK_VERSION}" == *"3.9"* ]]; then
+        IS_CORRECT_PYTHON=1
+    elif [[ "${CHECK_VERSION}" == *"3.10"* ]]; then
+        IS_CORRECT_PYTHON=1
+    fi
+
+    if [ $IS_CORRECT_PYTHON -eq 0 ]
+    then
+        echo "Error, please don't try to make licenses with an old python (here: $CHECK_VERSION)"
+        exit 255
+    else
+        echo "Make licenses with python $CHECK_VERSION"
+    fi
+
     # SC1090: Can't follow non-constant source. Use a directive to specify location.
     # shellcheck disable=SC1090,SC1091
     source $TMP_VENV_PATH/tmp_venv/bin/activate

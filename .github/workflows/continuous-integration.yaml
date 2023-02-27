@@ -381,6 +381,18 @@ jobs:
 
           make setup_env
 
+      - name: Check installation with sync_env and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
+
+      - name: Check installation with pip and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
+
+      - name: Check installation with wheel and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
+
       - name: Check commits first line format
         id: ccfl
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
