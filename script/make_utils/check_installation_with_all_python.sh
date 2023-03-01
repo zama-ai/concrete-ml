@@ -20,6 +20,10 @@ do
             METHOD="pip"
             ;;
 
+        "--clone" )
+            METHOD="clone"
+            ;;
+
         "--all" )
             VERSION_LIST="3.7 3.8 3.9 3.10"
             ;;
@@ -81,6 +85,18 @@ do
     elif [ "$METHOD" == "sync_env" ]
     then
         make sync_env
+    elif [ "$METHOD" == "clone" ]
+    then
+        rm -rf "${VENV}"
+        TMP_DIR=".tmp_dir_clone_${VERSION}"
+        rm -rf "${TMP_DIR}"
+        mkdir "${TMP_DIR}"
+        cd "${TMP_DIR}"
+        git clone https://github.com/zama-ai/concrete-ml
+        cd concrete-ml
+        make sync_env
+        cd ../..
+        rm -rf "${TMP_DIR}"
     else
         echo "What is this method $METHOD"
         exit 255

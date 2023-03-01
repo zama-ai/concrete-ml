@@ -393,6 +393,10 @@ jobs:
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
 
+      - name: Check installation with clone and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
+
       - name: Check commits first line format
         id: ccfl
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
