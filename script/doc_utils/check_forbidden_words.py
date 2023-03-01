@@ -65,69 +65,73 @@ def process_file(file_str: str, do_open_problematic_files=False):
     forbidden_word_list: List[Tuple[str, List]]
     forbidden_word_list = [
         ("Concrete-ml", []),  # use `Concrete-ML`
-        ("Concrete-Ml", []),
-        ("Concrete ML", []),
-        ("concrete ml", []),
-        ("concrete-ml", []),
-        ("pytorch", []),  # use `Pytorch`
+        ("Concrete-Ml", []),  # use `Concrete-ML`
+        ("Concrete ML", []),  # use `Concrete-ML`
+        ("concrete ml", []),  # use `Concrete-ML`
+        ("concrete-ml", []),  # use `Concrete-ML`
+        ("pytorch", []),  # use `PyTorch`
+        ("Pytorch", []),  # use `PyTorch`
+        ("pytorch", []),  # use `PyTorch`
         ("bitwidth", []),  # use `bit-width`
-        ("bit width", []),
+        ("bit width", []),  # use `bit-width`
         ("inputset", []),  # use `input-set`
         ("dataset", []),  # use `data-set`
-        ("data set", []),
+        ("data set", []),  # use `data-set`
         ("data-base", []),  # use `database`
         ("code-base", []),  # use `codebase`
-        ("dequantize", []),
-        ("requantize", []),
+        ("dequantize", []),  # use de-quantize
+        ("requantize", []),  # use re-quantize
         ("an FHE", []),  # use `a FHE`
-        ("can Google", []),
-        ("jupyter", []),
-        ("PyTest", []),
-        ("pyTest", []),
-        ("Pytest", []),
-        ("python", ["python client.py"]),
-        ("Pytorch", []),
-        ("pytorch", []),
-        ("HummingBird", []),
-        ("hummingbird", ["from hummingbird import", "import hummingbird", "from hummingbird."]),
-        ("MacOS", []),
-        ("macos", []),
-        ("MacOs", []),
-        ("bareOS", []),
-        ("BareOS", []),
-        ("torch", ["import torch", "torch.", "from torch import"]),
-        ("numpy", ["import numpy", "from numpy import", "numpy."]),
-        ("Numpy", ["Concrete-Numpy"]),
-        ("PoissonRegression", []),
-        ("docker", []),
-        ("poetry", []),
-        ("Make", []),
-        ("brevitas", ["import brevitas", "from brevitas", "bit accuracy brevitas"]),
-        ("concrete-numpy", []),
-        ("tool-kit", []),
-        ("tool-kits", []),
-        ("preprocessing", []),
-        ("preprocess", []),
-        ("keras", []),
-        ("tensorflow", ["= tensorflow."]),
-        ("Tensorflow", []),
-        ("gauss", []),
-        ("gaussian", []),
-        ("netron", []),
-        ("information are", []),
-        ("builtin", []),
-        ("hyper parameters", []),
-        ("hyperparameters", []),
-        ("combinaison", []),
-        ("zeropoint", []),
-        ("pretrained", []),
-        ("i.e.,", []),
-        ("e.g.,", []),
-        ("discord", []),
-        ("worst-case", []),
+        ("can Google", []),  # google is a verb
+        ("jupyter", []),  # use Jupyter
+        ("PyTest", []),  # use pytest
+        ("pyTest", []),  # use pytest
+        ("Pytest", []),  # use pytest
+        ("python", ["python client.py"]),  # use Python
+        ("HummingBird", []),  # use Hummingbird
+        (
+            "hummingbird",
+            ["from hummingbird import", "import hummingbird", "from hummingbird."],
+        ),  # use Hummingbird
+        ("MacOS", []),  # use macOS
+        ("macos", []),  # use macOS
+        ("MacOs", []),  # use macOS
+        ("bareOS", []),  # use bare OS
+        ("BareOS", []),  # use bare OS
+        ("torch", ["import torch", "torch.", "from torch import"]),  # use Torch
+        ("numpy", ["import numpy", "from numpy import", "numpy."]),  # use NumPy
+        ("Numpy", ["Concrete-Numpy"]),  # use NumPy
+        ("PoissonRegression", []),  # use Poisson Regression
+        ("docker", []),  # Use Docker
+        ("poetry", []),  # Use Poetry
+        ("Make", []),  # Use make
+        ("brevitas", ["import brevitas", "from brevitas", "bit accuracy brevitas"]),  # use Brevitas
+        ("concrete-numpy", []),  # use Concrete-Numpy
+        ("Concrete-numpy", []),  # use Concrete-Numpy
+        ("tool-kit", []),  # use toolkit
+        ("tool-kits", []),  # use toolkits
+        ("preprocessing", []),  # use pre-processing
+        ("preprocess", []),  # use pre-process
+        ("keras", []),  # use Keras
+        ("tensorflow", ["= tensorflow."]),  # use TensorFlow
+        ("Tensorflow", []),  # use TensorFlow
+        ("gauss", []),  # use Gauss
+        ("gaussian", []),  # use Gaussian
+        ("netron", []),  # use Netron
+        ("information are", []),  # information is
+        ("builtin", []),  # use built-in
+        ("hyper parameters", []),  # use hyper-parameters
+        ("hyperparameters", []),  # use hyper-parameters
+        ("combinaison", []),  # use combination
+        ("zeropoint", []),  # use zero-point
+        ("pretrained", []),  # use pre-trained
+        ("i.e.,", []),  # ie
+        ("e.g.,", []),  # eg
+        ("discord", []),  # use Discord
+        ("worst-case", []),  # use worst case
         ("FHE friendly", []),  # use FHE-friendly
-        ("slow-down", []),
-        ("counter-part", []),
+        ("slow-down", []),  # use slow down
+        ("counter-part", []),  # use counterpart
         ("Scikit-learn", []),  # use Scikit-Learn
         ("it's", []),  # use `it is`
         ("It's", []),  # use `It is`
@@ -135,15 +139,15 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("Let's", []),  # keep a consistent impersonal style
         ("let us", ["feel free to let us know"]),  # keep a consistent impersonal style
         ("Let us", []),  # keep a consistent impersonal style
-        ("github", []),
-        ("elementwise", []),
-        ("favourite", []),
+        ("github", []),  # use GitHub
+        ("elementwise", []),  # use element-wise
+        ("favourite", []),  # use favorite
         (
             "speed up",
             ["to speed up", "will speed up", "will not speed up", "it speeds up", "this speeds up"],
         ),
-        ("de-activate", []),
-        ("Skorch", []),
+        ("de-activate", []),  # use deactivate
+        ("Skorch", []),  # use skorch
         ("fhe", []),  # use `FHE`
     ]
     # For later
