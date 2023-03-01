@@ -126,8 +126,6 @@ def _compile_torch_or_onnx_model(
 
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
-    quantized_numpy_inputset = quantized_module.quantize_input(*inputset_as_numpy_tuple)
-
     # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
     # configuration and in direct arguments
     check_there_is_no_p_error_options_in_configuration(configuration)
@@ -136,7 +134,7 @@ def _compile_torch_or_onnx_model(
     p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
     quantized_module.compile(
-        quantized_numpy_inputset,
+        inputset_as_numpy_tuple,
         configuration,
         compilation_artifacts,
         show_mlir=show_mlir,

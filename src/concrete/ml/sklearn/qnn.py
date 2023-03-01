@@ -4,8 +4,7 @@
 # pylint: disable=invalid-name
 
 import copy
-from abc import abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 import brevitas.nn as qnn
 import numpy
@@ -315,13 +314,40 @@ class SparseQuantNeuralNetImpl(nn.Module):
         self.make_pruning_permanent()
 
 
+# pylint: disable-next=abstract-method
 class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
     """Mixin class that adds quantization features to Skorch NN estimators."""
 
-    @property
-    @abstractmethod
-    def base_estimator_type(self):
-        """Get the sklearn estimator that should be trained by the child class."""
+    # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/327
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ):
+        # It basically just resets quantized_module_ by calling QuantizedSkorchEstimatorMixin's
+        # initialization
+        super().__init__()
+
+        # If no parameters are passed just returns
+        # Used to load the model class from json
+        if len(args) == 0 and len(kwargs) == 0:
+            return
+
+        kwargs.pop("n_bits", None)
+
+        verbose = kwargs.pop("verbose", False)
+        kwargs["verbose"] = verbose
+
+        _check_input_output_kwargs(kwargs)
+
+        # Note that our default optimizer is Adam which was found to be more stable when pruning
+        self.underlying_model_class.__init__(
+            self,
+            SparseQuantNeuralNetImpl,
+            *args,
+            **kwargs,
+        )
 
     def infer(self, x, **fit_params):
         """Perform a single inference step on a batch of data.
@@ -428,7 +454,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
 
         return new_object_params
 
-    # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
     def on_train_end(self, net, X=None, y=None, **kwargs):
         """Call back when training is finished by the skorch wrapper.
 
@@ -553,7 +579,7 @@ class FixedTypeSkorchNeuralNet:
         return model_copy
 
 
-# pylint: disable-next=too-many-ancestors
+# pylint: disable-next=too-many-ancestors, abstract-method
 class NeuralNetClassifier(
     FixedTypeSkorchNeuralNet,
     QuantizedSkorchEstimatorMixin,
@@ -575,10 +601,10 @@ class NeuralNetClassifier(
     lower bitwidth, they will be safely casted to int64. Else, an error is raised.
     """
 
+    underlying_model_class: Callable = SKNeuralNetClassifier
     _is_a_public_cml_model = True
 
-    # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/327
+    # pylint: disable-next=useless-super-delegation
     def __init__(
         self,
         *args,
@@ -587,26 +613,8 @@ class NeuralNetClassifier(
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
-        # It basically just resets quantized_module_
-        # It calls the init of QuantizedSkorchEstimatorMixin
-        super().__init__()
-
-        # If no parameters are passed just returns
-        # Used to load the model class from json
-        if len(args) == 0 and len(kwargs) == 0:
-            return
-
-        kwargs.pop("n_bits", None)
-
-        verbose = kwargs.pop("verbose", False)
-        kwargs["verbose"] = verbose
-
-        _check_input_output_kwargs(kwargs)
-
-        # Note that our default optimizer is Adam which was found to be more stable when pruning
-        SKNeuralNetClassifier.__init__(
-            self,
-            SparseQuantNeuralNetImpl,
+        # Call QuantizedSkorchEstimatorMixin's __init__ method
+        super().__init__(
             *args,
             criterion=criterion,
             classes=classes,
@@ -614,26 +622,10 @@ class NeuralNetClassifier(
             **kwargs,
         )
 
-    @property
-    def base_estimator_type(self):
-        return SKNeuralNetClassifier
-
     # Disable pylint here because we add an additional argument to .predict,
     # with respect to the base class .predict method.
     # pylint: disable=arguments-differ
-    def predict(self, X, execute_in_fhe=False):
-        """Predict on user provided data.
-
-        Predicts using the quantized clear or FHE classifier
-
-        Args:
-            X : input data, a numpy array of raw values (non quantized)
-            execute_in_fhe : whether to execute the inference in FHE or in the clear
-
-        Returns:
-            y_pred : numpy ndarray with predictions
-
-        """
+    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
         # We just need to do argmax on the predicted probabilities
         # First we get the predicted class indices
         y_index_pred = self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
@@ -641,17 +633,8 @@ class NeuralNetClassifier(
         # Finally, return the class names corresponding to the indices
         return self.classes_[y_index_pred]
 
-    def fit(self, X, y, **fit_params):
-        # We probably can't handle all cases since per Skorch documentation they handle:
-        #  * numpy arrays
-        #  * torch tensors
-        #  * pandas DataFrame or Series
-        #  * scipy sparse CSR matrices
-        #  * a dictionary of the former three
-        #  * a list/tuple of the former three
-        #  * a Dataset
-        # which is a bit much since they don't necessarily have the same interfaces to handle types
-
+    # pylint: disable-next=attribute-defined-outside-init
+    def fit(self, X, y, *args, **kwargs) -> Any:
         # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
         # casted to float32 as this should not have a great impact on the model's performances. If
         # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
@@ -659,10 +642,10 @@ class NeuralNetClassifier(
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
         y = check_dtype_and_cast(y, "int64", error_information="Neural Network classifier target")
 
-        cls, y = numpy.unique(y, return_inverse=True)
+        classes, y = numpy.unique(y, return_inverse=True)
 
         # Check that at least two classes are given
-        n_classes = len(cls)
+        n_classes = len(classes)
         assert_true(
             n_classes >= 2,
             f"Invalid number of classes: {str(n_classes)}, " "n_outputs should be larger than one",
@@ -674,28 +657,30 @@ class NeuralNetClassifier(
         # Set the number of input dimensions to use
         self.module__input_dim = X.shape[1]
 
-        # Set the Skorch classes
-        self.classes = cls
+        # Call QuantizedSkorchEstimatorMixin's fit method
+        return super().fit(X, y, *args, **kwargs)
 
-        return super().fit(X, y, **fit_params)
-
-    def fit_benchmark(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> Tuple[Any, Any]:
+    def fit_benchmark(self, X, y, *args, **kwargs) -> Tuple[Any, Any]:
         # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
         # casted to float32 as this should not have a great impact on the model's performances. If
         # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
         # error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
         y = check_dtype_and_cast(y, "int64", error_information="Neural Network classifier target")
+
+        # Call QuantizedSkorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    def predict_proba(self, X, execute_in_fhe=False):
+    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
         # Check that inputs are float32. If they are, they will be casted to float32 as this
         # should not have a great impact on the model's performances. Else, an error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
+
+        # Call QuantizedSkorchEstimatorMixin's predict_proba method
         return super().predict_proba(X, execute_in_fhe)
 
 
-# pylint: disable-next=too-many-ancestors
+# pylint: disable-next=too-many-ancestors, abstract-method
 class NeuralNetRegressor(
     FixedTypeSkorchNeuralNet, QuantizedSkorchEstimatorMixin, SKNeuralNetRegressor
 ):
@@ -715,50 +700,24 @@ class NeuralNetRegressor(
     are not floating points.
     """
 
+    underlying_model_class: Callable = SKNeuralNetRegressor
     _is_a_public_cml_model = True
 
-    # Make this class accept a generic NN and not impose our SparseQuantNeuralNetImpl
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/327
+    # pylint: disable-next=useless-super-delegation
     def __init__(
         self,
         *args,
         optimizer=torch.optim.Adam,
         **kwargs,
     ):
-        super().__init__()
-        # If no parameters are passed just return
-        # Used to load the model class from json
-        if len(args) == 0 and len(kwargs) == 0:
-            return
-
-        kwargs.pop("n_bits", None)
-
-        _check_input_output_kwargs(kwargs)
-
-        # Note that our default optimizer is Adam which was found to be more stable when pruning
-        SKNeuralNetRegressor.__init__(
-            self,
-            SparseQuantNeuralNetImpl,
+        # Call QuantizedSkorchEstimatorMixin's __init__ method
+        super().__init__(
             *args,
             optimizer=optimizer,
             **kwargs,
         )
 
-    @property
-    def base_estimator_type(self):
-        return SKNeuralNetRegressor
-
-    def fit(self, X, y, **fit_params):
-        # We probably can't handle all cases since per Skorch documentation they handle:
-        #  * numpy arrays
-        #  * torch tensors
-        #  * pandas DataFrame or Series
-        #  * scipy sparse CSR matrices
-        #  * a dictionary of the former three
-        #  * a list/tuple of the former three
-        #  * a Dataset
-        # which is a bit much since they don't necessarily have the same interfaces to handle types
-
+    def fit(self, X, y, *args, **kwargs) -> Any:
         # Check that inputs and targets are float32. If they are float64, they will be casted to
         # float32 as this should not have a great impact on the model's performances. Else, an error
         # is raised.
@@ -773,18 +732,23 @@ class NeuralNetRegressor(
         # Set the number of input dimensions to use
         self.module__input_dim = X.shape[1]
 
-        return super().fit(X, y, **fit_params)
+        # Call QuantizedSkorchEstimatorMixin's fit method
+        return super().fit(X, y, *args, **kwargs)
 
-    def fit_benchmark(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> Tuple[Any, Any]:
+    def fit_benchmark(self, X, y, *args, **kwargs) -> Tuple[Any, Any]:
         # Check that inputs and targets are float32. If they are float64, they will be casted to
         # float32 as this should not have a great impact on the model's performances. Else, an error
         # is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")
         y = check_dtype_and_cast(y, "float32", error_information="Neural Network regressor target")
+
+        # Call QuantizedSkorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    def predict_proba(self, X, execute_in_fhe=False):
+    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
         # Check that inputs are float32. If they are float64, they will be casted to float32 as
         # this should not have a great impact on the model's performances. Else, an error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")
+
+        # Call QuantizedSkorchEstimatorMixin's predict_proba method
         return super().predict_proba(X, execute_in_fhe)

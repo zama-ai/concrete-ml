@@ -1,16 +1,17 @@
 """Implement RandomForest models."""
 
-import sklearn.ensemble
+import numpy
+import sklearn
 
-from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
+from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegressorMixin
 
 
 # pylint: disable=too-many-instance-attributes
 class RandomForestClassifier(BaseTreeClassifierMixin):
     """Implements the RandomForest classifier."""
 
-    sklearn_alg = sklearn.ensemble.RandomForestClassifier
-    framework: str = "sklearn"
+    underlying_model_class = sklearn.ensemble.RandomForestClassifier
+    framework = "sklearn"
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -40,7 +41,9 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
 
         # noqa: DAR101
         """
-        BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
+        # Call BaseClassifier's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.n_estimators = n_estimators
         self.bootstrap = bootstrap
         self.oob_score = oob_score
@@ -60,13 +63,19 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
 
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        # Here, we want to use BaseTreeEstimatorMixin's `post-processing` method as
+        # RandomForestClassifier models directly computes probabilities and therefore don't require
+        # to apply a sigmoid or softmax in post-processing
+        return BaseTreeEstimatorMixin.post_processing(self, y_preds)
+
 
 # pylint: disable=too-many-instance-attributes
 class RandomForestRegressor(BaseTreeRegressorMixin):
     """Implements the RandomForest regressor."""
 
-    sklearn_alg = sklearn.ensemble.RandomForestRegressor
-    framework: str = "sklearn"
+    underlying_model_class = sklearn.ensemble.RandomForestRegressor
+    framework = "sklearn"
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -95,7 +104,9 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
 
         # noqa: DAR101
         """
-        BaseTreeRegressorMixin.__init__(self, n_bits=n_bits)
+        # Call BaseTreeEstimatorMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.n_estimators = n_estimators
         self.bootstrap = bootstrap
         self.oob_score = oob_score

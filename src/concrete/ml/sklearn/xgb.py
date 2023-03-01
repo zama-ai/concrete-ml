@@ -7,10 +7,6 @@ import numpy
 import xgboost.sklearn
 
 from ..common.debugging.custom_assert import assert_true
-
-# The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
-# here in order to avoid duplicating them.
-from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
 
@@ -23,8 +19,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
     for more information about the parameters used.
     """
 
-    sklearn_alg = xgboost.sklearn.XGBClassifier
-    framework: str = "xgboost"
+    underlying_model_class = xgboost.sklearn.XGBClassifier
+    framework = "xgboost"
     _is_a_public_cml_model = True
 
     # pylint: disable=too-many-arguments,too-many-locals
@@ -59,9 +55,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         predictor: Optional[str] = None,
         enable_categorical: bool = False,
         use_label_encoder: bool = False,
-        random_state: Optional[
-            Union[numpy.random.RandomState, int]  # pylint: disable=no-member
-        ] = None,
+        random_state: Optional[int] = None,
         verbosity: Optional[int] = None,
     ):
         # base_score != 0.5 or None does not seem to not pass our tests
@@ -81,7 +75,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
                 warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
                 n_jobs = 1  # pragma: no cover
 
-        BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
+        # Call BaseClassifier's __init__ method
+        super().__init__(n_bits=n_bits)
 
         self.max_depth = max_depth
         self.learning_rate = learning_rate
@@ -113,46 +108,6 @@ class XGBClassifier(BaseTreeClassifierMixin):
         self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
-        self.post_processing_params: Dict[str, Any] = {}
-
-    @property
-    def _is_fitted(self):
-        return (
-            super()._is_fitted
-            and self.post_processing_params.get("n_classes_", None) is not None
-            and self.post_processing_params.get("n_estimators", None) is not None
-        )
-
-    def _update_post_processing_params(self):
-        """Update the post processing params."""
-        self.post_processing_params = {
-            "n_classes_": self.n_classes_,
-            "n_estimators": self.n_estimators,
-        }
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        self.check_model_is_fitted()
-
-        y_preds = super().post_processing(y_preds)
-
-        # Update post-processing params with their current values
-        self.__dict__.update(self.post_processing_params)
-
-        # If this binary classification problem
-        if self.n_classes_ == 2:
-            # Apply sigmoid
-            y_preds = numpy_sigmoid(y_preds)[0]
-
-            # Transform in a 2d array where [1-p, p] is the output as XGBoost only outputs 1 value
-            # when considering 2 classes
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-
-        # Else, it's a multi-class classification problem
-        else:
-            # Apply softmax
-            y_preds = numpy_softmax(y_preds)[0]
-
-        return y_preds
 
 
 # Disabling invalid-name to use uppercase X
@@ -164,8 +119,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
     for more information about the parameters used.
     """
 
-    sklearn_alg = xgboost.sklearn.XGBRegressor
-    framework: str = "xgboost"
+    underlying_model_class = xgboost.sklearn.XGBRegressor
+    framework = "xgboost"
     _is_a_public_cml_model = True
 
     # pylint: disable=too-many-arguments,too-many-locals
@@ -200,9 +155,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
         predictor: Optional[str] = None,
         enable_categorical: bool = False,
         use_label_encoder: bool = False,
-        random_state: Optional[
-            Union[numpy.random.RandomState, int]  # pylint: disable=no-member
-        ] = None,
+        random_state: Optional[int] = None,
         verbosity: Optional[int] = None,
     ):
         # base_score != 0.5 or None does not seem to not pass our tests
@@ -222,7 +175,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
                 warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
                 n_jobs = 1  # pragma: no cover
 
-        BaseTreeRegressorMixin.__init__(self, n_bits=n_bits)
+        # Call BaseTreeEstimatorMixin's __init__ method
+        super().__init__(n_bits=n_bits)
 
         self.max_depth = max_depth
         self.learning_rate = learning_rate
@@ -254,53 +208,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         self.use_label_encoder = use_label_encoder
         self.random_state = random_state
         self.verbosity = verbosity
-        self.post_processing_params: Dict[str, Any] = {}
 
-    @property
-    def _is_fitted(self):
-        return (
-            super()._is_fitted and self.post_processing_params.get("n_estimators", None) is not None
-        )
-
-    def _update_post_processing_params(self):
-        """Update the post processing params."""
-        self.post_processing_params = {
-            "n_estimators": self.n_estimators,
-        }
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        self.check_model_is_fitted()
-
-        # Update post-processing params with their current values
-        self.__dict__.update(self.post_processing_params)
-
-        # XGBoost returns a shape (n_examples, n_classes, n_trees) when self.n_classes_ >= 3
-        # otherwise it returns a shape (n_examples, 1, n_trees)
-
-        # Sum all tree outputs.
-        # Remove the sum once we handle multi-precision circuits
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=2)
-
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-
-        return y_preds
-
-    def fit(self, X, y, **kwargs) -> Any:
-        """Fit the tree-based estimator.
-
-        Args:
-            X : training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The target data.
-            **kwargs: args for super().fit
-
-        Returns:
-            Any: The fitted model.
-        """
+    def fit(self, X, y, *args, **kwargs) -> Any:
 
         # HummingBird and XGBoost don't properly manage multi-outputs cases
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1856
@@ -310,6 +219,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
             or (not isinstance(y, list) and (len(y.shape) == 1 or y.shape[1] == 1)),
             "XGBRegressor doesn't support multi-output cases.",
         )
-        # Fit the model
-        super().fit(X, y, **kwargs)
+
+        # Call BaseTreeEstimatorMixin's fit method
+        super().fit(X, y, *args, **kwargs)
         return self

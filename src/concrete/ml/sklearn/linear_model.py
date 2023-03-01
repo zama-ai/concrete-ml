@@ -22,7 +22,7 @@ class LinearRegression(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html
     """
 
-    sklearn_alg = sklearn.linear_model.LinearRegression
+    underlying_model_class = sklearn.linear_model.LinearRegression
 
     _is_a_public_cml_model = True
 
@@ -35,13 +35,14 @@ class LinearRegression(SklearnLinearRegressorMixin):
         n_jobs=None,
         positive=False,
     ):
-        self.n_bits = n_bits
+        # Call SklearnLinearModelMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.fit_intercept = fit_intercept
         self.normalize = normalize
         self.copy_X = copy_X
         self.n_jobs = n_jobs
         self.positive = positive
-        super().__init__(n_bits=n_bits)
 
 
 class ElasticNet(SklearnLinearRegressorMixin):
@@ -60,7 +61,7 @@ class ElasticNet(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html
     """
 
-    sklearn_alg = sklearn.linear_model.ElasticNet
+    underlying_model_class = sklearn.linear_model.ElasticNet
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -80,7 +81,9 @@ class ElasticNet(SklearnLinearRegressorMixin):
         random_state=None,
         selection="cyclic",
     ):
-        self.n_bits = n_bits
+        # Call SklearnLinearModelMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.alpha = alpha
         self.l1_ratio = l1_ratio
         self.fit_intercept = fit_intercept
@@ -93,7 +96,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         self.warm_start = warm_start
         self.random_state = random_state
         self.selection = selection
-        super().__init__(n_bits=n_bits)
 
 
 class Lasso(SklearnLinearRegressorMixin):
@@ -112,7 +114,7 @@ class Lasso(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html
     """
 
-    sklearn_alg = sklearn.linear_model.Lasso
+    underlying_model_class = sklearn.linear_model.Lasso
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -131,7 +133,9 @@ class Lasso(SklearnLinearRegressorMixin):
         random_state=None,
         selection="cyclic",
     ):
-        self.n_bits = n_bits
+        # Call SklearnLinearModelMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.normalize = normalize
@@ -143,7 +147,6 @@ class Lasso(SklearnLinearRegressorMixin):
         self.tol = tol
         self.precompute = precompute
         self.random_state = random_state
-        super().__init__(n_bits=n_bits)
 
 
 class Ridge(SklearnLinearRegressorMixin):
@@ -162,7 +165,7 @@ class Ridge(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html
     """
 
-    sklearn_alg = sklearn.linear_model.Ridge
+    underlying_model_class = sklearn.linear_model.Ridge
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -179,7 +182,9 @@ class Ridge(SklearnLinearRegressorMixin):
         positive=False,
         random_state=None,
     ):
-        self.n_bits = n_bits
+        # Call SklearnLinearModelMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.normalize = normalize
@@ -189,7 +194,6 @@ class Ridge(SklearnLinearRegressorMixin):
         self.tol = tol
         self.solver = solver
         self.random_state = random_state
-        super().__init__(n_bits=n_bits)
 
 
 class LogisticRegression(SklearnLinearClassifierMixin):
@@ -208,7 +212,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
     """
 
-    sklearn_alg = sklearn.linear_model.LogisticRegression
+    underlying_model_class = sklearn.linear_model.LogisticRegression
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -231,6 +235,9 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         n_jobs=None,
         l1_ratio=None,
     ):
+        # Call BaseClassifier's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.penalty = penalty
         self.dual = dual
         self.tol = tol
@@ -246,7 +253,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         self.warm_start = warm_start
         self.n_jobs = n_jobs
         self.l1_ratio = l1_ratio
-        super().__init__(n_bits=n_bits)
 
 
 # pylint: enable=too-many-instance-attributes,invalid-name

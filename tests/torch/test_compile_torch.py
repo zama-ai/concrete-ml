@@ -141,10 +141,13 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             numpy.random.uniform(-100, 100, size=(1, *input_output_feature))
             for _ in range(num_inputs)
         )
+
         qtest = quantized_numpy_module.quantize_input(*x_test)
+
         if not isinstance(qtest, tuple):
             qtest = (qtest,)
-        assert quantized_numpy_module.is_compiled
+
+        quantized_numpy_module.check_model_is_compiled()
 
         # Make sure VL and quantized module forward give the same output.
         check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
@@ -692,10 +695,12 @@ def test_pretrained_mnist_qat(
 
     # Check the forward works with the high bitwidth
     qtest = quantized_numpy_module.quantize_input(*x_test)
+
     if not isinstance(qtest, tuple):
         qtest = (qtest,)
 
-    assert quantized_numpy_module.is_compiled
+    quantized_numpy_module.check_model_is_compiled()
+
     check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
 
     # Collect VL results

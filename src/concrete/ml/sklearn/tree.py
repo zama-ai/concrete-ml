@@ -1,16 +1,17 @@
 """Implement DecisionTree models."""
 
+import numpy
 import sklearn
 
-from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
+from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegressorMixin
 
 
 # pylint: disable-next=too-many-instance-attributes
 class DecisionTreeClassifier(BaseTreeClassifierMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
-    sklearn_alg = sklearn.tree.DecisionTreeClassifier
-    framework: str = "sklearn"
+    underlying_model_class = sklearn.tree.DecisionTreeClassifier
+    framework = "sklearn"
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -35,6 +36,8 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         # noqa: DAR101
 
         """
+        # Call BaseClassifier's __init__ method
+        super().__init__(n_bits=n_bits)
 
         self.criterion = criterion
         self.splitter = splitter
@@ -49,15 +52,19 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
 
-        BaseTreeClassifierMixin.__init__(self, n_bits=n_bits)
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        # Here, we want to use BaseTreeEstimatorMixin's `post-processing` method as
+        # DecisionTreeClassifier models directly computes probabilities and therefore don't require
+        # to apply a sigmoid or softmax in post-processing
+        return BaseTreeEstimatorMixin.post_processing(self, y_preds)
 
 
 # pylint: disable-next=too-many-instance-attributes
 class DecisionTreeRegressor(BaseTreeRegressorMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
-    sklearn_alg = sklearn.tree.DecisionTreeRegressor
-    framework: str = "sklearn"
+    underlying_model_class = sklearn.tree.DecisionTreeRegressor
+    framework = "sklearn"
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -81,6 +88,8 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         # noqa: DAR101
 
         """
+        # Call BaseTreeEstimatorMixin's __init__ method
+        super().__init__(n_bits=n_bits)
 
         self.criterion = criterion
         self.splitter = splitter
@@ -93,5 +102,3 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         self.random_state = random_state
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
-
-        BaseTreeRegressorMixin.__init__(self, n_bits=n_bits)

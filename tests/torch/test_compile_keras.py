@@ -91,7 +91,8 @@ def compile_and_test_keras(
     if not isinstance(qtest, tuple):
         qtest = (qtest,)
 
-    assert quantized_numpy_module.is_compiled
+    quantized_numpy_module.check_model_is_compiled()
+
     quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
     check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
 

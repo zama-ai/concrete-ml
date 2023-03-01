@@ -44,24 +44,28 @@ def _raise_qat_import_error(bad_qat_ops: List[Tuple[str, str]]):
     )
 
 
-def _get_inputset_generator(
-    q_inputs: Tuple[numpy.ndarray, ...], input_quantizers: List[UniformQuantizer]
-) -> Generator:
+def _get_inputset_generator(q_inputs: Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]) -> Generator:
     """Create an input set generator with proper dimensions.
 
     Args:
-        q_inputs (numpy.ndarray): The quantized inputs
-        input_quantizers (List[UniformQuantizer]): The input quantizers used on the input set
+        q_inputs (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): The quantized inputs.
 
     Returns:
         Generator: The input set generator with proper dimensions.
     """
-    if len(input_quantizers) > 1:
+    if not isinstance(q_inputs, tuple):
+        q_inputs = (q_inputs,)
+
+    assert len(q_inputs) > 0, "Inputset cannot be empty"
+
+    if len(q_inputs) > 1:
         return (
             tuple(numpy.expand_dims(q_input[idx], 0) for q_input in q_inputs)
             for idx in range(q_inputs[0].shape[0])
         )
-    return (numpy.expand_dims(arr, 0) for arr in q_inputs[0])
+
+    # Else, there's only a single input (q_inputs, )
+    return (numpy.expand_dims(q_input, 0) for q_input in q_inputs[0])
 
 
 class QuantizedModule:
@@ -83,7 +87,6 @@ class QuantizedModule:
         # Set base attributes for API consistency. This could be avoided if an abstract base class
         # is created for both Concrete-ML models and QuantizedModule
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
-        self._is_compiled = False
         self.forward_fhe = None
         self.input_quantizers = []
         self.output_quantizers = []
@@ -112,22 +115,13 @@ class QuantizedModule:
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self.output_quantizers = self._set_output_quantizers()
 
-    @property
-    def is_compiled(self) -> bool:
-        """Return the compiled status of the module.
-
-        Returns:
-            bool: the compiled status of the module.
-        """
-        return self._is_compiled
-
     def check_model_is_compiled(self):
         """Check if the quantized module is compiled.
 
         Raises:
             AttributeError: If the quantized module is not compiled.
         """
-        if not self._is_compiled:
+        if self.fhe_circuit is None:
             raise AttributeError(
                 "The quantized module is not compiled. Please run compile(...) first before "
                 "executing it in FHE."
@@ -150,7 +144,6 @@ class QuantizedModule:
             fhe_circuit (Circuit): the FHE circuit
         """
         self.forward_fhe = fhe_circuit
-        self._is_compiled = True
 
     @property
     def post_processing_params(self) -> Dict[str, Any]:
@@ -350,34 +343,39 @@ class QuantizedModule:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
-            *values (numpy.ndarray): Floating point values.
+            values (numpy.ndarray): Floating point values.
 
         Returns:
             Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) values.
         """
-        n_qinputs = len(self.input_quantizers)
+        n_q_inputs = len(self.input_quantizers)
         n_values = len(values)
         assert_true(
-            n_values == n_qinputs,
-            f"Got {n_values} inputs, expected {n_qinputs}",
+            n_values == n_q_inputs,
+            f"Got {n_values} inputs, expected {n_q_inputs}",
             TypeError,
         )
 
-        qvalues = tuple(self.input_quantizers[idx].quant(values[idx]) for idx in range(len(values)))
+        q_values = tuple(
+            self.input_quantizers[idx].quant(values[idx]) for idx in range(len(values))
+        )
 
-        return qvalues[0] if len(qvalues) == 1 else qvalues
+        assert (
+            numpy.array(q_values).dtype == numpy.int64
+        ), "Inputs were not quantized to int64 values"
+        return q_values[0] if len(q_values) == 1 else q_values
 
-    def dequantize_output(self, qvalues: numpy.ndarray) -> numpy.ndarray:
+    def dequantize_output(self, q_values: numpy.ndarray) -> numpy.ndarray:
         """Take the last layer q_out and use its dequant function.
 
         Args:
-            qvalues (numpy.ndarray): Quantized values of the last layer.
+            q_values (numpy.ndarray): Quantized values of the last layer.
 
         Returns:
             numpy.ndarray: Dequantized values of the last layer.
         """
         real_values = tuple(
-            output_quantizer.dequant(qvalues) for output_quantizer in self.output_quantizers
+            output_quantizer.dequant(q_values) for output_quantizer in self.output_quantizers
         )
 
         assert_true(len(real_values) == 1)
@@ -403,7 +401,7 @@ class QuantizedModule:
 
     def compile(
         self,
-        q_inputs: Union[Tuple[numpy.ndarray, ...], numpy.ndarray],
+        inputs: Union[Tuple[numpy.ndarray, ...], numpy.ndarray],
         configuration: Optional[Configuration] = None,
         compilation_artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
@@ -412,35 +410,47 @@ class QuantizedModule:
         global_p_error: Optional[float] = None,
         verbose_compilation: bool = False,
     ) -> Circuit:
-        """Compile the forward function of the module.
+        """Compile the module's forward function.
 
         Args:
-            q_inputs (Union[Tuple[numpy.ndarray, ...], numpy.ndarray]): Needed for tracing and
-                building the boundaries.
-            configuration (Optional[Configuration]): Configuration object to use during compilation
-            compilation_artifacts (Optional[DebugArtifacts]): Artifacts object to fill during
-            show_mlir (bool): if set, the MLIR produced by the converter and which is
-                going to be sent to the compiler backend is shown on the screen, e.g., for debugging
-                or demo. Defaults to False.
-            use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-                Defaults to False.
-            p_error (Optional[float]): probability of error of a single PBS.
-            global_p_error (Optional[float]): probability of error of the full circuit. Not
-                simulated by the VL, i.e., taken as 0
-            verbose_compilation (bool): whether to show compilation information
+            inputs (numpy.ndarray): A representative set of input values used for building
+                cryptographic parameters.
+            configuration (Optional[Configuration]): Options to use for compilation. Default
+                to None.
+            compilation_artifacts (Optional[DebugArtifacts]): Artifacts information about the
+                compilation process to store for debugging.
+            show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
+            use_virtual_lib (bool): Indicate if the module should be compiled using the Virtual
+                Library in order to simulate FHE computations. This currently requires to set
+                `enable_unsafe_features` to True in the configuration. Default to False
+            p_error (Optional[float]): Probability of error of a single PBS. A p_error value cannot
+                be given if a global_p_error value is already set. Default to None, which sets this
+                error to a default value.
+            global_p_error (Optional[float]): Probability of error of the full circuit. A
+                global_p_error value cannot be given if a p_error value is already set. This feature
+                is not supported during Virtual Library simulation, meaning the probability is
+                currently set to 0 if use_virtual_lib is True. Default to None, which sets this
+                error to a default value.
+            verbose_compilation (bool): Indicate if compilation information should be printed
+                during compilation. Default to False.
 
         Returns:
-            Circuit: the compiled Circuit.
+            Circuit: The compiled Circuit.
         """
 
-        if not isinstance(q_inputs, tuple):
-            q_inputs = (q_inputs,)
+        if not isinstance(inputs, tuple):
+            inputs = (inputs,)
         else:
-            ref_len = q_inputs[0].shape[0]
+            ref_len = inputs[0].shape[0]
             assert_true(
-                all(q_input.shape[0] == ref_len for q_input in q_inputs),
+                all(input.shape[0] == ref_len for input in inputs),
                 "Mismatched dataset lengths",
             )
+
+        assert not numpy.any([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]), (
+            "Inputs used for compiling a QuantizedModule should only be floating points and not"
+            "already-quantized values."
+        )
 
         # concrete-numpy does not support variable *args-style functions, so compile a proxy
         # function dynamically with a suitable number of arguments
@@ -453,7 +463,11 @@ class QuantizedModule:
             {arg_name: "encrypted" for arg_name in orig_args_to_proxy_func_args.values()},
         )
 
-        inputset = _get_inputset_generator(q_inputs, self.input_quantizers)
+        # Quantize the inputs
+        q_inputs = self.quantize_input(*inputs)
+
+        # Generate the inputset with proper dimensions
+        inputset = _get_inputset_generator(q_inputs)
 
         # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
         # configuration and in direct arguments
@@ -464,16 +478,14 @@ class QuantizedModule:
 
         self.forward_fhe = compiler.compile(
             inputset,
-            configuration,
-            compilation_artifacts,
+            configuration=configuration,
+            artifacts=compilation_artifacts,
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose_compilation,
         )
-
-        self._is_compiled = True
 
         return self.forward_fhe
 

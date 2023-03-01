@@ -1,12 +1,12 @@
 """Tests common to all sklearn models."""
 import inspect
 import warnings
-from functools import partial
 
 import numpy
 import pytest
 from sklearn.exceptions import ConvergenceWarning
 
+from concrete.ml.common.utils import get_model_class
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn import (
     get_sklearn_linear_models,
@@ -18,22 +18,21 @@ from concrete.ml.sklearn import (
 def test_sklearn_args():
     """Check that all arguments from the underlying sklearn model are exposed."""
     test_counter = 0
-    skipped = []
     for model_class in (
         get_sklearn_linear_models() + get_sklearn_neural_net_models() + get_sklearn_tree_models()
     ):
-        if isinstance(model_class, partial):
-            model_class = model_class.func
-        if hasattr(model_class, "sklearn_alg"):
-            assert not set(inspect.getfullargspec(model_class.sklearn_alg).args) - set(
-                inspect.getfullargspec(model_class).args
-            )
-            test_counter += 1
-        else:
-            skipped.append(model_class.__name__)
+        model_class = get_model_class(model_class)
 
-    assert test_counter == 16
-    assert skipped == ["NeuralNetClassifier", "NeuralNetRegressor"]
+        # For Neural Network models, we manually fix the module parameter to
+        # SparseQuantNeuralNetImpl. It is therefore not exposed to the users.
+        assert (
+            not set(inspect.getfullargspec(model_class.underlying_model_class).args)
+            - set(inspect.getfullargspec(model_class).args)
+            - {"module"}
+        )
+        test_counter += 1
+
+    assert test_counter == 18
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)

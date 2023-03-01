@@ -271,25 +271,24 @@ def test_custom_net_classifier(load_data):
         "verbose": 0,
     }
 
+    # pylint: disable-next=abstract-method
     class MiniCustomNeuralNetClassifier(QuantizedSkorchEstimatorMixin, SKNeuralNetClassifier):
         """Sklearn API wrapper class for a custom network that will be quantized.
 
         Minimal work is needed to implement training of a custom class."""
 
+        underlying_model_class = SKNeuralNetClassifier
+
         def __init__(self, *args, **kwargs):
             super().__init__()
-            SKNeuralNetClassifier.__init__(self, *args, **kwargs)
-
-        @property
-        def base_estimator_type(self):
-            return SKNeuralNetClassifier
+            self.underlying_model_class.__init__(self, *args, **kwargs)
 
         @property
         def n_bits_quant(self):
             """Return the number of quantization bits"""
             return 2
 
-        def fit(self, X, y, **fit_params):
+        def fit(self, X, y, *args, **kwargs):
             # We probably can't handle all cases since per Skorch documentation they handle:
             #  * numpy arrays
             #  * torch tensors
@@ -306,7 +305,7 @@ def test_custom_net_classifier(load_data):
             y = check_dtype_and_cast(
                 y, "int64", error_information="MiniCustomNeuralNetClassifier target"
             )
-            return super().fit(X, y, **fit_params)
+            return super().fit(X, y, *args, **kwargs)
 
         def predict(self, X, execute_in_fhe=False):
             # We just need to do argmax on the predicted probabilities

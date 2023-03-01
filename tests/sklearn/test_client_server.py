@@ -141,8 +141,7 @@ def test_client_server_custom_model(
 
     # Check that the FHE execution is correct.
     # With a global_p_error of 1/100_000 we only allow one run.
-    q_x_test = quantized_numpy_module.quantize_input(x_test)
-    check_is_good_execution_for_cml_vs_circuit(q_x_test, quantized_numpy_module, n_allowed_runs=1)
+    check_is_good_execution_for_cml_vs_circuit(x_test, quantized_numpy_module, n_allowed_runs=1)
     client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration_no_jit)
 
 

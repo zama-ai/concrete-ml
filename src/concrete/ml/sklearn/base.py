@@ -1,5 +1,4 @@
 """Module that contains base classes for our libraries estimators."""
-import copy
 import functools
 import tempfile
 
@@ -27,7 +26,7 @@ from concrete.numpy.dtypes.integer import Integer
 from concrete.ml.quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from concrete.ml.quantization.quantizers import QuantizationOptions, UniformQuantizer
 
-from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert
+from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import (
     check_there_is_no_p_error_options_in_configuration,
@@ -70,11 +69,9 @@ class BaseEstimator:
             (as opposed to base or mixin classes).
     """
 
-    input_quantizers: List[UniformQuantizer]
-    output_quantizers: List[UniformQuantizer]
-    fhe_circuit_: Optional[Circuit]
-    onnx_model_: Optional[onnx.ModelProto]
-    post_processing_params: Dict[str, Any]
+    #: Base float estimator class to consider for the model. Is set for each subclasses.
+    underlying_model_class: Any
+
     _is_a_public_cml_model: bool = False
 
     def __init__(self):
@@ -85,29 +82,28 @@ class BaseEstimator:
         in their documentation:
         https://scikit-learn.org/stable/developers/develop.html#:~:text=Estimated%20Attributes%C2%B6
         """
-        #: input_quantizers (List[UniformQuantizer]): List of quantizers, which contain all
-        #: information necessary for applying uniform quantization to inputs and provide
-        #: quantization/dequantization functionalities. Is empty if the model was not fitted
-        self.input_quantizers = []
+        #: The list of quantizers, which contain all information necessary for applying uniform
+        #: quantization to inputs and provide quantization/dequantization functionalities. Is empty
+        #: if the model is not fitted
+        self.input_quantizers: List[UniformQuantizer] = []
 
-        #: output_quantizers (List[UniformQuantizer]): List of quantizers, which contain all
-        #: information necessary for applying uniform quantization to outputs and provide
-        #: quantization/dequantization functionalities. Is empty if the model was not fitted
-        self.output_quantizers = []
+        #: The list of quantizers, which contain all information necessary for applying uniform
+        #: quantization to outputs and provide quantization/dequantization functionalities. Is
+        #: empty if the model is not fitted
+        self.output_quantizers: List[UniformQuantizer] = []
 
-        #: post_processing_params (Dict[str, Any]): Parameters needed for post-processing the
-        #: outputs. Can be empty if no post-processing operations are needed for the
-        #: associated model
-        self.post_processing_params = {}
+        #: The parameters needed for post-processing the outputs. Can be empty if no post-processing
+        #: operations are needed for the associated model
+        self.post_processing_params: Dict[str, Any] = {}
 
-        self.fhe_circuit_ = None
-        self.onnx_model_ = None
+        self.fhe_circuit_: Optional[onnx.ModelProto] = None
+        self.onnx_model_: Optional[Circuit] = None
 
     @property
     def onnx_model(self) -> Optional[onnx.ModelProto]:
         """Get the ONNX model.
 
-        Is None if the model was not fitted.
+        Is None if the model is not fitted.
 
         Returns:
             onnx.ModelProto: The ONNX model.
@@ -121,7 +117,7 @@ class BaseEstimator:
         The FHE circuit combines computational graph, mlir, client and server into a single object.
         More information available in Concrete-Numpy documentation:
         https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology
-        Is None if the model was not fitted.
+        Is None if the model is not fitted.
 
         Returns:
             Circuit: The FHE circuit.
@@ -184,8 +180,8 @@ class BaseEstimator:
         Returns:
             params (dict): Parameter names mapped to their values.
         """
-        # Pylint doesn't properly handle classes mixed with classes from a different file
-        # Here, the `get_params` method is the `BaseEstimator.get_params` method from Scikit-Learn
+        # Here, the `get_params` method is the `BaseEstimator.get_params` method from Scikit-Learn,
+        # which will become available once a subclass inherits from it
         # pylint: disable-next=no-member
         params = super().get_params(deep=deep)
 
@@ -193,6 +189,104 @@ class BaseEstimator:
         params.pop("n_bits", None)
 
         return params
+
+    def _set_post_processing_params(self):
+        """Set parameters used in post-processing."""
+        self.post_processing_params = {}
+
+    def _fit_float_estimator(self, X, y, **fit_parameters) -> Any:
+        """Fit the model's float equivalent estimator.
+
+        Args:
+            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
+                or List.
+            **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
+
+        Returns:
+            Any: The fitted estimator.
+        """
+        # Retrieve the init parameters
+        params = self.get_sklearn_params()
+
+        # Initialize the sklearn model
+        # pylint: disable-next=attribute-defined-outside-init
+        self.sklearn_model = self.underlying_model_class(**params)
+
+        # Fit the sklearn model
+        self.sklearn_model.fit(X, y, **fit_parameters)
+
+        return self.sklearn_model
+
+    @abstractmethod
+    def fit(self, X, y, **fit_parameters) -> Any:
+        """Fit the estimator.
+
+        This method trains a Scikit-Learn estimator, computes its ONNX graph and defines the
+        quantization parameters needed for proper FHE inference.
+
+        Args:
+            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
+                or List.
+            **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
+
+        Returns:
+            Any: The fitted estimator.
+        """
+
+    # Several attributes and methods are called in `fit_benchmark` but will only be accessible
+    # in subclasses, we therefore need to disable pylint and mypy from checking these no-member
+    # issues
+    # pylint: disable=no-member
+    def fit_benchmark(
+        self,
+        X,
+        y,
+        random_state: Optional[int] = None,
+        **fit_parameters,
+    ) -> Tuple[Any, Any]:
+        """Fit both the Concrete-ML and its equivalent float estimators.
+
+        Args:
+            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
+                or List.
+            random_state (Optional[int]): The random state to use when fitting. Defaults to None.
+            **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
+
+        Returns:
+            Tuple[Any, Any]: The Concrete-ML and float equivalent fitted estimators.
+        """
+
+        # Retrieve sklearn's init parameters
+        params = self.get_sklearn_params()
+
+        # Make sure the random_state is set or both algorithms will diverge
+        # due to randomness in the training.
+        if "random_state" in params:
+            if random_state is not None:
+                params["random_state"] = random_state
+            elif getattr(self, "random_state", None) is not None:
+                params["random_state"] = self.random_state  # type: ignore[attr-defined]
+            else:
+                params["random_state"] = numpy.random.randint(0, 2**15)
+
+        # Initialize the Scikit-Learn model
+        sklearn_model = self.underlying_model_class(**params)
+
+        # Train the Scikit-Learn model
+        sklearn_model.fit(X, y, **fit_parameters)
+
+        # Update the Concrete-ML model's parameters
+        self.set_params(n_bits=self.n_bits, **params)  # type: ignore[attr-defined]
+
+        # Train the Concrete-ML model
+        self.fit(X, y, **fit_parameters)
+
+        return self, sklearn_model
+
+    # pylint: enable=no-member
 
     @abstractmethod
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
@@ -220,6 +314,144 @@ class BaseEstimator:
             numpy.ndarray: The dequantized output values.
         """
 
+    @abstractmethod
+    def _get_compiler(self) -> Compiler:
+        """Retrieve the compiler instance to compile.
+
+        Returns:
+            Compiler: The compiler instance to compile.
+        """
+
+    def compile(
+        self,
+        X,
+        configuration: Optional[Configuration] = None,
+        compilation_artifacts: Optional[DebugArtifacts] = None,
+        show_mlir: bool = False,
+        use_virtual_lib: bool = False,
+        p_error: Optional[float] = None,
+        global_p_error: Optional[float] = None,
+        verbose_compilation: bool = False,
+    ) -> Circuit:
+        """Compile the model.
+
+        Args:
+            X: A representative set of input values used for building cryptographic parameters.
+            configuration (Optional[Configuration]): Options to use for compilation. Default
+                to None.
+            compilation_artifacts (Optional[DebugArtifacts]): Artifacts information about the
+                compilation process to store for debugging.
+            show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
+            use_virtual_lib (bool): Indicate if the model should be compiled using the Virtual
+                Library in order to simulate FHE computations. This currently requires to set
+                `enable_unsafe_features` to True in the configuration. Default to False
+            p_error (Optional[float]): Probability of error of a single PBS. A p_error value cannot
+                be given if a global_p_error value is already set. Default to None, which sets this
+                error to a default value.
+            global_p_error (Optional[float]): Probability of error of the full circuit. A
+                global_p_error value cannot be given if a p_error value is already set. This feature
+                is not supported during Virtual Library simulation, meaning the probability is
+                currently set to 0 if use_virtual_lib is True. Default to None, which sets this
+                error to a default value.
+            verbose_compilation (bool): Indicate if compilation information should be printed
+                during compilation. Default to False.
+
+        Returns:
+            Circuit: The compiled Circuit.
+        """
+        # Check that the model is correctly fitted
+        self.check_model_is_fitted()
+
+        # Cast pandas, list or torch to numpy
+        X = check_array_and_assert(X)
+
+        # p_error or global_p_error should not be set in both the configuration and direct arguments
+        check_there_is_no_p_error_options_in_configuration(configuration)
+
+        # Find the right way to set parameters for compiler, depending on the way we want to default
+        p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+
+        # Quantize the inputs
+        q_X = self.quantize_input(X)
+
+        # Generate the compilation inputset with proper dimensions
+        inputset = _get_inputset_generator(q_X)
+
+        # Retrieve the compiler instance
+        module_to_compile = self._get_compiler()
+
+        self.fhe_circuit = module_to_compile.compile(
+            inputset,
+            configuration=configuration,
+            artifacts=compilation_artifacts,
+            show_mlir=show_mlir,
+            virtual=use_virtual_lib,
+            p_error=p_error,
+            global_p_error=global_p_error,
+            verbose=verbose_compilation,
+        )
+
+        return self.fhe_circuit
+
+    @abstractmethod
+    def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        """Inference function to consider when executing in the clear.
+
+        Args:
+            q_X (numpy.ndarray): The quantized input values.
+
+        Returns:
+            numpy.ndarray: The quantized predicted values.
+        """
+
+    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict values for X, in FHE or in the clear.
+
+        Args:
+            X: The input values to predict.
+            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
+                Default to False.
+
+        Returns:
+            y_pred (numpy.ndarray): The predicted values.
+        """
+        # CHeck that the model is properly fitted
+        self.check_model_is_fitted()
+
+        # Check that X's type and shape is supported
+        X = check_array_and_assert(X)
+
+        # Quantize the input
+        q_X = self.quantize_input(X)
+
+        # If the inference is executed in FHE
+        if execute_in_fhe:
+
+            # Check that the model is properly compiled
+            self.check_model_is_compiled()
+
+            q_y_pred_list = []
+            for q_X_i in q_X:
+                # Expected encrypt_run_decrypt output shape is (1, n_features) while q_X_i
+                # is of shape (n_features,)
+                q_X_i = numpy.expand_dims(q_X_i, 0)
+
+                # Ignore mypy issue as `check_model_is_compiled` makes sure that fhe_circuit is
+                # not None
+                q_y_pred_i = self.fhe_circuit.encrypt_run_decrypt(q_X_i)  # type: ignore[union-attr]
+                q_y_pred_list.append(q_y_pred_i[0])
+
+            q_y_pred = numpy.array(q_y_pred_list)
+
+        # Else, the prediction is simulated in the clear
+        else:
+            q_y_pred = self._inference(q_X)
+
+        # Dequantize the predicted values in the clear
+        y_pred = self.dequantize_output(q_y_pred)
+
+        return y_pred
+
     # pylint: disable-next=no-self-use
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply post-processing to the dequantized predictions.
@@ -242,13 +474,101 @@ class BaseEstimator:
         return y_preds
 
 
+# This class only is an equivalent of BaseEstimator applied to classifiers, therefore not all
+# methods are implemented and we need to disable pylint from checking that
+# pylint: disable-next=abstract-method
+class BaseClassifier(BaseEstimator):
+    """Base class for linear and tree-based classifiers in Concrete-ML.
+
+    This class inherits from BaseEstimator and modifies some of its methods in order to align them
+    with classifier behaviors. This notably include applying a sigmoid/softmax post-processing to
+    the predicted values as well as handling a mapping of classes in case they are not ordered.
+    """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        #: The classifier's different target classes. Is None if the model is not fitted.
+        self.classes_: numpy.ndarray = None
+
+        #: The classifier's number of different target classes. Is None if the model is not fitted.
+        self.n_classes_: int = None
+
+    @property
+    def _is_fitted(self):
+        return (
+            super()._is_fitted and self.post_processing_params.get("n_classes_", None) is not None
+        )
+
+    def _set_post_processing_params(self):
+        super()._set_post_processing_params()
+        self.post_processing_params.update({"n_classes_": self.n_classes_})
+
+    def fit(self, X, y, **fit_parameters) -> Any:
+        X, y = check_X_y_and_assert_multi_output(X, y)
+
+        # Retrieve the different target classes
+        self.classes_ = numpy.unique(y)
+
+        # Compute the number of target classes
+        self.n_classes_ = len(self.classes_)
+
+        # Make sure y contains at least two classes
+        assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
+
+        return super().fit(X, y, **fit_parameters)
+
+    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict class probabilities.
+
+        Args:
+            X: The input values to predict.
+            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
+                Default to False.
+
+        Returns:
+            numpy.ndarray: The predicted class probabilities.
+        """
+        return super().predict(X, execute_in_fhe=execute_in_fhe)
+
+    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+        # Compute the predicted probabilities
+        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+
+        # Retrieve the class with the highest probability
+        y_preds = numpy.argmax(y_preds, axis=1)
+
+        return self.classes_[y_preds]
+
+    def post_processing(self, y_preds: numpy.ndarray):
+        y_preds = super().post_processing(y_preds)
+
+        # Retrieve the number of target classes
+        n_classes_ = self.post_processing_params["n_classes_"]
+
+        # If the predictions only has one dimension (i.e. binary classification problem), apply the
+        # sigmoid operator
+        if n_classes_ == 2:
+            y_preds = numpy_sigmoid(y_preds)[0]
+
+            # Transform in a 2d array where [1-p, p] is the output as scikit-learn only outputs 1
+            # value when considering 2 classes
+            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+
+        # Else, apply the softmax operator
+        else:
+            y_preds = numpy_softmax(y_preds)[0]
+
+        return y_preds
+
+
 class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API."""
 
     def __init_subclass__(cls):
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
-            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+            if getattr(klass, "_is_a_public_cml_model", False):
                 _NEURALNET_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
@@ -257,11 +577,6 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     ):
         self.quantized_module_ = QuantizedModule()
         super().__init__()
-
-    @property
-    @abstractmethod
-    def base_estimator_type(self):
-        """Get the sklearn estimator that should be trained by the child class."""
 
     @property
     @abstractmethod
@@ -306,138 +621,50 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def _is_fitted(self):
         return self.quantized_module_.input_quantizers and self.quantized_module_.output_quantizers
 
-    def quantize_input(self, X: numpy.ndarray):
-        self.check_model_is_fitted()
-        return self.quantized_module_.quantize_input(X)
-
-    def dequantize_output(self, q_y_preds: numpy.ndarray):
-        self.check_model_is_fitted()
-        return self.quantized_module_.dequantize_output(q_y_preds)
-
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the dequantized predictions.
-
-        Args:
-            y_preds (numpy.ndarray): The dequantized predictions to post-process.
-
-        Raises:
-            ValueError: If the post-processing function is unknown.
-
-        Returns:
-            numpy.ndarray: The post-processed dequantized predictions.
-        """
-        if self.post_processing_params["post_processing_function_name"] == "softmax":
-            # Get dim argument
-            dim = self.post_processing_params["post_processing_function_keywords"]["dim"]
-
-            # Apply softmax to the output
-            y_preds = numpy_softmax(y_preds, axis=dim)[0]
-
-        elif "sigmoid" in self.post_processing_params["post_processing_function_name"]:
-            # Transform in a 2d array where [p, 1-p] is the output
-            y_preds = numpy.concatenate((y_preds, 1 - y_preds), axis=1)  # pragma: no cover
-
-        elif self.post_processing_params["post_processing_function_name"] == "_identity":
-            pass
-
+    def _set_post_processing_params(self):
+        params = self._get_predict_nonlinearity()  # type: ignore
+        if isinstance(params, functools.partial):
+            post_processing_function_name = params.func.__name__
+            post_processing_function_keywords = params.keywords
         else:
-            raise ValueError(
-                "Unknown post-processing function "
-                f"{self.post_processing_params['post_processing_function_name']}"
-            )  # pragma: no cover
+            post_processing_function_name = params.__name__
+            post_processing_function_keywords = {}
+        post_processing_params: Dict[str, Any] = {}
+        post_processing_params["post_processing_function_name"] = post_processing_function_name
+        post_processing_params[
+            "post_processing_function_keywords"
+        ] = post_processing_function_keywords
+        self.post_processing_params = post_processing_params
 
-        # To match torch softmax we need to cast to float32
-        return y_preds.astype(numpy.float32)
+    def _fit_float_estimator(self, X, y, **fit_parameters) -> Any:
+        # Call Skorch's fit that will train the network. This will instantiate the model class if
+        # it's not already done
+        return self.underlying_model_class.fit(self, X, y, **fit_parameters)
 
-    def compile(
-        self,
-        X: numpy.ndarray,
-        configuration: Optional[Configuration] = None,
-        compilation_artifacts: Optional[DebugArtifacts] = None,
-        show_mlir: bool = False,
-        use_virtual_lib: bool = False,
-        p_error: Optional[float] = None,
-        global_p_error: Optional[float] = None,
-        verbose_compilation: bool = False,
-    ) -> Circuit:
-        """Compile the model.
+    def fit(self, X, y, **fit_parameters):
+        """Fit he estimator.
 
-        Args:
-            X (numpy.ndarray): the dequantized dataset
-            configuration (Optional[Configuration]): the options for
-                compilation
-            compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill
-                during compilation
-            show_mlir (bool): whether or not to show MLIR during the compilation
-            use_virtual_lib (bool): whether to compile using the virtual library that allows higher
-                bitwidths
-            p_error (Optional[float]): probability of error of a single PBS
-            global_p_error (Optional[float]): probability of error of the full circuit. Not
-                simulated by the VL, i.e., taken as 0
-            verbose_compilation (bool): whether to show compilation information
+        If the module was already initialized, the module will be re-initialized unless
+        `warm_start` is set to True. In addition to the torch training step, this method performs
+        quantization of the trained Torch model.
 
-        Returns:
-            Circuit: the compiled Circuit.
-        """
-        self.check_model_is_fitted()
-
-        # Cast pandas, list or torch to numpy
-        X = check_array_and_assert(X)
-
-        # Quantize the compilation input set using the quantization parameters computed in .fit()
-        quantized_numpy_inputset = self.quantize_input(X)
-
-        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
-        # configuration and in direct arguments
-        check_there_is_no_p_error_options_in_configuration(configuration)
-
-        # Call the compilation backend to produce the FHE inference circuit
-        circuit = self.quantized_module_.compile(
-            quantized_numpy_inputset,
-            configuration=configuration,
-            compilation_artifacts=compilation_artifacts,
-            show_mlir=show_mlir,
-            use_virtual_lib=use_virtual_lib,
-            p_error=p_error,
-            global_p_error=global_p_error,
-            verbose_compilation=verbose_compilation,
-        )
-
-        succ = list(circuit.graph.graph.successors(circuit.graph.input_nodes[0]))
-        assert_true(
-            not any(s.converted_to_table_lookup for s in succ),
-            "The compiled circuit"
-            " applies lookup tables on input nodes, please check the underlying nn.Module.",
-        )
-
-        return circuit
-
-    def fit(self, X, y, **fit_params):
-        """Initialize and fit the module.
-
-        If the module was already initialized, by calling fit, the
-        module will be re-initialized (unless ``warm_start`` is True). In addition to the
-        torch training step, this method performs quantization of the trained torch model.
+        Values of dtype float64 are not supported and will be casted to float32.
 
         Args:
-            X : training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): labels associated with training data
-            **fit_params: additional parameters that can be used during training, these are passed
-                to the torch training interface
+            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
+                or List.
+            **fit_parameters: Keyword arguments to pass to Skorch's fit method.
 
         Returns:
-            self: the trained quantized estimator
+            Any: The fitted estimator.
         """
         # Reset the quantized module since quantization is lost during refit
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
         self.quantized_module_ = QuantizedModule()
-        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
-        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
+
+        X, y = check_X_y_and_assert_multi_output(X, y)
 
         # A helper for users so they don't need to import torch directly
         args_to_convert_to_tensor = ["criterion__weight"]
@@ -457,9 +684,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
                     "be a numpy.ndarray, list or torch.Tensor",
                 )
 
-        # Call skorch fit that will train the network
-        # This will instantiate the model class if it's not already done.
-        super().fit(X, y, **fit_params)
+        # Fit the model by using Skorch's fit
+        self._fit_float_estimator(X, y, **fit_parameters)
 
         # Export the brevitas model to ONNX
         output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
@@ -495,132 +721,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         self.quantized_module_ = qat_model.quantize_module(X)
 
         # Set post-processing params
-        self._update_post_processing_params()
+        self._set_post_processing_params()
         return self
-
-    def _update_post_processing_params(self):
-        """Update the post-processing parameters."""
-        params = self._get_predict_nonlinearity()  # type: ignore
-        if isinstance(params, functools.partial):
-            post_processing_function_name = params.func.__name__
-            post_processing_function_keywords = params.keywords
-        else:
-            post_processing_function_name = params.__name__
-            post_processing_function_keywords = {}
-        post_processing_params: Dict[str, Any] = {}
-        post_processing_params["post_processing_function_name"] = post_processing_function_name
-        post_processing_params[
-            "post_processing_function_keywords"
-        ] = post_processing_function_keywords
-        self.post_processing_params = post_processing_params
-
-    # Disable pylint here because we add an additional argument to .predict,
-    # with respect to the base class .predict method.
-    # pylint: disable=arguments-differ
-    def predict(self, X, execute_in_fhe=False):
-        """Predict on user provided data.
-
-        Predicts using the quantized clear or FHE classifier
-
-        Args:
-            X : input data, a numpy array of raw values (non quantized)
-            execute_in_fhe : whether to execute the inference in FHE or in the clear
-
-        Returns:
-            y_pred : numpy ndarray with predictions
-
-        """
-        # By default, just return the result of predict_proba
-        # which for linear models with no non-linearity applied simply returns
-        # the decision function value
-        return self.predict_proba(X, execute_in_fhe=execute_in_fhe)
-
-    def predict_proba(self, X, execute_in_fhe=False):
-        """Predict on user provided data, returning probabilities.
-
-        Predicts using the quantized clear or FHE classifier
-
-        Args:
-            X : input data, a numpy array of raw values (non quantized)
-            execute_in_fhe : whether to execute the inference in FHE or in the clear
-
-        Returns:
-            y_pred : numpy ndarray with probabilities (if applicable)
-        """
-        if execute_in_fhe:
-            self.check_model_is_fitted()
-            self.check_model_is_compiled()
-
-            # Run over each element of X individually and aggregate predictions in a vector
-            if X.ndim == 1:
-                X = X.reshape((1, -1))
-
-            X = check_array_and_assert(X)
-            q_y_pred = None
-            for idx, x in enumerate(X):
-                q_x = self.quantize_input(x).reshape(1, -1)
-                q_pred = self.fhe_circuit.encrypt_run_decrypt(q_x)
-                if q_y_pred is None:
-                    assert_true(
-                        isinstance(q_pred, numpy.ndarray),
-                        f"bad type {q_pred}, expected np.ndarray",
-                    )
-                    # pylint is lost: Instance of 'tuple' has no 'size' member (no-member)
-                    # because it doesn't understand the Union in encrypt_run_decrypt
-                    # pylint: disable=no-member
-                    q_y_pred = numpy.zeros((X.shape[0], q_pred.size), numpy.float32)
-                    # pylint: enable=no-member
-                q_y_pred[idx, :] = q_pred
-
-            # Dequantize the outputs and apply post processing
-            y_pred = self.dequantize_output(q_y_pred)
-            y_pred = self.post_processing(y_pred)
-            return y_pred
-
-        # For prediction in the clear we call the super class which, in turn,
-        # will end up calling .infer of this class
-        return super().predict_proba(X).astype(numpy.float32)
-
-    # pylint: enable=arguments-differ
-
-    def fit_benchmark(self, X: numpy.ndarray, y: numpy.ndarray, *args, **kwargs) -> Tuple[Any, Any]:
-        """Fit the quantized estimator as well as its equivalent float estimator.
-
-        This function returns both the quantized estimator (itself) as well as its non-quantized
-        (float) equivalent, which are both trained separately. This is useful in order
-        to compare performances between quantized and fp32 versions.
-
-        Args:
-            X : The training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The labels associated with the training data
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
-
-        Returns:
-            self: The trained quantized estimator
-            fp32_model: The trained float equivalent estimator
-        """
-        # Fit the quantized estimator
-        self.fit(X, y, *args, **kwargs)
-
-        # Retrieve the Skorch estimator's training parameters
-        estimator_parameters = self.get_sklearn_params()
-
-        # Retrieve the estimator's float equivalent module
-        float_module = self._get_equivalent_float_module()
-
-        # Instantiate the float estimator
-        skorch_estimator_type = self.base_estimator_type
-        float_estimator = skorch_estimator_type(float_module, **estimator_parameters)
-
-        # Fit the float estimator
-        float_estimator.fit(X, y, *args, **kwargs)
-
-        return self, float_estimator
 
     def _get_equivalent_float_module(self):
         """Build a topologically equivalent Torch module that can be used on floating points.
@@ -660,6 +762,146 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return float_module
 
+    # Skorch's Neural Networks don't support a random_state as parameter, we therefore need to
+    # disable pylint as the BaseEstimator class expect the fit method to support it.
+    def fit_benchmark(
+        self, X, y, random_state: Optional[int] = None, **fit_parameters
+    ) -> Tuple[Any, Any]:
+        """Fit the quantized estimator as well as its equivalent float estimator.
+
+        This function returns both the quantized estimator (itself) as well as its non-quantized
+        (float) equivalent, which are both trained separately. This method differs from the
+        BaseEstimator's `fit_benchmark` method as QNNs use QAT instead of PTQ. Hence, here, the
+        float model is topologically equivalent as we have less control over the influence of QAT
+        over the weights.
+
+        Values of dtype float64 are not supported and will be casted to float32.
+
+        Args:
+            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas Series
+                or List.
+            random_state (Optional[int]): The random state to use when fitting. However, Skorch
+                does not handle such a parameter and setting it will have no effect. Defaults
+                to None.
+            **fit_parameters: Keyword arguments to pass to Skorch's fit method.
+
+        Returns:
+            Tuple[Any, Any]: The Concrete-ML and equivalent Skorch fitted estimators.
+        """
+
+        assert (
+            random_state is None
+        ), "Neural Network models do not support random_state as a parameter when fitting."
+
+        # Fit the quantized estimator
+        self.fit(X, y, **fit_parameters)
+
+        # Retrieve the Skorch estimator's training parameters
+        estimator_parameters = self.get_sklearn_params()
+
+        # Retrieve the estimator's float topological equivalent module
+        float_module = self._get_equivalent_float_module()
+
+        # Instantiate the float estimator
+        skorch_estimator_type = self.underlying_model_class
+        float_estimator = skorch_estimator_type(float_module, **estimator_parameters)
+
+        # Fit the float estimator
+        float_estimator.fit(X, y, **fit_parameters)
+
+        return self, float_estimator
+
+    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+        q_X = self.quantized_module_.quantize_input(X)
+
+        assert numpy.array(q_X).dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        return q_X
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+        return self.quantized_module_.dequantize_output(q_y_preds)
+
+    def compile(self, X, *args, **kwargs) -> Circuit:
+        # Check that the model is correctly fitted
+        self.check_model_is_fitted()
+
+        # Cast pandas, list or torch to numpy
+        X = check_array_and_assert(X)
+
+        # Compile the QuantizedModule
+        # The QuantizedModule's compile method does not exactly share the same parameters as the
+        # one from a Compiler instance. We therefore need to override the BaseEstimator's compile
+        # method for that particular reason
+        self.quantized_module_.compile(X, *args, **kwargs)
+
+        # Make sure that no avoidable TLUs are found in the built-in model
+        succ = list(self.fhe_circuit.graph.graph.successors(self.fhe_circuit.graph.input_nodes[0]))
+        assert_true(
+            not any(s.converted_to_table_lookup for s in succ),
+            "The compiled circuit currently applies some lookup tables on input nodes but this "
+            "should be avoided. Please check the underlying nn.Module.",
+        )
+
+        return self.fhe_circuit
+
+    def predict(self, X, execute_in_fhe: bool = False):
+        return self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+
+    def predict_proba(self, X, execute_in_fhe: bool = False):
+        """Predict values for a regressor and class probabilities for a classifier.
+
+        In Scikit-Learn, predict_proba is not defined for regressors. However, Skorch seems to use
+        it as `predict`, and defines what to return using a post-processing method. We therefore
+        decided to follow the same structure and therefore include `predict_proba` in the QNN's
+        base class.
+
+        Values of dtype float64 are not supported and will be casted to float32.
+
+        Args:
+            X: The input values to predict.
+            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
+                Default to False.
+
+        Returns:
+            numpy.ndarray: The predicted values or class probabilities.
+        """
+        if execute_in_fhe:
+            # Run over each element of X individually and aggregate predictions in a vector
+            if X.ndim == 1:
+                X = X.reshape((1, -1))
+
+            return super().predict(X, execute_in_fhe=True)
+
+        # For prediction in the clear, we call the  Skorch's NeuralNet `predict_proba method which
+        # ends up calling `infer`
+        return self.underlying_model_class.predict_proba(self, X).astype(numpy.float32)
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        if self.post_processing_params["post_processing_function_name"] == "softmax":
+            # Get dim argument
+            dim = self.post_processing_params["post_processing_function_keywords"]["dim"]
+
+            # Apply softmax to the output
+            y_preds = numpy_softmax(y_preds, axis=dim)[0]
+
+        elif "sigmoid" in self.post_processing_params["post_processing_function_name"]:
+            # Transform in a 2d array where [p, 1-p] is the output
+            y_preds = numpy.concatenate((y_preds, 1 - y_preds), axis=1)  # pragma: no cover
+
+        elif self.post_processing_params["post_processing_function_name"] == "_identity":
+            pass
+
+        else:
+            raise ValueError(
+                "Unknown post-processing function "
+                f"{self.post_processing_params['post_processing_function_name']}"
+            )  # pragma: no cover
+
+        # To match torch softmax we need to cast to float32
+        return y_preds.astype(numpy.float32)
+
 
 class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
     """Mixin class for tree-based estimators.
@@ -668,17 +910,13 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
     `get_params` and `set_params` methods.
     """
 
-    n_bits: int
-    random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
-    sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
-    sklearn_model: sklearn.base.BaseEstimator
-    _tensor_tree_predict: Callable
+    #: Model's base framework used, either 'xgboost' or 'sklearn'. Is set for each subclasses.
     framework: str
 
     def __init_subclass__(cls):
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
-            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+            if getattr(klass, "_is_a_public_cml_model", False):
                 _TREE_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
@@ -686,264 +924,115 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator):
         """Initialize the TreeBasedEstimatorMixin.
 
         Args:
-            n_bits (int): Number of bits used for quantization.
+            n_bits (int): The number of bits used for quantization.
         """
         self.n_bits: int = n_bits
-        super().__init__()
+
+        #: The equivalent fitted float model. Is None if the model is not fitted.
+        self.sklearn_model: Any = None
+
+        #: The model's inference function. Is None if the model is not fitted.
+        self._tree_inference: Callable = None  # type: ignore[assignment]
+
+        BaseEstimator.__init__(self)
 
     @property
     def _is_fitted(self):
         return self.input_quantizers and self.output_quantizers
 
-    def quantize_input(self, X: numpy.ndarray):
-        self.check_model_is_fitted()
+    def fit(self, X, y, **fit_parameters) -> Any:
+        X, y = check_X_y_and_assert_multi_output(X, y)
 
-        qX = numpy.zeros_like(X)
-
-        # Quantize using the learned quantization parameters for each feature
-        for i, q_x_ in enumerate(self.input_quantizers):
-            qX[:, i] = q_x_.quant(X[:, i])
-
-        return qX.astype(numpy.int64)
-
-    def dequantize_output(self, q_y_preds: numpy.ndarray):
-        self.check_model_is_fitted()
-
-        q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
-        return q_y_preds
-
-    def _update_post_processing_params(self):
-        """Update the post processing parameters."""
-        self.post_processing_params = {}
-
-    def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
-        """Fit the tree-based estimator.
-
-        Args:
-            X : training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The target data.
-            **kwargs: args for super().fit
-
-        Returns:
-            Any: The fitted model.
-        """
-        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
-        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
-
-        qX = numpy.zeros_like(X)
+        q_X = numpy.zeros_like(X)
         self.input_quantizers = []
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
-            q_x_ = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
-            self.input_quantizers.append(q_x_)
-            qX[:, i] = q_x_.quant(X[:, i])
+            input_quantizer = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
+            self.input_quantizers.append(input_quantizer)
+            q_X[:, i] = input_quantizer.quant(X[:, i])
 
-        # Retrieve the init parameters
-        params = self.get_sklearn_params()
-
-        # Initialize the sklearn model
-        self.sklearn_model = self.sklearn_alg(**params)
-
-        # Fit the sklearn model
-        self.sklearn_model.fit(qX, y, **kwargs)
+        # Fit the Scikit-Learn model
+        self._fit_float_estimator(q_X, y, **fit_parameters)
 
         # Set post-processing parameters
-        self._update_post_processing_params()
+        self._set_post_processing_params()
 
         # Convert the tree inference with Numpy operators
-        self._tensor_tree_predict, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
+        self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
             self.sklearn_model,
-            qX[:1],
+            q_X[:1],
             framework=self.framework,
             output_n_bits=self.n_bits,
         )
 
         return self
 
-    def fit_benchmark(
-        self,
-        X: numpy.ndarray,
-        y: numpy.ndarray,
-        *args,
-        random_state: Optional[int] = None,
-        **kwargs,
-    ) -> Tuple[Any, Any]:
-        """Fit the sklearn tree-based model and the FHE tree-based model.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
-                The random state. Defaults to None.
-            *args: args for super().fit
-            **kwargs: kwargs for super().fit
-
-        Returns:
-            Tuple[ConcreteEstimators, SklearnEstimators]:
-                                                The FHE and sklearn tree-based models.
-        """
-        params = self.get_sklearn_params()  # type: ignore
-
-        # Make sure the random_state is set or both algorithms will diverge
-        # due to randomness in the training.
-        if random_state is not None:
-            params["random_state"] = random_state
-        elif self.random_state is not None:
-            params["random_state"] = self.random_state
-        else:
-            params["random_state"] = numpy.random.randint(0, 2**15)
-
-        # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(**params)
-        sklearn_model.fit(X, y, *args, **kwargs)
-
-        # Train the FHE model
-        self.set_params(n_bits=self.n_bits, **params)
-        self.fit(X, y, *args, **kwargs)
-        return self, sklearn_model
-
-    def _execute_in_fhe(self, qX: numpy.ndarray) -> numpy.ndarray:
-        """Execute the FHE inference on the input data.
-
-        Args:
-            qX (numpy.ndarray): the input data quantized
-
-        Returns:
-            numpy.ndarray: the prediction as ordinals
-        """
-        self.check_model_is_compiled()
-
-        y_preds = []
-        for qX_i in qX:
-            # Expected encrypt_run_decrypt output shape is (1, n_features) but qX_i is (n_features,)
-            qX_i = numpy.expand_dims(qX_i, 0)
-
-            # Ignore mypy issue as `check_model_is_compiled` makes sure that fhe_circuit is not None
-            fhe_pred = self.fhe_circuit.encrypt_run_decrypt(qX_i)  # type: ignore[union-attr]
-            y_preds.append(fhe_pred)
-
-        # Concatenate on the n_examples dimension where shape is (n_examples, n_classes, n_trees)
-        y_preds_array = numpy.concatenate(y_preds, axis=0)
-        return y_preds_array
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict values for X.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE or not. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted values.
-        """
+    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        X = check_array_and_assert(X)
+        q_X = numpy.zeros_like(X, dtype=numpy.int64)
 
-        # Quantize the input
-        qX = self.quantize_input(X)
+        # Quantize using the learned quantization parameters for each feature
+        for i, input_quantizer in enumerate(self.input_quantizers):
+            q_X[:, i] = input_quantizer.quant(X[:, i])
 
-        # If the inference should be executed in FHE
-        if execute_in_fhe:
-            q_y_pred = self._execute_in_fhe(qX)
+        assert q_X.dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        return q_X
 
-        # Else, the prediction is simulated in the clear
-        else:
-            q_y_pred = self._tensor_tree_predict(qX)[0]
-
-        # Dequantize the predicted values and apply some post-processing in the clear
-        y_pred = self.dequantize_output(q_y_pred)
-        y_pred = self.post_processing(y_pred)
-
-        return y_pred
-
-    def compile(
-        self,
-        X: numpy.ndarray,
-        configuration: Optional[Configuration] = None,
-        compilation_artifacts: Optional[DebugArtifacts] = None,
-        show_mlir: bool = False,
-        use_virtual_lib: bool = False,
-        p_error: Optional[float] = None,
-        global_p_error: Optional[float] = None,
-        verbose_compilation: bool = False,
-    ) -> Circuit:
-        """Compile the model.
-
-        Args:
-            X (numpy.ndarray): the dequantized dataset
-            configuration (Optional[Configuration]): the options for
-                compilation
-            compilation_artifacts (Optional[DebugArtifacts]): artifacts object to fill
-                during compilation
-            show_mlir (bool): whether or not to show MLIR during the compilation
-            use_virtual_lib (bool): set to True to use the so called virtual lib
-                simulating FHE computation. Defaults to False
-            p_error (Optional[float]): probability of error of a single PBS
-            global_p_error (Optional[float]): probability of error of the full circuit. Not
-                simulated by the VL, i.e., taken as 0
-            verbose_compilation (bool): whether to show compilation information
-
-        Returns:
-            Circuit: the compiled Circuit.
-
-        """
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        _tensor_tree_predict_proxy, parameters_mapping = generate_proxy_function(
-            self._tensor_tree_predict, ["inputs"]
+        q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
+        return q_y_preds
+
+    def _get_compiler(self) -> Compiler:
+        # Generate the proxy function to compile
+        _tree_inference_proxy, parameters_mapping = generate_proxy_function(
+            self._tree_inference, ["inputs"]
         )
 
-        # Return a numpy array, because compile method supports only arrays
-        X = check_array_and_assert(X)
-
-        X = self.quantize_input(X)
+        # Create the compiler instance
         compiler = Compiler(
-            _tensor_tree_predict_proxy,
+            _tree_inference_proxy,
             {parameters_mapping["inputs"]: "encrypted"},
         )
 
-        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
-        # configuration and in direct arguments
-        check_there_is_no_p_error_options_in_configuration(configuration)
+        return compiler
 
-        # Find the right way to set parameters for compiler, depending on the way we want to default
-        p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
+    def compile(self, *args, **kwargs) -> Circuit:
+        BaseEstimator.compile(self, *args, **kwargs)
 
-        self.fhe_circuit = compiler.compile(
-            (sample.reshape(1, sample.shape[0]) for sample in X),
-            configuration=configuration,
-            artifacts=compilation_artifacts,
-            show_mlir=show_mlir,
-            virtual=use_virtual_lib,
-            p_error=p_error,
-            global_p_error=global_p_error,
-            verbose=verbose_compilation,
-        )
-
-        output_graph = self.fhe_circuit.graph.ordered_outputs()
+        # Check that the graph only has a single output
+        # Ignore mypy issue as `self.fhe_circuit` is set in the super
+        output_graph = self.fhe_circuit.graph.ordered_outputs()  # type: ignore[union-attr]
         assert_true(
             len(output_graph) == 1,
             "graph has too many outputs",
         )
+
+        # Check that the output is an integer
         dtype_output = output_graph[0].output.dtype
         assert_true(
             isinstance(dtype_output, Integer),
             f"output is {dtype_output} but an Integer is expected.",
         )
-
         return self.fhe_circuit
 
+    def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        return self._tree_inference(q_X)[0]
+
+    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
+        y_pred = BaseEstimator.predict(self, X, execute_in_fhe=execute_in_fhe)
+        y_pred = self.post_processing(y_pred)
+        return y_pred
+
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        # Sum all tree outputs.
+        # Sum all tree outputs
         # Remove the sum once we handle multi-precision circuits
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
         y_preds = numpy.sum(y_preds, axis=-1)
+
         assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
         return y_preds
 
@@ -957,7 +1046,7 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
     """
 
 
-class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
+class BaseTreeClassifierMixin(BaseClassifier, BaseTreeEstimatorMixin, sklearn.base.ClassifierMixin):
     """Mixin class for tree-based classifiers.
 
     This class is used to create a tree-based classifier class that inherits from
@@ -968,83 +1057,6 @@ class BaseTreeClassifierMixin(BaseTreeEstimatorMixin, sklearn.base.ClassifierMix
     them compliant with classification workflows.
     """
 
-    classes_: numpy.ndarray
-    n_classes_: int
-    class_mapping_: Optional[Dict[int, int]]
-
-    def fit(self, X, y: numpy.ndarray, **kwargs) -> Any:
-        """Fit the tree-based estimator.
-
-        Args:
-            X : training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The target data.
-            **kwargs: args for super().fit
-
-        Returns:
-            Any: The fitted model.
-        """
-        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
-        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
-
-        self.classes_ = numpy.unique(y)
-
-        # Register the number of classes
-        self.n_classes_ = len(self.classes_)
-
-        # Make sure y contains at least two classes.
-        assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
-
-        # Keep track of the classes' order if they are not sorted
-        self.class_mapping_ = None
-        if not numpy.array_equal(numpy.arange(len(self.classes_)), self.classes_):
-            self.class_mapping_ = dict(enumerate(self.classes_))
-
-        return super().fit(X, y, **kwargs)
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict the class with highest probability.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted target values.
-        """
-        self.check_model_is_fitted()
-
-        X = check_array_and_assert(X)
-
-        # Compute the predicted probabilities
-        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
-
-        # Retrieve the class with the highest probability
-        y_preds = numpy.argmax(y_preds, axis=1)
-
-        # Order the output classes in order to be consistent with Scikit-learn's model
-        if self.class_mapping_ is not None:
-            y_preds = numpy.array([self.class_mapping_[y_pred] for y_pred in y_preds])
-
-        return y_preds
-
-    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict the probability.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute in FHE. Defaults to False.
-
-        Returns:
-            numpy.ndarray: The predicted probabilities.
-        """
-        self.check_model_is_fitted()
-
-        return super().predict(X, execute_in_fhe=execute_in_fhe)
-
 
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
@@ -1054,19 +1066,10 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
     `get_params` and `set_params` methods.
     """
 
-    n_bits: Union[int, Dict[str, int]]
-    sklearn_alg: Callable[..., sklearn.base.BaseEstimator]
-    random_state: Optional[Union[numpy.random.RandomState, int]] = None  # pylint: disable=no-member
-    _weight_quantizer: UniformQuantizer
-    _output_scale: numpy.float64
-    _output_zero_point: int
-    _q_weights: numpy.ndarray
-    _q_bias: numpy.ndarray
-
     def __init_subclass__(cls):
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
-            if hasattr(klass, "_is_a_public_cml_model") and klass._is_a_public_cml_model:
+            if getattr(klass, "_is_a_public_cml_model", False):
                 _LINEAR_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
@@ -1084,7 +1087,25 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         """
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
-        super().__init__()
+        #: The equivalent fitted float model. Is None if the model is not fitted.
+        self.sklearn_model: Any = None  # type: ignore[assignment]
+
+        #: The quantizer to use for quantizing the model's weights
+        self._weight_quantizer: UniformQuantizer = None  # type: ignore[assignment]
+
+        #: The scale to use for dequantizing the predicted outputs
+        self._output_scale: numpy.float64 = None  # type: ignore[assignment]
+
+        #: The zero-point to use for dequantizing the predicted outputs
+        self._output_zero_point: int = None  # type: ignore[assignment]
+
+        #: The model's quantized weights
+        self._q_weights: numpy.ndarray = None  # type: ignore[assignment]
+
+        #: The model's quantized bias
+        self._q_bias: numpy.ndarray = None  # type: ignore[assignment]
+
+        BaseEstimator.__init__(self)
 
     @property
     def _is_fitted(self):
@@ -1094,37 +1115,38 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
             and self.post_processing_params.get("output_zero_point", None) is not None
         )
 
-    def fit(self, X, y: numpy.ndarray, *args, **kwargs) -> Any:
-        """Fit the FHE linear model.
+    def _set_onnx_model(self, test_input: numpy.ndarray):
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
 
         Args:
-            X : Training data
-                By default, you should be able to pass:
-                * numpy arrays
-                * torch tensors
-                * pandas DataFrame or Series
-            y (numpy.ndarray): The target data.
-            *args: The arguments to pass to the sklearn linear model.
-            **kwargs: The keyword arguments to pass to the sklearn linear model.
-
-        Returns:
-            Any
+            test_input (numpy.ndarray): An input data used to trace the model execution.
         """
-        # Copy X
-        X = copy.deepcopy(X)
+        self.onnx_model_ = hb_convert(
+            self.sklearn_model,
+            backend="onnx",
+            test_input=test_input,
+            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
+        ).model
 
+        self.clean_graph()
+
+    def clean_graph(self):
+        """Clean the ONNX graph from undesired nodes."""
+        # Remove cast operators as they are not needed
+        remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
+
+    def _set_post_processing_params(self):
+        self.post_processing_params = {
+            "output_scale": self._output_scale,
+            "output_zero_point": self._output_zero_point,
+        }
+
+    def fit(self, X, y, **fit_parameters) -> Any:
         # LinearRegression handles multi-labels data
-        multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
-        X, y = check_X_y_and_assert(X, y, multi_output=multi_output)
+        X, y = check_X_y_and_assert_multi_output(X, y)
 
-        # Retrieve sklearn's init parameters
-        params = self.get_sklearn_params()  # type: ignore
-
-        # Initialize the sklearn model
-        self.sklearn_model = self.sklearn_alg(**params)
-
-        # Fit the sklearn model
-        self.sklearn_model.fit(X, y, *args, **kwargs)
+        # Fit the Scikit-Learn model
+        self._fit_float_estimator(X, y, **fit_parameters)
 
         # This workaround makes linear regressors be able to fit with fit_intercept set to False.
         # This needs to be removed once HummingBird's latest version is integrated in Concrete-ML
@@ -1136,7 +1158,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         # The trick is to hide their type to Hummingbird, it should be removed once HummingBird's
         # latest version is integrated in Concrete-ML
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2792
-        if self.sklearn_alg in {
+        if self.underlying_model_class in {
             sklearn.linear_model.Lasso,
             sklearn.linear_model.Ridge,
             sklearn.linear_model.ElasticNet,
@@ -1189,7 +1211,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         )
 
         # Updating post-processing parameters
-        self._update_post_processing_params()
+        self._set_post_processing_params()
 
         # Quantize the bias using the matmul's scale and zero-point, such that
         # q_bias = round((1/S)*bias + Z)
@@ -1202,185 +1224,12 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
 
         return self
 
-    def fit_benchmark(
-        self,
-        X: numpy.ndarray,
-        y: numpy.ndarray,
-        *args,
-        random_state: Optional[int] = None,
-        **kwargs,
-    ) -> Tuple[Any, Any]:
-        """Fit the sklearn linear model and the FHE linear model.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            y (numpy.ndarray): The target data.
-            random_state (Optional[Union[int, numpy.random.RandomState, None]]):
-                The random state. Defaults to None.
-            *args: The arguments to pass to the sklearn linear model.
-                or not (False). Default to False.
-            *args: Arguments for super().fit
-            **kwargs: Keyword arguments for super().fit
-
-        Returns:
-            Tuple[SklearnLinearModelMixin, sklearn.linear_model.LinearRegression]:
-                The FHE and sklearn LinearRegression.
-        """
-        # Retrieve sklearn's init parameters
-        params = self.get_sklearn_params()  # type: ignore
-
-        # Make sure the random_state is set or both algorithms will diverge
-        # due to randomness in the training.
-        if "random_state" in params:
-            if random_state is not None:
-                params["random_state"] = random_state
-            elif self.random_state is not None:
-                params["random_state"] = self.random_state
-            else:
-                params["random_state"] = numpy.random.randint(0, 2**15)
-
-        # Train the sklearn model without X quantized
-        sklearn_model = self.sklearn_alg(**params)
-        sklearn_model.fit(X, y, *args, **kwargs)
-
-        # Train the FHE model
-        self.set_params(n_bits=self.n_bits, **params)
-
-        self.fit(X, y, *args, **kwargs)
-
-        return self, sklearn_model
-
-    def compile(
-        self,
-        X: numpy.ndarray,
-        configuration: Optional[Configuration] = None,
-        compilation_artifacts: Optional[DebugArtifacts] = None,
-        show_mlir: bool = False,
-        use_virtual_lib: bool = False,
-        p_error: Optional[float] = None,
-        global_p_error: Optional[float] = None,
-        verbose_compilation: bool = False,
-    ) -> Circuit:
-        """Compile the FHE linear model.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            configuration (Optional[Configuration]): Configuration object
-                to use during compilation
-            compilation_artifacts (Optional[DebugArtifacts]): Artifacts object to fill during
-                compilation
-            show_mlir (bool): If set, the MLIR produced by the converter and which is
-                going to be sent to the compiler backend is shown on the screen, e.g., for debugging
-                or demo. Defaults to False.
-            use_virtual_lib (bool): Whether to compile using the virtual library that allows higher
-                bitwidths with simulated FHE computation. Defaults to False
-            p_error (Optional[float]): Probability of error of a single PBS
-            global_p_error (Optional[float]): probability of error of the full circuit. Not
-                simulated by the VL, i.e., taken as 0
-            verbose_compilation (bool): whether to show compilation information
-
-        Returns:
-            Circuit: The compiled Circuit.
-
-        """
-
-        def inference_to_compile(q_X: numpy.ndarray) -> numpy.ndarray:
-            """Compile the circuit in FHE using only the inputs as parameters.
-
-            Args:
-                q_X (numpy.ndarray): The quantized input data
-
-            Returns:
-                numpy.ndarray: The circuit's outputs.
-            """
-            return self._inference(
-                q_X, self._q_weights, self._q_bias, self._weight_quantizer.zero_point
-            )
-
+    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
+        q_X = self.input_quantizers[0].quant(X)
 
-        # Cast pandas, list or torch to numpy
-        X = check_array_and_assert(X)
-
-        # Quantize the inputs
-        q_X = self.quantize_input(X)
-
-        # Make the input set an generator yielding values with proper dimensions
-        inputset = _get_inputset_generator((q_X,), self.input_quantizers)
-
-        # Instantiate the compiler on the linear regression's inference
-        compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
-
-        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
-        # configuration and in direct arguments
-        check_there_is_no_p_error_options_in_configuration(configuration)
-
-        # Find the right way to set parameters for compiler, depending on the way we want to default
-        p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
-
-        # Compile on the input set
-        self.fhe_circuit = compiler.compile(
-            inputset,
-            configuration=configuration,
-            artifacts=compilation_artifacts,
-            show_mlir=show_mlir,
-            virtual=use_virtual_lib,
-            p_error=p_error,
-            global_p_error=global_p_error,
-            verbose=verbose_compilation,
-        )
-
-        return self.fhe_circuit
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict on user data.
-
-        Predict on user data using either the quantized clear model,
-        implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit
-
-        Args:
-            X (numpy.ndarray): The input data
-            execute_in_fhe (bool): Whether to execute the inference in FHE
-
-        Returns:
-            numpy.ndarray: The prediction as ordinals
-        """
-        self.check_model_is_fitted()
-
-        X = check_array_and_assert(X)
-
-        # Quantize the inputs
-        q_X = self.quantize_input(X)
-
-        # If the predictions are executed in FHE, we call the circuit on each sample
-        if execute_in_fhe:
-            self.check_model_is_compiled()
-
-            q_y_preds_list = []
-            for q_X_i in q_X:
-                # Ignore mypy issue as `check_model_is_compiled` makes sure that fhe_circuit is
-                # not None
-                q_y_pred_i = self.fhe_circuit.encrypt_run_decrypt(  # type: ignore[union-attr]
-                    q_X_i.reshape(1, q_X_i.shape[0])
-                )
-                q_y_preds_list.append(q_y_pred_i[0])
-
-            q_y_preds = numpy.array(q_y_preds_list)
-
-        # If the predictions are not executed in FHE, we only need to call the inference
-        else:
-            q_y_preds = self._inference(
-                q_X, self._q_weights, self._q_bias, self._weight_quantizer.zero_point
-            )
-
-        # Dequantize the outputs
-        y_preds = self.dequantize_output(q_y_preds)
-
-        return y_preds
-
-    def quantize_input(self, X: numpy.ndarray):
-        self.check_model_is_fitted()
-        return self.input_quantizers[0].quant(X)
+        assert q_X.dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        return q_X
 
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
@@ -1395,57 +1244,32 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator):
         y_preds = output_scale * (q_y_preds - 2 * output_zero_point)
         return y_preds
 
-    def _set_onnx_model(self, test_input: numpy.ndarray):
-        """Retrieve the model's ONNX graph using Hummingbird conversion.
+    def _get_compiler(self) -> Compiler:
+        # Define the inference function to compile.
+        # This function can neither be a class method nor a static one because self we want to avoid
+        # having self as a parameter while still being able to access some of its attribute
+        def inference_to_compile(q_X: numpy.ndarray) -> numpy.ndarray:
+            """Compile the circuit in FHE using only the inputs as parameters.
 
-        Args:
-            test_input (numpy.ndarray): An input data used to trace the model execution.
-        """
-        self.onnx_model_ = hb_convert(
-            self.sklearn_model,
-            backend="onnx",
-            test_input=test_input,
-            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
-        ).model
+            Args:
+                q_X (numpy.ndarray): The quantized input data
 
-        self.clean_graph()
+            Returns:
+                numpy.ndarray: The circuit's outputs.
+            """
+            return self._inference(q_X)
 
-    def clean_graph(self):
-        """Clean the graph of the onnx model.
+        # Create the compiler instance
+        compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
 
-        This will remove the Cast node in the model's onnx.graph since they have no use in
-        quantized or FHE models.
-        """
-        remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
+        return compiler
 
-    def _update_post_processing_params(self):
-        """Update the post processing parameters."""
-        self.post_processing_params = {
-            "output_scale": self._output_scale,
-            "output_zero_point": self._output_zero_point,
-        }
-
-    @staticmethod
-    def _inference(
-        q_x: numpy.ndarray,
-        q_weights: numpy.ndarray,
-        q_bias: numpy.ndarray,
-        weight_zp: numpy.ndarray,
-    ) -> numpy.ndarray:
-        """Execute a linear inference.
-
-        Args:
-            q_x (numpy.ndarray): The quantized input data
-            q_weights (numpy.ndarray): The quantized weights
-            q_bias (numpy.ndarray): The quantized bias
-            weight_zp (int): Zero-point use for quantizing the weights
-
-        Returns:
-            numpy.ndarray: The predicted values.
-        """
+    def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
         # Quantizing weights and inputs makes an additional term appear in the inference function
-        y_pred = q_x @ q_weights - weight_zp * numpy.sum(q_x, axis=1, keepdims=True)
-        y_pred += q_bias
+        y_pred = q_X @ self._q_weights - self._weight_quantizer.zero_point * numpy.sum(
+            q_X, axis=1, keepdims=True
+        )
+        y_pred += self._q_bias
         return y_pred
 
 
@@ -1458,7 +1282,9 @@ class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.Regresso
     """
 
 
-class SklearnLinearClassifierMixin(SklearnLinearModelMixin, sklearn.base.ClassifierMixin):
+class SklearnLinearClassifierMixin(
+    BaseClassifier, SklearnLinearModelMixin, sklearn.base.ClassifierMixin
+):
     """A Mixin class for sklearn linear classifiers with FHE.
 
     This class is used to create a linear classifier class that inherits from
@@ -1469,71 +1295,29 @@ class SklearnLinearClassifierMixin(SklearnLinearModelMixin, sklearn.base.Classif
     them compliant with classification workflows.
     """
 
-    def post_processing(self, y_preds: numpy.ndarray):
-        # If the predictions only has one dimension (i.e. binary classification problem), apply the
-        # sigmoid operator
-        if y_preds.shape[1] == 1:
-            y_preds = numpy_sigmoid(y_preds)[0]
+    def clean_graph(self):
+        # Remove any operators following gemm, as they will be done in the clear
+        clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
+        SklearnLinearModelMixin.clean_graph(self)
 
-            # Transform in a 2d array where [1-p, p] is the output as scikit-learn only outputs 1
-            # value when considering 2 classes
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
-
-        # Else, apply the softmax operator
-        else:
-            y_preds = numpy_softmax(y_preds)[0]
-
-        return y_preds
-
-    def decision_function(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict confidence scores for samples.
+    def decision_function(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+        """Predict confidence scores.
 
         Args:
-            X (numpy.ndarray): Samples to predict.
-            execute_in_fhe (bool): If True, the inference will be executed in FHE. Default to False.
+            X: The input values to predict.
+            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
+                Default to False.
 
         Returns:
-            numpy.ndarray: Confidence scores for samples.
+            numpy.ndarray: The predicted confidence scores.
         """
-        y_preds = super().predict(X, execute_in_fhe=execute_in_fhe)
+        # Here, we want to use SklearnLinearModelMixin's `predict` method as confidence scores are
+        # the dot product's output values, without any post-processing (as done in baseClassifier's
+        # one)
+        y_preds = SklearnLinearModelMixin.predict(self, X, execute_in_fhe=execute_in_fhe)
         return y_preds
 
-    def predict_proba(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict class probabilities for samples.
-
-        Args:
-            X (numpy.ndarray): Samples to predict.
-            execute_in_fhe (bool): If True, the inference will be executed in FHE. Default to False.
-
-        Returns:
-            numpy.ndarray: Class probabilities for samples.
-        """
+    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
         y_preds = self.decision_function(X, execute_in_fhe=execute_in_fhe)
         y_preds = self.post_processing(y_preds)
         return y_preds
-
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict on user data.
-
-        Predict on user data using either the quantized clear model, implemented with tensors, or,
-        if execute_in_fhe is set, using the compiled FHE circuit.
-
-        Args:
-            X (numpy.ndarray): Samples to predict.
-            execute_in_fhe (bool): If True, the inference will be executed in FHE. Default to False.
-
-        Returns:
-            numpy.ndarray: The prediction as ordinals.
-        """
-        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
-        y_preds = numpy.argmax(y_preds, axis=1)
-        return y_preds
-
-    def clean_graph(self):
-        """Clean the graph of the onnx model.
-
-        Any operators following gemm, including the sigmoid, softmax and argmax operators, are
-        removed from the graph. They will be executed in clear in the post-processing method.
-        """
-        clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
-        super().clean_graph()

@@ -1,4 +1,3 @@
-
 # Image filtering using FHE
 
 Zama has created a [Hugging Face space](https://huggingface.co/spaces/zama-fhe/encrypted_image_filtering) to apply filters over images homomorphically using the developer-friendly tools in [Concrete-Numpy](https://github.com/zama-ai/concrete-numpy) and [Concrete-ML](https://github.com/zama-ai/concrete-ml). This means the data is encrypted both in transit and during processing.

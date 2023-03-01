@@ -477,7 +477,12 @@ def check_is_good_execution_for_cml_vs_circuit():
             # Check if model_function is QuantizedModule
             if isinstance(model_function, QuantizedModule):
                 # In the case of a quantized module, integer inputs are expected.
-                assert numpy.all([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs])
+                if not numpy.all(
+                    [numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]
+                ):
+                    inputs = model_function.quantize_input(*inputs)
+                    inputs = (inputs,) if not isinstance(inputs, tuple) else inputs
+
                 results_cnp_circuit = batch_circuit_inference(inputs, model_function.fhe_circuit)
                 results_model_function = model_function.forward(*inputs)
 

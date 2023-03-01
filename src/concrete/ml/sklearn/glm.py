@@ -10,12 +10,12 @@ import torch
 
 from ..common.debugging.custom_assert import assert_true
 from ..torch.numpy_module import NumpyModule
-from .base import SklearnLinearModelMixin
+from .base import SklearnLinearRegressorMixin
 from .torch_modules import _LinearTorchModel
 
 
 # pylint: disable-next=too-many-instance-attributes
-class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
     """Regression via a penalized Generalized Linear Model (GLM) with FHE.
 
     Parameters:
@@ -40,7 +40,9 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         warm_start: bool = False,
         verbose: int = 0,
     ):
-        self.n_bits = n_bits
+        # Call SklearnLinearModelMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.solver = solver
@@ -48,25 +50,14 @@ class _GeneralizedLinearRegressor(SklearnLinearModelMixin, sklearn.base.Regresso
         self.tol = tol
         self.warm_start = warm_start
         self.verbose = verbose
-        super().__init__(n_bits=n_bits)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return self._inverse_link(y_preds)
 
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        """Predict on user data.
-
-        Predict on user data using either the quantized clear model, implemented with tensors, or,
-        if execute_in_fhe is set, using the compiled FHE circuit.
-
-        Args:
-            X (numpy.ndarray): The input data.
-            execute_in_fhe (bool): Whether to execute the inference in FHE. Default to False.
-
-        Returns:
-            numpy.ndarray: The model's predictions.
-        """
+    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+        # Call SklearnLinearModelMixin's predict method
         y_preds = super().predict(X, execute_in_fhe=execute_in_fhe)
+
         y_preds = self.post_processing(y_preds)
         return y_preds
 
@@ -122,7 +113,7 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
     """
 
-    sklearn_alg = sklearn.linear_model.PoissonRegressor
+    underlying_model_class = sklearn.linear_model.PoissonRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -147,16 +138,6 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
         )
 
     def _inverse_link(self, y_preds) -> numpy.ndarray:
-        """Apply the link function's inverse on the inputs.
-
-        PoissonRegressor uses the exponential function.
-
-        Args:
-            y_preds (numpy.ndarray): The input data.
-
-        Returns:
-            The model's final predictions.
-        """
         return numpy.exp(y_preds)
 
 
@@ -176,7 +157,7 @@ class GammaRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
     """
 
-    sklearn_alg = sklearn.linear_model.GammaRegressor
+    underlying_model_class = sklearn.linear_model.GammaRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -201,16 +182,6 @@ class GammaRegressor(_GeneralizedLinearRegressor):
         )
 
     def _inverse_link(self, y_preds) -> numpy.ndarray:
-        """Apply the link function's inverse on the inputs.
-
-        GammaRegressor uses the exponential function.
-
-        Args:
-            y_preds (numpy.ndarray): The input data.
-
-        Returns:
-            The model's final predictions.
-        """
         return numpy.exp(y_preds)
 
 
@@ -230,7 +201,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
     """
 
-    sklearn_alg = sklearn.linear_model.TweedieRegressor
+    underlying_model_class = sklearn.linear_model.TweedieRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -272,9 +243,8 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
             and self.post_processing_params.get("power", None) is not None
         )
 
-    def _update_post_processing_params(self):
-        """Update the post processing parameters."""
-        super()._update_post_processing_params()
+    def _set_post_processing_params(self):
+        super()._set_post_processing_params()
         self.post_processing_params.update(
             {
                 "link": self.link,
@@ -283,16 +253,6 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         )
 
     def _inverse_link(self, y_preds) -> numpy.ndarray:
-        """Apply the link function's inverse on the inputs.
-
-        TweedieRegressor uses either the identity or the exponential function.
-
-        Args:
-            y_preds (numpy.ndarray): The input data.
-
-        Returns:
-            The model's final predictions.
-        """
         self.check_model_is_fitted()
 
         if self.post_processing_params["link"] == "auto":

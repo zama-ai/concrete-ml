@@ -291,6 +291,6 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tensor_tree_predict = get_equivalent_numpy_forward(onnx_model)
+    _tree_inference = get_equivalent_numpy_forward(onnx_model)
 
-    return (_tensor_tree_predict, [q_y.quantizer], onnx_model)
+    return (_tree_inference, [q_y.quantizer], onnx_model)

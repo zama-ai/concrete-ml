@@ -176,37 +176,47 @@ def check_there_is_no_p_error_options_in_configuration(configuration):
         )
 
 
-def is_model_class_in_a_list(model_class, a_list):
-    """Say if model_class (which may be a partial()) is an element of a_list.
+def get_model_class(model_class):
+    """Return the class of the model, which can be a partial() instance.
 
     Args:
-        model_class: the model
-        a_list: the list in which to look
+        model_class: The model, which can be a partial() instance.
 
     Returns:
-        whether the class is in the list
+        The model's class.
 
     """
     if isinstance(model_class, partial):
-        return model_class.func in a_list
+        return model_class.func
 
-    return model_class in a_list
+    return model_class
+
+
+def is_model_class_in_a_list(model_class, a_list):
+    """Indicate if a model class, which can be a partial() instance, is an element of a_list.
+
+    Args:
+        model_class: The model, which can be a partial() instance.
+        a_list: The list in which to look into.
+
+    Returns:
+        If the model's class is in the list or not.
+
+    """
+    return get_model_class(model_class) in a_list
 
 
 def get_model_name(model_class):
-    """Return a model (which may be a partial()) name.
+    """Return the name of the model, which can be a partial() instance.
 
     Args:
-        model_class: the model
+        model_class: The model, which can be a partial() instance.
 
     Returns:
-        the class name
+        the model's name.
 
     """
-    if isinstance(model_class, partial):
-        return model_class.func.__name__
-
-    return model_class.__name__
+    return get_model_class(model_class).__name__
 
 
 def is_classifier_or_partial_classifier(model_class):
@@ -218,10 +228,7 @@ def is_classifier_or_partial_classifier(model_class):
     Returns:
         bool: If the model class represents a classifier.
     """
-    if isinstance(model_class, partial):
-        return is_classifier(model_class.func)
-
-    return is_classifier(model_class)
+    return is_classifier(get_model_class(model_class))
 
 
 def is_regressor_or_partial_regressor(model_class):
@@ -233,10 +240,7 @@ def is_regressor_or_partial_regressor(model_class):
     Returns:
         bool: If the model class represents a regressor.
     """
-    if isinstance(model_class, partial):
-        return is_regressor(model_class.func)
-
-    return is_regressor(model_class)
+    return is_regressor(get_model_class(model_class))
 
 
 def is_pandas_dataframe(input_container: Any) -> bool:

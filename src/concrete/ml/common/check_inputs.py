@@ -54,4 +54,24 @@ def check_X_y_and_assert(X, y, *args, **kwargs):
     return X, y
 
 
+def check_X_y_and_assert_multi_output(X, y, *args, **kwargs):
+    """sklearn.utils.check_X_y with an assert and multi-output handling.
+
+    Equivalent of sklearn.utils.check_X_y, with a final assert that the type is one which
+    is supported by Concrete-ML. If y is 2D, allows multi-output.
+
+    Args:
+        X (ndarray, list, sparse matrix): Input data
+        y (ndarray, list, sparse matrix): Labels
+        *args: The arguments to pass to check_X_y
+        **kwargs: The keyword arguments to pass to check_X_y
+
+    Returns:
+        The converted and validated arrays with multi-output targets.
+    """
+    multi_output = isinstance(y[0], list) if isinstance(y, list) else len(y.shape) > 1
+    X, y = check_X_y_and_assert(X, y, *args, multi_output=multi_output, **kwargs)
+    return X, y
+
+
 # pylint: enable=invalid-name

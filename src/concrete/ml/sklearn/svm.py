@@ -1,11 +1,11 @@
 """Implement Support Vector Machine."""
 import sklearn.linear_model
 
-from .base import SklearnLinearClassifierMixin, SklearnLinearModelMixin
+from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
-class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
+class LinearSVR(SklearnLinearRegressorMixin):
     """A Regression Support Vector Machine (SVM).
 
     Parameters:
@@ -21,7 +21,7 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html
     """
 
-    sklearn_alg = sklearn.svm.LinearSVR
+    underlying_model_class = sklearn.svm.LinearSVR
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -39,6 +39,9 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         random_state=None,
         max_iter=1000,
     ):
+        # Call SklearnLinearModelMixin's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.epsilon = epsilon
         self.tol = tol
         self.C = C
@@ -49,12 +52,9 @@ class LinearSVR(SklearnLinearModelMixin, sklearn.base.RegressorMixin):
         self.verbose = verbose
         self.random_state = random_state
         self.max_iter = max_iter
-        self.n_bits = n_bits
-        self._onnx = None
-        super().__init__(n_bits=n_bits)
 
 
-class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
+class LinearSVC(SklearnLinearClassifierMixin):
     """A Classification Support Vector Machine (SVM).
 
     Parameters:
@@ -70,7 +70,7 @@ class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html
     """
 
-    sklearn_alg = sklearn.svm.LinearSVC
+    underlying_model_class = sklearn.svm.LinearSVC
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -91,6 +91,9 @@ class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
         random_state=None,
         max_iter=1000,
     ):
+        # Call BaseClassifier's __init__ method
+        super().__init__(n_bits=n_bits)
+
         self.penalty = penalty
         self.loss = loss
         self.dual = dual
@@ -103,9 +106,6 @@ class LinearSVC(SklearnLinearClassifierMixin, sklearn.base.ClassifierMixin):
         self.verbose = verbose
         self.random_state = random_state
         self.max_iter = max_iter
-        self.n_bits = n_bits
-        self._onnx = None
-        super().__init__(n_bits=n_bits)
 
 
 # pylint: enable=invalid-name,too-many-instance-attributes

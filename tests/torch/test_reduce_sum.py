@@ -98,7 +98,7 @@ def test_sum(
     # Take an inputset's subset as inputs
     numpy_input = inputset[:5]
 
-    assert quantized_numpy_module.is_compiled, "Torch model is not compiled"
+    quantized_numpy_module.check_model_is_compiled()
 
     # Execute the sum in FHE over several samples
     q_result = []

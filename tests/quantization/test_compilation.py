@@ -84,17 +84,15 @@ def test_quantized_module_compilation(
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
-    # Quantize input
-    q_input = quantized_model.quantize_input(numpy_input)
-
     # Compile
     quantized_model.compile(
-        q_input,
+        numpy_input,
         default_configuration,
         use_virtual_lib=use_virtual_lib,
         verbose_compilation=verbose_compilation,
     )
-    check_is_good_execution_for_cml_vs_circuit(q_input, quantized_model)
+
+    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model)
     check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
 
 
@@ -151,17 +149,14 @@ def test_quantized_cnn_compilation(
     post_training_quant = PostTrainingAffineQuantization(n_bits, torch_cnn_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
-    # Quantize input
-    q_input = quantized_model.quantize_input(numpy_input)
-
     # Compile
     quantized_model.compile(
-        q_input,
+        numpy_input,
         default_configuration,
         use_virtual_lib=use_virtual_lib,
         verbose_compilation=verbose_compilation,
     )
-    check_is_good_execution_for_cml_vs_circuit(q_input, quantized_model)
+    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model)
     check_graph_input_has_no_tlu(quantized_model.forward_fhe.graph)
 
 
@@ -329,16 +324,13 @@ def test_compile_multi_input_nn_with_input_tlus(
     post_training_quant = PostTrainingAffineQuantization(2, torch_cnn_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
-    # Quantize input
-    q_input = quantized_model.quantize_input(numpy_input)
-
     # Compile
     quantized_model.compile(
-        q_input,
+        numpy_input,
         default_configuration,
         use_virtual_lib=True,
     )
-    check_is_good_execution_for_cml_vs_circuit(q_input, quantized_model)
+    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model)
 
     # Check that the network has TLUs in the input node
     with pytest.raises(AssertionError, match=".*TLU on an input node.*"):
