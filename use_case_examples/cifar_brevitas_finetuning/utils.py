@@ -487,7 +487,7 @@ def fhe_simulation_inference(
         for idx, x in enumerate(data):
             x_q = qmodel.quantize_input(np.expand_dims(x, 0))
 
-            circuit_prediction = qmodel.fhe_circuit.encrypt_run_decrypt(x_q)
+            circuit_prediction = qmodel.fhe_circuit.simulate(x_q)
             predictions[idx] = circuit_prediction
 
             total_example += 1

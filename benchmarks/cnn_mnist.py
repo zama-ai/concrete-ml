@@ -405,12 +405,16 @@ def test_concrete(
             x_q = np.expand_dims(x_test_q[i, :], 0)
 
             # Execute either in FHE (compiled or VL) or just in quantized
-            if use_fhe or use_vl:
-                out_fhe = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
-                output = quantized_module.dequantize_output(out_fhe)
+            if use_fhe:
+                output = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
+            elif use_vl:
+                output = quantized_module.forward_fhe.simulate(x_q)
             else:
                 # Here, that's with quantized module, but we could remove it, it will never be used
-                output = quantized_module.forward_and_dequant(x_q)
+                output = quantized_module.forward(x_q)
+
+            # Dequantize the integer predictions
+            output = quantized_module.dequantize_output(output)
 
             # Take the predicted class from the outputs and store it
             y_pred = np.argmax(output, 1)

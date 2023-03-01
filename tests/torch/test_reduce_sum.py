@@ -45,7 +45,7 @@ from concrete.ml.torch.compile import compile_torch_model
         pytest.param(TorchSumMod, True, True, id="sum_with_pbs_in_VL"),
     ],
 )
-# pylint: disable-next=too-many-arguments
+# pylint: disable-next=too-many-arguments,too-many-locals
 def test_sum(
     model_class,
     n_bits,
@@ -100,18 +100,24 @@ def test_sum(
 
     quantized_numpy_module.check_model_is_compiled()
 
-    # Execute the sum in FHE over several samples
+    # Execute the sum in FHE/VL over several samples
     q_result = []
     for numpy_input_i in numpy_input:
         # Quantize the input
         q_input = quantized_numpy_module.quantize_input((numpy_input_i,))
-        check_is_good_execution_for_cml_vs_circuit(q_input, quantized_numpy_module)
-
+        check_is_good_execution_for_cml_vs_circuit(
+            q_input, quantized_numpy_module, simulate=use_virtual_lib
+        )
         if not isinstance(q_input, tuple):
             q_input = (q_input,)
 
-        # Execute the sum in FHE over the sample
-        q_result.append(quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_input)[0])
+        # Execute the sum in FHE/VL over the sample
+        q_result_ = (
+            quantized_numpy_module.forward_fhe.simulate(*q_input)[0]
+            if use_virtual_lib
+            else quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_input)[0]
+        )
+        q_result.append(q_result_)
 
     # Dequantize the output
     computed_sum = quantized_numpy_module.dequantize_output(numpy.array(q_result))

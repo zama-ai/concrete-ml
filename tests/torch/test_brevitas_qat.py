@@ -118,13 +118,18 @@ def test_brevitas_tinymnist_cnn(
                 x_q = numpy.expand_dims(x_test_q[i, :], 0)
 
                 # Execute either in FHE (compiled or VL) or just in quantized
-                if use_fhe or use_vl:
-                    out_fhe = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
-                    output = quantized_module.dequantize_output(out_fhe)
+                if use_fhe:
+                    output = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
+                elif use_vl:
+                    output = quantized_module.forward_fhe.simulate(x_q)
                 else:
-                    output = quantized_module.forward_and_dequant(x_q)
+                    output = quantized_module.forward(x_q)
 
-                check_is_good_execution_for_cml_vs_circuit(x_q, quantized_module)
+                # Dequantize the integer predictions
+                output = quantized_module.dequantize_output(output)
+                check_is_good_execution_for_cml_vs_circuit(
+                    x_q, model_function=quantized_module, simulate=use_vl
+                )
                 # Take the predicted class from the outputs and store it
                 y_pred = numpy.argmax(output, 1)
                 all_y_pred[idx] = y_pred

@@ -97,9 +97,7 @@ def infer(quantized_module, inputs, progress_bar=True) -> Tuple[np.ndarray, Dict
     quantized_inferences = list()
     for img_feature_map in tqdm(inputs, leave=False, disable=not progress_bar):
         quantized_feature_maps = quantized_module.quantize_input(img_feature_map)
-        quantized_output = quantized_module.fhe_circuit.encrypt_run_decrypt(
-            quantized_feature_maps[None, ...]
-        )
+        quantized_output = quantized_module.fhe_circuit.simulate(quantized_feature_maps[None, ...])
         dequantized_output = quantized_module.dequantize_output(quantized_output)
         inferences.append(dequantized_output[0])
         quantized_inferences.append(quantized_output[0])

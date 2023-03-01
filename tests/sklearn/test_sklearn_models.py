@@ -1024,7 +1024,7 @@ def test_predict_correctness(
                 )
 
             check_is_good_execution_for_cml_vs_circuit(
-                x[:number_of_tests_in_fhe], model_function=model
+                x[:number_of_tests_in_fhe], model_function=model, simulate=use_virtual_lib
             )
 
             if test_subfunctions_in_fhe and (not use_virtual_lib):

@@ -436,9 +436,13 @@ class BaseEstimator:
                 # is of shape (n_features,)
                 q_X_i = numpy.expand_dims(q_X_i, 0)
 
-                # Ignore mypy issue as `check_model_is_compiled` makes sure that fhe_circuit is
-                # not None
-                q_y_pred_i = self.fhe_circuit.encrypt_run_decrypt(q_X_i)  # type: ignore[union-attr]
+                # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3062
+                # configuration.virtual is deprecated
+                q_y_pred_i = (
+                    self.fhe_circuit.simulate(q_X_i)  # type: ignore[union-attr]
+                    if self.fhe_circuit.configuration.virtual  # type: ignore[union-attr]
+                    else self.fhe_circuit.encrypt_run_decrypt(q_X_i)  # type: ignore[union-attr]
+                )
                 q_y_pred_list.append(q_y_pred_i[0])
 
             q_y_pred = numpy.array(q_y_pred_list)

@@ -435,30 +435,10 @@ def load_data():
 def check_is_good_execution_for_cml_vs_circuit():
     """Compare quantized module or built-in inference vs Concrete-Numpy circuit."""
 
-    def batch_circuit_inference(inputs: Union[tuple, numpy.ndarray], circuit: Circuit):
-        """Execute a circuit on a batch of data."""
-        # For now, only allow VL with p_error = 0 since want to make sure the VL
-        # (without randomness) matches perfectly CML's predictions.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2519
-        if circuit.configuration.virtual and circuit.configuration.p_error not in (
-            None,
-            0.0,
-        ):
-            raise ValueError(
-                "Virtual Library (VL) can not be tested with a simulated p_error. "
-                "Please make sure to have a p_error = 0 or None when the VL is enabled."
-            )
-        results_cnp_circuit = []
-        for i in range(inputs[0].shape[0]):
-            q_x = tuple(inputs[input][[i]] for input in range(len(inputs)))
-            q_result = circuit.encrypt_run_decrypt(*q_x)
-            results_cnp_circuit.append(q_result)
-        results_cnp_circuit = numpy.concatenate(results_cnp_circuit, axis=0)
-        return results_cnp_circuit
-
     def check_is_good_execution_for_cml_vs_circuit_impl(
         inputs: Union[tuple, numpy.ndarray],
         model_function: Union[Callable, QuantizedModule, QuantizedTorchEstimatorMixin],
+        simulate: bool,
         n_allowed_runs: int = 5,
     ):
         """Check that a model or a quantized module give the same output as the circuit.
@@ -467,6 +447,7 @@ def check_is_good_execution_for_cml_vs_circuit():
             inputs (tuple, numpy.ndarray): inputs for the model.
             model_function (Callable, QuantizedModule, QuantizedTorchEstimatorMixin): either the
                 Concrete-ML sklearn built-in model or a quantized module.
+            simulate (bool): whether to run the execution in FHE or in simulated mode.
             n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
                 different this allows to run the evaluation multiple times
         """
@@ -483,7 +464,7 @@ def check_is_good_execution_for_cml_vs_circuit():
                     inputs = model_function.quantize_input(*inputs)
                     inputs = (inputs,) if not isinstance(inputs, tuple) else inputs
 
-                results_cnp_circuit = batch_circuit_inference(inputs, model_function.fhe_circuit)
+                results_cnp_circuit = model_function.forward_in_fhe(*inputs, simulate=simulate)
                 results_model_function = model_function.forward(*inputs)
 
             else:

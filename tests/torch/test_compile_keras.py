@@ -93,8 +93,9 @@ def compile_and_test_keras(
 
     quantized_numpy_module.check_model_is_compiled()
 
-    quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
+    check_is_good_execution_for_cml_vs_circuit(
+        qtest, model_function=quantized_numpy_module, simulate=use_virtual_lib
+    )
 
 
 # We should also have some correctness tests

@@ -154,7 +154,11 @@ def compile_and_test(
         q_data = q_module.quantize_input(im)
         q_data = np.expand_dims(q_data, 0).astype(np.int64)
 
-        prediction = q_module.forward_fhe.encrypt_run_decrypt(q_data)
+        prediction = (
+            q_module.forward_fhe.simulate(q_data)
+            if use_virtual_lib
+            else q_module.forward_fhe.encrypt_run_decrypt(q_data)
+        )
         prediction = q_module.dequantize_output(prediction)
 
         if np.argmax(prediction) == target_np:

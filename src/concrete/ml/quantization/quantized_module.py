@@ -324,6 +324,33 @@ class QuantizedModule:
 
         return outputs[0].qvalues
 
+    def forward_in_fhe(self, *qvalues: numpy.ndarray, simulate=True) -> numpy.ndarray:
+        """Forward function running in FHE or simulated mode.
+
+        Args:
+            *qvalues (numpy.ndarray): numpy.array containing the quantized values.
+            simulate (bool): whether the function should be run in FHE or in simulation mode.
+
+        Returns:
+            (numpy.ndarray): Predictions of the quantized model
+
+        """
+        results_cnp_circuit_list = []
+        for i in range(qvalues[0].shape[0]):
+
+            # Extract the i th example from every element in the tuple qvalues
+            q_value = tuple(qvalues[input][[i]] for input in range(len(qvalues)))
+
+            # Run FHE or simulation based on the simulate argument
+            q_result = (
+                self.fhe_circuit.simulate(*q_value)
+                if simulate
+                else self.fhe_circuit.encrypt_run_decrypt(*q_value)
+            )
+            results_cnp_circuit_list.append(q_result)
+        results_cnp_circuit = numpy.concatenate(results_cnp_circuit_list, axis=0)
+        return results_cnp_circuit
+
     def forward_and_dequant(self, *q_x: numpy.ndarray) -> numpy.ndarray:
         """Forward pass with numpy function only plus dequantization.
 

@@ -150,7 +150,9 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
         quantized_numpy_module.check_model_is_compiled()
 
         # Make sure VL and quantized module forward give the same output.
-        check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
+        check_is_good_execution_for_cml_vs_circuit(
+            qtest, model_function=quantized_numpy_module, simulate=use_virtual_lib
+        )
     else:
         # Compile our network with 16-bits
         # to compare to torch (8b weights + float 32 activations)
@@ -225,6 +227,8 @@ def accuracy_test_rounding(
     quantized_numpy_module_round_low_precision and quantized_numpy_module making sure that the
     rounding feature has the expected behavior on the model accuracy.
     """
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
+    assert use_virtual_lib, "Rounding is not available in FHE yet."
 
     # Check that the maximum_integer_bit_width is at least 4 bits to compare the rounding
     # feature with enough precision.
@@ -286,12 +290,13 @@ def accuracy_test_rounding(
         q_x = tuple(q[[i]] for q in qtest)
 
         # encrypt, run, and decrypt with different precision modes
-        q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
-        q_result_high_precision = (
-            quantized_numpy_module_round_high_precision.forward_fhe.encrypt_run_decrypt(*q_x)
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
+        q_result = quantized_numpy_module.forward_fhe.simulate(*q_x)
+        q_result_high_precision = quantized_numpy_module_round_high_precision.forward_fhe.simulate(
+            *q_x
         )
-        q_result_low_precision = (
-            quantized_numpy_module_round_low_precision.forward_fhe.encrypt_run_decrypt(*q_x)
+        q_result_low_precision = quantized_numpy_module_round_low_precision.forward_fhe.simulate(
+            *q_x
         )
 
         # dequantize the results to obtain the actual output values
@@ -309,9 +314,15 @@ def accuracy_test_rounding(
         results_low_precision.append(result_low_precision)
 
     # Check modules predictions VL vs CML.
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module_round_high_precision)
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module_round_low_precision)
+    check_is_good_execution_for_cml_vs_circuit(
+        qtest, quantized_numpy_module, simulate=use_virtual_lib
+    )
+    check_is_good_execution_for_cml_vs_circuit(
+        qtest, quantized_numpy_module_round_high_precision, simulate=use_virtual_lib
+    )
+    check_is_good_execution_for_cml_vs_circuit(
+        qtest, quantized_numpy_module_round_low_precision, simulate=use_virtual_lib
+    )
 
     # Check that high precision gives a better match than low precision
     mae_high_precision = numpy.abs(
@@ -701,7 +712,7 @@ def test_pretrained_mnist_qat(
 
     quantized_numpy_module.check_model_is_compiled()
 
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module)
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module, simulate=True)
 
     # Collect VL results
     results = []
@@ -712,7 +723,7 @@ def test_pretrained_mnist_qat(
         # e.g. if qtest is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
         q_x = tuple(q[[i]] for q in qtest)
-        q_result = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_x)
+        q_result = quantized_numpy_module.forward_fhe.simulate(*q_x)
         result = quantized_numpy_module.dequantize_output(q_result)
         result = numpy.argmax(result)
         results.append(result)

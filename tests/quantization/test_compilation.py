@@ -92,7 +92,9 @@ def test_quantized_module_compilation(
         verbose_compilation=verbose_compilation,
     )
 
-    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model)
+    check_is_good_execution_for_cml_vs_circuit(
+        numpy_input, quantized_model, simulate=use_virtual_lib
+    )
     check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
 
 
@@ -156,7 +158,9 @@ def test_quantized_cnn_compilation(
         use_virtual_lib=use_virtual_lib,
         verbose_compilation=verbose_compilation,
     )
-    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model)
+    check_is_good_execution_for_cml_vs_circuit(
+        numpy_input, quantized_model, simulate=use_virtual_lib
+    )
     check_graph_input_has_no_tlu(quantized_model.forward_fhe.graph)
 
 
@@ -330,7 +334,7 @@ def test_compile_multi_input_nn_with_input_tlus(
         default_configuration,
         use_virtual_lib=True,
     )
-    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model)
+    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=True)
 
     # Check that the network has TLUs in the input node
     with pytest.raises(AssertionError, match=".*TLU on an input node.*"):
