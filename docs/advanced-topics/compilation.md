@@ -6,7 +6,7 @@ As FHE execution is much slower than execution on non-encrypted data, Concrete-M
 
 ## Compilation
 
-Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick%5C_start), and Concrete-ML hides away most of the complexity of this step, completing the entire compilation process itself.
+Concrete-ML implements machine model inference using Concrete-Numpy as a backend. In order to execute in FHE, a numerical program written in Concrete-Numpy needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete-ML hides away most of the complexity of this step, completing the entire compilation process itself.
 
 From the perspective of the Concrete-ML user, the compilation process performed by Concrete-Numpy can be broken up into 3 steps:
 

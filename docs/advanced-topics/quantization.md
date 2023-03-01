@@ -33,7 +33,7 @@ The other important parameter from this quantization schema is the `zero point` 
 
 $$Z_p = \mathtt{round} \left(- \frac{\alpha}{S} \right)$$
 
-When using quantized values in a matrix multiplication or convolution, the equations for computing the result become more complex. The IntelLabs Distiller documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo%5C_quantization.html) of the maths used to quantize values and how to keep computations consistent.
+When using quantized values in a matrix multiplication or convolution, the equations for computing the result become more complex. The IntelLabs Distiller documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) of the maths used to quantize values and how to keep computations consistent.
 
 ### Configuring model quantization parameters
 
@@ -88,4 +88,4 @@ for i in range(x_test_q.shape[0]):
 
 ## Resources
 
-- IntelLabs distiller explanation of quantization: [Distiller documentation](https://intellabs.github.io/distiller/algo%5C_quantization.html)
+- IntelLabs distiller explanation of quantization: [Distiller documentation](https://intellabs.github.io/distiller/algo_quantization.html)

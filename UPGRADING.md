@@ -6,8 +6,4 @@ This document is an help for developers who update from older versions of Concre
 
 `encrypt_run_decrypt` is now restricted to execution in FHE. For simulation with the Virtual Library, one uses `simulate` function
 
-`forward_fhe` has been renamed `fhe_circuit` [FIXME: in which case / which model?]
-
-
-
-
+`forward_fhe` has been renamed `fhe_circuit` \[FIXME: in which case / which model?\]

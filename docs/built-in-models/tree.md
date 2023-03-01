@@ -11,10 +11,10 @@ Concrete-ML provides several of the most popular `classification` and `regressio
 
 In addition to support for scikit-learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
-|                                      Concrete-ML                                       |                                                  XGboost                                                  |
-| :------------------------------------------------------------------------------------: | :-------------------------------------------------------------------------------------------------------: |
-| [XGBClassifier](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python%5C_api.html#xgboost.XGBClassifier) |
-|  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python%5C_api.html#xgboost.XGBRegressor)  |
+|                                      Concrete-ML                                       |                                                XGboost                                                 |
+| :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
+| [XGBClassifier](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
+|  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
 
 ## Example
 

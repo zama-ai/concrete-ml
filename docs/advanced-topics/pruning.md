@@ -7,7 +7,7 @@ Pruning is a method to reduce neural network complexity, usually applied in orde
 Pruning is used in Concrete-ML for two types of neural networks:
 
 1. Built-in [neural networks](../built-in-models/neural-networks.md) include a pruning mechanism that can be parameterized by the user. The pruning type is based on L1-norm. To comply with FHE constraints, Concrete-ML uses _unstructured_ pruning, as the aim is not to eliminate neurons or convolutional filters completely, but to decrease their accumulator bit-width.
-1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning%5C_tutorial.html) (e.g.L1-Unstructured) to good effect.
+1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) (e.g.L1-Unstructured) to good effect.
 
 ## Basics of pruning
 
@@ -25,7 +25,7 @@ When building a full neural network, each layer will contain multiple neurons, w
 
 For every neuron shown in each layer of the figure above, the linear combinations of inputs and learned weights are computed. Depending on the values of the inputs and weights, the sum $$v_k = \sum_i w_ix_i$$ - which for Concrete-ML neural networks is computed with integers - can take a range of different values.
 
-To respect the bit-width constraint of the FHE [table lookup](https://docs.zama.ai/concrete-numpy/tutorials/table%5C_lookups), the values of the accumulator $$v_k$$ must remain small to be representable using a maximum of 16 bits. In other words, the values must be between 0 and $$2^{16}-1$$.
+To respect the bit-width constraint of the FHE [table lookup](https://docs.zama.ai/concrete-numpy/tutorials/table_lookups), the values of the accumulator $$v_k$$ must remain small to be representable using a maximum of 16 bits. In other words, the values must be between 0 and $$2^{16}-1$$.
 
 Pruning a neural network entails fixing some of the weights $$w_k$$ to be zero during training. This is advantageous to meet FHE constraints, as irrespective of the distribution of $$x_i$$, multiplying these input values by 0 does not increase the accumulator value.
 

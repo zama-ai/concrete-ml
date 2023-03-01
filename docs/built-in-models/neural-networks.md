@@ -2,10 +2,10 @@
 
 Concrete-ML provides simple built-in neural networks models with a scikit-learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
 
-|                                            Concrete-ML                                             | Scikit-Learn                                                                                                    |
-| :------------------------------------------------------------------------------------------------: | --------------------------------------------------------------------------------------------------------------- |
-| [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural%5C_network.MLPClassifier.html) |
-|  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural%5C_network.MLPRegressor.html)   |
+|                                            Concrete-ML                                             | Scikit-Learn                                                                                                 |
+| :------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------ |
+| [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html) |
+|  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html)   |
 
 The neural network models are implemented with [skorch](https://skorch.readthedocs.io/en/stable/index.html), which provides a scikit-learn-like interface to Torch models (more [here](../developer-guide/external_libraries.md#skorch)).
 
