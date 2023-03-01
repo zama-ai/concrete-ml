@@ -36,7 +36,7 @@ readme = "pypi_readme.md"
 # Investigate if it is better to fix specific versions or use lower and upper bounds  
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2665
 python = ">=3.7.1,<3.11"
-concrete-numpy = "0.11.0"
+concrete-numpy = "0.11.1"
 setuptools = "65.6.3"
 xgboost = "1.6.2"
 skorch = "0.11.0"
@@ -46,9 +46,6 @@ hummingbird-ml = {version="0.4.4", extras = ["onnx"]}
 brevitas = "0.8.0"
 onnxoptimizer = "0.2.7"
 onnxruntime = "1.13.1"
-scipy = "1.7.3"
-onnx = "1.12.0"
-protobuf = "3.19.6"
 
 # Dependancies which depend on python version
 scikit-learn = [
@@ -56,11 +53,22 @@ scikit-learn = [
     {version = "1.0.2", python = "<3.8.0"}
 ]
 
+onnx = [
+    {version = "1.13.0", python = ">=3.8.0"},
+    {version = "1.12.0", python = "<3.8.0"}
+]
+scipy = [
+    {version = "1.10.1", python = ">=3.8.0"},
+    {version = "1.7.3", python = "<3.8.0"}
+]
 numpy = [
-    {version = "1.22.4", python = ">=3.8.0"},
+    {version = "1.23.5", python = ">=3.8.0"},
     {version = "1.21.6", python = "<3.8.0"}
 ]
-
+protobuf = [
+    {version = "3.20.3", python = ">=3.8.0"},
+    {version = "3.19.6", python = "<3.8.0"}
+]
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
@@ -101,7 +109,7 @@ jinja2 = "^3.1.2"
 LinkChecker = "^10.1.0"
 kaggle = "^1.5.12"
 tf2onnx = "^1.10.1"
-sphinx-rtd-theme = "^1.0.0"
+sphinx-rtd-theme = "1.2.0"
 boto3 = "^1.23.5"
 paramiko = "^2.11.0"
 types-paramiko = "^2.10.0"
@@ -113,8 +121,18 @@ lazydocs = "^0.4.0"
 seaborn = "^0.12.0"
 mistletoe = "^0.9.0"
 ruff = "^0.0.191"
-tensorflow = "2.11.0"
 
+# Dependancies which depend on python version
+tensorflow = [
+    {version = "2.12.0rc0", python = ">=3.8.0"},
+    {version = "2.11.0", python = "<3.8.0"}
+]
+ipython = [
+    {version = "^8.10.0", python = ">=3.8.0"},
+]
+#markdown-it-py = [
+#    {version = "2.2.0", python = ">=3.8.0"},
+#]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

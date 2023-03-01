@@ -3,8 +3,8 @@ Pillow, 9.4.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
 brevitas, 0.8.0, UNKNOWN
 coloredlogs, 15.0.1, MIT License
-concrete-compiler, 0.23.4, BSD-3
-concrete-numpy, 0.10.0, BSD License
+concrete-compiler, 0.24.0rc5, BSD-3
+concrete-numpy, 0.11.1, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
@@ -20,7 +20,7 @@ networkx, 2.6.3, BSD License
 numpy, 1.23.5, BSD License
 onnx, 1.13.0, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
-onnxmltools, 1.11.1, Apache Software License
+onnxmltools, 1.11.2, Apache Software License
 onnxoptimizer, 0.2.7, Apache License v2.0
 onnxruntime, 1.13.1, MIT License
 packaging, 23.0, Apache Software License; BSD License

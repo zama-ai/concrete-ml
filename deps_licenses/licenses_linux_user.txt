@@ -3,8 +3,8 @@ Pillow, 9.4.0, Historical Permission Notice and Disclaimer (HPND)
 PyYAML, 6.0, MIT License
 brevitas, 0.8.0, UNKNOWN
 coloredlogs, 15.0.1, MIT License
-concrete-compiler, 0.23.4, BSD-3
-concrete-numpy, 0.11.0, BSD License
+concrete-compiler, 0.24.0rc5, BSD-3
+concrete-numpy, 0.11.1, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
@@ -17,23 +17,23 @@ kiwisolver, 1.4.4, BSD License
 matplotlib, 3.5.3, Python Software Foundation License
 mpmath, 1.2.1, BSD License
 networkx, 2.6.3, BSD License
-numpy, 1.22.4, BSD License
+numpy, 1.23.5, BSD License
 nvidia-cublas-cu11, 11.10.3.66, Other/Proprietary License
 nvidia-cuda-nvrtc-cu11, 11.7.99, Other/Proprietary License
 nvidia-cuda-runtime-cu11, 11.7.99, Other/Proprietary License
 nvidia-cudnn-cu11, 8.5.0.96, Other/Proprietary License
-onnx, 1.12.0, Apache License v2.0
+onnx, 1.13.0, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
 onnxmltools, 1.11.2, Apache Software License
 onnxoptimizer, 0.2.7, Apache License v2.0
 onnxruntime, 1.13.1, MIT License
 packaging, 23.0, Apache Software License; BSD License
-protobuf, 3.19.6, 3-Clause BSD License
+protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.4, BSD License
 pyparsing, 3.0.9, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 scikit-learn, 1.1.3, BSD License
-scipy, 1.7.3, BSD License
+scipy, 1.10.1, BSD License
 setuptools-scm, 6.4.2, MIT License
 six, 1.16.0, MIT License
 skl2onnx, 1.12, Apache Software License
