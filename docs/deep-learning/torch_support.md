@@ -63,8 +63,8 @@ x_test_quantized = quantized_numpy_module.quantize_input(x_test)
 
 and the encrypted inference can be run using either:
 
-- `quantized_numpy_module.forward_and_dequant()` to compute predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the forward function on the clear data is useful when debugging. The results in FHE will be the same as those on clear quantized data.
-- `quantized_numpy_module.forward_fhe.encrypt_run_decrypt()` to perform the FHE inference. In this case, de-quantization is done in a second stage using `quantized_numpy_module.dequantize_output()`.
+- `quantized_numpy_module.forward_and_dequant()` simply to compute predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the forward function on the clear data is useful when debugging. The results in FHE will be the same as those on clear quantized data.
+- `quantized_numpy_module.forward_in_fhe()` to perform the FHE inference. In this case, de-quantization is done in a second stage using `quantized_numpy_module.dequantize_output()`.
 
 ## Generic Quantization Aware Training import
 

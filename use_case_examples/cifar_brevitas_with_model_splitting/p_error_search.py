@@ -78,8 +78,6 @@ def compile(model, inputs, p_error: float) -> QuantizedModule:
         show_graph=False,
         show_mlir=False,
         show_optimizer=False,
-        p_error=None,
-        global_p_error=None,
     )
     quantized_numpy_module = compile_brevitas_qat_model(
         torch_model=model,

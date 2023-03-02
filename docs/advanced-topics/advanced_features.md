@@ -88,11 +88,11 @@ If neither `p_error` or `global_p_error` are set, Concrete-ML takes a default `g
 
 ### Using a rounding operator to approximate operations for faster computations
 
-To speed-up neural networks, a rounding operator can be used at a fixed bit-width value. This involves applying the rounding operator to intermediate values in the neural network to retain only the most significant $P$ bits, where $P$ is the desired precision for the subsequent TLU.
+To speed-up neural networks, a rounding operator can be used at a fixed bit-width value. This involves applying the rounding operator to intermediate values in the neural network to retain only the most significant $$P$$ bits, where $$P$$ is the desired precision for the subsequent TLU.
 
 The rounding operation is defined as follows:
 
-First, compute $t$ as the difference between $L$, the actual bit-width of the accumulator, and $P$:
+First, compute $$t$$ as the difference between $$L$$, the actual bit-width of the accumulator, and $$P$$:
 
 $$t = L - P$$
 
@@ -118,7 +118,7 @@ To find the best trade-off between speed and accuracy, it is recommended to expe
 
 In practice, the process would look like this:
 
-1. Set a `rounding_threshold_bits` to a relatively high $P$. Say, 8 bits.
+1. Set a `rounding_threshold_bits` to a relatively high $$P$$. Say, 8 bits.
 1. Check the accuracy
 1. Update P = P - 1
 1. repeat 2. and 3. until th accuracy loss is above a certain, acceptable threshold.
