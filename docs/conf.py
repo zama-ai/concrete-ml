@@ -138,3 +138,6 @@ def setup(app):
     html_init = f"const CURRENT_VERSION = {release!r};"
     html_init += f"const ROOT_URL = {root_url!r};"
     app.add_js_file(None, body=html_init, priority=100)
+
+
+suppress_warnings = ["myst.xref_missing"]
