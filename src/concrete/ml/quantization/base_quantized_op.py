@@ -618,7 +618,10 @@ class QuantizedOpUnivariateOfEncrypted(QuantizedOp, is_utility=True):
         # - tensors that are produced by a unique integer tensor
         # If this operation is applied between two constants
         # it should be optimized out by the constant folding procedure
-        assert_true(self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1))
+        assert_true(
+            self.can_fuse() or (constant_inputs is not None and len(constant_inputs) == 1),
+            "Do not support this type of operation between encrypted tensors",
+        )
 
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.

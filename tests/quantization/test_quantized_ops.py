@@ -313,7 +313,9 @@ def test_all_arith_ops(
         # Check the R2 of raw output and quantized output
         check_r2_score(raw_output_vv, quantized_output_vv)
     else:
-        with pytest.raises(Exception):
+        with pytest.raises(
+            AssertionError, match="Do not support this type of operation between encrypted tensors"
+        ):
             # Variable+Variable (V+V) test
             q_op = operator(n_bits, operator.__name__, int_input_names={"0", "1"})
 

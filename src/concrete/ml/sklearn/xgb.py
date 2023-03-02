@@ -72,7 +72,9 @@ class XGBClassifier(BaseTreeClassifierMixin):
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2747
         if platform.system() == "Darwin":
             if n_jobs != 1:  # pragma: no cover
-                warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
+                warnings.warn(
+                    "forcing n_jobs = 1 on mac for segfault issue", stacklevel=3
+                )  # pragma: no cover
                 n_jobs = 1  # pragma: no cover
 
         # Call BaseClassifier's __init__ method
@@ -172,7 +174,9 @@ class XGBRegressor(BaseTreeRegressorMixin):
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2747
         if platform.system() == "Darwin":
             if n_jobs != 1:  # pragma: no cover
-                warnings.warn("forcing n_jobs = 1 on mac for segfault issue")  # pragma: no cover
+                warnings.warn(
+                    "forcing n_jobs = 1 on mac for segfault issue", stacklevel=3
+                )  # pragma: no cover
                 n_jobs = 1  # pragma: no cover
 
         # Call BaseTreeEstimatorMixin's __init__ method
