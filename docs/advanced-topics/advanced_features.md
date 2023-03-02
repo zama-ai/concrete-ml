@@ -123,7 +123,7 @@ In practice, the process would look like this:
 1. Update P = P - 1
 1. repeat 2. and 3. until th accuracy loss is above a certain, acceptable threshold.
 
-An example of such implementation is available in [use_case_examples/cifar_brevitas_training/evaluate_torch_cml.py](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/use_case_examples/cifar_brevitas_training/evaluate_one_example_fhe.py).
+An example of such implementation is available in [evaluate_torch_cml.py](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/use_case_examples/cifar_brevitas_training/evaluate_one_example_fhe.py) and [CifarInFheWithSmallerAccumulators.ipynb](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb)
 
 ## Seeing compilation information
 
