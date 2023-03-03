@@ -20,7 +20,7 @@ import os
 # -- Project information -----------------------------------------------------
 
 project = "Concrete-ML"
-copyright = "2022, Zama"
+copyright = "2022-2023, Zama"
 author = "Zama"
 description = "Zama Concrete-ML"
 root_url = os.environ.get("DOC_ROOT_URL", "/concrete-ml")

@@ -205,7 +205,7 @@
 #    limitations under the License.
 
 #
-# Modifications copyright (C) 2022 Zama:
+# Modifications copyright (C) 2022-2023 Zama:
 # - variable renaming
 # - streamlining of some functions
 # - mypy typing hints
