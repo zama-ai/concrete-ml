@@ -424,7 +424,7 @@ jobs:
         run:
           make actionlint
 
-      - name: Source code Conformance
+      - name: Source code conformance
         id: cs
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         # pcc launches an internal target with proper flags
@@ -433,13 +433,13 @@ jobs:
 
       - name: Determinism
         id: de
-        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.install-deps.outcome == 'success' && steps.cs.outcome == 'success' && !cancelled() }}
         run: |
           make determinism
 
       - name: Build docs
         id: cbd
-        if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
+        if: ${{ steps.install-deps.outcome == 'success' && steps.cs.outcome == 'success' && steps.de.outcome == 'success' && !cancelled() }}
         run: |
           make docs
 
