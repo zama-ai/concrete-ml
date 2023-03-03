@@ -381,22 +381,6 @@ jobs:
 
           make setup_env
 
-      - name: Check installation with sync_env and python ${{ matrix.python_version }}
-        run: |
-          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
-
-      - name: Check installation with pip and python ${{ matrix.python_version }}
-        run: |
-          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
-
-      - name: Check installation with wheel and python ${{ matrix.python_version }}
-        run: |
-          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
-
-      - name: Check installation with clone and python ${{ matrix.python_version }}
-        run: |
-          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
-
       - name: Check commits first line format
         id: ccfl
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
@@ -572,6 +556,22 @@ jobs:
         with:
           path: diff-coverage.txt
           recreate: true
+
+      - name: Check installation with sync_env and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
+
+      - name: Check installation with pip and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
+
+      - name: Check installation with wheel and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
+
+      - name: Check installation with clone and python ${{ matrix.python_version }}
+        run: |
+          ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
   # This is to manage build matrices and have a single status point for PRs
   # This can be updated to take macOS into account but is impractical for private repos because of
