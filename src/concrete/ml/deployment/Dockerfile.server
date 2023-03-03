@@ -1,0 +1,8 @@
+FROM concrete-ml-release:latest
+WORKDIR /project
+COPY dev dev
+COPY server_requirements.txt server_requirements.txt
+COPY server.py server.py
+RUN python -m pip install -r ./server_requirements.txt
+EXPOSE 5000
+ENTRYPOINT python server.py

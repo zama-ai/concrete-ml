@@ -128,8 +128,8 @@ class BaseEstimator:
         #: Indicate if the model is compiled.
         self._is_compiled: bool = False
 
-        self.fhe_circuit_: Optional[onnx.ModelProto] = None
-        self.onnx_model_: Optional[Circuit] = None
+        self.fhe_circuit_: Optional[Circuit] = None
+        self.onnx_model_: Optional[onnx.ModelProto] = None
 
     @property
     def onnx_model(self) -> Optional[onnx.ModelProto]:
@@ -140,6 +140,7 @@ class BaseEstimator:
         Returns:
             onnx.ModelProto: The ONNX model.
         """
+        assert isinstance(self.onnx_model_, onnx.ModelProto) or self.onnx_model_ is None
         return self.onnx_model_
 
     @property
@@ -154,6 +155,7 @@ class BaseEstimator:
         Returns:
             Circuit: The FHE circuit.
         """
+        assert isinstance(self.fhe_circuit_, Circuit) or self.fhe_circuit_ is None
         return self.fhe_circuit_
 
     @fhe_circuit.setter
@@ -448,6 +450,7 @@ class BaseEstimator:
 
         self._is_compiled = True
 
+        assert isinstance(self.fhe_circuit, Circuit)
         return self.fhe_circuit
 
     @abstractmethod
@@ -495,7 +498,6 @@ class BaseEstimator:
 
         # If the inference is executed in FHE or simulation mode
         if fhe in ["simulate", "execute"]:
-
             # Check that the model is properly compiled
             self.check_model_is_compiled()
 
@@ -884,10 +886,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         # Iterate over the model's sub-modules
         for module in self.base_module_to_compile.features:
-
             # If the module is not a QuantIdentity, it's either a QuantLinear or an activation
             if not isinstance(module, qnn.QuantIdentity):
-
                 # If the module is a QuantLinear, replace it with a Linear module
                 if isinstance(module, qnn.QuantLinear):
                     layer_index += 1
@@ -1198,6 +1198,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             isinstance(dtype_output, Integer),
             f"output is {dtype_output} but an Integer is expected.",
         )
+        assert self.fhe_circuit is not None
         return self.fhe_circuit
 
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
@@ -1466,6 +1467,7 @@ class SklearnLinearClassifierMixin(
         assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
 
         # Remove any operators following gemm, as they will be done in the clear
+        assert self.onnx_model_ is not None
         clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
         SklearnLinearModelMixin._clean_graph(self)
 

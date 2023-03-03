@@ -1,0 +1,5 @@
+[report]
+
+omit = 
+  src/concrete/ml/deployment/deploy_to_docker.py
+  src/concrete/ml/deployment/server.py

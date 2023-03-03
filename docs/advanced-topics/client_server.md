@@ -30,3 +30,21 @@ The server-side implementation of a Concrete-ML model follows the diagram above.
 ## Example notebook
 
 For a complete example, see [the client-server notebook](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ClientServer.ipynb).
+
+### AWS
+
+We provide scripts that leverage `boto3` to deploy any CML model to AWS.
+The first required step is to properly setup AWS CLI on your system.
+To do so please follow the instructions in [AWS Documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+To create Access keys to configure AWS CLI go to the [approriate panel on AWS website](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/security_credentials?section=IAM_credentials).
+
+Once this first setup is done you can simply launch `python src/concrete/ml/deployment/deploy_to_aws.py --path-to-model <path_to_your_serialized_model>` from the root of the repository to create an instance that runs a FastAPI server serving the model.
+
+### Docker
+
+Running Docker with the latest version of Concrete-ML will require you to build a Docker image as we do for releases.
+To do so run the following command: `poetry build && mkdir pkg && cp dist/* pkg/ && make release_docker`. You will need to have `make`, `poetry` and `docker` installed on your system.
+To test locally there is a dedicated script: `python src/concrete/ml/deployment/deploy_to_docker.py --path-to-model <path_to_your_serialized_model>` from the root of the repository to create an Docker that runs a FastAPI server serving the model.
+
+There was no code required to run the server but each client is specific to the use-case, even if the workflow stays the same for all of them.
+To see how to create your client refer to our [examples](../../use_case_examples/deployment) or [this notebook](../advanced_examples/Deployment.ipynb).

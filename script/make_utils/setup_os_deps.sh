@@ -128,6 +128,7 @@ if [[ "${OS_NAME}" == "Linux" ]]; then
         graphviz* \
         jq \
         make \
+        rsync \
         cmake \
         unzip \
         pandoc \
@@ -148,7 +149,7 @@ elif [[ "${OS_NAME}" == "Darwin" ]]; then
     # activated later in this script, the status is still 0 == success
     brew unlink git@2.35.1 | cat
 
-    brew install curl git git-lfs gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint unzip gh
+    brew install curl git git-lfs gitleaks graphviz jq make pandoc shellcheck openssl libomp actionlint unzip gh rsync
     python3 -m pip install -U pip
     python3 -m pip install poetry==1.2.2
 

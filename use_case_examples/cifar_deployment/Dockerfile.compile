@@ -1,9 +1,0 @@
-FROM zamafhe/concrete-ml:v0.6.1
-WORKDIR /project
-RUN python -m pip install torchvision==0.13 --no-deps
-RUN python -m pip install requests
-COPY ./compile.py ./compile.py
-COPY ./model.py ./model.py
-COPY ./brevitas_utils.py ./brevitas_utils.py
-COPY ./8_bit_model.pt ./8_bit_model.pt
-ENTRYPOINT python compile.py

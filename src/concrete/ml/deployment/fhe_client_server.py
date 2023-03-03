@@ -1,6 +1,7 @@
 """APIs for FHE deployment."""
 
 import json
+import sys
 import zipfile
 from pathlib import Path
 from typing import Any, Optional
@@ -57,6 +58,16 @@ AVAILABLE_MODEL = [
 ]
 
 
+try:
+    # 3.8 and above
+    # pylint: disable-next=no-name-in-module
+    from importlib.metadata import version
+except ImportError:  # pragma: no cover
+    # 3.7 and below
+    # pylint: disable-next=no-name-in-module
+    from importlib_metadata import version
+
+
 class FHEModelServer:
     """Server API to load and run the FHE circuit."""
 
@@ -75,7 +86,35 @@ class FHEModelServer:
         self.load()
 
     def load(self):
-        """Load the circuit."""
+        """Load the circuit.
+
+        Raises:
+            ValueError: if mismatch in versions between serialized file and runtime
+        """
+        # Load versions for checking
+        with zipfile.ZipFile(Path(self.path_dir).joinpath("server.zip")) as client_zip:
+            with client_zip.open("versions.json", mode="r") as file:
+                versions = json.load(file)
+
+        errors = []
+        packages_to_check = {"concrete-compiler"}
+        for package_name, package_version in versions.items():
+            if package_name not in packages_to_check:
+                continue
+            current_version = version(package_name)
+            if package_version != current_version:  # pragma: no cover
+                errors.append((package_name, package_version, current_version))
+        if errors:  # pragma: no cover
+            raise ValueError(
+                "Version mismatch for packages: \n"
+                + "\n".join(f"{error[0]}: {error[1]} != {error[2]}" for error in errors)
+            )
+
+        if not versions["python"].startswith(
+            f"{sys.version_info.major}.{sys.version_info.minor}"
+        ):  # pragma: no cover
+            raise ValueError("Not the same python version between the compiler and the server.")
+
         self.server = cnp.Server.load(Path(self.path_dir).joinpath("server.zip"))
 
     def run(
@@ -148,8 +187,12 @@ class FHEModelDev:
             json.dump(serialized_processing, file, cls=CustomEncoder)
         return json_path
 
-    def save(self):
+    def save(self, via_mlir: bool = False):
         """Export all needed artifacts for the client and server.
+
+        Arguments:
+            via_mlir (bool): serialize with `via_mlir` option from Concrete-Numpy.
+                For more details on the topic please refer to Concrete-Numpy's documentation.
 
         Raises:
             Exception: path_dir is not empty
@@ -175,7 +218,7 @@ class FHEModelDev:
 
         # First save the circuit for the server
         path_circuit_server = Path(self.path_dir).joinpath("server.zip")
-        self.model.fhe_circuit.server.save(path_circuit_server)
+        self.model.fhe_circuit.server.save(path_circuit_server, via_mlir=via_mlir)
 
         # Save the circuit for the client
         path_circuit_client = Path(self.path_dir).joinpath("client.zip")
@@ -183,6 +226,25 @@ class FHEModelDev:
 
         with zipfile.ZipFile(path_circuit_client, "a") as zip_file:
             zip_file.write(filename=json_path, arcname="serialized_processing.json")
+
+        # Add versions
+        versions_path = Path(self.path_dir).joinpath("versions.json")
+        versions = {
+            package_name: version(package_name)
+            for package_name in ["concrete-ml", "concrete-numpy", "concrete-compiler"]
+        }
+        versions[
+            "python"
+        ] = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+        with open(versions_path, "w", encoding="utf-8") as file:
+            json.dump(fp=file, obj=versions)
+
+        with zipfile.ZipFile(path_circuit_server, "a") as zip_file:
+            zip_file.write(filename=versions_path, arcname="versions.json")
+
+        with zipfile.ZipFile(path_circuit_client, "a") as zip_file:
+            zip_file.write(filename=versions_path, arcname="versions.json")
 
         json_path.unlink()
 
@@ -211,13 +273,36 @@ class FHEModelClient:
         self.load()
 
     def load(self):  # pylint: disable=no-value-for-parameter
-        """Load the quantizers along with the FHE specs."""
+        """Load the quantizers along with the FHE specs.
+
+        Raises:
+            ValueError: if mismatch in versions between serialized file and runtime
+        """
         self.client = cnp.Client.load(Path(self.path_dir).joinpath("client.zip"), self.key_dir)
 
         # Load the quantizers
         with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
             with client_zip.open("serialized_processing.json", mode="r") as file:
                 serialized_processing = json.load(file)
+
+        # Load versions for checking
+        with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
+            with client_zip.open("versions.json", mode="r") as file:
+                versions = json.load(file)
+
+        errors = []
+        packages_to_check = {"concrete-compiler"}
+        for package_name, package_version in versions.items():
+            if package_name not in packages_to_check:
+                continue
+            current_version = version(package_name)
+            if package_version != current_version:  # pragma: no cover
+                errors.append((package_name, package_version, current_version))
+        if errors:  # pragma: no cover
+            raise ValueError(
+                "Version mismatch for packages: \n"
+                + "\n".join(f"{error[0]}: {error[1]} != {error[2]}" for error in errors)
+            )
 
         # Make sure the version in serialized_model is the same as CML_VERSION
         assert_true(

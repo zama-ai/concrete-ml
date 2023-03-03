@@ -6,9 +6,7 @@ This guide aims to help developers who are upgrading from older versions of Conc
 
 Please take note of the following changes when upgrading to version 1.0.0:
 
-- `execute_in_fhe` argument in `.predict()` methods for built-in models has been replaced by `fhe="disable|simulate|execute"`. The `disable` option runs the model in Python, while `simulate` performs a FHE simulation, and `execute` provides actual FHE execution.
-
-- `.forward()` and `.forward_in_fhe()` methods for QuantizedModule instances have been merged into a `.forward()` method that handles the `fhe="disable|simulate|execute"` flag as well. `.forward()` now requires inputs to be floating points as the method handles the quantization and de-quantization steps. Alternatively, `.quantized_forward()` (resp. `.fhe_forward()`) can be used to execute the forward pass in the clear (resp. in FHE, with simulation or not using `simulate=True|False`) with already-quantized values as inputs, and will return quantized outputs.
+- `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe="disable|simulate|execute"`. The `disable` option runs the model in Python, while `simulate` performs a FHE simulation, and `execute` provides actual FHE execution.
 
 - `encrypt_run_decrypt` function can now __only__ be executed in FHE. For Virtual Library simulations, please use the `simulate` function instead.
 
@@ -23,5 +21,4 @@ Please take note of the following changes when upgrading to version 1.0.0:
   - `compile_onnx_model`
   - `compile_torch_model`
   - `compile_brevitas_qat_model`
-
-This means that models are now always converted to FHE, and only FHE-friendly models can be compiled.
+    This means that models are now always converted to FHE, and only FHE-friendly models can be compiled.

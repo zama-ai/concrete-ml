@@ -1,0 +1,6 @@
+FROM concrete-ml-release:latest
+WORKDIR /project
+COPY client_requirements.txt .
+RUN python -m pip install -r client_requirements.txt
+COPY client.py .
+ENTRYPOINT /bin/bash

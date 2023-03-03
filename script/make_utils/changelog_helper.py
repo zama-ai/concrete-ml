@@ -202,6 +202,7 @@ def main(args):
     ancestor_commits = repo.merge_base(to_commit, from_commit)
     assert len(ancestor_commits) == 1
     ancestor_commit = ancestor_commits[0]
+    assert ancestor_commit is not None
     log_msg(f"Common ancestor: {ancestor_commit}")
 
     if ancestor_commit != from_commit:
@@ -242,8 +243,10 @@ def main(args):
     # Mypy does not seem to be able to see that 'to_commit' has a hexsha attribute, even
     # if we add some assert. THerefore, it is disabled
     log_dict = generate_changelog(
-        repo, ancestor_commit.hexsha, to_commit.hexsha  # type: ignore[union-attr]
-    )
+        repo,
+        ancestor_commit.hexsha,
+        to_commit.hexsha,
+    )  # type: ignore[union-attr]
 
     owner, name = get_repository_owner_and_name()
     md_changelog = markdown_changelog(

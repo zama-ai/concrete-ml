@@ -478,7 +478,9 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         # Disable mypy attribute definition error as this method is expected to be reachable
         # once the model inherits from Skorch
         train_end_callback = getattr(
-            self.module_, "on_train_end", None  # type: ignore[attr-defined]
+            self.module_,  # type: ignore[attr-defined]
+            "on_train_end",
+            None,
         )
         if callable(train_end_callback):
             train_end_callback()
@@ -581,8 +583,8 @@ class FixedTypeSkorchNeuralNet:
 
         # Set the new pruning amount
         model_copy.module_.n_prune_neurons_percentage = (
-            n_prune_neurons_percentage  # type: ignore[attr-defined]
-        )
+            n_prune_neurons_percentage
+        )  # type: ignore[attr-defined]
 
         # Enable pruning again, this time with structured pruning
         model_copy.module_.enable_pruning()  # type: ignore[attr-defined]

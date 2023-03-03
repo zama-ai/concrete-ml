@@ -1,17 +1,31 @@
 # Deployment
 
-In this folder we show a typical Concrete-ML deployment use-case.
-You can start from a trained model, or use `train.py` (or `train.sh` to use docker) to generate the model, and then deploy it to AWS.
-To run this example you will need some dependencies like boto3, to install them please run `python -m pip install -r deployment_requirements.txt`.
+In this folder we explain how to deploy CML models.
+We show-case how to do this on 3 examples:
 
-## Get started
+- Breast cancer classification using a simple XGBoost model
+- Sentiment analysis by running a XGBoost model on top of a Transformer model
+- CIFAR-10 classification using a VGG model split in two parts.
 
-This examples requires you to have the AWS CLI properly setup on your system.
-To do so please refer to [AWS documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html).
+You can run these example locally using Docker, or on AWS if you have your credentials set up.
 
-One can also run this example locally using Docker, or just by running the script.
+For all of them the workflow is the same:
+0\. Optional: Train the model
 
-1. First of all you'll need to serialize your model using `FHEModelDev` as explained in [the documentation](../../docs/advanced-topics/client_server.md).
-1. Once that's done you can launch the `docker_build_images.sh` script to build both client and server Docker images.
-1. Then for AWS deployment run the `deploy_to_aws.py` script. This will create an AWS instance running a FastApi server serving the model. A public IP will be prompted, keep it to use it for the client.
-1. To run the client use the `client.sh` script to run the client Docker image. Then launch `URL=http://<public_ip>:5000 python client.py` to launch the inference.
+1. Compile the model to a FHE circuit
+1. Deploy to AWS, Docker or localhost
+1. Run the inference using the client (locally or in Docker)
+
+The script to deploy the model compiled to a FHE circuit is the same for all. The main difference between them is the client. Each use-case needs its own client.
+
+<!-- 
+Needed while 1.x Docker image hasn't been released yet
+FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3231
+-->
+
+WARNING: Before running these examples you will need to build a Docker image with the current version of the repository.
+To do so run the following command from the root of the repository (you will need Poetry that is a development dependency, please refer to the [adequate documentation](../../docs/developer-guide/project_setup.md)):
+
+```
+poetry build && mkdir pkg && cp dist/* pkg/ && make release_docker
+```

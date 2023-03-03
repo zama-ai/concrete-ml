@@ -59,6 +59,9 @@ env:
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+ 
 
 jobs:
   matrix-preparation:
@@ -303,6 +306,8 @@ jobs:
       IS_REF_BUILD: ${{ matrix.python_version == '3.8' }}
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
     steps:
       - name: Add masks
@@ -344,6 +349,8 @@ jobs:
         id: install-deps
         run: |
           ./script/make_utils/setup_os_deps.sh
+          mkdir -p ~/.aws
+          echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
           # Needed to include Python.h
           export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
 
@@ -631,6 +638,8 @@ jobs:
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Add masks
         run: |
@@ -661,6 +670,9 @@ jobs:
           SYSTEM_VERSION_COMPAT: 0
         run: |
           ./script/make_utils/setup_os_deps.sh
+
+          mkdir -p ~/.aws
+          echo "[default]\nregion=eu-west-3\noutput=json\n" >> ~/.aws/config
 
           which python3
           which pip3
@@ -987,7 +999,7 @@ jobs:
           echo "" >> "${SECRETS_FILE}"
           echo "SECRETS_FILE=${SECRETS_FILE}" >> "$GITHUB_ENV"
 
-      - name: Build concrete-ml Image
+      - name: Build Docker Concrete-ML Image
         if: ${{ success() && !cancelled() }}
         uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
         with:

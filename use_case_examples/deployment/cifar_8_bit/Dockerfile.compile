@@ -1,0 +1,14 @@
+FROM concrete-ml-release:latest
+WORKDIR /project
+# FIXME: to update once Concrete-ML 1.x is released
+# https://github.com/zama-ai/concrete-ml-internal/issues/3302
+RUN python -m pip install torchvision==0.13 --no-deps
+RUN python -m pip install requests
+COPY ./compile.py ./compile.py
+COPY ./encrypted_module.py ./encrypted_module.py
+COPY ./model.py ./model.py
+COPY ./clear_module.py ./clear_module.py
+COPY ./brevitas_utils.py ./brevitas_utils.py
+COPY ./constants.py ./constants.py
+COPY ./8_bit_model.pt ./8_bit_model.pt
+ENTRYPOINT python compile.py

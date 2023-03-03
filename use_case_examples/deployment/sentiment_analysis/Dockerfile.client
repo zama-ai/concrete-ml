@@ -1,0 +1,8 @@
+FROM concrete-ml-release:latest
+WORKDIR /project
+COPY client.py .
+COPY utils.py .
+COPY client_requirements.txt .
+COPY ./hf_cache ./hf_cache
+RUN python -m pip install -r client_requirements.txt
+ENTRYPOINT /bin/bash

@@ -1,0 +1,4 @@
+FROM concrete-ml-release:latest
+WORKDIR /project
+COPY ./train.py ./train.py
+ENTRYPOINT python train.py

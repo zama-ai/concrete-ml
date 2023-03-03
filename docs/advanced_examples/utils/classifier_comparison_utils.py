@@ -118,13 +118,11 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             sklearn_y_pred = sklearn_model.predict(X_test)
 
             # Compile the Concrete-ML model
-            circuit = concrete_model.compile(
-                X_train
-            )
+            circuit = concrete_model.compile(X_train)
 
             # If the prediction are done in FHE, generate the key
             if not ALWAYS_USE_SIM:
-                
+
                 if verbose:
                     print(
                         "Generating a key for a "
