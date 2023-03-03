@@ -8,7 +8,7 @@ from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
+from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
 from concrete.ml.torch.compile import compile_torch_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
@@ -28,6 +28,19 @@ INPUT_OUTPUT_FEATURE = [5, 10]
 )
 def test_config_sklearn(model_class, parameters, kwargs, load_data):
     """Testing with p_error and global_p_error configs with sklearn models."""
+
+    # This problem is being investigated
+    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1856
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3114
+    if (
+        "global_p_error" in kwargs
+        and kwargs["global_p_error"] == 0.036
+        and "XGBClassifier" in get_model_name(model_class)
+    ):
+        pytest.skip(
+            "Skipping while issue https://github.com/zama-ai/concrete-numpy-internal/issues/1856 "
+            "is being investigated"
+        )
 
     x, y = load_data(model_class, **parameters)
 
