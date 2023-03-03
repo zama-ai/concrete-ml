@@ -1009,7 +1009,7 @@ def test_predict_correctness(
                     x,
                     default_configuration,
                     use_virtual_lib=use_virtual_lib,
-                    show_mlir=verbose,
+                    show_mlir=verbose and (n_bits <= 8),
                 )
 
                 check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)

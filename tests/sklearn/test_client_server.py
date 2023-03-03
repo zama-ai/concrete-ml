@@ -100,7 +100,7 @@ def test_client_server_sklearn(
         client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
 
     fhe_circuit = model.compile(
-        x_train, default_configuration_no_jit, **extra_params, show_mlir=True
+        x_train, default_configuration_no_jit, **extra_params, show_mlir=(n_bits <= 8)
     )
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
