@@ -72,6 +72,7 @@ jobs:
           VULN_OUT="$(mktemp --suffix=.json)"
           REPORT_OUT="$(mktemp --suffix=.txt)"
           echo "REPORT_OUT=${REPORT_OUT}" >> "$GITHUB_ENV"
+          poetry run pip-audit
           poetry run pip-audit -f json > "${VULN_OUT}"
           cat "${VULN_OUT}"
           set -e
