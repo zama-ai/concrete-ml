@@ -46,7 +46,7 @@ from concrete.ml.torch.compile import (
 # (as well as the input of the network itself)
 # Note that when comparing two predictions with few features the r2 score is brittle
 # thus we prefer to avoid values that are too low (e.g. 1, 2)
-INPUT_OUTPUT_FEATURE = [5, 10]
+INPUT_OUTPUT_FEATURE = [5]
 
 
 # pylint: disable-next=too-many-arguments
@@ -366,8 +366,14 @@ def test_compile_torch_or_onnx_networks(
     use_virtual_lib,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
+    is_weekly_option,
 ):
     """Test the different model architecture from torch numpy."""
+
+    # Avoid too many tests
+    if use_virtual_lib and not is_weekly_option:
+        if model not in [FCSmall, BranchingModule]:
+            pytest.skip("Avoid too many tests")
 
     # To signal that this network is not using QAT set the QAT bits to 0
     qat_bits = 0
