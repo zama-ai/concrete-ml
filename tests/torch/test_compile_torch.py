@@ -366,12 +366,8 @@ def test_compile_torch_or_onnx_networks(
     use_virtual_lib,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
-    is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
 
     # To signal that this network is not using QAT set the QAT bits to 0
     qat_bits = 0
@@ -410,15 +406,11 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     default_configuration,
     use_virtual_lib,
     is_onnx,
-    is_vl_only_option,
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
 
     # To signal that this network is not using QAT set the QAT bits to 0
     qat_bits = 0
@@ -496,12 +488,8 @@ def test_compile_torch_or_onnx_activations(
     use_virtual_lib,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
-    is_vl_only_option,
 ):
     """Test the different model architecture from torch numpy."""
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
 
     # To signal that this network is not using QAT set the QAT bits to 0
     qat_bits = 0
@@ -540,13 +528,9 @@ def test_compile_torch_qat(
     n_bits,
     default_configuration,
     use_virtual_lib,
-    is_vl_only_option,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
 
     model = partial(model, n_bits=n_bits)
 

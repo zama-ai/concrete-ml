@@ -118,13 +118,9 @@ def test_compile_keras_networks(
     input_output_feature,
     default_configuration,
     use_virtual_lib,
-    is_vl_only_option,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from Keras."""
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
 
     compile_and_test_keras(
         input_output_feature,

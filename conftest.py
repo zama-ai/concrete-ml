@@ -58,12 +58,6 @@ def pytest_addoption(parser):
         help="To do longer tests.",
     )
 
-    parser.addoption(
-        "--only_vl_tests",
-        action="store_true",
-        help="To run only VL tests (i.e., no FHE compilation nor execution).",
-    )
-
 
 # This is only for doctests where we currently cannot make use of fixtures
 original_compilation_config_init = Configuration.__init__
@@ -201,13 +195,6 @@ def is_weekly_option(request):
     """Say if we are in --weekly configuration."""
     is_weekly = request.config.getoption("--weekly")
     return is_weekly
-
-
-@pytest.fixture
-def is_vl_only_option(request):
-    """Say if we are in --only_vl_tests configuration."""
-    only_vl_tests = request.config.getoption("--only_vl_tests")
-    return only_vl_tests
 
 
 # Method is not ideal as some MLIR can contain TLUs but not the associated graph

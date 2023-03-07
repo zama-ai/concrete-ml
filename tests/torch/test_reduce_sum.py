@@ -56,17 +56,12 @@ def test_sum(
     has_tlu,
     data_generator,
     default_configuration,
-    is_vl_only_option,
     check_circuit_has_no_tlu,
     check_circuit_precision,
     check_r2_score,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Tests ReduceSum ONNX operator on a torch model."""
-
-    if not use_virtual_lib and is_vl_only_option:
-        print("Warning, skipping non VL tests")
-        return
 
     # Create a Torch module that sums the elements of an array
     # We also need to transform the dim parameter as Torch doesn't handle its value to be None
