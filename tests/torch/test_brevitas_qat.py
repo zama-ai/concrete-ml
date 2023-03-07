@@ -119,9 +119,9 @@ def test_brevitas_tinymnist_cnn(
 
                 # Execute either in FHE (compiled or VL) or just in quantized
                 if use_fhe:
-                    output = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
+                    output = quantized_module.fhe_circuit.encrypt_run_decrypt(x_q)
                 elif use_vl:
-                    output = quantized_module.forward_fhe.simulate(x_q)
+                    output = quantized_module.fhe_circuit.simulate(x_q)
                 else:
                     output = quantized_module.forward(x_q)
 

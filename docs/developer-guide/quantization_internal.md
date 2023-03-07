@@ -54,7 +54,7 @@ print("q_A.quantizer.zero_point = ", q_A.quantizer.zero_point)
 # q_A.quantizer.zero_point =  0
 ```
 
-In the following example, showing the de-quantization of model outputs, the `QuantizedArray` class is used in a different way. Here it uses pre-quantized integer values and has the `scale` and `zero-point` set explicitly. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the `forward_fhe.encrypt_run_decrypt(..)` call.
+In the following example, showing the de-quantization of model outputs, the `QuantizedArray` class is used in a different way. Here it uses pre-quantized integer values and has the `scale` and `zero-point` set explicitly. Once the `QuantizedArray` is constructed, calling `dequant()` will compute the floating point values corresponding to the integer values `qvalues`, which are the output of the `fhe_circuit.encrypt_run_decrypt(..)` call.
 
 <!--pytest-codeblocks:cont-->
 

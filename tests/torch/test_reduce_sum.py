@@ -108,9 +108,9 @@ def test_sum(
 
         # Execute the sum in FHE/VL over the sample
         q_result_ = (
-            quantized_numpy_module.forward_fhe.simulate(*q_input)[0]
+            quantized_numpy_module.fhe_circuit.simulate(*q_input)[0]
             if use_virtual_lib
-            else quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*q_input)[0]
+            else quantized_numpy_module.fhe_circuit.encrypt_run_decrypt(*q_input)[0]
         )
         q_result.append(q_result_)
 

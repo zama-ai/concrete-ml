@@ -291,11 +291,11 @@ def accuracy_test_rounding(
 
         # encrypt, run, and decrypt with different precision modes
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-        q_result = quantized_numpy_module.forward_fhe.simulate(*q_x)
-        q_result_high_precision = quantized_numpy_module_round_high_precision.forward_fhe.simulate(
+        q_result = quantized_numpy_module.fhe_circuit.simulate(*q_x)
+        q_result_high_precision = quantized_numpy_module_round_high_precision.fhe_circuit.simulate(
             *q_x
         )
-        q_result_low_precision = quantized_numpy_module_round_low_precision.forward_fhe.simulate(
+        q_result_low_precision = quantized_numpy_module_round_low_precision.fhe_circuit.simulate(
             *q_x
         )
 
@@ -707,7 +707,7 @@ def test_pretrained_mnist_qat(
         # e.g. if qtest is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
         q_x = tuple(q[[i]] for q in qtest)
-        q_result = quantized_numpy_module.forward_fhe.simulate(*q_x)
+        q_result = quantized_numpy_module.fhe_circuit.simulate(*q_x)
         result = quantized_numpy_module.dequantize_output(q_result)
         result = numpy.argmax(result)
         results.append(result)
@@ -740,7 +740,7 @@ def test_pretrained_mnist_qat(
     # ops that form a quantizer. Thus it has input TLUs. But it should not have output TLUs
     check_graph_output_has_no_tlu(quantized_numpy_module.fhe_circuit.graph)
 
-    assert quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width() <= 8
+    assert quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() <= 8
 
 
 def test_qat_import_bits_check(default_configuration):

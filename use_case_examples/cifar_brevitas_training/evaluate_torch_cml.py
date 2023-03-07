@@ -17,7 +17,7 @@ def cml_inference(quantized_numpy_module, x_numpy):
     predictions = np.zeros(shape=(x_numpy.shape[0], 10))
     for idx, x in enumerate(x_numpy):
         x_q = np.expand_dims(x, 0)
-        circuit_prediction = quantized_numpy_module.forward_fhe.simulate(x_q)
+        circuit_prediction = quantized_numpy_module.fhe_circuit.simulate(x_q)
         predictions[idx] = circuit_prediction
     return predictions
 

@@ -217,7 +217,7 @@ Retrieving the bit-width of the circuit is then simply:
 <!--pytest-codeblocks:cont-->
 
 ```python
-print(quantized_numpy_module.forward_fhe.graph.maximum_integer_bit_width())
+print(quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width())
 ```
 
 Decreasing the number of bits and the number of PBS applications induces large reductions in the computation time of the compiled circuit.

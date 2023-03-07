@@ -76,7 +76,7 @@ Moreover, the maximum accumulator bit-width is determined as follows:
 <!--pytest-codeblocks:skip-->	
 
 ```python
-    bit_width = clf.quantized_module_.forward_fhe.graph.maximum_integer_bit_width()
+    bit_width = clf.quantized_module_.fhe_circuit.graph.maximum_integer_bit_width()
 ```
 
 ## A simple Concrete-Numpy example

@@ -77,7 +77,7 @@ qtest = quantized_numpy_module.quantize_input(x_test)
 
 y_clear = quantized_numpy_module(*qtest)
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3090
-y_fhe = quantized_numpy_module.forward_fhe.encrypt_run_decrypt(*qtest)
+y_fhe = quantized_numpy_module.fhe_circuit.encrypt_run_decrypt(*qtest)
 
 print("Execution in clear: ", y_clear)
 print("Execution in FHE:   ", y_fhe)

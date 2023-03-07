@@ -76,7 +76,7 @@ class QuantizedModule:
     quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
     input_quantizers: List[UniformQuantizer]
     output_quantizers: List[UniformQuantizer]
-    forward_fhe: Union[None, Circuit]
+    fhe_circuit: Union[None, Circuit]
 
     def __init__(
         self,
@@ -87,7 +87,7 @@ class QuantizedModule:
         # Set base attributes for API consistency. This could be avoided if an abstract base class
         # is created for both Concrete-ML models and QuantizedModule
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
-        self.forward_fhe = None
+        self.fhe_circuit = None
         self.input_quantizers = []
         self.output_quantizers = []
         self._onnx_model = None
@@ -126,24 +126,6 @@ class QuantizedModule:
                 "The quantized module is not compiled. Please run compile(...) first before "
                 "executing it in FHE."
             )
-
-    @property
-    def fhe_circuit(self) -> Circuit:
-        """Get the FHE circuit.
-
-        Returns:
-            Circuit: the FHE circuit
-        """
-        return self.forward_fhe
-
-    @fhe_circuit.setter
-    def fhe_circuit(self, fhe_circuit: Circuit):
-        """Set the FHE circuit.
-
-        Args:
-            fhe_circuit (Circuit): the FHE circuit
-        """
-        self.forward_fhe = fhe_circuit
 
     @property
     def post_processing_params(self) -> Dict[str, Any]:
@@ -335,11 +317,21 @@ class QuantizedModule:
             (numpy.ndarray): Predictions of the quantized model
 
         """
+
+        assert_true(
+            self.fhe_circuit is not None,
+            "The quantized module is not compiled. Please run compile(...) first before "
+            "executing it in FHE.",
+        )
+
         results_cnp_circuit_list = []
         for i in range(qvalues[0].shape[0]):
 
             # Extract the i th example from every element in the tuple qvalues
             q_value = tuple(qvalues[input][[i]] for input in range(len(qvalues)))
+
+            # For mypy
+            assert self.fhe_circuit is not None
 
             # Run FHE or simulation based on the simulate argument
             q_result = (
@@ -503,7 +495,7 @@ class QuantizedModule:
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
-        self.forward_fhe = compiler.compile(
+        self.fhe_circuit = compiler.compile(
             inputset,
             configuration=configuration,
             artifacts=compilation_artifacts,
@@ -514,7 +506,7 @@ class QuantizedModule:
             verbose=verbose_compilation,
         )
 
-        return self.forward_fhe
+        return self.fhe_circuit
 
     def bitwidth_and_range_report(
         self,
@@ -528,7 +520,7 @@ class QuantizedModule:
                 the bitwidth gives the number of bits needed to represent this range.
         """
 
-        if self.forward_fhe is None:
+        if self.fhe_circuit is None:
             return None
 
         result: Dict[str, Dict[str, Union[Tuple[int, ...], int]]] = {}
@@ -539,8 +531,8 @@ class QuantizedModule:
             # ex: abc, abc.cde, abc.cde.fgh
             # so first craft a regex to match all such tags.
             pattern = re.compile(re.escape(op_inst.op_instance_name) + "(\\..*)?")
-            value_range = self.forward_fhe.graph.integer_range(pattern)
-            bitwidth = self.forward_fhe.graph.maximum_integer_bit_width(pattern)
+            value_range = self.fhe_circuit.graph.integer_range(pattern)
+            bitwidth = self.fhe_circuit.graph.maximum_integer_bit_width(pattern)
 
             # Only store the range and bit-width if there are valid ones,
             # as some ops (fusable ones) do not have tags

@@ -77,7 +77,7 @@ for i in range(x_test_q.shape[0]):
     x_q = np.expand_dims(x_test_q[i, :], 0)
 
     # Execute the model in FHE
-    out_fhe = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
+    out_fhe = quantized_module.fhe_circuit.encrypt_run_decrypt(x_q)
 
     # Dequantization is done in the clear
     output = quantized_module.dequantize_output(out_fhe)

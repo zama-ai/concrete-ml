@@ -423,7 +423,7 @@ def train_and_test_regressor(
 
         # Compile and report compilation time
         t_start = time.time()
-        forward_fhe = concrete_regressor.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
+        fhe_circuit = concrete_regressor.compile(x_test_comp, configuration=BENCHMARK_CONFIGURATION)
 
         # Dump MLIR
         if local_args.mlir_only:
@@ -433,7 +433,7 @@ def train_and_test_regressor(
             )
             mlirs_dir.mkdir(parents=True, exist_ok=True)
             with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
-                file.write(forward_fhe.mlir)
+                file.write(fhe_circuit.mlir)
             return
 
         duration = time.time() - t_start
@@ -445,7 +445,7 @@ def train_and_test_regressor(
             print("Key generation")
 
         t_start = time.time()
-        forward_fhe.keygen()
+        fhe_circuit.keygen()
         duration = time.time() - t_start
         progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
 
@@ -594,7 +594,7 @@ def train_and_test_classifier(
 
         # Compile and report compilation time
         t_start = time.time()
-        forward_fhe = concrete_classifier.compile(
+        fhe_circuit = concrete_classifier.compile(
             x_test_comp, configuration=BENCHMARK_CONFIGURATION
         )
 
@@ -606,7 +606,7 @@ def train_and_test_classifier(
             )
             mlirs_dir.mkdir(parents=True, exist_ok=True)
             with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
-                file.write(forward_fhe.mlir)
+                file.write(fhe_circuit.mlir)
             return
 
         duration = time.time() - t_start
@@ -618,7 +618,7 @@ def train_and_test_classifier(
             print("Key generation")
 
         t_start = time.time()
-        forward_fhe.keygen()
+        fhe_circuit.keygen()
         duration = time.time() - t_start
         progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
 

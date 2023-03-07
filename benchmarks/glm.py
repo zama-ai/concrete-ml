@@ -511,7 +511,7 @@ def main():
         ids_to_convert_in_seconds.append(fhe_compile_time_id)
 
         with progress.measure(id=fhe_compile_time_id, label="FHE Compile Time"):
-            forward_fhe = model_pca["regressor"].compile(  # pylint: disable=no-member
+            fhe_circuit = model_pca["regressor"].compile(  # pylint: disable=no-member
                 x_train_subset_pca,
                 use_virtual_lib=False,
                 configuration=BENCHMARK_CONFIGURATION,
@@ -528,7 +528,7 @@ def main():
                 )
                 mlirs_dir.mkdir(parents=True, exist_ok=True)
                 with open(mlirs_dir / f"{benchmark_name}.mlir", "w", encoding="utf-8") as file:
-                    file.write(forward_fhe.mlir)
+                    file.write(fhe_circuit.mlir)
                 return
 
         if args.verbose:
@@ -540,7 +540,7 @@ def main():
         ids_to_convert_in_seconds.append(fhe_keygen_time_id)
 
         with progress.measure(id=fhe_keygen_time_id, label="FHE Key Generation Time"):
-            forward_fhe.keygen()
+            fhe_circuit.keygen()
 
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current:.4f} seconds")

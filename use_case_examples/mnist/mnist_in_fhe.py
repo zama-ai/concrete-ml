@@ -116,7 +116,7 @@ def compile_and_test(
     )
 
     # Check max bit width
-    max_bit_width = q_module.forward_fhe.graph.maximum_integer_bit_width()
+    max_bit_width = q_module.fhe_circuit.graph.maximum_integer_bit_width()
 
     if max_bit_width > 8:
         raise Exception(
@@ -141,7 +141,7 @@ def compile_and_test(
 
     # Key generation
     if not use_virtual_lib:
-        q_module.forward_fhe.keygen()
+        q_module.fhe_circuit.keygen()
 
     correct_fhe = 0
     idx = 0
@@ -155,9 +155,9 @@ def compile_and_test(
         q_data = np.expand_dims(q_data, 0).astype(np.int64)
 
         prediction = (
-            q_module.forward_fhe.simulate(q_data)
+            q_module.fhe_circuit.simulate(q_data)
             if use_virtual_lib
-            else q_module.forward_fhe.encrypt_run_decrypt(q_data)
+            else q_module.fhe_circuit.encrypt_run_decrypt(q_data)
         )
         prediction = q_module.dequantize_output(prediction)
 

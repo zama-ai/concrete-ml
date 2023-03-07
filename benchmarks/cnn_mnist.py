@@ -374,7 +374,7 @@ def test_concrete(
     if args.mlir_only:
         # If called with a virtual circuit, we don't do anything
         if use_fhe:
-            print("MLIR:", quantized_module.forward_fhe.mlir)
+            print("MLIR:", quantized_module.fhe_circuit.mlir)
         return
 
     all_y_pred = np.zeros((len(test_loader)), dtype=np.int64)
@@ -382,7 +382,7 @@ def test_concrete(
 
     if use_fhe:
         t_start = time.time()
-        quantized_module.forward_fhe.keygen()
+        quantized_module.fhe_circuit.keygen()
         duration = time.time() - t_start
         progress.measure(id="fhe-keygen-time", label="FHE Key Generation Time", value=duration)
 
@@ -406,9 +406,9 @@ def test_concrete(
 
             # Execute either in FHE (compiled or VL) or just in quantized
             if use_fhe:
-                output = quantized_module.forward_fhe.encrypt_run_decrypt(x_q)
+                output = quantized_module.fhe_circuit.encrypt_run_decrypt(x_q)
             elif use_vl:
-                output = quantized_module.forward_fhe.simulate(x_q)
+                output = quantized_module.fhe_circuit.simulate(x_q)
             else:
                 # Here, that's with quantized module, but we could remove it, it will never be used
                 output = quantized_module.forward(x_q)
@@ -529,8 +529,8 @@ def test_net_mnist(args, net, x_train, x_test, y_test, test_dataloader, n_bits):
         configuration=BENCHMARK_CONFIGURATION,
     )
 
-    assert isinstance(q_module_vl.forward_fhe, Circuit)
-    vfhe_circuit = cast(Circuit, q_module_vl.forward_fhe)
+    assert isinstance(q_module_vl.fhe_circuit, Circuit)
+    vfhe_circuit = cast(Circuit, q_module_vl.fhe_circuit)
     # Despite casting and the assert, pylint still does not consider this a Circuit
     # pylint: disable=no-member
     print(f"Selected n_bits = {n_bits}")
