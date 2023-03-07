@@ -576,6 +576,12 @@ help:
 pip_audit:
 	poetry run pip-audit
 
+.PHONY: pip_audit_use_cases # Run pip-audit and check if there are known vulnerabilities in our use-cases
+pip_audit_use_cases:
+	@echo "Will study:"
+	@find ./use_case_examples -type f -name "*requirements.txt" -exec echo -r "{}" \;
+	@find ./use_case_examples -type f -name "*requirements.txt" -exec echo \; -exec echo "{}:" \; -exec poetry run pip-audit -r "{}" \;
+
 .PHONY: clean_local_git # Tell the user how to delete local git branches, except main
 clean_local_git:
 	@git fetch --all --prune
