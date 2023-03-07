@@ -422,7 +422,7 @@ class QuantizedModule:
         self,
         inputs: Union[Tuple[numpy.ndarray, ...], numpy.ndarray],
         configuration: Optional[Configuration] = None,
-        compilation_artifacts: Optional[DebugArtifacts] = None,
+        artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         use_virtual_lib: bool = False,
         p_error: Optional[float] = None,
@@ -436,7 +436,7 @@ class QuantizedModule:
                 cryptographic parameters.
             configuration (Optional[Configuration]): Options to use for compilation. Default
                 to None.
-            compilation_artifacts (Optional[DebugArtifacts]): Artifacts information about the
+            artifacts (Optional[DebugArtifacts]): Artifacts information about the
                 compilation process to store for debugging.
             show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
             use_virtual_lib (bool): Indicate if the module should be compiled using the Virtual
@@ -498,7 +498,7 @@ class QuantizedModule:
         self.fhe_circuit = compiler.compile(
             inputset,
             configuration=configuration,
-            artifacts=compilation_artifacts,
+            artifacts=artifacts,
             show_mlir=show_mlir,
             virtual=use_virtual_lib,
             p_error=p_error,

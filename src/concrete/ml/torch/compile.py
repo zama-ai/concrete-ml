@@ -52,7 +52,7 @@ def _compile_torch_or_onnx_model(
     torch_inputset: Dataset,
     import_qat: bool = False,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     use_virtual_lib: bool = False,
@@ -75,7 +75,7 @@ def _compile_torch_or_onnx_model(
             in its computation graph and that Concrete ML should not requantize it.
         configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (DebugArtifacts): Artifacts object to fill
+        artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
@@ -136,7 +136,7 @@ def _compile_torch_or_onnx_model(
     quantized_module.compile(
         inputset_as_numpy_tuple,
         configuration,
-        compilation_artifacts,
+        artifacts,
         show_mlir=show_mlir,
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
@@ -155,7 +155,7 @@ def compile_torch_model(
     torch_inputset: Dataset,
     import_qat: bool = False,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     use_virtual_lib: bool = False,
@@ -177,7 +177,7 @@ def compile_torch_model(
             trained using quantization aware training
         configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (DebugArtifacts): Artifacts object to fill
+        artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
@@ -199,7 +199,7 @@ def compile_torch_model(
         torch_inputset,
         import_qat,
         configuration=configuration,
-        compilation_artifacts=compilation_artifacts,
+        artifacts=artifacts,
         show_mlir=show_mlir,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
@@ -216,7 +216,7 @@ def compile_onnx_model(
     torch_inputset: Dataset,
     import_qat: bool = False,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     use_virtual_lib: bool = False,
@@ -238,7 +238,7 @@ def compile_onnx_model(
             in its computation graph and that Concrete ML should not requantize it.
         configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (DebugArtifacts): Artifacts object to fill
+        artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
@@ -268,7 +268,7 @@ def compile_onnx_model(
         torch_inputset,
         import_qat,
         configuration=configuration,
-        compilation_artifacts=compilation_artifacts,
+        artifacts=artifacts,
         show_mlir=show_mlir,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
@@ -285,7 +285,7 @@ def compile_brevitas_qat_model(
     torch_inputset: Dataset,
     n_bits: Optional[Union[int, dict]] = None,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
@@ -313,7 +313,7 @@ def compile_brevitas_qat_model(
             the 8-bit default or a single integer for both values.
         configuration (Configuration): Configuration object to use
             during compilation
-        compilation_artifacts (DebugArtifacts): Artifacts object to fill
+        artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
@@ -406,7 +406,7 @@ def compile_brevitas_qat_model(
         torch_inputset,
         n_bits=n_bits,
         import_qat=True,
-        compilation_artifacts=compilation_artifacts,
+        artifacts=artifacts,
         show_mlir=show_mlir,
         use_virtual_lib=use_virtual_lib,
         rounding_threshold_bits=rounding_threshold_bits,

@@ -117,12 +117,7 @@ def test_quantized_cnn_compilation(
     default_configuration,
     check_graph_input_has_no_tlu,
     use_virtual_lib,
-<<<<<<< HEAD
-    verbose_compilation,
-=======
-    is_vl_only_option,
     verbose,
->>>>>>> 450861b (chore: verbose_compilation is renamed verbose)
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a convolutional neural network compilation for FHE inference."""
