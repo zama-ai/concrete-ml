@@ -50,7 +50,7 @@ Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 |               Windows                |         Yes         |   Coming soon    |
 |     Windows Subsystem for Linux      |         Yes         |       Yes        |
 |            macOS (Intel)             |         Yes         |       Yes        |
-| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |   Coming soon    |
+| macOS (Apple Silicon, ie M1, M2 etc) |     Coming soon     |   Coming soon    |
 
 Note: Concrete-ML only supports Python `3.7` (linux only), `3.8` and `3.9`.
 
