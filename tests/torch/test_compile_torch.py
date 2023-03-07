@@ -61,7 +61,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     check_is_good_execution_for_cml_vs_circuit,
     dump_onnx=False,
     expected_onnx_str=None,
-    verbose_compilation=False,
+    verbose=False,
 ) -> QuantizedModule:
     """Test the different model architecture from torch numpy."""
 
@@ -122,7 +122,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 configuration=default_configuration,
                 n_bits=n_bits,
                 use_virtual_lib=use_virtual_lib,
-                verbose_compilation=verbose_compilation,
+                verbose=verbose,
             )
         else:
             quantized_numpy_module = compile_torch_model(
@@ -132,7 +132,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 configuration=default_configuration,
                 n_bits=n_bits,
                 use_virtual_lib=use_virtual_lib,
-                verbose_compilation=verbose_compilation,
+                verbose=verbose,
             )
 
         # Create test data from the same distribution and quantize using
@@ -173,7 +173,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             configuration=default_configuration,
             n_bits=n_bits,
             use_virtual_lib=use_virtual_lib,
-            verbose_compilation=verbose_compilation,
+            verbose=verbose,
         )
 
         accuracy_test_rounding(
@@ -184,7 +184,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             configuration=default_configuration,
             n_bits=n_bits,
             use_virtual_lib=use_virtual_lib,
-            verbose_compilation=verbose_compilation,
+            verbose=verbose,
             input_output_feature=input_output_feature,
             num_inputs=num_inputs,
             check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
@@ -210,7 +210,7 @@ def accuracy_test_rounding(
     configuration,
     n_bits,
     use_virtual_lib,
-    verbose_compilation,
+    verbose,
     input_output_feature,
     num_inputs,
     check_is_good_execution_for_cml_vs_circuit,
@@ -243,7 +243,7 @@ def accuracy_test_rounding(
         configuration=configuration,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
         rounding_threshold_bits=quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width()
         - 1,
     )
@@ -256,7 +256,7 @@ def accuracy_test_rounding(
         configuration=configuration,
         n_bits=n_bits,
         use_virtual_lib=use_virtual_lib,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
         rounding_threshold_bits=2,
     )
 
@@ -387,7 +387,7 @@ def test_compile_torch_or_onnx_networks(
         use_virtual_lib,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
-        verbose_compilation=False,
+        verbose=False,
     )
 
 
@@ -430,7 +430,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         use_virtual_lib,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
-        verbose_compilation=False,
+        verbose=False,
     )
 
     check_graph_input_has_no_tlu(q_module.fhe_circuit.graph)
@@ -509,7 +509,7 @@ def test_compile_torch_or_onnx_activations(
         use_virtual_lib,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
-        verbose_compilation=False,
+        verbose=False,
     )
 
 
@@ -553,7 +553,7 @@ def test_compile_torch_qat(
         use_virtual_lib,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
-        verbose_compilation=False,
+        verbose=False,
     )
 
 
@@ -626,16 +626,16 @@ def test_dump_torch_network(
         check_is_good_execution_for_cml_vs_circuit,
         dump_onnx=True,
         expected_onnx_str=expected_onnx_str,
-        verbose_compilation=False,
+        verbose=False,
     )
 
 
-@pytest.mark.parametrize("verbose_compilation", [True, False])
+@pytest.mark.parametrize("verbose", [True, False])
 # pylint: disable-next=too-many-locals
 def test_pretrained_mnist_qat(
     default_configuration,
     check_accuracy,
-    verbose_compilation,
+    verbose,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
 ):
@@ -686,7 +686,7 @@ def test_pretrained_mnist_qat(
         configuration=default_configuration,
         n_bits=n_bits,
         use_virtual_lib=True,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
     num_inputs = 1
@@ -739,7 +739,7 @@ def test_pretrained_mnist_qat(
         configuration=default_configuration,
         n_bits=n_bits,
         use_virtual_lib=False,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
     # As this is a custom QAT network, the input goes through multiple univariate

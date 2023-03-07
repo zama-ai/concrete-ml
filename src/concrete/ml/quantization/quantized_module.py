@@ -427,7 +427,7 @@ class QuantizedModule:
         use_virtual_lib: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
-        verbose_compilation: bool = False,
+        verbose: bool = False,
     ) -> Circuit:
         """Compile the module's forward function.
 
@@ -450,7 +450,7 @@ class QuantizedModule:
                 is not supported during Virtual Library simulation, meaning the probability is
                 currently set to 0 if use_virtual_lib is True. Default to None, which sets this
                 error to a default value.
-            verbose_compilation (bool): Indicate if compilation information should be printed
+            verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
 
         Returns:
@@ -503,7 +503,7 @@ class QuantizedModule:
             virtual=use_virtual_lib,
             p_error=p_error,
             global_p_error=global_p_error,
-            verbose=verbose_compilation,
+            verbose=verbose,
         )
 
         return self.fhe_circuit

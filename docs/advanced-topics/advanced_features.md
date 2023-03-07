@@ -127,7 +127,7 @@ An example of such implementation is available in [evaluate_torch_cml.py](https:
 
 ## Seeing compilation information
 
-By using `verbose_compilation = True` and `show_mlir = True` during compilation, the user receives a lot of information from the compiler and its inner optimizer. These options are, however, mainly meant for power-users, so they may be hard to understand.
+By using `verbose = True` and `show_mlir = True` during compilation, the user receives a lot of information from the compiler and its inner optimizer. These options are, however, mainly meant for power-users, so they may be hard to understand.
 
 ```python
 from concrete.ml.sklearn import DecisionTreeClassifier
@@ -142,7 +142,7 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 clf = DecisionTreeClassifier(random_state=42)
 clf.fit(X_train, y_train)
 
-clf.compile(X_train, verbose_compilation=True, show_mlir=True, p_error=0.033)
+clf.compile(X_train, verbose=True, show_mlir=True, p_error=0.033)
 ```
 
 Here, one will see:

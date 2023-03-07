@@ -44,7 +44,7 @@ INPUT_OUTPUT_FEATURE = [1, 2, 3]
 )
 @pytest.mark.parametrize("n_bits", [2, 17, 25])
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-@pytest.mark.parametrize("verbose_compilation", [True, False])
+@pytest.mark.parametrize("verbose", [True, False])
 def test_quantized_module_compilation(
     input_output_feature,
     model,
@@ -53,7 +53,7 @@ def test_quantized_module_compilation(
     n_bits,
     use_virtual_lib,
     check_graph_input_has_no_tlu,
-    verbose_compilation,
+    verbose,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a neural network compilation for FHE inference."""
@@ -85,7 +85,7 @@ def test_quantized_module_compilation(
         numpy_input,
         default_configuration,
         use_virtual_lib=use_virtual_lib,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
     check_is_good_execution_for_cml_vs_circuit(
@@ -109,7 +109,7 @@ def test_quantized_module_compilation(
     ],
 )
 @pytest.mark.parametrize("use_virtual_lib", [True, False])
-@pytest.mark.parametrize("verbose_compilation", [True, False])
+@pytest.mark.parametrize("verbose", [True, False])
 def test_quantized_cnn_compilation(
     input_output_feature,
     model,
@@ -117,7 +117,12 @@ def test_quantized_cnn_compilation(
     default_configuration,
     check_graph_input_has_no_tlu,
     use_virtual_lib,
+<<<<<<< HEAD
     verbose_compilation,
+=======
+    is_vl_only_option,
+    verbose,
+>>>>>>> 450861b (chore: verbose_compilation is renamed verbose)
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a convolutional neural network compilation for FHE inference."""
@@ -148,7 +153,7 @@ def test_quantized_cnn_compilation(
         numpy_input,
         default_configuration,
         use_virtual_lib=use_virtual_lib,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
     check_is_good_execution_for_cml_vs_circuit(
         numpy_input, quantized_model, simulate=use_virtual_lib

@@ -53,10 +53,10 @@ def test_config_sklearn(model_class, parameters, kwargs, load_data):
 
     if kwargs.get("p_error", None) is not None and kwargs.get("global_p_error", None) is not None:
         with pytest.raises(ValueError) as excinfo:
-            model.compile(x, verbose_compilation=True, **kwargs)
+            model.compile(x, verbose=True, **kwargs)
         assert "Please only set one of (p_error, global_p_error) values" in str(excinfo.value)
     else:
-        model.compile(x, verbose_compilation=True, **kwargs)
+        model.compile(x, verbose=True, **kwargs)
 
     # We still need to check that we have the expected probabilities
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2206
@@ -104,7 +104,7 @@ def test_config_torch(model, kwargs):
                 inputset,
                 n_bits={"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2},
                 use_virtual_lib=False,
-                verbose_compilation=True,
+                verbose=True,
                 **kwargs
             )
 
@@ -115,7 +115,7 @@ def test_config_torch(model, kwargs):
             inputset,
             n_bits={"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2},
             use_virtual_lib=False,
-            verbose_compilation=True,
+            verbose=True,
             **kwargs
         )
 

@@ -59,7 +59,7 @@ def _compile_torch_or_onnx_model(
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose_compilation: bool = False,
+    verbose: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into a FHE equivalent.
 
@@ -87,7 +87,7 @@ def _compile_torch_or_onnx_model(
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
             by the VL, i.e., taken as 0
-        verbose_compilation (bool): whether to show compilation information
+        verbose (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -141,7 +141,7 @@ def _compile_torch_or_onnx_model(
         use_virtual_lib=use_virtual_lib,
         p_error=p_error,
         global_p_error=global_p_error,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
     quantized_module.onnx_model = onnx_model
@@ -162,7 +162,7 @@ def compile_torch_model(
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose_compilation: bool = False,
+    verbose: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into a FHE equivalent.
 
@@ -189,7 +189,7 @@ def compile_torch_model(
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
             by the VL, i.e., taken as 0
-        verbose_compilation (bool): whether to show compilation information
+        verbose (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -206,7 +206,7 @@ def compile_torch_model(
         rounding_threshold_bits=rounding_threshold_bits,
         p_error=p_error,
         global_p_error=global_p_error,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
 
@@ -223,7 +223,7 @@ def compile_onnx_model(
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose_compilation: bool = False,
+    verbose: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into a FHE equivalent.
 
@@ -250,7 +250,7 @@ def compile_onnx_model(
         p_error (Optional[float]): probability of error of a single PBS
         global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
             by the VL, i.e., taken as 0
-        verbose_compilation (bool): whether to show compilation information
+        verbose (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -275,7 +275,7 @@ def compile_onnx_model(
         rounding_threshold_bits=rounding_threshold_bits,
         p_error=p_error,
         global_p_error=global_p_error,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
 
@@ -292,7 +292,7 @@ def compile_brevitas_qat_model(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     output_onnx_file: Union[Path, str] = None,
-    verbose_compilation: bool = False,
+    verbose: bool = False,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
@@ -326,7 +326,7 @@ def compile_brevitas_qat_model(
             by the VL, i.e., taken as 0
         output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
             is generated
-        verbose_compilation (bool): whether to show compilation information
+        verbose (bool): whether to show compilation information
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -413,7 +413,7 @@ def compile_brevitas_qat_model(
         configuration=configuration,
         p_error=p_error,
         global_p_error=global_p_error,
-        verbose_compilation=verbose_compilation,
+        verbose=verbose,
     )
 
     # Remove the tempfile if we used one
