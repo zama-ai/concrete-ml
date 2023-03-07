@@ -148,8 +148,8 @@ To cite Concrete-ML, notably in academic papers, please use the following entry,
 ```text
 @Misc{ConcreteML,
   title={Concrete-{ML}: a Privacy-Preserving Machine Learning Library using Fully Homomorphic Encryption for Data Scientists},
-  author={Arthur Meyre and Benoit Chevallier-Mames and Jordan Frery and Andrei Stoian and Roman Bredehoft and Luis Montero and Celia Kherfallah},
-  year={2022-*},
+  author={Arthur Meyre and Benoit {Chevallier-Mames} and Jordan Frery and Andrei Stoian and Roman Bredehoft and Luis Montero and Celia Kherfallah},
+  year={2022},
   note={\url{https://github.com/zama-ai/concrete-ml}},
 }
 ```
