@@ -94,10 +94,9 @@ def test_brevitas_tinymnist_cnn(
         # Retrain while training is bad
         trained_ok = torch_correct > 0
 
-    def test_with_concrete(quantized_module, test_loader, use_fhe, use_vl):
+    def test_with_concrete(quantized_module, test_loader, use_vl):
         """Test a neural network that is quantized and compiled with Concrete-ML."""
 
-        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int64)
         all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
 
         # Iterate over the test batches and accumulate predictions and ground truth
@@ -112,31 +111,19 @@ def test_brevitas_tinymnist_cnn(
             endidx = idx + target.shape[0]
             all_targets[idx:endidx] = target.numpy()
 
-            # Iterate over single inputs
-            for i in range(x_test_q.shape[0]):
-                # Inputs must have size (N, C, H, W), we add the batch dimension with N=1
-                x_q = numpy.expand_dims(x_test_q[i, :], 0)
+            # Dequantize the integer predictions
+            check_is_good_execution_for_cml_vs_circuit(
+                x_test_q, model_function=quantized_module, simulate=use_vl
+            )
 
-                # Execute either in FHE (compiled or VL) or just in quantized
-                if use_fhe:
-                    output = quantized_module.fhe_circuit.encrypt_run_decrypt(x_q)
-                elif use_vl:
-                    output = quantized_module.fhe_circuit.simulate(x_q)
-                else:
-                    output = quantized_module.forward(x_q)
+            y_pred = quantized_module.forward_in_fhe(x_test_q, simulate=use_vl)
+            y_pred = quantized_module.dequantize_output(y_pred)
 
-                # Dequantize the integer predictions
-                output = quantized_module.dequantize_output(output)
-                check_is_good_execution_for_cml_vs_circuit(
-                    x_q, model_function=quantized_module, simulate=use_vl
-                )
-                # Take the predicted class from the outputs and store it
-                y_pred = numpy.argmax(output, 1)
-                all_y_pred[idx] = y_pred
-                idx += 1
+            # Take the predicted class from the outputs and store it
+            y_pred = numpy.argmax(y_pred, axis=1)
 
         # Compute and report results
-        n_correct = numpy.sum(all_targets == all_y_pred)
+        n_correct = numpy.sum(all_targets == y_pred)
         return n_correct
 
     net.eval()
@@ -151,7 +138,6 @@ def test_brevitas_tinymnist_cnn(
     vl_correct = test_with_concrete(
         q_module_vl,
         test_dataloader,
-        use_fhe=False,
         use_vl=True,
     )
 
