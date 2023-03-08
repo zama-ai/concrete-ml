@@ -66,18 +66,17 @@ onnx_model = onnx.load("tmp.model.onnx")
 onnx.checker.check_model(onnx_model)
 
 # Compile
-quantized_numpy_module = compile_onnx_model(
+quantized_module = compile_onnx_model(
     onnx_model, input_set, n_bits=2
 )
 
 # Create test data from the same distribution and quantize using
 # learned quantization parameters during compilation
 x_test = tuple(numpy.random.uniform(-100, 100, size=(1, *input_shape)) for _ in range(num_inputs))
-qtest = quantized_numpy_module.quantize_input(x_test)
+q_x_test = quantized_module.quantize_input(*x_test)
 
-y_clear = quantized_numpy_module(*qtest)
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3090
-y_fhe = quantized_numpy_module.fhe_circuit.encrypt_run_decrypt(*qtest)
+y_clear = quantized_module.forward(q_x_test)
+y_fhe = quantized_module.forward_in_fhe(q_x_test)
 
 print("Execution in clear: ", y_clear)
 print("Execution in FHE:   ", y_fhe)
