@@ -16,17 +16,26 @@ on:
           - "long"
           - "short"
       classification:
-        description: Whether to launch classification benchmarks or not
+        description: Launch classification benchmarks
         default: true
         type: boolean
       regression:
-        description: Whether to launch regression benchmarks or not
+        description: Launch regression benchmarks
         default: true
         type: boolean
       glm:
-        description: Whether to launch glm benchmarks or not
+        description: Launch glm benchmarks
         default: true
         type: boolean
+      deep-learning:
+        description: Launch deep learning benchmarks
+        default: true
+        type: boolean 
+      fhe-samples:
+        description: Number of FHE samples
+        required: false
+        type: number
+
   # Add recurrent launching
   # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1851
 
@@ -93,7 +102,7 @@ jobs:
         id: prepare-commands
         run: |
           source .venv/bin/activate
-          python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }} > commands.json
+          python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }} --deep_learning ${{ github.event.inputs.deep-learning }} --fhe_samples ${{ github.event.inputs.fhe-samples }} > commands.json
           # Needs to be done before populating COMMANDS otherwise it will crash
           LENGTH=$(jq length commands.json)
           COMMANDS=$(<commands.json)

@@ -112,7 +112,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           fetch-depth: 1
-          lfs: false
+          lfs: true
           path: cml_to_run
 
       - name: Sanitize Python commands
@@ -123,11 +123,12 @@ jobs:
           echo USER_INPUTS=$(python3 script/actions_utils/escape_quotes.py "$USER_INPUTS") >> "$GITHUB_ENV"
 
       # Install specific version
+      # Also pull LFS files (for example, for pulling the pre-trained deep learning model weights)
       - name: Checkout CML to install
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           fetch-depth: 1
-          lfs: false
+          lfs: true
           ref: ${{ fromJSON(env.USER_INPUTS).git-ref }}
           path: cml_to_install
 

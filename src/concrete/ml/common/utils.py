@@ -177,7 +177,7 @@ def check_there_is_no_p_error_options_in_configuration(configuration):
 
 
 def get_model_class(model_class):
-    """Return the class of the model, which can be a partial() instance.
+    """Return the class of the model (instantiated or not), which can be a partial() instance.
 
     Args:
         model_class: The model, which can be a partial() instance.
@@ -186,9 +186,15 @@ def get_model_class(model_class):
         The model's class.
 
     """
+    # If model_class is a functool.partial instance
     if isinstance(model_class, partial):
         return model_class.func
 
+    # If model_class is a instantiated model
+    if not isinstance(model_class, type) and hasattr(model_class, "__class__"):
+        return model_class.__class__
+
+    # Else, it is already a (not instantiated) model class
     return model_class
 
 

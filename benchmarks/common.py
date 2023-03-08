@@ -103,7 +103,7 @@ GLMS_STRING_TO_CLASS = {c.__name__: c for c in GLMS}
 
 MODELS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS + CLASSIFIERS + GLMS}
 
-NN_BENCHMARK_PARMAMS = (
+NN_BENCHMARK_CONFIGS = (
     [
         # A FHE compatible config
         {
@@ -153,14 +153,17 @@ NN_BENCHMARK_PARMAMS = (
     ]
 )
 
-LINEAR_REGRESSION_ARGUMENTS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
+LINEAR_REGRESSION_CONFIGS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
+
+DEEP_LEARNING_CONFIGS = [{"n_bits": 5}]
+
 
 # Backward compatibility
 if ("LinearRegression" in REGRESSORS) and (
     "use_sum_workaround"
     not in inspect.signature(REGRESSORS_STRING_TO_CLASS["LinearRegression"]).parameters
 ):
-    LINEAR_REGRESSION_ARGUMENTS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
+    LINEAR_REGRESSION_CONFIGS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
 
 BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
     "XGBClassifier": [
@@ -197,12 +200,16 @@ BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
     "LinearSVC": [{"n_bits": 2}],
     "LinearSVR": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "LogisticRegression": [{"n_bits": 2}],
-    "LinearRegression": LINEAR_REGRESSION_ARGUMENTS,
+    "LinearRegression": LINEAR_REGRESSION_CONFIGS,
     "Lasso": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "Ridge": [{"n_bits": n_bits} for n_bits in range(2, 11)],
     "ElasticNet": [{"n_bits": n_bits} for n_bits in range(2, 11)],
-    "NeuralNetClassifier": NN_BENCHMARK_PARMAMS,
-    "NeuralNetRegressor": NN_BENCHMARK_PARMAMS,
+    "NeuralNetClassifier": NN_BENCHMARK_CONFIGS,
+    "NeuralNetRegressor": NN_BENCHMARK_CONFIGS,
+    "ShallowNarrowCNN": DEEP_LEARNING_CONFIGS,
+    "DeepNarrowCNN": DEEP_LEARNING_CONFIGS,
+    "ShallowWideCNN": DEEP_LEARNING_CONFIGS,
+    "DeepWideCNN": DEEP_LEARNING_CONFIGS,
 }
 
 REGRESSION_DATASETS = [
@@ -696,7 +703,10 @@ def benchmark_name_generator(
 ) -> str:
     """Turns a combination of dataset + model + hyper-parameters and returns a string"""
     assert isinstance(model, type), f"Wrong type: {type(model)} - {model}"
-    if model.__name__ in {
+
+    model_name = model.__name__
+
+    if model_name in {
         "LinearSVR",
         "LinearSVC",
         "LogisticRegression",
@@ -707,32 +717,32 @@ def benchmark_name_generator(
     }:
         config_str = f"_{config['n_bits']}"
 
-    elif model.__name__ == "NeuralNetRegressor":
+    elif model_name == "NeuralNetRegressor":
         config_str = f"_{config['module__n_a_bits']}_{config['module__n_accum_bits']}"
 
-    elif model.__name__ == "NeuralNetClassifier":
+    elif model_name == "NeuralNetClassifier":
         config_str = f"_{config['module__n_w_bits']}_{config['module__n_accum_bits']}"
 
-    elif model.__name__ in {"DecisionTreeRegressor", "DecisionTreeClassifier"}:
+    elif model_name in {"DecisionTreeRegressor", "DecisionTreeClassifier"}:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_bits']}"
         else:
             config_str = f"_{config['n_bits']}"
 
-    elif model.__name__ in {"XGBClassifier", "XGBRegressor"}:
+    elif model_name in {"XGBClassifier", "XGBRegressor"}:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
         else:
             config_str = f"_{config['n_estimators']}_{config['n_bits']}"
 
-    elif model.__name__ in {"RandomForestRegressor", "RandomForestClassifier"}:
+    elif model_name in {"RandomForestRegressor", "RandomForestClassifier"}:
         if config["max_depth"] is not None:
             config_str = f"_{config['max_depth']}_{config['n_estimators']}_{config['n_bits']}"
         else:
             config_str = f"_{config['n_estimators']}_{config['n_bits']}"
 
     # GLMs
-    elif model.__name__ in {"PoissonRegressor", "GammaRegressor", "TweedieRegressor"}:
+    elif model_name in {"PoissonRegressor", "GammaRegressor", "TweedieRegressor"}:
         if isinstance(config["n_bits"], int):
             n_bits_inputs = config["n_bits"]
             n_bits_weights = config["n_bits"]
@@ -743,8 +753,11 @@ def benchmark_name_generator(
         pca_n_components = compute_number_of_components(config["n_bits"])
         config_str = f"_{n_bits_inputs}_{n_bits_weights}_{pca_n_components}"
 
+    elif model_name in {"ShallowNarrowCNN", "DeepNarrowCNN", "ShallowWideCNN", "DeepWideCNN"}:
+        config_str = f"_{config['n_bits']}"
+
     # We remove underscores to make sure to not have any conflict when splitting
-    return model.__name__.replace("_", "-") + config_str + joiner + dataset_name.replace("_", "-")
+    return model_name.replace("_", "-") + config_str + joiner + dataset_name.replace("_", "-")
 
 
 # Add tests:

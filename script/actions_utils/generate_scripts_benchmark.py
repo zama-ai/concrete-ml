@@ -69,7 +69,8 @@ def main():
     parser.add_argument("--classification", dest="classification", choices=["true", "false"])
     parser.add_argument("--regression", dest="regression", choices=["true", "false"])
     parser.add_argument("--glm", dest="glm", choices=["true", "false"])
-    parser.add_argument("--fhe_samples", dest="fhe_samples", type=int_range, default=100)
+    parser.add_argument("--deep_learning", dest="deep_learning", choices=["true", "false"])
+    parser.add_argument("--fhe_samples", dest="fhe_samples", type=int_range)
 
     args = parser.parse_args()
 
@@ -88,16 +89,23 @@ def main():
         scripts.append("regression")
     if args.glm == "true":
         scripts.append("glm")
+    if args.deep_learning == "true":
+        scripts.append("deep_learning")
+
+    fhe_samples = 100 if args.fhe_samples is None or args.fhe_samples == 0 else args.fhe_samples
+
+    # Arguments to consider for building the script commands
+    additional_args = f"--fhe_samples {fhe_samples} {list_arg}"
 
     # Get all commands to benchmark each models using python benchmarks/BENCHMARK_FILE
     commands = []
     for script in scripts:
-        command_start = f"python3 benchmarks/{script}.py --fhe_samples {args.fhe_samples}"
+        command_start = f"python3 benchmarks/{script}.py"
         now = datetime.datetime.now().strftime("%Y/%m/%d_%H:%M:%S")
         script_commands = [
             elt.replace('"', '\\"').replace("'", "")  # Needed to escape " when calling eval
             for elt in subprocess.check_output(
-                f"{command_start} {list_arg}",
+                f"{command_start} {additional_args}",
                 shell=True,
             )
             .decode("utf-8")
