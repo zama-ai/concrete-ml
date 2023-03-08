@@ -153,10 +153,27 @@ NN_BENCHMARK_CONFIGS = (
     ]
 )
 
-LINEAR_REGRESSION_CONFIGS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
+LINEAR_REGRESSION_CONFIGS = [{"n_bits": n_bits} for n_bits in range(2, 21)]
+
+XGB_CONFIGS = [
+    {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+    for max_depth in [6]
+    for n_estimators in [100]
+    for n_bits in [2, 6]
+]
+
+RANDOM_FOREST_CONFIGS = [
+    {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
+    for max_depth in [10]
+    for n_estimators in [100]
+    for n_bits in [2, 6]
+]
+
+DECISION_TREE_CONFIGS = [
+    {"max_depth": max_depth, "n_bits": n_bits} for max_depth in [5, 10] for n_bits in [2, 6]
+]
 
 DEEP_LEARNING_CONFIGS = [{"n_bits": 5}]
-
 
 # Backward compatibility
 if ("LinearRegression" in REGRESSORS) and (
@@ -166,44 +183,20 @@ if ("LinearRegression" in REGRESSORS) and (
     LINEAR_REGRESSION_CONFIGS = [{"n_bits": n_bits} for n_bits in range(2, 11)]
 
 BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
-    "XGBClassifier": [
-        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [6]
-        for n_estimators in [100]
-        for n_bits in [2, 6]
-    ],
-    "XGBRegressor": [
-        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [6]
-        for n_estimators in [100]
-        for n_bits in [2, 6]
-    ],
-    "RandomForestClassifier": [
-        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [10]
-        for n_estimators in [100]
-        for n_bits in [2, 6]
-    ],
-    "RandomForestRegressor": [
-        {"max_depth": max_depth, "n_estimators": n_estimators, "n_bits": n_bits}
-        for max_depth in [10]
-        for n_estimators in [100]
-        for n_bits in [2, 6]
-    ],
+    "XGBClassifier": XGB_CONFIGS,
+    "XGBRegressor": XGB_CONFIGS,
+    "RandomForestClassifier": RANDOM_FOREST_CONFIGS,
+    "RandomForestRegressor": RANDOM_FOREST_CONFIGS,
     # Benchmark different depths of the quantized decision tree
-    "DecisionTreeClassifier": [
-        {"max_depth": max_depth, "n_bits": n_bits} for max_depth in [5, 10] for n_bits in [2, 6]
-    ],
-    "DecisionTreeRegressor": [
-        {"max_depth": max_depth, "n_bits": n_bits} for max_depth in [5, 10] for n_bits in [2, 6]
-    ],
-    "LinearSVC": [{"n_bits": 2}],
-    "LinearSVR": [{"n_bits": n_bits} for n_bits in range(2, 11)],
-    "LogisticRegression": [{"n_bits": 2}],
+    "DecisionTreeClassifier": DECISION_TREE_CONFIGS,
+    "DecisionTreeRegressor": DECISION_TREE_CONFIGS,
+    "LinearSVC": LINEAR_REGRESSION_CONFIGS,
+    "LinearSVR": LINEAR_REGRESSION_CONFIGS,
+    "LogisticRegression": LINEAR_REGRESSION_CONFIGS,
     "LinearRegression": LINEAR_REGRESSION_CONFIGS,
-    "Lasso": [{"n_bits": n_bits} for n_bits in range(2, 11)],
-    "Ridge": [{"n_bits": n_bits} for n_bits in range(2, 11)],
-    "ElasticNet": [{"n_bits": n_bits} for n_bits in range(2, 11)],
+    "Lasso": LINEAR_REGRESSION_CONFIGS,
+    "Ridge": LINEAR_REGRESSION_CONFIGS,
+    "ElasticNet": LINEAR_REGRESSION_CONFIGS,
     "NeuralNetClassifier": NN_BENCHMARK_CONFIGS,
     "NeuralNetRegressor": NN_BENCHMARK_CONFIGS,
     "ShallowNarrowCNN": DEEP_LEARNING_CONFIGS,
@@ -302,7 +295,7 @@ def seed_everything(seed):
 
 # pylint: disable-next=too-many-return-statements, too-many-branches, redefined-outer-name
 def should_test_config_in_fhe(
-    model: type, config: Dict[str, Any], n_features: int, local_args: argparse.Namespace
+    model: type, config: Dict[str, Any], local_args: argparse.Namespace
 ) -> bool:
     """Determine whether a benchmark config for a classifier should be tested in FHE"""
     if local_args.execute_in_fhe != "auto":
@@ -328,15 +321,12 @@ def should_test_config_in_fhe(
         "Ridge",
         "LinearSVC",
         "LinearSVR",
+        "LinearRegression",
+        "TweedieRegressor",
+        "PoissonRegressor",
+        "GammaRegressor",
     }:
-        if config["n_bits"] <= 2 and n_features <= 14:
-            return True
-        if config["n_bits"] == 3 and n_features <= 2:
-            return True
-
-    if model_name == "LinearRegression":
-        if config["n_bits"] <= 3:
-            return True
+        return True
 
     if model_name in {
         "XGBClassifier",
@@ -355,7 +345,7 @@ def should_test_config_in_fhe(
             and config["module__n_hidden_neurons_multiplier"] == 1
         )
 
-    raise ValueError(f"Classifier {str(model_name)} configurations not yet setup for FHE")
+    raise ValueError(f"{str(model_name)} is not setup for FHE yet.")
 
 
 # pylint: disable-next=too-many-branches
@@ -417,9 +407,7 @@ def train_and_test_regressor(
     y_pred_q = concrete_regressor.predict(x_test, execute_in_fhe=False)
     run_and_report_regression_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
-    n_features = X.shape[1] if X.ndim == 2 else 1
-
-    if should_test_config_in_fhe(regressor, config, n_features, local_args):
+    if should_test_config_in_fhe(regressor, config, local_args):
 
         if local_args.verbose:
             print(f"  -- Done in {time.time() - time_current} seconds")
@@ -588,9 +576,7 @@ def train_and_test_classifier(
     y_pred_q = concrete_classifier.predict(x_test, execute_in_fhe=False)
     run_and_report_classification_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
-    n_features = x_train.shape[1] if x_train.ndim == 2 else 1
-
-    if should_test_config_in_fhe(classifier, config, n_features, local_args):
+    if should_test_config_in_fhe(classifier, config, local_args):
 
         if local_args.verbose:
             print(f"  -- Done in {time.time() - time_current} seconds")

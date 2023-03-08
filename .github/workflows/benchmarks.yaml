@@ -34,6 +34,7 @@ on:
       fhe-samples:
         description: Number of FHE samples
         required: false
+        default: 100
         type: number
 
   # Add recurrent launching
