@@ -1,4 +1,6 @@
 """Tests with Pandas."""
+import sys
+
 import numpy
 import pandas
 import pytest
@@ -36,6 +38,12 @@ def test_failure_bad_param(model_class, bad_value, expected_error):
     y_train = x_train["Col Three"]
 
     model = model_class(n_bits=2)
+
+    # The error message changed in one of our dependancies
+    assert sys.version_info.major == 3
+    if sys.version_info.minor <= 7:
+        if expected_error == "Input X contains NaN.":
+            expected_error = "Input contains NaN*"
 
     with pytest.raises(ValueError, match=expected_error):
         model.fit(x_train, y_train)
