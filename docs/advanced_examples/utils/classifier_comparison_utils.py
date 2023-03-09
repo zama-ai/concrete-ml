@@ -36,11 +36,8 @@ COMPIL_CONFIG_VL = Configuration(
     enable_unsafe_features=True,
 )
 
-from IPython.display import clear_output
-
-
 # pylint: disable=too-many-locals,too-many-statements,too-many-branches
-def make_classifier_comparison(title, classifiers, decision_level):
+def make_classifier_comparison(title, classifiers, decision_level, verbose=False):
 
     h = 0.04  # Step size in the mesh
 
@@ -138,23 +135,28 @@ def make_classifier_comparison(title, classifiers, decision_level):
 
             # If the prediction are done in FHE, generate the key
             if not ALWAYS_USE_VL:
-
-                print(
-                    "Generating a key for a "
-                    f"{circuit.graph.maximum_integer_bit_width()}-bit circuit"
-                )
+                
+                if verbose:
+                    print(
+                        "Generating a key for a "
+                        f"{circuit.graph.maximum_integer_bit_width()}-bit circuit"
+                    )
 
                 time_begin = time.time()
                 circuit.client.keygen(force=False)
-                print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+                if verbose:
+                    print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
 
             # Compute the predictions in FHE using the Concrete-ML model
             time_begin = time.time()
             concrete_y_pred = concrete_model.predict(X_test, execute_in_fhe=True)
-            print(
-                f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
-                "seconds per sample"
-            )
+
+            if verbose:
+                print(
+                    f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    "seconds per sample\n"
+                )
 
             # Measure the accuracy scores
             sklearn_score = accuracy_score(sklearn_y_pred, y_test)
@@ -260,8 +262,6 @@ def make_classifier_comparison(title, classifiers, decision_level):
                         size=font_size_text,
                         horizontalalignment="right",
                     )
-
-    clear_output(wait=True)
 
     plt.tight_layout()
     plt.show()
