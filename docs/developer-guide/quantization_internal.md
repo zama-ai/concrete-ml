@@ -89,7 +89,7 @@ The computation graph is taken from the corresponding floating point ONNX graph 
 {% hint style="info" %}
 Calibration is the process of determining the typical distributions of values encountered for the intermediate values of a model during inference.
 
-To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological%5C_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
+To perform calibration, an interpreter goes through the ONNX graph in [topological order](https://en.wikipedia.org/wiki/Topological_sorting) and stores the intermediate results as it goes. The statistics of these values determine quantization parameters.
 {% endhint %}
 
 That `QuantizedModule` generates the Concrete-Numpy function that is compiled to FHE. The compilation will succeed if the intermediate values conform to the 16-bits precision limit of the Concrete stack. See [the compilation section](../advanced-topics/compilation.md) for details.

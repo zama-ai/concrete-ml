@@ -347,6 +347,11 @@ docs: clean_docs
 	@# Check links
 	"$(MAKE)" check_links
 
+.PHONY: remove_5c_docs # Remove the ugly %5C that we have in the doc, due to management of _ with GitBook
+remove_5c_docs:
+	sed -i "" -e "s@%5C_@_@g" docs/*.md docs/*/*.md docs/*/*/*.md
+	sed -i "" -e "s@%5C%5C@@g" docs/*.md docs/*/*.md docs/*/*/*.md
+
 .PHONY: apidocs # Builds API docs
 apidocs:
 	@# At release time, one needs to change --src-base-url (to be a public release/A.B.x branch)
