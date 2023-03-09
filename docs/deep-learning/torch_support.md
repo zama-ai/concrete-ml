@@ -52,6 +52,45 @@ quantized_numpy_module = compile_brevitas_qat_model(
 
 ```
 
+## Configuring quantization parameters
+
+The PyTorch/Brevitas models, created following the example above, require the user to configure
+quantization parameters such as `bit_width` (activation bit-width) and `weight_bit_width`. The
+quantization parameters, along with the number of neurons on each layer, will determine the
+accumulator bit-width of the network. Larger accumulator bit-widths result in higher accuracy
+but slower FHE inference time.
+
+The following configurations were determined through experimentation for convolutional and
+dense layers.
+
+| target accumulator bit-width | activation bit-width | weight bit-width | number of active neurons |
+| ---------------------------- | -------------------- | ---------------- | ------------------------ |
+| 8                            | 3                    | 3                | 80                       |
+| 10                           | 4                    | 3                | 90                       |
+| 12                           | 5                    | 5                | 110                      |
+| 14                           | 6                    | 6                | 110                      |
+| 16                           | 7                    | 6                | 120                      |
+
+Using the templates above, the probability of obtaining the target accumulator
+bit-width, for a single layer, was determined experimentally by training 10 models for each of
+the following data-sets.
+
+| probability of obtaining <br>the accumulator bit-width | 8   | 10   | 12  | 14  | 16   |
+| ------------------------------------------------------ | --- | ---- | --- | --- | ---- |
+| mnist,fashion                                          | 72% | 100% | 72% | 85% | 100% |
+| cifar10                                                | 88% | 88%  | 75% | 75% | 88%  |
+| cifar100                                               | 73% | 88%  | 61% | 66% | 100% |
+
+Note that the accuracy on larger datasets, when the accumulator size is low, is also reduced
+strongly.
+
+| accuracy for target <br> accumulator bit-width | 8   | 10  | 12  | 14  | 16  |
+| ---------------------------------------------- | --- | --- | --- | --- | --- |
+| cifar10                                        | 20% | 37% | 89% | 90% | 90% |
+| cifar100                                       | 6%  | 30% | 67% | 69% | 69% |
+
+## Running encrypted inference
+
 The model can now be used to perform encrypted inference. Next, the test data is quantized:
 
 <!--pytest-codeblocks:cont-->
@@ -61,10 +100,25 @@ x_test = numpy.array([numpy.random.randn(N_FEAT)])
 x_test_quantized = quantized_numpy_module.quantize_input(x_test)
 ```
 
-and the encrypted inference can be run using either:
+and the encrypted inference can be run using `quantized_numpy_module.forward_in_fhe()` to perform
+the FHE inference. In this case, de-quantization must done by the caller in a second stage
+using `quantized_numpy_module.dequantize_output()`.
 
-- `quantized_numpy_module.forward_and_dequant()` simply to compute predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the forward function on the clear data is useful when debugging. The results in FHE will be the same as those on clear quantized data.
-- `quantized_numpy_module.forward_in_fhe()` to perform the FHE inference. In this case, de-quantization is done in a second stage using `quantized_numpy_module.dequantize_output()`.
+## Simulated FHE Inference in the clear
+
+The user can also perform the inference on clear data. Two approaches exist:
+
+- `quantized_numpy_module.forward_in_fhe(quantized_x, simulate=True)`: simulates FHE execution taking into account Table Lookup errors.\
+  De-quantization must be done in a second step as for actual FHE execution. Simulation takes into
+  account the `p_error`/`global_p_error` parameters
+- `quantized_numpy_module.forward_and_dequant()`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the this function on the clear data is useful when debugging, but please note that it does not perform
+  FHE simulation.
+
+{% hint style="info" %}
+FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table
+Lookup error can be adjusted using `p_error`/`global_p_error` as described in the
+[approximate computation section](../advanced-topics/advanced_features.md#approximate-computations).
+{% endhint %}
 
 ## Generic Quantization Aware Training import
 
