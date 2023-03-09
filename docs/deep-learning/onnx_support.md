@@ -126,6 +126,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Clip
 - Concat
 - Constant
+- ConstantOfShape
 - Conv
 - Cos
 - Cosh
@@ -136,6 +137,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Exp
 - Flatten
 - Floor
+- Gather
 - Gemm
 - Greater
 - GreaterOrEqual
@@ -162,10 +164,12 @@ The following operators are supported for evaluation and conversion to an equiva
 - Reshape
 - Round
 - Selu
+- Shape
 - Sigmoid
 - Sign
 - Sin
 - Sinh
+- Slice
 - Softplus
 - Squeeze
 - Sub

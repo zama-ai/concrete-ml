@@ -19,7 +19,13 @@ from ..onnx.onnx_impl_utils import (
     numpy_onnx_pad,
     onnx_avgpool_compute_norm_const,
 )
-from .base_quantized_op import QuantizedMixingOp, QuantizedOp, QuantizedOpUnivariateOfEncrypted
+from ..onnx.ops_impl import RawOpOutput
+from .base_quantized_op import (
+    ONNXOpInputOutputType,
+    QuantizedMixingOp,
+    QuantizedOp,
+    QuantizedOpUnivariateOfEncrypted,
+)
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
 
 
@@ -159,10 +165,10 @@ class QuantizedGemm(QuantizedMixingOp):
 
     def q_impl(
         self,
-        *q_inputs: QuantizedArray,
+        *q_inputs: ONNXOpInputOutputType,
         calibrate_rounding: bool = False,
         **attrs,
-    ) -> QuantizedArray:
+    ) -> ONNXOpInputOutputType:
 
         alpha = self.attrs.get("alpha", 1)
         beta = self.attrs.get("beta", 1)
@@ -308,9 +314,16 @@ class QuantizedAdd(QuantizedOp):
 
     def q_impl(
         self,
-        *q_inputs: QuantizedArray,
+        *q_inputs: ONNXOpInputOutputType,
         **attrs,
-    ) -> QuantizedArray:
+    ) -> ONNXOpInputOutputType:
+
+        # If operating over all raw inputs, just perform the op in the clear
+        if all(isinstance(q_input, RawOpOutput) for q_input in q_inputs):
+            prepared_inputs = self._prepare_inputs_with_constants(
+                *q_inputs, calibrate=False, quantize_actual_values=False
+            )
+            return self.call_impl(*prepared_inputs, **attrs).view(RawOpOutput)
 
         # For mypy
         assert self.output_quant_params is not None
@@ -445,8 +458,16 @@ class QuantizedIdentity(QuantizedOp):
 
     _impl_for_op_named: str = "Identity"
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         assert_true(len(q_inputs) == 1, "Identity does not work with multiple QuantizedArray")
+
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
+
         self.output_quant_params = q_inputs[0].quantizer.quant_params
         return super().q_impl(*q_inputs, **attrs)
 
@@ -457,7 +478,11 @@ class QuantizedReshape(QuantizedOp):
     _impl_for_op_named: str = "Reshape"
     quantize_inputs_with_model_outputs_precision = True
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Reshape the input integer encrypted tensor.
 
         Args:
@@ -476,6 +501,9 @@ class QuantizedReshape(QuantizedOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
+
         newshape = prepared_inputs[1]
         assert_true(numpy.issubdtype(newshape.dtype, numpy.integer))
 
@@ -488,6 +516,17 @@ class QuantizedReshape(QuantizedOp):
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Max Pooling operation can not be fused since it must be performed over integer tensors and
+        it combines different elements of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+        return False
 
 
 class QuantizedConv(QuantizedMixingOp):
@@ -561,10 +600,10 @@ class QuantizedConv(QuantizedMixingOp):
 
     def q_impl(
         self,
-        *q_inputs: QuantizedArray,
+        *q_inputs: ONNXOpInputOutputType,
         calibrate_rounding: bool = False,
         **attrs,
-    ) -> QuantizedArray:
+    ) -> ONNXOpInputOutputType:
         """Compute the quantized convolution between two quantized tensors.
 
         Allows an optional quantized bias.
@@ -793,10 +832,10 @@ class QuantizedAvgPool(QuantizedMixingOp):
 
     def q_impl(
         self,
-        *q_inputs: QuantizedArray,
+        *q_inputs: ONNXOpInputOutputType,
         calibrate_rounding: bool = False,
         **attrs,
-    ) -> QuantizedArray:
+    ) -> ONNXOpInputOutputType:
 
         # Retrieve the quantized inputs
         prepared_inputs = self._prepare_inputs_with_constants(
@@ -933,9 +972,9 @@ class QuantizedMaxPool(QuantizedOp):
 
     def q_impl(
         self,
-        *q_inputs: QuantizedArray,
+        *q_inputs: ONNXOpInputOutputType,
         **attrs,
-    ) -> QuantizedArray:
+    ) -> ONNXOpInputOutputType:
 
         # Retrieve the quantized inputs
         prepared_inputs = self._prepare_inputs_with_constants(
@@ -1031,9 +1070,45 @@ class QuantizedPad(QuantizedOp):
             self.mode == "constant", "Padding operator only supports padding with a constant"
         )
 
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,  # pylint: disable=unused-argument
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+        # Retrieve the quantized inputs
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+        q_input: QuantizedArray = prepared_inputs[0]
+        pads = prepared_inputs[1]
+
         assert_true(
-            self.constant_inputs is None or bool(numpy.all(self.constant_inputs[1] == 0)),
-            "Padding operator supported only with all pads at zero",
+            all(pads[i] == 0 and pads[4 + i] == 0 for i in range(0, 2)),
+            "Concrete-ML only supports padding along the width & height dimensions, padding"
+            f" requested was {pads}",
+        )
+
+        assert_true(pads.size % 2 == 0)  # must be a multiple of 2
+        assert_true(pads.size in [4, 8], "Only supporting pads of size 4 or 8.")
+        if pads.size == 8:
+            pads = numpy.asarray([pads[2], pads[3], pads[6], pads[7]])
+
+        assert_true(pads.size == 4, "Not currently supporting padding of 3D tensors")
+
+        pad_value = 0 if prepared_inputs[2] is None else prepared_inputs[2]
+        assert_true(pad_value == 0, "Concrete-ML only supports padding with constant zero values")
+
+        assert q_input.quantizer.zero_point is not None
+        q_input_pad = numpy_onnx_pad(q_input.qvalues, pads, q_input.quantizer.zero_point, True)
+
+        return QuantizedArray(
+            q_input.quantizer.n_bits,
+            q_input_pad,
+            value_is_float=False,
+            options=q_input.quantizer.quant_options,
+            stats=q_input.quantizer.quant_stats,
+            params=q_input.quantizer.quant_params,
         )
 
     def can_fuse(self) -> bool:
@@ -1276,7 +1351,11 @@ class QuantizedFlatten(QuantizedOp):
     _impl_for_op_named: str = "Flatten"
     quantize_inputs_with_model_outputs_precision = True
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Flatten the input integer encrypted tensor.
 
         Args:
@@ -1294,6 +1373,9 @@ class QuantizedFlatten(QuantizedOp):
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
+
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
 
         assert_true(len(q_inputs) == 1, "Flatten operator only takes a single input")
 
@@ -1405,7 +1487,11 @@ class QuantizedReduceSum(QuantizedMixingOp):
 
         return quantized_samples.values
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Sum the encrypted tensor's values along the given axes.
 
         Args:
@@ -1458,7 +1544,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
 
     def _prepare_inputs_with_constants(
         self,
-        *inputs: Union[QuantizedArray, numpy.ndarray],
+        *inputs: ONNXOpInputOutputType,
         calibrate: bool,
         quantize_actual_values: bool,
     ):
@@ -1475,7 +1561,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         calibration, in which case the variable inputs are just float numpy tensors.
 
         Args:
-             *inputs (Union[QuantizedArray, numpy.ndarray]): A list of all variable inputs
+             *inputs (ONNXOpInputOutputType): A list of all variable inputs
             calibrate (bool): A flag specifying if the method is called during calibration
             quantize_actual_values (bool): If called by a quantized operator that does matrix
                 multiplication between encrypted and clear values, this method will apply
@@ -1676,7 +1762,11 @@ class QuantizedBrevitasQuant(QuantizedOp):
 
         return result
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Quantize values.
 
         Args:
@@ -1690,6 +1780,9 @@ class QuantizedBrevitasQuant(QuantizedOp):
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=False
         )
+
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
 
         # Impose the number of bits that this op quantizes its inputs, to the value that
         # was provided by Brevitas. This number of bits is normally
@@ -1742,7 +1835,11 @@ class QuantizedTranspose(QuantizedOp):
     _impl_for_op_named: str = "Transpose"
     quantize_inputs_with_model_outputs_precision = True
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Reshape the input integer encrypted tensor.
 
         Args:
@@ -1761,6 +1858,9 @@ class QuantizedTranspose(QuantizedOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
+
         # Return a new quantized array with the same quantization parameters
         return QuantizedArray(
             q_inputs[0].quantizer.n_bits,
@@ -1770,6 +1870,17 @@ class QuantizedTranspose(QuantizedOp):
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Max Pooling operation can not be fused since it must be performed over integer tensors and
+        it combines different elements of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+        return False
 
 
 class QuantizedFloor(QuantizedOp):
@@ -1808,7 +1919,11 @@ class QuantizedUnsqueeze(QuantizedOp):
     _impl_for_op_named: str = "Unsqueeze"
     quantize_inputs_with_model_outputs_precision = True
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Unsqueeze the input tensors on a given axis.
 
         Args:
@@ -1826,6 +1941,9 @@ class QuantizedUnsqueeze(QuantizedOp):
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
+
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
 
         axes = prepared_inputs[1]
 
@@ -1846,7 +1964,11 @@ class QuantizedConcat(QuantizedOp):
     _impl_for_op_named: str = "Concat"
     quantize_inputs_with_model_outputs_precision = True
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Concatenate the input tensors on a giver axis.
 
         Args:
@@ -1864,6 +1986,9 @@ class QuantizedConcat(QuantizedOp):
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
+
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
 
         # The input tensors must have the same quantization parameters to be concatenated.
         scales = [x.quantizer.scale for x in prepared_inputs]
@@ -1885,6 +2010,17 @@ class QuantizedConcat(QuantizedOp):
             params=prepared_inputs[0].quantizer.quant_params,
         )
 
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Max Pooling operation can not be fused since it must be performed over integer tensors and
+        it combines different elements of the input tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it adds different encrypted integers
+        """
+        return False
+
 
 class QuantizedSqueeze(QuantizedOp):
     """Squeeze operator."""
@@ -1892,7 +2028,11 @@ class QuantizedSqueeze(QuantizedOp):
     _impl_for_op_named: str = "Squeeze"
     quantize_inputs_with_model_outputs_precision = True
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Squeeze the input tensors on a given axis.
 
         Args:
@@ -1911,6 +2051,9 @@ class QuantizedSqueeze(QuantizedOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
+
         axes = prepared_inputs[1]
 
         # Return a new quantized array with the same quantization parameters
@@ -1922,3 +2065,132 @@ class QuantizedSqueeze(QuantizedOp):
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
+
+
+class ONNXShape(QuantizedOp):
+    """Shape operator."""
+
+    _impl_for_op_named: str = "Shape"
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+        # This op takes only encrypted inputs in the form of QuantizedArray
+        assert isinstance(q_inputs[0], QuantizedArray)
+
+        return numpy.asarray(q_inputs[0].qvalues.shape, numpy.int64).view(RawOpOutput)
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        This operation returns the shape of the tensor and thus can not be fused into a
+        univariate TLU.
+
+        Returns:
+            bool: False, this operation can not be fused
+        """
+        return False
+
+
+class ONNXConstantOfShape(QuantizedOp):
+    """ConstantOfShape operator."""
+
+    _impl_for_op_named: str = "ConstantOfShape"
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        This operation returns the shape of the tensor and thus can not be fused into a
+        univariate TLU.
+
+        Returns:
+            bool: False, this operation can not be fused
+        """
+        return False
+
+
+class ONNXGather(QuantizedOp):
+    """Gather operator.
+
+    Returns values at requested indices from the input tensor.
+    """
+
+    _impl_for_op_named: str = "Gather"
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        # The first parameter can be either an encrypted tensor or a shape (int64 array)
+        if isinstance(prepared_inputs[0], QuantizedArray):
+            inputs = (prepared_inputs[0].qvalues, *prepared_inputs[1:])
+            return QuantizedArray(
+                prepared_inputs[0].quantizer.n_bits,
+                self.call_impl(*inputs, **attrs),
+                value_is_float=False,
+                options=prepared_inputs[0].quantizer.quant_options,
+                stats=prepared_inputs[0].quantizer.quant_stats,
+                params=prepared_inputs[0].quantizer.quant_params,
+            )
+
+        assert_true(isinstance(prepared_inputs[0], numpy.ndarray))
+        return self.call_impl(*prepared_inputs, **attrs)
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        This operation returns values from a tensor and thus can not be fused into a
+        univariate TLU.
+
+        Returns:
+            bool: False, this operation can not be fused
+        """
+        return False
+
+
+class ONNXSlice(QuantizedOp):
+    """Slice operator."""
+
+    _impl_for_op_named: str = "Slice"
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        assert_true(
+            isinstance(prepared_inputs[0], QuantizedArray),
+            "Slice currently only supports QuantizedArray inputs (encrypted inputs)",
+        )
+
+        inputs = (prepared_inputs[0].qvalues, *prepared_inputs[1:])
+        return QuantizedArray(
+            prepared_inputs[0].quantizer.n_bits,
+            self.call_impl(*inputs, **attrs),
+            value_is_float=False,
+            options=prepared_inputs[0].quantizer.quant_options,
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        This operation returns values from a tensor and thus can not be fused into a
+        univariate TLU.
+
+        Returns:
+            bool: False, this operation can not be fused
+        """
+        return False

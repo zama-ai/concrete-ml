@@ -3,11 +3,17 @@
 # The test_all_ops_were_tested needs all the tests that it references to be in a single file
 # pylint: disable=too-many-lines
 
+import io
+from collections import OrderedDict
 from functools import partial
 from typing import Callable, Tuple, Union
 
 import numpy
 import onnx
+import onnx.checker
+import onnx.helper
+import onnx.mapping
+import onnxruntime as ort
 import pytest
 import torch
 
@@ -15,6 +21,10 @@ from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.base_quantized_op import ALL_QUANTIZED_OPS
 from concrete.ml.quantization.quantized_ops import (
+    ONNXConstantOfShape,
+    ONNXGather,
+    ONNXShape,
+    ONNXSlice,
     QuantizedAbs,
     QuantizedAdd,
     QuantizedAvgPool,
@@ -909,49 +919,51 @@ def test_quantized_conv_args():
             )
 
 
-def test_quantized_pad():
+@pytest.mark.parametrize(
+    "pads", [[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0, 1, 0], [0, 0, 2, 1, 0, 0, 5, 3]]
+)
+def test_quantized_pad(pads):
     """Test the padding operator on quantized values."""
 
     # First we test that the operator result is the same as the input
     # when the padding is 0
     # This is currently the only supported mode
-    data = numpy.random.uniform(size=(1, 1, 32, 32)) * 4
+    data = numpy.random.uniform(size=(1, 1, 4, 4))
     q_data = QuantizedArray(2, data)
 
-    pads = numpy.asarray([0, 0, 0, 0, 0, 0, 0, 0])
+    pads_torch = [pads[3], pads[7], pads[2], pads[6], pads[1], pads[5], pads[0], pads[4]]
+    pad_torch = (
+        torch.nn.functional.pad(
+            torch.Tensor(q_data.qvalues), pads_torch, value=q_data.quantizer.zero_point
+        )
+        .int()
+        .numpy()
+    )
+
+    pads = numpy.asarray(pads)
+    pad_value = numpy.asarray(0)
+
     q_op = QuantizedPad(
         2,
         OP_DEBUG_NAME + "QuantizedPad",
         int_input_names={"0"},
-        constant_inputs={1: pads},
+        constant_inputs={1: pads, 2: pad_value},
         mode="constant",
+        input_quant_opts=q_data.quantizer.quant_options,
     )
 
-    pad_value = QuantizedArray(2, numpy.asarray([0]).astype(numpy.float64))
+    q_op.calibrate(q_data.values)
 
-    q_op.calibrate(q_data.values, pad_value.values)
+    q_pad_output = q_op(q_data)
+    assert numpy.array_equal(q_pad_output.qvalues, pad_torch)
 
-    q_pad_output = q_op(q_data, pad_value)
-    assert numpy.array_equal(q_pad_output.qvalues, q_data.qvalues)
 
-    # Test that padding an input tensor is not yet supported, this operation is
-    # only a stub for now
-    # Change this when we have a real solution for the Pad operator
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/747
-
-    pads_invalid = numpy.asarray([0, 1, 0, 0, 0, 1, 0, 0])
-    with pytest.raises(AssertionError):
-        QuantizedPad(
-            2,
-            OP_DEBUG_NAME + "QuantizedPad",
-            int_input_names={"0"},
-            constant_inputs={1: pads_invalid},
-            mode="constant",
-        )
-
+@pytest.mark.parametrize("mode", ["reflect", "wrap", "edge"])
+def test_quantized_pad_mode_invalid(mode):
+    """Check that invalid padding modes raise an assert."""
     # Now check that we assert when a different padding mode is given
     with pytest.raises(AssertionError):
-        QuantizedPad(2, OP_DEBUG_NAME + "QuantizedPad", int_input_names={"0"}, mode="reflect")
+        QuantizedPad(2, OP_DEBUG_NAME + "QuantizedPad", int_input_names={"0"}, mode=mode)
 
 
 @pytest.mark.parametrize("shape", [(1,), (10, 5), (10, 5, 2)])
@@ -1245,6 +1257,10 @@ def test_all_ops_were_tested():
         QuantizedUnsqueeze: test_quantized_unsqueeze,
         QuantizedConcat: test_quantized_concat,
         QuantizedSqueeze: test_quantized_squeeze,
+        ONNXSlice: test_quantized_slice,
+        ONNXGather: test_quantized_gather,
+        ONNXShape: test_quantized_shape,
+        ONNXConstantOfShape: test_constant_of_shape,
     }
     not_tested = [cls.__name__ for cls in ALL_QUANTIZED_OPS if cls not in currently_tested_ops]
     assert ALL_QUANTIZED_OPS == currently_tested_ops.keys(), (
@@ -1488,3 +1504,184 @@ def test_quantized_squeeze(shape, axis):
     assert q_result.quantizer.zero_point == q_arr.quantizer.zero_point
     assert q_result.quantizer.scale == q_arr.quantizer.scale
     assert numpy.all(numpy.squeeze(q_arr.qvalues, axis=axis) == q_result.qvalues)
+
+
+def make_single_function_onnx_and_run(onnx_op, op_args_dict, op_attrs_dict, input_value, out_shape):
+    """Make an ONNX model with a single operation of the specified type and run it."""
+
+    def make_initializer(name, values):
+        """Create a ONNX initializer node from a named ndarray.
+
+        Args:
+            name (str): name of the initializer
+            values (numpy.ndarray): values that will be stored in ONNX
+
+        Returns:
+            result (NodeProto): the protobuf structure of an initializer node
+        """
+
+        return onnx.helper.make_node(
+            "Constant",
+            inputs=[],
+            outputs=[name],
+            name=f"init_{name}",
+            value=onnx.helper.make_tensor(
+                f"cst_{name}",
+                data_type=onnx.helper.np_dtype_to_tensor_dtype(values.dtype),
+                dims=values.shape if isinstance(values, numpy.ndarray) else (len(values),),
+                vals=values,
+            ),
+        )
+
+    all_nodes = [make_initializer(k, v) for k, v in op_args_dict.items()]
+    inputs = ["input"] + list(op_args_dict.keys())
+
+    op_node = onnx.helper.make_node(
+        onnx_op,
+        inputs=inputs,
+        name=onnx_op,
+        outputs=["output"],
+    )
+    for k, v in op_attrs_dict.items():
+        op_node.attribute.append(onnx.helper.make_attribute(k, v))
+
+    all_nodes.append(op_node)
+
+    dtype_onnx = onnx.helper.np_dtype_to_tensor_dtype(input_value.dtype)
+    graph_proto = onnx.helper.make_graph(
+        all_nodes,
+        f"{onnx_op}_test",
+        [onnx.helper.make_tensor_value_info("input", dtype_onnx, input_value.shape)],
+        [onnx.helper.make_tensor_value_info("output", dtype_onnx, out_shape)],
+    )
+
+    op_proto = onnx.OperatorSetIdProto()
+    op_proto.version = 14
+
+    onnx_model = onnx.helper.make_model(graph_proto, producer_name="test", opset_imports=[op_proto])
+    onnx.checker.check_model(onnx_model)
+
+    buf = io.BytesIO()
+    onnx.save_model(onnx_model, buf)
+    buf.seek(0)
+
+    sess = ort.InferenceSession(buf.read())
+    onnx_output = sess.run(["output"], {onnx_model.graph.input[0].name: input_value})
+    return onnx_output[0]
+
+
+@pytest.mark.parametrize(
+    "starts, ends, steps, axes",
+    [
+        pytest.param([0, 0, 0, 0], [-1, -1, -1, -1], [1, 1, 1, 1], [0, 1, 2, 3]),
+        pytest.param([1], [5], [1], [0]),
+        pytest.param([1, 1], [31, 31], [2, 2], [2, 3]),
+        pytest.param([0, 0, 0, 0], [-1, -1, -1, -1], [1, 1, 1, 1], [0, -1, -2, -3]),
+        pytest.param([0, 0, 0, 0], [-1, -1, -1, -1], None, None),
+    ],
+)
+def test_quantized_slice(starts, ends, steps, axes):
+    """Check that the Concrete-ML Slice operator is equivalent to the ONNX slice operator."""
+
+    # Cast all inputs to numpy arrays
+    starts = numpy.asarray(starts)
+    ends = numpy.asarray(ends)
+    steps = numpy.asarray(steps) if steps is not None else None
+    axes = numpy.asarray(axes) if axes is not None else None
+
+    # Initialize data and the op
+    data = numpy.random.randn(32, 16, 32, 32)
+    q_arr = QuantizedArray(n_bits=8, values=data)
+
+    q_op = ONNXSlice(
+        8,
+        "slice_op",
+        constant_inputs={1: starts, 2: ends, 3: axes, 4: steps},
+        input_quant_opts=q_arr.quantizer.quant_options,
+    )
+
+    result = q_op(q_arr)
+
+    list_args = [("starts", starts), ("ends", ends)]
+    if axes is not None:
+        list_args.append(("axes", axes))
+        if steps is not None:
+            list_args.append(("steps", steps))
+
+    onnx_output = make_single_function_onnx_and_run(
+        "Slice",
+        OrderedDict(list_args),
+        {},
+        q_arr.qvalues,
+        result.qvalues.shape,
+    )
+    assert numpy.array_equal(onnx_output, result.qvalues)
+
+
+@pytest.mark.parametrize(
+    "indices, axis",
+    [
+        pytest.param([1], 0),
+        pytest.param([1, 5, 7], 0),
+        pytest.param([1, 15], 3),
+        pytest.param([0, -1, -3, -16], -2),
+    ],
+)
+def test_quantized_gather(indices, axis):
+    """Test the Gather operator."""
+
+    # Cast all inputs to numpy arrays
+    indices = numpy.asarray(indices)
+
+    # Initialize data and the op
+    data = numpy.random.randn(32, 16, 32, 32)
+    q_arr = QuantizedArray(n_bits=8, values=data)
+
+    q_op = ONNXGather(
+        8,
+        "gather_op",
+        constant_inputs={1: indices},
+        input_quant_opts=q_arr.quantizer.quant_options,
+        axis=numpy.asarray(axis),
+    )
+
+    result = q_op(q_arr)
+
+    onnx_output = make_single_function_onnx_and_run(
+        "Gather",
+        OrderedDict([("indices", indices)]),
+        {"axis": axis},
+        q_arr.qvalues,
+        result.qvalues.shape,
+    )
+    assert numpy.array_equal(onnx_output, result.qvalues)
+
+
+@pytest.mark.parametrize("shape", [[1], [10, 10], [1, 50, 20, 20]])
+@pytest.mark.parametrize("value", [[0], [-1], [1]])
+def test_constant_of_shape(shape, value):
+    """Test the ConstantOfShape operator."""
+
+    # Create the op and apply it
+    q_op = ONNXConstantOfShape(8, "cst_of_shape_op", constant_inputs={0: shape}, value=value)
+
+    result = q_op()
+
+    # Check that the created tensor contains the correct values
+    assert numpy.array_equal(numpy.ones(tuple(shape)) * value, result)
+
+
+@pytest.mark.parametrize("shape", [(1,), (10, 10), (1, 50, 20, 20)])
+def test_quantized_shape(shape):
+    """Test the shape operator."""
+
+    # Create an input
+    np_input = numpy.zeros(tuple(shape))
+    q_input = QuantizedArray(8, np_input)
+
+    # Create the op and apply it
+    q_op = ONNXShape(8, "shape_op")
+    result = q_op(q_input)
+
+    # Check that the CML op returns the shape
+    assert np_input.shape == tuple(result)

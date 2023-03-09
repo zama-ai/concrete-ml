@@ -303,14 +303,16 @@ def test_post_training_quantization_constant_folding():
     assert numpy.array_equal(q_gemm.constant_inputs[1].values, expected_constant)
 
 
+@pytest.mark.parametrize("can_remove_tlu", [True, False])
 def test_compile_multi_input_nn_with_input_tlus(
     default_configuration,
     check_graph_input_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
+    can_remove_tlu,
 ):
     """Checks that there are input TLUs on a network for which input TLUs cannot be removed."""
 
-    torch_cnn_model = MultiOpOnSingleInputConvNN()
+    torch_cnn_model = MultiOpOnSingleInputConvNN(can_remove_tlu)
     numpy_input = numpy.random.uniform(-1, 1, size=(1, 1, 10, 10))
     tensor_input = torch.from_numpy(numpy_input).float()
 
@@ -328,6 +330,9 @@ def test_compile_multi_input_nn_with_input_tlus(
     )
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=True)
 
-    # Check that the network has TLUs in the input node
-    with pytest.raises(AssertionError, match=".*TLU on an input node.*"):
+    if can_remove_tlu:
         check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
+    else:
+        # Check that the network has TLUs in the input node
+        with pytest.raises(AssertionError, match=".*TLU on an input node.*"):
+            check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)

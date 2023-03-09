@@ -15,7 +15,7 @@ from ..common.utils import (
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
 )
-from .base_quantized_op import QuantizedOp
+from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
 from .quantizers import QuantizedArray, UniformQuantizer
 
 
@@ -233,7 +233,7 @@ class QuantizedModule:
 
         if debug:
             debug_value_tracker: Optional[
-                Dict[str, Dict[Union[int, str], Optional[Union[QuantizedArray, numpy.ndarray]]]]
+                Dict[str, Dict[Union[int, str], Optional[ONNXOpInputOutputType]]]
             ] = {}
             for (_, layer) in self.quant_layers_dict.values():
                 layer.debug_value_tracker = debug_value_tracker
@@ -276,11 +276,13 @@ class QuantizedModule:
         ]
 
         # Init layer_results with the inputs
-        layer_results = dict(zip(self.ordered_module_input_names, q_inputs))
+        layer_results: Dict[str, ONNXOpInputOutputType] = dict(
+            zip(self.ordered_module_input_names, q_inputs)
+        )
 
         bad_qat_ops: List[Tuple[str, str]] = []
         for output_name, (input_names, layer) in self.quant_layers_dict.items():
-            inputs = (layer_results[input_name] for input_name in input_names)
+            inputs = (layer_results.get(input_name, None) for input_name in input_names)
 
             error_tracker: List[int] = []
             layer.error_tracker = error_tracker
@@ -303,6 +305,9 @@ class QuantizedModule:
         )
 
         assert_true(len(outputs) == 1)
+
+        # The output of a graph must be a QuantizedArray
+        assert isinstance(outputs[0], QuantizedArray)
 
         return outputs[0].qvalues
 

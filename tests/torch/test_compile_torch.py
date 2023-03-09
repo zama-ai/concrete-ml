@@ -1,4 +1,5 @@
 """Tests for the torch to numpy module."""
+# pylint: disable=too-many-lines
 import io
 import tempfile
 import zipfile
@@ -21,9 +22,13 @@ from concrete.ml.pytest.torch_models import (
     BranchingModule,
     CNNGrouped,
     CNNOther,
+    DoubleQuantQATMixNet,
     FCSmall,
     MultiInputNN,
+    MultiInputNNConfigurable,
     NetWithLoops,
+    PaddingNet,
+    ShapeOperationsNet,
     SimpleQAT,
     SingleMixNet,
     StepActivationModule,
@@ -884,10 +889,22 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
 @pytest.mark.parametrize("n_bits, use_virtual_lib", [(2, False)])
 @pytest.mark.parametrize("use_qat", [True, False])
 @pytest.mark.parametrize("force_tlu", [True, False])
-@pytest.mark.parametrize("module, input_shape", [(SingleMixNet, (1, 8, 8)), (SingleMixNet, 10)])
+@pytest.mark.parametrize(
+    "module, input_shape, num_inputs, is_fully_leveled",
+    [
+        (SingleMixNet, (1, 8, 8), 1, True),
+        (SingleMixNet, 10, 1, True),
+        (MultiInputNNConfigurable, 10, 2, False),
+        (MultiInputNNConfigurable, (1, 8, 8), 2, False),
+        (DoubleQuantQATMixNet, (1, 8, 8), 1, False),
+        (DoubleQuantQATMixNet, 10, 1, False),
+    ],
+)
 def test_net_has_no_tlu(
     module,
     input_shape,
+    num_inputs,
+    is_fully_leveled,
     use_qat,
     force_tlu,
     n_bits,
@@ -899,6 +916,20 @@ def test_net_has_no_tlu(
     use_conv = isinstance(input_shape, tuple) and len(input_shape) > 1
 
     net = module(use_conv, use_qat, input_shape, n_bits)
+    net.eval()
+
+    if not is_fully_leveled:
+        # No need to force the presence of a TLU if there are TLUs in the body of the
+        # network
+        force_tlu = False
+
+    if num_inputs > 1:
+        # It seems Brevitas does not support multiple inputs, only test
+        # multiple inputs with regular Torch
+        use_qat = False
+
+    if module is DoubleQuantQATMixNet:
+        use_qat = True
 
     # We have the option to force having a TLU in the net by
     # applying a nonlinear function on the original network's output. Thus
@@ -916,7 +947,13 @@ def test_net_has_no_tlu(
     # Generate the input in both the 2d and 1d cases
     if not isinstance(input_shape, tuple):
         input_shape = (input_shape,)
-    inputset = numpy.random.uniform(size=(100, *input_shape))
+
+    # Create random input
+    inputset = (
+        tuple(numpy.random.uniform(-100, 100, size=(100, *input_shape)) for _ in range(num_inputs))
+        if num_inputs > 1
+        else numpy.random.uniform(-100, 100, size=(100, *input_shape))
+    )
 
     if use_qat:
         # Compile with appropriate QAT compilation function, here the zero-points will all be 0
@@ -943,8 +980,100 @@ def test_net_has_no_tlu(
     if force_tlu:
         with pytest.raises(AssertionError):
             check_graph_output_has_no_tlu(quantized_numpy_module.fhe_circuit.graph)
-        with pytest.raises(AssertionError):
-            assert "lookup_table" not in mlir
+        if is_fully_leveled:
+            with pytest.raises(AssertionError):
+                assert "lookup_table" not in mlir
     else:
         check_graph_output_has_no_tlu(quantized_numpy_module.fhe_circuit.graph)
-        assert "lookup_table" not in mlir
+        if is_fully_leveled:
+            assert "lookup_table" not in mlir
+
+
+@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("is_qat", [True, False])
+@pytest.mark.parametrize("n_channels", [2])
+def test_shape_operations_net(
+    use_virtual_lib, n_channels, is_qat, default_configuration, check_graph_output_has_no_tlu
+):
+    """Test a pattern of reshaping, concatenation, chunk extraction."""
+    net = ShapeOperationsNet(is_qat)
+    inputset = numpy.random.uniform(size=(1, n_channels, 2, 2))
+
+    if is_qat:
+        quant_model = compile_brevitas_qat_model(
+            net,
+            inputset,
+            configuration=default_configuration,
+            use_virtual_lib=use_virtual_lib,
+            p_error=0.01,
+        )
+    else:
+        quant_model = compile_torch_model(
+            net,
+            inputset,
+            configuration=default_configuration,
+            n_bits=3,
+            use_virtual_lib=use_virtual_lib,
+            p_error=0.01,
+        )
+
+    # In QAT quantization options are consistent across all the layers
+    # which allows for the elimination of TLUs
+    # In PTQ there are TLUs in the graph because Shape/Concat/Transpose
+    # must quantize inputs with some default quantization options
+
+    # In QAT testing in FHE is fast since there are no TLUs
+    # For PTQ we only test that the model cna be compiled and that it can be executed
+    if is_qat or use_virtual_lib:
+        test_input = numpy.random.uniform(size=(1, n_channels, 2, 2))
+        q_input = quant_model.quantize_input(test_input)
+        if use_virtual_lib:
+            q_output = quant_model.fhe_circuit.simulate(q_input)
+        else:
+            q_output = quant_model.fhe_circuit.encrypt_run_decrypt(q_input)
+
+        dequant_out = quant_model.dequantize_output(q_output)
+
+        torch_output = net(torch.tensor(test_input)).detach().numpy()
+
+        # In PTQ the results do not match because of a-priori set quantization options
+        # Currently no solution for concat/reshape/transpose correctness in PTQ is proposed.
+        if is_qat:
+            assert numpy.allclose(torch_output, dequant_out, atol=0.05, rtol=0)
+
+            # In QAT, since the quantization is defined a-priori, all TLUs will be removed
+            # and the input quantizer is moved to the clear. We can thus check there are no TLUs
+            # in the graph
+            check_graph_output_has_no_tlu(quant_model.fhe_circuit.graph)
+            if not use_virtual_lib:
+                assert "lookup_table" not in quant_model.fhe_circuit.mlir
+
+
+def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
+    """Test padding in PyTorch using ONNX pad operators."""
+    net = PaddingNet()
+
+    num_batch = 20
+    inputset = numpy.random.uniform(size=(num_batch, 1, 2, 2))
+
+    quant_model = compile_brevitas_qat_model(
+        net,
+        inputset,
+        configuration=default_configuration,
+        use_virtual_lib=False,
+        p_error=0.01,
+    )
+
+    test_input = numpy.random.uniform(size=(1, 1, 2, 2))
+
+    torch_output = net(torch.tensor(test_input)).detach().numpy()
+
+    cml_output = quant_model.forward_and_dequant(quant_model.quantize_input(test_input))
+
+    # We only care about checking that zeros added with padding are in the same positions
+    # between the torch output and the CML output
+    torch_output = torch_output > 0
+    cml_output = cml_output > 0
+
+    assert numpy.alltrue(torch_output == cml_output)
+    check_circuit_has_no_tlu(quant_model.fhe_circuit)

@@ -123,26 +123,15 @@ def test_torch_to_numpy(model_class, input_shape, activation_function, check_r2_
     check_r2_score(torch_predictions, numpy_predictions)
 
 
-@pytest.mark.parametrize(
-    "padding, gather_slice",
-    [
-        pytest.param(True, False),
-        pytest.param(False, True),
-    ],
-)
-def test_raises(padding, gather_slice):
+def test_raises():
     """Function to test incompatible layers."""
 
-    torch_incompatible_model = CNNInvalid(nn.ReLU, padding, False, gather_slice)
+    torch_incompatible_model = CNNInvalid(nn.ReLU, False)
 
-    error_msg_pattern = None
-    if padding:
-        error_msg_pattern = ".*Padding.*"
-    elif gather_slice:
-        error_msg_pattern = (
-            "The following ONNX operators are required to convert the torch model to numpy but are"
-            " not currently implemented: Gather, Slice*"
-        )
+    error_msg_pattern = (
+        "The following ONNX operators are required to convert the torch model to numpy but are"
+        " not currently implemented: ReduceMean*"
+    )
 
     with pytest.raises(
         Exception,

@@ -6,6 +6,7 @@ from typing import Iterable, List, Optional, Sequence, Set, Tuple, Union
 
 import numpy
 import onnx
+import onnx.helper
 from brevitas.function import max_int, min_int
 from concrete.numpy import univariate
 from concrete.onnx import conv as cnp_conv
@@ -19,6 +20,10 @@ from .onnx_impl_utils import (
     numpy_onnx_pad,
     onnx_avgpool_compute_norm_const,
 )
+
+
+class RawOpOutput(numpy.ndarray):
+    """Type construct that marks an ndarray as a raw output of a quantized op."""
 
 
 # This function is only used for comparison operators that return boolean values by default.
@@ -44,13 +49,15 @@ class ONNXMixedFunction:
     values as QuantizedArrays.
     """
 
-    def __init__(self, function, non_quant_params: Set[str]):
+    def __init__(self, function, non_quant_params: Set[str], output_is_raw: bool = False):
         """Create the mixed function and raw parameter list.
 
         Args:
             function (Any): function to be decorated
             non_quant_params: Set[str]: set of parameters that will not be quantized (stored
                 as numpy.ndarray)
+            output_is_raw (bool): indicates whether the op outputs a value that should
+                not be quantized
         """
 
         self.non_quant_params: Set[str] = non_quant_params
@@ -61,6 +68,7 @@ class ONNXMixedFunction:
             ",".join(bad_non_quant_params),
         )
         self.function = function  # type: ignore
+        self.output_is_raw = output_is_raw
 
     def __call__(self, *args, **kwargs):
         """Call the wrapped numpy function.
@@ -72,7 +80,10 @@ class ONNXMixedFunction:
         Returns:
             result (Any): result of calling the wrapped function on the input arguments
         """
-        return self.function(*args, **kwargs)
+        result = self.function(*args, **kwargs)
+        if self.output_is_raw:
+            result = tuple(r.view(RawOpOutput) for r in result)
+        return result
 
     @property
     def __name__(self):
@@ -84,11 +95,13 @@ class ONNXMixedFunction:
         return self.function.__name__
 
 
-def onnx_func_raw_args(*args):
+def onnx_func_raw_args(*args, output_is_raw: bool = False):
     """Decorate a numpy onnx function to flag the raw/non quantized inputs.
 
     Args:
         *args (tuple[Any]): function argument names
+        output_is_raw (bool): marks the function as returning raw
+            values that should not be quantized
 
     Returns:
         result (ONNXMixedFunction): wrapped numpy function with a list of mixed arguments
@@ -103,7 +116,7 @@ def onnx_func_raw_args(*args):
         Returns:
             result (ONNXMixedFunction): wrapped numpy function with a list of mixed arguments
         """
-        return ONNXMixedFunction(function, set(args))
+        return ONNXMixedFunction(function, set(args), output_is_raw)
 
     return decoration
 
@@ -721,9 +734,17 @@ def numpy_div(
     # Remove the where op once the following issue is explained
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/857
     bp = numpy_where_body(b != 0, b, 1)
-    ans = numpy.divide(a, bp)
 
-    return (ans,)
+    # Check if processing non-encrypted constants.
+    # We handle non-encrypted constants differently because integer constants
+    # must use `floor_divide`
+    if isinstance(a, RawOpOutput) and numpy.issubdtype(a.dtype, numpy.integer):
+        return (numpy.floor_divide(a, bp),)
+
+    # This branch may be processing encrypted data or float clear constants that are initializers
+    # In FHE for integer values we want floating point behavior that produces TLUs without
+    # loss of precision.
+    return (numpy.divide(a, bp),)
 
 
 def numpy_mul(
@@ -1084,7 +1105,7 @@ def numpy_identity(
     return (x,)
 
 
-@onnx_func_raw_args("newshape")
+@onnx_func_raw_args("newshape", "allowzero")
 def numpy_reshape(
     x: numpy.ndarray, newshape: numpy.ndarray, *, allowzero=0
 ) -> Tuple[numpy.ndarray]:
@@ -1320,7 +1341,7 @@ def numpy_maxpool(
     return (res,)
 
 
-@onnx_func_raw_args("pads")
+@onnx_func_raw_args("pads", "constant_value")
 def numpy_pad(
     data: numpy.ndarray,
     pads: numpy.ndarray,
@@ -1342,19 +1363,22 @@ def numpy_pad(
         res (numpy.ndarray): Padded tensor
     """
 
-    assert_true(bool(numpy.all(pads == 0)), "Padding operator supported only with all pads at zero")
     assert_true(mode == "constant", "Padding only supported with a constant pad value")
     assert_true(
         constant_value is None or constant_value == 0, "Pad only accepts a constant padding with 0s"
     )
 
-    return (data,)
+    # Pad the input if needed
+    x_pad = numpy_onnx_pad(data, tuple(pads))
+
+    return (x_pad,)
 
 
 def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     """Execute ONNX cast in Numpy.
 
-    Supports only booleans for now, which are converted to integers.
+    For traced values during compilation, it supports only booleans, which are converted to float.
+    For raw values (used in constant folding or shape computations), any cast is allowed.
 
     See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
@@ -1365,7 +1389,13 @@ def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     Returns:
         result (numpy.ndarray): a tensor with the required data type
     """
+    # For raw values, any cast is fine
+    if isinstance(data, RawOpOutput):
+        return (data.astype(onnx.helper.tensor_dtype_to_np_dtype(to)).view(RawOpOutput),)
+
     assert_true(to == onnx.TensorProto.BOOL)
+
+    # Will be used for traced values
     return (data.astype(numpy.float64),)
 
 
@@ -1760,3 +1790,154 @@ def numpy_squeeze(x: numpy.ndarray, axis=None) -> Tuple[numpy.ndarray]:
         Tuple[numpy.ndarray]: Output tensor.
     """
     return (numpy.squeeze(x, axis=tuple(axis) if axis is not None else axis),)
+
+
+@onnx_func_raw_args(output_is_raw=True)
+def numpy_shape(x: numpy.ndarray) -> Tuple[numpy.ndarray]:
+    """Return the shape of the input tensor.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#shape-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: outputs an 1D int64 tensor (per ONNX spec)
+    """
+
+    # As this op is used in a graph to take the shape of an intermediary encrypted
+    # tensor, it marks its output as a raw output
+    return (numpy.asarray(x.shape, numpy.int64).view(RawOpOutput),)
+
+
+@onnx_func_raw_args("shape", "value", output_is_raw=True)
+def numpy_constant_of_shape(shape: numpy.ndarray, *, value=0.0) -> Tuple[numpy.ndarray]:
+    """Create a constant tensor with a specified shape.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md#ConstantOfShape
+
+    Args:
+        shape (numpy.ndarray): the shape of the constant tensor
+        value (Optional[Any]): the constant value
+
+    Returns:
+        result(Tuple[numpy.ndarray]): the constant tensor
+    """
+
+    return (numpy.ones(shape, dtype=numpy.int64) * value,)
+
+
+@onnx_func_raw_args("starts", "ends", "steps", "axes")
+def numpy_slice(
+    x: numpy.ndarray,
+    starts: numpy.ndarray,
+    ends: numpy.ndarray,
+    axes: Optional[numpy.ndarray],
+    steps: Optional[numpy.ndarray],
+) -> Tuple[numpy.ndarray]:
+    """Slice the input according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#slice-13
+
+    Args:
+        x (numpy.ndarray): input tensor to slice
+        starts (numpy.ndarray): the starting indices, one for each axis to slice
+        ends (numpy.ndarray): the ending indices, one for each axis to slice
+        axes (numpy.ndarray): the axis indices, default is all axes
+        steps (numpy.ndarray): the steps along each axis, defaults to 1
+
+    Returns:
+        result (Tuple[numpy.ndarray]): the slice(s) of the input tensor as a new tensor
+    """
+
+    slices = []
+    if steps is None:
+        steps = numpy.ones_like(starts)
+
+    if axes is None:
+        axes = numpy.arange(x.ndim)
+        assert_true(
+            starts.shape[0] == x.ndim and steps.shape[0] == x.ndim,
+            "The Starts and Ends parameter of Slice must have the same "
+            "number of elements as the number of axes of the input when the axes "
+            f"parameter is None. Got starts with {starts.shape[0]} elements, ends "
+            f"with {steps.shape[0]} elements, while the input has {x.ndim} dimensions.",
+        )
+    else:
+        # Adjust negative axes
+        axes = axes.copy()
+        axes[axes < 0] += x.ndim
+        assert_true(
+            steps.shape[0] == starts.shape[0]
+            and ends.shape[0] == starts.shape[0]
+            and axes.shape[0] == starts.shape[0],
+            "The Starts and Ends parameter of Slice must have the same "
+            "number of elements as the axes parameter. Got starts with "
+            f"{starts.shape[0]} elements, ends "
+            f"with {steps.shape[0]} elements, while the axes had {axes.shape[0]} dimensions.",
+        )
+
+    # All negative values in starts[i] and ends[i] have dims[axes[i]] added to them,
+    # where dims are the dimensions of input. Then start[axes[i]] is the adjusted starts[i]
+    # is clamped into the range [0, dims[axes[i]]] for positive stepping and
+    # [0, dims[axes[i]]-1] for negative stepping.
+
+    # The clamping for the adjusted ends[i] depends on the sign of steps[i] and must
+    # accommodate copying 0 through dims[axes[i]] elements,
+    # so for positive stepping end[axes[i]] is clamped to [0, dims[axes[i]]],
+    # while for negative stepping it is clamped to [-1, dims[axes[i]]-1].
+
+    starts = starts.copy()
+    ends = ends.copy()
+    for k in range(starts.size):
+        if starts[k] < 0:
+            starts[k] += x.shape[axes[k]]
+        if ends[k] < 0:
+            ends[k] += x.shape[axes[k]]
+
+        if steps[k] < 0:
+            starts[k] = numpy.clip(starts[k], -x.shape[axes[k]] - 1, -1)
+            ends[k] = numpy.clip(ends[k], -x.shape[axes[k]] - 1, -1)
+        else:
+            starts[k] = numpy.clip(starts[k], 0, x.shape[axes[k]] - 1)
+            ends[k] = numpy.clip(ends[k], 0, x.shape[axes[k]])
+
+    # Check there are no duplicates
+    assert_true(
+        len(numpy.unique(axes)) == len(axes), "Axes parameter to Slice contained duplicates"
+    )
+
+    # Initialize slices to take the whole input tensor
+    slices = [slice(0, int(x.shape[axis]), 1) for axis in range(x.ndim)]
+
+    for idx, axis in enumerate(axes):
+        slices[axis] = slice(int(starts[idx]), int(ends[idx]), int(steps[idx]))
+
+    return (x[tuple(slices)],)
+
+
+@onnx_func_raw_args("indices", "axis")
+def numpy_gather(
+    x: numpy.ndarray, indices: numpy.ndarray, *, axis: int = 0
+) -> Tuple[numpy.ndarray]:
+    """Gather indices according to ONNX spec.
+
+    Args:
+        x (numpy.ndarray): input tensor to slice
+        indices (numpy.ndarray): the indices at which to extract values
+        axis (int): the axis along which to extract values (defaults to 0)
+
+    Returns:
+        result (Tuple[numpy.ndarray]): the values gathered from the input tensor as a new tensor
+    """
+
+    slices: List[Union[slice, numpy.ndarray]] = []
+
+    for axis_iter in range(x.ndim):
+        # Support both negative and positive axis
+        if (axis >= 0 and axis_iter == axis) or (axis < 0 and axis_iter == x.ndim + axis):
+            slices.append(indices)
+        else:
+            slices.append(slice(0, x.shape[axis_iter]))
+
+    return (x[tuple(slices)],)

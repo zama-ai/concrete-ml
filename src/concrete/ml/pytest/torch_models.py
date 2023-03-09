@@ -1,4 +1,6 @@
 """Torch modules for our pytests."""
+
+# pylint: disable=too-many-lines
 import brevitas.nn as qnn
 import numpy
 import torch
@@ -189,8 +191,10 @@ class CNNOther(nn.Module):
 class CNNInvalid(nn.Module):
     """Torch CNN model for the tests."""
 
-    def __init__(self, activation_function, padding, groups, gather_slice):
+    def __init__(self, activation_function, groups):
         super().__init__()
+
+        padding = True
 
         self.activation_function = activation_function()
         self.flatten_function = lambda x: torch.flatten(x, 1)
@@ -201,7 +205,7 @@ class CNNInvalid(nn.Module):
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
 
-        self.gather_slice = gather_slice
+        self.gather_slice = True
 
     def forward(self, x):
         """Forward pass.
@@ -220,7 +224,8 @@ class CNNInvalid(nn.Module):
         x = self.fc3(x)
         # Produce a Gather and Slice which are not supported
         if self.gather_slice:
-            return x[0, 0:-1:2]
+            x = x[0, 0:-1:2]
+        x = torch.mean(x)
         return x
 
 
@@ -307,6 +312,34 @@ class MultiInputNN(nn.Module):
             the output of the NN
         """
         return self.act(x + y)
+
+
+class MultiInputNNConfigurable(nn.Module):
+    """Torch model to test multiple inputs forward."""
+
+    def __init__(self, use_conv, use_qat, input_output, n_bits):  # pylint: disable=unused-argument
+        super().__init__()
+
+        if use_conv:
+            self.layer1 = nn.Conv2d(input_output[0], input_output[0], 1, 1, 0)
+            self.layer2 = nn.Conv2d(input_output[0], input_output[0], 1, 1, 0)
+        else:
+            self.layer1 = nn.Linear(input_output, input_output)
+            self.layer2 = nn.Linear(input_output, input_output)
+
+    def forward(self, x, y):
+        """Forward pass.
+
+        Args:
+            x: the first input of the NN
+            y: the second input of the NN
+
+        Returns:
+            the output of the NN
+        """
+        x = self.layer1(x)
+        y = self.layer2(y)
+        return self.layer1(x + y)
 
 
 class BranchingModule(nn.Module):
@@ -450,8 +483,9 @@ class NetWithConcatUnsqueeze(torch.nn.Module):
 class MultiOpOnSingleInputConvNN(nn.Module):
     """Network that applies two quantized operations on a single input."""
 
-    def __init__(self):
+    def __init__(self, can_remove_input_tlu: bool):
         super().__init__()
+        self.can_remove_input_tlu = can_remove_input_tlu
         self.conv1 = nn.Conv2d(1, 8, 3)
         self.conv2 = nn.Conv2d(1, 8, 3)
 
@@ -464,7 +498,13 @@ class MultiOpOnSingleInputConvNN(nn.Module):
         Returns:
             the output of the NN
         """
-        layer1_out = torch.relu(self.conv1(x))
+
+        # The quantizer for this network can be moved in the clear if the
+        # input is fed directly to two conv layers that have the same quantizer.
+        # To ensure the quantizer is performed in FHE, a univariate op is applied
+        # before _one_ of the convolutions
+        y = x if self.can_remove_input_tlu else torch.sigmoid(x)
+        layer1_out = torch.relu(self.conv1(y))
         layer2_out = torch.relu(self.conv2(x))
         return layer1_out + layer2_out
 
@@ -887,6 +927,44 @@ class SingleMixNet(nn.Module):
         return self.mixing_layer(x)
 
 
+class DoubleQuantQATMixNet(nn.Module):
+    """Torch model that with two different quantizers on the input.
+
+    Used to test that it keeps the input TLU.
+    """
+
+    def __init__(self, use_conv, use_qat, inp_size, n_bits):  # pylint: disable=unused-argument
+        super().__init__()
+
+        # A first quantizer
+        self.quant1 = qnn.QuantIdentity(bit_width=n_bits)
+        # A different quantizer
+        self.quant2 = qnn.QuantIdentity(bit_width=n_bits + 1)
+
+        if use_conv:
+            self.mixing_layer = qnn.QuantConv2d(
+                1, 1, 3, stride=1, bias=True, weight_bit_width=n_bits
+            )
+        else:
+            self.mixing_layer = qnn.QuantLinear(
+                inp_size, inp_size, bias=True, weight_bit_width=n_bits
+            )
+
+    def forward(self, x):
+        """Execute the single convolution.
+
+        Args:
+            x: the input of the NN
+
+        Returns:
+            the output of the NN
+        """
+
+        left_x1 = self.quant1(x)
+        right_x2 = self.quant2(x)
+        return self.mixing_layer(left_x1 + right_x2)
+
+
 class TorchSum(nn.Module):
     """Torch model to test the ReduceSum ONNX operator in a leveled circuit."""
 
@@ -981,4 +1059,89 @@ class NetWithConstantsFoldedBeforeOps(nn.Module):
         x = self.act1(x)
 
         x = self.dense2(x)
+        return x
+
+
+class ShapeOperationsNet(nn.Module):
+    """Torch QAT model that reshapes the input."""
+
+    def __init__(self, is_qat):
+        super().__init__()
+        self.is_qat = is_qat
+        if is_qat:
+            self.input_quant = qnn.QuantIdentity(bit_width=8)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model
+
+        Returns:
+            torch.tensor: Output of the network
+        """
+
+        def shufflenet_shuffle(x: torch.Tensor, groups: int) -> torch.Tensor:
+            """Shuffle the channels: split them into two groups and then recombine them.
+
+            In ShuffleNet, conv ops operate over the two branches, but here they are skipped
+            for simplicity.
+
+            Args:
+                x (torch.Tensor): the tensor that will be shuffled
+                groups (int): the number of groups of channels to
+
+            Returns:
+                torch.Tensor: the tensor containing the groups of channels of the input tensor
+            """
+
+            batchsize, num_channels, height, width = x.size()
+            channels_per_group = num_channels // groups
+
+            x = x.reshape(batchsize, groups, channels_per_group, height, width)
+            x = torch.transpose(x, 1, 2).contiguous()
+            x = x.reshape(batchsize, -1, height, width)
+
+            return x
+
+        if self.is_qat:
+            x = self.input_quant(x)
+        chunk1, chunk2 = x.chunk(2, dim=1)
+        out = torch.cat((chunk1, chunk2), dim=1)
+        return shufflenet_shuffle(out, 2)
+
+
+class PaddingNet(nn.Module):
+    """Torch QAT model that applies various padding patterns."""
+
+    def __init__(self):
+        super().__init__()
+
+        # Use a QAT network to allow the torch result to be the same as the CML result
+        self.input_quant = qnn.QuantIdentity(bit_width=8)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model
+
+        Returns:
+            torch.tensor: Output of the network
+        """
+
+        # Quantize input
+        x = self.input_quant(x)
+
+        # Torch pads starting from the last dimensions of the tensor moving forward, with
+        # potentially different padding at the start/end of the axes
+        # for example a 4d tensor NCHW, padded with [1, 2, 2, 3] is padded
+        # along the last 2 dimensions, with 1 cell to the left and 2 to the right (dimension 4: W)
+        # and 2 cells at the top and 3 at the bottom (dimension 3: H)
+        x = torch.nn.functional.pad(x, (3, 2))
+        x = torch.nn.functional.pad(x, (1, 2, 3, 4))
+
+        # Concrete-ML only supports padding on the last two dimensions as this is the
+        # most common setting
+        x = torch.nn.functional.pad(x, (1, 1, 2, 2, 0, 0, 0, 0))
         return x

@@ -10,13 +10,15 @@ import numpy
 from ..common.debugging import assert_true
 from ..common.utils import compute_bits_precision
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
-from ..onnx.ops_impl import ONNXMixedFunction
+from ..onnx.ops_impl import ONNXMixedFunction, RawOpOutput
 from .quantizers import (
     MinMaxQuantizationStats,
     QuantizationOptions,
     QuantizedArray,
     UniformQuantizationParameters,
 )
+
+ONNXOpInputOutputType = Union[numpy.ndarray, QuantizedArray, None]
 
 ALL_QUANTIZED_OPS: Set[Type] = set()
 
@@ -84,9 +86,13 @@ class QuantizedOp:
     # that will be decrypted and dequantized in the clear
     produces_graph_output = False
 
+    # Determines if the op produces a raw output (not quantized). This can
+    # be a float or integer tensor that contains non-encrypted values
+    produces_raw_output = False
+
     error_tracker: Optional[List[int]] = None
     debug_value_tracker: Optional[
-        Dict[str, Dict[Union[int, str], Optional[Union[QuantizedArray, numpy.ndarray]]]]
+        Dict[str, Dict[Union[int, str], Optional[ONNXOpInputOutputType]]]
     ] = None
 
     POSITIONAL_ARGUMENTS_KINDS = {
@@ -214,16 +220,16 @@ class QuantizedOp:
         cls._populate_op_input_infos()
         cls._has_attr = len(cls._authorized_attr_names) > 0
 
-    def __call__(self, *q_inputs: QuantizedArray) -> QuantizedArray:
+    def __call__(self, *q_inputs: ONNXOpInputOutputType) -> ONNXOpInputOutputType:
         """Process the forward pass of the quantized op according to the implementation.
 
         The calibrate method needs to be called with sample data before using this function.
 
         Args:
-            *q_inputs (QuantizedArray): Quantized inputs.
+            *q_inputs (ONNXOpInputOutputType): Quantized inputs.
 
         Returns:
-            QuantizedArray: Quantized output.
+            ONNXOpInputOutputType: Quantized output.
         """
 
         return self.q_impl(*q_inputs, **self.attrs)
@@ -235,6 +241,7 @@ class QuantizedOp:
         if isinstance(cls.impl, ONNXMixedFunction):
             impl_signature = signature(cls.impl.function)
             cls._inputs_not_quantized = cls.impl.non_quant_params
+            cls.produces_raw_output = cls.impl.output_is_raw
         else:
             impl_signature = signature(cls.impl)
         impl_params = impl_signature.parameters
@@ -282,16 +289,21 @@ class QuantizedOp:
         input_name = cls._input_idx_to_params_name[input_name_or_idx]
         return input_name not in cls._inputs_not_quantized
 
-    def q_impl(self, *q_inputs: QuantizedArray, **attrs) -> QuantizedArray:
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
         """Execute the quantized forward.
 
         Args:
-            *q_inputs (QuantizedArray): Quantized inputs.
+            *q_inputs (ONNXOpInputOutputType): Quantized inputs.
             **attrs: the QuantizedOp attributes.
 
         Returns:
-            QuantizedArray: The returned quantized value.
+            ONNXOpInputOutputType: The returned quantized value.
         """
+
         # Here we need the float32 values from the QuantizedArrays. By default, when possible,
         # we want QuantizedOps to convert to TLUs. Ops that need to do quantized computation
         # will call _prepare_inputs_with_constants with quantize_actual_values=True
@@ -299,28 +311,22 @@ class QuantizedOp:
             *q_inputs, calibrate=False, quantize_actual_values=False
         )
         f_outputs = self.call_impl(*prepared_inputs, **attrs)
+
+        # If the op takes only raw values as inputs it must be producing only raw outputs
+        # Operations such as Add/Mul can, in some settings, operate in this setting
+        # for example in subgraphs that manipulate shapes
+        if all(isinstance(q_input, RawOpOutput) for q_input in q_inputs):
+            return f_outputs.view(RawOpOutput)
+
         return self.prepare_output(f_outputs)
 
-    def _prepare_inputs_with_constants(
-        self,
-        *inputs: Union[QuantizedArray, numpy.ndarray],
-        calibrate: bool,
-        quantize_actual_values: bool,
-    ):  # pylint: disable=too-many-branches
-        """Retrieve all the inputs of an operator in the computational graph.
-
-        This helper method will prepare a list of inputs to an operator. Inputs can be variables,
-        i.e. encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
-        the slots of a list, as the order of inputs is important.
-
-        Usually the input list is populated with QuantizedArrays. Operators that require the
-        original float (operators that only produce or contribute to TLUs) values will just read
-        out the .values of  these quantized arrays. Operators that do matrix multiplication will
-        read out the quantized integer values of the arrays.  The method can be called during
-        calibration, in which case the variable inputs are just float numpy tensors.
+    def _prepare_constants(
+        self, number_of_inputs: int, calibrate: bool, quantize_actual_values: bool
+    ) -> List[Optional[ONNXOpInputOutputType]]:
+        """Prepare a list of inputs of the quantized op, filling in the constants.
 
         Args:
-             *inputs (Union[QuantizedArray, numpy.ndarray]): A list of all variable inputs
+            number_of_inputs (int): The total number of inputs to fill in
             calibrate (bool): A flag specifying if the method is called during calibration
             quantize_actual_values (bool): If called by a quantized operator that does matrix
                 multiplication between encrypted and clear values, this method will apply
@@ -329,21 +335,12 @@ class QuantizedOp:
 
         Returns:
             result (List): a list of inputs which are either QuantizedArray or numpy.arrays. If
-                quantize_actual_values==True then the quantization code is applied
+                quantize_actual_values==True then the constants are assumed to be quantized
         """
-        num_onnx_inputs = len(self._params_that_are_onnx_inputs)
-        num_required_onnx_inputs = len(self._params_that_are_required_onnx_inputs)
-        num_provided_constants = len(self.constant_inputs)
-        num_inputs = len(inputs)
-        is_param_variadic = len(self._params_that_are_onnx_var_inputs) > 0
 
-        prepared_inputs: List[Optional[Union[QuantizedArray, numpy.ndarray]]]
-        if is_param_variadic:
-            # prepared_inputs length can't be inferred from num_onnx_inputs with a var parameter
-            # use inputs instead
-            prepared_inputs = [None] * num_inputs
-        else:
-            prepared_inputs = [None] * num_onnx_inputs
+        prepared_inputs: List[Optional[ONNXOpInputOutputType]]
+
+        prepared_inputs = [None] * number_of_inputs
 
         # If calibrating (calibrate=True): inputs are numpy.ndarrays of float32
         # If used in the computation graph (calibrate=False): inputs are QuantizedArrays, of which
@@ -362,12 +359,113 @@ class QuantizedOp:
             # in this case are produced by other ops or inputs. numpy.arrays are produced
             # by initializers
             if calibrate or not quantize_actual_values:
-                if self.__class__.must_quantize_input(input_idx):
+                is_clear_value = isinstance(constant_val, RawOpOutput)
+
+                if not is_clear_value and self.__class__.must_quantize_input(input_idx):
                     prepared_inputs[input_idx] = constant_val.values
                 else:
                     prepared_inputs[input_idx] = constant_val
             else:
                 prepared_inputs[input_idx] = constant_val
+
+        return prepared_inputs
+
+    def _prepare_quantized_input(self, input_: QuantizedArray) -> QuantizedArray:
+        """Prepare a quantized encrypted input for a univariate or mixin operation.
+
+        Args:
+            input_ (QuantizedArray): the encrypted input
+
+        Returns:
+            result (QuantizedArray): the quantized input, either re-quantized to new quantization
+                options, or keeping the original quantization
+        """
+
+        # Here we want to trace the code that does quantization, to produce a TLU
+        # We use the op's input quantization options
+
+        quant_opts = QuantizationOptions(self.input_quant_opts.n_bits)
+        quant_opts.copy_opts(self.input_quant_opts)
+
+        # And if this op is in a QAT enabled graph, we disable QAT if this op is fusable
+        # If the op can be fused, quantization will not be used, no need to run the QAT
+        # specific quantization process. This case is encountered for example for Add
+        # when the tensors that are added are produced from a single integer tensor
+        if self.can_fuse():
+            quant_opts.is_qat = False
+
+        # Now we quantize the input. For ops that require quantized inputs (which
+        # call this function with quantize_actual_values==True), this
+        # will produce numpy ops that will be fused to a TLU. Fusable ops will
+        # use the .values directly (see else branch below). We need the quantization
+        # stats to generate the quantization code, they cannot be computed on the fly.
+
+        # Conv/Matmul layers have quantization options initialized by the PTQ default,
+        # but when parsing the ONNX graph, some options can be overwritten. Thus
+        # when evaluating QAT layers we ignore one of these options to allow the
+        # override.
+        if quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True):
+            # Pass-through when the input is already quantized in
+            # the manner that this op requires: use the qvalues directly,
+            # they will then be used by this quantized op's q_impl
+            new_input = QuantizedArray(
+                quant_opts.n_bits,
+                input_.qvalues,
+                value_is_float=False,
+                options=quant_opts,
+                stats=input_.quantizer.quant_stats,
+                params=input_.quantizer.quant_params,
+            )
+        else:
+            quant_params = None
+            if input_.quantizer.is_qat:
+                quant_params = input_.quantizer.quant_params
+
+            new_input = QuantizedArray(
+                quant_opts.n_bits,
+                input_.values,
+                options=quant_opts,
+                stats=input_.quantizer.quant_stats,
+                params=quant_params,
+            )
+
+        return new_input
+
+    def _prepare_inputs_with_constants(
+        self,
+        *inputs: ONNXOpInputOutputType,
+        calibrate: bool,
+        quantize_actual_values: bool,
+    ):
+        """Retrieve all the inputs of an operator in the computational graph.
+
+        This helper method will prepare a list of inputs to an operator. Inputs can be variables,
+        i.e. encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
+        the slots of a list, as the order of inputs is important.
+
+        Usually the input list is populated with QuantizedArrays. Operators that require the
+        original float (operators that only produce or contribute to TLUs) values will just read
+        out the .values of  these quantized arrays. Operators that do matrix multiplication will
+        read out the quantized integer values of the arrays.  The method can be called during
+        calibration, in which case the variable inputs are just float numpy tensors.
+
+        Args:
+             *inputs (ONNXOpInputOutputType): A list of all variable inputs
+            calibrate (bool): A flag specifying if the method is called during calibration
+            quantize_actual_values (bool): If called by a quantized operator that does matrix
+                multiplication between encrypted and clear values, this method will apply
+                the quantization computation to the input, which will be fused in a (potentially
+                larger) TLU, with preceding floating point computations
+
+        Returns:
+            result (List): a list of inputs which are either QuantizedArray or numpy.arrays. If
+                quantize_actual_values==True then the quantization code is applied
+        """
+        num_onnx_inputs = len(self._params_that_are_onnx_inputs)
+        num_required_onnx_inputs = len(self._params_that_are_required_onnx_inputs)
+        num_provided_constants = len(self.constant_inputs)
+        num_inputs = len(inputs)
+        is_param_variadic = len(self._params_that_are_onnx_var_inputs) > 0
 
         condition_inputs = (
             num_onnx_inputs >= (num_inputs) + num_provided_constants >= num_required_onnx_inputs
@@ -382,6 +480,10 @@ class QuantizedOp:
             f"{num_required_onnx_inputs} and {num_onnx_inputs} inputs and constants.",
         )
 
+        prepared_inputs = self._prepare_constants(
+            num_inputs if is_param_variadic else num_onnx_inputs, calibrate, quantize_actual_values
+        )
+
         # If calibrating, the function is called with numpy.ndarrays
         # If not calibrating, the function is called with QuantizedArray inputs
         # If quantized values are requested, we quantized the float32 values contained in the
@@ -392,68 +494,38 @@ class QuantizedOp:
             while prepared_inputs[curr_input_fill_idx] is not None:
                 curr_input_fill_idx += 1
 
-            if calibrate:
+            # This is an integer scalar (e.g. tensor shape). This is not an encrypted
+            # value, it is not traced
+            is_clear_value = isinstance(input_, RawOpOutput)
+
+            if input_ is None:
+                # Do nothing if the input is not set, the underlying ops will handle the None
+                pass
+            elif calibrate or is_clear_value:
+                # This is used during calibration with numpy.ndarrays
+                # or then the input is raw (not quantized)
                 prepared_inputs[curr_input_fill_idx] = input_
             elif quantize_actual_values:
-                # Here we want to trace the code that does quantization, to produce a TLU
+                # This is used by mixing (conv/gemm) or value re-arranging ops (reshape)
                 input_ = cast(QuantizedArray, input_)
+                new_input = self._prepare_quantized_input(input_)
 
-                # We use the op's input quantization options
-                quant_opts = QuantizationOptions(self.input_quant_opts.n_bits)
-                quant_opts.copy_opts(self.input_quant_opts)
-
-                # And if this op is in a QAT enabled graph, we disable QAT if this op is fusable
-                # If the op can be fused, quantization will not be used, no need to run the QAT
-                # specific quantization process. This case is encountered for example for Add
-                # when the tensors that are added are produced from a single integer tensor
-                if self.can_fuse():
-                    quant_opts.is_qat = False
-
-                # Now we quantize the input. For ops that require quantized inputs (which
-                # call this function with quantize_actual_values==True), this
-                # will produce numpy ops that will be fused to a TLU. Fusable ops will
-                # use the .values directly (see else branch below). We need the quantization
-                # stats to generate the quantization code, they cannot be computed on the fly.
-
-                # Conv/Matmul layers have quantization options initialized by the PTQ default,
-                # but when parsing the ONNX graph, some options can be overwritten. Thus
-                # when evaluating QAT layers we ignore one of these options to allow the
-                # override.
-                if quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True):
-                    # Pass-through when the input is already quantized in
-                    # the manner that this op requires: use the qvalues directly,
-                    # they will then be used by this quantized op's q_impl
-                    new_input = QuantizedArray(
-                        quant_opts.n_bits,
-                        input_.qvalues,
-                        value_is_float=False,
-                        options=quant_opts,
-                        stats=input_.quantizer.quant_stats,
-                        params=input_.quantizer.quant_params,
-                    )
-                else:
-                    quant_params = None
-                    if input_.quantizer.is_qat:
-                        quant_params = input_.quantizer.quant_params
-
-                    new_input = QuantizedArray(
-                        quant_opts.n_bits,
-                        input_.values,
-                        options=quant_opts,
-                        stats=input_.quantizer.quant_stats,
-                        params=quant_params,
-                    )
-
+                # Check that the input quantizer is correct - that it can de-quantize
+                # values correctly. If it's not, it is added to the list of invalid tensors
+                # for which an error is raised
                 if (
-                    quant_opts.is_qat
+                    new_input.quantizer.is_qat
                     and not input_.quantizer.is_precomputed_qat
                     and self.error_tracker is not None
-                    and not new_input.quantizer.check_is_uniform_quantized(quant_opts)
+                    and not new_input.quantizer.check_is_uniform_quantized(
+                        new_input.quantizer.quant_options
+                    )
                 ):
                     self.error_tracker.append(input_idx)
 
                 prepared_inputs[curr_input_fill_idx] = new_input
             else:
+                # This is usually used for univariate ops that are fused into TLUs
                 input_ = cast(QuantizedArray, input_)
                 prepared_inputs[curr_input_fill_idx] = input_.values
 
@@ -486,9 +558,12 @@ class QuantizedOp:
         prepared_inputs = self._prepare_inputs_with_constants(
             *inputs, calibrate=True, quantize_actual_values=False
         )
-        quantized_samples = QuantizedArray(
-            self.n_bits, self.call_impl(*prepared_inputs, **self.attrs)
-        )
+
+        raw_result = self.call_impl(*prepared_inputs, **self.attrs)
+        if isinstance(raw_result, RawOpOutput):
+            return raw_result
+
+        quantized_samples = QuantizedArray(self.n_bits, raw_result)
 
         self.output_quant_params = quantized_samples.quantizer.quant_params
         self.output_quant_stats = quantized_samples.quantizer.quant_stats
