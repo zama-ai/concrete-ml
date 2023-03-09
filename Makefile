@@ -697,10 +697,6 @@ check_links:
 	poetry run python ./script/make_utils/check_headers.py
 
 	@# For weblinks and internal references
-	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it
-	@# 		requires credentials
-	@#	--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: issues with access to
-	@#		our private repo
 	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
@@ -716,8 +712,6 @@ check_links:
 	@#		to gitbook images in the HTML checker. But the images are actually checked by the 
 	@#		markdown link checker, `local_link_check.sh`.
 	poetry run linkchecker docs --check-extern \
-		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
-		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
@@ -759,10 +753,6 @@ check_links_after_release: docs
 	poetry run python ./script/make_utils/local_link_check.py
 
 	@# For weblinks and internal references
-	@# 	--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues is here because it
-	@# 		requires credentials
-	@#	--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: issues with access to
-	@#		our private repo
 	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
@@ -773,8 +763,6 @@ check_links_after_release: docs
 	@#		to gitbook images in the HTML checker. But the images are actually checked by the
 	@#		markdown link checker, `local_link_check.sh`.
 	poetry run linkchecker docs --check-extern \
-		--ignore-url=https://github.com/zama-ai/concrete-numpy-internal/issues \
-		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
