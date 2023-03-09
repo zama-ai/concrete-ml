@@ -8,17 +8,20 @@ There are three ways to contribute to Concrete-ML:
 
 ## 1. Creating a new branch
 
-Concrete-ML uses a consistent branch naming scheme, and you are expected to follow it as well. Here is the format, along with some examples:
+To create your branch, you have to use the issue ID somewhere in the branch name:
 
 ```shell
 git checkout -b {feat|fix|refactor|test|benchmark|doc|style|chore}/short-description_$issue_id
+git checkout -b short-description_$issue_id
+git checkout -b $issue_id_short-description
 ```
 
 e.g.
 
 ```shell
 git checkout -b feat/explicit-tlu_11
-git checkout -b fix/tracing_indexing_42
+git checkout -b tracing_indexing_42
+git checkout -b 42_tracing_indexing
 ```
 
 ## 2. Before committing
@@ -98,9 +101,3 @@ git push --force
 ```
 
 You can learn more about rebasing [here](https://git-scm.com/docs/git-rebase).
-
-## 5. Releases
-
-Before any final release, Concrete-ML contributors go through a release candidate (RC) cycle. The idea is that once the codebase and documentations look ready for release, you create an RC release by opening an issue with the release template [here](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=&labels=&template=release.md), starting with version `vX.Y.Zrc1` and then with versions `vX.Y.Zrc2`, `vX.Y.Zrc3`...
-
-Once the last RC is deemed ready, open an issue with the release template using the last RC version from which you remove the `rc?` part (i.e. `v12.67.19` if your last RC version was `v12.67.19-rc4`) on [GitHub](https://github.com/zama-ai/concrete-ml-internal/issues/new?assignees=&labels=&template=release.md).
