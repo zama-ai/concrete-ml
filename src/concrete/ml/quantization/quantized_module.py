@@ -14,6 +14,7 @@ from ..common.utils import (
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
+    to_tuple,
 )
 from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
 from .quantizers import QuantizedArray, UniformQuantizer
@@ -53,8 +54,7 @@ def _get_inputset_generator(q_inputs: Union[numpy.ndarray, Tuple[numpy.ndarray, 
     Returns:
         Generator: The input set generator with proper dimensions.
     """
-    if not isinstance(q_inputs, tuple):
-        q_inputs = (q_inputs,)
+    q_inputs = to_tuple(q_inputs)
 
     assert len(q_inputs) > 0, "Inputset cannot be empty"
 
@@ -461,15 +461,13 @@ class QuantizedModule:
         Returns:
             Circuit: The compiled Circuit.
         """
+        inputs = to_tuple(inputs)
 
-        if not isinstance(inputs, tuple):
-            inputs = (inputs,)
-        else:
-            ref_len = inputs[0].shape[0]
-            assert_true(
-                all(input.shape[0] == ref_len for input in inputs),
-                "Mismatched dataset lengths",
-            )
+        ref_len = inputs[0].shape[0]
+        assert_true(
+            all(input.shape[0] == ref_len for input in inputs),
+            "Mismatched dataset lengths",
+        )
 
         assert not numpy.any([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]), (
             "Inputs used for compiling a QuantizedModule should only be floating points and not"

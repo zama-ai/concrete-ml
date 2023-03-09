@@ -17,6 +17,7 @@ from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
     is_regressor_or_partial_regressor,
+    to_tuple,
 )
 from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.sklearn import (
@@ -438,7 +439,7 @@ def check_is_good_execution_for_cml_vs_circuit():
             n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
                 different this allows to run the evaluation multiple times
         """
-        inputs = (inputs,) if not isinstance(inputs, tuple) else inputs
+        inputs = to_tuple(inputs)
 
         for _ in range(n_allowed_runs):
 
@@ -448,8 +449,7 @@ def check_is_good_execution_for_cml_vs_circuit():
                 if not numpy.all(
                     [numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]
                 ):
-                    inputs = model_function.quantize_input(*inputs)
-                    inputs = (inputs,) if not isinstance(inputs, tuple) else inputs
+                    inputs = to_tuple(model_function.quantize_input(*inputs))
 
                 results_cnp_circuit = model_function.forward_in_fhe(*inputs, simulate=simulate)
                 results_model_function = model_function.forward(*inputs)

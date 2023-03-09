@@ -443,3 +443,19 @@ def compute_bits_precision(x: numpy.ndarray) -> int:
         int: the number of bits required to represent x
     """
     return Integer.that_can_represent([x.min(), x.max()]).bit_width
+
+
+def to_tuple(x: Any) -> tuple:
+    """Make the input a tuple if it is not already the case.
+
+    Args:
+        x (Any): The input to consider. It can already be an input.
+
+    Returns:
+        tuple: The input as a tuple.
+    """
+    # If the input is not a tuple, return a tuple of a single element
+    if not isinstance(x, tuple):
+        return (x,)
+
+    return x

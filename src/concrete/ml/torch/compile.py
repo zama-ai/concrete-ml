@@ -17,6 +17,7 @@ from ..common.utils import (
     check_there_is_no_p_error_options_in_configuration,
     get_onnx_opset_version,
     manage_parameters_for_pbs_errors,
+    to_tuple,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_utils import remove_initializer_from_input
@@ -100,10 +101,8 @@ def _compile_torch_or_onnx_model(
         "Rounding cannot be used in FHE yet.",
     )
 
-    inputset_as_numpy_tuple = (
-        tuple(convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in torch_inputset)
-        if isinstance(torch_inputset, tuple)
-        else (convert_torch_tensor_or_numpy_array_to_numpy_array(torch_inputset),)
+    inputset_as_numpy_tuple = tuple(
+        convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
     )
 
     # Tracing needs to be done with the batch size of 1 since we compile our models to FHE with
@@ -332,10 +331,8 @@ def compile_brevitas_qat_model(
         QuantizedModule: The resulting compiled QuantizedModule.
     """
 
-    inputset_as_numpy_tuple = (
-        tuple(convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in torch_inputset)
-        if isinstance(torch_inputset, tuple)
-        else (convert_torch_tensor_or_numpy_array_to_numpy_array(torch_inputset),)
+    inputset_as_numpy_tuple = tuple(
+        convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
     )
 
     dummy_input_for_tracing = tuple(

@@ -15,6 +15,7 @@ import torch
 import torch.quantization
 from torch import nn
 
+from concrete.ml.common.utils import to_tuple
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.pytest.torch_models import (
     FC,
@@ -73,10 +74,9 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     # Define an input shape (n_examples, n_features)
     n_examples = 500
 
-    # Define the torch model
-    if not isinstance(input_output_feature, tuple):
-        input_output_feature = (input_output_feature,)
+    input_output_feature = to_tuple(input_output_feature)
 
+    # Define the torch model
     torch_model = model_class(
         input_output=input_output_feature[0], activation_function=activation_function
     )
@@ -84,13 +84,9 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     num_inputs = len(signature(torch_model.forward).parameters)
 
     # Create random input
-    inputset = (
-        tuple(
-            numpy.random.uniform(-100, 100, size=(n_examples, *input_output_feature))
-            for _ in range(num_inputs)
-        )
-        if num_inputs > 1
-        else numpy.random.uniform(-100, 100, size=(n_examples, *input_output_feature))
+    inputset = tuple(
+        numpy.random.uniform(-100, 100, size=(n_examples, *input_output_feature))
+        for _ in range(num_inputs)
     )
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
@@ -103,14 +99,9 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
         )
 
         if is_onnx:
-
             output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
-            inputset_as_numpy_tuple = (
-                (val for val in inputset) if isinstance(inputset, tuple) else (inputset,)
-            )
-            dummy_input = tuple(
-                torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
-            )
+
+            dummy_input = tuple(torch.from_numpy(val[[0], ::]).float() for val in inputset)
             torch.onnx.export(
                 torch_model,
                 dummy_input,
@@ -148,9 +139,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
         )
 
         qtest = quantized_numpy_module.quantize_input(*x_test)
-
-        if not isinstance(qtest, tuple):
-            qtest = (qtest,)
 
         quantized_numpy_module.check_model_is_compiled()
 
@@ -273,15 +261,12 @@ def accuracy_test_rounding(
     )
 
     # Make sure the two modules have the same quantization result
-
     qtest = quantized_numpy_module.quantize_input(*x_test)
     qtest_high = quantized_numpy_module_round_high_precision.quantize_input(*x_test)
     qtest_low = quantized_numpy_module_round_low_precision.quantize_input(*x_test)
+
     numpy.testing.assert_array_equal(qtest, qtest_high)
     numpy.testing.assert_array_equal(qtest, qtest_low)
-
-    if not isinstance(qtest, tuple):
-        qtest = (qtest,)
 
     results = []
     results_high_precision = []
@@ -292,7 +277,7 @@ def accuracy_test_rounding(
         # while keeping the dimension of the original tensors.
         # e.g. if qtest is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
-        q_x = tuple(q[[i]] for q in qtest)
+        q_x = tuple(q[[i]] for q in to_tuple(qtest))
 
         # encrypt, run, and decrypt with different precision modes
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
@@ -694,20 +679,12 @@ def test_pretrained_mnist_qat(
         verbose=verbose,
     )
 
-    num_inputs = 1
-
-    # Create test data tuple
-    x_test = tuple(inputset for _ in range(num_inputs))
-
-    # Check the forward works with the high bitwidth
-    qtest = quantized_numpy_module.quantize_input(*x_test)
-
-    if not isinstance(qtest, tuple):
-        qtest = (qtest,)
-
     quantized_numpy_module.check_model_is_compiled()
 
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module, simulate=True)
+    check_is_good_execution_for_cml_vs_circuit(inputset, quantized_numpy_module, simulate=True)
+
+    # Check the forward works with the high bitwidth
+    qtest = quantized_numpy_module.quantize_input(inputset)
 
     # Collect VL results
     results = []
@@ -717,7 +694,7 @@ def test_pretrained_mnist_qat(
         # while keeping the dimension of the original tensors.
         # e.g. if qtest is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
-        q_x = tuple(q[[i]] for q in qtest)
+        q_x = tuple(q[[i]] for q in to_tuple(qtest))
         q_result = quantized_numpy_module.fhe_circuit.simulate(*q_x)
         result = quantized_numpy_module.dequantize_output(q_result)
         result = numpy.argmax(result)
@@ -949,14 +926,11 @@ def test_net_has_no_tlu(
         net.forward = relu_adder_decorator(net.forward)
 
     # Generate the input in both the 2d and 1d cases
-    if not isinstance(input_shape, tuple):
-        input_shape = (input_shape,)
+    input_shape = to_tuple(input_shape)
 
     # Create random input
-    inputset = (
-        tuple(numpy.random.uniform(-100, 100, size=(100, *input_shape)) for _ in range(num_inputs))
-        if num_inputs > 1
-        else numpy.random.uniform(-100, 100, size=(100, *input_shape))
+    inputset = tuple(
+        numpy.random.uniform(-100, 100, size=(100, *input_shape)) for _ in range(num_inputs)
     )
 
     if use_qat:

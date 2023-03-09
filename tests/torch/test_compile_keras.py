@@ -88,9 +88,6 @@ def compile_and_test_keras(
     )
     qtest = quantized_numpy_module.quantize_input(*x_test)
 
-    if not isinstance(qtest, tuple):
-        qtest = (qtest,)
-
     quantized_numpy_module.check_model_is_compiled()
 
     check_is_good_execution_for_cml_vs_circuit(
