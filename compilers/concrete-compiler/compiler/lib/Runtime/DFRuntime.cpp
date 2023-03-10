@@ -1112,6 +1112,7 @@ static inline void _dfr_start_impl(int argc, char *argv[]) {
   mlir::concretelang::dfr::num_nodes = hpx::get_num_localities().get();
 
   new mlir::concretelang::dfr::WorkFunctionRegistry();
+  new mlir::concretelang::dfr::RuntimeContextManager();
   mlir::concretelang::dfr::_dfr_jit_phase_barrier = new hpx::lcos::barrier(
       "phase_barrier", mlir::concretelang::dfr::num_nodes,
       hpx::get_locality_id());
@@ -1161,23 +1162,24 @@ void _dfr_start(int64_t use_dfr_p, void *ctx) {
     if (!mlir::concretelang::dfr::_dfr_is_root_node() &&
         !mlir::concretelang::dfr::_dfr_is_jit())
       _dfr_stop_impl();
-  }
 
-  // If DFR is used and a runtime context is needed, and execution is
-  // distributed, then broadcast from root to all compute nodes.
-  if (use_dfr_p && (mlir::concretelang::dfr::num_nodes > 1) &&
-      (ctx || !mlir::concretelang::dfr::_dfr_is_root_node())) {
-    BEGIN_TIME(&mlir::concretelang::dfr::broadcast_timer);
-    new mlir::concretelang::dfr::RuntimeContextManager();
-    mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
-        ->setContext(ctx);
-
+    // If DFR is used and a runtime context is needed, and execution is
+    // distributed, then broadcast from root to all compute nodes.
+    if (mlir::concretelang::dfr::num_nodes > 1 &&
+        (ctx || !mlir::concretelang::dfr::_dfr_is_root_node())) {
+      BEGIN_TIME(&mlir::concretelang::dfr::broadcast_timer);
+      mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
+          ->setContext(ctx);
+    }
     // If this is not JIT, then the remote nodes never reach _dfr_stop,
     // so root should not instantiate this barrier.
     if (mlir::concretelang::dfr::_dfr_is_root_node() &&
         mlir::concretelang::dfr::_dfr_is_jit())
       mlir::concretelang::dfr::_dfr_startup_barrier->wait();
-    END_TIME(&mlir::concretelang::dfr::broadcast_timer, "Key broadcasting");
+
+    if (mlir::concretelang::dfr::num_nodes > 1 && ctx) {
+      END_TIME(&mlir::concretelang::dfr::broadcast_timer, "Key broadcasting");
+    }
   }
   BEGIN_TIME(&mlir::concretelang::dfr::compute_timer);
 }
@@ -1203,12 +1205,13 @@ void _dfr_stop(int64_t use_dfr_p) {
       // gain as the root node would be waiting for the end of computation
       // on all remote nodes before reaching here anyway (dataflow
       // dependences).
-      if (mlir::concretelang::dfr::_dfr_is_jit()) {
+      if (mlir::concretelang::dfr::_dfr_is_jit())
         mlir::concretelang::dfr::_dfr_jit_phase_barrier->wait();
-      }
 
       mlir::concretelang::dfr::_dfr_node_level_runtime_context_manager
           ->clearContext();
+      mlir::concretelang::dfr::_dfr_node_level_work_function_registry
+          ->clearRegistry();
     }
   }
   END_TIME(&mlir::concretelang::dfr::compute_timer, "Compute");
