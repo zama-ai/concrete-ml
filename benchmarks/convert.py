@@ -9,8 +9,6 @@ import json
 import math
 import subprocess
 import sys
-
-# pylint: disable-next=no-name-in-module
 from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union

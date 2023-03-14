@@ -1274,25 +1274,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
-        # This workaround makes linear regressors be able to fit with fit_intercept set to False.
-        # This needs to be removed once HummingBird's latest version is integrated in Concrete-ML
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1610
-        if not self.fit_intercept:
-            self.sklearn_model.intercept_ = numpy.array(self.sklearn_model.intercept_)
-
-        # These models are not natively supported by Hummingbird
-        # The trick is to hide their type to Hummingbird, it should be removed once HummingBird's
-        # latest version is integrated in Concrete-ML
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2792
-        if self.sklearn_model_class in {
-            sklearn.linear_model.Lasso,
-            sklearn.linear_model.Ridge,
-            sklearn.linear_model.ElasticNet,
-        }:
-            self.sklearn_model.__class__ = sklearn.linear_model.LinearRegression
-            self.n_jobs = None
-            self.sklearn_model.n_jobs = None
-
         # Retrieve the ONNX graph
         self._set_onnx_model(X)
 
