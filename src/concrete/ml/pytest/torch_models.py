@@ -950,6 +950,7 @@ class DoubleQuantQATMixNet(nn.Module):
         self.quant1 = qnn.QuantIdentity(bit_width=n_bits)
         # A different quantizer
         self.quant2 = qnn.QuantIdentity(bit_width=n_bits + 1)
+        self.quant3 = qnn.QuantIdentity(bit_width=n_bits)
 
         if use_conv:
             self.mixing_layer = qnn.QuantConv2d(
@@ -972,7 +973,7 @@ class DoubleQuantQATMixNet(nn.Module):
 
         left_x1 = self.quant1(x)
         right_x2 = self.quant2(x)
-        return self.mixing_layer(left_x1 + right_x2)
+        return self.mixing_layer(self.quant3(left_x1 + right_x2))
 
 
 class TorchSum(nn.Module):
@@ -1050,7 +1051,11 @@ class NetWithConstantsFoldedBeforeOps(nn.Module):
         self.act1 = qnn.QuantReLU(act_quant=act_quant, bit_width=bits)
 
         self.dense2 = qnn.QuantLinear(
-            hparams["hidden_dim"], 1, weight_bit_width=bits, weight_quant=weight_quant, bias=True
+            hparams["hidden_dim"],
+            1,
+            weight_bit_width=bits,
+            weight_quant=weight_quant,
+            bias=True,
         )
 
     def forward(self, x):

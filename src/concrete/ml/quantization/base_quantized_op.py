@@ -405,14 +405,14 @@ class QuantizedOp:
         # when evaluating QAT layers we ignore one of these options to allow the
         # override.
         if quant_opts.is_equal(input_.quantizer.quant_options, ignore_sign_qat=True):
-            # Pass-through when the input is already quantized in
-            # the manner that this op requires: use the qvalues directly,
-            # they will then be used by this quantized op's q_impl
+            # Pass-through the input quantizer when the input is already quantized in
+            # the manner that this op requires: this makes the op use the qvalues directly,
+            # in q_impl and will avoid a TLU to re-quantize.
             new_input = QuantizedArray(
                 quant_opts.n_bits,
                 input_.qvalues,
                 value_is_float=False,
-                options=quant_opts,
+                options=input_.quantizer.quant_options,
                 stats=input_.quantizer.quant_stats,
                 params=input_.quantizer.quant_params,
             )
@@ -481,7 +481,9 @@ class QuantizedOp:
         )
 
         prepared_inputs = self._prepare_constants(
-            num_inputs if is_param_variadic else num_onnx_inputs, calibrate, quantize_actual_values
+            num_inputs if is_param_variadic else num_onnx_inputs,
+            calibrate,
+            quantize_actual_values,
         )
 
         # If calibrating, the function is called with numpy.ndarrays

@@ -512,7 +512,7 @@ class QuantizedReshape(QuantizedOp):
             q_inputs[0].quantizer.n_bits,
             self.call_impl(prepared_inputs[0].qvalues, newshape, **attrs),
             value_is_float=False,
-            options=self._get_output_quant_opts(),
+            options=prepared_inputs[0].quantizer.quant_options,
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
@@ -580,7 +580,8 @@ class QuantizedConv(QuantizedMixingOp):
 
         # Validate the parameters
         assert_true(
-            len(self.kernel_shape) == 2, "The convolution operator currently supports only 2d"
+            len(self.kernel_shape) == 2,
+            "The convolution operator currently supports only 2d",
         )
         assert_true(
             len(self.kernel_shape) == len(self.strides),
@@ -813,7 +814,8 @@ class QuantizedAvgPool(QuantizedMixingOp):
 
         # Validate the parameters
         assert_true(
-            len(self.kernel_shape) == 2, "The Average Pool operator currently supports only 2d"
+            len(self.kernel_shape) == 2,
+            "The Average Pool operator currently supports only 2d",
         )
         assert_true(
             len(self.kernel_shape) == len(self.strides),
@@ -852,7 +854,11 @@ class QuantizedAvgPool(QuantizedMixingOp):
             kernel[i, i, ::] = 1
 
         norm_const = 1.0 / onnx_avgpool_compute_norm_const(
-            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, self.ceil_mode
+            q_input.qvalues.shape,
+            self.kernel_shape,
+            self.pads,
+            self.strides,
+            self.ceil_mode,
         )
 
         # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
@@ -953,11 +959,15 @@ class QuantizedMaxPool(QuantizedOp):
 
         # Validate the parameters
         assert_true(
-            self.ceil_mode == 0, "Only ceil_mode = 0 is supported by Concrete Numpy for now"
+            self.ceil_mode == 0,
+            "Only ceil_mode = 0 is supported by Concrete Numpy for now",
         )
 
         # Validate the parameters
-        assert_true(len(self.kernel_shape) == 2, "The Max Pool operator currently supports only 2d")
+        assert_true(
+            len(self.kernel_shape) == 2,
+            "The Max Pool operator currently supports only 2d",
+        )
         assert_true(
             len(self.kernel_shape) == len(self.strides),
             "The Max Pool operator requires the number of strides to "
@@ -988,12 +998,17 @@ class QuantizedMaxPool(QuantizedOp):
         assert q_input.quantizer.zero_point is not None
 
         assert_true(
-            self.ceil_mode == 0, "Only ceil_mode = 0 is supported by Concrete Numpy for now"
+            self.ceil_mode == 0,
+            "Only ceil_mode = 0 is supported by Concrete Numpy for now",
         )
 
         # Simple padding for PyTorch style
         pool_pads = compute_onnx_pool_padding(
-            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, self.ceil_mode
+            q_input.qvalues.shape,
+            self.kernel_shape,
+            self.pads,
+            self.strides,
+            self.ceil_mode,
         )
 
         q_input_pad = numpy_onnx_pad(
@@ -1067,7 +1082,8 @@ class QuantizedPad(QuantizedOp):
         # Get the ONNX parameters
         self.mode = attrs.get("mode", None)
         assert_true(
-            self.mode == "constant", "Padding operator only supports padding with a constant"
+            self.mode == "constant",
+            "Padding operator only supports padding with a constant",
         )
 
     def q_impl(
@@ -1097,7 +1113,10 @@ class QuantizedPad(QuantizedOp):
         assert_true(pads.size == 4, "Not currently supporting padding of 3D tensors")
 
         pad_value = 0 if prepared_inputs[2] is None else prepared_inputs[2]
-        assert_true(pad_value == 0, "Concrete-ML only supports padding with constant zero values")
+        assert_true(
+            pad_value == 0,
+            "Concrete-ML only supports padding with constant zero values",
+        )
 
         assert q_input.quantizer.zero_point is not None
         q_input_pad = numpy_onnx_pad(q_input.qvalues, pads, q_input.quantizer.zero_point, True)
@@ -1795,7 +1814,8 @@ class QuantizedBrevitasQuant(QuantizedOp):
         assert len(q_inputs) >= 1
 
         assert_true(
-            self.output_quant_params is not None, "You need to calibrate this op before using it"
+            self.output_quant_params is not None,
+            "You need to calibrate this op before using it",
         )
 
         # For mypy
@@ -1866,7 +1886,7 @@ class QuantizedTranspose(QuantizedOp):
             q_inputs[0].quantizer.n_bits,
             self.call_impl(prepared_inputs[0].qvalues, **attrs),
             value_is_float=False,
-            options=self._get_output_quant_opts(),
+            options=prepared_inputs[0].quantizer.quant_options,
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
@@ -1997,6 +2017,14 @@ class QuantizedConcat(QuantizedOp):
             all(x == scales[0] for x in scales) and all(x == zero_points[0] for x in zero_points),
             "All inputs must have the same scale and zero_point to be concatenated.",
         )
+        assert_true(
+            all(
+                prep_input.quantizer.quant_options.is_equal(
+                    prepared_inputs[0].quantizer.quant_options
+                )
+                for prep_input in prepared_inputs[1:]
+            )
+        )
 
         tensors_to_concat = [prepared_input.qvalues for prepared_input in prepared_inputs]
 
@@ -2005,7 +2033,7 @@ class QuantizedConcat(QuantizedOp):
             q_inputs[0].quantizer.n_bits,
             self.call_impl(*tensors_to_concat, **attrs),
             value_is_float=False,
-            options=self._get_output_quant_opts(),
+            options=prepared_inputs[0].quantizer.quant_options,
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
