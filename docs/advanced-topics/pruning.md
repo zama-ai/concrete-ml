@@ -13,7 +13,7 @@ Pruning is used in Concrete-ML for two types of neural networks:
 
 In neural networks, a neuron computes a linear combination of inputs and learned weights, then applies an activation function.
 
-![Artificial Neuron (from: wikipedia)](../figures/Artificial_neuron.png)
+![Artificial Neuron](../figures/Artificial_neuron.png)
 
 The neuron computes:
 
