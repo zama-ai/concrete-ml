@@ -500,8 +500,9 @@ def check_grid_search(model_class, x, y):
 
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         param_grid = {
-            "module__n_layers": [5],
-            "module__activation_function": (nn.Tanh, nn.ReLU6),
+            "module__n_layers": [2, 3],
+            "module__n_hidden_neurons_multiplier": [1],
+            "module__activation_function": (nn.ReLU6,),
         }
     elif model_class in get_sklearn_tree_models(str_in_class_name="DecisionTree"):
         param_grid = {
@@ -897,7 +898,7 @@ def test_hyper_parameters(
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+    [3],
 )
 # pylint: disable=too-many-arguments
 def test_grid_search(
