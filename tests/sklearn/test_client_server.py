@@ -183,9 +183,14 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     )
     fhemodel_client.load()
 
-    # Grab the model and save it again (feature to allow compilation on an adventurous OS)
+    # Grab the model and save it again
+    # No user is expected to load a FHEModelDev instance from a FHEModelClient's model. This is
+    # only made a testing for making sure the model has the expected attributes
     client_model = fhemodel_client.model
     client_model.fhe_circuit = model.fhe_circuit
+
+    # pylint: disable-next=protected-access
+    client_model._is_compiled = True
 
     network.cleanup()
 

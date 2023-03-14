@@ -113,6 +113,8 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["post_processing_params"] = self.post_processing_params
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -122,7 +124,6 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
-        metadata["n_bits"] = self.n_bits
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
         metadata["solver"] = self.solver
@@ -130,7 +131,6 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         metadata["tol"] = self.tol
         metadata["warm_start"] = self.warm_start
         metadata["verbose"] = self.verbose
-        metadata["onnx_model_"] = self.onnx_model_
 
         return metadata
 
@@ -160,6 +160,8 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
 
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         if isinstance(obj._output_zero_point, list):
@@ -175,8 +177,6 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         obj.tol = metadata["tol"]
         obj.warm_start = metadata["warm_start"]
         obj.verbose = metadata["verbose"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
 
         return obj
 
@@ -320,14 +320,6 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         self.power = power
         self.link = link
 
-    @property
-    def _is_fitted(self):
-        return (
-            super()._is_fitted
-            and self.post_processing_params.get("link", None) is not None
-            and self.post_processing_params.get("power", None) is not None
-        )
-
     def _set_post_processing_params(self):
         super()._set_post_processing_params()
         self.post_processing_params.update(
@@ -364,6 +356,8 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["post_processing_params"] = self.post_processing_params
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -404,6 +398,8 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
 
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]

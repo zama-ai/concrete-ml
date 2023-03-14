@@ -75,6 +75,8 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["framework"] = self.framework
 
         # Classifier
@@ -124,6 +126,8 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         )
 
         obj.post_processing_params = metadata["post_processing_params"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
 
         # Classifier
         obj.classes_ = numpy.array(metadata["classes_"])
@@ -200,6 +204,8 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["framework"] = self.framework
 
         metadata["criterion"] = self.criterion
@@ -244,6 +250,8 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         )
 
         obj.post_processing_params = metadata["post_processing_params"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
 
         obj.criterion = metadata["criterion"]
         obj.splitter = metadata["splitter"]

@@ -125,6 +125,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["framework"] = self.framework
 
         # Classifier
@@ -184,6 +186,8 @@ class XGBClassifier(BaseTreeClassifierMixin):
         )
 
         obj.framework = metadata["framework"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
 
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
             obj.sklearn_model,
@@ -357,6 +361,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["framework"] = self.framework
 
         # Specific
@@ -413,6 +419,8 @@ class XGBRegressor(BaseTreeRegressorMixin):
         )
 
         obj.framework = metadata["framework"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
 
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
             obj.sklearn_model,

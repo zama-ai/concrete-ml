@@ -63,6 +63,8 @@ class LinearRegression(SklearnLinearRegressorMixin):
         metadata["sklearn_model"] = self.sklearn_model
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -77,7 +79,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
         metadata["copy_X"] = self.copy_X
         metadata["n_jobs"] = self.n_jobs
         metadata["positive"] = self.positive
-        metadata["onnx_model_"] = self.onnx_model_
 
         return metadata
 
@@ -110,6 +111,8 @@ class LinearRegression(SklearnLinearRegressorMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
@@ -121,8 +124,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
         obj.copy_X = metadata["copy_X"]
         obj.n_jobs = metadata["n_jobs"]
         obj.positive = metadata["positive"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
         return obj
 
 
@@ -191,6 +192,8 @@ class ElasticNet(SklearnLinearRegressorMixin):
         metadata["sklearn_model"] = self.sklearn_model
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -206,7 +209,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
         metadata["positive"] = self.positive
-        metadata["onnx_model_"] = self.onnx_model_
         metadata["precompute"] = self.precompute
         metadata["max_iter"] = self.max_iter
         metadata["tol"] = self.tol
@@ -245,6 +247,8 @@ class ElasticNet(SklearnLinearRegressorMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
@@ -256,8 +260,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
         obj.positive = metadata["positive"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
         obj.precompute = metadata["precompute"]
         obj.max_iter = metadata["max_iter"]
         obj.tol = metadata["tol"]
@@ -331,6 +333,8 @@ class Lasso(SklearnLinearRegressorMixin):
         metadata["sklearn_model"] = self.sklearn_model
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -340,13 +344,11 @@ class Lasso(SklearnLinearRegressorMixin):
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
-        metadata["n_bits"] = self.n_bits
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
         metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
         metadata["positive"] = self.positive
-        metadata["onnx_model_"] = self.onnx_model_
         metadata["max_iter"] = self.max_iter
         metadata["warm_start"] = self.warm_start
         metadata["selection"] = self.selection
@@ -385,19 +387,18 @@ class Lasso(SklearnLinearRegressorMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
-        obj.n_bits = metadata["n_bits"]
         obj.alpha = metadata["alpha"]
         obj.fit_intercept = metadata["fit_intercept"]
         obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
         obj.positive = metadata["positive"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
         obj.max_iter = metadata["max_iter"]
         obj.warm_start = metadata["warm_start"]
         obj.selection = metadata["selection"]
@@ -467,6 +468,8 @@ class Ridge(SklearnLinearRegressorMixin):
         metadata["sklearn_model"] = self.sklearn_model
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -476,7 +479,6 @@ class Ridge(SklearnLinearRegressorMixin):
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
-        metadata["n_bits"] = self.n_bits
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
         metadata["normalize"] = self.normalize
@@ -486,7 +488,6 @@ class Ridge(SklearnLinearRegressorMixin):
         metadata["tol"] = self.tol
         metadata["solver"] = self.solver
         metadata["random_state"] = self.random_state
-        metadata["onnx_model_"] = self.onnx_model_
 
         return metadata
 
@@ -519,12 +520,13 @@ class Ridge(SklearnLinearRegressorMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
-        obj.n_bits = metadata["n_bits"]
         obj.alpha = metadata["alpha"]
         obj.fit_intercept = metadata["fit_intercept"]
         obj.normalize = metadata["normalize"]
@@ -534,8 +536,6 @@ class Ridge(SklearnLinearRegressorMixin):
         obj.tol = metadata["tol"]
         obj.solver = metadata["solver"]
         obj.random_state = metadata["random_state"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
         return obj
 
 
@@ -615,6 +615,8 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["sklearn_model"] = self.sklearn_model
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
@@ -640,7 +642,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["warm_start"] = self.warm_start
         metadata["n_jobs"] = self.n_jobs
         metadata["l1_ratio"] = self.l1_ratio
-        metadata["onnx_model_"] = self.onnx_model_
 
         return metadata
 
@@ -677,6 +678,8 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
@@ -697,8 +700,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         obj.warm_start = metadata["warm_start"]
         obj.n_jobs = metadata["n_jobs"]
         obj.l1_ratio = metadata["l1_ratio"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
 
         return obj
 

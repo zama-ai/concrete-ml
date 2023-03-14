@@ -367,7 +367,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         # Note that this supports more data types for x than we support in quantized mode
         # Disable mypy error as super().infer is expected to be reachable once the model inherits
         # from Skorch
-        if not self._is_fitted:
+        if not self.is_fitted:
             return super().infer(x, **fit_params)  # type: ignore[misc]
 
         # Get a numpy array from the tensor to do quantization

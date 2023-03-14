@@ -76,6 +76,8 @@ class LinearSVR(SklearnLinearRegressorMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["_output_scale"] = self._output_scale
         metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
@@ -91,8 +93,6 @@ class LinearSVR(SklearnLinearRegressorMixin):
         metadata["verbose"] = self.verbose
         metadata["random_state"] = self.random_state
         metadata["max_iter"] = self.max_iter
-        metadata["n_bits"] = self.n_bits
-        metadata["onnx_model_"] = self.onnx_model_
 
         return metadata
 
@@ -125,6 +125,8 @@ class LinearSVR(SklearnLinearRegressorMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
@@ -140,9 +142,6 @@ class LinearSVR(SklearnLinearRegressorMixin):
         obj.verbose = metadata["verbose"]
         obj.random_state = metadata["random_state"]
         obj.max_iter = metadata["max_iter"]
-        obj.n_bits = metadata["n_bits"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
 
         return obj
 
@@ -222,6 +221,8 @@ class LinearSVC(SklearnLinearClassifierMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["_output_scale"] = self._output_scale
         metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
@@ -239,8 +240,6 @@ class LinearSVC(SklearnLinearClassifierMixin):
         metadata["verbose"] = self.verbose
         metadata["random_state"] = self.random_state
         metadata["max_iter"] = self.max_iter
-        metadata["n_bits"] = self.n_bits
-        metadata["onnx_model_"] = self.onnx_model_
 
         return metadata
 
@@ -277,6 +276,8 @@ class LinearSVC(SklearnLinearClassifierMixin):
         ]
         obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
         obj.onnx_model_ = metadata["onnx_model_"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
         obj._output_scale = metadata["_output_scale"]
         obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
@@ -294,9 +295,6 @@ class LinearSVC(SklearnLinearClassifierMixin):
         obj.verbose = metadata["verbose"]
         obj.random_state = metadata["random_state"]
         obj.max_iter = metadata["max_iter"]
-        obj.n_bits = metadata["n_bits"]
-        # pylint: disable-next=protected-access
-        obj.onnx_model_ = metadata["onnx_model_"]
 
         return obj
 

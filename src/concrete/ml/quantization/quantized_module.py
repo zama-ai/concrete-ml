@@ -88,6 +88,7 @@ class QuantizedModule:
         # is created for both Concrete-ML models and QuantizedModule
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
         self.fhe_circuit = None
+        self._is_compiled = False
         self.input_quantizers = []
         self.output_quantizers = []
         self._onnx_model = None
@@ -115,13 +116,22 @@ class QuantizedModule:
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self.output_quantizers = self._set_output_quantizers()
 
+    @property
+    def is_compiled(self) -> bool:
+        """Indicate if the model is compiled.
+
+        Returns:
+            bool: If the model is compiled.
+        """
+        return self._is_compiled
+
     def check_model_is_compiled(self):
         """Check if the quantized module is compiled.
 
         Raises:
             AttributeError: If the quantized module is not compiled.
         """
-        if self.fhe_circuit is None:
+        if not self.is_compiled:
             raise AttributeError(
                 "The quantized module is not compiled. Please run compile(...) first before "
                 "executing it in FHE."
@@ -508,6 +518,8 @@ class QuantizedModule:
             global_p_error=global_p_error,
             verbose=verbose,
         )
+
+        self._is_compiled = True
 
         return self.fhe_circuit
 

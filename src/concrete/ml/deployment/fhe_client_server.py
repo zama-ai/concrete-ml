@@ -138,6 +138,10 @@ class FHEModelDev:
             "cml_version": CML_VERSION,
         }
 
+        # Export the `is_fitted` attribute for built-in models
+        if hasattr(self.model, "is_fitted"):
+            serialized_processing["is_fitted"] = self.model.is_fitted
+
         # Dump json
         json_path = Path(self.path_dir).joinpath("serialized_processing.json")
         with open(json_path, "w", encoding="utf-8") as file:
@@ -234,6 +238,14 @@ class FHEModelClient:
         self.model.output_quantizers = [
             load_dict(elt) for elt in serialized_processing["output_quantizers"]
         ]
+
+        # Load the `_is_fitted` private attribute for built-in models
+        if "is_fitted" in serialized_processing:
+            # This private access should be temporary as the Client-Server interface could benefit
+            # from built-in serialization load/dump methods
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3243
+            # pylint: disable-next=protected-access
+            self.model._is_fitted = serialized_processing["is_fitted"]
 
         # Load model parameters
         # Add some checks on post-processing-params

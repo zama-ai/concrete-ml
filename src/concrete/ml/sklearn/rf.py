@@ -86,6 +86,8 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["framework"] = self.framework
 
         # Classifier
@@ -141,6 +143,8 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         )
 
         obj.post_processing_params = metadata["post_processing_params"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
 
         # Classifier
         obj.classes_ = numpy.array(metadata["classes_"])
@@ -234,6 +238,8 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
         metadata["framework"] = self.framework
 
         metadata["n_estimators"] = self.n_estimators
@@ -284,6 +290,8 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         )
 
         obj.post_processing_params = metadata["post_processing_params"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
 
         obj.n_estimators = metadata["n_estimators"]
         obj.bootstrap = metadata["bootstrap"]

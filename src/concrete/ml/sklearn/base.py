@@ -101,6 +101,12 @@ class BaseEstimator:
         #: This attribute is typically used for serving models
         self.post_processing_params: Dict[str, Any] = {}
 
+        #: Indicate if the model is fitted.
+        self._is_fitted: bool = False
+
+        #: Indicate if the model is compiled.
+        self._is_compiled: bool = False
+
         self.fhe_circuit_: Optional[onnx.ModelProto] = None
         self.onnx_model_: Optional[Circuit] = None
 
@@ -139,13 +145,13 @@ class BaseEstimator:
         self.fhe_circuit_ = value
 
     @property
-    @abstractmethod
-    def _is_fitted(self) -> bool:
+    def is_fitted(self) -> bool:
         """Indicate if the model is fitted.
 
         Returns:
             bool: If the model is fitted.
         """
+        return self._is_fitted
 
     def _is_not_fitted_error_message(self) -> str:
         return (
@@ -159,7 +165,7 @@ class BaseEstimator:
         Raises:
             AttributeError: If the model is not fitted.
         """
-        if not self._is_fitted:
+        if not self.is_fitted:
             raise AttributeError(self._is_not_fitted_error_message())
 
     def _is_not_compiled_error_message(self) -> str:
@@ -168,13 +174,22 @@ class BaseEstimator:
             "Please run compile(...) first before executing the prediction in FHE."
         )
 
+    @property
+    def is_compiled(self) -> bool:
+        """Indicate if the model is compiled.
+
+        Returns:
+            bool: If the model is compiled.
+        """
+        return self._is_compiled
+
     def check_model_is_compiled(self):
         """Check if the model is compiled.
 
         Raises:
             AttributeError: If the model is not compiled.
         """
-        if self.fhe_circuit is None:
+        if not self.is_compiled:
             raise AttributeError(self._is_not_compiled_error_message())
 
     def get_sklearn_params(self, deep: bool = True) -> dict:
@@ -375,6 +390,9 @@ class BaseEstimator:
         Returns:
             Circuit: The compiled Circuit.
         """
+        # Reset for double compile
+        self._is_compiled = False
+
         # Check that the model is correctly fitted
         self.check_model_is_fitted()
 
@@ -406,6 +424,8 @@ class BaseEstimator:
             global_p_error=global_p_error,
             verbose=verbose,
         )
+
+        self._is_compiled = True
 
         return self.fhe_circuit
 
@@ -580,18 +600,6 @@ class BaseClassifier(BaseEstimator):
         #: The classifier's number of different target classes. Is None if the model is not fitted.
         self.n_classes_: Optional[int] = None
 
-    @property
-    def _is_fitted(self):
-        # Here we call super() even though BaseEstimator's _is_fitted method is an abstract method.
-        # We indeed expect each model inheriting from BaseClassifier to also inherit from a mixin
-        # base class, ultimately making this super() call the mixin's method instead.
-        # This behavior could be avoided with a simple boolean attributed set in the `fit` method
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3191
-        return (
-            super()._is_fitted  # type: ignore[safe-super]
-            and self.post_processing_params.get("n_classes_", None) is not None
-        )
-
     def _set_post_processing_params(self):
         super()._set_post_processing_params()
         self.post_processing_params.update({"n_classes_": self.n_classes_})
@@ -712,10 +720,6 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def fhe_circuit(self, value: Circuit):
         self.quantized_module_.fhe_circuit = value
 
-    @property
-    def _is_fitted(self):
-        return self.quantized_module_.input_quantizers and self.quantized_module_.output_quantizers
-
     def _set_post_processing_params(self):
         # Disable mypy attribute definition error as this method is expected to be reachable
         # once the model inherits from Skorch
@@ -757,6 +761,9 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Returns:
             Any: The fitted estimator.
         """
+        # Reset for double fit
+        self._is_fitted = False
+
         # Reset the quantized module since quantization is lost during refit
         # This will make the .infer() function call into the Torch nn.Module
         # Instead of the quantized module
@@ -822,6 +829,9 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         # Set post-processing params
         self._set_post_processing_params()
+
+        self._is_fitted = True
+
         return self
 
     def _get_equivalent_float_module(self):
@@ -924,6 +934,9 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return self.quantized_module_.dequantize_output(q_y_preds)
 
     def compile(self, X, *args, **kwargs) -> Circuit:
+        # Reset for double compile
+        self._is_compiled = False
+
         # Check that the model is correctly fitted
         self.check_model_is_fitted()
 
@@ -943,6 +956,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             "The compiled circuit currently applies some lookup tables on input nodes but this "
             "should be avoided. Please check the underlying nn.Module.",
         )
+
+        self._is_compiled = True
 
         return self.fhe_circuit
 
@@ -1036,10 +1051,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
-    @property
-    def _is_fitted(self):
-        return self.input_quantizers and self.output_quantizers
-
     def _sklearn_model_is_not_fitted_error_message(self) -> str:
         return (
             f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
@@ -1047,6 +1058,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         )  # pragma: no cover
 
     def fit(self, X, y, **fit_parameters) -> Any:
+        # Reset for double fit
+        self._is_fitted = False
+
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         q_X = numpy.zeros_like(X)
@@ -1073,6 +1087,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             framework=self.framework,
             output_n_bits=self.n_bits,
         )
+
+        self._is_fitted = True
 
         return self
 
@@ -1221,14 +1237,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
-    @property
-    def _is_fitted(self):
-        return (
-            self.input_quantizers
-            and self.post_processing_params.get("output_scale", None) is not None
-            and self.post_processing_params.get("output_zero_point", None) is not None
-        )
-
     def _sklearn_model_is_not_fitted_error_message(self) -> str:
         return (
             f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
@@ -1266,6 +1274,9 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         }
 
     def fit(self, X, y, **fit_parameters) -> Any:
+        # Reset for double fit
+        self._is_fitted = False
+
         # LinearRegression handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)
 
@@ -1328,6 +1339,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._q_bias = numpy.round(
             self.sklearn_model.intercept_ / self._output_scale + self._output_zero_point
         ).astype(numpy.int64)
+
+        self._is_fitted = True
 
         return self
 
