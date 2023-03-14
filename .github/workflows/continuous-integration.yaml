@@ -25,7 +25,7 @@ on:
           - push_to_release
 
       linux_python_versions:
-        description: "Space separated list of python versions (3.7 3.8, 3.9, 3.10 are supported) to launch on linux"
+        description: "Space separated list of python versions (3.8, 3.9, 3.10 are supported) to launch on linux"
         required: false
         type: string
         default: "3.8 3.9"
@@ -67,7 +67,6 @@ jobs:
     outputs:
       linux-matrix: ${{ steps.set-matrix.outputs.linux-matrix }}
       macos-matrix: ${{ steps.set-matrix.outputs.macos-matrix }}
-      needs-37-linux-runner: ${{ steps.set-matrix.outputs.needs-37-linux-runner }}
       needs-38-linux-runner: ${{ steps.set-matrix.outputs.needs-38-linux-runner }}
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
       needs-310-linux-runner: ${{ steps.set-matrix.outputs.needs-310-linux-runner }}
@@ -106,10 +105,10 @@ jobs:
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
-            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9 3.10"
+            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS="3.9"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
-            LINUX_PYTHON_VERSIONS="3.7 3.8 3.9 3.10"
+            LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "push_to_main" ]]; then
             LINUX_PYTHON_VERSIONS="3.8"
@@ -145,17 +144,12 @@ jobs:
           echo "linux-matrix=${LINUX_MATRIX}" >> $GITHUB_OUTPUT
           echo "macos-matrix=${MACOS_MATRIX}" >> $GITHUB_OUTPUT
 
-          NEEDS_LINUX_37_RUNNER=$(echo "${LINUX_MATRIX}" | \
-            jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.7")) | length > 0')
           NEEDS_LINUX_38_RUNNER=$(echo "${LINUX_MATRIX}" | \
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.8")) | length > 0')
           NEEDS_LINUX_39_RUNNER=$(echo "${LINUX_MATRIX}" | \
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.9")) | length > 0')
           NEEDS_LINUX_310_RUNNER=$(echo "${LINUX_MATRIX}" | \
             jq -rc '. | map(select(.os_kind=="linux" and .python_version=="3.10")) | length > 0')
-
-          echo "Needs Linux 3.7 runner:"
-          echo "${NEEDS_LINUX_37_RUNNER}"
 
           echo "Needs Linux 3.8 runner:"
           echo "${NEEDS_LINUX_38_RUNNER}"
@@ -166,7 +160,6 @@ jobs:
           echo "Needs Linux 3.10 runner:"
           echo "${NEEDS_LINUX_310_RUNNER}"
 
-          echo "needs-37-linux-runner=${NEEDS_LINUX_37_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-38-linux-runner=${NEEDS_LINUX_38_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-39-linux-runner=${NEEDS_LINUX_39_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
@@ -177,8 +170,6 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 15
     outputs:
-      label-37: ${{ steps.start-ec2-runner-37.outputs.label }}
-      ec2-instance-id-37: ${{ steps.start-ec2-runner-37.outputs.ec2-instance-id || '' }}
       label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
       ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
       label-39: ${{ steps.start-ec2-runner-39.outputs.label }}
@@ -196,30 +187,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Start EC2 runner python 37
-        id: start-ec2-runner-37
-        if: ${{ !cancelled() && fromJSON(needs.matrix-preparation.outputs.needs-37-linux-runner) }}
-        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
-        with:
-          mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-ci-ec2-github-runner-py37"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Python version", "Value": "3.7"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
 
       - name: Start EC2 runner python 38
         id: start-ec2-runner-38
@@ -299,8 +266,6 @@ jobs:
         env:
           MATRIX: ${{ needs.matrix-preparation.outputs.linux-matrix }}
         run: |
-          MATRIX=$(echo "${MATRIX}" | jq -rc \
-          '(. | map(select(.os_kind=="linux" and .python_version=="3.7") |= . + {"runs_on": "${{ steps.start-ec2-runner-37.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
           '(. | map(select(.os_kind=="linux" and .python_version=="3.8") |= . + {"runs_on": "${{ steps.start-ec2-runner-38.outputs.label }}"}) )')
           MATRIX=$(echo "${MATRIX}" | jq -rc \
@@ -615,15 +580,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop EC2 runner python 37
-        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
-        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-37 }}
-        with:
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-runner-linux.outputs.label-37 }}
-          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-37 }}
-          mode: stop
 
       - name: Stop EC2 runner python 38
         uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea

@@ -18,7 +18,6 @@ class EnumEncoder(json.JSONEncoder):
 class PythonVersion(enum.Enum):
     """Enumerate for python versions"""
 
-    V_3_7 = "3.7"
     V_3_8 = "3.8"
     V_3_9 = "3.9"
     V_3_10 = "3.10"
@@ -79,7 +78,7 @@ if __name__ == "__main__":
         required=True,
         type=PythonVersion,
         default=[],
-        choices=set(PythonVersion) - {PythonVersion.V_3_7},
+        choices=set(PythonVersion),
         help="Python versions to use on mac systems",
     )
     parser.add_argument(

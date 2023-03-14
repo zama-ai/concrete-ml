@@ -2,12 +2,7 @@
 
 import datetime
 import json
-
-try:
-    from importlib.metadata import version  # python 3.8+
-except ImportError:
-    from importlib_metadata import version  # python 3.7-
-
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Dict, List, Union
 

@@ -25,7 +25,7 @@ do
             ;;
 
         "--all" )
-            VERSION_LIST="3.7 3.8 3.9 3.10"
+            VERSION_LIST="3.8 3.9 3.10"
             ;;
 
         "--version" )
