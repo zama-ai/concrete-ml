@@ -274,11 +274,11 @@ def test_custom_net_classifier(load_data):
 
         Minimal work is needed to implement training of a custom class."""
 
-        underlying_model_class = SKNeuralNetClassifier
+        sklearn_model_class = SKNeuralNetClassifier
 
         def __init__(self, *args, **kwargs):
             super().__init__()
-            self.underlying_model_class.__init__(self, *args, **kwargs)
+            self.sklearn_model_class.__init__(self, *args, **kwargs)
 
         @property
         def n_bits_quant(self):

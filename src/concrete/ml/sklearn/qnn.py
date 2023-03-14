@@ -342,7 +342,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         _check_input_output_kwargs(kwargs)
 
         # Note that our default optimizer is Adam which was found to be more stable when pruning
-        self.underlying_model_class.__init__(
+        self.sklearn_model_class.__init__(
             self,
             SparseQuantNeuralNetImpl,
             *args,
@@ -619,7 +619,7 @@ class NeuralNetClassifier(
     lower bitwidth, they will be safely casted to int64. Else, an error is raised.
     """
 
-    underlying_model_class: Callable = SKNeuralNetClassifier
+    sklearn_model_class: Callable = SKNeuralNetClassifier
     _is_a_public_cml_model = True
 
     # pylint: disable-next=useless-super-delegation
@@ -718,7 +718,7 @@ class NeuralNetRegressor(
     are not floating points.
     """
 
-    underlying_model_class: Callable = SKNeuralNetRegressor
+    sklearn_model_class: Callable = SKNeuralNetRegressor
     _is_a_public_cml_model = True
 
     # pylint: disable-next=useless-super-delegation

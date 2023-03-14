@@ -28,7 +28,7 @@ class LinearRegression(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html
     """
 
-    underlying_model_class = sklearn.linear_model.LinearRegression
+    sklearn_model_class = sklearn.linear_model.LinearRegression
 
     _is_a_public_cml_model = True
 
@@ -61,7 +61,7 @@ class LinearRegression(SklearnLinearRegressorMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -102,7 +102,7 @@ class LinearRegression(SklearnLinearRegressorMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [
@@ -142,7 +142,7 @@ class ElasticNet(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html
     """
 
-    underlying_model_class = sklearn.linear_model.ElasticNet
+    sklearn_model_class = sklearn.linear_model.ElasticNet
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -189,7 +189,7 @@ class ElasticNet(SklearnLinearRegressorMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -237,7 +237,7 @@ class ElasticNet(SklearnLinearRegressorMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [
@@ -284,7 +284,7 @@ class Lasso(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html
     """
 
-    underlying_model_class = sklearn.linear_model.Lasso
+    sklearn_model_class = sklearn.linear_model.Lasso
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -329,7 +329,7 @@ class Lasso(SklearnLinearRegressorMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -377,7 +377,7 @@ class Lasso(SklearnLinearRegressorMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [
@@ -424,7 +424,7 @@ class Ridge(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html
     """
 
-    underlying_model_class = sklearn.linear_model.Ridge
+    sklearn_model_class = sklearn.linear_model.Ridge
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -465,7 +465,7 @@ class Ridge(SklearnLinearRegressorMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -511,7 +511,7 @@ class Ridge(SklearnLinearRegressorMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [
@@ -555,7 +555,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
     """
 
-    underlying_model_class = sklearn.linear_model.LogisticRegression
+    sklearn_model_class = sklearn.linear_model.LogisticRegression
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -613,7 +613,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -669,7 +669,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [

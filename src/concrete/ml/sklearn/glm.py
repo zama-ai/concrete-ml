@@ -74,7 +74,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
-        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Initialize the Torch model. Using a small Torch model that reproduces the proper
         # inference is necessary for GLMs. Indeed, the Hummingbird library does not support these
@@ -110,7 +110,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         metadata["cml_dumped_class_name"] = str(type(self).__name__)
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["post_processing_params"] = self.post_processing_params
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
@@ -197,7 +197,7 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
     """
 
-    underlying_model_class = SklearnPoissonRegressor
+    sklearn_model_class = SklearnPoissonRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -241,7 +241,7 @@ class GammaRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
     """
 
-    underlying_model_class = SklearnGammaRegressor
+    sklearn_model_class = SklearnGammaRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -286,7 +286,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
     https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
     """
 
-    underlying_model_class = SklearnTweedieRegressor
+    sklearn_model_class = SklearnTweedieRegressor
     _is_a_public_cml_model = True
 
     def __init__(
@@ -361,7 +361,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         metadata["cml_dumped_class_name"] = str(type(self).__name__)
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["post_processing_params"] = self.post_processing_params
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]

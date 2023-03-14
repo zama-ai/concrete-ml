@@ -16,7 +16,7 @@ from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegre
 class RandomForestClassifier(BaseTreeClassifierMixin):
     """Implements the RandomForest classifier."""
 
-    underlying_model_class = SklearnRandomForestClassifier
+    sklearn_model_class = SklearnRandomForestClassifier
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -83,7 +83,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["n_bits"] = self.n_bits
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
@@ -172,7 +172,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
 class RandomForestRegressor(BaseTreeRegressorMixin):
     """Implements the RandomForest regressor."""
 
-    underlying_model_class = SklearnRandomForestRegressor
+    sklearn_model_class = SklearnRandomForestRegressor
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -231,7 +231,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         metadata["n_bits"] = self.n_bits
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework

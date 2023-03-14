@@ -74,7 +74,7 @@ class BaseEstimator:
     """
 
     #: Base float estimator class to consider for the model. Is set for each subclasses.
-    underlying_model_class: Any
+    sklearn_model_class: Any
 
     _is_a_public_cml_model: bool = False
 
@@ -223,7 +223,7 @@ class BaseEstimator:
 
         # Initialize the sklearn model
         # pylint: disable-next=attribute-defined-outside-init
-        self.sklearn_model = self.underlying_model_class(**params)
+        self.sklearn_model = self.sklearn_model_class(**params)
 
         # Fit the sklearn model
         self.sklearn_model.fit(X, y, **fit_parameters)
@@ -287,7 +287,7 @@ class BaseEstimator:
                 params["random_state"] = numpy.random.randint(0, 2**15)
 
         # Initialize the Scikit-Learn model
-        sklearn_model = self.underlying_model_class(**params)
+        sklearn_model = self.sklearn_model_class(**params)
 
         # Train the Scikit-Learn model
         sklearn_model.fit(X, y, **fit_parameters)
@@ -737,7 +737,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def _fit_float_estimator(self, X, y, **fit_parameters) -> Any:
         # Call Skorch's fit that will train the network. This will instantiate the model class if
         # it's not already done
-        return self.underlying_model_class.fit(self, X, y, **fit_parameters)
+        return self.sklearn_model_class.fit(self, X, y, **fit_parameters)
 
     def fit(self, X, y, **fit_parameters) -> Any:
         """Fit he estimator.
@@ -904,7 +904,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         float_module = self._get_equivalent_float_module()
 
         # Instantiate the float estimator
-        skorch_estimator_type = self.underlying_model_class
+        skorch_estimator_type = self.sklearn_model_class
         float_estimator = skorch_estimator_type(float_module, **estimator_parameters)
 
         # Fit the float estimator
@@ -976,7 +976,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         # For prediction in the clear, we call the  Skorch's NeuralNet `predict_proba method which
         # ends up calling `infer`
-        return self.underlying_model_class.predict_proba(self, X).astype(numpy.float32)
+        return self.sklearn_model_class.predict_proba(self, X).astype(numpy.float32)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         if self.post_processing_params["post_processing_function_name"] == "softmax":
@@ -1040,9 +1040,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def _is_fitted(self):
         return self.input_quantizers and self.output_quantizers
 
-    def _underlying_model_is_not_fitted_error_message(self) -> str:
+    def _sklearn_model_is_not_fitted_error_message(self) -> str:
         return (
-            f"The underlying model (class: {self.underlying_model_class}) is not fitted and thus "
+            f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
             "cannot be quantized."
         )  # pragma: no cover
 
@@ -1064,7 +1064,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Set post-processing parameters
         self._set_post_processing_params()
 
-        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Convert the tree inference with Numpy operators
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
@@ -1229,9 +1229,9 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             and self.post_processing_params.get("output_zero_point", None) is not None
         )
 
-    def _underlying_model_is_not_fitted_error_message(self) -> str:
+    def _sklearn_model_is_not_fitted_error_message(self) -> str:
         return (
-            f"The underlying model (class: {self.underlying_model_class}) is not fitted and thus "
+            f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
             "cannot be converted quantized."
         )  # pragma: no cover
 
@@ -1241,7 +1241,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
-        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         self.onnx_model_ = hb_convert(
             self.sklearn_model,
@@ -1272,7 +1272,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Fit the Scikit-Learn model
         self._fit_float_estimator(X, y, **fit_parameters)
 
-        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # This workaround makes linear regressors be able to fit with fit_intercept set to False.
         # This needs to be removed once HummingBird's latest version is integrated in Concrete-ML
@@ -1284,7 +1284,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # The trick is to hide their type to Hummingbird, it should be removed once HummingBird's
         # latest version is integrated in Concrete-ML
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2792
-        if self.underlying_model_class in {
+        if self.sklearn_model_class in {
             sklearn.linear_model.Lasso,
             sklearn.linear_model.Ridge,
             sklearn.linear_model.ElasticNet,

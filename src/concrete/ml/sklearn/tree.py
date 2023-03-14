@@ -16,7 +16,7 @@ from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegre
 class DecisionTreeClassifier(BaseTreeClassifierMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
-    underlying_model_class = SklearnDecisionTreeClassifier
+    sklearn_model_class = SklearnDecisionTreeClassifier
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -72,7 +72,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         metadata["n_bits"] = self.n_bits
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
@@ -149,7 +149,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
 class DecisionTreeRegressor(BaseTreeRegressorMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
-    underlying_model_class = SklearnDecisionTreeRegressor
+    sklearn_model_class = SklearnDecisionTreeRegressor
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -197,7 +197,7 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         metadata["n_bits"] = self.n_bits
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework

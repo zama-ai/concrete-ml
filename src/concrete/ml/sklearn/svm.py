@@ -27,7 +27,7 @@ class LinearSVR(SklearnLinearRegressorMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVR.html
     """
 
-    underlying_model_class = sklearn.svm.LinearSVR
+    sklearn_model_class = sklearn.svm.LinearSVR
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -70,7 +70,7 @@ class LinearSVR(SklearnLinearRegressorMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -117,7 +117,7 @@ class LinearSVR(SklearnLinearRegressorMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [
@@ -163,7 +163,7 @@ class LinearSVC(SklearnLinearClassifierMixin):
     https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html
     """
 
-    underlying_model_class = sklearn.svm.LinearSVC
+    sklearn_model_class = sklearn.svm.LinearSVC
     _is_a_public_cml_model = True
 
     # pylint: disable-next=too-many-arguments
@@ -216,7 +216,7 @@ class LinearSVC(SklearnLinearClassifierMixin):
         # Linear
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["underlying_model_class"] = self.underlying_model_class
+        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["fhe_circuit"] = self.fhe_circuit
         metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
@@ -269,7 +269,7 @@ class LinearSVC(SklearnLinearClassifierMixin):
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.underlying_model_class = metadata["underlying_model_class"]
+        obj.sklearn_model_class = metadata["sklearn_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
         obj.output_quantizers = [

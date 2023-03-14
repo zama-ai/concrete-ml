@@ -26,7 +26,7 @@ def test_sklearn_args():
         # For Neural Network models, we manually fix the module parameter to
         # SparseQuantNeuralNetImpl. It is therefore not exposed to the users.
         assert (
-            not set(inspect.getfullargspec(model_class.underlying_model_class).args)
+            not set(inspect.getfullargspec(model_class.sklearn_model_class).args)
             - set(inspect.getfullargspec(model_class).args)
             - {"module"}
         )
