@@ -25,8 +25,8 @@ def test_assert_not_functions():
     assert "another failing check" in str(excinfo.value)
 
     # With specific errors
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError):
         assert_true(False, "another check", ValueError)
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError):
         assert_false(True, "another check", ValueError)

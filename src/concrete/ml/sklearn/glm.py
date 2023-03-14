@@ -74,6 +74,8 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
+        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
+
         # Initialize the Torch model. Using a small Torch model that reproduces the proper
         # inference is necessary for GLMs. Indeed, the Hummingbird library does not support these
         # models and thus cannot be used to convert them into an ONNX form. Additionally, a
@@ -102,6 +104,8 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         """
 
     def dump_dict(self) -> Dict:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
         metadata["cml_dumped_class_name"] = str(type(self).__name__)
         metadata["n_bits"] = self.n_bits
@@ -139,6 +143,8 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         obj.output_quantizers = [
             UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
         ]
+
+        # Load the underlying fitted model
         loads_sklearn_kwargs = {}
         if USE_SKOPS:
             loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
@@ -349,6 +355,8 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         return y_preds
 
     def dump_dict(self) -> Dict:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
         metadata["cml_dumped_class_name"] = str(type(self).__name__)
         metadata["n_bits"] = self.n_bits
@@ -379,6 +387,8 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         obj.output_quantizers = [
             UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
         ]
+
+        # Load the underlying fitted model
         loads_sklearn_kwargs = {}
         if USE_SKOPS:
             loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS

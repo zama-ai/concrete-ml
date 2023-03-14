@@ -4,6 +4,7 @@ import re
 import subprocess
 from multiprocessing import Pool, cpu_count
 from pathlib import Path
+from typing import Any, Dict
 
 ISSUE_URL_PATTERN = re.compile(
     r"FIXME: https\:\/\/github\.com\/zama-ai\/concrete-ml-internal\/issues\/([0-9]+)"
@@ -76,7 +77,7 @@ def main():
     with Pool(NUMBER_OF_CORES) as pool:
         issues_list = pool.starmap(check_file, paths)
 
-    issues = {}
+    issues: Dict[str, Dict[str, Any]] = {}
     for path_issues in issues_list:
         for issue_index, issue in path_issues.items():
             if issue_index in issues:

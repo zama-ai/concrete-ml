@@ -812,13 +812,13 @@ def main():
         # Print the short or long lists if asked and stop
         printed_models = set()
         for (dataset, cnn_class, config) in all_tasks:
-            config = json.dumps(config).replace("'", '"')
+            configs = json.dumps(config).replace("'", '"')
             cnn_name = cnn_class.__name__
 
             # Only print one config per model if printing the short_list
             if not (args.short_list and cnn_name in printed_models):
                 print(
-                    f"--models {cnn_name} --dataset {dataset} --configs '{config}'"
+                    f"--models {cnn_name} --dataset {dataset} --configs '{configs}'"
                     + f" --train --epochs {args.epochs}" * args.train
                     + f" --fhe_samples {args.fhe_samples}" * (not args.train)
                 )

@@ -4,6 +4,7 @@ from typing import Any, Dict
 import numpy
 import sklearn.linear_model
 
+from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
 from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
@@ -59,6 +60,8 @@ class LinearSVR(SklearnLinearRegressorMixin):
         self.max_iter = max_iter
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -104,9 +107,16 @@ class LinearSVR(SklearnLinearRegressorMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
@@ -191,6 +201,8 @@ class LinearSVC(SklearnLinearClassifierMixin):
         self.max_iter = max_iter
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -243,13 +255,20 @@ class LinearSVC(SklearnLinearClassifierMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Classifier
         obj.classes_ = numpy.array(metadata["classes_"])
         obj.n_classes_ = metadata["n_classes_"]
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]

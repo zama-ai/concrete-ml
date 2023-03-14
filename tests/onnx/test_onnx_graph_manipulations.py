@@ -15,7 +15,7 @@ def test_remove_unused_constant_nodes():
         inputs=[],
         outputs=["unused_constant"],
         name="unused_constant_node",
-        **{"value_float": 1.0},
+        value_float=1.0,
     )
 
     used_constant = helper.make_node(
@@ -23,7 +23,7 @@ def test_remove_unused_constant_nodes():
         inputs=[],
         outputs=["used_constant"],
         name="used_constant_node",
-        **{"value_float": 0.0},
+        value_float=0.0,
     )
 
     other_used_constant = helper.make_node(
@@ -31,7 +31,7 @@ def test_remove_unused_constant_nodes():
         inputs=[],
         outputs=["other_used_constant"],
         name="other_used_constant_node",
-        **{"value_float": 0.0},
+        value_float=0.0,
     )
 
     identity_node = helper.make_node(

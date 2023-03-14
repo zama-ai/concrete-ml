@@ -868,9 +868,13 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             super().__init__(input_output, activation_function)
 
             for m in self.modules():
+                # assert m.bias is not None
+                # Disable mypy as it properly detects that m's bias term is None end therefore does
+                # not have a `data` attribute but fails to take into consideration the fact that
+                # `torch.nn.init.constant_` actually handles such a case
                 if isinstance(m, (nn.Conv2d, nn.Linear)):
                     torch.nn.init.constant_(m.weight.data, 0)
-                    torch.nn.init.constant_(m.bias.data, 0)
+                    torch.nn.init.constant_(m.bias.data, 0)  # type: ignore[union-attr]
 
     # A network that may look like QAT but it just zeros all inputs
     with pytest.raises(ValueError, match=error_message_pattern):

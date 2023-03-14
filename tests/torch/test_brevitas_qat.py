@@ -359,7 +359,11 @@ def test_brevitas_intermediary_values(
             diff_raw_weights = numpy.abs(
                 dbg_model.raw_weights[idx][indices] - cml_raw_weights[idx][indices]
             )
-            weights_ok = numpy.all(diff_raw_weights > 0.0001)
+
+            # Here, numpy.all returns Numpy's `bool_` type, which is a different type than `bool`.
+            # Since `weights_ok` is initialized using a `bool`, mypy complains and we therefore
+            # need to force the type
+            weights_ok = bool(numpy.all(diff_raw_weights > 0.0001))
 
             error = (
                 f"Mismatched weights in layer {idx} at input indices: {numpy.transpose(indices)}\n"

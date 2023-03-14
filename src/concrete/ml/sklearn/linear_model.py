@@ -5,6 +5,7 @@ import numpy
 import sklearn
 import sklearn.linear_model
 
+from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
 from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
@@ -50,6 +51,8 @@ class LinearRegression(SklearnLinearRegressorMixin):
         self.positive = positive
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -89,9 +92,16 @@ class LinearRegression(SklearnLinearRegressorMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
@@ -169,6 +179,8 @@ class ElasticNet(SklearnLinearRegressorMixin):
         self.selection = selection
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -215,9 +227,16 @@ class ElasticNet(SklearnLinearRegressorMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
@@ -300,6 +319,8 @@ class Lasso(SklearnLinearRegressorMixin):
         self.random_state = random_state
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -346,9 +367,16 @@ class Lasso(SklearnLinearRegressorMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
@@ -427,6 +455,8 @@ class Ridge(SklearnLinearRegressorMixin):
         self.random_state = random_state
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -471,9 +501,16 @@ class Ridge(SklearnLinearRegressorMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
@@ -561,6 +598,8 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         self.l1_ratio = l1_ratio
 
     def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         metadata: Dict[str, Any] = {}
 
         metadata["post_processing_params"] = self.post_processing_params
@@ -616,13 +655,20 @@ class LogisticRegression(SklearnLinearClassifierMixin):
                 obj.post_processing_params["output_zero_point"]
             )
 
+        # Load the underlying fitted model
+        loads_sklearn_kwargs = {}
+        if USE_SKOPS:
+            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
+        obj.sklearn_model = loads_sklearn(
+            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
+        )
+
         # Classifier
         obj.classes_ = numpy.array(metadata["classes_"])
         obj.n_classes_ = metadata["n_classes_"]
 
         # Linear
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model = metadata["sklearn_model"]
         obj.underlying_model_class = metadata["underlying_model_class"]
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]

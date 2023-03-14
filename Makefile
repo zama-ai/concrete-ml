@@ -252,7 +252,7 @@ pytest_macOS_for_GitHub:
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
 mypy:
-	poetry run mypy -p $(SRC_DIR) --ignore-missing-imports --implicit-optional
+	poetry run mypy -p $(SRC_DIR) --ignore-missing-imports --implicit-optional --check-untyped-defs
 
 # Friendly target to run mypy without ignoring missing stubs and still have errors messages
 # Allows to see which stubs we are missing
@@ -262,17 +262,17 @@ mypy_ns:
 
 .PHONY: mypy_test # Run mypy on test files
 mypy_test:
-	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional
-	poetry run mypy conftest.py --ignore-missing-imports
+	find ./tests/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional --check-untyped-defs
+	poetry run mypy conftest.py --ignore-missing-imports --check-untyped-defs
 
 .PHONY: mypy_script # Run mypy on scripts
 mypy_script:
-	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional
-	find ./docker/release_resources -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional
+	find ./script/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional --check-untyped-defs
+	find ./docker/release_resources -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional --check-untyped-defs
 
 .PHONY: mypy_benchmark # Run mypy on benchmark files
 mypy_benchmark:
-	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional
+	find ./benchmarks/ -name "*.py" | xargs poetry run mypy --ignore-missing-imports --implicit-optional --check-untyped-defs
 
 # The plus indicates that make will be called by the command and allows to share the context with
 # the parent make execution. We serialize calls to these targets as they may overwrite each others

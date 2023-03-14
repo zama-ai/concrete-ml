@@ -174,12 +174,15 @@ class XGBClassifier(BaseTreeClassifierMixin):
         obj.output_quantizers = [
             UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
         ]
+
+        # Load the underlying fitted model
         loads_sklearn_kwargs = {}
         if USE_SKOPS:
             loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
         obj.sklearn_model = loads_sklearn(
             bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
         )
+
         obj.framework = metadata["framework"]
 
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
@@ -400,12 +403,15 @@ class XGBRegressor(BaseTreeRegressorMixin):
         obj.output_quantizers = [
             UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
         ]
+
+        # Load the underlying fitted model
         loads_sklearn_kwargs = {}
         if USE_SKOPS:
             loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
         obj.sklearn_model = loads_sklearn(
             bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
         )
+
         obj.framework = metadata["framework"]
 
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(

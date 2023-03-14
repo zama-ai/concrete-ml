@@ -147,6 +147,12 @@ class BaseEstimator:
             bool: If the model is fitted.
         """
 
+    def _is_not_fitted_error_message(self) -> str:
+        return (
+            f"The {self.__class__.__name__} model is not fitted. "
+            "Please run fit(...) on proper arguments first."
+        )
+
     def check_model_is_fitted(self):
         """Check if the model is fitted.
 
@@ -154,10 +160,13 @@ class BaseEstimator:
             AttributeError: If the model is not fitted.
         """
         if not self._is_fitted:
-            raise AttributeError(
-                f"The {self.__class__.__name__} model is not fitted. "
-                "Please run fit(...) on proper arguments first.",
-            )
+            raise AttributeError(self._is_not_fitted_error_message())
+
+    def _is_not_compiled_error_message(self) -> str:
+        return (
+            f"The {self.__class__.__name__} model is not compiled. "
+            "Please run compile(...) first before executing the prediction in FHE."
+        )
 
     def check_model_is_compiled(self):
         """Check if the model is compiled.
@@ -166,12 +175,9 @@ class BaseEstimator:
             AttributeError: If the model is not compiled.
         """
         if self.fhe_circuit is None:
-            raise AttributeError(
-                f"The {self.__class__.__name__} model is not compiled. "
-                "Please run compile(...) first before executing the prediction in FHE."
-            )
+            raise AttributeError(self._is_not_compiled_error_message())
 
-    def get_sklearn_params(self, deep=True):
+    def get_sklearn_params(self, deep: bool = True) -> dict:
         """Get parameters for this estimator.
 
         This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's
@@ -186,9 +192,10 @@ class BaseEstimator:
             params (dict): Parameter names mapped to their values.
         """
         # Here, the `get_params` method is the `BaseEstimator.get_params` method from Scikit-Learn,
-        # which will become available once a subclass inherits from it
+        # which will become available once a subclass inherits from it. We therefore disable both
+        # pylint and mypy as this behavior is expected
         # pylint: disable-next=no-member
-        params = super().get_params(deep=deep)
+        params = super().get_params(deep=deep)  # type: ignore[misc]
 
         # Remove the n_bits parameters as this attribute is added by Concrete-ML
         params.pop("n_bits", None)
@@ -273,6 +280,8 @@ class BaseEstimator:
             if random_state is not None:
                 params["random_state"] = random_state
             elif getattr(self, "random_state", None) is not None:
+                # Disable mypy attribute definition errors as it does not seem to see that we make
+                # sure this attribute actually exists before calling it
                 params["random_state"] = self.random_state  # type: ignore[attr-defined]
             else:
                 params["random_state"] = numpy.random.randint(0, 2**15)
@@ -284,6 +293,8 @@ class BaseEstimator:
         sklearn_model.fit(X, y, **fit_parameters)
 
         # Update the Concrete-ML model's parameters
+        # Disable mypy attribute definition errors as this attribute is expected to be
+        # initialized once the model inherits from Skorch
         self.set_params(n_bits=self.n_bits, **params)  # type: ignore[attr-defined]
 
         # Train the Concrete-ML model
@@ -443,6 +454,8 @@ class BaseEstimator:
 
                 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3062
                 # configuration.virtual is deprecated
+                # Disable mypy's union attribute error as we already check that fhe_circuit is not
+                # None using check_model_is_compiled
                 q_y_pred_i = (
                     self.fhe_circuit.simulate(q_X_i)  # type: ignore[union-attr]
                     if self.fhe_circuit.configuration.virtual  # type: ignore[union-attr]
@@ -562,15 +575,21 @@ class BaseClassifier(BaseEstimator):
         super().__init__(*args, **kwargs)
 
         #: The classifier's different target classes. Is None if the model is not fitted.
-        self.classes_: numpy.ndarray = None
+        self.classes_: Optional[numpy.ndarray] = None
 
         #: The classifier's number of different target classes. Is None if the model is not fitted.
-        self.n_classes_: int = None
+        self.n_classes_: Optional[int] = None
 
     @property
     def _is_fitted(self):
+        # Here we call super() even though BaseEstimator's _is_fitted method is an abstract method.
+        # We indeed expect each model inheriting from BaseClassifier to also inherit from a mixin
+        # base class, ultimately making this super() call the mixin's method instead.
+        # This behavior could be avoided with a simple boolean attributed set in the `fit` method
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3191
         return (
-            super()._is_fitted and self.post_processing_params.get("n_classes_", None) is not None
+            super()._is_fitted  # type: ignore[safe-super]
+            and self.post_processing_params.get("n_classes_", None) is not None
         )
 
     def _set_post_processing_params(self):
@@ -581,10 +600,11 @@ class BaseClassifier(BaseEstimator):
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Retrieve the different target classes
-        self.classes_ = numpy.unique(y)
+        classes = numpy.unique(y)
+        self.classes_ = classes
 
         # Compute the number of target classes
-        self.n_classes_ = len(self.classes_)
+        self.n_classes_ = len(classes)
 
         # Make sure y contains at least two classes
         assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
@@ -610,6 +630,8 @@ class BaseClassifier(BaseEstimator):
 
         # Retrieve the class with the highest probability
         y_preds = numpy.argmax(y_preds, axis=1)
+
+        assert self.classes_ is not None, self._is_not_fitted_error_message()
 
         return self.classes_[y_preds]
 
@@ -695,7 +717,10 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return self.quantized_module_.input_quantizers and self.quantized_module_.output_quantizers
 
     def _set_post_processing_params(self):
-        params = self._get_predict_nonlinearity()  # type: ignore
+        # Disable mypy attribute definition error as this method is expected to be reachable
+        # once the model inherits from Skorch
+        params = self._get_predict_nonlinearity()  # type: ignore[attr-defined]
+
         if isinstance(params, functools.partial):
             post_processing_function_name = params.func.__name__
             post_processing_function_keywords = params.keywords
@@ -714,7 +739,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # it's not already done
         return self.underlying_model_class.fit(self, X, y, **fit_parameters)
 
-    def fit(self, X, y, **fit_parameters):
+    def fit(self, X, y, **fit_parameters) -> Any:
         """Fit he estimator.
 
         If the module was already initialized, the module will be re-initialized unless
@@ -771,7 +796,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
         )
 
-        onnx_model = onnx.load(output_onnx_file_path)
+        onnx_model = onnx.load(str(output_onnx_file_path))
 
         output_onnx_file_path.unlink()
 
@@ -786,7 +811,9 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # which override the bitwidth that we pass here
         # Thus, this parameter, set by the inheriting classes, such as NeuralNetClassifier
         # is only used to check consistency during import (onnx file vs import)
-        n_bits = self.n_bits_quant
+        # Disable mypy attribute definition error as this attribute is expected to be
+        # initialized once the model inherits from Skorch
+        n_bits = self.n_bits_quant  # type: ignore[attr-defined]
 
         # Import the quantization aware trained model
         qat_model = PostTrainingQATImporter(n_bits, numpy_model)
@@ -1002,16 +1029,22 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.n_bits: int = n_bits
 
         #: The equivalent fitted float model. Is None if the model is not fitted.
-        self.sklearn_model: Any = None
+        self.sklearn_model: Optional[Any] = None
 
         #: The model's inference function. Is None if the model is not fitted.
-        self._tree_inference: Callable = None  # type: ignore[assignment]
+        self._tree_inference: Optional[Callable] = None
 
         BaseEstimator.__init__(self)
 
     @property
     def _is_fitted(self):
         return self.input_quantizers and self.output_quantizers
+
+    def _underlying_model_is_not_fitted_error_message(self) -> str:
+        return (
+            f"The underlying model (class: {self.underlying_model_class}) is not fitted and thus "
+            "cannot be quantized."
+        )  # pragma: no cover
 
     def fit(self, X, y, **fit_parameters) -> Any:
         X, y = check_X_y_and_assert_multi_output(X, y)
@@ -1030,6 +1063,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Set post-processing parameters
         self._set_post_processing_params()
+
+        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
 
         # Convert the tree inference with Numpy operators
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
@@ -1060,6 +1095,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return q_y_preds
 
     def _get_compiler(self) -> Compiler:
+        assert self._tree_inference is not None, self._is_not_fitted_error_message()
+
         # Generate the proxy function to compile
         _tree_inference_proxy, parameters_mapping = generate_proxy_function(
             self._tree_inference, ["inputs"]
@@ -1093,6 +1130,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return self.fhe_circuit
 
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        assert self._tree_inference is not None, self._is_not_fitted_error_message()
+
         return self._tree_inference(q_X)[0]
 
     def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
@@ -1163,22 +1202,22 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
         #: The equivalent fitted float model. Is None if the model is not fitted.
-        self.sklearn_model: Any = None  # type: ignore[assignment]
+        self.sklearn_model: Optional[Any] = None
 
         #: The quantizer to use for quantizing the model's weights
-        self._weight_quantizer: UniformQuantizer = None  # type: ignore[assignment]
+        self._weight_quantizer: Optional[UniformQuantizer] = None
 
         #: The scale to use for dequantizing the predicted outputs
-        self._output_scale: numpy.float64 = None  # type: ignore[assignment]
+        self._output_scale: Optional[numpy.float64] = None
 
         #: The zero-point to use for dequantizing the predicted outputs
-        self._output_zero_point: Union[numpy.ndarray, int, None] = None  # type: ignore[assignment]
+        self._output_zero_point: Optional[Union[numpy.ndarray, int]] = None
 
         #: The model's quantized weights
-        self._q_weights: numpy.ndarray = None  # type: ignore[assignment]
+        self._q_weights: Optional[numpy.ndarray] = None
 
         #: The model's quantized bias
-        self._q_bias: numpy.ndarray = None  # type: ignore[assignment]
+        self._q_bias: Optional[numpy.ndarray] = None
 
         BaseEstimator.__init__(self)
 
@@ -1190,12 +1229,20 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             and self.post_processing_params.get("output_zero_point", None) is not None
         )
 
+    def _underlying_model_is_not_fitted_error_message(self) -> str:
+        return (
+            f"The underlying model (class: {self.underlying_model_class}) is not fitted and thus "
+            "cannot be converted quantized."
+        )  # pragma: no cover
+
     def _set_onnx_model(self, test_input: numpy.ndarray):
         """Retrieve the model's ONNX graph using Hummingbird conversion.
 
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
+        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
+
         self.onnx_model_ = hb_convert(
             self.sklearn_model,
             backend="onnx",
@@ -1203,10 +1250,12 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
         ).model
 
-        self.clean_graph()
+        self._clean_graph()
 
-    def clean_graph(self):
+    def _clean_graph(self):
         """Clean the ONNX graph from undesired nodes."""
+        assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
+
         # Remove cast operators as they are not needed
         remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
 
@@ -1222,6 +1271,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Fit the Scikit-Learn model
         self._fit_float_estimator(X, y, **fit_parameters)
+
+        assert self.sklearn_model is not None, self._underlying_model_is_not_fitted_error_message()
 
         # This workaround makes linear regressors be able to fit with fit_intercept set to False.
         # This needs to be removed once HummingBird's latest version is integrated in Concrete-ML
@@ -1343,6 +1394,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
         # Quantizing weights and inputs makes an additional term appear in the inference function
         y_pred = q_X @ self._q_weights - self._weight_quantizer.zero_point * numpy.sum(
             q_X, axis=1, keepdims=True
@@ -1373,10 +1426,12 @@ class SklearnLinearClassifierMixin(
     them compliant with classification workflows.
     """
 
-    def clean_graph(self):
+    def _clean_graph(self):
+        assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
+
         # Remove any operators following gemm, as they will be done in the clear
         clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
-        SklearnLinearModelMixin.clean_graph(self)
+        SklearnLinearModelMixin._clean_graph(self)
 
     def decision_function(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
         """Predict confidence scores.

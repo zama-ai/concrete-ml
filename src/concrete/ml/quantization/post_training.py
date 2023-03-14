@@ -120,8 +120,8 @@ class ONNXConverter:
     """
 
     quant_ops_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]
-    n_bits: Union[int, Dict]
-    quant_params: Dict[str, QuantizedArray]
+    n_bits: Dict[str, int]
+    quant_params: Dict[str, numpy.ndarray]
     numpy_model: NumpyModule
     rounding_threshold_bits: Optional[int]
 

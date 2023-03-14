@@ -9,7 +9,7 @@ except ImportError:
     from importlib_metadata import version  # python 3.7-
 
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pandas as pd
@@ -89,8 +89,8 @@ def main():
 
     # Create experiments
     experiments = []
-    model_name, dataset_name, hyper_args = "8-bit-split-v0", "CIFAR-10", {}
-    experiment_representation = {}
+    model_name, dataset_name = "8-bit-split-v0", "CIFAR-10"
+    experiment_representation: Dict[str, Any] = {}
     experiment_representation["experiment_name"] = "cifar-10-8-bit-split-v0"
     experiment_representation["experiment_metadata"] = {
         "model_name": model_name,
@@ -98,7 +98,6 @@ def main():
         "cml_version": version("concrete-ml"),
         "cnp_version": version("concrete-numpy"),
     }
-    experiment_representation["experiment_metadata"].update(hyper_args)
     experiment_representation["git_hash"] = current_git_hash
     experiment_representation["git_timestamp"] = current_git_hash_timestamp
     experiment_representation["experiment_timestamp"] = current_timestamp

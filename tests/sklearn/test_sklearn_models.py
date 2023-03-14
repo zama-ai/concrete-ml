@@ -28,7 +28,6 @@ More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
 # pylint: disable=too-many-lines
-import functools
 import json
 import tempfile
 import warnings
@@ -48,6 +47,7 @@ from torch import nn
 
 from concrete.ml.common.serialization import dump, dumps, load, loads
 from concrete.ml.common.utils import (
+    get_model_class,
     get_model_name,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
@@ -220,82 +220,107 @@ def check_double_fit(model_class, n_bits, x, y):
     assert numpy.array_equal(y_pred_one, y_pred_two)
 
 
-def check_serialization(model_class, n_bits, x, y):
+def check_serialization(model, x):
     """Check serialization."""
-    model = instantiate_model_generic(model_class, n_bits=n_bits)
-    model_name = type(model).__name__
 
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-    model.set_params(**model_params)
-
-    if isinstance(model_class, functools.partial):
-        model_class_ = model_class.func
-    else:
-        model_class_ = model_class
+    model_class = get_model_class(model)
 
     # Neural Networks are not handling double fit properly
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
-    if is_model_class_in_a_list(model_class_, get_sklearn_neural_net_models()):
-        pytest.skip(
-            f"Serializaton not supported yet for class={model_class_}, model_name={model_name}"
-        )
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        pytest.skip(f"Serialization not supported yet for {model_class}")
 
-    # IO dump
+    check_serialization_dump_load(model, x)
+    check_serialization_dumps_loads(model, x)
+
+
+def check_serialization_dump_load(model, x):
+    """Check that a model can be serialized two times using dump/load methods."""
+
+    model_class = get_model_class(model)
+
     with tempfile.TemporaryFile("w+") as temp_dump:
+        # Disable mypy
         for (dump_method, load_method) in [
-            (functools.partial(dump, file=temp_dump), functools.partial(load, file=temp_dump)),
-            (
-                functools.partial(model_class_.dump, file=temp_dump),
-                functools.partial(model_class_.load, file=temp_dump),
-            ),
+            (dump, load),
+            (model_class.dump, model_class.load),
         ]:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=ConvergenceWarning)
+            # Dump the model into the file
+            temp_dump.seek(0)
+            temp_dump.truncate(0)
+            dump_method(model, file=temp_dump)
 
-                model.fit(x, y)
-                y_pred_one = model.predict(x)
+            # Load the model from the file as a dict using json
+            temp_dump.seek(0)
+            serialized_model_dict: Dict = json.load(temp_dump)
 
-                temp_dump.seek(0, 0)
-                temp_dump.truncate(0)
-                serialized_model = dump_method(model)
+            # Load the model from the file using Concrete-ML's method
+            temp_dump.seek(0)
+            loaded_model = load_method(file=temp_dump)
 
-                temp_dump.seek(0, 0)
-                loaded_model = load_method()
+            # Dump the loaded model into the file using Concrete-ML's method
+            temp_dump.seek(0)
+            temp_dump.truncate(0)
+            dump_method(loaded_model, file=temp_dump)
 
-                y_pred_two = loaded_model.predict(x)
-                temp_dump.seek(0, 0)
-                temp_dump.truncate(0)
-                re_serialized_model: str = dump_method(loaded_model)
+            # Load the model from the file again as a dict using json
+            temp_dump.seek(0)
+            re_serialized_model_dict: Dict = json.load(temp_dump)
 
-            assert numpy.array_equal(y_pred_one, y_pred_two)
+            # Check that the dictionaries are identical (except for sklearn_model attribute, as
+            # it is serialized using the pickle library, which does not handle double serialization)
+            del serialized_model_dict["sklearn_model"]
+            del re_serialized_model_dict["sklearn_model"]
+            assert serialized_model_dict == re_serialized_model_dict
 
-    # Dumps
+            # Check that the predictions made by both model are identical
+            y_pred_model = model.predict(x)
+            y_pred_loaded_model = loaded_model.predict(x)
+            assert numpy.array_equal(y_pred_model, y_pred_loaded_model)
+
+            # Check that the predictions made by both Scikit-Learn model are identical
+            y_pred_sklearn_model = model.sklearn_model.predict(x)
+            y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
+            assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
+
+
+def check_serialization_dumps_loads(model, x):
+    """Check that a model can be serialized two times using dumps/loads methods."""
+
+    model_class = get_model_class(model)
+
     for (dumps_method, loads_method) in [
         (dumps, loads),
-        (model_class_.dumps, model_class_.loads),
+        (model_class.dumps, model_class.loads),
     ]:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=ConvergenceWarning)
+        # Dump the model into a string
+        serialized_model = dumps_method(model)
 
-            model.fit(x, y)
-            y_pred_one = model.predict(x)
+        # Load the model from the string
+        loaded_model = loads_method(serialized_model)
 
-            serialized_model = dumps_method(model)
-            loaded_model = loads_method(serialized_model)
-            y_pred_two = loaded_model.predict(x)
-            re_serialized_model: str = dumps_method(loaded_model)
+        # Dump the model into a string again
+        re_serialized_model: str = dumps_method(loaded_model)
 
-            # For testing
-            re_serialized_model_dict: Dict = json.loads(re_serialized_model)
-            serialized_model_dict: Dict = json.loads(serialized_model)
+        # Load both strings using json
+        serialized_model_dict: Dict = json.loads(serialized_model)
+        re_serialized_model_dict: Dict = json.loads(re_serialized_model)
 
-            del re_serialized_model_dict["sklearn_model"]
-            del serialized_model_dict["sklearn_model"]
+        # Check that the dictionaries are identical (except for sklearn_model attribute, as
+        # it is serialized using the pickle library, which does not handle double serialization)
+        del serialized_model_dict["sklearn_model"]
+        del re_serialized_model_dict["sklearn_model"]
+        assert serialized_model_dict == re_serialized_model_dict
 
-        assert re_serialized_model_dict == serialized_model_dict
-        assert numpy.array_equal(y_pred_one, y_pred_two)
+        # Check that the predictions made by both model are identical
+        y_pred_model = model.predict(x)
+        y_pred_loaded_model = loaded_model.predict(x)
+        assert numpy.array_equal(y_pred_model, y_pred_loaded_model)
+
+        # Check that the predictions made by both Scikit-Learn model are identical
+        y_pred_sklearn_model = model.sklearn_model.predict(x)
+        y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
+        assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
 
 
 def check_offset(model_class, n_bits, x, y):
@@ -341,7 +366,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
     # Generate the keys
     fhe_circuit.keygen()
 
-    y_pred_fhe_step = []
+    y_pred_fhe = []
 
     for f_input in x:
         # Quantize an input (float)
@@ -366,16 +391,14 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
         # Apply the argmax to get the class predictions (in the clear)
         if is_classifier_or_partial_classifier(model):
             y_class = numpy.argmax(y_proba, axis=1)
-            y_pred_fhe_step += list(y_class)
+            y_pred_fhe += list(y_class)
         else:
-            y_pred_fhe_step += list(y_proba)
-
-    y_pred_fhe_step = numpy.array(y_pred_fhe_step)
+            y_pred_fhe += list(y_proba)
 
     # Compare with VL
     y_pred_expected_in_vl = model.predict(x, execute_in_fhe=False)
 
-    assert numpy.isclose(y_pred_fhe_step, y_pred_expected_in_vl).all(), (
+    assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_vl).all(), (
         "computations are not the same between individual functions (in FHE) "
         "and predict function (in VL)"
     )
@@ -909,12 +932,12 @@ def test_serialization(
     verbose=True,
 ):
     """Test Serialization."""
-    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_serialization")
 
-    check_serialization(model_class, n_bits, x, y)
+    check_serialization(model, x)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)

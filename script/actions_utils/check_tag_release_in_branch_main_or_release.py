@@ -40,7 +40,7 @@ def main(args):
     # Github CI will not have local branches, only remote references
     # Thus we check the presence of the tag commit in the remote references
     remote_refs = {}
-    for ref in repo.refs:
+    for ref in repo.references:
         # Remote refs may be prefixed by "refs/" in some cases, and always contain "remotes/origin"
         # Strip these path items to check against the target branch names
         stripped_name = ref.name.replace("refs/", "").replace("remotes/", "").replace("origin/", "")
@@ -56,11 +56,14 @@ def main(args):
             ancestors_main = repo.merge_base(branch_main, to_commit)
             assert len(ancestors_main) == 1
             ancestor_main = ancestors_main[0]
+
+            # Mypy does not seem to be able to see that 'to_commit' has a hexsha attribute, even
+            # if we add some assert. THerefore, it is disabled
             print(
-                f"Checking current commit {to_commit.hexsha} against "
+                f"Checking current commit {to_commit.hexsha} against "  # type: ignore[union-attr]
                 f"commit on branch {ancestor_main.hexsha}"
             )
-            if ancestor_main.hexsha == to_commit.hexsha:
+            if ancestor_main.hexsha == to_commit.hexsha:  # type: ignore[union-attr]
                 break
     else:
         raise ValueError(

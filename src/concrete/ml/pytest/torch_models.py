@@ -1,6 +1,8 @@
 """Torch modules for our pytests."""
 
 # pylint: disable=too-many-lines
+from typing import Union
+
 import brevitas.nn as qnn
 import numpy
 import torch
@@ -317,6 +319,9 @@ class MultiInputNN(nn.Module):
 class MultiInputNNConfigurable(nn.Module):
     """Torch model to test multiple inputs forward."""
 
+    layer1: nn.Module
+    layer2: nn.Module
+
     def __init__(self, use_conv, use_qat, input_output, n_bits):  # pylint: disable=unused-argument
         super().__init__()
 
@@ -474,10 +479,10 @@ class NetWithConcatUnsqueeze(torch.nn.Module):
         results = []
         for module in self.ifc:
             results.append(module(x))
+
         # Use torch.stack which creates Unsqueeze operators for each module
         # and a final Concat operator.
-        results = torch.stack(results)
-        return results
+        return torch.stack(results)
 
 
 class MultiOpOnSingleInputConvNN(nn.Module):
@@ -885,7 +890,9 @@ class QATTestModule(nn.Module):
 class SingleMixNet(nn.Module):
     """Torch model that with a single conv layer that produces the output, e.g. a blur filter."""
 
-    def __init__(self, use_conv, use_qat, inp_size, n_bits):  # pylint: disable=unused-argument
+    mixing_layer: Union[nn.Module, nn.Sequential]
+
+    def __init__(self, use_conv, use_qat, inp_size, n_bits):
         super().__init__()
 
         if use_conv:
@@ -897,8 +904,10 @@ class SingleMixNet(nn.Module):
                     qnn.QuantIdentity(bit_width=n_bits),
                     qnn.QuantConv2d(1, 1, 3, stride=1, bias=True, weight_bit_width=n_bits),
                 )
+                layer_obj = self.mixing_layer[1]
             else:
                 self.mixing_layer = nn.Conv2d(1, 1, 3, stride=1, bias=True)
+                layer_obj = self.mixing_layer
         else:
             # Initialize a linear layer with 1s
             np_weights = numpy.asarray([[1] * inp_size])
@@ -907,10 +916,11 @@ class SingleMixNet(nn.Module):
                     qnn.QuantIdentity(bit_width=n_bits),
                     qnn.QuantLinear(inp_size, inp_size, bias=True, weight_bit_width=n_bits),
                 )
+                layer_obj = self.mixing_layer[1]
             else:
                 self.mixing_layer = nn.Linear(inp_size, inp_size, bias=True)
+                layer_obj = self.mixing_layer
 
-        layer_obj = self.mixing_layer[1] if use_qat else self.mixing_layer
         layer_obj.weight.data = torch.from_numpy(np_weights).float()
         layer_obj.bias.data = torch.rand(size=(1,))
 

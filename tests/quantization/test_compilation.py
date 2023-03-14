@@ -159,7 +159,8 @@ def test_quantized_cnn_compilation(
 class NumpyModuleTest(NumpyModule):
     """Test class to build NumpyModule in an alternative way."""
 
-    def __init__(self, onnx_model: onnx.ModelProto):  # pylint: disable=super-init-not-called
+    # pylint: disable-next=super-init-not-called
+    def __init__(self, onnx_model: onnx.ModelProto):
         self.numpy_forward = lambda x: x
         self._onnx_model = onnx_model
 
@@ -179,16 +180,15 @@ def test_post_training_quantization_constant_folding():
         inputs=[],
         outputs=["constant_f_one"],
         name="constant_f_one_node",
-        **{"value_float": f_one},
+        value_float=f_one,
     )
     constant_f_zero = helper.make_node(
         "Constant",
         inputs=[],
         outputs=["constant_f_zero"],
         name="constant_f_zero_node",
-        **{"value_float": f_zero},
+        value_float=f_zero,
     )
-
     add_one_and_zero = helper.make_node(
         "Add",
         inputs=["constant_f_one", "constant_f_zero"],
@@ -248,7 +248,10 @@ def test_post_training_quantization_constant_folding():
         inputs=["x_input", "negative_input_plus_one"],
         outputs=[model_output_name],
         name="matmul_with_folded_cst",
-        **{"transA": 0, "transB": 0, "alpha": 1.0, "beta": 1.0},
+        transA=0,
+        transB=0,
+        alpha=1.0,
+        beta=1.0,
     )
 
     graph_def = helper.make_graph(

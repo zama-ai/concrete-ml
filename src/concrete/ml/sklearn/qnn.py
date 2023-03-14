@@ -365,8 +365,10 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
 
         # During training we infer the same as in the base class
         # Note that this supports more data types for x than we support in quantized mode
+        # Disable mypy error as super().infer is expected to be reachable once the model inherits
+        # from Skorch
         if not self._is_fitted:
-            return super().infer(x, **fit_params)
+            return super().infer(x, **fit_params)  # type: ignore[misc]
 
         # Get a numpy array from the tensor to do quantization
         x = x.detach().cpu().numpy()
@@ -385,7 +387,11 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         Returns:
             module (nn.Module): the instantiated torch module
         """
-        return self.module_
+        # Disable mypy attribute definition error as this method is expected to be reachable
+        # once the model inherits from Skorch
+        self.check_is_fitted()  # type: ignore[attr-defined]
+
+        return self.module_  # type: ignore[attr-defined]
 
     @property
     def n_bits_quant(self) -> int:
@@ -403,7 +409,8 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         # Hence, we use Skorch's `NeuralNet.check_is_fitted` method, which raises a
         # NotInitializedError exception it the model is not fitted (by checking if the
         # `module_` attribute is found)
-        # However, mypy does not see it
+        # Disable mypy attribute definition error as this method is expected to be reachable
+        # once the model inherits from Skorch
         self.check_is_fitted()  # type: ignore[attr-defined]
 
         # Similarily, ignore mypy here
@@ -434,7 +441,9 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         # See: https://scikit-learn.org/stable/modules/generated/sklearn.base.clone.html
         # We therefore obtained the parameters with get_params(), copy them using copy.deepcopy
         # and then pass them to the constructor.
-        new_object_params = super().get_params(deep=deep)
+        # Disable mypy error as super().get_params is expected to be reachable once the model
+        # inherits from Skorch
+        new_object_params = super().get_params(deep=deep)  # type: ignore[misc]
 
         # The `module` parameter needs to be removed as we need to rebuild it separately
         # This key is only present for NeuralNetClassifiers that don't fix the module type,
@@ -466,7 +475,11 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
             y: targets
             kwargs: other arguments
         """
-        train_end_callback = getattr(self.module_, "on_train_end", None)
+        # Disable mypy attribute definition error as this method is expected to be reachable
+        # once the model inherits from Skorch
+        train_end_callback = getattr(
+            self.module_, "on_train_end", None  # type: ignore[attr-defined]
+        )
         if callable(train_end_callback):
             train_end_callback()
 
@@ -489,10 +502,11 @@ class FixedTypeSkorchNeuralNet:
         Returns:
             params : dict, Parameter names mapped to their values.
         """
-        # Pylint doesn't properly handle classes mixed with classes from a different file
         # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch
+        # Disable mypy error and pylint no-member error as super().get_params is expected to be
+        # reachable once the model inherits from Skorch
         # pylint: disable-next=no-member
-        params = super().get_params(deep, **kwargs)
+        params = super().get_params(deep, **kwargs)  # type: ignore[misc]
 
         # Remove the module key since our NN skorch class imposes SparseQuantNeuralNetImpl as
         # the NN model type. Therefore, when cloning this estimator we don't need to pass
@@ -530,11 +544,13 @@ class FixedTypeSkorchNeuralNet:
             ValueError: if the model has not been trained or if the model is one that has already
                 been pruned
         """
-
-        if not self.initialized_:  # pylint: disable=no-member
+        # Disable several mypy attribute definition error and pylint no-member error as this
+        # attribute is expected to be reachable once the model inherits from Skorch
+        # pylint: disable=no-member
+        if not self.initialized_:  # type: ignore[attr-defined]
             raise ValueError("Can only prune another NeuralNet model that is already already fit.")
 
-        if self.module_.n_prune_neurons_percentage > 0.0:  # pylint: disable=no-member
+        if self.module_.n_prune_neurons_percentage > 0.0:  # type: ignore[attr-defined]
             raise ValueError(
                 "Cannot apply structured pruning optimization to an already pruned model"
             )
@@ -557,24 +573,26 @@ class FixedTypeSkorchNeuralNet:
         model_copy.initialize()
 
         # Deactivate the default pruning
-        model_copy.module_.make_pruning_permanent()  # pylint: disable=no-member
+        model_copy.module_.make_pruning_permanent()  # type: ignore[attr-defined]
 
         # Load the original model
-        model_copy.module_.load_state_dict(self.module_.state_dict())  # pylint: disable=no-member
+        model_copy.module_.load_state_dict(self.module_.state_dict())  # type: ignore[attr-defined]
 
         # Set the new pruning amount
         model_copy.module_.n_prune_neurons_percentage = (
-            n_prune_neurons_percentage  # pylint: disable=no-member
+            n_prune_neurons_percentage  # type: ignore[attr-defined]
         )
 
         # Enable pruning again, this time with structured pruning
-        model_copy.module_.enable_pruning()  # pylint: disable=no-member
+        model_copy.module_.enable_pruning()  # type: ignore[attr-defined]
 
         # The .module_ was initialized manually, prevent .fit from creating a new one
         model_copy.warm_start = True  # pylint: disable=attribute-defined-outside-init
 
         # Now, fine-tune the original module with structured pruning
         model_copy.fit(X, y, **fit_params)
+
+        # pylint: enable=no-member
 
         return model_copy
 

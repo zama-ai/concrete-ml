@@ -1,6 +1,7 @@
 """Small helper utility to preprocess benchmark results locally"""
 
 import json
+from typing import Set
 
 
 def main():
@@ -12,17 +13,17 @@ def main():
         benchmark = json.load(inp_fp)
 
     # Get all unique measurement names
-    columns = set()
+    unique_measurements: Set[str] = set()
     for target in benchmark["targets"].values():
         if "measurements" not in target:
             continue
-        target_meas = set(target["measurements"])
-        columns = columns.union(target_meas)
+        target_measurements = set(target["measurements"])
+        unique_measurements = unique_measurements.union(target_measurements)
 
     # Open the output CSV file
     with open("progress.csv", "wt", encoding="utf8") as out_fp:
         # Add the classifier column and write the CSV header
-        columns = ["classifier"] + sorted(list(columns))
+        columns = ["classifier"] + sorted(list(unique_measurements))
         out_fp.write(",".join(columns) + "\n")
 
         # Re-scan all targets

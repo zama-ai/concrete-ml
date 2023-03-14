@@ -519,16 +519,16 @@ class QuantizedModule:
         """Report the ranges and bitwidths for layers that mix encrypted integer values.
 
         Returns:
-            result (Dict): a dictionary with operation names as keys. For each operation,
-                (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned. The range
-                contains the min/max values encountered when computing the operation and
+            op_names_to_report (Dict): a dictionary with operation names as keys. For each
+                operation, (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned.
+                The range contains the min/max values encountered when computing the operation and
                 the bitwidth gives the number of bits needed to represent this range.
         """
 
         if self.fhe_circuit is None:
             return None
 
-        result: Dict[str, Dict[str, Union[Tuple[int, ...], int]]] = {}
+        op_names_to_report: Dict[str, Dict[str, Union[Tuple[int, ...], int]]] = {}
         for (_, op_inst) in self.quant_layers_dict.values():
             # Get the value range of this tag and all its subtags
             # The potential tags for this op start with the op instance name
@@ -542,6 +542,9 @@ class QuantizedModule:
             # Only store the range and bit-width if there are valid ones,
             # as some ops (fusable ones) do not have tags
             if value_range is not None and bitwidth >= 0:
-                result[op_inst.op_instance_name] = {"range": value_range, "bitwidth": bitwidth}
+                op_names_to_report[op_inst.op_instance_name] = {
+                    "range": value_range,
+                    "bitwidth": bitwidth,
+                }
 
-        return result
+        return op_names_to_report

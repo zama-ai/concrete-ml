@@ -199,9 +199,9 @@ def main(args):
         from_commit = repo.commit(args.from_ref)
 
     log_msg(f"From commit: {from_commit}")
-    ancestor_commit = repo.merge_base(to_commit, from_commit)
-    assert len(ancestor_commit) == 1
-    ancestor_commit = ancestor_commit[0]
+    ancestor_commits = repo.merge_base(to_commit, from_commit)
+    assert len(ancestor_commits) == 1
+    ancestor_commit = ancestor_commits[0]
     log_msg(f"Common ancestor: {ancestor_commit}")
 
     if ancestor_commit != from_commit:
@@ -214,7 +214,10 @@ def main(args):
             ),
         )
 
-    ancestor_tag = sha1_to_tags.get(ancestor_commit.hexsha, None)
+    # Mypy does not seem to be able to see that 'to_commit' has a hexsha attribute, even
+    # if we add some assert. THerefore, it is disabled
+    ancestor_tag = sha1_to_tags.get(ancestor_commit.hexsha, None)  # type: ignore[union-attr]
+
     # The initial repo commit is allowed to not have a tag when generating changelogs
     # If the ancestor has no tag and it's not the repo initial commit
     if ancestor_tag is None and not from_commit_is_initial_commit:
@@ -236,7 +239,11 @@ def main(args):
         f"(tag: {to_tag} - parsed version {str(to_version)})"
     )
 
-    log_dict = generate_changelog(repo, ancestor_commit.hexsha, to_commit.hexsha)
+    # Mypy does not seem to be able to see that 'to_commit' has a hexsha attribute, even
+    # if we add some assert. THerefore, it is disabled
+    log_dict = generate_changelog(
+        repo, ancestor_commit.hexsha, to_commit.hexsha  # type: ignore[union-attr]
+    )
 
     owner, name = get_repository_owner_and_name()
     md_changelog = markdown_changelog(

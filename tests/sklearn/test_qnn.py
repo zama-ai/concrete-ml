@@ -204,15 +204,16 @@ def test_compile_and_calib(
     # Train the model
     # Needed for coverage
     if is_regressor_or_partial_regressor(model_class):
-        for x_d_type, y_d_type in product(
+        for x_d_type_regressor, y_d_type_regressor in product(
             [numpy.float32, numpy.float64], [numpy.float32, numpy.float64]
         ):
-            model.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
+            model.fit(x_train.astype(x_d_type_regressor), y_train.astype(y_d_type_regressor))
+
     elif is_classifier_or_partial_classifier(model_class):
-        for x_d_type, y_d_type in product(
+        for x_d_type_classifier, y_d_type_classifier in product(
             [numpy.float32, numpy.float64], [numpy.int32, numpy.int64]
         ):
-            model.fit(x_train.astype(x_d_type), y_train.astype(y_d_type))
+            model.fit(x_train.astype(x_d_type_classifier), y_train.astype(y_d_type_classifier))
 
     # Train normally
     model.fit(x_train, y_train)

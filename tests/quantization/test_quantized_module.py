@@ -258,12 +258,16 @@ def test_bitwidth_report(
             ops_check_have_report.add(node.name)
 
     # Get the report
-    report = quantized_model.bitwidth_and_range_report()
+    op_names_to_report = quantized_model.bitwidth_and_range_report()
+
+    assert (
+        op_names_to_report is not None
+    ), "Please compile the module before accessing the bitwidth and range reports."
 
     # Check that all interesting ops are in the report
-    assert ops_check_have_report.issubset(report.keys())
+    assert ops_check_have_report.issubset(op_names_to_report.keys())
 
-    expected = {
+    expected_class_to_reports = {
         FC: {
             "/fc1/Gemm": {"range": (-251, 208), "bitwidth": 9},
             "/fc2/Gemm": {"range": (-20, 20), "bitwidth": 6},
@@ -274,26 +278,35 @@ def test_bitwidth_report(
     }
 
     # Check that the report includes the correct information
-    for key in report:
+    for op_name, op_report in op_names_to_report.items():
+
         # Ensure the report contains the right info
-        assert "range" in report[key] and "bitwidth" in report[key]
+        assert "range" in op_report and "bitwidth" in op_report, (
+            f"Report for {op_name} is not correct. Expected `range` and `bitwidth` keys, got "
+            f"{op_report.keys()}"
+        )
+
+        model_reports = expected_class_to_reports.get(model_class, None)
 
         # If we have actual values for this trained model
-        if model_class in expected:
-            # Find the expected values for this layer
-            expected = expected[model_class]
-            expected_key = None
-            for potential_key in expected.keys():
+        if model_reports is not None:
+            expected_report = None
+            for potential_op, potential_report in model_reports.items():
                 # Expected key name should be contained in the ONNX layer name
-                if potential_key in key:
-                    expected_key = potential_key
+                if potential_op in op_name:
+                    expected_report = potential_report
                     break
 
             # Ensure we find the expected layer name though it maybe be transformed
             # with a prefix or suffix
-            assert expected_key
+            assert expected_report is not None, (
+                f"No proper report has been found for {model_class.__name__}'s expected {op_name} "
+                f"operator. Got {model_reports.keys()}."
+            )
 
             # Ensure the value are the expected ones
-            assert report[key]["range"][0] == expected[expected_key]["range"][0]
-            assert report[key]["range"][1] == expected[expected_key]["range"][1]
-            assert report[key]["bitwidth"] == expected[expected_key]["bitwidth"]
+            # Disable mypy here as it does not seem to understand that the `range` value is
+            # a tuple in both the report dictionaries
+            assert op_report["range"][0] == expected_report["range"][0]  # type: ignore[index]
+            assert op_report["range"][1] == expected_report["range"][1]  # type: ignore[index]
+            assert op_report["bitwidth"] == expected_report["bitwidth"]
