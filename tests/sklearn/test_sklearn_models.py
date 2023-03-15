@@ -541,8 +541,11 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
             "Skipping sklearn-equivalence test for some linear models, doesn't work for now"
         )
 
-    # Still some problems to fix
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2842
+    # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
+    # in structure but trained from scratch. Furthermore, the `n_bits` setting
+    # of the QNN instantiation in `instantiate_model_generic` takes `n_bits` as
+    # a target accumulator and sets 3-b w&a for these tests. Thus it's
+    # impossible to reach R-2 of 0.99 when comparing the two NN models returned by `fit_benchmark`
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         pytest.skip("Skipping sklearn-equivalence test for NN, doesn't work for now")
 
