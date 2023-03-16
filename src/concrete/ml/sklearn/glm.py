@@ -5,7 +5,6 @@ from abc import abstractmethod
 from typing import Any, Dict, Union
 
 import numpy
-import torch
 from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
 from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
 from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
@@ -15,9 +14,8 @@ from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import FheMode
-from ..torch.numpy_module import NumpyModule
+from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type
 from .base import SklearnLinearRegressorMixin
-from .torch_modules import _LinearTorchModel
 
 
 # pylint: disable-next=too-many-instance-attributes
@@ -57,6 +55,14 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         self.warm_start = warm_start
         self.verbose = verbose
 
+    def _clean_graph(self):
+        assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
+
+        # Remove any operators following gemm, as they will be done in the clear in post-processing
+        # In particular, this includes the exponential operator
+        clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
+        super()._clean_graph()
+
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return self._inverse_link(y_preds)
 
@@ -66,35 +72,6 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
 
         y_preds = self.post_processing(y_preds)
         return y_preds
-
-    # Remove the following method once Hummingbird's latest version is integrated in Concrete-ML
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2080
-    def _set_onnx_model(self, test_input: numpy.ndarray):
-        """Retrieve the model's ONNX graph using Hummingbird conversion.
-
-        Args:
-            test_input (numpy.ndarray): An input data used to trace the model execution.
-        """
-        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
-
-        # Initialize the Torch model. Using a small Torch model that reproduces the proper
-        # inference is necessary for GLMs. Indeed, the Hummingbird library does not support these
-        # models and thus cannot be used to convert them into an ONNX form. Additionally, a
-        # NumpyModule accepts a Torch module as an input, making the rest of the structure still
-        # usable.
-        torch_model = _LinearTorchModel(
-            weight=self.sklearn_model.coef_,
-            bias=self.sklearn_model.intercept_ if self.fit_intercept else None,
-        )
-
-        # Create a NumpyModule from the Torch model
-        numpy_module = NumpyModule(
-            torch_model,
-            dummy_input=torch.from_numpy(test_input[0]),
-        )
-
-        # Retrieve the ONNX graph
-        self.onnx_model_ = numpy_module.onnx_model
 
     @abstractmethod
     def _inverse_link(self, y_preds):

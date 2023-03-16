@@ -14,6 +14,9 @@ from concrete.ml.sklearn import get_sklearn_tree_models
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 
+# We are dumping long raw strings in this test, we therefore need to disable pylint from checking it
+# pylint: disable=line-too-long
+
 
 def check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
@@ -63,7 +66,14 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
     if not is_model_class_in_a_list(
         model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
     ):
-        assert str_model == str_expected
+        # The expected graph is usually a string and we therefore directly test if it is equal to
+        # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
+        # this graph can slightly changed depending on some input's values. We then expected the
+        # string to match as least one of them expected strings (as a list)
+        if isinstance(str_expected, str):
+            assert str_model == str_expected
+        else:
+            assert str_model in str_expected
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
@@ -209,25 +219,34 @@ def test_dump(
   return %transposed_output
 }""",
         "PoissonRegressor": """graph torch_jit (
-  %onnx::MatMul_0[DOUBLE, 10]
+  %input_0[DOUBLE, symx10]
 ) initializers (
-  %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_6[DOUBLE, 10x1]
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %/linear/MatMul_output_0 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
-  %5 = Add(%linear.bias, %/linear/MatMul_output_0)
-  return %5
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %/_operators.0/Gemm_output_0
 }""",
-        "TweedieRegressor": """graph torch_jit (
-  %onnx::MatMul_0[DOUBLE, 10]
+        "TweedieRegressor": [
+            """graph torch_jit (
+  %input_0[DOUBLE, symx10]
 ) initializers (
-  %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_6[DOUBLE, 10x1]
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %/linear/MatMul_output_0 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
-  %5 = Add(%linear.bias, %/linear/MatMul_output_0)
-  return %5
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %/_operators.0/Gemm_output_0
 }""",
+            """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
+}""",
+        ],
         "Ridge": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
@@ -257,14 +276,13 @@ def test_dump(
   return %transposed_output
 }""",
         "GammaRegressor": """graph torch_jit (
-  %onnx::MatMul_0[DOUBLE, 10]
+  %input_0[DOUBLE, symx10]
 ) initializers (
-  %linear.bias[DOUBLE, scalar]
-  %onnx::MatMul_6[DOUBLE, 10x1]
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
 ) {
-  %/linear/MatMul_output_0 = MatMul(%onnx::MatMul_0, %onnx::MatMul_6)
-  %5 = Add(%linear.bias, %/linear/MatMul_output_0)
-  return %5
+  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %/_operators.0/Gemm_output_0
 }""",
         "ElasticNet": """graph torch_jit (
   %input_0[DOUBLE, symx10]
