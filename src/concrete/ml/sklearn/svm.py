@@ -78,8 +78,6 @@ class LinearSVR(SklearnLinearRegressorMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -100,12 +98,6 @@ class LinearSVR(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
         obj = LinearSVR()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -127,8 +119,6 @@ class LinearSVR(SklearnLinearRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
@@ -223,8 +213,6 @@ class LinearSVC(SklearnLinearClassifierMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -247,12 +235,6 @@ class LinearSVC(SklearnLinearClassifierMixin):
     def load_dict(cls, metadata: Dict):
         obj = LinearSVC()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -278,8 +260,6 @@ class LinearSVC(SklearnLinearClassifierMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 

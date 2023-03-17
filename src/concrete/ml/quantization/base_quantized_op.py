@@ -773,13 +773,13 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         out_opts.is_signed = False
         out_opts.is_symmetric = False
 
-        out_params = UniformQuantizationParameters()
-        out_params.scale = scale
-        out_params.zero_point = zero_point
-
-        # Since we don't know the real bit-width of this numpy_q_out value,
+        # Since we don't know the real bit-width of these quantized values,
         # return a quantizer that has zero offset
-        out_params.offset = 0
+        out_params = UniformQuantizationParameters(
+            scale=scale,
+            zero_point=zero_point,
+            offset=0,
+        )
 
         return QuantizedArray(
             self.n_bits,

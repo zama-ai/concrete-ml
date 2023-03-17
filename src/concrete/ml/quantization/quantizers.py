@@ -100,6 +100,20 @@ class QuantizationOptions:
     # quantization layer that has pre-computed scale and zero-point (i.e. ONNX brevitas quant layer)
     is_precomputed_qat: bool = False
 
+    def __init__(
+        self, n_bits: int, is_signed: bool = False, is_symmetric: bool = False, is_qat: bool = False
+    ):
+        self.n_bits = n_bits
+        self.is_signed = is_signed
+        self.is_symmetric = is_symmetric
+        self.is_qat = is_qat
+
+        # QAT quantization is not symmetric
+        assert_true(not self.is_qat or not self.is_symmetric)
+
+        # Symmetric quantization is signed
+        assert_true(not self.is_symmetric or self.is_signed)
+
     def dump_dict(self) -> Dict:
         """Dump itelf to a dict.
 
@@ -181,20 +195,6 @@ class QuantizationOptions:
         _metadata: Dict = json.loads(metadata)
         return QuantizationOptions.load_dict(metadata=_metadata)
 
-    def __init__(
-        self, n_bits: int, is_signed: bool = False, is_symmetric: bool = False, is_qat: bool = False
-    ) -> None:
-        self.n_bits = n_bits
-        self.is_signed = is_signed
-        self.is_symmetric = is_symmetric
-        self.is_qat = is_qat
-
-        # QAT quantization is not symmetric
-        assert_true(not self.is_qat or (self.is_qat and not self.is_symmetric))
-
-        # Symmetric quantization is signed
-        assert_true(not self.is_symmetric or (self.is_signed and self.is_symmetric))
-
     def copy_opts(self, opts):
         """Copy the options from a different structure.
 
@@ -253,6 +253,16 @@ class MinMaxQuantizationStats:
     rmin: Optional[float] = None
     uvalues: Optional[numpy.ndarray] = None
 
+    def __init__(
+        self,
+        rmax: Optional[float] = None,
+        rmin: Optional[float] = None,
+        uvalues: Optional[numpy.ndarray] = None,
+    ):
+        self.rmax = rmax
+        self.rmin = rmin
+        self.uvalues = uvalues
+
     def dump_dict(self) -> Dict:
         """Dump itelf to a dict.
 
@@ -295,10 +305,12 @@ class MinMaxQuantizationStats:
         Returns:
             QuantizationOptions: the loaded object
         """
-        to_return = MinMaxQuantizationStats()
-        to_return.rmax = metadata["rmax"]
-        to_return.rmin = metadata["rmin"]
-        to_return.uvalues = numpy.array(metadata["uvalues"])
+        to_return = MinMaxQuantizationStats(
+            rmax=metadata["rmax"],
+            rmin=metadata["rmin"],
+            uvalues=numpy.array(metadata["uvalues"]),
+        )
+
         return to_return
 
     @staticmethod
@@ -411,6 +423,16 @@ class UniformQuantizationParameters:
     zero_point: Optional[Union[int, float, numpy.ndarray]] = None
     offset: Optional[int] = None
 
+    def __init__(
+        self,
+        scale: Optional[numpy.float64] = None,
+        zero_point: Optional[Union[int, float, numpy.ndarray]] = None,
+        offset: Optional[int] = None,
+    ):
+        self.scale = scale
+        self.zero_point = zero_point
+        self.offset = offset
+
     def dump_dict(self) -> Dict:
         """Dump itelf to a dict.
 
@@ -453,11 +475,11 @@ class UniformQuantizationParameters:
         Returns:
             UniformQuantizationParameters: the loaded object
         """
-        to_return = UniformQuantizationParameters()
-        to_return.scale = metadata["scale"]
-
-        to_return.zero_point = metadata["zero_point"]
-        to_return.offset = metadata["offset"]
+        to_return = UniformQuantizationParameters(
+            scale=metadata["scale"],
+            zero_point=metadata["zero_point"],
+            offset=metadata["offset"],
+        )
         return to_return
 
     @staticmethod
@@ -607,6 +629,8 @@ class UniformQuantizationParameters:
 
                     self.zero_point = numpy.round(
                         (
+                            # Pylint does not see that offset is not None here
+                            # pylint: disable-next=invalid-unary-operand-type
                             stats.rmax * (-self.offset)
                             - (stats.rmin * (2**options.n_bits - 1 - self.offset))
                         )
@@ -629,11 +653,13 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             (scale, zero-point)
     """
 
-    def __init__(  # pylint: disable=super-init-not-called
+    # pylint: disable-next=super-init-not-called
+    def __init__(
         self,
         options: Optional[QuantizationOptions] = None,
         stats: Optional[MinMaxQuantizationStats] = None,
         params: Optional[UniformQuantizationParameters] = None,
+        no_clipping: bool = False,
     ):
         if options is not None:
             self.copy_opts(options)
@@ -643,6 +669,8 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         if params is not None:
             self.copy_params(params)
+
+        self.no_clipping = no_clipping
 
         # Force scale to be a float64
         if self.scale is not None:
@@ -665,18 +693,22 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         qvalues = numpy.rint(values / self.scale + self.zero_point)
 
-        # Offset is either 2^(n-1) or 0, but for narrow range
-        # the values should be clipped to [2^(n-1)+1, .. 2^(n-1)-1], so we add
-        # one to the minimum value for narrow range
-        min_value = -self.offset
-        if self.is_narrow:
-            min_value += 1
-
         # Clipping can be performed for PTQ and for precomputed (for now only Brevitas) QAT
         # (where quantizer parameters are available in ONNX layers).
         # For Custom QAT, with inferred parameters the type of quantization (signed/narrow)
         # can not be inferred and thus clipping can not be performed reliably
-        if not self.is_qat or self.is_precomputed_qat:
+        # It is possible to disable this clipping step for specific cases such as quantizing values
+        # within fully-leveled circuits (where not bounds are needed)
+        if (not self.is_qat or self.is_precomputed_qat) and not self.no_clipping:
+            # Offset is either 2^(n-1) or 0, but for narrow range
+            # the values should be clipped to [2^(n-1)+1, .. 2^(n-1)-1], so we add
+            # one to the minimum value for narrow range
+            # Pylint does not see that offset is not None here
+            # pylint: disable-next=invalid-unary-operand-type
+            min_value = -self.offset
+            if self.is_narrow:
+                min_value += 1
+
             qvalues = qvalues.clip(min_value, 2 ** (self.n_bits) - 1 - self.offset)
 
         return qvalues.astype(numpy.int64)
@@ -715,10 +747,10 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         """
         metadata: Dict[str, Any] = {}
         metadata["cml_dumped_class_name"] = str(type(self).__name__)
-        metadata["zero_point"] = self.zero_point
-        metadata["scale"] = self.scale
-        metadata["offset"] = self.offset
-        metadata["n_bits"] = self.n_bits
+
+        for attribute in ["zero_point", "scale", "offset", "n_bits"]:
+            if hasattr(self, attribute):
+                metadata[attribute] = getattr(self, attribute)
         return metadata
 
     def dumps(self) -> str:
@@ -752,12 +784,9 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         """
         obj = UniformQuantizer()
 
-        obj.zero_point = metadata["zero_point"]
-
-        obj.scale = metadata["scale"]
-        obj.offset = metadata["offset"]
-        obj.n_bits = metadata["n_bits"]
-
+        for attribute in ["zero_point", "scale", "offset", "n_bits"]:
+            if attribute in metadata:
+                setattr(obj, attribute, metadata[attribute])
         return obj
 
     @staticmethod

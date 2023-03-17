@@ -28,7 +28,11 @@ from concrete.numpy.dtypes.integer import Integer
 
 from concrete.ml.common.serialization import CustomEncoder
 from concrete.ml.quantization.quantized_module import QuantizedModule, _get_inputset_generator
-from concrete.ml.quantization.quantizers import QuantizationOptions, UniformQuantizer
+from concrete.ml.quantization.quantizers import (
+    QuantizationOptions,
+    UniformQuantizationParameters,
+    UniformQuantizer,
+)
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -1234,12 +1238,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The quantizer to use for quantizing the model's weights
         self._weight_quantizer: Optional[UniformQuantizer] = None
 
-        #: The scale to use for dequantizing the predicted outputs
-        self._output_scale: Optional[numpy.float64] = None
-
-        #: The zero-point to use for dequantizing the predicted outputs
-        self._output_zero_point: Optional[Union[numpy.ndarray, int]] = None
-
         #: The model's quantized weights
         self._q_weights: Optional[numpy.ndarray] = None
 
@@ -1277,12 +1275,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Remove cast operators as they are not needed
         remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
-
-    def _set_post_processing_params(self):
-        self.post_processing_params = {
-            "output_scale": self._output_scale,
-            "output_zero_point": self._output_zero_point,
-        }
 
     def fit(self, X, y, **fit_parameters) -> Any:
         # Reset for double fit
@@ -1330,26 +1322,33 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert input_quantizer.scale is not None
         assert weight_quantizer.scale is not None
 
-        # Retrieve the scale and zero-point of the matmul's outputs, following the same steps from
+        # Compute the scale and zero-point of the matmul's outputs, following the same steps from
         # the QuantizedGemm operator, which are based on equations detailed in
         # https://arxiv.org/abs/1712.05877
-        self._output_scale = input_quantizer.scale * weight_quantizer.scale
-        self._output_zero_point = input_quantizer.zero_point * (
-            numpy.sum(self._q_weights, axis=0, keepdims=True)
-            - X.shape[1] * weight_quantizer.zero_point
+        output_quant_params = UniformQuantizationParameters(
+            scale=input_quantizer.scale * weight_quantizer.scale,
+            zero_point=input_quantizer.zero_point
+            * (
+                numpy.sum(self._q_weights, axis=0, keepdims=True)
+                - X.shape[1] * weight_quantizer.zero_point
+            ),
+            offset=0,
         )
 
-        # Updating post-processing parameters
-        self._set_post_processing_params()
+        output_quantizer = UniformQuantizer(params=output_quant_params, no_clipping=True)
 
         # Quantize the bias using the matmul's scale and zero-point, such that
         # q_bias = round((1/S)*bias + Z)
-        # Contrary to the QuantizedGemm operator which handles the bias term as a floating point
-        # (and thus fusing it with following TLUs), we need to quantize the bias term so that it
-        # matches the same range of values as the matmul's outputs.
-        self._q_bias = numpy.round(
-            self.sklearn_model.intercept_ / self._output_scale + self._output_zero_point
-        ).astype(numpy.int64)
+        self._q_bias = output_quantizer.quant(self.sklearn_model.intercept_)
+
+        # Since the matmul and the bias both use the same scale and zero-points, we obtain that
+        # y = S*(q_y - 2*Z) when dequantizing the values. We therefore need to multiply the initial
+        # output zero_point by 2
+        output_quantizer.zero_point *= 2
+        self.output_quantizers.append(output_quantizer)
+
+        # Updating post-processing parameters
+        self._set_post_processing_params()
 
         self._is_fitted = True
 
@@ -1365,16 +1364,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        # Retrieve the post-processing parameters
-        output_scale = self.post_processing_params["output_scale"]
-        output_zero_point = self.post_processing_params["output_zero_point"]
-
-        # Dequantize the output.
-        # Since the matmul and the bias both use the same scale and zero-points, we obtain that
-        # y = S*(q_y - 2*Z)
-        y_preds = output_scale * (
-            q_y_preds - 2 * numpy.asarray(output_zero_point, dtype=numpy.float64)
-        )
+        # Dequantize the output values
+        y_preds = self.output_quantizers[0].dequant(q_y_preds)
 
         return y_preds
 

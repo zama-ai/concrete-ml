@@ -97,8 +97,6 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -131,19 +129,11 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         )
 
         obj.post_processing_params = metadata["post_processing_params"]
-        # Needs to be an array and not a list
-        for key, value in obj.post_processing_params.items():
-            if isinstance(value, list):
-                obj.post_processing_params[key] = numpy.array(value)
 
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
-        if isinstance(obj._output_zero_point, list):
-            obj._output_zero_point = numpy.array(obj._output_zero_point)
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
@@ -340,8 +330,6 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -369,17 +357,11 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
         )
 
         obj.post_processing_params = metadata["post_processing_params"]
-        # Needs to be an array and not a list
-        for key, value in obj.post_processing_params.items():
-            if isinstance(value, list):
-                obj.post_processing_params[key] = numpy.array(value)
 
         obj.fhe_circuit = metadata["fhe_circuit"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 

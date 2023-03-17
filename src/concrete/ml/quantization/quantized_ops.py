@@ -1769,15 +1769,13 @@ class QuantizedBrevitasQuant(QuantizedOp):
         # those stored in the ONNX model. This allows the quantized module to
         # pass these parameters to the module's input quantizer
 
-        # for mypy: this is set by the base class calibration
-        assert self.output_quant_params is not None
-
-        self.output_quant_params = UniformQuantizationParameters()
-        self.output_quant_params.scale = numpy.float64(self.constant_inputs[1])
-        self.output_quant_params.zero_point = int(self.constant_inputs[2])
-
         n_bits = int(self.constant_inputs[3])
-        self.output_quant_params.offset = 2 ** (n_bits - 1) if self.is_signed else 0
+
+        self.output_quant_params = UniformQuantizationParameters(
+            scale=numpy.float64(self.constant_inputs[1]),
+            zero_point=int(self.constant_inputs[2]),
+            offset=2 ** (n_bits - 1) if self.is_signed else 0,
+        )
 
         return result
 

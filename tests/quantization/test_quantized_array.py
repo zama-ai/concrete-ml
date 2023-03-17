@@ -22,8 +22,13 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
     quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
     qvalues = quant_array.quant()
 
+    assert quant_array.quantizer.offset is not None
+
     # Quantized values must be contained between 0 and 2**n_bits
     assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.quantizer.offset
+
+    # Pylint does not see that offset is not None here
+    # pylint: disable-next=invalid-unary-operand-type
     assert numpy.min(qvalues) >= -quant_array.quantizer.offset
 
     # Dequantized values must be close to original values
@@ -92,11 +97,15 @@ def test_quantized_array_all_zeros(n_bits, is_signed, value_shape):
 
     assert quant_array.quantizer.scale == 1
     assert quant_array.quantizer.zero_point == 0
+    assert quant_array.quantizer.offset is not None
 
     qvalues = quant_array.quant()
 
     # Quantized values must be contained between 0 and 2**n_bits
     assert numpy.max(qvalues) <= 2 ** (n_bits) - 1 - quant_array.quantizer.offset
+
+    # Pylint does not see that offset is not None here
+    # pylint: disable-next=invalid-unary-operand-type
     assert numpy.min(qvalues) >= -quant_array.quantizer.offset
 
 

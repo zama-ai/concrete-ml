@@ -69,8 +69,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -86,12 +84,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
         obj = LinearRegression()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -113,8 +105,6 @@ class LinearRegression(SklearnLinearRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
@@ -198,8 +188,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -222,12 +210,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
         obj = ElasticNet()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -249,8 +231,6 @@ class ElasticNet(SklearnLinearRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
@@ -339,8 +319,6 @@ class Lasso(SklearnLinearRegressorMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -362,12 +340,6 @@ class Lasso(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
         obj = Lasso()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -389,8 +361,6 @@ class Lasso(SklearnLinearRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
@@ -474,8 +444,6 @@ class Ridge(SklearnLinearRegressorMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -495,12 +463,6 @@ class Ridge(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
         obj = Ridge()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -522,8 +484,6 @@ class Ridge(SklearnLinearRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
@@ -621,8 +581,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
         metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
         metadata["onnx_model_"] = self.onnx_model_
-        metadata["_output_scale"] = self._output_scale
-        metadata["_output_zero_point"] = self._output_zero_point
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
 
@@ -649,12 +607,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
     def load_dict(cls, metadata: Dict):
         obj = LogisticRegression()
         obj.post_processing_params = metadata["post_processing_params"]
-        if "output_zero_point" in metadata["post_processing_params"] and isinstance(
-            obj.post_processing_params["output_zero_point"], list
-        ):
-            obj.post_processing_params["output_zero_point"] = numpy.array(
-                obj.post_processing_params["output_zero_point"]
-            )
 
         # Load the underlying fitted model
         loads_sklearn_kwargs = {}
@@ -680,8 +632,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-        obj._output_scale = metadata["_output_scale"]
-        obj._output_zero_point = metadata["_output_zero_point"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
 
