@@ -6,9 +6,9 @@ from sklearn.ensemble import RandomForestClassifier as SklearnRandomForestClassi
 from sklearn.ensemble import RandomForestRegressor as SklearnRandomForestRegressor
 
 from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
-from concrete.ml.quantization.quantizers import UniformQuantizer
-from concrete.ml.sklearn.tree_to_numpy import tree_to_numpy
 
+from ..quantization.quantizers import UniformQuantizer
+from ..sklearn.tree_to_numpy import tree_to_numpy
 from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegressorMixin
 
 

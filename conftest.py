@@ -3,7 +3,7 @@ import json
 import random
 import re
 from pathlib import Path
-from typing import Any, Callable, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy
 import pytest
@@ -14,6 +14,7 @@ from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 
 from concrete.ml.common.utils import (
+    is_brevitas_model,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
     is_regressor_or_partial_regressor,
@@ -356,6 +357,7 @@ def load_data():
     def load_data_impl(
         model_class: Callable,
         *args,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Generate a random regression or classification problem.
@@ -370,14 +372,15 @@ def load_data():
         Args:
             model_class (Callable): The Concrete-ML model class to generate the data for.
             *args: Positional arguments to consider for generating the data.
+            random_state (int): Determines random number generation for data-set creation.
             **kwargs: Keyword arguments to consider for generating the data.
         """
         # Create a random_state value in order to seed the data generation functions. This enables
         # all tests that use this fixture to be deterministic and thus reproducible.
-        random_state = numpy.random.randint(0, 2**15)
+        random_state = numpy.random.randint(0, 2**15) if random_state is None else random_state
 
         # If the dataset should be generated for a classification problem.
-        if is_classifier_or_partial_classifier(model_class):
+        if is_classifier_or_partial_classifier(model_class) or is_brevitas_model(model_class):
             generated_classifier = list(
                 make_classification(*args, **kwargs, random_state=random_state)
             )

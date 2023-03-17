@@ -16,21 +16,60 @@ from concrete.numpy.compilation import Configuration
 from models import Fp32VGG11
 from sklearn.metrics import top_k_accuracy_score
 from torch.utils.data.dataloader import DataLoader
-from torchvision import transforms
+from torchvision import datasets, transforms
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
+from concrete.ml.pytest.utils import get_torchvision_dataset
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-"""In this utils.py we provide tthe common code to all *.ipynb"""
 
-
-def seed_worker(worker_id: int):
-    worker_seed = torch.initial_seed() % 2**32
-    np.random.seed(worker_seed)
-    random.seed(worker_seed)
+DATASETS_ARGS = {
+    "CIFAR_10": {
+        "dataset": datasets.CIFAR10,
+        "mean": [0.247, 0.243, 0.261],
+        "std": [0.4914, 0.4822, 0.4465],
+        "train_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.247, 0.243, 0.261), (0.4914, 0.4822, 0.4465)),
+                # We apply data augmentation in order to prevent overfitting
+                transforms.RandomRotation(5, fill=(1,)),
+                transforms.GaussianBlur(kernel_size=(3, 3)),
+                transforms.RandomHorizontalFlip(0.5),
+            ]
+        ),
+        "test_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.247, 0.243, 0.261), (0.4914, 0.4822, 0.4465)),
+            ]
+        ),
+    },
+    "CIFAR_100": {
+        "dataset": datasets.CIFAR100,
+        "mean": [0.485, 0.456, 0.406],
+        "std": [0.229, 0.224, 0.225],
+        "train_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+                # We apply data augmentation in order to prevent overfitting
+                transforms.RandomRotation(5, fill=(1,)),
+                transforms.GaussianBlur(kernel_size=(3, 3)),
+                transforms.RandomHorizontalFlip(0.5),
+            ]
+        ),
+        "test_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+            ]
+        ),
+    },
+}
 
 
 def get_dataloader(
@@ -53,52 +92,15 @@ def get_dataloader(
     torch.manual_seed(param["seed"])
     random.seed(param["seed"])
 
-    train_dataset = param["dataset"](
-        download=True,
-        root="./data",
-        train=True,
-        transform=transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(param["mean"], param["std"]),
-                # We apply data augmentation in order to prevent overfitting
-                transforms.RandomRotation(5, fill=(1,)),
-                transforms.GaussianBlur(kernel_size=(3, 3)),
-                transforms.RandomHorizontalFlip(0.5),
-            ]
-        ),
-    )
+    train_dataset = get_torchvision_dataset(DATASETS_ARGS[param["dataset_name"]], train_set=True)
 
-    test_dataset = param["dataset"](
-        download=True,
-        root="./data",
-        train=False,
-        transform=transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(param["mean"], param["std"])]
-        ),
-    )
-
-    if param.get("test_dataset_size", None):
-        test_dataset = torch.utils.data.random_split(
-            test_dataset,
-            [param["test_dataset_size"], len(test_dataset) - param["test_dataset_size"]],
-        )[0]
-
-    if param.get("calibration_dataset_size", None):
-        train_dataset = torch.utils.data.random_split(
-            train_dataset,
-            [
-                param["calibration_dataset_size"],
-                len(train_dataset) - param["calibration_dataset_size"],
-            ],
-        )[0]
+    test_dataset = get_torchvision_dataset(DATASETS_ARGS[param["dataset_name"]], train_set=False)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=param["batch_size"],
         shuffle=True,
         drop_last=True,
-        worker_init_fn=seed_worker,
         generator=g,
     )
 
@@ -237,7 +239,9 @@ def plot_dataset(data_loader: DataLoader, param: Dict, n: int = 10) -> None:
     # Make a grid from batch and rotate to get a valid shape for imshow
     images = make_grid(images[:n], nrow=n).permute((1, 2, 0))
     # Remove the previous normalization
-    images = images * np.array(param["std"]) + np.array(param["mean"])
+    images = images * np.array(DATASETS_ARGS[param["dataset_name"]]["std"]) + np.array(
+        DATASETS_ARGS[param["dataset_name"]]["mean"]
+    )
 
     ax.imshow(images)
 

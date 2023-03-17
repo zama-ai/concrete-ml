@@ -1,238 +1,151 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Run p_error search for the model.
+# Run p_error search for CIFAR-10 8-bits network.
 
-# Steps
-# - Load model
-# - Load data
-# - Pre-process data according to the model
-#   - In our case that means computing the features maps
-# - Run the search (for a given number of steps here but we could also consider something like the delta in p-error between 2 steps as a stop condition)
-#   - Run the inference using the Virtual Library and p_error=0.0 for reference
-#   - Take a lower and upper bound of p-error (start = [0, 1])
-#   - Consider a p-error between the bounds
-#   - Run the inference using the Virtual Library and this p_error
-#   - If our objective is matched, here we compute the difference in accuracy between the reference and the result of the inference
-#       - Update the lower bound to be the current p-error
-#   - Else
-#       - Update the upper bound to be the current p-error
+# Steps:
+# 1. Load CIFAR-10 8-bits model
+
+# 2. Load CIFAR-10 dataset
+
+# 3. Pre-process the dataset, in our case, that means:
+#   - Reducing the dataset size (that we will can calibration data in our experiments)
+#   - Computing the features maps of the model on the client side
+
+# 4. Run the search for a given set of hyper-parameters
+#   - The objective is to look for the largest `p_error = i`, with i ∈ ]0,1[ ∩ ℝ,
+#       which gives a model_i that has `accuracy_i`, such that:
+#       | accuracy_i - accuracy_0| <= Threshold, where:
+#           - Threshold is given by the user and
+#           - `accuracy_0` refers to original model with `p_error = 0`
+
+#   - Define our objective:
+#       - If the objective is matched -> update the lower bound to be the current p-error
+#       - Else, update the upper bound to be the current p-error
 #   - Update the current p-error with the mean of the bounds
 
-import time
-from collections import OrderedDict
-from pathlib import Path
-from typing import Callable, Dict, Tuple
+#   - We stop the search either
+#         - when the maximum number of iterations is reached, or
+#         - when the update of the `p_error` is below at a given threshold
 
-import numpy as np
-import pandas as pd
+#   - The inference is performed via the FHE simulation mode (Virtual Library)
+
+# `p_error` is bounded between 0 and 1
+#       - `p_error = 0.0`, refers to the original model in clear, that gives an accuracy
+#           that we note as `accuracy_0`
+#       - `p_error = 1.0`, refers to the worst case scenario, where the model perfoms very badly
+#       - By default, `lower = 0.0` and `uppder` bound to 1.
+
+#   - Run the inference using the Virtual Library and this `p_error`
+#   - Define our objective:
+#       - If the objective is matched -> update the lower bound to be the current p-error
+#       - Else, update the upper bound to be the current p-error
+#   - Update the current p-error with the mean of the bounds
+
+import argparse
+
 import torch
-import torchvision
-import torchvision.transforms as transforms
-from brevitas.nn.quant_layer import acc
-from concrete.numpy import Configuration
 from model import CNV
-from sklearn.metrics import accuracy_score, top_k_accuracy_score
-from tqdm import tqdm
+from torchvision import datasets, transforms
 
-from concrete.ml.quantization import QuantizedModule
-from concrete.ml.torch.compile import compile_brevitas_qat_model
+from concrete.ml.pytest.utils import (
+    data_calibration_processing,
+    get_torchvision_dataset,
+    load_torch_model,
+)
+from concrete.ml.search_parameters import BinarySearch
+
+DATASETS_ARGS = {
+    "CIFAR10": {
+        "dataset": datasets.CIFAR10,
+        "train_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        ),
+        "test_transform": transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+        ),
+    }
+}
 
 
-def acc_diff_objective(
-    model_output, reference, ground_truth, tolerance=0.01, k=1
-) -> Tuple[bool, Dict]:
-    # Compute accuracy
-    reference_accuracy = top_k_accuracy_score(y_true=ground_truth, y_score=reference, k=k)
-    estimated_accuracy = top_k_accuracy_score(y_true=ground_truth, y_score=model_output, k=k)
+MODELS_ARGS = {
+    "CIFAR10_8b": {
+        "model_class": CNV,
+        "path": "./use_case_examples/cifar_brevitas_with_model_splitting/8_bit_model.pt",
+        "params": {
+            "num_classes": 10,
+            "weight_bit_width": 2,
+            "act_bit_width": 2,
+            "in_bit_width": 3,
+            "in_ch": 3,
+        },
+    },
+}
 
-    # Compute inference error
-    difference = abs(reference_accuracy - estimated_accuracy)
-    raw_difference = reference - model_output
-    l_1_error = np.abs(raw_difference).sum()
-    l_inf_error = np.abs(raw_difference).max()
-    count_error = (reference != model_output).sum()
 
-    # Check if match
-    if difference <= tolerance:
-        match = True
-    else:
-        match = False
+def main(args):
 
-    meta_output = OrderedDict(
-        {
-            "accuracy_difference": difference,
-            "match": match,
-            "l1_error": l_1_error,
-            "linf_error": l_inf_error,
-            "count_error": count_error,
-        }
+    if args.verbose:
+        print(f"** Download `{args.dataset_name=}` dataset")
+    dataset = get_torchvision_dataset(DATASETS_ARGS[args.dataset_name], train_set=True)
+    x_calib, y = data_calibration_processing(dataset, n_sample=args.n_sample)
+
+    if args.verbose:
+        print(f"** Load `{args.model_name=}` network")
+
+    checkpoint = torch.load(MODELS_ARGS[args.model_name]["path"], map_location=args.device)
+    state_dict = checkpoint["model_state_dict"]
+
+    model = load_torch_model(
+        MODELS_ARGS[args.model_name]["model_class"],
+        state_dict,
+        MODELS_ARGS[args.model_name]["params"],
     )
-    return match, meta_output
+    model.eval()
 
-
-def compile(model, inputs, p_error: float) -> QuantizedModule:
-    configuration = Configuration(
-        dump_artifacts_on_unexpected_failures=True,
-        enable_unsafe_features=True,  # This is for our tests in Virtual Library only
-        show_graph=False,
-        show_mlir=False,
-        show_optimizer=False,
-    )
-    quantized_numpy_module = compile_brevitas_qat_model(
-        torch_model=model,
-        torch_inputset=inputs,
-        p_error=p_error,
-        use_virtual_lib=True,
-        configuration=configuration,
-    )
-    return quantized_numpy_module
-
-
-def infer(quantized_module, inputs, progress_bar=True) -> Tuple[np.ndarray, Dict]:
-    # We need to iterate to do the inference
-    inferences = list()
-    quantized_inferences = list()
-    for img_feature_map in tqdm(inputs, leave=False, disable=not progress_bar):
-        quantized_feature_maps = quantized_module.quantize_input(img_feature_map)
-        quantized_output = quantized_module.fhe_circuit.simulate(quantized_feature_maps[None, ...])
-        dequantized_output = quantized_module.dequantize_output(quantized_output)
-        inferences.append(dequantized_output[0])
-        quantized_inferences.append(quantized_output[0])
-    inferences = np.array(inferences)
-    quantized_inferences = np.array(quantized_inferences)
-    return inferences, {"outputs": inferences, "quantized_output": quantized_inferences}
-
-
-def output_to_csv(output: Dict, file_path: Path):
-    for label_index in range(output["outputs"].shape[1]):
-        output[f"pred_{label_index}"] = output["outputs"][:, label_index]
-    for label_index in range(output["quantized_output"].shape[1]):
-        output[f"pred_quant_{label_index}"] = output["quantized_output"][:, label_index]
-
-    del output["outputs"]
-    del output["quantized_output"]
-
-    pd.DataFrame(output).to_csv(file_path)
-
-
-def search(
-    model: torch.nn.Module,
-    inputs: np.ndarray,
-    ground_truth: np.ndarray,
-    objective: Callable[..., Tuple[bool, Dict]],
-    max_iter: int = 100,
-    bootstrap_samples: int = 3,
-):
-    search_folder = Path("./search")
-    search_folder.mkdir(exist_ok=True)
-    assert bootstrap_samples >= 1
-
-    # Run predictions
-    reference_quantized_module = compile(model=model, inputs=inputs, p_error=0.0)
-
-    # Compute reference
-    reference_output, meta_output = infer(reference_quantized_module, inputs)
-    meta_output["label"] = ground_truth
-    output_to_csv(meta_output, search_folder / "reference_output.csv")
-
-    # Search
-    lower = 0.0  # 0
-    upper = 1.0  # 1
-    current_p_error = (lower + upper) / 2
-
-    log_file = search_folder / "p_error_search.csv"
-
-    # Binary search algorithm
-    for index in tqdm(range(max_iter)):
-        # Run the inference with given p-error
-        # Run predictions
-        current_quantized_module = compile(model=model, inputs=inputs, p_error=current_p_error)
-
-        all_matches = []
-        # Compute reference
-        for _ in range(bootstrap_samples):
-            current_output, current_meta_output = infer(current_quantized_module, inputs)
-
-            p_error_as_str = str(current_p_error).replace(".", "_")
-            output_to_csv(current_meta_output, search_folder / "{p_error_as_str}_output.csv")
-
-            is_matched_objective, objective_meta = objective(
-                model_output=current_output,
-                reference=reference_output,
-                ground_truth=ground_truth,
-            )
-            all_matches.append(is_matched_objective)
-
-            # CSV header
-            if index == 0:
-                with open(log_file, "w", encoding="utf-8") as file:
-                    file.write(",".join(objective_meta.keys()) + ",lower,upper,p_error\n")
-            with open(log_file, "a", encoding="utf-8") as file:
-                file.write(
-                    ",".join(str(elt) for elt in objective_meta.values())
-                    + f",{str(lower)},{str(upper)},{str(current_p_error)}\n"
-                )
-
-        # Update p-error
-        if all(all_matches):
-            lower = current_p_error
-        else:
-            upper = current_p_error
-        current_p_error = (lower + upper) / 2
-
-        print(current_p_error, lower, upper)
-
-
-def main():
-    # Load model
-    model = CNV(num_classes=10, weight_bit_width=2, act_bit_width=2, in_bit_width=3, in_ch=3)
-    loaded = torch.load(Path(__file__).parent / "8_bit_model.pt")
-    model.load_state_dict(loaded["model_state_dict"])
-    model = model.eval()
-
-    # Get dataset
-    IMAGE_TRANSFORM = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-    )
-    try:
-        train_set = torchvision.datasets.CIFAR10(
-            root=".data/",
-            train=True,
-            download=False,
-            transform=IMAGE_TRANSFORM,
-            target_transform=None,
-        )
-    except:
-        train_set = torchvision.datasets.CIFAR10(
-            root=".data/",
-            train=True,
-            download=True,
-            transform=IMAGE_TRANSFORM,
-            target_transform=None,
-        )
-
-    # Sub-sample
-    num_samples = 1000
-    train_sub_set = torch.stack(
-        [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
-    )
-    # Pre-processing -> images -> feature maps (used for compilation)
     with torch.no_grad():
-        train_features_sub_set = model.clear_module(train_sub_set).numpy()
-    train_sub_set_labels = np.array(
-        [train_set[index][1] for index in range(min(num_samples, len(train_set)))]
-    )
+        x_calib = model.clear_module(torch.tensor(x_calib)).numpy()
 
-    search(
-        model=model.encrypted_module,
-        inputs=train_features_sub_set,
-        ground_truth=train_sub_set_labels,
-        objective=acc_diff_objective,
-        max_iter=100,
-        bootstrap_samples=1,
-    )
+    model = model.encrypted_module
+
+    if args.verbose:
+        print("** `p_error` search")
+
+    search = BinarySearch(estimator=model)
+
+    p_error = search.run(x=x_calib, ground_truth=y, strategy=all)
+
+    if args.verbose:
+        print(f"Optimal p_error: {p_error}")
 
 
 if __name__ == "__main__":
-    main()
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--seed", type=int, default=42, help="Seed")
+    parser.add_argument("--verbose", type=bool, default=True, help="Verbose")
+    parser.add_argument("--n_sample", type=int, default=500, help="n_sample")
+    parser.add_argument(
+        "--dataset_name",
+        type=str,
+        default="CIFAR10",
+        choices=["CIFAR10"],
+        help="The selected dataset",
+    )
+    parser.add_argument(
+        "--model_name",
+        type=str,
+        default="CIFAR10_8b",
+        choices=["CIFAR10_8b"],
+        help="The selected model",
+    )
+
+    args = parser.parse_args()
+
+    args.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    main(args)

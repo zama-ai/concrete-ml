@@ -10,6 +10,8 @@ from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
 from torch import nn
 from torch.nn.utils import prune
 
+# pylint: disable=too-many-lines
+
 
 class SimpleNet(torch.nn.Module):
     """Fake torch model used to generate some onnx."""
@@ -1159,4 +1161,231 @@ class PaddingNet(nn.Module):
         # Concrete-ML only supports padding on the last two dimensions as this is the
         # most common setting
         x = torch.nn.functional.pad(x, (1, 1, 2, 2, 0, 0, 0, 0))
+        return x
+
+
+# pylint: disable=too-many-return-statements
+class QNNFashionMNIST(torch.nn.Module):
+    """A small quantized network with Brevitas for FashionMNIST classification."""
+
+    # pylint: disable=invalid-name
+    layers = [
+        # Layer 1
+        (
+            "Conv2d",
+            {"in_channels": 1, "out_channels": 12, "kernel_size": 2, "stride": 1, "padding": 0},
+        ),
+        ("ReLU",),
+        ("AvgPool2d", {"kernel_size": 2, "stride": 2, "padding": 0}),
+        ("BatchNorm2d", {"num_features": 12}),
+        ("Identity",),
+        # Layer 2
+        (
+            "Conv2d",
+            {"in_channels": 12, "out_channels": 16, "kernel_size": 3, "stride": 1, "padding": 0},
+        ),
+        ("ReLU",),
+        ("AvgPool2d", {"kernel_size": 2, "stride": 2, "padding": 0}),
+        ("BatchNorm2d", {"num_features": 16}),
+        ("Identity",),
+        # Layer 3
+        (
+            "Conv2d",
+            {"in_channels": 16, "out_channels": 20, "kernel_size": 2, "stride": 1, "padding": 0},
+        ),
+        ("ReLU",),
+        ("AvgPool2d", {"kernel_size": 2, "stride": 1, "padding": 0}),
+        ("BatchNorm2d", {"num_features": 20}),
+        # Layer 4
+        ("Identity",),
+        ("Flatten",),
+        ("Identity",),
+        # Layer 5
+        ("Linear", {"in_features": 20 * 3 * 3, "out_features": 100}),
+        ("ReLU",),
+        ("Dropout2d", {"p": 0.5}),
+        # Layer 6
+        ("Linear", {"in_features": 100, "out_features": 50}),
+        ("ReLU",),
+        # Layer 7
+        ("Linear", {"in_features": 50, "out_features": 10}),
+    ]
+
+    def __init__(
+        self,
+        n_bits,
+        quant_weight=Int8WeightPerTensorFloat,
+        act_quant=Int8ActPerTensorFloat,
+    ):
+        """Quantized Torch Model with Brevitas.
+
+        Args:
+            n_bits (int): Bit of quantization
+            quant_weight (brevitas.quant): Quantization protocol of weights
+            act_quant (brevitas.quant): Quantization protocol of activations.
+
+        """
+        super().__init__()
+
+        # pylint: disable=inconsistent-return-statements
+        def make_quant_layers(t):
+            if t[0] == "ReLU":
+                return qnn.QuantReLU(
+                    bit_width=n_bits, act_quant=act_quant, return_quant_tensor=True
+                )
+            if t[0] == "AvgPool2d":
+                return torch.nn.AvgPool2d(**t[1])
+            if t[0] == "Conv2d":
+                return qnn.QuantConv2d(
+                    **t[1],
+                    weight_bit_width=n_bits,
+                    quant_weight=quant_weight,
+                    return_quant_tensor=True,
+                )
+            if t[0] == "Linear":
+                return qnn.QuantLinear(
+                    **t[1],
+                    weight_quant=quant_weight,
+                    weight_bit_width=n_bits,
+                    bias=True,
+                    return_quant_tensor=True,
+                )
+
+            if t[0] == "Dropout2d":
+                return torch.nn.Dropout2d(**t[1])
+            if t[0] == "BatchNorm2d":
+                return torch.nn.BatchNorm2d(**t[1])
+            if t[0] == "Identity":
+                return qnn.QuantIdentity(
+                    bit_width=n_bits, act_quant=act_quant, return_quant_tensor=True
+                )
+            if t[0] == "Flatten":
+                return nn.Flatten()
+
+        # Convolutional layers
+        self.quant_input = qnn.QuantIdentity(
+            bit_width=n_bits, act_quant=act_quant, return_quant_tensor=True
+        )
+
+        # Fully connected linear layers
+        self.sequential = torch.nn.Sequential(*[make_quant_layers(t) for t in self.layers])
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model.
+
+        Returns:
+            torch.tensor: Output of the network.
+        """
+        x = self.quant_input(x)
+        x = self.sequential(x)
+        return x.value
+
+
+class QuantCustomModel(nn.Module):
+    """A small quantized network with Brevitas, trained on make_classification."""
+
+    def __init__(
+        self,
+        input_shape: int,
+        output_shape: int,
+        hidden_shape: int = 100,
+        n_bits: int = 5,
+        act_quant=Int8ActPerTensorFloat,
+        weight_quant=Int8WeightPerTensorFloat,
+    ):
+        """Quantized Torch Model with Brevitas.
+
+        Args:
+            input_shape (int): Input size
+            output_shape (int): Output size
+            hidden_shape (int): Hidden size
+            n_bits (int): Bit of quantization
+            weight_quant (brevitas.quant): Quantization protocol of weights
+            act_quant (brevitas.quant): Quantization protocol of activations.
+
+        """
+        super().__init__()
+
+        self.quant_input = qnn.QuantIdentity(
+            bit_width=n_bits, act_quant=act_quant, return_quant_tensor=True
+        )
+        self.linear1 = qnn.QuantLinear(
+            in_features=input_shape,
+            out_features=hidden_shape,
+            weight_bit_width=n_bits,
+            weight_quant=weight_quant,
+            bias=True,
+            return_quant_tensor=True,
+        )
+
+        self.relu1 = qnn.QuantReLU(return_quant_tensor=True, bit_width=n_bits, act_quant=act_quant)
+        self.linear2 = qnn.QuantLinear(
+            in_features=hidden_shape,
+            out_features=hidden_shape,
+            weight_bit_width=n_bits,
+            weight_quant=weight_quant,
+            bias=True,
+            return_quant_tensor=True,
+        )
+
+        self.relu2 = qnn.QuantReLU(return_quant_tensor=True, bit_width=n_bits, act_quant=act_quant)
+
+        self.linear3 = qnn.QuantLinear(
+            in_features=hidden_shape,
+            out_features=output_shape,
+            weight_bit_width=n_bits,
+            weight_quant=weight_quant,
+            bias=True,
+            return_quant_tensor=True,
+        )
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model.
+
+        Returns:
+            torch.tensor: Output of the network.
+        """
+        x = self.quant_input(x)
+        x = self.linear1(x)
+        x = self.relu1(x)
+        x = self.linear2(x)
+        x = self.relu2(x)
+        x = self.linear3(x)
+        return x.value
+
+
+class TorchCustomModel(nn.Module):
+    """A small network with Brevitas, trained on make_classification."""
+
+    def __init__(self, input_shape, hidden_shape, output_shape):
+        """Torch Model.
+
+        Args:
+            input_shape (int): Input size
+            output_shape (int): Output size
+            hidden_shape (int): Hidden size
+        """
+        super().__init__()
+        self.linear1 = nn.Linear(input_shape, hidden_shape)
+        self.linear2 = nn.Linear(hidden_shape, hidden_shape)
+        self.linear3 = nn.Linear(hidden_shape, output_shape)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model.
+
+        Returns:
+            torch.tensor: Output of the network.
+        """
+        x = torch.relu(self.linear1(x))
+        x = torch.relu(self.linear2(x))
+        x = self.linear3(x)
         return x

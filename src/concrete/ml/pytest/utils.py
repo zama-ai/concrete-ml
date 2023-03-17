@@ -1,12 +1,15 @@
 """Common functions or lists for test files, which can't be put in fixtures."""
 from functools import partial
+from pathlib import Path
+from typing import Dict, List, Union
 
 import numpy
 import pytest
+import torch
 from torch import nn
 
-from concrete.ml.common.utils import get_model_name, is_model_class_in_a_list
-from concrete.ml.sklearn import (
+from ..common.utils import get_model_name, is_model_class_in_a_list, is_pandas_type
+from ..sklearn import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,
     ElasticNet,
@@ -147,4 +150,109 @@ def instantiate_model_generic(model_class, **parameters):
 
     model.set_params(**model_params)
 
+    return model
+
+
+def get_torchvision_dataset(
+    param: Dict,
+    train_set: bool,
+):
+    """Get train or testing data-set.
+
+    Args:
+        param (Dict): Set of hyper-parameters to use based on the selected torchvision data-set.
+            It must contain: data-set transformations (torchvision.transforms.Compose), and the
+            data-set_size (Optional[int]).
+        train_set (bool): Use train data-set if True, else testing data-set
+
+    Returns:
+        A torchvision datasets.
+    """
+
+    transform = param["train_transform"] if train_set else param["test_transform"]
+    dataset = param["dataset"](download=True, root="./data", train=train_set, transform=transform)
+
+    if param.get("dataset_size", None):
+        dataset = torch.utils.data.random_split(
+            dataset,
+            [param["dataset_size"], len(dataset) - param["dataset_size"]],
+        )[0]
+
+    return dataset
+
+
+def data_calibration_processing(data, n_sample: int, targets=None):
+    """Reduce size of the given dataset.
+
+    Args:
+        data: The input container to consider
+        n_sample (int): Number of samples to keep if the given data-set
+        targets: If `dataset` is a `torch.utils.data.Dataset`, it typically contains both the data
+            and the corresponding targets. In this case, `targets` must be set to `None`.
+            If `data` is instance of `torch.Tensor` or 'numpy.ndarray`, `targets` is expected.
+
+    Returns:
+        Tuple[numpy.ndarray, numpy.ndarray]: The input data and the target (respectively x and y).
+
+    Raises:
+        TypeError: If the 'data-set' does not match any expected type.
+    """
+    assert n_sample >= 1, "`n_sample` must be greater than or equal to `1`"
+    n_sample = min(len(data), n_sample)
+
+    # Generates a random sample from a given 1-D array
+    random_sample = numpy.random.choice(len(data), n_sample, replace=False)
+
+    if (
+        hasattr(data, "__getitem__") and hasattr(data, "__len__") and hasattr(data, "train")
+    ) or isinstance(data, torch.utils.data.dataset.Subset):
+        assert targets is None, "dataset includes inputs and targets"
+        splitted_dataset = list(zip(*data))
+        x, y = numpy.stack(splitted_dataset[0]), numpy.array(splitted_dataset[1])
+
+    elif targets is not None and is_pandas_type(data) and is_pandas_type(targets):
+        x = data.to_numpy()
+        y = targets.to_numpy()
+
+    elif (
+        targets is not None
+        and isinstance(targets, (List, numpy.ndarray, torch.Tensor))  # type: ignore[arg-type]
+        and isinstance(data, (numpy.ndarray, torch.Tensor))
+    ):
+        x = numpy.array(data)
+        y = numpy.array(targets)
+    else:
+        raise TypeError(
+            "Only numpy arrays, torch tensors and torchvision datasets are supported. "
+            f"Got `{type(data)}` as input type and `{type(targets)}` as target type"
+        )
+
+    x = x[random_sample]
+    y = y[random_sample]
+
+    return x, y
+
+
+def load_torch_model(
+    model_class: torch.nn.Module,
+    state_dict: Union[Path, Dict],
+    kwargs: Dict,
+    device: str = "cpu",
+) -> torch.nn.Module:
+    """Load an object saved with torch.save() from a file or dict.
+
+    Args:
+        model_class (torch.nn.Module): A Pytorch or Brevitas network.
+        state_dict (Union[Path, Dict]): path or state_dict
+        kwargs (Dict): kwargs
+        device (str):  Device type.
+
+    Returns:
+        torch.nn.Module: A Pytorch or Brevitas network.
+    """
+    if isinstance(state_dict, (str, Path)):
+        state_dict = torch.load(state_dict, map_location=device)
+
+    model = model_class(**kwargs)
+    model.load_state_dict(state_dict)
     return model

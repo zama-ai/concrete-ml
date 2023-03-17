@@ -1,6 +1,5 @@
 """Utils that can be re-used by other pieces of code in the module."""
 
-
 import string
 from functools import partial
 from types import FunctionType
@@ -443,6 +442,24 @@ def compute_bits_precision(x: numpy.ndarray) -> int:
         int: the number of bits required to represent x
     """
     return Integer.that_can_represent([x.min(), x.max()]).bit_width
+
+
+def is_brevitas_model(model: torch.nn.Module) -> bool:
+    """Check if a model is a Brevitas type.
+
+    Args:
+        model: PyTorch model.
+
+    Returns:
+        bool: True if `model` is a Brevitas network.
+
+    """
+    return isinstance(model, torch.nn.Module) and any(
+        hasattr(module, "__class__")
+        and module.__class__.__name__
+        in ["QuantConv1d", "QuantConv2d", "QuantIdentity", "QuantLinear", "QuantReLU"]
+        for module in model.modules()
+    )
 
 
 def to_tuple(x: Any) -> tuple:

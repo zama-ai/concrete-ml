@@ -2,7 +2,6 @@ import brevitas
 import brevitas.nn as qnn
 import torch
 import torch.nn as nn
-from brevitas.core.quant import QuantType
 from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
 
 """ In this models.py we provide the code for the Pytorch and Brevitas networks."""

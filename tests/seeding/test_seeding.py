@@ -5,8 +5,8 @@ import warnings
 
 import numpy
 import pytest
-from sklearn import tree
 from sklearn.exceptions import ConvergenceWarning
+from sklearn.tree import plot_tree
 
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 
@@ -100,7 +100,7 @@ def test_seed_sklearn(model_class, parameters, load_data, default_configuration)
 
     lpvoid_ptr_plot_tree = getattr(model, "plot_tree", None)
     if callable(lpvoid_ptr_plot_tree):
-        print("model", tree.plot_tree(model.sklearn_model))
+        print("model", plot_tree(model.sklearn_model))
 
     print(f"sklearn_model = {sklearn_model}")
 
