@@ -84,7 +84,7 @@ jobs:
 
       # We don't need to specify the git-ref here since he are just generating the cli arguments 
       - name: Checkout code
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@24cb9080177205b6e8c946b17badbe402adc938f
 
       - name: Set up Python
         uses: actions/setup-python@5ccb29d8773c3f3f653e1705f474dfaa8a06a912
