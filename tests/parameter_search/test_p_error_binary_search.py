@@ -239,12 +239,13 @@ def test_valid_estimator_with_compile_function(is_qat, model_name, training):
         n_simulation=5,
         is_qat=is_qat,
         delta_tolerence=1e-4,
+        max_metric_loss=0.1,
     )
 
     _ = search.run(x=x_calib, ground_truth=y, strategy=all, max_iter=1)
 
 
-@pytest.mark.parametrize("is_qat", [True, False])
+@pytest.mark.parametrize("is_qat", [False, True])
 def test_invalid_estimator_with_compile_function(is_qat):
     """Check the supported models according our build functions."""
 

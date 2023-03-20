@@ -56,7 +56,9 @@ the `p_error` is below at a given threshold
 If we don't reach the convergence, a user warning is raised.
 """
 import warnings
+from collections import OrderedDict
 from pathlib import Path
+from pprint import pprint
 from typing import Any, Callable, Dict, List
 
 import numpy
@@ -343,20 +345,22 @@ class BinarySearch:
         match = difference <= self.max_metric_loss
 
         # Save some meta data
-        meta_output = {
-            "p_error": self.p_error,
-            "low": self.lower,
-            "upper": self.upper,
-            "accuracy_difference": difference,
-            "match": match,
-            "l1_error": l_1_error,
-            "linf_error": l_inf_error,
-            "count_error": count_error,
-            "mean_error": mean_error,
-            "strategy": self.strategy,
-            "estimated_accuracy": estimated_accuracy,
-            "reference_accuracy": reference_accuracy,
-        }
+        meta_output = OrderedDict(
+            {
+                "p_error": self.p_error,
+                "low": self.lower,
+                "upper": self.upper,
+                "strategy": self.strategy,
+                "l1_error": l_1_error,
+                "linf_error": l_inf_error,
+                "count_error": count_error,
+                "mean_error": mean_error,
+                "estimated_accuracy": estimated_accuracy,
+                "reference_accuracy": reference_accuracy,
+                "accuracy_difference": difference,
+                "match": match,
+            }
+        )
 
         self._save(meta_output)
 
@@ -380,7 +384,11 @@ class BinarySearch:
         self._check_valid_values()
 
     def run(
-        self, x: numpy.ndarray, ground_truth: numpy.ndarray, strategy: Callable, **kwargs: Dict
+        self,
+        x: numpy.ndarray,
+        ground_truth: numpy.ndarray,
+        strategy: Callable = all,
+        **kwargs: Dict,
     ) -> float:
         """Get an optimal `p_error` using binary search method for classification tasks.
 
@@ -413,6 +421,7 @@ class BinarySearch:
                 built-in functions provided in python, like: any or all or a custom function, like:
                 mean = lambda all_matches: numpy.mean(all_matches) >= 0.5
                 median = lambda all_matches: numpy.median(all_matches) == 1
+                Default is `all`.
 
         Returns:
             float: The optimal `p_error` that aims to speedup computations while maintaining good
@@ -425,6 +434,7 @@ class BinarySearch:
 
         # Reference predictions:
         # `p_error = 0.0`, corresponds to the original model in clear
+
         quantized_module = get_quantized_module(
             estimator=self.estimator,
             calibration_data=x,
@@ -471,7 +481,7 @@ class BinarySearch:
 
                 all_matches.append(is_matched)
 
-            # Update update interval
+            # Update interval
             if self.eval_match(strategy, all_matches):
                 # If we valid our criteria, we increase the `p_error`
                 self.lower = self.p_error
@@ -482,7 +492,7 @@ class BinarySearch:
             self.p_error = (self.lower + self.upper) / 2
 
             if self.verbose:
-                print(f"{self.history[-1]}\n")
+                pprint(self.history[-1])
 
             # If |previous_perror - current_perror | <= threshold, we consider that the convergence
             # is reached and we stop the search
