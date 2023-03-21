@@ -55,6 +55,13 @@ from concrete.ml.torch.compile import (
 INPUT_OUTPUT_FEATURE = [5]
 
 
+def create_test_inputset(inputset, n_percent_inputset_examples_test):
+    """Create a test inputset from a given inputset and percentage of examples."""
+    n_examples_test = int(n_percent_inputset_examples_test * to_tuple(inputset)[0].shape[0])
+    x_test = tuple(inputs[:n_examples_test] for inputs in to_tuple(inputset))
+    return x_test
+
+
 # pylint: disable-next=too-many-arguments
 def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many-statements
     input_output_feature,
@@ -62,7 +69,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     activation_function,
     qat_bits,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
     dump_onnx=False,
@@ -90,7 +97,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     )
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
-    if not use_virtual_lib:
+    if not simulate:
 
         n_bits = (
             {"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2}
@@ -117,7 +124,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 import_qat=qat_bits != 0,
                 configuration=default_configuration,
                 n_bits=n_bits,
-                use_virtual_lib=use_virtual_lib,
                 verbose=verbose,
             )
         else:
@@ -127,16 +133,13 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                 import_qat=qat_bits != 0,
                 configuration=default_configuration,
                 n_bits=n_bits,
-                use_virtual_lib=use_virtual_lib,
                 verbose=verbose,
             )
 
-        # Create test data from the same distribution and quantize using
-        # learned quantization parameters during compilation
-        x_test = tuple(
-            numpy.random.uniform(-100, 100, size=(1, *input_output_feature))
-            for _ in range(num_inputs)
-        )
+        n_examples_test = 1
+        # Use some inputset to test the inference.
+        # Using the inputset allows to remove any chance of overflow.
+        x_test = tuple(inputs[:n_examples_test] for inputs in inputset)
 
         qtest = quantized_numpy_module.quantize_input(*x_test)
 
@@ -144,20 +147,22 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 
         # Make sure VL and quantized module forward give the same output.
         check_is_good_execution_for_cml_vs_circuit(
-            qtest, model_function=quantized_numpy_module, simulate=use_virtual_lib
+            qtest, model_function=quantized_numpy_module, simulate=simulate
         )
     else:
         # Compile our network with 16-bits
         # to compare to torch (8b weights + float 32 activations)
         if qat_bits == 0:
-            n_bits = 16
+            n_bits_w_a = 4
         else:
-            n_bits = {
-                "model_inputs": 16,
-                "op_weights": qat_bits,
-                "op_inputs": qat_bits,
-                "model_outputs": 16,
-            }
+            n_bits_w_a = qat_bits
+
+        n_bits = {
+            "model_inputs": 8,
+            "op_weights": n_bits_w_a,
+            "op_inputs": n_bits_w_a,
+            "model_outputs": 8,
+        }
 
         quantized_numpy_module = compile_torch_model(
             torch_model,
@@ -165,7 +170,6 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             import_qat=qat_bits != 0,
             configuration=default_configuration,
             n_bits=n_bits,
-            use_virtual_lib=use_virtual_lib,
             verbose=verbose,
         )
 
@@ -176,10 +180,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             import_qat=qat_bits != 0,
             configuration=default_configuration,
             n_bits=n_bits,
-            use_virtual_lib=use_virtual_lib,
+            simulate=simulate,
             verbose=verbose,
-            input_output_feature=input_output_feature,
-            num_inputs=num_inputs,
             check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         )
 
@@ -202,10 +204,8 @@ def accuracy_test_rounding(
     import_qat,
     configuration,
     n_bits,
-    use_virtual_lib,
+    simulate,
     verbose,
-    input_output_feature,
-    num_inputs,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Check rounding behavior.
@@ -221,7 +221,7 @@ def accuracy_test_rounding(
     rounding feature has the expected behavior on the model accuracy.
     """
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-    assert use_virtual_lib, "Rounding is not available in FHE yet."
+    assert simulate, "Rounding is not available in FHE yet."
 
     # Check that the maximum_integer_bit_width is at least 4 bits to compare the rounding
     # feature with enough precision.
@@ -235,7 +235,6 @@ def accuracy_test_rounding(
         import_qat=import_qat,
         configuration=configuration,
         n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
         verbose=verbose,
         rounding_threshold_bits=quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width()
         - 1,
@@ -248,17 +247,13 @@ def accuracy_test_rounding(
         import_qat=import_qat,
         configuration=configuration,
         n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
         verbose=verbose,
         rounding_threshold_bits=2,
     )
 
-    n_examples_test = 100
-    # Create some fake data
-    x_test = tuple(
-        numpy.random.uniform(-100, 100, size=(n_examples_test, *input_output_feature))
-        for _ in range(num_inputs)
-    )
+    n_percent_inputset_examples_test = 0.1
+    # Using the inputset allows to remove any chance of overflow.
+    x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
     # Make sure the two modules have the same quantization result
     qtest = quantized_numpy_module.quantize_input(*x_test)
@@ -271,7 +266,7 @@ def accuracy_test_rounding(
     results = []
     results_high_precision = []
     results_low_precision = []
-    for i in range(n_examples_test):
+    for i in range(x_test[0].shape[0]):
 
         # Extract the i th example for each tensor in the tuple qtest
         # while keeping the dimension of the original tensors.
@@ -304,14 +299,12 @@ def accuracy_test_rounding(
         results_low_precision.append(result_low_precision)
 
     # Check modules predictions VL vs CML.
+    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module, simulate=simulate)
     check_is_good_execution_for_cml_vs_circuit(
-        qtest, quantized_numpy_module, simulate=use_virtual_lib
+        qtest, quantized_numpy_module_round_high_precision, simulate=simulate
     )
     check_is_good_execution_for_cml_vs_circuit(
-        qtest, quantized_numpy_module_round_high_precision, simulate=use_virtual_lib
-    )
-    check_is_good_execution_for_cml_vs_circuit(
-        qtest, quantized_numpy_module_round_low_precision, simulate=use_virtual_lib
+        qtest, quantized_numpy_module_round_low_precision, simulate=simulate
     )
 
     # Check that high precision gives a better match than low precision
@@ -346,14 +339,14 @@ def accuracy_test_rounding(
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False], ids=["virtual", "FHE"])
+@pytest.mark.parametrize("simulate", [True, False], ids=["virtual", "FHE"])
 @pytest.mark.parametrize("is_onnx", [True, False], ids=["is_onnx", ""])
 def test_compile_torch_or_onnx_networks(
     input_output_feature,
     model,
     activation_function,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
@@ -361,7 +354,7 @@ def test_compile_torch_or_onnx_networks(
     """Test the different model architecture from torch numpy."""
 
     # Avoid too many tests
-    if use_virtual_lib and not is_weekly_option:
+    if not simulate and not is_weekly_option:
         if model not in [FCSmall, BranchingModule]:
             pytest.skip("Avoid too many tests")
 
@@ -374,7 +367,7 @@ def test_compile_torch_or_onnx_networks(
         activation_function,
         qat_bits,
         default_configuration,
-        use_virtual_lib,
+        simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
@@ -394,13 +387,13 @@ def test_compile_torch_or_onnx_networks(
         pytest.param(partial(CNNGrouped, groups=3)),
     ],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
 def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     model,
     activation_function,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     is_onnx,
     check_graph_input_has_no_tlu,
     check_graph_output_has_no_tlu,
@@ -417,7 +410,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
         activation_function,
         qat_bits,
         default_configuration,
-        use_virtual_lib,
+        simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
@@ -474,14 +467,14 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
 def test_compile_torch_or_onnx_activations(
     input_output_feature,
     model,
     activation_function,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     is_onnx,
     check_is_good_execution_for_cml_vs_circuit,
 ):
@@ -496,7 +489,7 @@ def test_compile_torch_or_onnx_activations(
         activation_function,
         qat_bits,
         default_configuration,
-        use_virtual_lib,
+        simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
@@ -517,13 +510,13 @@ def test_compile_torch_or_onnx_activations(
     "n_bits",
     [pytest.param(n_bits) for n_bits in [1, 2]],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("simulate", [True, False])
 def test_compile_torch_qat(
     input_output_feature,
     model,
     n_bits,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from torch numpy."""
@@ -540,7 +533,7 @@ def test_compile_torch_qat(
         nn.Sigmoid,
         qat_bits,
         default_configuration,
-        use_virtual_lib,
+        simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
@@ -601,7 +594,7 @@ def test_dump_torch_network(
 ):
     """This is a test which is equivalent to tests in test_dump_onnx.py, but for torch modules."""
     input_output_feature = 7
-    use_virtual_lib = True
+    simulate = True
     is_onnx = False
     qat_bits = 0
 
@@ -611,7 +604,7 @@ def test_dump_torch_network(
         activation_function,
         qat_bits,
         default_configuration,
-        use_virtual_lib,
+        simulate,
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         dump_onnx=True,
@@ -630,6 +623,9 @@ def test_pretrained_mnist_qat(
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Load a QAT MNIST model and make sure we get the same results in VL as with ONNX."""
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3164
+    pytest.skip("Compilation is too long.")
 
     onnx_file_path = "tests/data/mnist_2b_s1_1.zip"
     mnist_test_path = "tests/data/mnist_test_batch.zip"
@@ -675,7 +671,6 @@ def test_pretrained_mnist_qat(
         import_qat=True,
         configuration=default_configuration,
         n_bits=n_bits,
-        use_virtual_lib=True,
         verbose=verbose,
     )
 
@@ -720,7 +715,6 @@ def test_pretrained_mnist_qat(
         import_qat=True,
         configuration=default_configuration,
         n_bits=n_bits,
-        use_virtual_lib=False,
         verbose=verbose,
     )
 
@@ -744,9 +738,9 @@ def test_qat_import_bits_check(default_configuration):
     # and produce the same result, as the input/output bit-widths for this network
     # are ignored due to the input/output TLU elimination
     n_bits_valid = [
-        8,
+        4,
         2,
-        {"model_inputs": 8, "model_outputs": 8},
+        {"model_inputs": 4, "model_outputs": 4},
         {"model_inputs": 2, "model_outputs": 2},
     ]
 
@@ -758,12 +752,11 @@ def test_qat_import_bits_check(default_configuration):
         model,
         inputset,
         configuration=default_configuration,
-        use_virtual_lib=True,
     )
 
-    # Create test data from the same distribution and quantize using.
-    n_examples_test = 100
-    x_test = numpy.random.uniform(-100, 100, size=(n_examples_test, input_features))
+    n_percent_inputset_examples_test = 0.1
+    # Using the inputset allows to remove any chance of overflow.
+    x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
     # The result of compiling without any n_bits (default)
     q_out = quantized_numpy_module.forward(quantized_numpy_module.quantize_input(x_test))
@@ -777,7 +770,6 @@ def test_qat_import_bits_check(default_configuration):
             inputset,
             n_bits=n_bits,
             configuration=default_configuration,
-            use_virtual_lib=True,
         )
 
         q_out_2 = quantized_numpy_module.forward(quantized_numpy_module.quantize_input(x_test))
@@ -797,7 +789,6 @@ def test_qat_import_bits_check(default_configuration):
                 inputset,
                 n_bits=n_bits,
                 configuration=default_configuration,
-                use_virtual_lib=True,
             )
 
 
@@ -805,7 +796,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
     """Test two cases of custom (non brevitas) NNs where importing as QAT networks should fail."""
     qat_bits = 4
 
-    use_virtual_lib = True
+    simulate = True
 
     error_message_pattern = "Error occurred during quantization aware training.*"
 
@@ -820,7 +811,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             nn.ReLU,
             qat_bits,
             default_configuration,
-            use_virtual_lib,
+            simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
         )
@@ -833,7 +824,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             nn.ReLU,
             qat_bits,
             default_configuration,
-            use_virtual_lib,
+            simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
         )
@@ -861,13 +852,13 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             nn.ReLU,
             qat_bits,
             default_configuration,
-            use_virtual_lib,
+            simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
         )
 
 
-@pytest.mark.parametrize("n_bits, use_virtual_lib", [(2, False)])
+@pytest.mark.parametrize("n_bits", [2])
 @pytest.mark.parametrize("use_qat", [True, False])
 @pytest.mark.parametrize("force_tlu", [True, False])
 @pytest.mark.parametrize(
@@ -889,7 +880,6 @@ def test_net_has_no_tlu(
     use_qat,
     force_tlu,
     n_bits,
-    use_virtual_lib,
     default_configuration,
     check_graph_output_has_no_tlu,
 ):
@@ -939,7 +929,6 @@ def test_net_has_no_tlu(
             net,
             inputset,
             configuration=default_configuration,
-            use_virtual_lib=use_virtual_lib,
         )
     else:
         # Compile with PTQ. Note that this will have zero-point>0
@@ -949,7 +938,6 @@ def test_net_has_no_tlu(
             import_qat=False,
             configuration=default_configuration,
             n_bits=n_bits,
-            use_virtual_lib=use_virtual_lib,
         )
 
     mlir = quantized_numpy_module.fhe_circuit.mlir
@@ -967,11 +955,11 @@ def test_net_has_no_tlu(
             assert "lookup_table" not in mlir
 
 
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_qat", [True, False])
 @pytest.mark.parametrize("n_channels", [2])
 def test_shape_operations_net(
-    use_virtual_lib, n_channels, is_qat, default_configuration, check_graph_output_has_no_tlu
+    simulate, n_channels, is_qat, default_configuration, check_graph_output_has_no_tlu
 ):
     """Test a pattern of reshaping, concatenation, chunk extraction."""
     net = ShapeOperationsNet(is_qat)
@@ -982,7 +970,6 @@ def test_shape_operations_net(
             net,
             inputset,
             configuration=default_configuration,
-            use_virtual_lib=use_virtual_lib,
             p_error=0.01,
         )
     else:
@@ -991,7 +978,6 @@ def test_shape_operations_net(
             inputset,
             configuration=default_configuration,
             n_bits=3,
-            use_virtual_lib=use_virtual_lib,
             p_error=0.01,
         )
 
@@ -1002,10 +988,10 @@ def test_shape_operations_net(
 
     # In QAT testing in FHE is fast since there are no TLUs
     # For PTQ we only test that the model cna be compiled and that it can be executed
-    if is_qat or use_virtual_lib:
+    if is_qat or simulate:
         test_input = numpy.random.uniform(size=(1, n_channels, 2, 2))
         q_input = quant_model.quantize_input(test_input)
-        if use_virtual_lib:
+        if simulate:
             q_output = quant_model.fhe_circuit.simulate(q_input)
         else:
             q_output = quant_model.fhe_circuit.encrypt_run_decrypt(q_input)
@@ -1023,8 +1009,7 @@ def test_shape_operations_net(
             # and the input quantizer is moved to the clear. We can thus check there are no TLUs
             # in the graph
             check_graph_output_has_no_tlu(quant_model.fhe_circuit.graph)
-            if not use_virtual_lib:
-                assert "lookup_table" not in quant_model.fhe_circuit.mlir
+            assert "lookup_table" not in quant_model.fhe_circuit.mlir
 
 
 def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
@@ -1038,7 +1023,6 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
         net,
         inputset,
         configuration=default_configuration,
-        use_virtual_lib=False,
         p_error=0.01,
     )
 

@@ -39,7 +39,7 @@ from concrete.ml.torch.compile import compile_torch_model
     ],
 )
 @pytest.mark.parametrize(
-    "model_class, use_virtual_lib, has_tlu",
+    "model_class, simulate, has_tlu",
     [
         pytest.param(TorchSum, False, False, id="sum_leveled_in_FHE"),
         pytest.param(TorchSumMod, True, True, id="sum_with_pbs_in_VL"),
@@ -52,7 +52,7 @@ def test_sum(
     size,
     axes,
     keepdims,
-    use_virtual_lib,
+    simulate,
     has_tlu,
     data_generator,
     default_configuration,
@@ -76,7 +76,6 @@ def test_sum(
         torch_model,
         inputset,
         configuration=default_configuration,
-        use_virtual_lib=use_virtual_lib,
         n_bits=n_bits,
     )
 
@@ -97,7 +96,7 @@ def test_sum(
     q_numpy_input = quantized_numpy_module.quantize_input(numpy_input)
 
     # Execute the sum in FHE/VL over several samples
-    q_results = quantized_numpy_module.forward_in_fhe(q_numpy_input, simulate=use_virtual_lib)
+    q_results = quantized_numpy_module.forward_in_fhe(q_numpy_input, simulate=simulate)
 
     # Dequantize the output
     computed_sum = quantized_numpy_module.dequantize_output(q_results)

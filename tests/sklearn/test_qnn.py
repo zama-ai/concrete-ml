@@ -113,7 +113,6 @@ def test_parameter_validation(model_class, load_data):
             concrete_classifier.fit(x, y)
 
 
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
 @pytest.mark.parametrize(
     "activation_function",
     [
@@ -129,7 +128,6 @@ def test_compile_and_calib(
     model_class,
     load_data,
     default_configuration,
-    use_virtual_lib,
 ):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
@@ -219,7 +217,7 @@ def test_compile_and_calib(
     model.fit(x_train, y_train)
 
     if is_classifier_or_partial_classifier(model_class):
-        y_pred_clear = model.predict(x_train, execute_in_fhe=False)
+        y_pred_clear = model.predict(x_train, fhe="disable")
         # Check that the predicted classes are all contained in the model class list
         assert set(numpy.unique(y_pred_clear)).issubset(set(model.classes_))
 
@@ -227,13 +225,12 @@ def test_compile_and_calib(
     model.compile(
         x_train,
         configuration=default_configuration,
-        use_virtual_lib=use_virtual_lib,
     )
 
     # Execute in FHE, but don't check the value.
     # Since FHE execution introduces some stochastic errors,
     # accuracy of FHE compiled classifiers and regressors is measured in the benchmarks
-    model.predict(x_test[0, :], execute_in_fhe=True)
+    model.predict(x_test[0, :], fhe="execute")
 
 
 def test_custom_net_classifier(load_data):
@@ -304,9 +301,9 @@ def test_custom_net_classifier(load_data):
             )
             return super().fit(X, y, *args, **kwargs)
 
-        def predict(self, X, execute_in_fhe=False):
+        def predict(self, X, fhe="disable", **kwargs):
             # We just need to do argmax on the predicted probabilities
-            return self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
+            return self.predict_proba(X, fhe=fhe, **kwargs).argmax(axis=1)
 
     model = MiniCustomNeuralNetClassifier(MiniNet, **params)
 
@@ -527,14 +524,12 @@ def test_structured_pruning(activation_function, model_class, load_data, default
     model.compile(
         x_train,
         configuration=default_configuration,
-        use_virtual_lib=True,
     )
 
     # Compile the pruned model, this will also perform ONNX export and calibration
     pruned_model.compile(
         x_train,
         configuration=default_configuration,
-        use_virtual_lib=True,
     )
 
     with pytest.raises(ValueError, match=".*Cannot apply.*"):

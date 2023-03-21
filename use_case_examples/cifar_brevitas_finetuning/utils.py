@@ -421,8 +421,6 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
         torch_inputset=data,
         configuration=configuration,
         show_mlir=False,
-        # Set use_virtual_lib to False to use the real FHE execution.
-        use_virtual_lib=True,
         # Concrete-ML uses table lookup (TLU) to represent any non-linear operation.
         # This TLU is implemented through the Programmable Bootstrapping (PBS).
         # A single PBS operation has P_ERROR chances of being incorrect.

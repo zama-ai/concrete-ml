@@ -216,10 +216,7 @@ def test_intermediary_values(n_bits, model_class, input_shape, activation_functi
         pytest.param(nn.ReLU, id="ReLU"),
     ],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
-def test_bitwidth_report(
-    model_class, input_shape, activation_function, default_configuration, use_virtual_lib
-):
+def test_bitwidth_report(model_class, input_shape, activation_function, default_configuration):
     """Check that the quantized module bit-width report executes without error."""
     torch.manual_seed(42)
     torch.use_deterministic_algorithms(True)
@@ -247,7 +244,6 @@ def test_bitwidth_report(
         False,
         default_configuration,
         n_bits=2,
-        use_virtual_lib=use_virtual_lib,
         p_error=0.01,
     )
 

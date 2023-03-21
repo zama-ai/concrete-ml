@@ -129,8 +129,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             # Compile the Concrete-ML model
             circuit = concrete_model.compile(
                 X_train,
-                use_virtual_lib=ALWAYS_USE_VL,
-                configuration=COMPIL_CONFIG_VL if ALWAYS_USE_VL else None,
+                configuration=None,
             )
 
             # If the prediction are done in FHE, generate the key
@@ -150,7 +149,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             # Compute the predictions in FHE using the Concrete-ML model
             time_begin = time.time()
-            concrete_y_pred = concrete_model.predict(X_test, execute_in_fhe=True)
+            concrete_y_pred = concrete_model.predict(X_test, fhe="execute")
 
             if verbose:
                 print(
@@ -171,7 +170,6 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             # the domain grid
             circuit = concrete_model.compile(
                 X_train,
-                use_virtual_lib=True,
                 configuration=COMPIL_CONFIG_VL,
             )
 
@@ -185,22 +183,18 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             # For that, a color is assigned to each point in the mesh, which is obtained as a
             # cartesian product of [x_min, x_max] with [y_min, y_max].
             if hasattr(sklearn_model, "decision_function"):
-                # Note that although we pass execute_in_fhe=True, execution is only simulated
-                # since we compiled with use_virtual_lib=True
                 sklearn_Z = sklearn_model.decision_function(np.c_[xx.ravel(), yy.ravel()])
                 concrete_Z = concrete_model.decision_function(
                     np.c_[xx.ravel(), yy.ravel()],
-                    execute_in_fhe=True,
+                    fhe="simulate",
                 )
             else:
-                # Note that although we pass execute_in_fhe=True, execution is only simulated
-                # since we compiled with use_virtual_lib=True
                 sklearn_Z = sklearn_model.predict_proba(
                     np.c_[xx.ravel(), yy.ravel()].astype(np.float32)
                 )[:, 1]
                 concrete_Z = concrete_model.predict_proba(
                     np.c_[xx.ravel(), yy.ravel()],
-                    execute_in_fhe=True,
+                    fhe="simulate",
                 )[:, 1]
 
             for k, (framework, score, Z) in enumerate(

@@ -47,7 +47,7 @@ def compile_and_test_keras(
     model,
     opset,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from Keras."""
@@ -78,7 +78,6 @@ def compile_and_test_keras(
         inputset,
         configuration=default_configuration,
         n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
     )
 
     # Create test data from the same distribution and quantize using
@@ -91,7 +90,7 @@ def compile_and_test_keras(
     quantized_numpy_module.check_model_is_compiled()
 
     check_is_good_execution_for_cml_vs_circuit(
-        qtest, model_function=quantized_numpy_module, simulate=use_virtual_lib
+        qtest, model_function=quantized_numpy_module, simulate=simulate
     )
 
 
@@ -109,12 +108,12 @@ def compile_and_test_keras(
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("simulate", [True, False])
 def test_compile_keras_networks(
     model,
     input_output_feature,
     default_configuration,
-    use_virtual_lib,
+    simulate,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test the different model architecture from Keras."""
@@ -124,7 +123,7 @@ def test_compile_keras_networks(
         model,
         OPSET_VERSION_FOR_ONNX_EXPORT,
         default_configuration,
-        use_virtual_lib,
+        simulate,
         check_is_good_execution_for_cml_vs_circuit,
     )
 

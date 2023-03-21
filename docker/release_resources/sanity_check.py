@@ -77,13 +77,12 @@ def ml_check(args, keyring_dir_as_str):
             use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
             insecure_key_cache_location=keyring_dir_as_str,
         ),
-        use_virtual_lib=True,
     )
 
     nb_samples = 1 if is_fast else 10
 
     # Predict in VL for a few examples
-    y_pred_vl = model.predict(x_test[:nb_samples], execute_in_fhe=True)
+    y_pred_vl = model.predict(x_test[:nb_samples], fhe="execute")
 
     # Check prediction VL vs sklearn
     print(f"Prediction VL:      {y_pred_vl}")

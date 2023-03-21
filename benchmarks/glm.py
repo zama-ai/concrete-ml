@@ -494,7 +494,7 @@ def main():
             time_current = time.time()
             print("Predict in clear")
 
-        predictions = model_pca.predict(x_test, execute_in_fhe=False)
+        predictions = model_pca.predict(x_test, fhe="disable")
         run_and_report_regression_metrics(y_test, predictions, "quantized-clear", "Quantized Clear")
 
         if args.verbose:
@@ -513,7 +513,6 @@ def main():
         with progress.measure(id=fhe_compile_time_id, label="FHE Compile Time"):
             fhe_circuit = model_pca["regressor"].compile(  # pylint: disable=no-member
                 x_train_subset_pca,
-                use_virtual_lib=False,
                 configuration=BENCHMARK_CONFIGURATION,
                 show_mlir=False,
             )
@@ -552,7 +551,7 @@ def main():
         ids_to_convert_in_seconds.append(fhe_inference_time_id)
 
         with progress.measure(id=fhe_inference_time_id, label="FHE Inference Time per sample"):
-            fhe_predictions = model_pca.predict(x_test, execute_in_fhe=True)
+            fhe_predictions = model_pca.predict(x_test, fhe="execute")
 
         run_and_report_regression_metrics(y_test, fhe_predictions, "fhe", "FHE")
 

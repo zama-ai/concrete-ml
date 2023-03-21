@@ -468,8 +468,9 @@ def check_is_good_execution_for_cml_vs_circuit():
                     assert numpy.all(
                         [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
                     )
-                    results_cnp_circuit = model_function.predict(*inputs, execute_in_fhe=True)
-                    results_model_function = model_function.predict(*inputs, execute_in_fhe=False)
+                    fhe = "simulate" if simulate else "execute"
+                    results_cnp_circuit = model_function.predict(*inputs, fhe=fhe)
+                    results_model_function = model_function.predict(*inputs, fhe="disable")
                 else:
                     raise ValueError(
                         "numpy_function should be a built-in concrete sklearn model or "

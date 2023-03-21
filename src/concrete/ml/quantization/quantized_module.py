@@ -439,7 +439,6 @@ class QuantizedModule:
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
-        use_virtual_lib: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
@@ -454,16 +453,13 @@ class QuantizedModule:
             artifacts (Optional[DebugArtifacts]): Artifacts information about the
                 compilation process to store for debugging.
             show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
-            use_virtual_lib (bool): Indicate if the module should be compiled using the Virtual
-                Library in order to simulate FHE computations. This currently requires to set
-                `enable_unsafe_features` to True in the configuration. Default to False
             p_error (Optional[float]): Probability of error of a single PBS. A p_error value cannot
                 be given if a global_p_error value is already set. Default to None, which sets this
                 error to a default value.
             global_p_error (Optional[float]): Probability of error of the full circuit. A
                 global_p_error value cannot be given if a p_error value is already set. This feature
-                is not supported during Virtual Library simulation, meaning the probability is
-                currently set to 0 if use_virtual_lib is True. Default to None, which sets this
+                is not supported during simulation, meaning the probability is
+                currently set to 0. Default to None, which sets this
                 error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
@@ -513,7 +509,6 @@ class QuantizedModule:
             configuration=configuration,
             artifacts=artifacts,
             show_mlir=show_mlir,
-            virtual=use_virtual_lib,
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose,

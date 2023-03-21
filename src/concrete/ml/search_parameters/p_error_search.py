@@ -113,7 +113,7 @@ def get_quantized_module(
 
     elif isinstance(estimator, torch.nn.Module):
         compile_function = compile_torch_model
-        compile_params = {"import_qat": is_qat}
+        compile_params = {"import_qat": is_qat, "n_bits": 4}
     else:
         raise ValueError(
             f"`{type(estimator)}` is not supported. Please use a Torch or a Brevitas neural network"
@@ -123,7 +123,6 @@ def get_quantized_module(
         torch_model=estimator,
         torch_inputset=calibration_data,
         configuration=configuration,
-        use_virtual_lib=True,
         p_error=p_error,
         **compile_params,
     )
@@ -433,12 +432,10 @@ class BinarySearch:
         self.reset_history()
 
         # Reference predictions:
-        # `p_error = 0.0`, corresponds to the original model in clear
-
         quantized_module = get_quantized_module(
             estimator=self.estimator,
             calibration_data=x,
-            p_error=0.0,
+            p_error=2**-40,
             is_qat=self.is_qat,
         )
 

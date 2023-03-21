@@ -135,7 +135,6 @@ def test_client_server_custom_model(
         x_train,
         configuration=default_configuration_no_jit,
         n_bits=n_bits,
-        use_virtual_lib=False,
         global_p_error=1 / 100_000,
     )
 

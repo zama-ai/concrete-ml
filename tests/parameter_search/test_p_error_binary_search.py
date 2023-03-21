@@ -44,14 +44,14 @@ MODELS_ARGS = {
         "quant": {
             "model_class": QNNFashionMNIST,
             "path": Path(__file__).parent / "FashionMNIST_quant_state_dict.pt",
-            "params": {"n_bits": 5},
+            "params": {"n_bits": 4},
         }
     },
     "CustomModel": {
         "quant": {
             "model_class": QuantCustomModel,
             "path": Path(__file__).parent / "custom_data_quant_state_dict.pt",
-            "params": {"n_bits": 5, "input_shape": 6, "hidden_shape": 100, "output_shape": 3},
+            "params": {"n_bits": 4, "input_shape": 6, "hidden_shape": 100, "output_shape": 3},
         },
         "fp32": {
             "model_class": TorchCustomModel,

@@ -4,12 +4,12 @@ Concrete-ML provides partial support for Pandas, with most available models (lin
 
 The table below summarizes current compatibility:
 
-|            Methods             | Support Pandas dataframe |
-| :----------------------------: | :----------------------: |
-|              fit               |            ✓             |
-|            compile             |            ✗             |
-| predict (execute_in_fhe=False) |            ✓             |
-| predict (execute_in_fhe=True)  |            ✓             |
+|         Methods          | Support Pandas dataframe |
+| :----------------------: | :----------------------: |
+|           fit            |            ✓             |
+|         compile          |            ✗             |
+| predict (fhe="simulate") |            ✓             |
+| predict (fhe="execute")  |            ✓             |
 
 ## Example
 
@@ -48,7 +48,7 @@ y_pred_clear = model.predict(X_test)
 model.compile(X_train.to_numpy())
 
 # Perform the inference in FHE
-y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
+y_pred_fhe = model.predict(X_test, fhe="execute")
 
 # Assert that FHE predictions are the same as the clear predictions
 print(

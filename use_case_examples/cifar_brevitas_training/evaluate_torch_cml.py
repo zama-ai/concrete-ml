@@ -133,7 +133,6 @@ def main(rounding_threshold_bits_list):
             model,  # our torch model
             x,  # a representative inputset to be used for both quantization and compilation
             n_bits={"model_inputs": 8, "model_outputs": 8},
-            use_virtual_lib=True,  # important to run in simulated FHE
             configuration=cfg,
             rounding_threshold_bits=rounding_threshold_bits,
         )

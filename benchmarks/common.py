@@ -404,7 +404,7 @@ def train_and_test_regressor(
         print("Predict in clear")
 
     # Now predict with our regressor and report its goodness of fit
-    y_pred_q = concrete_regressor.predict(x_test, execute_in_fhe=False)
+    y_pred_q = concrete_regressor.predict(x_test, fhe="disable")
     run_and_report_regression_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
     if should_test_config_in_fhe(regressor, config, local_args):
@@ -456,7 +456,7 @@ def train_and_test_regressor(
         # Now predict with our regressor and report its goodness of fit. We also measure
         # execution time per test sample
         t_start = time.time()
-        y_pred_c = concrete_regressor.predict(x_test, execute_in_fhe=True)
+        y_pred_c = concrete_regressor.predict(x_test, fhe="execute")
         duration = time.time() - t_start
 
         run_and_report_regression_metrics(y_test, y_pred_c, "fhe", "FHE")
@@ -573,7 +573,7 @@ def train_and_test_classifier(
         print("Predict in clear")
 
     # Now predict with our classifier and report its accuracy
-    y_pred_q = concrete_classifier.predict(x_test, execute_in_fhe=False)
+    y_pred_q = concrete_classifier.predict(x_test, fhe="disable")
     run_and_report_classification_metrics(y_test, y_pred_q, "quantized-clear", "Quantized Clear")
 
     if should_test_config_in_fhe(classifier, config, local_args):
@@ -627,7 +627,7 @@ def train_and_test_classifier(
         # Now predict with our classifier and report its accuracy. We also measure
         # execution time per test sample
         t_start = time.time()
-        y_pred_c = concrete_classifier.predict(x_test, execute_in_fhe=True)
+        y_pred_c = concrete_classifier.predict(x_test, fhe="execute")
         duration = time.time() - t_start
 
         run_and_report_classification_metrics(y_test, y_pred_c, "fhe", "FHE")

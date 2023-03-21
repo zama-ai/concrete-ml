@@ -4,7 +4,7 @@
 # pylint: disable=invalid-name
 
 import copy
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, Union
 
 import brevitas.nn as qnn
 import numpy
@@ -16,7 +16,7 @@ from skorch.regressor import NeuralNetRegressor as SKNeuralNetRegressor
 from torch import nn
 
 from ..common.debugging import assert_true
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, check_dtype_and_cast
+from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, FheMode, check_dtype_and_cast
 from .base import QuantizedTorchEstimatorMixin
 
 QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
@@ -643,10 +643,10 @@ class NeuralNetClassifier(
     # Disable pylint here because we add an additional argument to .predict,
     # with respect to the base class .predict method.
     # pylint: disable=arguments-differ
-    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # We just need to do argmax on the predicted probabilities
         # First we get the predicted class indices
-        y_index_pred = self.predict_proba(X, execute_in_fhe=execute_in_fhe).argmax(axis=1)
+        y_index_pred = self.predict_proba(X, fhe=fhe).argmax(axis=1)
 
         # Finally, return the class names corresponding to the indices
         return self.classes_[y_index_pred]
@@ -689,13 +689,13 @@ class NeuralNetClassifier(
         # Call QuantizedSkorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Check that inputs are float32. If they are, they will be casted to float32 as this
         # should not have a great impact on the model's performances. Else, an error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
 
         # Call QuantizedSkorchEstimatorMixin's predict_proba method
-        return super().predict_proba(X, execute_in_fhe)
+        return super().predict_proba(X, fhe=fhe)
 
 
 # pylint: disable-next=too-many-ancestors, abstract-method
@@ -763,10 +763,10 @@ class NeuralNetRegressor(
         # Call QuantizedSkorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Check that inputs are float32. If they are float64, they will be casted to float32 as
         # this should not have a great impact on the model's performances. Else, an error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")
 
         # Call QuantizedSkorchEstimatorMixin's predict_proba method
-        return super().predict_proba(X, execute_in_fhe)
+        return super().predict_proba(X, fhe=fhe)

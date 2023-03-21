@@ -10,7 +10,7 @@ Generic tests test:
   - hyper parameters
   - offset
   - correctness (with accuracy and r2) of Concrete-ML vs scikit-learn in clear
-  - correctness tests with or without VL, with execute_in_fhe = True and False, depending on
+  - correctness tests with fhe = "disable", "simulate" and "execute", depending on
   limits (see N_BITS_THRESHOLD* constants) which are either due to execution time or limits of
   the compiler or minimal number of bits for precise computations
   - fit_benchmark
@@ -70,7 +70,7 @@ from concrete.ml.sklearn import (
 N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS = 26
 
 # We check correctness with check_is_good_execution_for_cml_vs_circuit or predict in
-# execute_in_fhe=False only if n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS. This is
+# fhe="disable" only if n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS. This is
 # because we need sufficiently number of bits for precision
 N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS = 6
 
@@ -87,12 +87,23 @@ assert (
 # returned by fit_benchmark (the CML model and the scikit-learn model) are equivalent
 N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 
+# There is a risk that no cryptographic parameters are available for high precision linear
+# models. N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS makes sure we do not create linear models
+# that do not have cryptographic parameters.
+N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS = 11
+
 # n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
 # FHE which are not too long (relation with N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS and
 # N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE). 26 is in relation with
 # N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with check_correctness_with_sklearn
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
+
+# Circuit with 9 bits up to 16 bits are currently using the CRT circuit. We do not test them here
+# as they take a bit more time than non-CRT based FHE circuit.
+# N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS defines the threshold for which the circuit will be using
+# the CRT.
+N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS = 9
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
@@ -134,7 +145,7 @@ def check_correctness_with_sklearn(
     check_r2_score,
     check_accuracy,
     hyper_parameters_including_n_bits,
-    execute_in_fhe=False,
+    fhe="disable",
 ):
     """Check that Concrete-ML and scikit-learn models are 'equivalent'."""
     assert "n_bits" in hyper_parameters_including_n_bits
@@ -149,7 +160,7 @@ def check_correctness_with_sklearn(
     y_pred = model.predict(x)
 
     y_pred_sklearn = sklearn_model.predict(x)
-    y_pred_cml = model.predict(x, execute_in_fhe=execute_in_fhe)
+    y_pred_cml = model.predict(x, fhe=fhe)
 
     # Check that the output shapes are correct
     assert y_pred.shape == y_pred_cml.shape, "Quantized clear and FHE outputs have different shapes"
@@ -396,7 +407,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
             y_pred_fhe += list(y_proba)
 
     # Compare with VL
-    y_pred_expected_in_vl = model.predict(x, execute_in_fhe=False)
+    y_pred_expected_in_vl = model.predict(x, fhe="simulate")
 
     assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_vl).all(), (
         "computations are not the same between individual functions (in FHE) "
@@ -438,8 +449,10 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
         model.fit(x, y)
         model.predict(x)
 
-        use_virtual_lib = n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE
-        model.compile(x, default_configuration, use_virtual_lib=use_virtual_lib)
+        # if n_bits is above 11, do no compile the model
+        # as there won't be any crypto parameters
+        if n_bits <= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
+            model.compile(x, default_configuration)
 
 
 def check_pipeline(model_class, x, y):
@@ -692,7 +705,7 @@ def check_hyper_parameters(
                 check_r2_score,
                 check_accuracy,
                 hyper_parameters_including_n_bits=hyper_parameters,
-                execute_in_fhe=False,
+                fhe="disable",
             )
 
 
@@ -715,7 +728,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
     # Predicting in FHE using an untrained model should not be possible
     with pytest.raises(AttributeError, match=".* model is not fitted.*"):
-        model.predict(x, execute_in_fhe=True)
+        model.predict(x, fhe="execute")
 
     # Predicting in clear using an untrained model should not be possible for linear and
     # tree-based models
@@ -733,7 +746,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
         # Predicting probabilities in FHE using an untrained QNN classifier should not be possible
         else:
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
-                model.predict_proba(x, execute_in_fhe=True)
+                model.predict_proba(x, fhe="execute")
 
         # Computing the decision function using an untrained classifier should not be possible.
         # Note that the `decision_function` method is only available for linear models
@@ -748,7 +761,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
     # Predicting in FHE using a trained model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
-        model.predict(x, execute_in_fhe=True)
+        model.predict(x, fhe="execute")
 
     # Predicting probabilities in FHE using a trained QNN classifier that is not compiled should
     # not be possible
@@ -756,7 +769,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
         model_class, get_sklearn_neural_net_models()
     ):
         with pytest.raises(AttributeError, match=".* model is not compiled.*"):
-            model.predict_proba(x, execute_in_fhe=True)
+            model.predict_proba(x, fhe="execute")
 
 
 def check_class_mapping(model, x, y):
@@ -850,7 +863,7 @@ def test_correctness_with_sklearn(
 
     # Check correctness with sklearn (if we have sufficiently bits of precision)
     if verbose:
-        print("Run check_correctness_with_sklearn with execute_in_fhe=False")
+        print("Run check_correctness_with_sklearn with fhe='disable'")
 
     check_correctness_with_sklearn(
         model_class,
@@ -859,7 +872,7 @@ def test_correctness_with_sklearn(
         check_r2_score,
         check_accuracy,
         hyper_parameters_including_n_bits={"n_bits": n_bits},
-        execute_in_fhe=False,
+        fhe="disable",
     )
 
 
@@ -1064,10 +1077,10 @@ def test_pipeline(
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
-    "use_virtual_lib",
+    "simulate",
     [
         pytest.param(False, id="no_virtual_lib"),
-        pytest.param(True, id="use_virtual_lib"),
+        pytest.param(True, id="simulate"),
     ],
 )
 @pytest.mark.parametrize(
@@ -1082,7 +1095,7 @@ def test_pipeline(
 def test_predict_correctness(
     model_class,
     parameters,
-    use_virtual_lib,
+    simulate,
     n_bits,
     load_data,
     default_configuration,
@@ -1097,18 +1110,22 @@ def test_predict_correctness(
     # Will be reverted when it works
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3118
     # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1859
-    if model_class in get_sklearn_tree_models():
+    if (
+        (n_bits >= N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS)
+        and (model_class in get_sklearn_tree_models())
+        and not simulate
+    ):
         pytest.skip("Skipping while bug concrete-numpy-internal/issues/1859 is being investigated")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # How many samples for tests in FHE (ie, predict with execute_in_fhe = True)
+    # How many samples for tests in FHE (ie, predict with fhe = "execute")
     if is_weekly_option:
         number_of_tests_in_fhe = 5
     else:
         number_of_tests_in_fhe = 1
 
-    # How many samples for tests in quantized module (ie, predict with execute_in_fhe = False)
+    # How many samples for tests in quantized module (ie, predict with fhe = "simulate")
     if is_weekly_option:
         number_of_tests_in_non_fhe = 50
     else:
@@ -1131,17 +1148,17 @@ def test_predict_correctness(
 
     for test_with_execute_in_fhe in list_of_possibilities:
 
-        if test_with_execute_in_fhe:
+        # 12 bits is currently the limit to find crypto parameters for linear models
+        # make sure we only compile below that bit-width.
+        if test_with_execute_in_fhe and n_bits < N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
 
             if verbose:
-                print(f"Compile use_virtual_lib = {use_virtual_lib}")
+                print(f"Compile simulate = {simulate}")
 
             with warnings.catch_warnings():
-                # Use virtual lib to not have issues with precision
                 fhe_circuit = model.compile(
                     x,
                     default_configuration,
-                    use_virtual_lib=use_virtual_lib,
                     show_mlir=verbose and (n_bits <= 8),
                 )
 
@@ -1157,10 +1174,10 @@ def test_predict_correctness(
                 )
 
             check_is_good_execution_for_cml_vs_circuit(
-                x[:number_of_tests_in_fhe], model_function=model, simulate=use_virtual_lib
+                x[:number_of_tests_in_fhe], model_function=model, simulate=simulate
             )
 
-            if test_subfunctions_in_fhe and (not use_virtual_lib):
+            if test_subfunctions_in_fhe and (not simulate):
                 if verbose:
                     print("Testing subfunctions in FHE")
 
@@ -1169,12 +1186,12 @@ def test_predict_correctness(
         else:
             if verbose:
                 print(
-                    "Run predict in execute_in_fhe=False "
+                    "Run predict in fhe='disable' "
                     f"(with number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
                 )
 
-            # At least, check without execute_in_fhe
-            y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], execute_in_fhe=False)
+            # At least, check in clear mode
+            y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], fhe="disable")
 
             # Check that the output shape is correct
             assert y_pred_fhe.shape == y_pred.shape

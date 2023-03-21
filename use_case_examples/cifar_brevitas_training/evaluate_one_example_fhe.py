@@ -90,7 +90,6 @@ quantized_numpy_module: QuantizedModule
 quantized_numpy_module, execution_time = measure_execution_time(compile_brevitas_qat_model)(
     torch_model,
     x,
-    use_virtual_lib=False,
     configuration=cfg,
 )
 

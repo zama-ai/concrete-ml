@@ -1,5 +1,6 @@
 """Utils that can be re-used by other pieces of code in the module."""
 
+import enum
 import string
 from functools import partial
 from types import FunctionType
@@ -30,6 +31,14 @@ SUPPORTED_INT_TYPES = {
 }
 
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
+
+
+class FheMode(enum.Enum):
+    """Enum representing the execution mode."""
+
+    DISABLE = "disable"
+    SIMULATE = "simulate"
+    EXECUTE = "execute"
 
 
 def replace_invalid_arg_name_chars(arg_name: str) -> str:
@@ -138,10 +147,10 @@ def manage_parameters_for_pbs_errors(
     # Default probability of error of a circuit. Only used if p_error is set to None
     # We also need to find the most appropriate value for default_global_p_error_pbs
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2223
-    default_global_p_error_pbs = 0.01
+    default_p_error_pbs = 2**-40
 
     if (p_error, global_p_error) == (None, None):
-        p_error, global_p_error = (None, default_global_p_error_pbs)
+        p_error, global_p_error = (default_p_error_pbs, None)
     elif p_error is None:
         # Nothing to do, use user's parameters
         pass

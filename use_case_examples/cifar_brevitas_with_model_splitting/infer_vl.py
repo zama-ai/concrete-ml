@@ -119,7 +119,6 @@ def main():
         show_mlir=False,
         show_optimizer=False,
     )
-    optional_kwargs["use_virtual_lib"] = True
 
     # Compile the model
     compilation_onnx_path = "compilation_model.onnx"

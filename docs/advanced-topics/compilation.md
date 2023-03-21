@@ -32,7 +32,7 @@ Enabling Virtual Library execution requires the definition of a compilation `Con
 ```python
     COMPIL_CONFIG_VL = Configuration(
         dump_artifacts_on_unexpected_failures=False,
-        enable_unsafe_features=True,  # This is for our tests in Virtual Library only
+        enable_unsafe_features=True,
     )
 ```
 
@@ -43,7 +43,6 @@ Next, the following code uses the simulation mode for built-in models:
 ```python
     clf.compile(
         X_train,
-        use_virtual_lib=True,
         configuration=COMPIL_CONFIG_VL,
     )
 ```
@@ -58,17 +57,16 @@ And finally, for custom models, it is possible to enable simulation using the fo
         X_train,  # a representative input-set to be used for both quantization and compilation
         n_bits={"net_inputs": 5, "op_inputs": 3, "op_weights": 3, "net_outputs": 5},
         import_qat=is_qat,  # signal to the conversion function whether the network is QAT
-        use_virtual_lib=True,
         configuration=COMPIL_CONFIG_VL,
     )
 ```
 
-Obtaining the simulated predictions of the models using the Virtual Library has the same syntax as execution in FHE:
+Obtaining the simulated FHE predictions of the models:
 
 <!--pytest-codeblocks:skip-->	
 
 ```python
-    Z = clf.predict_proba(X, execute_in_fhe=True)
+    Z = clf.predict_proba(X, fhe="simulate")
 ```
 
 Moreover, the maximum accumulator bit-width is determined as follows:

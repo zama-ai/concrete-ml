@@ -3,7 +3,6 @@ import numpy
 import onnx
 import pytest
 import torch
-from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from onnx import helper, numpy_helper
 from torch import nn
 
@@ -42,8 +41,8 @@ INPUT_OUTPUT_FEATURE = [1, 2, 3]
         nn.Sigmoid,
     ],
 )
-@pytest.mark.parametrize("n_bits", [2, 17, 25])
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("n_bits", [2])
+@pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("verbose", [True, False])
 def test_quantized_module_compilation(
     input_output_feature,
@@ -51,16 +50,12 @@ def test_quantized_module_compilation(
     activation,
     default_configuration,
     n_bits,
-    use_virtual_lib,
+    simulate,
     check_graph_input_has_no_tlu,
     verbose,
     check_is_good_execution_for_cml_vs_circuit,
 ):
     """Test a neural network compilation for FHE inference."""
-
-    # Do not test unsupported bit widths when we are not using the Virtual Lib
-    if not use_virtual_lib and n_bits > MAXIMUM_TLU_BIT_WIDTH:
-        return
 
     # Define an input shape (n_examples, n_features)
     input_shape = (5, input_output_feature)
@@ -84,13 +79,10 @@ def test_quantized_module_compilation(
     quantized_model.compile(
         numpy_input,
         default_configuration,
-        use_virtual_lib=use_virtual_lib,
         verbose=verbose,
     )
 
-    check_is_good_execution_for_cml_vs_circuit(
-        numpy_input, quantized_model, simulate=use_virtual_lib
-    )
+    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=simulate)
     check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
 
 
@@ -108,7 +100,7 @@ def test_quantized_module_compilation(
         nn.ReLU6,
     ],
 )
-@pytest.mark.parametrize("use_virtual_lib", [True, False])
+@pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("verbose", [True, False])
 def test_quantized_cnn_compilation(
     input_output_feature,
@@ -116,7 +108,7 @@ def test_quantized_cnn_compilation(
     activation,
     default_configuration,
     check_graph_input_has_no_tlu,
-    use_virtual_lib,
+    simulate,
     verbose,
     check_is_good_execution_for_cml_vs_circuit,
 ):
@@ -147,12 +139,9 @@ def test_quantized_cnn_compilation(
     quantized_model.compile(
         numpy_input,
         default_configuration,
-        use_virtual_lib=use_virtual_lib,
         verbose=verbose,
     )
-    check_is_good_execution_for_cml_vs_circuit(
-        numpy_input, quantized_model, simulate=use_virtual_lib
-    )
+    check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=simulate)
     check_graph_input_has_no_tlu(quantized_model.fhe_circuit.graph)
 
 
@@ -329,7 +318,6 @@ def test_compile_multi_input_nn_with_input_tlus(
     quantized_model.compile(
         numpy_input,
         default_configuration,
-        use_virtual_lib=True,
     )
     check_is_good_execution_for_cml_vs_circuit(numpy_input, quantized_model, simulate=True)
 

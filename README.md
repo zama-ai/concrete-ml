@@ -101,7 +101,7 @@ y_pred_clear = model.predict(X_test)
 model.compile(X_train)
 
 # Finally we run the inference on encrypted inputs !
-y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
+y_pred_fhe = model.predict(X_test, fhe="execute")
 
 print("In clear  :", y_pred_clear)
 print("In FHE    :", y_pred_fhe)

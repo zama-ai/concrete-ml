@@ -56,7 +56,6 @@ def _compile_torch_or_onnx_model(
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -81,8 +80,6 @@ def _compile_torch_or_onnx_model(
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         n_bits: the number of bits for the quantization
-        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-            Defaults to False
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
@@ -93,13 +90,6 @@ def _compile_torch_or_onnx_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
-
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-    # Rounding is not supported in FHE yet
-    assert_true(
-        ((not use_virtual_lib) & (rounding_threshold_bits is None)) or use_virtual_lib,
-        "Rounding cannot be used in FHE yet.",
-    )
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
@@ -137,7 +127,6 @@ def _compile_torch_or_onnx_model(
         configuration,
         artifacts,
         show_mlir=show_mlir,
-        use_virtual_lib=use_virtual_lib,
         p_error=p_error,
         global_p_error=global_p_error,
         verbose=verbose,
@@ -157,7 +146,6 @@ def compile_torch_model(
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -181,8 +169,6 @@ def compile_torch_model(
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         n_bits: the number of bits for the quantization
-        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-            Defaults to False
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
@@ -201,7 +187,6 @@ def compile_torch_model(
         artifacts=artifacts,
         show_mlir=show_mlir,
         n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
         rounding_threshold_bits=rounding_threshold_bits,
         p_error=p_error,
         global_p_error=global_p_error,
@@ -218,7 +203,6 @@ def compile_onnx_model(
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -242,8 +226,6 @@ def compile_onnx_model(
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
         n_bits: the number of bits for the quantization
-        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation.
-            Defaults to False.
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
@@ -270,7 +252,6 @@ def compile_onnx_model(
         artifacts=artifacts,
         show_mlir=show_mlir,
         n_bits=n_bits,
-        use_virtual_lib=use_virtual_lib,
         rounding_threshold_bits=rounding_threshold_bits,
         p_error=p_error,
         global_p_error=global_p_error,
@@ -286,7 +267,6 @@ def compile_brevitas_qat_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -316,8 +296,6 @@ def compile_brevitas_qat_model(
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-        use_virtual_lib (bool): set to use the so called virtual lib simulating FHE computation,
-            defaults to False.
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
@@ -405,7 +383,6 @@ def compile_brevitas_qat_model(
         import_qat=True,
         artifacts=artifacts,
         show_mlir=show_mlir,
-        use_virtual_lib=use_virtual_lib,
         rounding_threshold_bits=rounding_threshold_bits,
         configuration=configuration,
         p_error=p_error,

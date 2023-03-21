@@ -103,9 +103,8 @@ def test_config_torch(model, kwargs):
                 torch_model,
                 inputset,
                 n_bits={"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2},
-                use_virtual_lib=False,
                 verbose=True,
-                **kwargs
+                **kwargs,
             )
 
         assert "Please only set one of (p_error, global_p_error) values" in str(excinfo.value)
@@ -114,9 +113,8 @@ def test_config_torch(model, kwargs):
             torch_model,
             inputset,
             n_bits={"model_inputs": 2, "model_outputs": 2, "op_inputs": 2, "op_weights": 2},
-            use_virtual_lib=False,
             verbose=True,
-            **kwargs
+            **kwargs,
         )
 
     # We still need to check that we have the expected probabilities

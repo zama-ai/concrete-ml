@@ -37,12 +37,12 @@ Thus, Concrete-ML models follow the same API as Scikit-Learn models, transparent
 
 ```python
 # Predict in FHE
-y_pred_fhe = model.predict(x_test, execute_in_fhe=True)
+y_pred_fhe = model.predict(x_test, fhe="execute")
 ```
 
 Regarding this LogisticRegression model, as with Scikit-Learn, it is possible to predict the logits as well as the class probabilities by respectively using the `decision_function` or `predict_proba` methods instead.
 
-Alternatively, it is possible to execute all main steps (key generation, quantization, encryption, FHE execution, decryption) separately. However, please note that this **cannot** be done if the circuit is compiled using the [Virtual Library](./compilation.md).
+Alternatively, it is possible to execute all main steps (key generation, quantization, encryption, FHE execution, decryption) separately.
 
 <!--pytest-codeblocks:cont-->
 

@@ -33,6 +33,7 @@ from concrete.ml.quantization.quantizers import QuantizationOptions, UniformQuan
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import (
+    FheMode,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
@@ -359,7 +360,6 @@ class BaseEstimator:
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
-        use_virtual_lib: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
@@ -373,16 +373,13 @@ class BaseEstimator:
             artifacts (Optional[DebugArtifacts]): Artifacts information about the
                 compilation process to store for debugging.
             show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
-            use_virtual_lib (bool): Indicate if the model should be compiled using the Virtual
-                Library in order to simulate FHE computations. This currently requires to set
-                `enable_unsafe_features` to True in the configuration. Default to False
             p_error (Optional[float]): Probability of error of a single PBS. A p_error value cannot
                 be given if a global_p_error value is already set. Default to None, which sets this
                 error to a default value.
             global_p_error (Optional[float]): Probability of error of the full circuit. A
                 global_p_error value cannot be given if a p_error value is already set. This feature
                 is not supported during Virtual Library simulation, meaning the probability is
-                currently set to 0 if use_virtual_lib is True. Default to None, which sets this
+                currently set to 0. Default to None, which sets this
                 error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
@@ -419,7 +416,6 @@ class BaseEstimator:
             configuration=configuration,
             artifacts=artifacts,
             show_mlir=show_mlir,
-            virtual=use_virtual_lib,
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose,
@@ -440,28 +436,33 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    def predict(
+        self, X: numpy.ndarray, fhe: Union[FheMode, str] = FheMode.DISABLE
+    ) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
 
         Args:
-            X: The input values to predict.
-            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
-                Default to False.
+            X (numpy.ndarray): The input values to predict.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete-ML python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
 
         Returns:
-            y_pred (numpy.ndarray): The predicted values.
+            np.ndarray: The predicted values for X.
         """
-        # CHeck that the model is properly fitted
+        # Check that the model is properly fitted
         self.check_model_is_fitted()
 
-        # Check that X's type and shape is supported
+        # Check that X's type and shape are supported
         X = check_array_and_assert(X)
 
         # Quantize the input
         q_X = self.quantize_input(X)
 
-        # If the inference is executed in FHE
-        if execute_in_fhe:
+        # If the inference is executed in FHE or simulation mode
+        if fhe in ["simulate", "execute"]:
 
             # Check that the model is properly compiled
             self.check_model_is_compiled()
@@ -478,7 +479,7 @@ class BaseEstimator:
                 # None using check_model_is_compiled
                 q_y_pred_i = (
                     self.fhe_circuit.simulate(q_X_i)  # type: ignore[union-attr]
-                    if self.fhe_circuit.configuration.virtual  # type: ignore[union-attr]
+                    if fhe == "simulate"
                     else self.fhe_circuit.encrypt_run_decrypt(q_X_i)  # type: ignore[union-attr]
                 )
                 q_y_pred_list.append(q_y_pred_i[0])
@@ -619,22 +620,27 @@ class BaseClassifier(BaseEstimator):
 
         return super().fit(X, y, **fit_parameters)
 
-    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3261
+    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict class probabilities.
 
         Args:
             X: The input values to predict.
-            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
-                Default to False.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete-ML python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
 
         Returns:
             numpy.ndarray: The predicted class probabilities.
         """
-        return super().predict(X, execute_in_fhe=execute_in_fhe)
+        return super().predict(X, fhe=fhe)
 
-    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3261
+    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Compute the predicted probabilities
-        y_preds = self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+        y_preds = self.predict_proba(X, fhe=fhe)
 
         # Retrieve the class with the highest probability
         y_preds = numpy.argmax(y_preds, axis=1)
@@ -961,10 +967,10 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return self.fhe_circuit
 
-    def predict(self, X, execute_in_fhe: bool = False):
-        return self.predict_proba(X, execute_in_fhe=execute_in_fhe)
+    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE):
+        return self.predict_proba(X, fhe=fhe)
 
-    def predict_proba(self, X, execute_in_fhe: bool = False):
+    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE):
         """Predict values for a regressor and class probabilities for a classifier.
 
         In Scikit-Learn, predict_proba is not defined for regressors. However, Skorch seems to use
@@ -976,18 +982,21 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         Args:
             X: The input values to predict.
-            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
-                Default to False.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete-ML python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
 
         Returns:
             numpy.ndarray: The predicted values or class probabilities.
         """
-        if execute_in_fhe:
+        if fhe == "execute":
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:
                 X = X.reshape((1, -1))
 
-            return super().predict(X, execute_in_fhe=True)
+            return super().predict(X, fhe="execute")
 
         # For prediction in the clear, we call the  Skorch's NeuralNet `predict_proba method which
         # ends up calling `infer`
@@ -1150,8 +1159,10 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return self._tree_inference(q_X)[0]
 
-    def predict(self, X: numpy.ndarray, execute_in_fhe: bool = False) -> numpy.ndarray:
-        y_pred = BaseEstimator.predict(self, X, execute_in_fhe=execute_in_fhe)
+    def predict(
+        self, X: numpy.ndarray, fhe: Union[FheMode, str] = FheMode.DISABLE
+    ) -> numpy.ndarray:
+        y_pred = BaseEstimator.predict(self, X, fhe=fhe)
         y_pred = self.post_processing(y_pred)
         return y_pred
 
@@ -1427,13 +1438,16 @@ class SklearnLinearClassifierMixin(
         clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
         SklearnLinearModelMixin._clean_graph(self)
 
-    def decision_function(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    def decision_function(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict confidence scores.
 
         Args:
             X: The input values to predict.
-            execute_in_fhe (bool): If the prediction should be executed in FHE or in the clear.
-                Default to False.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete-ML python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
 
         Returns:
             numpy.ndarray: The predicted confidence scores.
@@ -1441,10 +1455,10 @@ class SklearnLinearClassifierMixin(
         # Here, we want to use SklearnLinearModelMixin's `predict` method as confidence scores are
         # the dot product's output values, without any post-processing (as done in baseClassifier's
         # one)
-        y_preds = SklearnLinearModelMixin.predict(self, X, execute_in_fhe=execute_in_fhe)
+        y_preds = SklearnLinearModelMixin.predict(self, X, fhe=fhe)
         return y_preds
 
-    def predict_proba(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
-        y_preds = self.decision_function(X, execute_in_fhe=execute_in_fhe)
+    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        y_preds = self.decision_function(X, fhe=fhe)
         y_preds = self.post_processing(y_preds)
         return y_preds

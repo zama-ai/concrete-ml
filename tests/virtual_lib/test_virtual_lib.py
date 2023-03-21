@@ -17,7 +17,8 @@ def test_torch_matmul_virtual_lib(default_configuration):
     # Special inputset
     inputset = [thousand_ones]
     virtual_fhe_circuit = matmul_thousand_ones_compiler.compile(
-        inputset, default_configuration, virtual=True
+        inputset,
+        default_configuration,
     )
 
     assert isinstance(virtual_fhe_circuit, Circuit)
@@ -38,7 +39,8 @@ def test_torch_matmul_virtual_lib(default_configuration):
     # Special inputset
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     virtual_fhe_circuit = matmul_three_thousand_plus_minus_ones_compiler.compile(
-        inputset, default_configuration, virtual=True
+        inputset,
+        default_configuration,
     )
 
     assert isinstance(virtual_fhe_circuit, Circuit)
@@ -59,7 +61,8 @@ def test_torch_matmul_virtual_lib(default_configuration):
     # Special inputset
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     virtual_fhe_circuit = sin_matmul_three_thousand_plus_minus_ones_compiler.compile(
-        inputset, default_configuration, virtual=True
+        inputset,
+        default_configuration,
     )
 
     assert isinstance(virtual_fhe_circuit, Circuit)

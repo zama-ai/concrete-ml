@@ -611,7 +611,6 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
         cnn_model,
         x_train[0:N_MAX_COMPILE_FHE, ::],
         n_bits=config["n_bits"],
-        use_virtual_lib=False,
         configuration=BENCHMARK_CONFIGURATION,
     )
 

@@ -14,6 +14,7 @@ from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
 from concrete.ml.quantization.quantizers import UniformQuantizer
 
 from ..common.debugging.custom_assert import assert_true
+from ..common.utils import FheMode
 from ..torch.numpy_module import NumpyModule
 from .base import SklearnLinearRegressorMixin
 from .torch_modules import _LinearTorchModel
@@ -59,9 +60,9 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return self._inverse_link(y_preds)
 
-    def predict(self, X, execute_in_fhe: bool = False) -> numpy.ndarray:
+    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Call SklearnLinearModelMixin's predict method
-        y_preds = super().predict(X, execute_in_fhe=execute_in_fhe)
+        y_preds = super().predict(X, fhe=fhe)
 
         y_preds = self.post_processing(y_preds)
         return y_preds

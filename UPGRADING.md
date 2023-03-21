@@ -11,3 +11,5 @@ This document is an help for developers who update from older versions of Concre
 `verbose_compilation` has been renamed `verbose`.
 
 `compilation_artifacts` has been renamed `artifacts`.
+
+`execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe = "disable|simulate|execute"` where disable runs the model in python, simulate is a FHE simulation and execute provides the actual FHE execution.

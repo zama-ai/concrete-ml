@@ -29,12 +29,11 @@ concrete_clf = RandomForestClassifier(
 )
 concrete_clf.fit(X, y)
 
-concrete_clf.compile(X, debug_config, use_virtual_lib=True)
+concrete_clf.compile(X, debug_config)
 
-# Compilation has been done with `use_virtual_lib = True` flag.
-# Running the model in FHE with this flag offers a simulation of
-# FHE inference for debugging purposes.
-y_preds_clear = concrete_clf.predict(X, execute_in_fhe=True)
+# Running the model in FHE with fhe="simulate" uses the
+# FHE inference simulation for debugging purposes.
+y_preds_clear = concrete_clf.predict(X, fhe="simulate")
 ```
 
 ## Compilation debugging

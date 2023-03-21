@@ -38,7 +38,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
 
     with warnings.catch_warnings():
         # Use virtual lib to not have issues with precision
-        model.compile(x, default_configuration, use_virtual_lib=True)
+        model.compile(x, default_configuration)
 
     # Get ONNX model
     onnx_model = model.onnx_model

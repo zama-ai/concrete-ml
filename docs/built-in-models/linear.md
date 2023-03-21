@@ -61,7 +61,7 @@ y_pred_clear = model.predict(X_test)
 model.compile(X_train)
 
 # Perform the inference in FHE:
-y_pred_fhe = model.predict(X_test, execute_in_fhe=True)
+y_pred_fhe = model.predict(X_test, fhe="execute")
 
 # Assert that FHE predictions are the same as the clear predictions:
 print(

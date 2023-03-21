@@ -121,7 +121,7 @@ def train():
 
     # Now let's predict with FHE over a single tweet and print the time it takes
     start = time.perf_counter()
-    decrypted_proba = best_model.predict_proba(X_tested_tweet, execute_in_fhe=True)
+    decrypted_proba = best_model.predict_proba(X_tested_tweet, fhe="execute")
     end = time.perf_counter()
     print(f"FHE inference time: {end - start:.4f} seconds")
 
@@ -316,7 +316,7 @@ def train():
 
     # Now let's predict with FHE over a single tweet and print the time it takes
     start = time.perf_counter()
-    decrypted_proba = best_model.predict_proba(X_tested_tweet, execute_in_fhe=True)
+    decrypted_proba = best_model.predict_proba(X_tested_tweet, fhe="execute")
     end = time.perf_counter()
     fhe_exec_time = end - start
     print(f"FHE inference time: {fhe_exec_time:.4f} seconds")

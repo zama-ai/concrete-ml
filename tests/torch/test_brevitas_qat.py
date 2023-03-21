@@ -21,7 +21,7 @@ from concrete.ml.sklearn.qnn import SparseQuantNeuralNetImpl
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
-@pytest.mark.parametrize("qat_bits", [3, 7])
+@pytest.mark.parametrize("qat_bits", [3])
 @pytest.mark.parametrize("signed, narrow", [(True, False), (True, True), (False, False)])
 def test_brevitas_tinymnist_cnn(
     qat_bits,
@@ -74,7 +74,7 @@ def test_brevitas_tinymnist_cnn(
 
     while not trained_ok:
         # Create the tiny CNN module with 10 output classes
-        net = TinyQATCNN(10, qat_bits, 5 if qat_bits <= 3 else 20, signed, narrow)
+        net = TinyQATCNN(10, qat_bits, 4 if qat_bits <= 3 else 20, signed, narrow)
 
         # Train a single epoch to have a fast test, accuracy should still be the same VL vs torch
         # But train 3 epochs for the VL test to check that training works well
@@ -132,7 +132,6 @@ def test_brevitas_tinymnist_cnn(
         net,
         x_train,
         configuration=default_configuration,
-        use_virtual_lib=True,
     )
 
     vl_correct = test_with_concrete(
@@ -400,5 +399,4 @@ def test_brevitas_constant_folding(default_configuration):
             model.to("cpu"),
             torch_inputset=data,
             configuration=default_configuration,
-            use_virtual_lib=True,
         )
