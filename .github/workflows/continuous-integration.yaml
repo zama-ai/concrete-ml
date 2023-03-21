@@ -70,6 +70,7 @@ jobs:
       needs-38-linux-runner: ${{ steps.set-matrix.outputs.needs-38-linux-runner }}
       needs-39-linux-runner: ${{ steps.set-matrix.outputs.needs-39-linux-runner }}
       needs-310-linux-runner: ${{ steps.set-matrix.outputs.needs-310-linux-runner }}
+      instance-type: ${{ steps.set-matrix.outputs.instance-type }}
     steps:
       - name: Checkout code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
@@ -95,6 +96,12 @@ jobs:
           else
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1
+          fi
+
+          # Manage instance type
+          INSTANCE_TYPE="c5.4xlarge"
+          if [[ "${BUILD_TYPE}" == "weekly" ]]; then
+            INSTANCE_TYPE="m6i.metal"
           fi
 
           # Manage python versions
@@ -124,6 +131,7 @@ jobs:
           echo "LINUX_PYTHON_VERSIONS: ${LINUX_PYTHON_VERSIONS}"
           echo "MACOS_PYTHON_VERSIONS: ${MACOS_PYTHON_VERSIONS}"
           echo "BUILD_TYPE: ${BUILD_TYPE}"
+          echo "INSTANCE_TYPE: ${INSTANCE_TYPE}"
 
           MATRIX_JSON=$(mktemp --suffix=.json)
           echo "Prepared build matrix:"
@@ -163,6 +171,7 @@ jobs:
           echo "needs-38-linux-runner=${NEEDS_LINUX_38_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-39-linux-runner=${NEEDS_LINUX_39_RUNNER}" >> $GITHUB_OUTPUT
           echo "needs-310-linux-runner=${NEEDS_LINUX_310_RUNNER}" >> $GITHUB_OUTPUT
+          echo "instance-type=${INSTANCE_TYPE}" >> $GITHUB_OUTPUT
 
   start-runner-linux:
     needs: [matrix-preparation]
@@ -196,7 +205,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
           aws-resource-tags: >
@@ -220,7 +229,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
           aws-resource-tags: >
@@ -244,7 +253,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
           aws-resource-tags: >
@@ -789,7 +798,7 @@ jobs:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
           ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ secrets.AWS_EC2_INSTANCE_TYPE }}
+          ec2-instance-type: ${{ needs.matrix-preparation.outputs.instance-type }}
           subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
           aws-resource-tags: >
