@@ -991,12 +991,12 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Returns:
             numpy.ndarray: The predicted values or class probabilities.
         """
-        if fhe == "execute":
+        if fhe in ["execute", "simulate"]:
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:
                 X = X.reshape((1, -1))
 
-            return super().predict(X, fhe="execute")
+            return super().predict(X, fhe=fhe)
 
         # For prediction in the clear, we call the  Skorch's NeuralNet `predict_proba method which
         # ends up calling `infer`
