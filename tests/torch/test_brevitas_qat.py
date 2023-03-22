@@ -130,7 +130,7 @@ def test_brevitas_tinymnist_cnn(
 
     q_module_vl = compile_brevitas_qat_model(
         net,
-        x_train,
+        x_all,
         configuration=default_configuration,
     )
 
