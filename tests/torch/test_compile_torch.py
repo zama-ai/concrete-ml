@@ -33,6 +33,7 @@ from concrete.ml.pytest.torch_models import (
     SimpleQAT,
     SingleMixNet,
     StepActivationModule,
+    TinyQATCNN,
     UnivariateModule,
 )
 from concrete.ml.quantization import QuantizedModule
@@ -1039,3 +1040,35 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
 
     assert numpy.alltrue(torch_output == cml_output)
     check_circuit_has_no_tlu(quant_model.fhe_circuit)
+
+
+def test_compilation_functions_check_model_types(default_configuration):
+    """Check that the compile functions validate the input model types."""
+
+    input_output_feature = 5
+    n_examples = 50
+
+    torch_model = FCSmall(input_output_feature, nn.ReLU)
+
+    # Create random input
+    inputset = numpy.random.uniform(-100, 100, size=(n_examples, input_output_feature))
+
+    with pytest.raises(
+        AssertionError,
+        match=".*no Brevitas quantized layers, consider using compile_torch_model instead.*",
+    ):
+        compile_brevitas_qat_model(
+            torch_model,
+            inputset,
+            configuration=default_configuration,
+        )
+
+    torch_model_qat = TinyQATCNN(5, 4, 10, True, False)
+    with pytest.raises(
+        AssertionError, match=".*must be imported using compile_brevitas_qat_model.*"
+    ):
+        compile_torch_model(
+            torch_model_qat,
+            inputset,
+            configuration=default_configuration,
+        )

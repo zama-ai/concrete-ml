@@ -8,10 +8,12 @@ import numpy
 import onnx
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
+from brevitas.nn.quant_layer import QuantInputOutputLayer as QNNMixingLayer
+from brevitas.nn.quant_layer import QuantNonLinearActLayer as QNNUnivariateLayer
 from concrete.numpy.compilation.artifacts import DebugArtifacts
 from concrete.numpy.compilation.configuration import Configuration
 
-from ..common.debugging import assert_true
+from ..common.debugging import assert_false, assert_true
 from ..common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     check_there_is_no_p_error_options_in_configuration,
@@ -179,6 +181,22 @@ def compile_torch_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
+    assert_true(
+        isinstance(torch_model, torch.nn.Module),
+        "The compile_torch_model function must be called on a torch.nn.Module",
+    )
+
+    has_any_qnn_layers = any(
+        isinstance(layer, (QNNMixingLayer, QNNUnivariateLayer)) for layer in torch_model.modules()
+    )
+
+    assert_false(
+        has_any_qnn_layers,
+        "The compile_torch_model was called on a torch.nn.Module that contains "
+        "Brevitas quantized layers. These models must be imported "
+        "using compile_brevitas_qat_model instead.",
+    )
+
     return _compile_torch_or_onnx_model(
         torch_model,
         torch_inputset,
@@ -322,6 +340,21 @@ def compile_brevitas_qat_model(
     )
 
     use_tempfile: bool = output_onnx_file is None
+
+    assert_true(
+        isinstance(torch_model, torch.nn.Module),
+        "The compile_brevitas_qat_model function must be called on a torch.nn.Module",
+    )
+
+    has_any_qnn_layers = any(
+        isinstance(layer, (QNNMixingLayer, QNNUnivariateLayer)) for layer in torch_model.modules()
+    )
+
+    assert_true(
+        has_any_qnn_layers,
+        "The compile_brevitas_qat_model was called on a torch.nn.Module that contains "
+        "no Brevitas quantized layers, consider using compile_torch_model instead",
+    )
 
     # Brevitas to ONNX
     exporter = BrevitasONNXManager()
