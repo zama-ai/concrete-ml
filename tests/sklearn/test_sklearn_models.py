@@ -211,20 +211,20 @@ def check_double_fit(model_class, n_bits, x, y):
     """Check double fit."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    # Neural Networks are not handling double fit properly
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/918
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        pytest.skip("Skipping double-fit test for NN, doesn't work for now")
+    # Generate a seed for the PyTorch RNG
+    main_seed = numpy.random.randint(0, 2**63)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
         # First fit: here, we really need to fit, we can't reuse an already fitted model
+        torch.manual_seed(main_seed)
         model.fit(x, y)
         y_pred_one = model.predict(x)
 
         # Second fit: here, we really need to fit, we can't reuse an already fitted model
+        torch.manual_seed(main_seed)
         model.fit(x, y)
         y_pred_two = model.predict(x)
 
