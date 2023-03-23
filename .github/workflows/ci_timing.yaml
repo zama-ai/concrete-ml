@@ -40,7 +40,7 @@ jobs:
 
       - name: Generate figure
         run: |
-          python ./script/action_utils/monitor.py
+          python ./script/actions_utils/monitor.py
 
       - name: Archive figure
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
