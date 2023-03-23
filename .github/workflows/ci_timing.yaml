@@ -30,17 +30,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
+        id: setup-python
+        with:
+          python-version: 3.8
+
       - name: Install dependencies
+        env:
+          SYSTEM_VERSION_COMPAT: 0
         run: |
           sudo apt update
+          sudo ./script/make_utils/setup_os_deps.sh
+          # Needed to include Python.h
+          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
           # We need to freeze docker.io because its update requires user input
           sudo apt-mark hold docker.io
           sudo ./script/make_utils/setup_os_deps.sh --linux-install-python
           make setup_env
+          poetry run pip install matplotlib
 
       - name: Generate figure
         run: |
-          python ./script/actions_utils/monitor.py
+          poetry run python ./script/actions_utils/monitor.py
 
       - name: Archive figure
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
@@ -71,4 +83,9 @@ jobs:
           SLACK_MESSAGE: "CML-CI timings over last 4 weeks available at: (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Upload figure to Slack
+        run: |
+          curl -F file=@cml_ci_time_evolution.png -F "initial_comment=CML CI time evolution (over last 4 weeks)" -F channels=${{ secrets.CML_INTERNAL_UPDATE_SLACK_CHANNEL_ID }} -H "Authorization: Bearer ${{ secrets.SLACK_CI_MONITORING_BOT_TOKEN }}" https://slack.com/api/files.upload
+
 
