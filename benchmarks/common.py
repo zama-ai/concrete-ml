@@ -103,6 +103,16 @@ GLMS_STRING_TO_CLASS = {c.__name__: c for c in GLMS}
 
 MODELS_STRING_TO_CLASS = {c.__name__: c for c in REGRESSORS + CLASSIFIERS + GLMS}
 
+DEEP_LEARNING_NAMES = [
+    "ShallowNarrowCNN",
+    "Deep20CNN",
+    "Deep50CNN",
+    "Deep100CNN",
+    "ShallowWideCNN",
+]
+
+MODEL_NAMES = CLASSIFIERS_NAMES + REGRESSORS_NAMES + GLMS_NAMES + DEEP_LEARNING_NAMES
+
 NN_BENCHMARK_CONFIGS = (
     [
         # A FHE compatible config
@@ -173,7 +183,11 @@ DECISION_TREE_CONFIGS = [
     {"max_depth": max_depth, "n_bits": n_bits} for max_depth in [5, 10] for n_bits in [2, 6]
 ]
 
-DEEP_LEARNING_CONFIGS = [{"n_bits": 5}]
+DEEP_LEARNING_CONFIGS = [
+    {"n_bits": n_bits, "p_error": p_error}
+    for n_bits in [2, 5]
+    for p_error in [2 ** (-40), 1 - 2 ** (-40)]
+]
 
 # Backward compatibility
 if ("LinearRegression" in REGRESSORS) and (
@@ -199,11 +213,10 @@ BENCHMARK_PARAMS: Dict[str, List[Dict[str, Any]]] = {
     "ElasticNet": LINEAR_REGRESSION_CONFIGS,
     "NeuralNetClassifier": NN_BENCHMARK_CONFIGS,
     "NeuralNetRegressor": NN_BENCHMARK_CONFIGS,
-    "ShallowNarrowCNN": DEEP_LEARNING_CONFIGS,
-    "DeepNarrowCNN": DEEP_LEARNING_CONFIGS,
-    "ShallowWideCNN": DEEP_LEARNING_CONFIGS,
-    "DeepWideCNN": DEEP_LEARNING_CONFIGS,
 }
+
+for deep_learning_name in DEEP_LEARNING_NAMES:
+    BENCHMARK_PARAMS[deep_learning_name] = DEEP_LEARNING_CONFIGS
 
 REGRESSION_DATASETS = [
     "one-hundred-plants-margin",
@@ -692,6 +705,10 @@ def benchmark_name_generator(
 
     model_name = model.__name__
 
+    assert (
+        model_name in MODEL_NAMES
+    ), f"Wrong model name. Expected one of {MODEL_NAMES}, got {model_name}"
+
     if model_name in {
         "LinearSVR",
         "LinearSVC",
@@ -728,7 +745,7 @@ def benchmark_name_generator(
             config_str = f"_{config['n_estimators']}_{config['n_bits']}"
 
     # GLMs
-    elif model_name in {"PoissonRegressor", "GammaRegressor", "TweedieRegressor"}:
+    elif model_name in GLMS_NAMES:
         if isinstance(config["n_bits"], int):
             n_bits_inputs = config["n_bits"]
             n_bits_weights = config["n_bits"]
@@ -739,7 +756,7 @@ def benchmark_name_generator(
         pca_n_components = compute_number_of_components(config["n_bits"])
         config_str = f"_{n_bits_inputs}_{n_bits_weights}_{pca_n_components}"
 
-    elif model_name in {"ShallowNarrowCNN", "DeepNarrowCNN", "ShallowWideCNN", "DeepWideCNN"}:
+    elif model_name in DEEP_LEARNING_NAMES:
         config_str = f"_{config['n_bits']}"
 
     # We remove underscores to make sure to not have any conflict when splitting

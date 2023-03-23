@@ -10,14 +10,14 @@ import py_progress_tracker as progress
 import torch
 import torch.utils
 from common import (
-    BENCHMARK_CONFIGURATION,
     benchmark_generator,
     benchmark_name_generator,
     run_and_report_classification_metrics,
     seed_everything,
 )
+from concrete.numpy.compilation.circuit import Circuit
 from sklearn.datasets import load_digits
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
@@ -30,7 +30,7 @@ from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.torch.compile import compile_torch_model
 
 # To define the length of train sample for compilation
-N_MAX_COMPILE_FHE = 100
+N_MAX_COMPILE_FHE = 200
 
 
 class _CustomCNN(nn.Module):
@@ -153,44 +153,61 @@ class ShallowNarrowCNN(_CustomCNN):
 
 
 class ShallowWideCNN(_CustomCNN):
-    """A shallow and wide CNN to classify images."""
+    """A shallow and wide CNN to classify images.
+
+    This CNN considers 92 filters in the middle hidden layer in order to maximize CPU usage
+    with parallelized computations.
+    """
 
     def __init__(self, n_classes):
         super().__init__(
             n_classes=n_classes,
-            hidden_size=50,
+            hidden_size=92,
             activation_function=torch.relu,
             n_active_neurons=10,
         )
 
 
-class DeepNarrowCNN(_CustomCNN):
-    """A deep and narrow CNN to classify images."""
+class Deep20CNN(_CustomCNN):
+    """A deep CNN using 20 hidden layers to classify images."""
 
     def __init__(self, n_classes):
         super().__init__(
             n_classes=n_classes,
             hidden_size=3,
             activation_function=torch.relu,
-            n_active_neurons=50,
-            n_deep_conv=10,
+            n_active_neurons=10,
+            n_deep_conv=20,
         )
 
 
-class DeepWideCNN(_CustomCNN):
-    """A deep and wide CNN to classify images."""
+class Deep50CNN(_CustomCNN):
+    """A deep CNN using 50 hidden layers to classify images."""
 
     def __init__(self, n_classes):
         super().__init__(
             n_classes=n_classes,
-            hidden_size=50,
+            hidden_size=3,
             activation_function=torch.relu,
             n_active_neurons=10,
-            n_deep_conv=10,
+            n_deep_conv=50,
         )
 
 
-CNN_CLASSES = [ShallowNarrowCNN, DeepNarrowCNN, ShallowWideCNN, DeepWideCNN]
+class Deep100CNN(_CustomCNN):
+    """A deep CNN using 100 hidden layers to classify images."""
+
+    def __init__(self, n_classes):
+        super().__init__(
+            n_classes=n_classes,
+            hidden_size=3,
+            activation_function=torch.relu,
+            n_active_neurons=10,
+            n_deep_conv=100,
+        )
+
+
+CNN_CLASSES = [ShallowNarrowCNN, Deep20CNN, Deep50CNN, Deep100CNN, ShallowWideCNN]
 CNN_STRING_TO_CLASS = {cnn_model.__name__: cnn_model for cnn_model in CNN_CLASSES}
 
 CNN_DATASETS = ["MNIST"]
@@ -205,9 +222,10 @@ def load_data(dataset: str = "mnist") -> Tuple[np.ndarray, np.ndarray, np.ndarra
     Returns:
         x_train, x_test, y_train, y_test (Tuple): The input and target values to
             use for training and evaluating.
-    """
 
-    assert dataset in CNN_DATASETS, f"Wrong dataset. Expected one of {CNN_DATASETS}, got {dataset}."
+    Raise:
+        ValueError: If dataset is not currently handled.
+    """
 
     if dataset == "MNIST":
         # Load the MNIST input and target values
@@ -226,6 +244,9 @@ def load_data(dataset: str = "mnist") -> Tuple[np.ndarray, np.ndarray, np.ndarra
         x_train, x_test, y_train, y_test = train_test_split(
             X, y, test_size=0.25, shuffle=True, random_state=42
         )
+
+    else:
+        raise ValueError(f"Wrong dataset. Expected one of {CNN_DATASETS}, got {dataset}.")
 
     return x_train, x_test, y_train, y_test
 
@@ -392,6 +413,7 @@ def train_cnn_model(cnn_class: Any, dataset: str, epochs: int, batch_size: int):
             framework="torch",
             module=cnn_model,
             test_loader=test_loader,
+            n_classes=n_classes,
             metric_id_prefix=None,
             metric_label_prefix=None,
             train=True,
@@ -410,6 +432,33 @@ def train_cnn_model(cnn_class: Any, dataset: str, epochs: int, batch_size: int):
     return cnn_model
 
 
+def report_compiler_feedback(fhe_circuit: Circuit):
+    """Report all compiler feedback values.
+
+    Args:
+        fhe_circuit (Circuit): The FHE circuit to consider.
+    """
+    compiler_feedback_names = [
+        "complexity",
+        "size_of_secret_keys",
+        "size_of_bootstrap_keys",
+        "size_of_keyswitch_keys",
+        "size_of_inputs",
+        "size_of_outputs",
+        "p_error",
+        "global_p_error",
+    ]
+
+    for compiler_feedback_name in compiler_feedback_names:
+        compiler_feedback_value = getattr(fhe_circuit, compiler_feedback_name)
+
+        progress.measure(
+            id=f"compiler-{compiler_feedback_name}",
+            label=f"Compiler {compiler_feedback_name}",
+            value=compiler_feedback_value,
+        )
+
+
 def concrete_inference(quantized_module: QuantizedModule, x: np.ndarray, in_fhe: bool):
     """Execute the model's inference using Concrete-ML (quantized clear or FHE).
 
@@ -420,6 +469,7 @@ def concrete_inference(quantized_module: QuantizedModule, x: np.ndarray, in_fhe:
 
     Returns:
         y_preds (np.ndarray): The model's predictions.
+        q_y_pred_proba (np.ndarray): The model's predicted quantized probabilities.
     """
 
     # Quantize the inputs
@@ -439,7 +489,7 @@ def concrete_inference(quantized_module: QuantizedModule, x: np.ndarray, in_fhe:
     # Apply the argmax in the clear
     y_pred = np.argmax(y_pred_proba, 1)
 
-    return y_pred
+    return y_pred, q_y_pred_proba
 
 
 def torch_inference(cnn_model: nn.Module, x: torch.Tensor):
@@ -451,6 +501,7 @@ def torch_inference(cnn_model: nn.Module, x: torch.Tensor):
 
     Returns:
         y_preds (np.ndarray): The model's predictions.
+        y_pred_proba (np.ndarray): The model's predicted probabilities.
     """
     # Freeze normalization layers
     cnn_model.eval()
@@ -461,13 +512,14 @@ def torch_inference(cnn_model: nn.Module, x: torch.Tensor):
     # Apply the argmax in the clear
     y_pred = y_pred_proba.argmax(1)
 
-    return y_pred.detach().numpy()
+    return y_pred.detach().numpy(), y_pred_proba.detach().numpy()
 
 
 def evaluate_module(
     framework: str,
     module: Union[nn.Module, QuantizedModule],
     test_loader: DataLoader,
+    n_classes: int,
     metric_id_prefix: Optional[str] = None,
     metric_label_prefix: Optional[str] = None,
     train: bool = False,
@@ -480,6 +532,7 @@ def evaluate_module(
         module (Union[nn.Module, QuantizedModule]): The Torch or Concrete-ML module representing
             the model to evaluate.
         test_loader (DataLoader): The test data loader.
+        n_classes (int): The number of classes to target.
         metric_id_prefix (Optional[str]): The id's prefix to consider when tracking the metrics.
             Default to None.
         metric_label_prefix (Optional[str]): The label's prefix to consider when tracking the
@@ -491,7 +544,8 @@ def evaluate_module(
             be set while using the torch framework. Default to False.
 
     Returns:
-        y_preds (np.ndarray): The model's predictions.
+        y_preds_proba (np.ndarray): The model's predicted probabilities (quantized form for the
+            'concrete' framework).
     """
 
     assert framework in [
@@ -518,8 +572,10 @@ def evaluate_module(
     batch_size = test_loader.batch_size if test_loader.batch_size is not None else 1
     total_size = len(test_loader) * batch_size
 
-    # Initialize the arrays for storing the predicted values and ground truth target labels
+    # Initialize the arrays for storing the predicted values, probabilities and ground truth
+    # target labels
     y_preds = np.zeros((total_size), dtype=np.float64)
+    y_preds_proba = np.zeros((total_size, n_classes), dtype=np.float64)
     targets = np.zeros((total_size), dtype=np.float64)
 
     inference_start = time.time()
@@ -532,17 +588,18 @@ def evaluate_module(
 
             # Execute Concrete-ML's inference
             if framework == "concrete":
-                y_pred = concrete_inference(module, data.numpy(), in_fhe)
+                y_pred, y_pred_proba = concrete_inference(module, data.numpy(), in_fhe)
 
             # Else, execute torch's inference
             else:
-                y_pred = torch_inference(module, data)
+                y_pred, y_pred_proba = torch_inference(module, data)
 
             # Store the predicted values and the ground truth target labels at the right indexes
             start_index = batch_i * batch_size
             batch_slice = slice(start_index, start_index + min(batch_size, target.shape[0]))
-            targets[batch_slice] = target.numpy()
             y_preds[batch_slice] = y_pred
+            y_preds_proba[batch_slice] = y_pred_proba
+            targets[batch_slice] = target.numpy()
 
             progress_bar.update(batch_size)
 
@@ -572,7 +629,7 @@ def evaluate_module(
             targets, y_preds, metric_id_prefix, metric_label_prefix, use_f1=False
         )
 
-    return y_preds
+    return y_preds_proba
 
 
 def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, cli_args):
@@ -602,23 +659,38 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
     # Load the pre-trained weights into the model
     cnn_model = load_pre_trained_cnn_model(cnn_model, dataset)
 
+    p_error = config["p_error"]
+    n_bits = config["n_bits"]
+
     if cli_args.verbose:
-        print("Converting and compiling to a quantized module")
+        print(
+            f"Converting and compiling to a quantized module, using n_bits: {n_bits}, "
+            f"p_error: {p_error}"
+        )
+
+    progress.measure(id="p-error", label="Using p-error", value=p_error)
 
     # Compile the model for FHE computations, using N_MAX_COMPILE_FHE samples at most in order
     # to avoid a long compilation time
+    compilation_start = time.time()
     fhe_module = compile_torch_model(
         cnn_model,
         x_train[0:N_MAX_COMPILE_FHE, ::],
-        n_bits=config["n_bits"],
-        configuration=BENCHMARK_CONFIGURATION,
+        n_bits=n_bits,
+        p_error=p_error,
+        verbose=cli_args.verbose,
     )
+    compilation_time = time.time() - compilation_start
+
+    progress.measure(id="fhe-compile-time", label="FHE Compile Time", value=compilation_time)
 
     assert fhe_module.fhe_circuit is not None, "Please compile the FHE module."
 
     if cli_args.mlir_only:
         print("MLIR:", fhe_module.fhe_circuit.mlir)
         return
+
+    report_compiler_feedback(fhe_module.fhe_circuit)
 
     # Create a test data loader to supply batches for evaluating the model's different metrics
     test_loader = get_data_loader(x_test, y_test, batch_size=50)
@@ -631,17 +703,21 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
         framework="torch",
         module=cnn_model,
         test_loader=test_loader,
+        n_classes=n_classes,
         metric_id_prefix="torch-fp32",
         metric_label_prefix="Torch fp32",
     )
 
-    if cli_args.verbose:
-        print(
-            "\nMax numbers of bits reached during the inference:",
-            fhe_module.fhe_circuit.graph.maximum_integer_bit_width(),
-        )
+    circuit_bitwidth = fhe_module.fhe_circuit.graph.maximum_integer_bit_width()
+
+    progress.measure(
+        id="maximum-circuit-bit-width",
+        label="Circuit bit width",
+        value=circuit_bitwidth,
+    )
 
     if cli_args.verbose:
+        print("\nMax numbers of bits reached during the inference:", circuit_bitwidth)
         print("\nEvaluating the Concrete-ML model's quantized clear inference an all test samples:")
 
     # Evaluate the quantized clear inference using the full dataset
@@ -649,6 +725,7 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
         framework="concrete",
         module=fhe_module,
         test_loader=test_loader,
+        n_classes=n_classes,
         metric_id_prefix="quantized-clear",
         metric_label_prefix="Quantized Clear",
     )
@@ -660,10 +737,11 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
         print("\nEvaluating the Concrete-ML model's quantized clear inference on FHE samples:")
 
     # Evaluate the quantized clear inference using a specific number of FHE samples
-    y_pred_clear = evaluate_module(
+    q_y_preds_proba_clear = evaluate_module(
         framework="concrete",
         module=fhe_module,
         test_loader=fhe_test_loader,
+        n_classes=n_classes,
         metric_id_prefix="quant-clear-fhe-set",
         metric_label_prefix="Quantized Clear (FHE set)",
     )
@@ -673,24 +751,25 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
             print("\nEvaluating the Concrete-ML model's inference in FHE on FHE samples:")
 
         # Evaluate the FHE inference using a specific number of FHE samples
-        y_pred_fhe = evaluate_module(
+        q_y_preds_proba_fhe = evaluate_module(
             framework="concrete",
             module=fhe_module,
             test_loader=fhe_test_loader,
+            n_classes=n_classes,
             metric_id_prefix="fhe",
             metric_label_prefix="FHE",
             in_fhe=True,
         )
 
-        # Compute the MSE between predictions from the quantized clear model with respect to the
-        # FHE one
-        mse_score = mean_squared_error(y_pred_clear, y_pred_fhe)
+        # Compute the MAE between predicted quantized probabilities from the quantized clear model
+        # and the FHE one
+        mae_score = mean_absolute_error(q_y_preds_proba_clear, q_y_preds_proba_fhe)
 
-        # Track this MSE metric as well
+        # Track this MAE metric as well
         progress.measure(
-            id="clear-vs-fhe-mse",
-            label="MSE score between clear and FHE predictions",
-            value=mse_score,
+            id="clear-vs-fhe-mae",
+            label="MAE score between clear and FHE quantized probabilities",
+            value=mae_score,
         )
 
     else:

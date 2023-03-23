@@ -71,6 +71,7 @@ def main():
     parser.add_argument("--glm", dest="glm", choices=["true", "false"])
     parser.add_argument("--deep_learning", dest="deep_learning", choices=["true", "false"])
     parser.add_argument("--fhe_samples", dest="fhe_samples", type=int_range)
+    parser.add_argument("--model", dest="model", type=str)
 
     args = parser.parse_args()
 
@@ -96,6 +97,9 @@ def main():
 
     # Arguments to consider for building the script commands
     additional_args = f"--fhe_samples {fhe_samples} {list_arg}"
+
+    if args.model is not None and args.model != "":
+        additional_args += f" --models {args.model}"
 
     # Get all commands to benchmark each models using python benchmarks/BENCHMARK_FILE
     commands = []

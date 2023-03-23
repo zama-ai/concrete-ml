@@ -36,6 +36,10 @@ on:
         required: false
         default: 100
         type: number
+      model:
+        description: The model to run
+        required: false
+        type: string
 
   # Add recurrent launching
   # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1851
@@ -103,7 +107,7 @@ jobs:
         id: prepare-commands
         run: |
           source .venv/bin/activate
-          python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }} --deep_learning ${{ github.event.inputs.deep-learning }} --fhe_samples ${{ github.event.inputs.fhe-samples }} > commands.json
+          python3 ./script/actions_utils/generate_scripts_benchmark.py --list_length ${{ github.event.inputs.list }} --classification ${{ github.event.inputs.classification }} --regression ${{ github.event.inputs.regression }} --glm ${{ github.event.inputs.glm }} --deep_learning ${{ github.event.inputs.deep-learning }} --fhe_samples ${{ github.event.inputs.fhe-samples }} --model ${{ github.event.inputs.model }} > commands.json
           # Needs to be done before populating COMMANDS otherwise it will crash
           LENGTH=$(jq length commands.json)
           COMMANDS=$(<commands.json)
