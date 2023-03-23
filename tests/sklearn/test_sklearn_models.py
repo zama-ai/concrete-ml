@@ -547,13 +547,6 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
     the scikit-learn model."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    # Still some problems to fix
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2841
-    if get_model_name(model_class) in ["LinearSVC", "LogisticRegression"]:
-        pytest.skip(
-            "Skipping sklearn-equivalence test for some linear models, doesn't work for now"
-        )
-
     # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
     # in structure but trained from scratch. Furthermore, the `n_bits` setting
     # of the QNN instantiation in `instantiate_model_generic` takes `n_bits` as
