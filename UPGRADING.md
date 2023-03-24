@@ -4,12 +4,12 @@ This document is an help for developers who update from older versions of Concre
 
 ## Upgrading to 1.0.0
 
-`encrypt_run_decrypt` is now restricted to execution in FHE. For simulation with the Virtual Library, one uses `simulate` function
+- `encrypt_run_decrypt` is now restricted to execution in FHE. For simulation use the `fhe="simulate"` argument available in the `predict` (for built-in models) and `forward` (for custom models) functions of Concrete-ML models.
 
-`forward_fhe` has been renamed `fhe_circuit` in some models, such that it is now `fhe_circuit` for all models.
+- `forward_fhe` has been renamed `fhe_circuit` in some models, such that it is now `fhe_circuit` for all models.
 
-`verbose_compilation` has been renamed `verbose`.
+- `verbose_compilation` has been renamed `verbose`.
 
-`compilation_artifacts` has been renamed `artifacts`.
+- `compilation_artifacts` has been renamed `artifacts`.
 
-`execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe = "disable|simulate|execute"` where disable runs the model in python, simulate is a FHE simulation and execute provides the actual FHE execution.
+- `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe = "disable|simulate|execute"` where disable runs the model in python, simulate is a FHE simulation and execute provides the actual FHE execution.

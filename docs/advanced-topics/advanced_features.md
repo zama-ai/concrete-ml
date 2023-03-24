@@ -4,11 +4,13 @@ Concrete-ML offers some features for advanced users that wish to adjust the cryp
 
 ## Approximate computations
 
-### Probability of errors
-
 Concrete-ML makes use of table lookups (TLUs) to represent any non-linear operation (e.g. sigmoid). TLUs are implemented through the Programmable Bootstrapping (PBS) operation which will apply a non-linear operation in the cryptographic realm.
 
 The result of TLU operations is obtained with a specific error probability. Concrete-ML offers the possibility to set this error probability, which influences the cryptographic parameters. The higher the success rate, the more restrictive the parameters become. This can affect both key generation and, more significantly, FHE execution time.
+
+{% hint style="info" %}
+Concrete-ML has a _"simulation"_ mode where the impact of approximate computation of TLUs on the model accuracy can be determined. The simulation is much faster, thus it speeds up model development greatly. The behavior in the simulation mode is representative of the behavior of the model on encrypted data.
+{% endhint %}
 
 In Concrete-ML, there are three different ways to define the error probability:
 
@@ -59,7 +61,7 @@ clf.fit(X_train, y_train)
 clf.compile(X_train, p_error = 0.1)
 ```
 
-If the `p_error` value is specified and the [Virtual Library](compilation.md#simulation-with-the-virtual-library) is enabled, the run will take into account the randomness induced by the `p_error`, resulting in statistical similarity to the FHE evaluation.
+If the `p_error` value is specified and the [Simulation](compilation.md#fhe-simulation) is enabled, the run will take into account the randomness induced by the `p_error`, resulting in statistical similarity to the FHE evaluation.
 
 ### A global error probability for the entire model
 
@@ -77,10 +79,6 @@ clf.compile(X_train, global_p_error = 0.1)
 ```
 
 In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. Note that the shift is relative to the expected value, so even if the result is different, it should be **around** the expected value.
-
-{% hint style="warning" %}
-The `global_p_error` parameter is only used for FHE evaluation and has **no** effect on VL simulation (unlike the `p_error`). Fixing it is in our roadmap.
-{% endhint %}
 
 ### Using default error probability
 

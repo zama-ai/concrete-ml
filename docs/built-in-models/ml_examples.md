@@ -11,7 +11,7 @@ Tree-based models apply non-linear functions that enable comparisons of inputs a
 As shown in the examples below, built-in neural networks can be configured to work with user-specified accumulator sizes, which allow the user to adjust the speed/accuracy tradeoff.
 
 {% hint style="info" %}
-It is recommended to use [simulation](../advanced-topics/compilation.md#simulation-with-the-virtual-library) to configure the speed/accuracy trade-off for tree-based models and neural networks, using grid-search or your own heuristics.
+It is recommended to use [simulation](../advanced-topics/compilation.md#fhe-simulation) to configure the speed/accuracy trade-off for tree-based models and neural networks, using grid-search or your own heuristics.
 {% endhint %}
 
 ## List of examples

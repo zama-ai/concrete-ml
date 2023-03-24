@@ -4,7 +4,7 @@ These examples illustrate the basic usage of Concrete-ML to build various types 
 
 ## FHE constraints considerations
 
-The examples listed here make use of simulation (using the [Virtual Library](../advanced-topics/compilation.md#simulation-with-the-virtual-library)) to perform evaluation over large test sets. Since FHE execution can be slow, only a few FHE executions can be performed. The [correctness guarantees](../getting-started/concepts.md#cryptography-concepts) of Concrete-ML ensure that accuracy measured with simulation is the same that will be obtained during FHE execution.
+The examples listed here make use of [simulation](../advanced-topics/compilation.md#fhe-simulation)) to perform evaluation over large test sets. Since FHE execution can be slow, only a few FHE executions can be performed. The [correctness guarantees](../getting-started/concepts.md#cryptography-concepts) of Concrete-ML ensure that accuracy measured with simulation is the same that will be obtained during FHE execution.
 
 Some examples constrain accumulators to 7-8 bits, which can be sufficient for simple data-sets. Up to 16-bit accumulators can be used, but this introduces a slowdown of 4-5x compared to 8-bit accumulators.
 

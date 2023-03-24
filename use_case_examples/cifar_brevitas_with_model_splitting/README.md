@@ -32,12 +32,12 @@ On an AWS c6i.metal compute machine, doing the inference of one CIFAR-10 image w
 
 But this can be improved by searching for a better `p_error`.
 
-One way to do this is to do a binary search using the Virtual Library to estimate the impact of the `p_error` on the final accuracy of our model.
-Using the first 1000 samples of CIFAR-10 train set we ran the search to find the highest `p_error` such that the difference in accuracy between the Virtual Library and the clear model was below 1 point. This search yielded a `p_error` of approximately 0.05.
+One way to do this is to do a binary search using FHE simulation to estimate the impact of the `p_error` on the final accuracy of our model.
+Using the first 1000 samples of CIFAR-10 train set we ran the search to find the highest `p_error` such that the difference in accuracy between the FHE-simulated and the clear model was below 1 point. This search yielded a `p_error` of approximately 0.05.
 We use only a subset of the training set to make the search time acceptable, but one can either modify this number, or even do [bootstrapping](<https://en.wikipedia.org/wiki/Bootstrapping_(statistics)>), to have a better estimate.
 We provide a [script](./p_error_search.py) to run the `p_error` search. Results may differ since it relies on random simulation.
 
-Obviously the accuracy difference observed is only a simulation on these 1000 samples so a verification of this result is important to do. We validated this `p_error` choice by running 40 times the inference of the 1000 samples using the Virtual Library and the maximum difference in accuracy that we observed was of 2 points, which seemed relatively okay.
+Obviously the accuracy difference observed is only a simulation on these 1000 samples so a verification of this result is important to do. We validated this `p_error` choice by running 40 times the inference of the 1000 samples using simulation and the maximum difference in accuracy that we observed was of 2 points, which seemed acceptable.
 
 Once we had this `p_error` validated we re-run the FHE inference using this new `p_error`, on the same machine (c6i.metal) and got the following results:
 
@@ -50,9 +50,9 @@ We see a 20x improvement with a simple change in the `p_error` parameter, for mo
 ## Results
 
 Anyone can reproduce the FHE inference results using the [dedicated script](./infer_fhe.py).
-We also provide `infer_vl.py` and `infer_torch.py` to infer using the Virtual Library or PyTorch.
+We also provide `infer_vl.py` and `infer_torch.py` to infer using FHE-simulation or directly through PyTorch.
 
-The PyTorch model and the inference using PyTorch for the first layer and the Virtual Library for the encrypted part yielded the same top-k accuracies:
+The PyTorch model and the inference using PyTorch for the first layer and simulation for the encrypted part yielded the same top-k accuracies:
 
 - top-1-accuracy: 0.6234
 - top-2-accuracy: 0.8075

@@ -110,5 +110,5 @@ While it is the ambition of Concrete-ML to execute such large CNNs in reasonable
 
 Rounding with 6 bits all accumulators offer a huge boost in FHE (TBD) while the loss compared to the original model is only $1.3\%$.
 
-\* The simulation is done using Virtual Library (VL) that simulates the FHE evaluation in the clear for faster debugging.
+\* Simulation is used to evaluate the accuracy in the clear for faster debugging.
 \*\* Expected to match the VGG FHE simulation. It is a work in progress to assess the actual FHE accuracy on a subset of images.

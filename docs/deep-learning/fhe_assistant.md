@@ -1,16 +1,39 @@
 # Debugging Models
 
-This section provides a set of tools and guidelines to help users build optimized FHE-compatible models.
+This section provides a set of tools and guidelines to help users build optimized FHE-compatible models. It discusses
+FHE simulation, the key-cache functionality that helps speed-up FHE result debugging, and gives a guide to evaluate circuit complexity.
 
-## Virtual Library
+## Simulation
 
-The _Virtual Lib_ in Concrete-ML is a prototype that provides drop-in replacements for Concrete-Numpy's compiler, allowing users to simulate FHE execution, including any probabilistic behavior FHE may induce. The Virtual Library comes from Concrete-Numpy, where it is called [Virtual Circuits](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
+The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation)(previously known as Virtual Library) of Concrete-ML provides a way to evaluate, using clear data, the results that ML models would produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with Concrete-Numpy's Virtual Circuits\](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
 
-The Virtual Lib can be useful when developing and iterating on an ML model implementation. For example, you can check that your model is compatible in terms of operands (all integers) with the Virtual Lib compilation. Then, you can check how many bits your ML model would require, which can give you hints about ways it could be modified to compile it to an actual FHE Circuit. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the Virtual Lib can help to find the optimal model design.
+The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the simulation can help to find the optimal model design.
 
-The Virtual Lib, being pure Python and not requiring crypto key generation, can be much faster than the actual compilation and FHE execution. This allows for faster iterations, debugging, and FHE simulation, regardless of the bit-width used. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
+Simulation is much faster than FHE execution. This allows for faster debugging and model optimization. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
-The following example shows how to use the Virtual Lib in Concrete-ML. Simply add `use_virtual_lib = True` and `enable_unsafe_features = True` in a `Configuration`. The result of the compilation will then be a simulated circuit that allows for more precision or simulated FHE execution.
+The following example shows how to use the simulation mode in Concrete-ML.
+
+```python
+from sklearn.datasets import fetch_openml, make_circles
+from concrete.ml.sklearn import RandomForestClassifier
+
+n_bits = 2
+X, y = make_circles(n_samples=1000, noise=0.1, factor=0.6, random_state=0)
+concrete_clf = RandomForestClassifier(
+    n_bits=n_bits, n_estimators=10, max_depth=5
+)
+concrete_clf.fit(X, y)
+
+concrete_clf.compile(X)
+
+# Running the model using FHE-simulation
+y_preds_clear = concrete_clf.predict(X, fhe="simulate")
+```
+
+## Caching keys during debugging
+
+It is possible to avoid re-generating the keys of the models you are debugging. This feature is unsafe and
+should not be used in production. Here is an example that shows how to enable key-caching:
 
 ```python
 from sklearn.datasets import fetch_openml, make_circles
@@ -30,10 +53,6 @@ concrete_clf = RandomForestClassifier(
 concrete_clf.fit(X, y)
 
 concrete_clf.compile(X, debug_config)
-
-# Running the model in FHE with fhe="simulate" uses the
-# FHE inference simulation for debugging purposes.
-y_preds_clear = concrete_clf.predict(X, fhe="simulate")
 ```
 
 ## Compilation debugging
@@ -158,22 +177,11 @@ Furthermore, the cost of PBS will depend on the bit-width of the compiled circui
 
 This can be done by inspecting the MLIR code produced by the compiler:
 
-### Concrete-ML model
-
 <!--pytest-codeblocks:cont-->
 
 ```python
-torch_model = SimpleNet(10)
-
-quantized_numpy_module = compile_torch_model(
-    torch_model,
-    torch_input,
-    n_bits=7,
-    show_mlir=True,
-)
+print(quantized_numpy_module.fhe_circuit.mlir)
 ```
-
-### Compiled MLIR model
 
 ```
 MLIR
