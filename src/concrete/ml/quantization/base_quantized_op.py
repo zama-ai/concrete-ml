@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union,
 import concrete.numpy as cnp
 import numpy
 
-from ..common.debugging import assert_true
+from ..common.debugging import assert_false, assert_true
 from ..common.utils import compute_bits_precision
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
 from ..onnx.ops_impl import ONNXMixedFunction, RawOpOutput
@@ -387,12 +387,11 @@ class QuantizedOp:
         quant_opts = QuantizationOptions(self.input_quant_opts.n_bits)
         quant_opts.copy_opts(self.input_quant_opts)
 
-        # And if this op is in a QAT enabled graph, we disable QAT if this op is fusable
-        # If the op can be fused, quantization will not be used, no need to run the QAT
-        # specific quantization process. This case is encountered for example for Add
-        # when the tensors that are added are produced from a single integer tensor
-        if self.can_fuse():
-            quant_opts.is_qat = False
+        assert_false(
+            self.can_fuse(),
+            f"The {self.__class__.__name__} operation is attempting "
+            "to quantize its inputs but is marked as fusable (can_fuse() return True). ",
+        )
 
         # Now we quantize the input. For ops that require quantized inputs (which
         # call this function with quantize_actual_values==True), this

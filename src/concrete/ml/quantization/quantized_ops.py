@@ -493,10 +493,6 @@ class QuantizedReshape(QuantizedOp):
             result (QuantizedArray): reshaped encrypted integer tensor
         """
 
-        # Currently reshape quantizes the inputs, but this is unnecessary if the reshape
-        # operation could be fused into a Gemm/Add/Conv that follows it. We should reshape
-        # here only if the reshaped result is returned directly from the FHE program.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1385,10 +1381,6 @@ class QuantizedFlatten(QuantizedOp):
             result (QuantizedArray): reshaped encrypted integer tensor
         """
 
-        # Currently reshape quantizes the inputs, but this is unnecessary if the reshape
-        # operation could be fused into a Gemm/Add/Conv that follows it. We should reshape
-        # here only if the reshaped result is returned directly from the FHE program.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1787,8 +1779,9 @@ class QuantizedBrevitasQuant(QuantizedOp):
         """Quantize values.
 
         Args:
-            q_inputs: an encrypted integer tensor at index 0 and one constant shape at index 1
-            attrs: additional optional reshape options
+            q_inputs: an encrypted integer tensor at index 0,
+                      scale, zero_point, n_bits at indices 1,2,3
+            attrs: additional optional attributes
 
         Returns:
             result (QuantizedArray): reshaped encrypted integer tensor
@@ -1846,8 +1839,8 @@ class QuantizedBrevitasQuant(QuantizedOp):
 class QuantizedTranspose(QuantizedOp):
     """Transpose operator for quantized inputs.
 
-    This operator performs quantization, transposes the encrypted data, then
-    dequantizes again.
+    This operator performs quantization and transposes the encrypted data.
+    When the inputs are pre-computed QAT the input is only quantized if needed.
     """
 
     _impl_for_op_named: str = "Transpose"
@@ -1858,20 +1851,16 @@ class QuantizedTranspose(QuantizedOp):
         *q_inputs: ONNXOpInputOutputType,
         **attrs,
     ) -> ONNXOpInputOutputType:
-        """Reshape the input integer encrypted tensor.
+        """Transpose the input integer encrypted tensor.
 
         Args:
             q_inputs: an encrypted integer tensor at index 0 and one constant shape at index 1
             attrs: additional optional reshape options
 
         Returns:
-            result (QuantizedArray): reshaped encrypted integer tensor
+            result (QuantizedArray): transposed encrypted integer tensor
         """
 
-        # Currently Transpose quantizes the inputs, but this is unnecessary if the reshape
-        # operation could be fused into a Gemm/Add/Conv that follows it. We should transpose
-        # here only if the transpose result is returned directly from the FHE program.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1892,11 +1881,11 @@ class QuantizedTranspose(QuantizedOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Max Pooling operation can not be fused since it must be performed over integer tensors and
-        it combines different elements of the input tensors.
+        Transpose can not be fused since it must be performed over integer tensors as
+        it moves around different elements of these input tensors.
 
         Returns:
-            bool: False, this operation can not be fused as it adds different encrypted integers
+            bool: False, this operation can not be fused as it copies encrypted integers
         """
         return False
 
@@ -1945,17 +1934,13 @@ class QuantizedUnsqueeze(QuantizedOp):
         """Unsqueeze the input tensors on a given axis.
 
         Args:
-            q_inputs: an encrypted integer tensor
+            q_inputs: an encrypted integer tensor at index 0, axes at index 1
             attrs: additional optional unsqueeze options
 
         Returns:
             result (QuantizedArray): unsqueezed encrypted integer tensor
         """
 
-        # Currently Unsqueeze quantizes the inputs, but this is unnecessary if the reshape
-        # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
-        # here only if the concatenated result is returned directly from the FHE program.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -1975,6 +1960,17 @@ class QuantizedUnsqueeze(QuantizedOp):
             params=prepared_inputs[0].quantizer.quant_params,
         )
 
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Unsqueeze can not be fused since it must be performed over integer tensors as
+        it reshapes an encrypted tensor.
+
+        Returns:
+            bool: False, this operation can not be fused as it operates on encrypted tensors
+        """
+        return False
+
 
 class QuantizedConcat(QuantizedOp):
     """Concatenate operator."""
@@ -1987,7 +1983,7 @@ class QuantizedConcat(QuantizedOp):
         *q_inputs: ONNXOpInputOutputType,
         **attrs,
     ) -> ONNXOpInputOutputType:
-        """Concatenate the input tensors on a giver axis.
+        """Concatenate the input tensors on a given axis.
 
         Args:
             q_inputs: an encrypted integer tensor
@@ -1997,10 +1993,6 @@ class QuantizedConcat(QuantizedOp):
             result (QuantizedArray): concatenated encrypted integer tensor
         """
 
-        # Currently Concatenate quantizes the inputs, but this is unnecessary if the reshape
-        # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
-        # here only if the concatenated result is returned directly from the FHE program.
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -2039,11 +2031,11 @@ class QuantizedConcat(QuantizedOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        Max Pooling operation can not be fused since it must be performed over integer tensors and
-        it combines different elements of the input tensors.
+        Concatenation can not be fused since it must be performed over integer tensors as
+        it copies encrypted integers from one tensor to another.
 
         Returns:
-            bool: False, this operation can not be fused as it adds different encrypted integers
+            bool: False, this operation can not be fused as it copies encrypted integers
         """
         return False
 
@@ -2062,17 +2054,13 @@ class QuantizedSqueeze(QuantizedOp):
         """Squeeze the input tensors on a given axis.
 
         Args:
-            q_inputs: an encrypted integer tensor
+            q_inputs: an encrypted integer tensor at index 0, axes at index 1
             attrs: additional optional squeeze options
 
         Returns:
             result (QuantizedArray): squeezed encrypted integer tensor
         """
 
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/527
-        # Currently Squeeze quantizes the inputs, but this is unnecessary if the reshape
-        # operation could be fused into a Gemm/Add/Conv that follows it. We should concatenate
-        # here only if the concatenated result is returned directly from the FHE program.
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
@@ -2091,6 +2079,17 @@ class QuantizedSqueeze(QuantizedOp):
             stats=prepared_inputs[0].quantizer.quant_stats,
             params=prepared_inputs[0].quantizer.quant_params,
         )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Squeeze can not be fused since it must be performed over integer tensors as
+        it reshapes encrypted tensors.
+
+        Returns:
+            bool: False, this operation can not be fused as it reshapes encrypted tensors
+        """
+        return False
 
 
 class ONNXShape(QuantizedOp):
@@ -2128,8 +2127,8 @@ class ONNXConstantOfShape(QuantizedOp):
     def can_fuse(self) -> bool:
         """Determine if this op can be fused.
 
-        This operation returns the shape of the tensor and thus can not be fused into a
-        univariate TLU.
+        This operation returns a new encrypted tensor and thus can
+        not be fused.
 
         Returns:
             bool: False, this operation can not be fused
