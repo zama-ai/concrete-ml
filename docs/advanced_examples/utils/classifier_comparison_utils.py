@@ -25,16 +25,7 @@ from sklearn.preprocessing import StandardScaler
 
 from concrete.ml.sklearn import DecisionTreeClassifier, NeuralNetClassifier
 
-# The Virtual Library allows to simulate FHE executions without paying the cost of FHE
-# computations. However, data is not encrypted when using the Virtual Library, the model executes
-# an integer model on data in the clear.
-ALWAYS_USE_VL = False
-
-# Initialize the configuration used for Virtual Library tests only.
-COMPIL_CONFIG_VL = Configuration(
-    dump_artifacts_on_unexpected_failures=False,
-    enable_unsafe_features=True,
-)
+ALWAYS_USE_SIM = False
 
 # pylint: disable=too-many-locals,too-many-statements,too-many-branches
 def make_classifier_comparison(title, classifiers, decision_level, verbose=False):
@@ -128,12 +119,11 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             # Compile the Concrete-ML model
             circuit = concrete_model.compile(
-                X_train,
-                configuration=None,
+                X_train
             )
 
             # If the prediction are done in FHE, generate the key
-            if not ALWAYS_USE_VL:
+            if not ALWAYS_USE_SIM:
                 
                 if verbose:
                     print(
@@ -170,7 +160,6 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             # the domain grid
             circuit = concrete_model.compile(
                 X_train,
-                configuration=COMPIL_CONFIG_VL,
             )
 
             # If the model is not a tree-based model, retrieve the maximum integer bitwidth
