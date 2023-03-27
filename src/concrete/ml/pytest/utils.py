@@ -1,7 +1,7 @@
 """Common functions or lists for test files, which can't be put in fixtures."""
 from functools import partial
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy
 import pytest
@@ -235,24 +235,28 @@ def data_calibration_processing(data, n_sample: int, targets=None):
 
 def load_torch_model(
     model_class: torch.nn.Module,
-    state_dict: Union[Path, Dict],
-    kwargs: Dict,
+    state_dict_or_path: Optional[Union[str, Path, Dict[str, Any]]],
+    params: Dict,
     device: str = "cpu",
 ) -> torch.nn.Module:
     """Load an object saved with torch.save() from a file or dict.
 
     Args:
         model_class (torch.nn.Module): A Pytorch or Brevitas network.
-        state_dict (Union[Path, Dict]): path or state_dict
-        kwargs (Dict): kwargs
+        state_dict_or_path (Optional[Union[str, Path, Dict[str, Any]]]): Path or state_dict
+        params (Dict): Model's parameters
         device (str):  Device type.
 
     Returns:
         torch.nn.Module: A Pytorch or Brevitas network.
     """
-    if isinstance(state_dict, (str, Path)):
-        state_dict = torch.load(state_dict, map_location=device)
+    model = model_class(**params)
 
-    model = model_class(**kwargs)
-    model.load_state_dict(state_dict)
+    if state_dict_or_path is not None:
+        if isinstance(state_dict_or_path, (str, Path)):
+            state_dict = torch.load(state_dict_or_path, map_location=device)
+        else:
+            state_dict = state_dict_or_path
+        model.load_state_dict(state_dict)
+
     return model
