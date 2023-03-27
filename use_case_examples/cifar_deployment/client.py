@@ -101,7 +101,6 @@ def main():
     print(f"Evaluation keys size: {sys.getsizeof(serialized_evaluation_keys) / 1024 / 1024:.2f} MB")
 
     # Update all base64 queries encodings with UploadFile
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2932
     response = requests.post(
         f"{URL}/add_key",
         files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)},

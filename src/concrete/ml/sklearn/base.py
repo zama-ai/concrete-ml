@@ -477,8 +477,6 @@ class BaseEstimator:
                 # is of shape (n_features,)
                 q_X_i = numpy.expand_dims(q_X_i, 0)
 
-                # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3062
-                # configuration.virtual is deprecated
                 # Disable mypy's union attribute error as we already check that fhe_circuit is not
                 # None using check_model_is_compiled
                 q_y_pred_i = (
@@ -624,7 +622,6 @@ class BaseClassifier(BaseEstimator):
 
         return super().fit(X, y, **fit_parameters)
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3261
     def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict class probabilities.
 
@@ -641,7 +638,6 @@ class BaseClassifier(BaseEstimator):
         """
         return super().predict(X, fhe=fhe)
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3261
     def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Compute the predicted probabilities
         y_preds = self.predict_proba(X, fhe=fhe)

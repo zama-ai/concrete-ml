@@ -24,9 +24,6 @@ if __name__ == "__main__":
     # Train the model and compile it
     model = XGBClassifier(n_bits=2, n_estimators=8, max_depth=3)
     model.fit(X_train, y_train)
-
-    # Until we have proper model serialization we need to compile and create client/server here
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/735
     model.compile(X_train)
     dev = FHEModelDev("./dev", model)
     dev.save()

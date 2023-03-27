@@ -449,10 +449,11 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
         model.fit(x, y)
         model.predict(x)
 
-        # if n_bits is above 11, do no compile the model
+        # if n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
         # as there won't be any crypto parameters
-        if n_bits <= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
-            model.compile(x, default_configuration)
+        if n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
+            return
+        model.compile(x, default_configuration)
 
 
 def check_pipeline(model_class, x, y):
@@ -1141,9 +1142,10 @@ def test_predict_correctness(
 
     for test_with_execute_in_fhe in list_of_possibilities:
 
-        # 12 bits is currently the limit to find crypto parameters for linear models
+        # N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
+        # limit to find crypto parameters for linear models
         # make sure we only compile below that bit-width.
-        if test_with_execute_in_fhe and n_bits < N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
+        if test_with_execute_in_fhe and not n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
 
             if verbose:
                 print(f"Compile simulate = {simulate}")

@@ -549,7 +549,6 @@ def train_and_test_classifier(
 
     # Now instantiate the classifier, provide it with a custom configuration if we specify one
     # These parameters could be inferred from the data given to .fit
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/325
 
     if classifier.__name__ == "NeuralNetClassifier":
         classes = np.unique(y_all)

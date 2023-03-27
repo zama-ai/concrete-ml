@@ -75,7 +75,6 @@ if __name__ == "__main__":
     clear_input = None
 
     # Update all base64 queries encodings with UploadFile
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2932
     response = requests.post(
         f"{URL}/add_key", files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)}
     )

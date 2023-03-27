@@ -1,15 +1,24 @@
 # Upgrading Concrete ML In Your Project
 
-This document is an help for developers who update from older versions of Concrete-ML. It is difficult to be exhaustive, but we try to list the most important points to help you in your transition. And in any case, if troubles, don't hesitate to reach out https://community.zama.ai or ask on fhe.org discord.
+This guide aims to help developers who are upgrading from older versions of Concrete-ML. Although we cannot cover everything, we have compiled the most important points to assist you in your transition. If you encounter any issues, please do not hesitate to reach out to https://community.zama.ai or ask on the fhe.org discord.
 
 ## Upgrading to 1.0.0
 
-- `encrypt_run_decrypt` is now restricted to execution in FHE. For simulation use the `fhe="simulate"` argument available in the `predict` (for built-in models) and `forward` (for custom models) functions of Concrete-ML models.
+Please take note of the following changes when upgrading to version 1.0.0:
 
-- `forward_fhe` has been renamed `fhe_circuit` in some models, such that it is now `fhe_circuit` for all models.
+- `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe="disable|simulate|execute"`. The `disable` option runs the model in python, while `simulate` performs an FHE simulation, and `execute` provides actual FHE execution.
 
-- `verbose_compilation` has been renamed `verbose`.
+- `encrypt_run_decrypt` function can now __only__ be executed in FHE. For Virtual Library simulations, please use the `simulate` function instead.
 
-- `compilation_artifacts` has been renamed `artifacts`.
+- In some models, the `forward_fhe` function has been renamed to `fhe_circuit` for consistency across all models.
 
-- `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe = "disable|simulate|execute"` where disable runs the model in python, simulate is a FHE simulation and execute provides the actual FHE execution.
+- `verbose_compilation` parameter has been renamed to `verbose` in the compile functions.
+
+- `compilation_artifacts` parameter has been renamed to `artifacts`.
+
+- `use_virtual_lib` parameter in `concrete.ml.torch` has been removed from the following functions:
+
+  - `compile_onnx_model`
+  - `compile_torch_model`
+  - `compile_brevitas_qat_model`
+This means that models are now always converted to FHE, and only FHE-friendly models can be compiled.
