@@ -14,6 +14,12 @@ This guide is based on a [notebook tutorial](https://github.com/zama-ai/concrete
 
 For a more formal description of the usage of Brevitas to build FHE-compatible neural networks, please see the [Brevitas usage reference](../developer-guide/external_libraries.md#brevitas).
 
+{% hint style="info" %}
+For a formal explanation of the mechanisms that enable FHE-compatible neural networks, please see the the following paper.
+
+[Deep Neural Networks for Encrypted Inference with TFHE, 7th International Symposium, CSCML 2023](https://arxiv.org/abs/2302.10906)
+{% endhint %}
+
 ## Baseline PyTorch model
 
 In PyTorch, using standard layers, a fully connected neural network would look as follows:

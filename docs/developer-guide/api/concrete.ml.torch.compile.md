@@ -13,7 +13,7 @@ torch compilation function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_torch_tensor_or_numpy_array_to_numpy_array`
 
@@ -35,7 +35,7 @@ Convert a torch tensor or a numpy array to a numpy array.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -45,14 +45,13 @@ compile_torch_model(
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
     import_qat: bool = False,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=8,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose_compilation: bool = False
+    verbose: bool = False
 ) → QuantizedModule
 ```
 
@@ -66,14 +65,13 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
 - <b>`import_qat`</b> (bool):  Set to True to import a network that contains quantizers and was  trained using quantization aware training
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
-- <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
+- <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`n_bits`</b>:  the number of bits for the quantization
-- <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation.  Defaults to False
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
-- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
+- <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
 
@@ -91,14 +89,13 @@ compile_onnx_model(
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
     import_qat: bool = False,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
     n_bits=8,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose_compilation: bool = False
+    verbose: bool = False
 ) → QuantizedModule
 ```
 
@@ -112,14 +109,13 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
 - <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not requantize it.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
-- <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
+- <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`n_bits`</b>:  the number of bits for the quantization
-- <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation.  Defaults to False.
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
-- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
+- <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
 
@@ -127,7 +123,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -137,14 +133,13 @@ compile_brevitas_qat_model(
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
     n_bits: Optional[int, dict] = None,
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    use_virtual_lib: bool = False,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     output_onnx_file: Union[Path, str] = None,
-    verbose_compilation: bool = False
+    verbose: bool = False
 ) → QuantizedModule
 ```
 
@@ -158,14 +153,13 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`torch_inputset`</b> (Dataset):  the calibration inputset, can contain either torch  tensors or numpy.ndarray.
 - <b>`n_bits`</b> (Optional\[Union\[int, dict\]):  the number of bits for the quantization. By default,  for most models, a value of None should be given, which instructs Concrete-ML to use the  bit-widths configured using Brevitas quantization options. For some networks, that  perform a non-linear operation on an input on an output, if None is given, a default  value of 8 bits is used for the input/output quantization. For such models the user can  also specify a dictionary with model_inputs/model_outputs keys to override  the 8-bit default or a single integer for both values.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
-- <b>`compilation_artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
+- <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-- <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation,  defaults to False.
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated
-- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
+- <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
 

@@ -9,3 +9,4 @@ Modules for torch to numpy conversion.
 ## **Global Variables**
 
 - **numpy_module**
+- **compile**

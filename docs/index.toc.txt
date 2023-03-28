@@ -35,6 +35,7 @@
     deep-learning/examples.md
     deep-learning/fhe_friendly_models.md
     deep-learning/fhe_assistant.md
+    deep-learning/optimizing_inference.md
 
 .. toctree::
     :maxdepth: 0

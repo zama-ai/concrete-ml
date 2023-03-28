@@ -6,9 +6,14 @@
 
 Implement sklearn's Generalized Linear Models (GLM).
 
+## **Global Variables**
+
+- **TRUSTED_SKOPS**
+- **USE_SKOPS**
+
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PoissonRegressor`
 
@@ -22,7 +27,7 @@ A Poisson regression model with FHE.
 
 For more details on PoissonRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.PoissonRegressor.html
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L171"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -44,7 +49,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model is not fitted.
 
 **Returns:**
 
@@ -52,11 +57,31 @@ The FHE circuit combines computational graph, mlir, client and server into a sin
 
 ______________________________________________________________________
 
+#### <kbd>property</kbd> is_compiled
+
+Indicate if the model is compiled.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is compiled.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> is_fitted
+
+Indicate if the model is fitted.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is fitted.
+
+______________________________________________________________________
+
 #### <kbd>property</kbd> onnx_model
 
 Get the ONNX model.
 
-Is None if the model was not fitted.
+Is None if the model is not fitted.
 
 **Returns:**
 
@@ -64,7 +89,27 @@ Is None if the model was not fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict')
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -74,30 +119,17 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
 ```python
-predict(X: 'ndarray', execute_in_fhe: 'bool' = False) → ndarray
+predict(X, fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>) → ndarray
 ```
-
-Predict on user data.
-
-Predict on user data using either the quantized clear model, implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input data.
-- <b>`execute_in_fhe`</b> (bool):  Whether to execute the inference in FHE. Default to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The model's predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L196"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `GammaRegressor`
 
@@ -111,7 +143,7 @@ A Gamma regression model with FHE.
 
 For more details on GammaRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.GammaRegressor.html
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -133,7 +165,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model is not fitted.
 
 **Returns:**
 
@@ -141,11 +173,31 @@ The FHE circuit combines computational graph, mlir, client and server into a sin
 
 ______________________________________________________________________
 
+#### <kbd>property</kbd> is_compiled
+
+Indicate if the model is compiled.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is compiled.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> is_fitted
+
+Indicate if the model is fitted.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is fitted.
+
+______________________________________________________________________
+
 #### <kbd>property</kbd> onnx_model
 
 Get the ONNX model.
 
-Is None if the model was not fitted.
+Is None if the model is not fitted.
 
 **Returns:**
 
@@ -153,7 +205,27 @@ Is None if the model was not fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L84"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict')
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -163,30 +235,17 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
 ```python
-predict(X: 'ndarray', execute_in_fhe: 'bool' = False) → ndarray
+predict(X, fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>) → ndarray
 ```
-
-Predict on user data.
-
-Predict on user data using either the quantized clear model, implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input data.
-- <b>`execute_in_fhe`</b> (bool):  Whether to execute the inference in FHE. Default to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The model's predictions.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L217"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L241"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `TweedieRegressor`
 
@@ -200,7 +259,7 @@ A Tweedie regression model with FHE.
 
 For more details on TweedieRegressor please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.TweedieRegressor.html
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L260"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -224,7 +283,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model was not fitted.
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete-Numpy documentation: https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology Is None if the model is not fitted.
 
 **Returns:**
 
@@ -232,11 +291,31 @@ The FHE circuit combines computational graph, mlir, client and server into a sin
 
 ______________________________________________________________________
 
+#### <kbd>property</kbd> is_compiled
+
+Indicate if the model is compiled.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is compiled.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> is_fitted
+
+Indicate if the model is fitted.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is fitted.
+
+______________________________________________________________________
+
 #### <kbd>property</kbd> onnx_model
 
 Get the ONNX model.
 
-Is None if the model was not fitted.
+Is None if the model is not fitted.
 
 **Returns:**
 
@@ -244,7 +323,27 @@ Is None if the model was not fitted.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L341"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict')
+```
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -254,23 +353,10 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L56"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/glm.py#L69"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
 ```python
-predict(X: 'ndarray', execute_in_fhe: 'bool' = False) → ndarray
+predict(X, fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>) → ndarray
 ```
-
-Predict on user data.
-
-Predict on user data using either the quantized clear model, implemented with tensors, or, if execute_in_fhe is set, using the compiled FHE circuit.
-
-**Args:**
-
-- <b>`X`</b> (numpy.ndarray):  The input data.
-- <b>`execute_in_fhe`</b> (bool):  Whether to execute the inference in FHE. Default to False.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The model's predictions.

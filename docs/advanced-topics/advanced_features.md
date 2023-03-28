@@ -84,9 +84,33 @@ In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a 
 
 If neither `p_error` or `global_p_error` are set, Concrete-ML takes a default `global_p_error = 0.01`.
 
-### Using a rounding operator to approximate operations for faster computations
+### Searching for the best error probability
 
-To speed-up neural networks, a rounding operator can be used at a fixed bit-width value. This involves applying the rounding operator to intermediate values in the neural network to retain only the most significant $$P$$ bits, where $$P$$ is the desired precision for the subsequent TLU.
+Currently finding a good `p_error` value a-priori is not possible, as it is difficult to determine the impact of the
+TLU-error on the output of a neural network.
+Concrete-ML provides a tool to find a good `p_error` value that improves inference speed while maintaining
+accuracy. The method is based on binary search, evaluating the latency/accuracy tradeoff iteratively.
+
+```python
+from concrete.ml.search_parameters import BinarySearch
+from concrete.ml.sklearn import DecisionTreeClassifier
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+
+x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
+
+# Retrieve train and test sets
+X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
+
+clf = DecisionTreeClassifier(random_state=42)
+
+search = BinarySearch(estimator=clf, predict_method="predict")
+p_error = search.run(x=X_train, ground_truth=y_train)
+```
+
+## Rounded activations and quantizers
+
+To speed-up neural networks, a _rounding_ operator can be applied on the accumulators of linear an convolution layers in order to retain only the most significant bits, on which the activation and quantization is applied. Suppose the accumulator is represented using $$L$$ bits, and $$P \leq L$$ is the desired input bit-width of the TLU operation that computes the activation and quantization.
 
 The rounding operation is defined as follows:
 
@@ -106,10 +130,10 @@ In Concrete-ML, this feature is currently implemented for custom neural networks
 - `concrete.ml.torch.compile_onnx_model` and
 - `concrete.ml.torch.compile_brevitas_qat_model`.
 
-using `rounding_threshold_bits` argument which can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors, we can speed-up computations while maintaining accuracy to some extent.
+using `rounding_threshold_bits` argument which can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors to some extent, it is possible to speed-up computations while maintaining accuracy.
 
 {% hint style="warning" %}
-The `rounding_threshold_bits` parameter only works in FHE for bit-width **less or equal to 8 bits**.
+The `rounding_threshold_bits` parameter only works in FHE for TLU input bit-width ($$P$$) **less or equal to 8 bits**.
 {% endhint %}
 
 To find the best trade-off between speed and accuracy, it is recommended to experiment with different thresholds and check the accuracy on an evaluation set after compiling the model.

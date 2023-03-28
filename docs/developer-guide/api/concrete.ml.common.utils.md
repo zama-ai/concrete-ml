@@ -8,12 +8,13 @@ Utils that can be re-used by other pieces of code in the module.
 
 ## **Global Variables**
 
-- **SUPPORTED_TORCH_DTYPES**
+- **SUPPORTED_FLOAT_TYPES**
+- **SUPPORTED_INT_TYPES**
 - **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L29"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L44"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `replace_invalid_arg_name_chars`
 
@@ -35,7 +36,7 @@ This does not check that the starting character of arg_name is valid.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L48"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `generate_proxy_function`
 
@@ -61,7 +62,7 @@ This returns a runtime compiled function with the sanitized argument names passe
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L89"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_onnx_opset_version`
 
@@ -81,7 +82,7 @@ Return the ONNX opset_version.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L119"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `manage_parameters_for_pbs_errors`
 
@@ -118,7 +119,7 @@ Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_there_is_no_p_error_options_in_configuration`
 
@@ -136,7 +137,26 @@ It would be dangerous, since we set them in direct arguments in our calls to Con
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_model_class`
+
+```python
+get_model_class(model_class)
+```
+
+Return the class of the model (instantiated or not), which can be a partial() instance.
+
+**Args:**
+
+- <b>`model_class`</b>:  The model, which can be a partial() instance.
+
+**Returns:**
+The model's class.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_model_class_in_a_list`
 
@@ -144,19 +164,19 @@ ______________________________________________________________________
 is_model_class_in_a_list(model_class, a_list)
 ```
 
-Say if model_class (which may be a partial()) is an element of a_list.
+Indicate if a model class, which can be a partial() instance, is an element of a_list.
 
 **Args:**
 
-- <b>`model_class`</b>:  the model
-- <b>`a_list`</b>:  the list in which to look
+- <b>`model_class`</b>:  The model, which can be a partial() instance.
+- <b>`a_list`</b>:  The list in which to look into.
 
 **Returns:**
-whether the class is in the list
+If the model's class is in the list or not.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L189"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_model_name`
 
@@ -164,23 +184,63 @@ ______________________________________________________________________
 get_model_name(model_class)
 ```
 
-Return a model (which may be a partial()) name.
+Return the name of the model, which can be a partial() instance.
 
 **Args:**
 
-- <b>`model_class`</b>:  the model
+- <b>`model_class`</b>:  The model, which can be a partial() instance.
 
 **Returns:**
-the class name
+the model's name.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_classifier_or_partial_classifier`
+
+```python
+is_classifier_or_partial_classifier(model_class)
+```
+
+Indicate if the model class represents a classifier.
+
+**Args:**
+
+- <b>`model_class`</b>:  The model class, which can be a functool's `partial` class.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model class represents a classifier.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L246"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_regressor_or_partial_regressor`
+
+```python
+is_regressor_or_partial_regressor(model_class)
+```
+
+Indicate if the model class represents a regressor.
+
+**Args:**
+
+- <b>`model_class`</b>:  The model class, which can be a functool's `partial` class.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model class represents a regressor.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L258"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_pandas_dataframe`
 
 ```python
-is_pandas_dataframe(input_container) → bool
+is_pandas_dataframe(input_container: Any) → bool
 ```
 
 Indicate if the input container is a Pandas DataFrame.
@@ -197,12 +257,12 @@ This function is inspired from Scikit-Learn's test validation tools and avoids t
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L274"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_pandas_series`
 
 ```python
-is_pandas_series(input_container) → bool
+is_pandas_series(input_container: Any) → bool
 ```
 
 Indicate if the input container is a Pandas Series.
@@ -219,12 +279,12 @@ This function is inspired from Scikit-Learn's test validation tools and avoids t
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `is_pandas_type`
 
 ```python
-is_pandas_type(input_container) → bool
+is_pandas_type(input_container: Any) → bool
 ```
 
 Indicate if the input container is a Pandas DataFrame or Series.
@@ -239,35 +299,39 @@ Indicate if the input container is a Pandas DataFrame or Series.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L327"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_dtype_and_cast`
 
 ```python
-check_dtype_and_cast(values, expected_dtype, error_information=None)
+check_dtype_and_cast(
+    values: Any,
+    expected_dtype: str,
+    error_information: Optional[str] = ''
+)
 ```
 
-Check that the values' dtype(s) match(es) the given expected dtype.
+Convert any allowed type into an array and cast it if required.
 
-If they don't match, cast the values to the expected dtype if possible, else raise a ValueError.
+If values types don't match with any supported type or the expected dtype, raise a ValueError.
 
 **Args:**
 
-- <b>`values`</b> (Union\[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor\]):  The values  to consider
+- <b>`values`</b> (Any):  The values to consider
 - <b>`expected_dtype`</b> (str):  The expected dtype, either "float32" or "int64"
 - <b>`error_information`</b> (str):  Additional information to put in front of the error message when  raising a ValueError. Default to None.
 
 **Returns:**
 
-- <b>`Union[numpy.ndarray, pandas.DataFrame, pandas.Series, torch.Tensor]`</b>:  The values with  proper dtype.
+- <b>`(Union[numpy.ndarray, torch.utils.data.dataset.Subset])`</b>:  The values with proper dtype.
 
 **Raises:**
 
-- <b>`ValueError`</b>:  If the values' dtype don't match the expected one and casting is not possible.
+- <b>`ValueError`</b>:  If the values' dtype don't match the expected one or casting is not possible.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L442"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_bits_precision`
 
@@ -284,3 +348,51 @@ Compute the number of bits required to represent x.
 **Returns:**
 
 - <b>`int`</b>:  the number of bits required to represent x
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L454"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `is_brevitas_model`
+
+```python
+is_brevitas_model(model: Module) → bool
+```
+
+Check if a model is a Brevitas type.
+
+**Args:**
+
+- <b>`model`</b>:  PyTorch model.
+
+**Returns:**
+
+- <b>`bool`</b>:  True if `model` is a Brevitas network.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `to_tuple`
+
+```python
+to_tuple(x: Any) → tuple
+```
+
+Make the input a tuple if it is not already the case.
+
+**Args:**
+
+- <b>`x`</b> (Any):  The input to consider. It can already be an input.
+
+**Returns:**
+
+- <b>`tuple`</b>:  The input as a tuple.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/utils.py#L36"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `FheMode`
+
+Enum representing the execution mode.

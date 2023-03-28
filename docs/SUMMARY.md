@@ -24,6 +24,7 @@
 - [Step-by-step Guide](deep-learning/fhe_friendly_models.md)
 - [Deep Learning Examples](deep-learning/examples.md)
 - [Debugging Models](deep-learning/fhe_assistant.md)
+- [Optimizing Inference](deep-learning/optimizing_inference.md)
 
 ## Advanced topics
 
@@ -53,6 +54,7 @@
   - [concrete.ml.common.debugging.custom_assert.md](developer-guide/api/concrete.ml.common.debugging.custom_assert.md)
   - [concrete.ml.common.debugging.md](developer-guide/api/concrete.ml.common.debugging.md)
   - [concrete.ml.common.md](developer-guide/api/concrete.ml.common.md)
+  - [concrete.ml.common.serialization.md](developer-guide/api/concrete.ml.common.serialization.md)
   - [concrete.ml.common.utils.md](developer-guide/api/concrete.ml.common.utils.md)
   - [concrete.ml.deployment.fhe_client_server.md](developer-guide/api/concrete.ml.deployment.fhe_client_server.md)
   - [concrete.ml.deployment.md](developer-guide/api/concrete.ml.deployment.md)
@@ -71,6 +73,8 @@
   - [concrete.ml.quantization.quantized_module.md](developer-guide/api/concrete.ml.quantization.quantized_module.md)
   - [concrete.ml.quantization.quantized_ops.md](developer-guide/api/concrete.ml.quantization.quantized_ops.md)
   - [concrete.ml.quantization.quantizers.md](developer-guide/api/concrete.ml.quantization.quantizers.md)
+  - [concrete.ml.search_parameters.md](developer-guide/api/concrete.ml.search_parameters.md)
+  - [concrete.ml.search_parameters.p_error_search.md](developer-guide/api/concrete.ml.search_parameters.p_error_search.md)
   - [concrete.ml.sklearn.base.md](developer-guide/api/concrete.ml.sklearn.base.md)
   - [concrete.ml.sklearn.glm.md](developer-guide/api/concrete.ml.sklearn.glm.md)
   - [concrete.ml.sklearn.linear_model.md](developer-guide/api/concrete.ml.sklearn.linear_model.md)
@@ -78,7 +82,6 @@
   - [concrete.ml.sklearn.qnn.md](developer-guide/api/concrete.ml.sklearn.qnn.md)
   - [concrete.ml.sklearn.rf.md](developer-guide/api/concrete.ml.sklearn.rf.md)
   - [concrete.ml.sklearn.svm.md](developer-guide/api/concrete.ml.sklearn.svm.md)
-  - [concrete.ml.sklearn.torch_modules.md](developer-guide/api/concrete.ml.sklearn.torch_modules.md)
   - [concrete.ml.sklearn.tree.md](developer-guide/api/concrete.ml.sklearn.tree.md)
   - [concrete.ml.sklearn.tree_to_numpy.md](developer-guide/api/concrete.ml.sklearn.tree_to_numpy.md)
   - [concrete.ml.sklearn.xgb.md](developer-guide/api/concrete.ml.sklearn.xgb.md)

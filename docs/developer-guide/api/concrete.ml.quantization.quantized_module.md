@@ -8,13 +8,13 @@ QuantizedModule API.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedModule`
 
 Inference for a quantized model.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -28,23 +28,13 @@ __init__(
 
 ______________________________________________________________________
 
-#### <kbd>property</kbd> fhe_circuit
-
-Get the FHE circuit.
-
-**Returns:**
-
-- <b>`Circuit`</b>:  the FHE circuit
-
-______________________________________________________________________
-
 #### <kbd>property</kbd> is_compiled
 
-Return the compiled status of the module.
+Indicate if the model is compiled.
 
 **Returns:**
 
-- <b>`bool`</b>:  the compiled status of the module.
+- <b>`bool`</b>:  If the model is compiled.
 
 ______________________________________________________________________
 
@@ -70,7 +60,7 @@ Get the post-processing parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L463"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L521"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwidth_and_range_report`
 
@@ -82,59 +72,73 @@ Report the ranges and bitwidths for layers that mix encrypted integer values.
 
 **Returns:**
 
-- <b>`result`</b> (Dict):  a dictionary with operation names as keys. For each operation,  (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned. The range  contains the min/max values encountered when computing the operation and  the bitwidth gives the number of bits needed to represent this range.
+- <b>`op_names_to_report`</b> (Dict):  a dictionary with operation names as keys. For each  operation, (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned.  The range contains the min/max values encountered when computing the operation and  the bitwidth gives the number of bits needed to represent this range.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L387"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled()
+```
+
+Check if the quantized module is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the quantized module is not compiled.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
 ```python
 compile(
-    q_inputs: Union[Tuple[ndarray, ], ndarray],
+    inputs: Union[Tuple[ndarray, ], ndarray],
     configuration: Optional[Configuration] = None,
-    compilation_artifacts: Optional[DebugArtifacts] = None,
+    artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    use_virtual_lib: bool = False,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose_compilation: bool = False
+    verbose: bool = False
 ) → Circuit
 ```
 
-Compile the forward function of the module.
+Compile the module's forward function.
 
 **Args:**
 
-- <b>`q_inputs`</b> (Union\[Tuple\[numpy.ndarray, ...\], numpy.ndarray\]):  Needed for tracing and  building the boundaries.
-- <b>`configuration`</b> (Optional\[Configuration\]):  Configuration object to use during compilation
-- <b>`compilation_artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts object to fill during
-- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is  going to be sent to the compiler backend is shown on the screen, e.g., for debugging  or demo. Defaults to False.
-- <b>`use_virtual_lib`</b> (bool):  set to use the so called virtual lib simulating FHE computation.  Defaults to False.
-- <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS.
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not  simulated by the VL, i.e., taken as 0
-- <b>`verbose_compilation`</b> (bool):  whether to show compilation information
+- <b>`inputs`</b> (numpy.ndarray):  A representative set of input values used for building  cryptographic parameters.
+- <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
+- <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the  compilation process to store for debugging.
+- <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.
+- <b>`p_error`</b> (Optional\[float\]):  Probability of error of a single PBS. A p_error value cannot  be given if a global_p_error value is already set. Default to None, which sets this  error to a default value.
+- <b>`global_p_error`</b> (Optional\[float\]):  Probability of error of the full circuit. A  global_p_error value cannot be given if a p_error value is already set. This feature  is not supported during simulation, meaning the probability is  currently set to 0. Default to None, which sets this  error to a default value.
+- <b>`verbose`</b> (bool):  Indicate if compilation information should be printed  during compilation. Default to False.
 
 **Returns:**
 
-- <b>`Circuit`</b>:  the compiled Circuit.
+- <b>`Circuit`</b>:  The compiled Circuit.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L402"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
 ```python
-dequantize_output(qvalues: ndarray) → ndarray
+dequantize_output(q_values: ndarray) → ndarray
 ```
 
 Take the last layer q_out and use its dequant function.
 
 **Args:**
 
-- <b>`qvalues`</b> (numpy.ndarray):  Quantized values of the last layer.
+- <b>`q_values`</b> (numpy.ndarray):  Quantized values of the last layer.
 
 **Returns:**
 
@@ -142,7 +146,7 @@ Take the last layer q_out and use its dequant function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -166,7 +170,7 @@ Forward pass with numpy function only.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L361"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward_and_dequant`
 
@@ -186,7 +190,28 @@ Forward pass with numpy function only plus dequantization.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L324"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward_in_fhe`
+
+```python
+forward_in_fhe(*qvalues: ndarray, simulate=True) → ndarray
+```
+
+Forward function running in FHE or simulated mode.
+
+**Args:**
+
+- <b>`*qvalues (numpy.ndarray)`</b>:  numpy.array containing the quantized values.
+- <b>`simulate`</b> (bool):  whether the function should be run in FHE or in simulation mode.
+
+**Returns:**
+
+- <b>`(numpy.ndarray)`</b>:  Predictions of the quantized model
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -208,7 +233,7 @@ For quantized modules, there is no post-processing step but the method is kept t
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -220,7 +245,7 @@ Take the inputs in fp32 and quantize it using the learned quantization parameter
 
 **Args:**
 
-- <b>`*values (numpy.ndarray)`</b>:  Floating point values.
+- <b>`values`</b> (numpy.ndarray):  Floating point values.
 
 **Returns:**
 
@@ -228,7 +253,7 @@ Take the inputs in fp32 and quantize it using the learned quantization parameter
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L370"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantized_module.py#L419"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_inputs_quantization_parameters`
 

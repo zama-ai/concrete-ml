@@ -12,7 +12,7 @@ Quantization utilities for a numpy array/tensor.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L13"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L18"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fill_from_kwargs`
 
@@ -39,7 +39,7 @@ Fill a parameter set structure from kwargs parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizationOptions`
 
@@ -47,17 +47,17 @@ Options for quantization.
 
 Determines the number of bits for quantization and the method of quantization of the values. Signed quantization allows negative quantized values. Symmetric quantization assumes the float values are distributed symmetrically around x=0 and assigns signed values around 0 to the float values. QAT (quantization aware training) quantization assumes the values are already quantized, taking a discrete set of values, and assigns these values to integers, computing only the scale.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    n_bits,
-    is_signed: bool = False,
-    is_symmetric: bool = False,
-    is_qat: bool = False
-) → None
+    n_bits: 'int',
+    is_signed: 'bool' = False,
+    is_symmetric: 'bool' = False,
+    is_qat: 'bool' = False
+)
 ```
 
 ______________________________________________________________________
@@ -72,7 +72,7 @@ Get a copy of the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_opts`
 
@@ -88,12 +88,60 @@ Copy the options from a different structure.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump`
+
+```python
+dump(file: 'IO[str]')
+```
+
+Dump itelf to a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of where to dump.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+Dump itelf to a dict.
+
+**Returns:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dumps`
+
+```python
+dumps() → str
+```
+
+Dump itelf to a string.
+
+**Returns:**
+
+- <b>`metadata`</b> (str):  string of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `is_equal`
 
 ```python
-is_equal(opts, ignore_sign_qat: bool = False) → bool
+is_equal(opts, ignore_sign_qat: 'bool' = False) → bool
 ```
 
 Compare two quantization options sets.
@@ -109,13 +157,85 @@ Compare two quantization options sets.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load`
+
+```python
+load(file: 'IO[str]') → QuantizationOptions
+```
+
+Load itelf from a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of serialized object
+
+**Returns:**
+
+- <b>`QuantizationOptions`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict')
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+**Returns:**
+
+- <b>`QuantizationOptions`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `loads`
+
+```python
+loads(metadata: 'str') → QuantizationOptions
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (str):  serialized object
+
+**Returns:**
+
+- <b>`QuantizationOptions`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MinMaxQuantizationStats`
 
 Calibration set statistics.
 
 This class stores the statistics for the calibration set or for a calibration data batch. Currently we only store min/max to determine the quantization range. The min/max are computed from the calibration set.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(
+    rmax: 'Optional[float]' = None,
+    rmin: 'Optional[float]' = None,
+    uvalues: 'Optional[ndarray]' = None
+)
+```
 
 ______________________________________________________________________
 
@@ -129,12 +249,12 @@ Get a copy of the calibration set statistics.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_is_uniform_quantized`
 
 ```python
-check_is_uniform_quantized(options: QuantizationOptions) → bool
+check_is_uniform_quantized(options: 'QuantizationOptions') → bool
 ```
 
 Check if these statistics correspond to uniformly quantized values.
@@ -151,12 +271,12 @@ Determines whether the values represented by this QuantizedArray show a quantize
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_stats`
 
 ```python
-compute_quantization_stats(values: ndarray) → None
+compute_quantization_stats(values: 'ndarray') → None
 ```
 
 Compute the calibration set quantization statistics.
@@ -167,7 +287,7 @@ Compute the calibration set quantization statistics.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_stats`
 
@@ -183,13 +303,133 @@ Copy the statistics from a different structure.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump`
+
+```python
+dump(file: 'IO[str]')
+```
+
+Dump itelf to a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of where to dump.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+Dump itelf to a dict.
+
+**Returns:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dumps`
+
+```python
+dumps() → str
+```
+
+Dump itelf to a string.
+
+**Returns:**
+
+- <b>`metadata`</b> (str):  string of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load`
+
+```python
+load(file: 'IO[str]') → MinMaxQuantizationStats
+```
+
+Load itelf from a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of serialized object
+
+**Returns:**
+
+- <b>`MinMaxQuantizationStats`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict')
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+**Returns:**
+
+- <b>`QuantizationOptions`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `loads`
+
+```python
+loads(metadata: 'str') → MinMaxQuantizationStats
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (str):  serialized object
+
+**Returns:**
+
+- <b>`MinMaxQuantizationStats`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `UniformQuantizationParameters`
 
 Quantization parameters for uniform quantization.
 
 This class stores the parameters used for quantizing real values to discrete integer values. The parameters are computed from quantization options and quantization statistics.
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(
+    scale: 'Optional[float64]' = None,
+    zero_point: 'Optional[Union[int, float, ndarray]]' = None,
+    offset: 'Optional[int]' = None
+)
+```
 
 ______________________________________________________________________
 
@@ -203,14 +443,14 @@ Get a copy of the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L535"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_parameters`
 
 ```python
 compute_quantization_parameters(
-    options: QuantizationOptions,
-    stats: MinMaxQuantizationStats
+    options: 'QuantizationOptions',
+    stats: 'MinMaxQuantizationStats'
 ) → None
 ```
 
@@ -223,7 +463,7 @@ Compute the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_params`
 
@@ -239,7 +479,115 @@ Copy the parameters from a different structure.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L384"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump`
+
+```python
+dump(file: 'IO[str]')
+```
+
+Dump itelf to a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of where to dump.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+Dump itelf to a dict.
+
+**Returns:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dumps`
+
+```python
+dumps() → str
+```
+
+Dump itelf to a string.
+
+**Returns:**
+
+- <b>`metadata`</b> (str):  string of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L485"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load`
+
+```python
+load(file: 'IO[str]') → UniformQuantizationParameters
+```
+
+Load itelf from a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of serialized object
+
+**Returns:**
+
+- <b>`UniformQuantizationParameters`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L468"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict') → UniformQuantizationParameters
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+**Returns:**
+
+- <b>`UniformQuantizationParameters`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `loads`
+
+```python
+loads(metadata: 'str') → UniformQuantizationParameters
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (str):  serialized object
+
+**Returns:**
+
+- <b>`UniformQuantizationParameters`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L643"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `UniformQuantizer`
 
@@ -253,16 +601,16 @@ Contains all information necessary for uniform quantization and provides quantiz
 - <b>`stats`</b> (Optional\[MinMaxQuantizationStats\]):  Quantization batch statistics set
 - <b>`params`</b> (Optional\[UniformQuantizationParameters\]):  Quantization parameters set  (scale, zero-point)
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L397"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L657"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
-    options: QuantizationOptions = None,
-    stats: Optional[MinMaxQuantizationStats] = None,
-    params: Optional[UniformQuantizationParameters] = None,
-    **kwargs
+    options: 'Optional[QuantizationOptions]' = None,
+    stats: 'Optional[MinMaxQuantizationStats]' = None,
+    params: 'Optional[UniformQuantizationParameters]' = None,
+    no_clipping: 'bool' = False
 )
 ```
 
@@ -298,12 +646,12 @@ Get a copy of the calibration set statistics.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_is_uniform_quantized`
 
 ```python
-check_is_uniform_quantized(options: QuantizationOptions) → bool
+check_is_uniform_quantized(options: 'QuantizationOptions') → bool
 ```
 
 Check if these statistics correspond to uniformly quantized values.
@@ -320,14 +668,14 @@ Determines whether the values represented by this QuantizedArray show a quantize
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L278"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L535"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_parameters`
 
 ```python
 compute_quantization_parameters(
-    options: QuantizationOptions,
-    stats: MinMaxQuantizationStats
+    options: 'QuantizationOptions',
+    stats: 'MinMaxQuantizationStats'
 ) → None
 ```
 
@@ -340,12 +688,12 @@ Compute the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_stats`
 
 ```python
-compute_quantization_stats(values: ndarray) → None
+compute_quantization_stats(values: 'ndarray') → None
 ```
 
 Compute the calibration set quantization statistics.
@@ -356,7 +704,7 @@ Compute the calibration set quantization statistics.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L112"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_opts`
 
@@ -372,7 +720,7 @@ Copy the options from a different structure.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_params`
 
@@ -388,7 +736,7 @@ Copy the parameters from a different structure.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_stats`
 
@@ -404,12 +752,12 @@ Copy the statistics from a different structure.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L716"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequant`
 
 ```python
-dequant(qvalues: ndarray) → ndarray
+dequant(qvalues: 'ndarray') → Union[Any, ndarray]
 ```
 
 Dequantize values.
@@ -420,16 +768,64 @@ Dequantize values.
 
 **Returns:**
 
-- <b>`numpy.ndarray`</b>:  Dequantized float values.
+- <b>`Union[Any, numpy.ndarray]`</b>:  Dequantized float values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L765"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump`
+
+```python
+dump(file: 'IO[str]') → None
+```
+
+Dump itelf to a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of where to dump.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L742"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+Dump itelf to a dict.
+
+**Returns:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dumps`
+
+```python
+dumps() → str
+```
+
+Dump itelf to a string.
+
+**Returns:**
+
+- <b>`metadata`</b> (str):  string of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `is_equal`
 
 ```python
-is_equal(opts, ignore_sign_qat: bool = False) → bool
+is_equal(opts, ignore_sign_qat: 'bool' = False) → bool
 ```
 
 Compare two quantization options sets.
@@ -445,12 +841,72 @@ Compare two quantization options sets.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L425"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load`
+
+```python
+load(file: 'IO[str]') → UniformQuantizer
+```
+
+Load itelf from a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of serialized object
+
+**Returns:**
+
+- <b>`UniformQuantizer`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L775"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict') → UniformQuantizer
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+**Returns:**
+
+- <b>`UniformQuantizer`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L805"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `loads`
+
+```python
+loads(metadata: 'str') → UniformQuantizer
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (str):  serialized object
+
+**Returns:**
+
+- <b>`UniformQuantizer`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quant`
 
 ```python
-quant(values: ndarray) → ndarray
+quant(values: 'ndarray') → ndarray
 ```
 
 Quantize values.
@@ -465,7 +921,7 @@ Quantize values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L483"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L819"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedArray`
 
@@ -485,25 +941,25 @@ See https://arxiv.org/abs/1712.05877.
 - <b>`params`</b> (Optional\[UniformQuantizationParameters\]):  Quantization parameters set  (scale, zero-point)
 - <b>`kwargs`</b>:  Any member of the options, stats, params sets as a key-value pair. The parameter  sets need to be completely parametrized if their members appear in kwargs.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L514"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L850"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
 __init__(
     n_bits,
-    values: Optional[ndarray],
-    value_is_float: bool = True,
-    options: QuantizationOptions = None,
-    stats: Optional[MinMaxQuantizationStats] = None,
-    params: Optional[UniformQuantizationParameters] = None,
+    values: 'Optional[ndarray]',
+    value_is_float: 'bool' = True,
+    options: 'Optional[QuantizationOptions]' = None,
+    stats: 'Optional[MinMaxQuantizationStats]' = None,
+    params: 'Optional[UniformQuantizationParameters]' = None,
     **kwargs
 )
 ```
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L649"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L986"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequant`
 
@@ -519,12 +975,120 @@ Dequantize self.qvalues.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L639"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L1024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump`
+
+```python
+dump(file: 'IO[str]') → None
+```
+
+Dump itelf to a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of where to dump.
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L999"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict
+```
+
+Dump itelf to a dict.
+
+**Returns:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L1015"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dumps`
+
+```python
+dumps() → str
+```
+
+Dump itelf to a string.
+
+**Returns:**
+
+- <b>`metadata`</b> (str):  string of serialized object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L1053"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load`
+
+```python
+load(file: 'IO[str]') → QuantizedArray
+```
+
+Load itelf from a file.
+
+**Args:**
+
+- <b>`file`</b> (IO\[str\]):  file of serialized object
+
+**Returns:**
+
+- <b>`QuantizedArray`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L1034"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict') → QuantizedArray
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (Dict):  dict of serialized object
+
+**Returns:**
+
+- <b>`QuantizedArray`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L1066"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `loads`
+
+```python
+loads(metadata: 'str') → QuantizedArray
+```
+
+Load itelf from a string.
+
+**Args:**
+
+- <b>`metadata`</b> (str):  serialized object
+
+**Returns:**
+
+- <b>`QuantizedArray`</b>:  the loaded object
+
+______________________________________________________________________
+
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L976"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quant`
 
 ```python
-quant() → Union[ndarray, NoneType]
+quant() → Optional[ndarray]
 ```
 
 Quantize self.values.
@@ -535,12 +1099,12 @@ Quantize self.values.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L963"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_quantized_values`
 
 ```python
-update_quantized_values(qvalues: ndarray) → ndarray
+update_quantized_values(qvalues: 'ndarray') → ndarray
 ```
 
 Update qvalues to get their corresponding values using the related quantized parameters.
@@ -555,12 +1119,12 @@ Update qvalues to get their corresponding values using the related quantized par
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/quantizers.py#L950"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_values`
 
 ```python
-update_values(values: ndarray) → ndarray
+update_values(values: 'ndarray') → ndarray
 ```
 
 Update values to get their corresponding qvalues using the related quantized parameters.

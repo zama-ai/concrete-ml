@@ -115,47 +115,36 @@ Function you are trying to compile cannot be converted to MLIR:
 return %8
 ```
 
-Knowing that a linear/dense layer is implemented as a matrix multiplication, it can determine which parts of the op-graph listing in the exception message above correspond to which layers.
-
-Layer weights initialization:
-
-```
-%1 = [[ 33 -27  ...   22 -29]]        # ClearTensor<int7, shape=(2, 120)>         
-%4 = [[ 16   6  ...   10  54]]        # ClearTensor<int7, shape=(120, 120)>   
-%7 = [[ -7 -52] ... [-12  62]]        # ClearTensor<int7, shape=(120, 2)> 
-```
-
-Input data:
+The error `table lookups are only supported on circuits with up to 16-bit integers` indicates that
+the 16-bit limit on the input of the Table Lookup operation has been exceeded. To pinpoint the
+model layer that causes the error Concrete-ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First the
+model must be compiled so that it can be [simulated](#simulation). Next, calling the function on the
+module above returns the following:
 
 ```
-%0 = _onnx__Gemm_0                    # EncryptedTensor<int7, shape=(1, 2)>   
+quantized_numpy_module = compile_torch_model(
+    torch_model,
+    torch_input,
+    n_bits=7,
+    use_virtual_lib=True
+)
+
+res = quantized_numpy_module.bitwidth_and_range_report()
+print(res)
 ```
 
-First dense layer and activation function:
-
 ```
-%2 = matmul(%0, %1)                   # EncryptedTensor<int14, shape=(1, 120)>    
-%3 = subgraph(%2)                     # EncryptedTensor<uint7, shape=(1, 120)>        
-```
-
-Second dense layer and activation function:
-
-```
-%5 = matmul(%3, %4)                   # EncryptedTensor<int17, shape=(1, 120)>    
-%6 = subgraph(%5)                     # EncryptedTensor<uint7, shape=(1, 120)>  
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
+{
+    '/fc1/Gemm': {'range': (-6180, 6840), 'bitwidth': 14}, 
+    '/fc2/Gemm': {'range': (-45051, 43090), 'bitwidth': 17}, 
+    '/fc3/Gemm': {'range': (-17351, 13868), 'bitwidth': 16}
+}
 ```
 
-Third dense layer:
+To make this network FHE-compatible one can reduce the bit-width of the second layer named `fc2`. To do this,
+a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
 
-```
-%8 = matmul(%6, %7)                   # EncryptedTensor<int16, shape=(1, 2)> 
-return %8
-```
-
-We can see here that the error is in the second layer because the product has exceeded the 16-bit precision limit. This error is only detected when the PBS operations are actually applied.
-
-However, reducing the number of neurons in this layer resolves the error and makes the network FHE-compatible:
+Reducing the number of neurons in this layer resolves the error and makes the network FHE-compatible:
 
 <!--pytest-codeblocks:cont-->
 

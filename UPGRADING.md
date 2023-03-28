@@ -21,4 +21,4 @@ Please take note of the following changes when upgrading to version 1.0.0:
   - `compile_onnx_model`
   - `compile_torch_model`
   - `compile_brevitas_qat_model`
-This means that models are now always converted to FHE, and only FHE-friendly models can be compiled.
+    This means that models are now always converted to FHE, and only FHE-friendly models can be compiled.

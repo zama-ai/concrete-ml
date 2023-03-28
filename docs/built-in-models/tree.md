@@ -16,6 +16,13 @@ In addition to support for scikit-learn, Concrete-ML also supports [XGBoost](htt
 | [XGBClassifier](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
 |  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
 
+{% hint style="info" %}
+For a formal explanation of the mechanisms that enable FHE-compatible decision trees, please see the following paper.
+
+[Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254)
+
+{% endhint %}
+
 ## Example
 
 Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
