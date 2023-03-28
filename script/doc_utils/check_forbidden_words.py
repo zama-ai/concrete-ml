@@ -1,4 +1,4 @@
-"""."""
+"""Check forbidden words in our files, to have more coherent file or avoid English mistakes"""
 
 import argparse
 import multiprocessing
@@ -66,7 +66,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
     forbidden_word_list = [
         ("Concrete-ml", []),  # use `Concrete-ML`
         ("Concrete-Ml", []),  # use `Concrete-ML`
-        ("Concrete ML", []),  # use `Concrete-ML`
+        ("Concrete ML", ["# Upgrading Concrete ML"]),  # use `Concrete-ML`
         ("concrete ml", []),  # use `Concrete-ML`
         ("concrete-ml", []),  # use `Concrete-ML`
         ("pytorch", []),  # use `PyTorch`
@@ -148,7 +148,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ),
         ("de-activate", []),  # use deactivate
         ("Skorch", []),  # use skorch
-        ("fhe", []),  # use `FHE`
+        ("fhe", ["execute_in_fhe", "forward_fhe", "fhe_circuit", "fhe.org"]),  # use `FHE`
     ]
     # For later
     #   "We" or "Our", or more generally, passive form
