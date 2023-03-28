@@ -431,6 +431,7 @@ def check_is_good_execution_for_cml_vs_circuit():
         model_function: Union[Callable, QuantizedModule, QuantizedTorchEstimatorMixin],
         simulate: bool,
         n_allowed_runs: int = 5,
+        check_proba: bool = False,
     ):
         """Check that a model or a quantized module give the same output as the circuit.
 
@@ -441,7 +442,15 @@ def check_is_good_execution_for_cml_vs_circuit():
             simulate (bool): whether to run the execution in FHE or in simulated mode.
             n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
                 different this allows to run the evaluation multiple times
+            check_proba (bool): Indicate if probabilities should be checked (using
+                `predict_proba`) instead of regular predictions (using `predict`). This can only
+                be used with built-in classifiers only. Default to False.
         """
+        if check_proba:
+            assert is_classifier_or_partial_classifier(
+                model_function
+            ), "The`check_proba` parameter can only be used with built-in classifiers."
+
         inputs = to_tuple(inputs)
 
         for _ in range(n_allowed_runs):
@@ -469,8 +478,17 @@ def check_is_good_execution_for_cml_vs_circuit():
                         [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
                     )
                     fhe = "simulate" if simulate else "execute"
-                    results_cnp_circuit = model_function.predict(*inputs, fhe=fhe)
-                    results_model_function = model_function.predict(*inputs, fhe="disable")
+
+                    if check_proba:
+                        results_cnp_circuit = model_function.predict_proba(*inputs, fhe=fhe)
+                        results_model_function = model_function.predict_proba(
+                            *inputs, fhe="disable"
+                        )
+
+                    else:
+                        results_cnp_circuit = model_function.predict(*inputs, fhe=fhe)
+                        results_model_function = model_function.predict(*inputs, fhe="disable")
+
                 else:
                     raise ValueError(
                         "numpy_function should be a built-in concrete sklearn model or "

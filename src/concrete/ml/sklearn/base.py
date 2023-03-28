@@ -996,7 +996,13 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             if X.ndim == 1:
                 X = X.reshape((1, -1))
 
-            return super().predict(X, fhe=fhe)
+            y_out = super().predict(X, fhe=fhe)
+
+            # Apply post-processing in the clear, such as the softmax or sigmoid functions for
+            # classifiers
+            y_proba = self.post_processing(y_out)
+
+            return y_proba
 
         # For prediction in the clear, we call the  Skorch's NeuralNet `predict_proba method which
         # ends up calling `infer`

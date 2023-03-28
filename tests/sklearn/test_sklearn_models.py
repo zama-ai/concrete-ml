@@ -163,7 +163,7 @@ def check_correctness_with_sklearn(
     y_pred_cml = model.predict(x, fhe=fhe)
 
     # Check that the output shapes are correct
-    assert y_pred.shape == y_pred_cml.shape, "Quantized clear and FHE outputs have different shapes"
+    assert y_pred.shape == y_pred_cml.shape, "Outputs have different shapes"
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2604
     # Generic tests look to show issues in accuracy / R2 score, even for high n_bits
@@ -1113,13 +1113,13 @@ def test_predict_correctness(
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # How many samples for tests in FHE (ie, predict with fhe = "execute")
-    if is_weekly_option:
+    # How many samples for tests in FHE (ie, predict with fhe = "execute" or "simulate")
+    if is_weekly_option or simulate:
         number_of_tests_in_fhe = 5
     else:
         number_of_tests_in_fhe = 1
 
-    # How many samples for tests in quantized module (ie, predict with fhe = "simulate")
+    # How many samples for tests in quantized module (ie, predict with fhe = "disable")
     if is_weekly_option:
         number_of_tests_in_non_fhe = 50
     else:
@@ -1148,7 +1148,7 @@ def test_predict_correctness(
         if test_with_execute_in_fhe and not n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
 
             if verbose:
-                print(f"Compile simulate = {simulate}")
+                print("Compile the model")
 
             with warnings.catch_warnings():
                 fhe_circuit = model.compile(
@@ -1168,9 +1168,19 @@ def test_predict_correctness(
                     + f"(with number_of_tests_in_fhe = {number_of_tests_in_fhe})"
                 )
 
+            # Check the `predict` method
             check_is_good_execution_for_cml_vs_circuit(
                 x[:number_of_tests_in_fhe], model_function=model, simulate=simulate
             )
+
+            # If the model is a classifier, check the `predict_proba` method as well
+            if is_classifier_or_partial_classifier(model):
+                check_is_good_execution_for_cml_vs_circuit(
+                    x[:number_of_tests_in_fhe],
+                    model_function=model,
+                    simulate=simulate,
+                    check_proba=True,
+                )
 
             if test_subfunctions_in_fhe and (not simulate):
                 if verbose:
