@@ -64,6 +64,9 @@ from concrete.ml.sklearn import (
     get_sklearn_tree_models,
 )
 
+# Allow multiple runs in FHE to make sure we always have the correct output
+N_ALLOWED_FHE_RUN = 5
+
 # If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, we check correctness against
 # scikit-learn in the clear, via check_correctness_with_sklearn function. This is because we need
 # sufficiently number of bits for precision
@@ -1220,6 +1223,74 @@ def test_fitted_compiled_error_raises(
         print("Run check_fitted_compiled_error_raises")
 
     check_fitted_compiled_error_raises(model_class, n_bits, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "error_param",
+    [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
+    ids=["p_error"],
+)
+def test_p_error_global_p_error_simulation(
+    model_class,
+    parameters,
+    error_param,
+    load_data,
+    is_weekly_option,
+):
+    """Test p_error and global_p_error simulation.
+
+    Description:
+        A model is compiled with a large p_error. The test then checks the predictions for
+        simulated and fully homomorphic encryption (FHE) inference, and asserts
+        that the predictions for both are different from the exepceted predictions.
+    """
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
+    if "global_p_error" in error_param:
+        pytest.skip("global_p_error behave very differently depending on the type of model.")
+
+    # Get dataset
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    # Initialize and fit the model
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Check if model is linear
+    is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
+
+    # Compile with a large p_error to be sure the result is random.
+    model.compile(x, **error_param)
+
+    def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
+        """Detect divergence between simulated/FHE execution and clear run."""
+        predict_function = (
+            model.predict_proba if is_classifier_or_partial_classifier(model) else model.predict
+        )
+        y_expected = predict_function(x, fhe="disable")
+        for i in range(max_iterations):
+            y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
+            if not numpy.array_equal(y_pred, y_expected[i : i + 1].ravel()):
+                return True
+        return False
+
+    simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
+    fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
+
+    # Check for differences in predictions
+    if is_linear_model:
+
+        # In FHE, high p_error affect the crypto parameters which
+        # makes the predictions slighlty different
+        assert fhe_diff_found, "FHE predictions should be different for linear models"
+
+        # linear models p_error is not simulated
+        assert not simulation_diff_found, "SIMULATE predictions not the same for linear models"
+    else:
+        assert fhe_diff_found and simulation_diff_found, (
+            f"Predictions not different in at least one run.\n"
+            f"FHE predictions differ: {fhe_diff_found}\n"
+            f"SIMULATE predictions differ: {simulation_diff_found}"
+        )
 
 
 @pytest.mark.parametrize("model_class, parameters", _classifiers_and_datasets)
