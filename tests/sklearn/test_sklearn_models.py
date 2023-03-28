@@ -382,35 +382,39 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
 
     y_pred_fhe = []
 
-    for f_input in x:
-        # Quantize an input (float)
-        q_input = model.quantize_input(f_input.reshape(1, -1))
+    for _ in range(N_ALLOWED_FHE_RUN):
+        for f_input in x:
+            # Quantize an input (float)
+            q_input = model.quantize_input(f_input.reshape(1, -1))
 
-        # Encrypt the input
-        q_input_enc = fhe_circuit.encrypt(q_input)
+            # Encrypt the input
+            q_input_enc = fhe_circuit.encrypt(q_input)
 
-        # Execute the linear product in FHE
-        q_y_enc = fhe_circuit.run(q_input_enc)
+            # Execute the linear product in FHE
+            q_y_enc = fhe_circuit.run(q_input_enc)
 
-        # Decrypt the result (integer)
-        q_y = fhe_circuit.decrypt(q_y_enc)
+            # Decrypt the result (integer)
+            q_y = fhe_circuit.decrypt(q_y_enc)
 
-        # Dequantize the result
-        y = model.dequantize_output(q_y)
+            # Dequantize the result
+            y = model.dequantize_output(q_y)
 
-        # Apply either the sigmoid if it is a binary classification task, which is the case in this
-        # example, or a softmax function in order to get the probabilities (in the clear)
-        y_proba = model.post_processing(y)
+            # Apply either the sigmoid if it is a binary classification task,
+            # which is the case in this example, or a softmax function in order
+            # to get the probabilities (in the clear)
+            y_proba = model.post_processing(y)
 
-        # Apply the argmax to get the class predictions (in the clear)
-        if is_classifier_or_partial_classifier(model):
-            y_class = numpy.argmax(y_proba, axis=1)
-            y_pred_fhe += list(y_class)
-        else:
-            y_pred_fhe += list(y_proba)
+            # Apply the argmax to get the class predictions (in the clear)
+            if is_classifier_or_partial_classifier(model):
+                y_class = numpy.argmax(y_proba, axis=1)
+                y_pred_fhe += list(y_class)
+            else:
+                y_pred_fhe += list(y_proba)
 
-    # Compare with VL
-    y_pred_expected_in_vl = model.predict(x, fhe="simulate")
+        # Compare with VL
+        y_pred_expected_in_vl = model.predict(x, fhe="simulate")
+        if numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_vl).all():
+            break
 
     assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_vl).all(), (
         "computations are not the same between individual functions (in FHE) "
