@@ -147,11 +147,7 @@ def main():
                 # forward + backward + optimize
                 feat_maps = net.clear_module(inputs)
 
-            outputs = softmax(
-                quantized_numpy_module.forward_and_dequant(
-                    quantized_numpy_module.quantize_input(feat_maps.numpy())
-                )
-            )
+            outputs = softmax(quantized_numpy_module.forward(feat_maps.numpy(), fhe="disable"))
 
             for preds, label in zip(outputs, labels):
                 csv_writer.writerow(preds.tolist() + [label.numpy().tolist()])

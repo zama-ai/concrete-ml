@@ -66,20 +66,38 @@ Here is a simple example showing how to perform inference, starting from float v
 <!--pytest-codeblocks:skip-->
 
 ```python
-# Assume quantized_module : QuantizedModule
-#        data: numpy.ndarray of float
+# Assume 
+#   quantized_module : QuantizedModule
+#   x: numpy.ndarray (of float)
 
 # Quantization is done in the clear
-x_test_q = quantized_module.quantize_input(data)
+x_q = quantized_module.quantize_input(x)
 
-# Forward in FHE
-output = quantized_module.forward_in_fhe(x_test_q)
+# Forward in FHE (here with simulation)
+q_y_proba = quantized_module.quantized_forward(x_q, fhe="simulate")
 
-# Dequantization is done in the clear
-output = quantized_module.dequantize_output(output)
+# De-quantization is done in the clear
+y_proba = quantized_module.dequantize_output(q_y_proba)
 
 # For classifiers with multi-class outputs, the arg max is done in the clear
-y_pred = np.argmax(output, 1)
+y_pred = np.argmax(y_proba, 1)
+```
+
+Alternatively, the `forward` method groups the quantization, FHE execution and de-quantization steps all together.
+
+<!--pytest-codeblocks:skip-->
+
+```python
+# Assume 
+#   quantized_module : QuantizedModule
+#   x: numpy.ndarray (of float)
+
+# Forward in FHE (here with simulation). Quantization and de-quantization steps are still done in 
+# the clear 
+y_proba = quantized_module.forward(x, fhe="simulate")
+
+# For classifiers with multi-class outputs, the arg max is done in the clear
+y_pred = np.argmax(y_proba, 1)
 ```
 
 ## Resources

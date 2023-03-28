@@ -373,12 +373,11 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         # Get a numpy array from the tensor to do quantization
         x = x.detach().cpu().numpy()
 
-        # Once we finished the data type checks, quantize the input and perform quantized inference
-        q_x = self.quantize_input(x)
-        q_out = self.quantized_module_(q_x)
+        # Once we finished the data type checks, execute the quantized inference in the clear
+        y_pred = self.quantized_module_.forward(x, fhe="disable")
 
         # Cast back to a tensor to keep a consistent API (tensor in, tensor out)
-        return torch.tensor(self.dequantize_output(q_out))
+        return torch.tensor(y_pred)
 
     @property
     def base_module_to_compile(self):

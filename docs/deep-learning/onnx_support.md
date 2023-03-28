@@ -73,10 +73,9 @@ quantized_module = compile_onnx_model(
 # Create test data from the same distribution and quantize using
 # learned quantization parameters during compilation
 x_test = tuple(numpy.random.uniform(-100, 100, size=(1, *input_shape)) for _ in range(num_inputs))
-q_x_test = quantized_module.quantize_input(*x_test)
 
-y_clear = quantized_module.forward(q_x_test)
-y_fhe = quantized_module.forward_in_fhe(q_x_test)
+y_clear = quantized_module.forward(*x_test, fhe="disable")
+y_fhe = quantized_module.forward(*x_test, fhe="execute")
 
 print("Execution in clear: ", y_clear)
 print("Execution in FHE:   ", y_fhe)

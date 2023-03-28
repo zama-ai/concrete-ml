@@ -4,7 +4,7 @@ import enum
 import string
 from functools import partial
 from types import FunctionType
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -33,12 +33,47 @@ SUPPORTED_INT_TYPES = {
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 
 
-class FheMode(enum.Enum):
-    """Enum representing the execution mode."""
+class FheMode(str, enum.Enum):
+    """Enum representing the execution mode.
+
+    This enum inherits from str in order to be able to easily compare a string parameter to its
+    equivalent Enum attribute.
+
+    Examples:
+        fhe_disable = FheMode.DISABLE
+
+        >>> fhe_disable == "disable"
+        True
+
+        >>> fhe_disable == "execute"
+        False
+
+        >>> FheMode.is_valid("simulate")
+        True
+
+        >>> FheMode.is_valid(FheMode.EXECUTE)
+        True
+
+        >>> FheMode.is_valid("predict_in_fhe")
+        False
+
+    """
 
     DISABLE = "disable"
     SIMULATE = "simulate"
     EXECUTE = "execute"
+
+    @staticmethod
+    def is_valid(fhe: Union["FheMode", str]) -> bool:
+        """Indicate if the given name is a supported FHE mode.
+
+        Args:
+            fhe (Union[FheMode, str]): The FHE mode to check.
+
+        Returns:
+            bool: Whether the FHE mode is supported or not.
+        """
+        return fhe in FheMode.__members__.values()
 
 
 def replace_invalid_arg_name_chars(arg_name: str) -> str:
@@ -483,3 +518,29 @@ def to_tuple(x: Any) -> tuple:
         return (x,)
 
     return x
+
+
+def all_values_are_integers(*values: Any) -> bool:
+    """Indicate that all unpacked values are of a supported integer dtype.
+
+    Args:
+        *values (Any): The values to consider.
+
+    Returns:
+        bool: Wether all values are supported integers or not.
+
+    """
+    return all(_is_of_dtype(value, SUPPORTED_INT_TYPES) for value in values)
+
+
+def all_values_are_floats(*values: Any) -> bool:
+    """Indicate that all unpacked values are of a supported float dtype.
+
+    Args:
+        *values (Any): The values to consider.
+
+    Returns:
+        bool: Wether all values are supported floating points or not.
+
+    """
+    return all(_is_of_dtype(value, SUPPORTED_FLOAT_TYPES) for value in values)

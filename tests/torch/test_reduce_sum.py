@@ -72,7 +72,7 @@ def test_sum(
     inputset = data_generator(size=(200,) + size)
 
     # Compile the torch model
-    quantized_numpy_module = compile_torch_model(
+    quantized_module = compile_torch_model(
         torch_model,
         inputset,
         configuration=default_configuration,
@@ -82,24 +82,21 @@ def test_sum(
     # If the model is expected to have some TLUs, check that the circuit precision is under the
     # maximum allowed value
     if has_tlu:
-        check_circuit_precision(quantized_numpy_module.fhe_circuit)
+        check_circuit_precision(quantized_module.fhe_circuit)
 
     # Else, check if that the model actually doesn't have any TLUs
     else:
-        check_circuit_has_no_tlu(quantized_numpy_module.fhe_circuit)
+        check_circuit_has_no_tlu(quantized_module.fhe_circuit)
 
     # Take an inputset's subset as inputs
     numpy_input = inputset[:5]
 
-    quantized_numpy_module.check_model_is_compiled()
+    quantized_module.check_model_is_compiled()
 
-    q_numpy_input = quantized_numpy_module.quantize_input(numpy_input)
+    fhe_mode = "simulate" if simulate else "execute"
 
-    # Execute the sum in FHE/VL over several samples
-    q_results = quantized_numpy_module.forward_in_fhe(q_numpy_input, simulate=simulate)
-
-    # Dequantize the output
-    computed_sum = quantized_numpy_module.dequantize_output(q_results)
+    # Compute the sum, in FHE or with simulation
+    computed_sum = quantized_module.forward(numpy_input, fhe=fhe_mode)
 
     # Compute the expected sum
     # As the calibration inputset and inputs are ran over several samples, we need to apply the

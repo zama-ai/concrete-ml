@@ -463,12 +463,12 @@ def mapping_keys(pretrained_weights: Dict, model: nn.Module, device: str) -> nn.
 
 
 def fhe_simulation_inference(
-    qmodel, data_loader, output_size: int, step: int = None, verbose: bool = False
+    quantized_module, data_loader, output_size: int, step: int = None, verbose: bool = False
 ) -> float:
     """Evaluate the model in FHE simulation mode.
 
     Args:
-        qmodel (Callable): The quantized module.
+        quantized_module (Callable): The quantized module.
         data_loader (int): The test or evaluation set.
         output_size (int): The number of classes, it's 10 for CIFAR_10 and 100 for CIFAR_100.
         step (int): Display the accuracy every batch % step.
@@ -487,14 +487,15 @@ def fhe_simulation_inference(
         predictions = np.zeros(shape=(data.shape[0], output_size))
 
         for idx, x in enumerate(data):
-            x_q = qmodel.quantize_input(np.expand_dims(x, 0))
+            x_q = quantized_module.quantize_input(np.expand_dims(x, 0))
 
-            circuit_prediction = qmodel.fhe_circuit.simulate(x_q)
-            predictions[idx] = circuit_prediction
+            # Store the predicted quantized probabilities
+            predictions[idx] = quantized_module.quantized_forward(x_q, fhe="simulate")
 
             total_example += 1
 
-        predictions = qmodel.dequantize_output(predictions)
+        # Dequantized the predicted probabilities and store the class predictions
+        predictions = quantized_module.dequantize_output(predictions)
         accuracy_vl.extend(predictions.argmax(1) == labels)
 
         if step and (j % step) == 0:

@@ -17,8 +17,7 @@ def cml_inference(quantized_numpy_module, x_numpy):
     predictions = np.zeros(shape=(x_numpy.shape[0], 10))
     for idx, x in enumerate(x_numpy):
         x_q = np.expand_dims(x, 0)
-        circuit_prediction = quantized_numpy_module.fhe_circuit.simulate(x_q)
-        predictions[idx] = circuit_prediction
+        predictions[idx] = quantized_numpy_module.forward(x_q, fhe="simulate")
     return predictions
 
 
@@ -59,12 +58,10 @@ def evaluate(torch_model, cml_model):
         # Compute torch output
         output = torch_model(input)
 
-        # Compute cml output
         numpy_input = input.detach().cpu().numpy()
 
-        q_numpy_input = cml_model.quantize_input(numpy_input)
-        y_cml_vl = cml_inference(cml_model, q_numpy_input)
-        y_cml_vl = cml_model.dequantize_output(y_cml_vl)
+        # Compute cml output
+        y_cml_vl = cml_inference(cml_model, numpy_input)
 
         # y_cml_vl to torch to device
         y_cml_vl = torch.tensor(y_cml_vl).to(device)

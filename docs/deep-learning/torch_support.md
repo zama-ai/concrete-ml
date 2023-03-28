@@ -44,7 +44,7 @@ import numpy
 
 torch_input = torch.randn(100, N_FEAT)
 torch_model = QATSimpleNet(30)
-quantized_numpy_module = compile_brevitas_qat_model(
+quantized_module = compile_brevitas_qat_model(
     torch_model, # our model
     torch_input, # a representative input-set to be used for both quantization and compilation
     n_bits = n_bits,
@@ -91,28 +91,27 @@ strongly.
 
 ## Running encrypted inference
 
-The model can now be used to perform encrypted inference. Next, the test data is quantized:
+The model can now be used to perform encrypted inference.
 
 <!--pytest-codeblocks:cont-->
 
 ```python
 x_test = numpy.array([numpy.random.randn(N_FEAT)])
-x_test_quantized = quantized_numpy_module.quantize_input(x_test)
+
+y_pred = quantized_module.forward(x_test, fhe="execute")
 ```
 
-and the encrypted inference can be run using `quantized_numpy_module.forward_in_fhe()` to perform
-the FHE inference. In this case, de-quantization must done by the caller in a second stage
-using `quantized_numpy_module.dequantize_output()`.
+In this example example, the input values `x_test` and the predicted values `y_pred` are floating points.
+The quantization (resp. de-quantization) step is done in the clear within the `forward` method, before (resp. after) any FHE computations.
 
 ## Simulated FHE Inference in the clear
 
 The user can also perform the inference on clear data. Two approaches exist:
 
-- `quantized_numpy_module.forward_in_fhe(quantized_x, simulate=True)`: simulates FHE execution taking into account Table Lookup errors.\
+- `quantized_module.forward(quantized_x, fhe="simulate")`: simulates FHE execution taking into account Table Lookup errors.\
   De-quantization must be done in a second step as for actual FHE execution. Simulation takes into
   account the `p_error`/`global_p_error` parameters
-- `quantized_numpy_module.forward_and_dequant()`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the dequantized (float) output of running the model in the clear. Calling the this function on the clear data is useful when debugging, but please note that it does not perform
-  FHE simulation.
+- `quantized_module.forward(quantized_x, fhe="disable")`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on the clear data is useful when debugging, but this does not perform actual FHE simulation.
 
 {% hint style="info" %}
 FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table
@@ -134,7 +133,7 @@ Suppose that `n_bits_qat` is the bit-width of activations and weights during the
 from concrete.ml.torch.compile import compile_torch_model
 n_bits_qat = 3
 
-quantized_numpy_module = compile_torch_model(
+quantized_module = compile_torch_model(
     torch_model,
     torch_input,
     import_qat=True,

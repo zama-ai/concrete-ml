@@ -456,6 +456,14 @@ class BaseEstimator:
         Returns:
             np.ndarray: The predicted values for X.
         """
+        assert_true(
+            FheMode.is_valid(fhe),
+            "`fhe` mode is not supported. Expected one of 'disable' (resp. FheMode.DISABLE), "
+            "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
+            f"{fhe}",
+            ValueError,
+        )
+
         # Check that the model is properly fitted
         self.check_model_is_fitted()
 
@@ -991,6 +999,13 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Returns:
             numpy.ndarray: The predicted values or class probabilities.
         """
+        assert_true(
+            FheMode.is_valid(fhe),
+            "`fhe` mode is not supported. Expected one of 'disable' (resp. FheMode.DISABLE), "
+            "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
+            f"{fhe}",
+        )
+
         if fhe in ["execute", "simulate"]:
             # Run over each element of X individually and aggregate predictions in a vector
             if X.ndim == 1:

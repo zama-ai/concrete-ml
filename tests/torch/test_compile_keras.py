@@ -85,12 +85,11 @@ def compile_and_test_keras(
     x_test = tuple(
         numpy.random.uniform(-100, 100, size=(1, *input_shape)) for _ in range(num_inputs)
     )
-    qtest = quantized_numpy_module.quantize_input(*x_test)
 
     quantized_numpy_module.check_model_is_compiled()
 
     check_is_good_execution_for_cml_vs_circuit(
-        qtest, model_function=quantized_numpy_module, simulate=simulate
+        x_test, model_function=quantized_numpy_module, simulate=simulate
     )
 
 

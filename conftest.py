@@ -14,6 +14,8 @@ from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 
 from concrete.ml.common.utils import (
+    SUPPORTED_FLOAT_TYPES,
+    all_values_are_floats,
     is_brevitas_model,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
@@ -453,18 +455,19 @@ def check_is_good_execution_for_cml_vs_circuit():
 
         inputs = to_tuple(inputs)
 
-        for _ in range(n_allowed_runs):
+        # Make sure that the inputs are floating points
+        assert all_values_are_floats(*inputs), (
+            f"Input values are expected to be floating points of dtype {SUPPORTED_FLOAT_TYPES}. "
+            "Do not quantize the inputs manually as it is handled within this method."
+        )
 
+        fhe_mode = "simulate" if simulate else "execute"
+
+        for _ in range(n_allowed_runs):
             # Check if model_function is QuantizedModule
             if isinstance(model_function, QuantizedModule):
-                # In the case of a quantized module, integer inputs are expected.
-                if not numpy.all(
-                    [numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]
-                ):
-                    inputs = to_tuple(model_function.quantize_input(*inputs))
-
-                results_cnp_circuit = model_function.forward_in_fhe(*inputs, simulate=simulate)
-                results_model_function = model_function.forward(*inputs)
+                results_cnp_circuit = model_function.forward(*inputs, fhe=fhe_mode)
+                results_model_function = model_function.forward(*inputs, fhe="disable")
 
             else:
                 assert isinstance(
@@ -473,20 +476,14 @@ def check_is_good_execution_for_cml_vs_circuit():
                 )
 
                 if model_function._is_a_public_cml_model:  # pylint: disable=protected-access
-                    # In the case of a model, floating point inputs are expected.
-                    assert numpy.all(
-                        [numpy.issubdtype(input.dtype, numpy.floating) for input in inputs]
-                    )
-                    fhe = "simulate" if simulate else "execute"
-
                     if check_proba:
-                        results_cnp_circuit = model_function.predict_proba(*inputs, fhe=fhe)
+                        results_cnp_circuit = model_function.predict_proba(*inputs, fhe=fhe_mode)
                         results_model_function = model_function.predict_proba(
                             *inputs, fhe="disable"
                         )
 
                     else:
-                        results_cnp_circuit = model_function.predict(*inputs, fhe=fhe)
+                        results_cnp_circuit = model_function.predict(*inputs, fhe=fhe_mode)
                         results_model_function = model_function.predict(*inputs, fhe="disable")
 
                 else:

@@ -135,9 +135,7 @@ def compile_and_simulated_fhe_inference(
             **compile_params,
         )
 
-        quantized_output = quantized_module.quantize_input(calibration_data)
-        quantized_output = quantized_module.forward_in_fhe(quantized_output, simulate=True)
-        dequantized_output = quantized_module.dequantize_output(quantized_output)
+        dequantized_output = quantized_module.forward(calibration_data, fhe="simulate")
 
     elif is_model_class_in_a_list(
         estimator, get_sklearn_neural_net_models() + get_sklearn_tree_models()

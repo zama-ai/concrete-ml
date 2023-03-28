@@ -104,8 +104,6 @@ def test_brevitas_tinymnist_cnn(
         idx = 0
         for data, target in test_loader:
             data = data.numpy()
-            # Quantize the inputs and cast to appropriate data type
-            x_test_q = quantized_module.quantize_input(data)
 
             # Accumulate the ground truth labels
             endidx = idx + target.shape[0]
@@ -113,11 +111,12 @@ def test_brevitas_tinymnist_cnn(
 
             # Dequantize the integer predictions
             check_is_good_execution_for_cml_vs_circuit(
-                x_test_q, model_function=quantized_module, simulate=use_vl
+                data, model_function=quantized_module, simulate=use_vl
             )
 
-            y_pred = quantized_module.forward_in_fhe(x_test_q, simulate=use_vl)
-            y_pred = quantized_module.dequantize_output(y_pred)
+            fhe_mode = "simulate" if use_vl else "execute"
+
+            y_pred = quantized_module.forward(data, fhe=fhe_mode)
 
             # Take the predicted class from the outputs and store it
             y_pred = numpy.argmax(y_pred, axis=1)
@@ -303,8 +302,10 @@ def test_brevitas_intermediary_values(
     dbg_model(torch.tensor(x_test.astype(numpy.float64)))
 
     # Execute the Concrete-ML model on the test set and capture debug values
-    q_x = concrete_model.quantized_module_.quantize_input(x_test)
-    _, cml_debug_values = concrete_model.quantized_module_.forward(q_x, debug=True)
+    _, cml_debug_values = concrete_model.quantized_module_.forward(
+        x_test, debug=True, fhe="disable"
+    )
+
     cml_intermediary_values = [
         q_arr[0].qvalues for name, q_arr in cml_debug_values.items() if "Gemm" in name
     ]

@@ -1,5 +1,4 @@
 """Tests for the quantized module."""
-import re
 from functools import partial
 
 import numpy
@@ -96,19 +95,17 @@ def test_quantized_linear(model_class, input_shape, n_bits, activation_function,
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
-    # Quantize input
-    qinput = quantized_model.quantize_input(numpy_input)
-    prediction = quantized_model(qinput)
-    dequant_manually_prediction = quantized_model.dequantize_output(prediction)
+    # Execution the predictions in the clear using the __call__ method
+    dequant_prediction_call = quantized_model(numpy_input)
 
-    # Forward and Dequantize to get back to real values
-    dequant_prediction = quantized_model.forward_and_dequant(qinput)
+    # Execution the predictions in the clear using the forward method
+    dequant_prediction_forward = quantized_model.forward(numpy_input, fhe="disable")
 
-    # Both dequant prediction should be equal
-    assert numpy.array_equal(dequant_manually_prediction, dequant_prediction)
+    # Both prediction values should be equal
+    assert numpy.array_equal(dequant_prediction_call, dequant_prediction_forward)
 
-    # Check that the actual prediction are close to the expected predictions
-    check_r2_score(numpy_prediction, dequant_prediction)
+    # Check that the actual prediction are close to the expected prediction
+    check_r2_score(numpy_prediction, dequant_prediction_forward)
 
 
 @pytest.mark.parametrize(
@@ -118,35 +115,42 @@ def test_quantized_linear(model_class, input_shape, n_bits, activation_function,
     ],
 )
 @pytest.mark.parametrize(
-    "dtype, err_msg",
+    "method, dtype, error_message",
     [
         pytest.param(
+            "quantized_forward",
             numpy.float32,
-            re.escape(
-                "Inputs: #0 (float32) are not integer types. "
-                "Make sure you quantize your input before calling forward."
-            ),
+            "Input values are expected to be integers of dtype .*",
+        ),
+        pytest.param(
+            "forward",
+            numpy.int64,
+            "Input values are expected to be floating points of dtype .*",
         ),
     ],
 )
-def test_raises_on_float_inputs(model_class, input_shape, dtype, err_msg):
+def test_raises_on_inputs_with_wrong_dtypes(model_class, input_shape, method, dtype, error_message):
     """Function to test incompatible inputs."""
 
     # Define the torch model
     torch_fc_model = model_class(nn.ReLU)
+
     # Create random input
-    numpy_input = numpy.random.uniform(size=input_shape).astype(dtype)
+    numpy_input = numpy.random.uniform(size=input_shape)
+
     # Create corresponding numpy model
     numpy_fc_model = NumpyModule(torch_fc_model, torch.from_numpy(numpy_input).float())
+
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(8, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
     with pytest.raises(
-        ValueError,
-        match=err_msg,
+        TypeError,
+        match=error_message,
     ):
-        quantized_model(numpy_input)
+        forward_method = getattr(quantized_model, method)
+        forward_method(numpy_input.astype(dtype))
 
 
 @pytest.mark.parametrize("n_bits", [2, 7])
@@ -180,9 +184,8 @@ def test_intermediary_values(n_bits, model_class, input_shape, activation_functi
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
-    # Quantize input
-    qinput = quantized_model.quantize_input(numpy_input)
-    _, debug_values = quantized_model.forward(qinput, debug=True)
+    # Execute the forward pass in the clear
+    _, debug_values = quantized_model.forward(numpy_input, debug=True, fhe="disable")
 
     # Count the number of Gemm/Conv layers in the CML debug values
     num_gemm_conv = 0

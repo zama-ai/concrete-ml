@@ -475,13 +475,10 @@ def concrete_inference(quantized_module: QuantizedModule, x: np.ndarray, in_fhe:
     # Quantize the inputs
     q_x = quantized_module.quantize_input(x)
 
-    # Execute the inference in FHE
-    if in_fhe:
-        q_y_pred_proba = quantized_module.forward_in_fhe(q_x, simulate=False)
+    fhe_mode = "execute" if in_fhe else "disable"
 
-    # Else, execute the quantized inference in the clear
-    else:
-        q_y_pred_proba = quantized_module.forward(q_x)
+    # Execute the forward pass, in FHE or in the clear
+    q_y_pred_proba = quantized_module.quantized_forward(q_x, fhe=fhe_mode)
 
     # Dequantize the output probabilities
     y_pred_proba = quantized_module.dequantize_output(q_y_pred_proba)

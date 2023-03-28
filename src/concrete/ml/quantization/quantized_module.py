@@ -11,6 +11,11 @@ from concrete.numpy.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
 from ..common.utils import (
+    SUPPORTED_FLOAT_TYPES,
+    SUPPORTED_INT_TYPES,
+    FheMode,
+    all_values_are_floats,
+    all_values_are_integers,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
@@ -208,75 +213,138 @@ class QuantizedModule:
         self._onnx_model = value
 
     def __call__(self, *x: numpy.ndarray):
+        """Define the QuantizedModule's call method.
+
+        This method is a forward method executed in the clear.
+
+        Args:
+            *x (numpy.ndarray): Input float values to consider.
+
+        Returns:
+            numpy.ndarray: Predictions of the quantized model, in floating points.
+        """
         return self.forward(*x)
 
     def forward(
-        self, *qvalues: numpy.ndarray, debug: bool = False
+        self,
+        *x: numpy.ndarray,
+        fhe: Union[FheMode, str] = FheMode.DISABLE,
+        debug: bool = False,
     ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, Optional[Dict[Any, Any]]]]:
-        """Forward pass with numpy function only.
+        """Forward pass with numpy function only on floating points.
+
+        This method executes the forward pass in the clear, with simulation or in FHE. Input values
+        are expected to be floating points, as the method handles the quantization step. The
+        returned values are floating points as well.
 
         Args:
-            *qvalues (numpy.ndarray): numpy.array containing the quantized values.
+            *x (numpy.ndarray): Input float values to consider.
+            fhe (Union[FheMode, str]): The mode to use for prediction. Can be FheMode.DISABLE for
+                Concrete-ML python inference, FheMode.SIMULATE for FHE simulation and
+                FheMode.EXECUTE for actual FHE execution. Can also be the string representation of
+                any of these values. Default to FheMode.DISABLE.
             debug (bool): In debug mode, returns quantized intermediary values of the computation.
-                          This is useful when a model's intermediary values in Concrete-ML need
-                          to be compared with the intermediary values obtained in pytorch/onnx.
-                          When set, the second return value is a dictionary containing ONNX
-                          operation names as keys and, as values, their input QuantizedArray or
-                          ndarray. The use can thus extract the quantized or float values of
-                          quantized inputs.
+                This is useful when a model's intermediary values in Concrete-ML need to be
+                compared with the intermediary values obtained in pytorch/onnx. When set, the
+                second return value is a dictionary containing ONNX operation names as keys and,
+                as values, their input QuantizedArray or ndarray. The use can thus extract the
+                quantized or float values of quantized inputs. This feature is only available in
+                FheMode.DISABLE mode. Default to False.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model
+            numpy.ndarray: Predictions of the quantized model, in floating points.
         """
-        # Make sure that the input is quantized
-        invalid_inputs = tuple(
-            (idx, qvalue)
-            for idx, qvalue in enumerate(qvalues)
-            if not issubclass(qvalue.dtype.type, numpy.integer)
-        )
         assert_true(
-            len(invalid_inputs) == 0,
-            f"Inputs: {', '.join(f'#{val[0]} ({val[1].dtype})' for val in invalid_inputs)} are not "
-            "integer types. Make sure you quantize your input before calling forward.",
-            ValueError,
+            FheMode.is_valid(fhe),
+            "`fhe` mode is not supported. Expected one of 'disable' (resp. FheMode.DISABLE), "
+            "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
+            f"{fhe}",
         )
 
-        if debug:
+        # Make sure that the inputs are floating points
+        assert_true(
+            all_values_are_floats(*x),
+            "Input values are expected to be floating points of dtype "
+            f"{SUPPORTED_FLOAT_TYPES}. Do not quantize the inputs manually as it is handled "
+            "within this method.",
+            TypeError,
+        )
+
+        # Quantized the input values
+        q_x = to_tuple(self.quantize_input(*x))
+
+        if debug and fhe == "disable":
             debug_value_tracker: Optional[
                 Dict[str, Dict[Union[int, str], Optional[ONNXOpInputOutputType]]]
             ] = {}
             for (_, layer) in self.quant_layers_dict.values():
                 layer.debug_value_tracker = debug_value_tracker
-            result = self._forward(*qvalues)
+            result = self.quantized_forward(*q_x, fhe="disable")
             for (_, layer) in self.quant_layers_dict.values():
                 layer.debug_value_tracker = None
             return result, debug_value_tracker
 
-        return self._forward(*qvalues)
+        q_y_pred = self.quantized_forward(*q_x, fhe=fhe)
 
-    def _forward(self, *qvalues: numpy.ndarray) -> numpy.ndarray:
+        # Dequantize the output predicted values
+        y_pred = self.dequantize_output(q_y_pred)
+
+        return y_pred
+
+    def quantized_forward(
+        self, *q_x: numpy.ndarray, fhe: Union[FheMode, str] = FheMode.DISABLE
+    ) -> numpy.ndarray:
         """Forward function for the FHE circuit.
 
         Args:
-            *qvalues (numpy.ndarray): numpy.array containing the quantized values.
+            *q_x (numpy.ndarray): Input integer values to consider.
+            fhe (Union[FheMode, str]): The mode to use for prediction. Can be FheMode.DISABLE for
+                Concrete-ML python inference, FheMode.SIMULATE for FHE simulation and
+                FheMode.EXECUTE for actual FHE execution. Can also be the string representation of
+                any of these values. Default to FheMode.DISABLE.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model
+            (numpy.ndarray): Predictions of the quantized model, with integer values.
 
         """
-
-        n_qinputs = len(self.input_quantizers)
-        n_qvalues = len(qvalues)
+        # Make sure that the inputs are integers
         assert_true(
-            n_qvalues == n_qinputs,
-            f"Got {n_qvalues} inputs, expected {n_qinputs}",
+            all_values_are_integers(*q_x),
+            f"Input values are expected to be integers of dtype {SUPPORTED_INT_TYPES}. "
+            "Please quantize the inputs manually as it is not handled within this method.",
             TypeError,
         )
+
+        n_inputs = len(self.input_quantizers)
+        n_values = len(q_x)
+        assert_true(
+            n_values == n_inputs,
+            f"Got {n_values} inputs, expected {n_inputs}. Either the quantized module has not been "
+            "properly initialized or the input data has been changed since its initialization.",
+            ValueError,
+        )
+
+        if fhe == "disable":
+            return self._clear_forward(*q_x)
+
+        simulate = fhe == "simulate"
+        return self._fhe_forward(*q_x, simulate=simulate)
+
+    def _clear_forward(self, *q_x: numpy.ndarray) -> numpy.ndarray:
+        """Forward function for the FHE circuit executed in the clear.
+
+        Args:
+            *q_x (numpy.ndarray): Input integer values to consider.
+
+        Returns:
+            (numpy.ndarray): Predictions of the quantized model, with integer values.
+
+        """
 
         q_inputs = [
             QuantizedArray(
                 self.input_quantizers[idx].n_bits,
-                qvalues[idx],
+                q_x[idx],
                 value_is_float=False,
                 options=self.input_quantizers[idx].quant_options,
                 stats=self.input_quantizers[idx].quant_stats,
@@ -310,29 +378,31 @@ class QuantizedModule:
         if len(bad_qat_ops) > 0:
             _raise_qat_import_error(bad_qat_ops)
 
-        outputs = tuple(
+        output_quantized_arrays = tuple(
             layer_results[output_name] for output_name in self.ordered_module_output_names
         )
 
-        assert_true(len(outputs) == 1)
+        assert_true(len(output_quantized_arrays) == 1)
 
         # The output of a graph must be a QuantizedArray
-        assert isinstance(outputs[0], QuantizedArray)
+        assert isinstance(output_quantized_arrays[0], QuantizedArray)
 
-        return outputs[0].qvalues
+        return output_quantized_arrays[0].qvalues
 
-    def forward_in_fhe(self, *qvalues: numpy.ndarray, simulate=True) -> numpy.ndarray:
-        """Forward function running in FHE or simulated mode.
+    def _fhe_forward(self, *q_x: numpy.ndarray, simulate: bool = True) -> numpy.ndarray:
+        """Forward function executed in FHE or with simulation.
 
         Args:
-            *qvalues (numpy.ndarray): numpy.array containing the quantized values.
-            simulate (bool): whether the function should be run in FHE or in simulation mode.
+            *q_x (numpy.ndarray): Input integer values to consider.
+            simulate (bool): Whether the function should be run in FHE or in simulation mode.
+                Default to True.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model
+            (numpy.ndarray): Predictions of the quantized model, with integer values.
 
         """
 
+        # Make sure that the module is compiled
         assert_true(
             self.fhe_circuit is not None,
             "The quantized module is not compiled. Please run compile(...) first before "
@@ -340,81 +410,66 @@ class QuantizedModule:
         )
 
         results_cnp_circuit_list = []
-        for i in range(qvalues[0].shape[0]):
+        for i in range(q_x[0].shape[0]):
 
-            # Extract the i th example from every element in the tuple qvalues
-            q_value = tuple(qvalues[input][[i]] for input in range(len(qvalues)))
+            # Extract the i th example from every element in the tuple q_x
+            q_input = tuple(q_x[input][[i]] for input in range(len(q_x)))
 
             # For mypy
             assert self.fhe_circuit is not None
 
-            # Run FHE or simulation based on the simulate argument
+            # Execute the forward pass in FHE or with simulation
             q_result = (
-                self.fhe_circuit.simulate(*q_value)
+                self.fhe_circuit.simulate(*q_input)
                 if simulate
-                else self.fhe_circuit.encrypt_run_decrypt(*q_value)
+                else self.fhe_circuit.encrypt_run_decrypt(*q_input)
             )
             results_cnp_circuit_list.append(q_result)
+
         results_cnp_circuit = numpy.concatenate(results_cnp_circuit_list, axis=0)
+
         return results_cnp_circuit
 
-    def forward_and_dequant(self, *q_x: numpy.ndarray) -> numpy.ndarray:
-        """Forward pass with numpy function only plus dequantization.
-
-        Args:
-            *q_x (numpy.ndarray): numpy.ndarray containing the quantized input values. Requires the
-                input dtype to be int64.
-
-        Returns:
-            (numpy.ndarray): Predictions of the quantized model
-        """
-        q_out = self.forward(*q_x)
-        return self.dequantize_output(q_out)  # type: ignore
-
-    def quantize_input(
-        self, *values: numpy.ndarray
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
+    def quantize_input(self, *x: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.
 
         Args:
-            values (numpy.ndarray): Floating point values.
+            x (numpy.ndarray): Floating point x.
 
         Returns:
-            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) values.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: Quantized (numpy.int64) x.
         """
-        n_q_inputs = len(self.input_quantizers)
-        n_values = len(values)
+        n_inputs = len(self.input_quantizers)
+        n_values = len(x)
         assert_true(
-            n_values == n_q_inputs,
-            f"Got {n_values} inputs, expected {n_q_inputs}",
-            TypeError,
+            n_values == n_inputs,
+            f"Got {n_values} inputs, expected {n_inputs}. Either the quantized module has not been "
+            "properly initialized or the input data has been changed since its initialization.",
+            ValueError,
         )
 
-        q_values = tuple(
-            self.input_quantizers[idx].quant(values[idx]) for idx in range(len(values))
-        )
+        q_x = tuple(self.input_quantizers[idx].quant(x[idx]) for idx in range(len(x)))
 
-        assert (
-            numpy.array(q_values).dtype == numpy.int64
-        ), "Inputs were not quantized to int64 values"
-        return q_values[0] if len(q_values) == 1 else q_values
+        assert numpy.array(q_x).dtype == numpy.int64, "Inputs were not quantized to int64 x"
 
-    def dequantize_output(self, q_values: numpy.ndarray) -> numpy.ndarray:
+        return q_x[0] if len(q_x) == 1 else q_x
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         """Take the last layer q_out and use its dequant function.
 
         Args:
-            q_values (numpy.ndarray): Quantized values of the last layer.
+            q_y_preds (numpy.ndarray): Quantized output values of the last layer.
 
         Returns:
-            numpy.ndarray: Dequantized values of the last layer.
+            numpy.ndarray: Dequantized output values of the last layer.
         """
-        real_values = tuple(
-            output_quantizer.dequant(q_values) for output_quantizer in self.output_quantizers
+        y_preds = tuple(
+            output_quantizer.dequant(q_y_preds) for output_quantizer in self.output_quantizers
         )
 
-        assert_true(len(real_values) == 1)
+        assert_true(len(y_preds) == 1)
 
-        return real_values[0]
+        return y_preds[0]
 
     def set_inputs_quantization_parameters(self, *input_q_params: UniformQuantizer):
         """Set the quantization parameters for the module's inputs.
@@ -426,8 +481,9 @@ class QuantizedModule:
         n_values = len(input_q_params)
         assert_true(
             n_values == n_inputs,
-            f"Got {n_values} inputs, expected {n_inputs}",
-            TypeError,
+            f"Got {n_values} inputs, expected {n_inputs}. Either the quantized module has not been "
+            "properly initialized or the input data has been changed since its initialization.",
+            ValueError,
         )
 
         self.input_quantizers.clear()
@@ -483,7 +539,7 @@ class QuantizedModule:
         # concrete-numpy does not support variable *args-style functions, so compile a proxy
         # function dynamically with a suitable number of arguments
         forward_proxy, orig_args_to_proxy_func_args = generate_proxy_function(
-            self._forward, self.ordered_module_input_names
+            self._clear_forward, self.ordered_module_input_names
         )
 
         compiler = Compiler(

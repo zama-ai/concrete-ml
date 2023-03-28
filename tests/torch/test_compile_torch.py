@@ -142,13 +142,11 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
         # Using the inputset allows to remove any chance of overflow.
         x_test = tuple(inputs[:n_examples_test] for inputs in inputset)
 
-        qtest = quantized_numpy_module.quantize_input(*x_test)
-
         quantized_numpy_module.check_model_is_compiled()
 
         # Make sure VL and quantized module forward give the same output.
         check_is_good_execution_for_cml_vs_circuit(
-            qtest, model_function=quantized_numpy_module, simulate=simulate
+            x_test, model_function=quantized_numpy_module, simulate=simulate
         )
     else:
         # Compile our network with 16-bits
@@ -277,12 +275,14 @@ def accuracy_test_rounding(
 
         # encrypt, run, and decrypt with different precision modes
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-        q_result = quantized_numpy_module.fhe_circuit.simulate(*q_x)
-        q_result_high_precision = quantized_numpy_module_round_high_precision.fhe_circuit.simulate(
-            *q_x
+        q_result = quantized_numpy_module.quantized_forward(*q_x, fhe="simulate")
+        q_result_high_precision = quantized_numpy_module_round_high_precision.quantized_forward(
+            *q_x,
+            fhe="simulate",
         )
-        q_result_low_precision = quantized_numpy_module_round_low_precision.fhe_circuit.simulate(
-            *q_x
+        q_result_low_precision = quantized_numpy_module_round_low_precision.quantized_forward(
+            *q_x,
+            fhe="simulate",
         )
 
         # dequantize the results to obtain the actual output values
@@ -300,12 +300,12 @@ def accuracy_test_rounding(
         results_low_precision.append(result_low_precision)
 
     # Check modules predictions VL vs CML.
-    check_is_good_execution_for_cml_vs_circuit(qtest, quantized_numpy_module, simulate=simulate)
+    check_is_good_execution_for_cml_vs_circuit(x_test, quantized_numpy_module, simulate=simulate)
     check_is_good_execution_for_cml_vs_circuit(
-        qtest, quantized_numpy_module_round_high_precision, simulate=simulate
+        x_test, quantized_numpy_module_round_high_precision, simulate=simulate
     )
     check_is_good_execution_for_cml_vs_circuit(
-        qtest, quantized_numpy_module_round_low_precision, simulate=simulate
+        x_test, quantized_numpy_module_round_low_precision, simulate=simulate
     )
 
     # Check that high precision gives a better match than low precision
@@ -679,21 +679,16 @@ def test_pretrained_mnist_qat(
 
     check_is_good_execution_for_cml_vs_circuit(inputset, quantized_numpy_module, simulate=True)
 
-    # Check the forward works with the high bitwidth
-    qtest = quantized_numpy_module.quantize_input(inputset)
-
     # Collect VL results
     results = []
     for i in range(inputset.shape[0]):
 
-        # Extract the i th example for each tensor in the tuple qtest
+        # Extract the i th example for each tensor in the tuple inputset
         # while keeping the dimension of the original tensors.
-        # e.g. if qtest is a tuple of two (100, 10) tensors
+        # e.g. if inputset is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
-        q_x = tuple(q[[i]] for q in to_tuple(qtest))
-        q_result = quantized_numpy_module.fhe_circuit.simulate(*q_x)
-        result = quantized_numpy_module.dequantize_output(q_result)
-        result = numpy.argmax(result)
+        x = tuple(input[[i]] for input in to_tuple(inputset))
+        result = numpy.argmax(quantized_numpy_module.forward(*x, fhe="simulate"))
         results.append(result)
 
     # Compare ONNX runtime vs Virtual Lib
@@ -760,7 +755,7 @@ def test_qat_import_bits_check(default_configuration):
     x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
     # The result of compiling without any n_bits (default)
-    q_out = quantized_numpy_module.forward(quantized_numpy_module.quantize_input(x_test))
+    predictions = quantized_numpy_module.forward(*x_test, fhe="disable")
 
     # Compare the results of running with n_bits=None to the results running with
     # all the other n_bits configs. The results should be the same as bit-widths
@@ -773,9 +768,9 @@ def test_qat_import_bits_check(default_configuration):
             configuration=default_configuration,
         )
 
-        q_out_2 = quantized_numpy_module.forward(quantized_numpy_module.quantize_input(x_test))
+        new_predictions = quantized_numpy_module.forward(*x_test, fhe="disable")
 
-        assert numpy.all(q_out == q_out_2)
+        assert numpy.all(predictions == new_predictions)
 
     n_bits_invalid = [
         {"XYZ": 8, "model_inputs": 8},
@@ -967,14 +962,14 @@ def test_shape_operations_net(
     inputset = numpy.random.uniform(size=(1, n_channels, 2, 2))
 
     if is_qat:
-        quant_model = compile_brevitas_qat_model(
+        quantized_module = compile_brevitas_qat_model(
             net,
             inputset,
             configuration=default_configuration,
             p_error=0.01,
         )
     else:
-        quant_model = compile_torch_model(
+        quantized_module = compile_torch_model(
             net,
             inputset,
             configuration=default_configuration,
@@ -991,26 +986,23 @@ def test_shape_operations_net(
     # For PTQ we only test that the model cna be compiled and that it can be executed
     if is_qat or simulate:
         test_input = numpy.random.uniform(size=(1, n_channels, 2, 2))
-        q_input = quant_model.quantize_input(test_input)
-        if simulate:
-            q_output = quant_model.fhe_circuit.simulate(q_input)
-        else:
-            q_output = quant_model.fhe_circuit.encrypt_run_decrypt(q_input)
 
-        dequant_out = quant_model.dequantize_output(q_output)
+        fhe_mode = "simulate" if simulate else "execute"
+
+        predictions = quantized_module.forward(test_input, fhe=fhe_mode)
 
         torch_output = net(torch.tensor(test_input)).detach().numpy()
 
         # In PTQ the results do not match because of a-priori set quantization options
         # Currently no solution for concat/reshape/transpose correctness in PTQ is proposed.
         if is_qat:
-            assert numpy.allclose(torch_output, dequant_out, atol=0.05, rtol=0)
+            assert numpy.allclose(torch_output, predictions, atol=0.05, rtol=0)
 
             # In QAT, since the quantization is defined a-priori, all TLUs will be removed
             # and the input quantizer is moved to the clear. We can thus check there are no TLUs
             # in the graph
-            check_graph_output_has_no_tlu(quant_model.fhe_circuit.graph)
-            assert "lookup_table" not in quant_model.fhe_circuit.mlir
+            check_graph_output_has_no_tlu(quantized_module.fhe_circuit.graph)
+            assert "lookup_table" not in quantized_module.fhe_circuit.mlir
 
 
 def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
@@ -1031,7 +1023,7 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
 
     torch_output = net(torch.tensor(test_input)).detach().numpy()
 
-    cml_output = quant_model.forward_and_dequant(quant_model.quantize_input(test_input))
+    cml_output = quant_model.forward(test_input, fhe="disable")
 
     # We only care about checking that zeros added with padding are in the same positions
     # between the torch output and the CML output
