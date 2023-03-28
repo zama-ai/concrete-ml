@@ -11,7 +11,6 @@ DO_USER_LICENSES=1
 
 OUTPUT_DIRECTORY="${LICENSE_DIRECTORY}"
 DO_FORCE_UPDATE=0
-CN_VERSION="concrete-numpy[full]"
 
 while [ -n "$1" ]
 do
@@ -25,11 +24,6 @@ do
             DO_FORCE_UPDATE=1
             ;;
 
-        "--cn_version" )
-            shift
-            CN_VERSION="${1}"
-            ;;
-
         *)
             echo "Unknown param : $1"
             exit 1
@@ -37,12 +31,6 @@ do
    esac
    shift
 done
-
-# Temp file with CN version inside. We can't have a dynamic TMP_FILE_CN_VERSION filename, since it
-# changes the md5
-TMP_FILE_CN_VERSION="/tmp/cn_version.txt"
-rm -f TMP_FILE_CN_VERSION
-echo "${CN_VERSION}" > ${TMP_FILE_CN_VERSION}
 
 UNAME=$(uname)
 if [ "$UNAME" == "Darwin" ]
@@ -69,7 +57,7 @@ then
 
     # If the dependencies have not changed, don't do anything
     MD5_OLD_DEPENDENCIES=$(cat ${LICENSES_FILENAME}.md5)
-    MD5_NEW_DEPENDENCIES=$(openssl md5 poetry.lock ${TMP_FILE_CN_VERSION} | sed -e "s@(stdin)= @@g" | openssl md5 | sed -e "s@MD5@@g" | sed -e "s@(stdin)= @@g")
+    MD5_NEW_DEPENDENCIES=$(openssl md5 poetry.lock | sed -e "s@(stdin)= @@g" | openssl md5 | sed -e "s@MD5@@g" | sed -e "s@(stdin)= @@g")
 
     echo "MD5 of the poetry.lock for which dependencies have been listed: ${MD5_OLD_DEPENDENCIES}"
     echo "MD5 of the current poetry.lock:                                 ${MD5_NEW_DEPENDENCIES}"
@@ -126,7 +114,6 @@ then
     fi
 
     poetry install --only main
-    python -m pip install -U --pre "${CN_VERSION}"
     python -m pip install pip-licenses
 
     # In --format=csv such that the column length (and so, the diff) do not change with longer
@@ -198,7 +185,7 @@ then
         echo "Success: no update in $LICENSES_FILENAME"
     else
         # Update the .md5 files
-        openssl md5 poetry.lock ${TMP_FILE_CN_VERSION} | sed -e "s@(stdin)= @@g" | openssl md5 | sed -e "s@MD5@@g" | sed -e "s@(stdin)= @@g" > ${LICENSES_FILENAME}.md5
+        openssl md5 poetry.lock | sed -e "s@(stdin)= @@g" | openssl md5 | sed -e "s@MD5@@g" | sed -e "s@(stdin)= @@g" > ${LICENSES_FILENAME}.md5
     fi
 fi
 

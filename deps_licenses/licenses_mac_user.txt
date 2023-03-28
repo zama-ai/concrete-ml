@@ -6,7 +6,7 @@ certifi, 2022.12.7, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.1.0, MIT License
 coloredlogs, 15.0.1, MIT License
 concrete-compiler, 0.24.0rc5, BSD-3
-concrete-numpy, 0.11.1, BSD License
+concrete-numpy, 1.0.0rc2, BSD License
 contourpy, 1.0.7, BSD License
 cycler, 0.11.0, BSD License
 dependencies, 2.0.1, BSD License
