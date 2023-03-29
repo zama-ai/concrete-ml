@@ -13,6 +13,17 @@ PYTEST_OPTIONS:=
 POETRY_VERSION:=1.2.2
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
 
+# If one wants to force the installation of a given rc version
+# /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
+# issues when trying to run it in the future.
+CN_VERSION_SPEC_FOR_RC="concrete-numpy==1.0.0rc2"
+
+# If one wants to use the last RC version
+# CN_VERSION_SPEC_FOR_RC="$$(poetry run python \
+# ./script/make_utils/pyproject_version_parser_helper.py \
+# --pyproject-toml-file pyproject.toml \
+# --get-pip-install-spec-for-dependency concrete-numpy)"
+
 .PHONY: setup_env # Set up the environment
 setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
@@ -31,6 +42,9 @@ setup_env:
 	else \
 		poetry install; \
 	fi
+
+	echo "Installing $(CN_VERSION_SPEC_FOR_RC)" && \
+	poetry run python -m pip install -U --pre "$(CN_VERSION_SPEC_FOR_RC)"
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: check_poetry_version
@@ -447,6 +461,7 @@ release_docker:
 	--new-version "$${PROJECT_VERSION}" \
 	--existing-versions "$${PROJECT_VERSION}" | jq -rc '.is_prerelease')" && \
 	echo "PRERELEASE=$${IS_PRERELEASE}" >> "$${EV_FILE}" && \
+	echo "CN_VERSION='$(CN_VERSION_SPEC_FOR_RC)'" >> "$${EV_FILE}" && \
 	echo "" >> "$${EV_FILE}" && \
 	./docker/build_release_image.sh "$${EV_FILE}" && rm -f "$${EV_FILE}" || rm -f "$${EV_FILE}"
 
@@ -532,16 +547,17 @@ show_type:show_scope
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
-	./script/make_utils/licenses.sh
+	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)"
 
 .PHONY: force_licenses # Generate the list of licenses of dependencies (force the regeneration)
 force_licenses:
-	./script/make_utils/licenses.sh --force_update
+	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)" --force_update
 
 .PHONY: check_licenses # Check if the licenses of dependencies have changed
 check_licenses:
 	@TMP_OUT="$$(mktemp)" && \
-	if ! poetry run env bash ./script/make_utils/licenses.sh --check > "$${TMP_OUT}"; then \
+	if ! poetry run env bash ./script/make_utils/licenses.sh --check \
+		--cn_version "$(CN_VERSION_SPEC_FOR_RC)" > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
 		echo "Error while checking licenses, see log above."; \
