@@ -14,6 +14,7 @@ on:
         - ClientServer \n
         - ConvolutionalNeuralNetwork \n
         - DecisionTreeClassifier \n
+        - ExperimentPrivacyTreePaper \n
         - FromImageNetToCifar \n
         - FullyConnectedNeuralNetwork \n
         - FullyConnectedNeuralNetworkOnMNIST \n
@@ -47,6 +48,7 @@ env:
   ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
+  ExperimentPrivacyTreePaper: "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb" 
   FromImageNetToCifar: "use_case_examples/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
