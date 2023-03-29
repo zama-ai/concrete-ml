@@ -1396,7 +1396,9 @@ class SklearnLinearModelMixin(sklearn.base.BaseEstimator):
         # Dequantize the output.
         # Since the matmul and the bias both use the same scale and zero-points, we obtain that
         # y = S*(q_y - 2*Z)
-        y_preds = output_scale * (q_y_preds - 2 * output_zero_point)
+        y_preds = output_scale * (
+            q_y_preds - 2 * numpy.asarray(output_zero_point, dtype=numpy.float64)
+        )
         return y_preds
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
