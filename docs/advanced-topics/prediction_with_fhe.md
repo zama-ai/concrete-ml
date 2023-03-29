@@ -1,7 +1,11 @@
 # Prediction with FHE
 
-Concrete-ML offers the possibility to easily encrypt the inputs with a dedicated function, to execute
-the inference on these inputs encrypted, and, finally, to decrypt the outputs with another dedicated function.
+Concrete-ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE and decryption, in a single step. However, there is the option to execute the individual steps separately, for more fine-grained control. The APIs to accomplish this are different for:
+
+- [Built-in models](#built-in-models)
+- [Custom models](#custom-models)
+
+## Built-in models
 
 The following example shows how to create a synthetic data-set and how to use it
 to train a LogisticRegression model from Concrete-ML.
@@ -14,7 +18,7 @@ from concrete.ml.sklearn import LogisticRegression
 import numpy
 
 # Create a synthetic data-set for a classification problem
-x, y = make_classification(n_samples=100, class_sep=2, n_features=30, random_state=42)
+x, y = make_classification(n_samples=100, class_sep=2, n_features=3, n_informative=3, n_redundant=0, random_state=42)
 
 # Split the data-set into a train and test set
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
@@ -72,7 +76,8 @@ for f_input in x_test:
     # example, or a softmax function in order to get the probabilities (in the clear)
     y_proba = model.post_processing(y)
 
-    # Apply the argmax to get the class predictions (in the clear)
+    # Since this model does classification, apply the argmax to get the class predictions (in the clear)
+    # Note that regression models won't need the following line
     y_class = numpy.argmax(y_proba, axis=1)
 
     y_pred_fhe_step += list(y_class)
@@ -82,4 +87,42 @@ y_pred_fhe_step = numpy.array(y_pred_fhe_step)
 print("Predictions in clear:", y_pred_clear)
 print("Predictions in FHE  :", y_pred_fhe_step)
 print(f"Similarity: {int((y_pred_fhe_step == y_pred_clear).mean()*100)}%")
+```
+
+## Custom models
+
+For custom models, the API to execute inference in FHE or simulation is illustrated by the following example:
+
+<!--pytest-codeblocks:cont-->
+
+```python
+from torch import nn
+from brevitas import nn as qnn
+from concrete.ml.torch.compile import compile_brevitas_qat_model
+
+class FCSmall(nn.Module):
+    """A small QAT NN."""
+
+    def __init__(self, input_output):
+        super().__init__()
+        self.quant_input = qnn.QuantIdentity(bit_width=3)
+        self.fc1 = qnn.QuantLinear(in_features=input_output, out_features=input_output, weight_bit_width=3, bias=True)
+        self.act_f = nn.ReLU()
+        self.fc2 = qnn.QuantLinear(in_features=input_output, out_features=input_output, weight_bit_width=3, bias=True)
+
+    def forward(self, x):
+        return self.fc2(self.act_f(self.fc1(self.quant_input(x))))
+
+torch_model = FCSmall(3)
+
+quantized_module = compile_brevitas_qat_model(
+    torch_model,
+    x_train,
+)
+
+x_test_q = quantized_module.quantize_input(x_test)
+y_pred = quantized_module.quantized_forward(x_test_q, fhe="simulate")
+y_pred = quantized_module.dequantize_output(y_pred)
+
+y_pred = numpy.argmax(y_pred, axis=1)
 ```
