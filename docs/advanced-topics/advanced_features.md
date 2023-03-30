@@ -112,7 +112,7 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 clf = DecisionTreeClassifier(random_state=42)
 
 search = BinarySearch(estimator=clf, predict="predict", metric=top_k_accuracy_score)
-p_error = search.run(x=X_train, ground_truth=y_train)
+p_error = search.run(x=X_train, ground_truth=y_train, max_iter=10)
 ```
 
 ## Rounded activations and quantizers
