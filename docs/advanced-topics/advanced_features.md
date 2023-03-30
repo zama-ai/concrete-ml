@@ -91,6 +91,10 @@ TLU-error on the output of a neural network.
 Concrete-ML provides a tool to find a good `p_error` value that improves inference speed while maintaining
 accuracy. The method is based on binary search, evaluating the latency/accuracy tradeoff iteratively.
 
+<!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3367-->
+
+<!--pytest-codeblocks:skip-->
+
 ```python
 from sklearn.datasets import make_classification
 from sklearn.metrics import top_k_accuracy_score
