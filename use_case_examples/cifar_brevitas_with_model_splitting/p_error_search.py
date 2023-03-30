@@ -17,7 +17,7 @@
 #       which gives a model_i that has `accuracy_i`, such that:
 #       | accuracy_i - accuracy_0| <= Threshold, where:
 #           - Threshold is given by the user and
-#           - `accuracy_0` refers to original model with `p_error = 0`
+#           - `accuracy_0` refers to original model with `p_error ~ 0`
 
 #   - Define our objective:
 #       - If the objective is matched -> update the lower bound to be the current p-error
@@ -31,7 +31,7 @@
 #   - The inference is performed via the FHE simulation mode (Virtual Library)
 
 # `p_error` is bounded between 0 and 1
-#       - `p_error = 0.0`, refers to the original model in clear, that gives an accuracy
+#       - `p_error ~ 0.0`, refers to the original model in clear, that gives an accuracy
 #           that we note as `accuracy_0`
 #       - `p_error = 1.0`, refers to the worst case scenario, where the model perfoms very badly
 #       - By default, `lower = 0.0` and `uppder` bound to 1.
@@ -46,6 +46,7 @@ import argparse
 
 import torch
 from model import CNV
+from sklearn.metrics import top_k_accuracy_score
 from torchvision import datasets, transforms
 
 from concrete.ml.pytest.utils import (
@@ -114,7 +115,7 @@ def main(args):
     if args.verbose:
         print("** `p_error` search")
 
-    search = BinarySearch(estimator=model)
+    search = BinarySearch(estimator=model, predict="predict", metric=top_k_accuracy_score)
 
     p_error = search.run(x=x_calib, ground_truth=y, strategy=all)
 

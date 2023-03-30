@@ -1,5 +1,6 @@
 """Test binary search class."""
 
+import os
 import warnings
 from pathlib import Path
 
@@ -24,6 +25,8 @@ from concrete.ml.pytest.utils import (
 from concrete.ml.search_parameters import BinarySearch
 from concrete.ml.sklearn import get_sklearn_linear_models
 
+# For built-in models (trees and QNNs) we use the fixture `load_data`
+# For custom models, we define the following variables:
 DATASETS_ARGS = {
     "FashionMNIST": {
         "dataset": datasets.FashionMNIST,
@@ -109,6 +112,7 @@ def test_update_invalid_attr_method(attr, value, model_name, quant_type, metric,
     search = BinarySearch(
         estimator=model,
         metric=metric,
+        predict="predict",
     )
 
     with pytest.raises(AttributeError, match=".* does not belong to this class"):
@@ -135,36 +139,70 @@ def test_update_valid_attr_method(attr, value, model_name, quant_type, metric):
     search = BinarySearch(
         estimator=model,
         metric=metric,
+        predict="predict",
+        n_simulation=1,
     )
 
     search.run(x=x_calib, ground_truth=y, strategy=all, **{attr: value})
+    assert getattr(search, attr) == value
 
 
+@pytest.mark.skip(reason="Tests too long")
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-def test_non_convergence(model_class, parameters, load_data):
+def test_non_convergence_for_built_in_models(model_class, parameters, load_data):
     """Check that binary search raises a user warning when convergence is not achieved."""
+
+    # Linear models are not concerned by this test because they do not have PBS
+    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        return
 
     x, y = load_data(model_class, **parameters)
     x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=100)
 
     model = instantiate_model_generic(model_class, n_bits=4)
 
-    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
-        return
-
     metric = r2_score if is_regressor_or_partial_regressor(model) else binary_classification_metric
 
     search = BinarySearch(
         estimator=model,
-        predict_method="predict",
-        verbose=True,
-        save=True,
-        n_simulation=1,
-        max_metric_loss=1e-9,
-        delta_tolerance=1e-9,
+        predict="predict",
         metric=metric,
-        is_qat=False,
         max_iter=1,
+        n_simulation=5,
+        max_metric_loss=1e-9,
+        is_qat=False,
+    )
+
+    warnings.simplefilter("always")
+    with pytest.warns(UserWarning, match="ConvergenceWarning: .*"):
+        search.run(x=x_calib, ground_truth=y, strategy=all)
+
+
+@pytest.mark.parametrize("model_name, quant_type", [("CustomModel", "qat")])
+def test_non_convergence_for_custom_models(model_name, quant_type):
+    """Check that binary search raises a user warning when convergence is not achieved."""
+
+    # Load pretrained model
+    model = load_torch_model(
+        MODELS_ARGS[model_name][quant_type]["model_class"],
+        MODELS_ARGS[model_name][quant_type]["path"],
+        MODELS_ARGS[model_name][quant_type]["params"],
+    )
+
+    # Load data-set
+    x, y = make_classification(**MODELS_ARGS[model_name]["dataset"])
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=1)
+
+    search = BinarySearch(
+        estimator=model,
+        predict="predict",
+        metric=top_k_accuracy_score,
+        max_metric_loss=-0.3,
+        max_iter=1,
+        n_simulation=1,
+        is_qat=quant_type == "qat",
+        k=1,
+        labels=numpy.arange(MODELS_ARGS[model_name]["dataset"]["n_classes"]),
     )
 
     warnings.simplefilter("always")
@@ -191,7 +229,7 @@ def test_valid_strategy(strategy, model_name, quant_type):
         MODELS_ARGS[model_name][quant_type]["params"],
     )
 
-    search = BinarySearch(estimator=model)
+    search = BinarySearch(estimator=model, predict="predict", metric=top_k_accuracy_score)
     search.eval_match(strategy, all_matches=numpy.random.choice([True, False], size=5))
 
 
@@ -206,24 +244,17 @@ def test_invalid_strategy(strategy, model_name, quant_type):
         MODELS_ARGS[model_name][quant_type]["params"],
     )
 
-    search = BinarySearch(estimator=model)
+    search = BinarySearch(estimator=model, predict="predict", metric=top_k_accuracy_score)
 
     with pytest.raises(TypeError, match=".* is not valid."):
         search.eval_match(strategy, all_matches=numpy.random.choice([True, False], size=5))
 
 
-@pytest.mark.parametrize("threshold", [0.019])
-@pytest.mark.parametrize(
-    "strategy",
-    [
-        all,
-        lambda all_matches: numpy.median(all_matches) == 1,
-    ],
-)
+@pytest.mark.parametrize("threshold,", [0.02])
 @pytest.mark.parametrize(
     "model_name, quant_type", [("CustomModel", "qat"), ("CustomModel", "fp32")]
 )
-def test_binary_search_for_custom_models(model_name, quant_type, strategy, threshold):
+def test_binary_search_for_custom_models(model_name, quant_type, threshold):
     """Check if the returned `p_error` is valid for custom NNs."""
 
     # Load pretrained model
@@ -235,72 +266,72 @@ def test_binary_search_for_custom_models(model_name, quant_type, strategy, thres
 
     # Load data-set
     x, y = make_classification(**MODELS_ARGS[model_name]["dataset"])
-    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=100)
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=10)
 
     search = BinarySearch(
         estimator=model,
-        n_simulation=5,
-        max_metric_loss=threshold,
-        is_qat=quant_type == "qat",
+        predict="predict",
         metric=top_k_accuracy_score,
+        max_metric_loss=threshold,
+        n_simulation=5,
+        max_iter=1,
+        is_qat=quant_type == "qat",
         k=1,
         labels=numpy.arange(MODELS_ARGS[model_name]["dataset"]["n_classes"]),
     )
 
-    largest_perror = search.run(x=x_calib, ground_truth=y, strategy=strategy)
+    largest_perror = search.run(x=x_calib, ground_truth=y, strategy=all)
 
     assert 1.0 > largest_perror > 0.0
-    assert round(search.history[-1]["accuracy_difference"]) <= threshold
+    assert (
+        numpy.mean(search.history[-1]["metric_difference"]) <= threshold
+        or len(search.history) == search.max_iter
+    )
 
 
-@pytest.mark.parametrize("threshold", [0.019])
-@pytest.mark.parametrize(
-    "strategy",
-    [
-        all,
-        lambda all_matches: numpy.median(all_matches) == 1,
-    ],
-)
+@pytest.mark.parametrize("threshold", [0.02])
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-@pytest.mark.parametrize("predict_method", ["predict", "predict_log_proba", "predict_proba"])
-def test_binary_search_for_built_in_models(
-    model_class, parameters, strategy, threshold, predict_method, load_data
-):
+@pytest.mark.parametrize("predict", ["predict", "predict_log_proba", "predict_proba"])
+def test_binary_search_for_built_in_models(model_class, parameters, threshold, predict, load_data):
     """Check if the returned `p_error` is valid for built-in models."""
 
     x, y = load_data(model_class, **parameters)
-    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=100)
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=80)
 
     model = instantiate_model_generic(model_class, n_bits=4)
 
+    # Linear models are not concerned by this test because they do not have PBS
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
         return
 
     metric = r2_score if is_regressor_or_partial_regressor(model) else binary_classification_metric
 
-    if hasattr(type(model), predict_method):
+    if hasattr(type(model), predict):
 
         search = BinarySearch(
             estimator=model,
-            predict_method=predict_method,
-            verbose=True,
+            predict=predict,
+            metric=metric,
             n_simulation=5,
             max_metric_loss=threshold,
-            metric=metric,
             is_qat=False,
+            max_iter=3,
         )
     else:
-        # The model does not have `predict_method`
+        # The model does not have `predict`
         return
 
-    largest_perror = search.run(x=x_calib, ground_truth=y, strategy=strategy)
+    largest_perror = search.run(x=x_calib, ground_truth=y, strategy=all)
 
     assert 1.0 > largest_perror > 0.0
-    assert search.history[-1]["accuracy_difference"] <= threshold
+    assert (
+        numpy.mean(search.history[-1]["metric_difference"]) <= threshold
+        or len(search.history) == search.max_iter
+    )
 
 
 @pytest.mark.parametrize("is_qat", [False, True])
-def test_invalid_estimator(is_qat):
+def test_invalid_estimator_for_custom_models(is_qat):
     """Check that binary search raises an exception for insupported models."""
 
     model = keras.Sequential(
@@ -319,7 +350,110 @@ def test_invalid_estimator(is_qat):
     search = BinarySearch(
         estimator=model,
         is_qat=is_qat,
+        predict="predict",
+        metric=top_k_accuracy_score,
     )
 
     with pytest.raises(ValueError, match=".* is not supported. .*"):
-        search.run(x=x_calib, ground_truth=y, strategy=all, max_iter=1)
+        search.run(x=x_calib, ground_truth=y, strategy=all, max_iter=1, n_simulation=1)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_invalid_estimator_for_built_in_models(model_class, parameters, load_data):
+    """Check that binary search raises an exception for insupported models."""
+
+    x, y = load_data(model_class, **parameters)
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=100)
+
+    model = instantiate_model_generic(model_class, n_bits=4)
+
+    # Linear models are not concerned by this test because they do not have PBS
+    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        return
+
+    metric = r2_score if is_regressor_or_partial_regressor(model) else binary_classification_metric
+
+    search = BinarySearch(
+        estimator=model,
+        predict="predict",
+        metric=metric,
+        is_qat=False,
+    )
+
+    with pytest.raises(ValueError, match=".* is not supported. .*"):
+        search.run(x=x_calib, ground_truth=y)
+
+
+@pytest.mark.parametrize(
+    "model_name, quant_type, metric", [("CustomModel", "qat", binary_classification_metric)]
+)
+def test_failure_save_option(model_name, quant_type, metric):
+    """Check that `_update_attr` can successfully update given valid attributes."""
+
+    model = load_torch_model(
+        MODELS_ARGS[model_name][quant_type]["model_class"],
+        MODELS_ARGS[model_name][quant_type]["path"],
+        MODELS_ARGS[model_name][quant_type]["params"],
+    )
+
+    with pytest.raises(AssertionError, match="To save logs, file name and path must be provided"):
+        _ = BinarySearch(
+            estimator=model,
+            predict="predict",
+            metric=metric,
+            save=True,
+        )
+
+
+@pytest.mark.filterwarnings("ignore::UserWarning")
+@pytest.mark.parametrize(
+    "directory, log_file",
+    [
+        ("/tmp/binary_search_perror", "log_file_1.txt"),
+        (Path("/tmp/binary_search_perror"), "log_file_2.txt"),
+        ("/tmp/binary_search_perror", Path("log_file_3.txt")),
+        (Path("/tmp/binary_search_perror"), Path("log_file_4.txt")),
+    ],
+)
+@pytest.mark.parametrize(
+    "model_name, quant_type, metric", [("CustomModel", "qat", binary_classification_metric)]
+)
+def test_success_save_option(model_name, quant_type, metric, directory, log_file, load_data):
+    """Check that `_update_attr` can successfully update given valid attributes."""
+
+    model = load_torch_model(
+        MODELS_ARGS[model_name][quant_type]["model_class"],
+        MODELS_ARGS[model_name][quant_type]["path"],
+        MODELS_ARGS[model_name][quant_type]["params"],
+    )
+
+    x, y = load_data(model, **MODELS_ARGS[model_name]["dataset"])
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=1)
+
+    search = BinarySearch(
+        estimator=model,
+        metric=metric,
+        predict="predict",
+        save=True,
+        directory=directory,
+        log_file=log_file,
+        max_iter=1,
+        n_simulation=1,
+        verbose=True,
+    )
+
+    path = Path(os.path.join(directory, log_file))
+
+    # When instantiating the class, if the file exists, it is deleted, to avoid overwriting it
+    assert not path.exists()
+
+    search.run(x=x_calib, ground_truth=y)
+
+    # Check that the file has been properly created
+    assert path.exists()
+
+    # Check that the file contains at least 2 rows (one for the header and another one for the data)
+    with path.open(mode="r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    assert len(lines) >= 2

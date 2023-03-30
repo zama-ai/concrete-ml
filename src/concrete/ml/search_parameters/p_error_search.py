@@ -48,8 +48,7 @@ If match, we update the lower bound to be the current `p_error`
 Else, we update the upper bound to be the current `p_error`
 Update the current `p_error` with the mean of the bounds
 
-We stop the search either when the maximum number of iterations is reached or when the update of
-the `p_error` is below a given threshold called `delta_tolerence`
+We stop the search when the maximum number of iterations is reached.
 
 If we don't reach the convergence, a user warning is raised.
 """
@@ -57,12 +56,11 @@ import warnings
 from collections import OrderedDict
 from pathlib import Path
 from pprint import pprint
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy
 import torch
 from concrete.numpy import Configuration
-from sklearn.metrics import top_k_accuracy_score
 from tqdm import tqdm
 
 from ..common.utils import is_brevitas_model, is_model_class_in_a_list
@@ -78,7 +76,7 @@ def compile_and_simulated_fhe_inference(
     n_bits: int,
     is_qat: bool,
     metric: Callable,
-    predict_method: Optional[str],
+    predict: str,
     **kwargs: Dict,
 ) -> Tuple[numpy.ndarray, float]:
     """Get the quantized module of a given model in FHE, simulated or not.
@@ -97,7 +95,7 @@ def compile_and_simulated_fhe_inference(
         is_qat (bool): True, if the NN has been trained through QAT.
             If `False` it is converted into post-trained quantized model.
         metric (Callable): Classification or regression evaluation metric.
-        predict_method (str): The predict method to use.
+        predict (str): The predict method to use.
         kwargs (Dict): Metric's hyper-parameters.
 
     Returns:
@@ -144,7 +142,7 @@ def compile_and_simulated_fhe_inference(
             estimator = estimator.fit(calibration_data, ground_truth)
 
         estimator.compile(calibration_data, p_error=p_error, configuration=configuration)
-        predict_method = getattr(estimator, predict_method)
+        predict_method = getattr(estimator, predict)
         dequantized_output = predict_method(calibration_data, fhe="simulate")
 
     else:
@@ -162,64 +160,57 @@ def compile_and_simulated_fhe_inference(
 class BinarySearch:
     """Class for `p_error` hyper-parameter search for classification and regression tasks."""
 
-    history: List = []
+    history: List
+    path: Path = None  # type: ignore[assignment]
     p_error: float
 
     def __init__(
         self,
         estimator,
+        predict: str,
+        metric: Callable,
         n_bits: int = 4,
         is_qat: bool = True,
-        verbose: bool = True,
-        save: bool = False,
         lower: float = 0.0,
         upper: float = 1.0,
-        max_iter: int = 100,
-        n_simulation: int = 10,
+        max_iter: int = 30,
+        n_simulation: int = 5,
         strategy: Any = all,
-        metric: Callable = top_k_accuracy_score,
         max_metric_loss: float = 0.01,
-        delta_tolerance: float = 1e-5,
-        log_file: str = "log_file.txt",
-        directory: str = "/tmp/cml_search/p_error",
-        predict_method: Optional[str] = None,
+        save: bool = False,
+        log_file: str = None,
+        directory: str = None,
+        verbose: bool = False,
         **kwargs: dict,
     ):
         """`p_error` binary search algorithm.
 
         Args:
-            estimator : Custom model (Brevitas or Pytorch) or built-in models (trees or QNNs)
-            is_qat (bool): Flag that indicates whether the `estimator` has been
-                trained through QAT (quantization-aware training). Default is True
-            verbose (bool): Flag that indicates whether to print detailed information.
-                Default is True.
-            n_bits (int): Quantization bits
-            save (bool): Flag that indicates whether to save some meta data in
-                `log_file.txt`file. Default is False.
-            lower (float): The lower bound of the search space for the `p_error`.
-                Default is 0.0.
-            upper (float): The upper bound of the search space for the `p_error`.
-                Default is 1.0.
+            estimator : Custom model (Brevitas or Pytorch) or built-in models (trees or QNNs).
+            predict (str): The prediction method to use for built-in tree models.
+            metric (Callable): Evaluation metric for classification or regression tasks.
+            n_bits (int): Quantization bits, for PTQ models. Default is 4.
+            is_qat (bool): Flag that indicates whether the `estimator` has been trained through
+                QAT (quantization-aware training). Default is True.
+            lower (float): The lower bound of the search space for the `p_error`. Default is 0.0.
+            upper (float): The upper bound of the search space for the `p_error`. Default is 1.0.
             max_iter (int): The maximum number of iterations to run the binary search
-                algorithm. Default is 100.
-            n_simulation (int): The number of simulations to validate the results of
-                the VL. Default is 10.
-            max_metric_loss (float): The threshold to use to satisfy the condition:
-                | accuracy_i - accuracy_0| <= `max_metric_loss` and stop the search algorithm.
-                Default is 0.01.
-            strategy (Any): A uni-variate function that defines a "match". It can be:
-                a built-in functions provided in python, like:
-                any or all or a custom function, like:
+                algorithm. Default is 20.
+            n_simulation (int): The number of simulations to validate the results of the FHE
+                simulation. Default is 5.
+            strategy (Any): A uni-variate function that defines a "match". It can be built-in
+                functions provided in Python, such as any() or all(), or custom functions, like:
                 mean = lambda all_matches: numpy.mean(all_matches) >= 0.5
                 median = lambda all_matches: numpy.median(all_matches) == 1
                 Default is 'all'.
-            metric (Callable): Evaluation metric for classification or regression tasks
-            log_file (str): The kog file name. Default is 'log_file.txt'.
-            delta_tolerance (float): Tolerance's threshold of the relative difference between
-                |current_p_error - previous_p_error|. Default is 1e-5.
-            directory (str): The directory to save the meta data.
-                Default is '/tmp/cml_search/p_error'.
-            predict_method (str): The prediction method to use for built-in tree models.
+            max_metric_loss (float): The threshold to use to satisfy the condition:
+                | accuracy_i - accuracy_0| <= `max_metric_loss`. Default is 0.01.
+            save (bool): Flag that indicates whether to save some meta data in log file.
+                Default is False.
+            log_file (str): The log file name. Default is None.
+            directory (str): The directory to save the meta data. Default is None.
+            verbose (bool): Flag that indicates whether to print detailed information.
+                Default is False.
             kwargs: Parameter of the evaluation metric.
         """
 
@@ -234,12 +225,12 @@ class BinarySearch:
         self.n_simulation = n_simulation
         self.max_metric_loss = max_metric_loss
         self.strategy = strategy
-        self.log_file = log_file
-        self.delta_tolerance = delta_tolerance
-        self.directory = Path(directory)
         self.metric = metric
-        self.predict_method = predict_method
+        self.predict = predict
         self.kwargs = kwargs
+
+        if directory is not None and log_file is not None:
+            self.path = Path(directory) / log_file
 
         self._check_valid_values()
         self.reset_history()
@@ -252,34 +243,34 @@ class BinarySearch:
         assert self.lower < self.upper, "Invalid values, `lower` < `upper`"
         assert (
             self.n_simulation >= 1
-        ), "Invalid value, `n_evaluation` must be greater or equal than 1"
+        ), "Invalid value, `n_simulation` must be greater or equal than 1"
+        assert (
+            self.save is True and self.path is not None
+        ) or self.save is False, "To save logs, file name and path must be provided"
 
     def reset_history(self) -> None:
         """Clean history."""
-        full_path = self.directory / self.log_file
-        if full_path.exists():
-            full_path.unlink(missing_ok=True)
+        if self.path is not None:
+            self.path.unlink(missing_ok=True)
 
     def _save(self, data: Dict) -> None:
-        """Save data into `self.dir / self.log_file.txt`.
+        """Save data into `directory / log_file.txt`.
 
         Args:
             data (Dict): Data to be saved.
         """
 
-        self.history.append(data)
-
         if self.save:
-            # When instantiating the class, if `self.log_file` exists, we reset it
+            # When instantiating the class, if the log file exists, we reset it
             # On the first iteration, we write the header
             # Then, we append the data at each iteration
-            if not (self.directory / self.log_file).exists():
-                self.directory.mkdir(parents=True, exist_ok=True)
-                with open(self.directory / self.log_file, "w", encoding="utf-8") as file:
+            if not self.path.exists():
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                with self.path.open("w", encoding="utf-8") as file:
                     file.write(f"{','.join(data.keys())}\n")  # Iteration = 0, set the header
 
             # Append new data, as it goes along
-            with open(self.directory / self.log_file, "a", encoding="utf-8") as file:
+            with self.path.open("a", encoding="utf-8") as file:
                 file.write(f"{','.join(map(str, data.values()))}\n")
 
     def _eval(self) -> None:
@@ -288,15 +279,15 @@ class BinarySearch:
             self.estimator.eval()
 
     @staticmethod
-    def eval_match(strategy: Callable, all_matches: List) -> Union[bool, numpy.bool_]:
+    def eval_match(strategy: Callable, all_matches: List[bool]) -> Union[bool, numpy.bool_]:
         """Eval the matches.
 
         Args:
-            strategy (Callable): A uni-variate function that defines a "match". It can be: a
-                built-in functions provided in python, like: any or all or a custom function, like:
+            strategy (Callable): A uni-variate function that defines a "match". It can be built-in
+                functions provided in Python, such as any() or all(), or custom functions, like:
                 mean = lambda all_matches: numpy.mean(all_matches) >= 0.5
                 median = lambda all_matches: numpy.median(all_matches) == 1
-            all_matches (List): List of matches.
+            all_matches (List[bool]): List of matches.
 
         Returns:
             bool: Evaluation of the matches according to the given strategy.
@@ -308,8 +299,11 @@ class BinarySearch:
         try:
             is_match = strategy(all_matches)
             assert isinstance(is_match, (bool, numpy.bool_))
-        except (TypeError, AssertionError) as e:
-            raise TypeError("`strategy` is not valid. `is_match` must be a boolean.") from e
+        except (TypeError, AssertionError) as exception:
+            raise TypeError(
+                "`strategy` is not valid. It takes a list of boolean values as input and "
+                "outputs a boolean value. `is_match` must be a boolean."
+            ) from exception
 
         return is_match
 
@@ -319,7 +313,7 @@ class BinarySearch:
         estimated_output: numpy.ndarray,
         reference_score: float,
         estimated_score: float,
-    ) -> bool:
+    ) -> Dict:
         """Figure out if the selected `p_error` is a good candidate and meets the criteria.
 
         A good candidate refers to a the largest possible `p_error` that satisfied the following
@@ -339,42 +333,42 @@ class BinarySearch:
             estimated_score (float): The score computed by the original model with p_error in ]0,1[
 
         Returns:
-            bool: if it matches and some information
+            Dict: Set of information
         """
 
         # The difference between the original model and the model with a given `p_error_i`
-        difference = abs(reference_score - estimated_score)
+        difference = reference_score - estimated_score
         abs_difference = numpy.abs(reference_output - estimated_output)
 
         # Compute inference errors
-        l_1_error = abs_difference.sum()
-        l_inf_error = abs_difference.max()
+        l1_error = abs_difference.mean()
+        l2_error = numpy.sqrt(l1_error)
         count_error = (reference_output != estimated_output).sum()
         mean_error = (reference_output != estimated_output).mean()
 
         # Check if `p_error_i` matches the condition
         match = difference <= self.max_metric_loss
 
-        # Save some meta data
-        meta_output = OrderedDict(
+        # Save some metadata
+        metadata = OrderedDict(
             {
+                "lower": self.lower,
                 "p_error": self.p_error,
-                "low": self.lower,
                 "upper": self.upper,
-                "l1_error": l_1_error,
-                "linf_error": l_inf_error,
-                "count_error": count_error,
-                "mean_error": mean_error,
-                "estimated_accuracy": estimated_score,
-                "reference_accuracy": reference_score,
-                "accuracy_difference": difference,
-                "match": match,
+                "l1_error": [round(l1_error, 4)],
+                "l2_error": [round(l2_error, 4)],
+                "count_error": [count_error],
+                "mean_error": [round(mean_error, 4)],
+                "estimated_metric": [round(estimated_score, 4)],
+                "reference_metric": reference_score,
+                "metric_difference": [round(difference, 4)],
+                "all_matches": [match],
             }
         )
 
-        self._save(meta_output)
+        self._save(metadata)
 
-        return match
+        return metadata
 
     def _update_attr(self, **kwargs: dict) -> None:
         """Update the hyper-parameters then check if the values are valid.
@@ -402,8 +396,7 @@ class BinarySearch:
     ) -> float:
         """Get an optimal `p_error` using binary search for classification and regression tasks.
 
-        Only PyTorch models are supported. If the given model is not quantization-aware trained, it
-        will be converted into a post-trained quantized model.
+        PyTorch models and built-in models are supported.
 
         To find an optimal `p_error` that  offers a balance between speed and efficiency, we use a
         binary search approach. Where the goal to look for the largest `p_error_i`, a float ∈ ]0,1[,
@@ -441,6 +434,8 @@ class BinarySearch:
         self.reset_history()
         self._eval()
 
+        self.history = []
+
         # Reference predictions:
         # Compile the model in FHE simulation, then compute the score with a model of `p_error ~ 0`
         reference_output, reference_score = compile_and_simulated_fhe_inference(
@@ -451,7 +446,7 @@ class BinarySearch:
             is_qat=self.is_qat,
             n_bits=self.n_bits,
             metric=self.metric,
-            predict_method=self.predict_method,
+            predict=self.predict,
             **self.kwargs,
         )
 
@@ -459,14 +454,13 @@ class BinarySearch:
         self.p_error = (self.lower + self.upper) / 2.0
 
         # Binary search algorithm
-        for _ in tqdm(range(self.max_iter), disable=self.verbose is None):
-            # Run the inference with given p-error
-            # Run predictions
+        for _ in tqdm(range(self.max_iter), disable=not self.verbose):
+            # Run the inference with a given p-error
 
-            # Since `p_error` represents a probability, to validate the results of the VL and get
-            # a stable estimation, several simulations are needed
-            all_matches = []
-            for _ in tqdm(range(self.n_simulation), disable=self.verbose is None):
+            # Since `p_error` represents a probability, to validate the results of the Fhe
+            # simulation and get a stable estimation, several runs are needed
+            simulation_data = []
+            for _ in range(self.n_simulation):
                 current_output, current_score = compile_and_simulated_fhe_inference(
                     estimator=self.estimator,
                     calibration_data=x,
@@ -475,44 +469,45 @@ class BinarySearch:
                     is_qat=self.is_qat,
                     n_bits=self.n_bits,
                     metric=self.metric,
-                    predict_method=self.predict_method,
+                    predict=self.predict,
                     **self.kwargs,
                 )
 
-                is_matched = self._acc_diff_objective(
+                current_metadata = self._acc_diff_objective(
                     reference_output=reference_output,
                     estimated_output=current_output,
                     reference_score=reference_score,
                     estimated_score=current_score,
                 )
 
-                all_matches.append(is_matched)
+                simulation_data.append(current_metadata)
+
+            # Aggregating all metadata collected from `n` simulations to display them all at once
+            self.history.append(
+                OrderedDict(
+                    {
+                        k: sum((d[k] for d in simulation_data), [])
+                        if isinstance(simulation_data[0][k], list)
+                        else simulation_data[0][k]
+                        for k in simulation_data[0]
+                    }
+                )
+            )
+
+            if self.verbose:
+                pprint(self.history[-1])
 
             # Update interval
-            if self.eval_match(strategy, all_matches):
+            if self.eval_match(strategy, self.history[-1]["all_matches"]):
                 # If we valid our criteria, we increase the `p_error`
                 self.lower = self.p_error
             else:
                 # If not, we decrease the `p_error`
                 self.upper = self.p_error
-            previous_p_error = self.p_error
-            self.p_error = (self.lower + self.upper) / 2
-
-            if self.verbose:
-                pprint(self.history[-1])
-
-            # If |previous_perror - current_perror | <= threshold, we consider that the convergence
-            # is reached and we stop the search
-            if (
-                abs(self.p_error - previous_p_error) <= self.delta_tolerance
-                or self.history[-1]["accuracy_difference"] <= self.max_metric_loss
-            ):
-                if self.verbose:
-                    print("Convergence reached")
-                break
+            self.p_error = (self.lower + self.upper) / 2.0
 
         # Raise a user warning if the convergence is not reached
-        if self.history[-1]["accuracy_difference"] > self.max_metric_loss:
+        if numpy.mean(self.history[-1]["metric_difference"]) > self.max_metric_loss:
             # pylint: disable=pointless-statement
             warning_message = (
                 "ConvergenceWarning: The convergence is not reached for the "

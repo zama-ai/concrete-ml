@@ -92,10 +92,13 @@ Concrete-ML provides a tool to find a good `p_error` value that improves inferen
 accuracy. The method is based on binary search, evaluating the latency/accuracy tradeoff iteratively.
 
 ```python
+from sklearn.datasets import make_classification
+from sklearn.metrics import top_k_accuracy_score
+from sklearn.model_selection import train_test_split
+
 from concrete.ml.search_parameters import BinarySearch
 from concrete.ml.sklearn import DecisionTreeClassifier
-from sklearn.datasets import make_classification
-from sklearn.model_selection import train_test_split
+
 
 x, y = make_classification(n_samples=100, class_sep=2, n_features=4, random_state=42)
 
@@ -104,7 +107,7 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 
 clf = DecisionTreeClassifier(random_state=42)
 
-search = BinarySearch(estimator=clf, predict_method="predict")
+search = BinarySearch(estimator=clf, predict="predict", metric=top_k_accuracy_score)
 p_error = search.run(x=X_train, ground_truth=y_train)
 ```
 
