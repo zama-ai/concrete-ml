@@ -5,9 +5,8 @@ import functools
 import json
 import tempfile
 
-# https://github.com/zama-ai/concrete-ml-internal/issues/942
-# Refactoring base.py. This file is more than 1000 lines.
-# We use names like X and q_X
+# Disable pylint as some names like X and q_X are used, following Scikit-Learn's standard. The file
+# is also more than 1000 lines long.
 # pylint: disable=too-many-lines,invalid-name
 import warnings
 from abc import ABC, abstractmethod
@@ -65,6 +64,23 @@ _LINEAR_MODELS: Set[Type] = set()
 _TREE_MODELS: Set[Type] = set()
 _NEURALNET_MODELS: Set[Type] = set()
 
+# Define the supported types for both the input data and the target values. Since the Pandas
+# library is currently only a dev dependencies, we cannot import it. We therefore need to use type
+# strings and the `name-defined` mypy error to do so.
+Data = Union[
+    numpy.ndarray,
+    torch.Tensor,
+    "pandas.DataFrame",  # type: ignore[name-defined] # noqa: F821
+    List,
+]
+Target = Union[
+    numpy.ndarray,
+    torch.Tensor,
+    "pandas.DataFrame",  # type: ignore[name-defined] # noqa: F821
+    "pandas.Series",  # type: ignore[name-defined] # noqa: F821
+    List,
+]
+
 
 class BaseEstimator:
     """Base class for all estimators in Concrete-ML.
@@ -79,7 +95,7 @@ class BaseEstimator:
     """
 
     #: Base float estimator class to consider for the model. Is set for each subclasses.
-    sklearn_model_class: Any
+    sklearn_model_class: Type
 
     _is_a_public_cml_model: bool = False
 
@@ -141,7 +157,7 @@ class BaseEstimator:
         return self.fhe_circuit_
 
     @fhe_circuit.setter
-    def fhe_circuit(self, value: Circuit):
+    def fhe_circuit(self, value: Circuit) -> None:
         """Set the FHE circuit.
 
         Args:
@@ -164,7 +180,7 @@ class BaseEstimator:
             "Please run fit(...) on proper arguments first."
         )
 
-    def check_model_is_fitted(self):
+    def check_model_is_fitted(self) -> None:
         """Check if the model is fitted.
 
         Raises:
@@ -188,7 +204,7 @@ class BaseEstimator:
         """
         return self._is_compiled
 
-    def check_model_is_compiled(self):
+    def check_model_is_compiled(self) -> None:
         """Check if the model is compiled.
 
         Raises:
@@ -222,21 +238,23 @@ class BaseEstimator:
 
         return params
 
-    def _set_post_processing_params(self):
+    def _set_post_processing_params(self) -> None:
         """Set parameters used in post-processing."""
         self.post_processing_params = {}
 
-    def _fit_float_estimator(self, X, y, **fit_parameters) -> Any:
+    def _fit_float_estimator(
+        self, X: Data, y: Target, **fit_parameters
+    ) -> sklearn.base.BaseEstimator:
         """Fit the model's float equivalent estimator.
 
         Args:
-            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
-                or List.
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
+                Series or List.
             **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
 
         Returns:
-            Any: The fitted estimator.
+            sklearn.base.BaseEstimator: The fitted float estimator.
         """
         # Retrieve the init parameters
         params = self.get_sklearn_params()
@@ -251,20 +269,20 @@ class BaseEstimator:
         return self.sklearn_model
 
     @abstractmethod
-    def fit(self, X, y, **fit_parameters) -> Any:
+    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
         """Fit the estimator.
 
         This method trains a Scikit-Learn estimator, computes its ONNX graph and defines the
         quantization parameters needed for proper FHE inference.
 
         Args:
-            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
-                or List.
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
+                Series or List.
             **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
 
         Returns:
-            Any: The fitted estimator.
+            BaseEstimator: The fitted estimator.
         """
 
     # Several attributes and methods are called in `fit_benchmark` but will only be accessible
@@ -273,22 +291,23 @@ class BaseEstimator:
     # pylint: disable=no-member
     def fit_benchmark(
         self,
-        X,
-        y,
+        X: Data,
+        y: Target,
         random_state: Optional[int] = None,
         **fit_parameters,
-    ) -> Tuple[Any, Any]:
+    ) -> Tuple[BaseEstimator, sklearn.base.BaseEstimator]:
         """Fit both the Concrete-ML and its equivalent float estimators.
 
         Args:
-            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
-                or List.
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
+                Series or List.
             random_state (Optional[int]): The random state to use when fitting. Defaults to None.
             **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
 
         Returns:
-            Tuple[Any, Any]: The Concrete-ML and float equivalent fitted estimators.
+            Tuple[BaseEstimator, sklearn.base.BaseEstimator]: The Concrete-ML and float equivalent
+                fitted estimators.
         """
 
         # Retrieve sklearn's init parameters
@@ -360,7 +379,7 @@ class BaseEstimator:
 
     def compile(
         self,
-        X,
+        X: Data,
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
@@ -371,20 +390,22 @@ class BaseEstimator:
         """Compile the model.
 
         Args:
-            X: A representative set of input values used for building cryptographic parameters.
+            X (Data): A representative set of input values used for building cryptographic
+                parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
+                usually the training data set or s sub-set of it.
             configuration (Optional[Configuration]): Options to use for compilation. Default
                 to None.
-            artifacts (Optional[DebugArtifacts]): Artifacts information about the
-                compilation process to store for debugging.
+            artifacts (Optional[DebugArtifacts]): Artifacts information about the compilation
+                process to store for debugging. Default to None.
             show_mlir (bool): Indicate if the MLIR graph should be printed during compilation.
+                Default to False.
             p_error (Optional[float]): Probability of error of a single PBS. A p_error value cannot
                 be given if a global_p_error value is already set. Default to None, which sets this
                 error to a default value.
             global_p_error (Optional[float]): Probability of error of the full circuit. A
                 global_p_error value cannot be given if a p_error value is already set. This feature
                 is not supported during Virtual Library simulation, meaning the probability is
-                currently set to 0. Default to None, which sets this
-                error to a default value.
+                currently set to 0. Default to None, which sets this error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
 
@@ -440,13 +461,12 @@ class BaseEstimator:
             numpy.ndarray: The quantized predicted values.
         """
 
-    def predict(
-        self, X: numpy.ndarray, fhe: Union[FheMode, str] = FheMode.DISABLE
-    ) -> numpy.ndarray:
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for X, in FHE or in the clear.
 
         Args:
-            X (numpy.ndarray): The input values to predict.
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
                 Can be FheMode.DISABLE for Concrete-ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
@@ -543,7 +563,7 @@ class BaseEstimator:
         metadata: Dict[str, Any] = self.dump_dict()
         return json.dumps(metadata, cls=CustomEncoder)
 
-    def dump(self, file: IO[str]):
+    def dump(self, file: IO[str]) -> None:
         """Dump itelf to a file.
 
         Args:
@@ -615,7 +635,7 @@ class BaseClassifier(BaseEstimator):
         super()._set_post_processing_params()
         self.post_processing_params.update({"n_classes_": self.n_classes_})
 
-    def fit(self, X, y, **fit_parameters) -> Any:
+    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Retrieve the different target classes
@@ -628,13 +648,16 @@ class BaseClassifier(BaseEstimator):
         # Make sure y contains at least two classes
         assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
 
-        return super().fit(X, y, **fit_parameters)
+        # Change to composition in order to avoid diamond inheritance and indirect super() calls
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3249
+        return super().fit(X, y, **fit_parameters)  # type: ignore[safe-super]
 
-    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict class probabilities.
 
         Args:
-            X: The input values to predict.
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
                 Can be FheMode.DISABLE for Concrete-ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
@@ -646,7 +669,7 @@ class BaseClassifier(BaseEstimator):
         """
         return super().predict(X, fhe=fhe)
 
-    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Compute the predicted probabilities
         y_preds = self.predict_proba(X, fhe=fhe)
 
@@ -657,7 +680,7 @@ class BaseClassifier(BaseEstimator):
 
         return self.classes_[y_preds]
 
-    def post_processing(self, y_preds: numpy.ndarray):
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         y_preds = super().post_processing(y_preds)
 
         # Retrieve the number of target classes
@@ -689,9 +712,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
                 _NEURALNET_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.quantized_module_ = QuantizedModule()
         super().__init__()
 
@@ -710,7 +731,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return self.quantized_module_.input_quantizers
 
     @input_quantizers.setter
-    def input_quantizers(self, value: List[UniformQuantizer]):
+    def input_quantizers(self, value: List[UniformQuantizer]) -> None:
         self.quantized_module_.input_quantizers = value
 
     @property
@@ -723,7 +744,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return self.quantized_module_.output_quantizers
 
     @output_quantizers.setter
-    def output_quantizers(self, value: List[UniformQuantizer]):
+    def output_quantizers(self, value: List[UniformQuantizer]) -> None:
         self.quantized_module_.output_quantizers = value
 
     @property
@@ -731,10 +752,10 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return self.quantized_module_.fhe_circuit
 
     @fhe_circuit.setter
-    def fhe_circuit(self, value: Circuit):
+    def fhe_circuit(self, value: Circuit) -> None:
         self.quantized_module_.fhe_circuit = value
 
-    def _set_post_processing_params(self):
+    def _set_post_processing_params(self) -> None:
         # Disable mypy attribute definition error as this method is expected to be reachable
         # once the model inherits from Skorch
         params = self._get_predict_nonlinearity()  # type: ignore[attr-defined]
@@ -752,12 +773,14 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         ] = post_processing_function_keywords
         self.post_processing_params = post_processing_params
 
-    def _fit_float_estimator(self, X, y, **fit_parameters) -> Any:
+    def _fit_float_estimator(
+        self, X: Data, y: Target, **fit_parameters
+    ) -> sklearn.base.BaseEstimator:
         # Call Skorch's fit that will train the network. This will instantiate the model class if
         # it's not already done
         return self.sklearn_model_class.fit(self, X, y, **fit_parameters)
 
-    def fit(self, X, y, **fit_parameters) -> Any:
+    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
         """Fit he estimator.
 
         If the module was already initialized, the module will be re-initialized unless
@@ -767,13 +790,13 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Values of dtype float64 are not supported and will be casted to float32.
 
         Args:
-            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series
-                or List.
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
+                Series or List.
             **fit_parameters: Keyword arguments to pass to Skorch's fit method.
 
         Returns:
-            Any: The fitted estimator.
+            BaseEstimator: The fitted estimator.
         """
         # Reset for double fit
         self._is_fitted = False
@@ -848,11 +871,11 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return self
 
-    def _get_equivalent_float_module(self):
+    def _get_equivalent_float_module(self) -> torch.nn.Sequential:
         """Build a topologically equivalent Torch module that can be used on floating points.
 
         Returns:
-            float_module (nn.Sequential): The equivalent float module.
+            float_module (torch.nn.Sequential): The equivalent float module.
         """
         # Instantiate a new sequential module
         float_module = torch.nn.Sequential()
@@ -889,8 +912,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     # Skorch's Neural Networks don't support a random_state as parameter, we therefore need to
     # disable pylint as the BaseEstimator class expect the fit method to support it.
     def fit_benchmark(
-        self, X, y, random_state: Optional[int] = None, **fit_parameters
-    ) -> Tuple[Any, Any]:
+        self, X: Data, y: Target, random_state: Optional[int] = None, **fit_parameters
+    ) -> Tuple[BaseEstimator, sklearn.base.BaseEstimator]:
         """Fit the quantized estimator as well as its equivalent float estimator.
 
         This function returns both the quantized estimator (itself) as well as its non-quantized
@@ -902,16 +925,17 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Values of dtype float64 are not supported and will be casted to float32.
 
         Args:
-            X: The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-            y: The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas Series
-                or List.
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas
+                Series or List.
             random_state (Optional[int]): The random state to use when fitting. However, Skorch
                 does not handle such a parameter and setting it will have no effect. Defaults
                 to None.
             **fit_parameters: Keyword arguments to pass to Skorch's fit method.
 
         Returns:
-            Tuple[Any, Any]: The Concrete-ML and equivalent Skorch fitted estimators.
+            Tuple[BaseEstimator, sklearn.base.BaseEstimator]: The Concrete-ML and equivalent Skorch
+                fitted estimators.
         """
 
         assert (
@@ -947,7 +971,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         self.check_model_is_fitted()
         return self.quantized_module_.dequantize_output(q_y_preds)
 
-    def compile(self, X, *args, **kwargs) -> Circuit:
+    def compile(self, X: Data, *args, **kwargs) -> Circuit:
         # Reset for double compile
         self._is_compiled = False
 
@@ -975,10 +999,10 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return self.fhe_circuit
 
-    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE):
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         return self.predict_proba(X, fhe=fhe)
 
-    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE):
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         """Predict values for a regressor and class probabilities for a classifier.
 
         In Scikit-Learn, predict_proba is not defined for regressors. However, Skorch seems to use
@@ -989,7 +1013,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Values of dtype float64 are not supported and will be casted to float32.
 
         Args:
-            X: The input values to predict.
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
                 Can be FheMode.DISABLE for Concrete-ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
@@ -1008,7 +1033,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         if fhe in ["execute", "simulate"]:
             # Run over each element of X individually and aggregate predictions in a vector
-            if X.ndim == 1:
+            if isinstance(X, (numpy.ndarray, torch.Tensor)) and X.ndim == 1:
                 X = X.reshape((1, -1))
 
             y_out = super().predict(X, fhe=fhe)
@@ -1074,7 +1099,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.n_bits: int = n_bits
 
         #: The equivalent fitted float model. Is None if the model is not fitted.
-        self.sklearn_model: Optional[Any] = None
+        self.sklearn_model: Optional[sklearn.base.BaseEstimator] = None
 
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
@@ -1087,7 +1112,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             "cannot be quantized."
         )  # pragma: no cover
 
-    def fit(self, X, y, **fit_parameters) -> Any:
+    def fit(self, X: Data, y: Target, **fit_parameters) -> Any:
         # Reset for double fit
         self._is_fitted = False
 
@@ -1180,9 +1205,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return self._tree_inference(q_X)[0]
 
-    def predict(
-        self, X: numpy.ndarray, fhe: Union[FheMode, str] = FheMode.DISABLE
-    ) -> numpy.ndarray:
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         y_pred = BaseEstimator.predict(self, X, fhe=fhe)
         y_pred = self.post_processing(y_pred)
         return y_pred
@@ -1250,7 +1273,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
         #: The equivalent fitted float model. Is None if the model is not fitted.
-        self.sklearn_model: Optional[Any] = None
+        self.sklearn_model: Optional[sklearn.base.BaseEstimator] = None
 
         #: The quantizer to use for quantizing the model's weights
         self._weight_quantizer: Optional[UniformQuantizer] = None
@@ -1269,7 +1292,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             "cannot be converted quantized."
         )  # pragma: no cover
 
-    def _set_onnx_model(self, test_input: numpy.ndarray):
+    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
         """Retrieve the model's ONNX graph using Hummingbird conversion.
 
         Args:
@@ -1286,14 +1309,14 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         self._clean_graph()
 
-    def _clean_graph(self):
+    def _clean_graph(self) -> None:
         """Clean the ONNX graph from undesired nodes."""
         assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
 
         # Remove cast operators as they are not needed
         remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
 
-    def fit(self, X, y, **fit_parameters) -> Any:
+    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
         # Reset for double fit
         self._is_fitted = False
 
@@ -1439,18 +1462,21 @@ class SklearnLinearClassifierMixin(
     them compliant with classification workflows.
     """
 
-    def _clean_graph(self):
+    def _clean_graph(self) -> None:
         assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
 
         # Remove any operators following gemm, as they will be done in the clear
         clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
         SklearnLinearModelMixin._clean_graph(self)
 
-    def decision_function(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def decision_function(
+        self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE
+    ) -> numpy.ndarray:
         """Predict confidence scores.
 
         Args:
-            X: The input values to predict.
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
                 Can be FheMode.DISABLE for Concrete-ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
@@ -1466,7 +1492,7 @@ class SklearnLinearClassifierMixin(
         y_preds = SklearnLinearModelMixin.predict(self, X, fhe=fhe)
         return y_preds
 
-    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         y_preds = self.decision_function(X, fhe=fhe)
         y_preds = self.post_processing(y_preds)
         return y_preds

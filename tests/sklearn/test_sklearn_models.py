@@ -458,13 +458,27 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
-        model.predict(x)
 
-        # if n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
-        # as there won't be any crypto parameters
-        if n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
-            return
-        model.compile(x, default_configuration)
+    # Make sure `predict` is working when FHE is disabled
+    model.predict(x)
+
+    # Similarly, we test `predict_proba` for classifiers
+    if is_classifier_or_partial_classifier(model):
+        model.predict_proba(x)
+
+    # If n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
+    # as there won't be any crypto parameters
+    if n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
+        return
+
+    model.compile(x, default_configuration)
+
+    # Make sure `predict` is working when FHE is disabled
+    model.predict(x, fhe="simulate")
+
+    # Similarly, we test `predict_proba` for classifiers
+    if is_classifier_or_partial_classifier(model):
+        model.predict_proba(x, fhe="simulate")
 
 
 def check_pipeline(model_class, x, y):

@@ -4,10 +4,11 @@
 # pylint: disable=invalid-name
 
 import copy
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import brevitas.nn as qnn
 import numpy
+import sklearn
 import torch
 import torch.nn.utils.prune as pruning
 from sklearn.base import clone
@@ -17,7 +18,7 @@ from torch import nn
 
 from ..common.debugging import assert_true
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE, FheMode, check_dtype_and_cast
-from .base import QuantizedTorchEstimatorMixin
+from .base import BaseEstimator, Data, QuantizedTorchEstimatorMixin, Target
 
 QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 QNN_FLOAT_DTYPE = numpy.float32
@@ -166,7 +167,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
         self.enable_pruning()
 
-    def max_active_neurons(self):
+    def max_active_neurons(self) -> int:
         """Compute the maximum number of active (non-zero weight) neurons.
 
         The computation is done using the quantization parameters passed to the constructor.
@@ -177,7 +178,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
         max_active_neurons.
 
         Returns:
-            n (int): maximum number of active neurons
+            int: maximum number of active neurons
         """
 
         return int(
@@ -186,7 +187,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
             )
         )
 
-    def make_pruning_permanent(self):
+    def make_pruning_permanent(self) -> None:
         """Make the learned pruning permanent in the network."""
         max_neuron_connections = self.max_active_neurons()
 
@@ -252,7 +253,7 @@ class SparseQuantNeuralNetImpl(nn.Module):
             "Not all layers in the network were examined as candidates for pruning",
         )
 
-    def enable_pruning(self):
+    def enable_pruning(self) -> None:
         """Enable pruning in the network. Pruning must be made permanent to recover pruned weights.
 
         Raises:
@@ -298,18 +299,18 @@ class SparseQuantNeuralNetImpl(nn.Module):
             "Not all layers in the network were examined as candidates for pruning",
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Forward pass.
 
         Args:
             x (torch.Tensor): network input
 
         Returns:
-            x (torch.Tensor): network prediction
+            torch.Tensor: network prediction
         """
         return self.features(x)
 
-    def on_train_end(self):
+    def on_train_end(self) -> None:
         """Call back when training is finished, can be useful to remove training hooks."""
         self.make_pruning_permanent()
 
@@ -349,7 +350,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
             **kwargs,
         )
 
-    def infer(self, x, **fit_params):
+    def infer(self, x: torch.Tensor, **fit_params) -> torch.Tensor:
         """Perform a single inference step on a batch of data.
 
         This method is specific to Skorch estimators.
@@ -360,7 +361,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
                 the module and to the ``self.train_split`` call.
 
         Returns:
-            A torch tensor with the inference results for each item in the input
+            torch.Tensor: The inference results for each item in the input.
         """
 
         # During training we infer the same as in the base class
@@ -380,7 +381,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         return torch.tensor(y_pred)
 
     @property
-    def base_module_to_compile(self):
+    def base_module_to_compile(self) -> nn.Module:
         """Get the module that should be compiled to FHE. In our case this is a torch nn.Module.
 
         Returns:
@@ -415,7 +416,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         # Similarily, ignore mypy here
         return self.module_.n_a_bits  # type: ignore[attr-defined]
 
-    def get_sklearn_params(self, deep=True):
+    def get_sklearn_params(self, deep: bool = True) -> dict:
         """Get parameters for benchmark when cloning a skorch wrapped NN.
 
         We must remove all parameters related to the module. Skorch takes either a class or a
@@ -463,7 +464,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
         return new_object_params
 
     # pylint: disable-next=unused-argument
-    def on_train_end(self, net, X=None, y=None, **kwargs):
+    def on_train_end(self, net, X=None, y=None, **kwargs) -> None:
         """Call back when training is finished by the skorch wrapper.
 
         Check if the underlying neural net has a callback for this event and, if so, call it.
@@ -490,7 +491,7 @@ class FixedTypeSkorchNeuralNet:
     module__n_outputs: Optional[int] = None
     module__input_dim: Optional[int] = None
 
-    def get_params(self, deep=True, **kwargs):
+    def get_params(self, deep: bool = True, **kwargs) -> dict:
         """Get parameters for this estimator.
 
         Args:
@@ -499,7 +500,7 @@ class FixedTypeSkorchNeuralNet:
             **kwargs: any additional parameters to pass to the sklearn BaseEstimator class
 
         Returns:
-            params : dict, Parameter names mapped to their values.
+            params (dict): Parameter names mapped to their values.
         """
         # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch
         # Disable mypy error and pylint no-member error as super().get_params is expected to be
@@ -518,7 +519,7 @@ class FixedTypeSkorchNeuralNet:
 
         return params
 
-    def prune(self, X, y, n_prune_neurons_percentage, **fit_params):
+    def prune(self, X: Data, y: Target, n_prune_neurons_percentage: float, **fit_params):
         """Prune a copy of this NeuralNetwork model.
 
         This can be used when the number of neurons on the hidden layers is too high. For example,
@@ -529,15 +530,16 @@ class FixedTypeSkorchNeuralNet:
         once good accuracy is obtained.
 
         Args:
-            X : training data, can be a torch.tensor, numpy.ndarray or pandas DataFrame
-            y : training targets, can be a torch.tensor, numpy.ndarray or pandas DataFrame
-            n_prune_neurons_percentage : percentage of neurons to remove. A value of 0 means
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
+                Series or List.
+            n_prune_neurons_percentage (float):Percentage of neurons to remove. A value of 0 means
                 no neurons are removed and a value of 1.0 means 100% of neurons would be removed.
             fit_params: additional parameters to pass to the forward method of the underlying
                 nn.Module
 
         Returns:
-            result: a new pruned copy of this NeuralNetClassifier or NeuralNetRegressor
+            A new pruned copy of this NeuralNet
 
         Raises:
             ValueError: if the model has not been trained or if the model is one that has already
@@ -618,7 +620,7 @@ class NeuralNetClassifier(
     lower bitwidth, they will be safely casted to int64. Else, an error is raised.
     """
 
-    sklearn_model_class: Callable = SKNeuralNetClassifier
+    sklearn_model_class = SKNeuralNetClassifier
     _is_a_public_cml_model = True
 
     # pylint: disable-next=useless-super-delegation
@@ -642,7 +644,7 @@ class NeuralNetClassifier(
     # Disable pylint here because we add an additional argument to .predict,
     # with respect to the base class .predict method.
     # pylint: disable=arguments-differ
-    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # We just need to do argmax on the predicted probabilities
         # First we get the predicted class indices
         y_index_pred = self.predict_proba(X, fhe=fhe).argmax(axis=1)
@@ -651,7 +653,7 @@ class NeuralNetClassifier(
         return self.classes_[y_index_pred]
 
     # pylint: disable-next=attribute-defined-outside-init
-    def fit(self, X, y, *args, **kwargs) -> Any:
+    def fit(self, X: Data, y: Target, *args, **kwargs) -> BaseEstimator:
         # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
         # casted to float32 as this should not have a great impact on the model's performances. If
         # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
@@ -677,7 +679,9 @@ class NeuralNetClassifier(
         # Call QuantizedSkorchEstimatorMixin's fit method
         return super().fit(X, y, *args, **kwargs)
 
-    def fit_benchmark(self, X, y, *args, **kwargs) -> Tuple[Any, Any]:
+    def fit_benchmark(
+        self, X: Data, y: Target, *args, **kwargs
+    ) -> Tuple[sklearn.base.BaseEstimator, BaseEstimator]:
         # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
         # casted to float32 as this should not have a great impact on the model's performances. If
         # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
@@ -688,7 +692,7 @@ class NeuralNetClassifier(
         # Call QuantizedSkorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Check that inputs are float32. If they are, they will be casted to float32 as this
         # should not have a great impact on the model's performances. Else, an error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
@@ -717,7 +721,7 @@ class NeuralNetRegressor(
     are not floating points.
     """
 
-    sklearn_model_class: Callable = SKNeuralNetRegressor
+    sklearn_model_class = SKNeuralNetRegressor
     _is_a_public_cml_model = True
 
     # pylint: disable-next=useless-super-delegation
@@ -734,7 +738,7 @@ class NeuralNetRegressor(
             **kwargs,
         )
 
-    def fit(self, X, y, *args, **kwargs) -> Any:
+    def fit(self, X: Data, y: Target, *args, **kwargs) -> BaseEstimator:
         # Check that inputs and targets are float32. If they are float64, they will be casted to
         # float32 as this should not have a great impact on the model's performances. Else, an error
         # is raised.
@@ -752,7 +756,9 @@ class NeuralNetRegressor(
         # Call QuantizedSkorchEstimatorMixin's fit method
         return super().fit(X, y, *args, **kwargs)
 
-    def fit_benchmark(self, X, y, *args, **kwargs) -> Tuple[Any, Any]:
+    def fit_benchmark(
+        self, X: Data, y: Target, *args, **kwargs
+    ) -> Tuple[sklearn.base.BaseEstimator, BaseEstimator]:
         # Check that inputs and targets are float32. If they are float64, they will be casted to
         # float32 as this should not have a great impact on the model's performances. Else, an error
         # is raised.
@@ -762,7 +768,7 @@ class NeuralNetRegressor(
         # Call QuantizedSkorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    def predict_proba(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Check that inputs are float32. If they are float64, they will be casted to float32 as
         # this should not have a great impact on the model's performances. Else, an error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network regressor input")

@@ -15,7 +15,7 @@ from concrete.ml.quantization.quantizers import UniformQuantizer
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import FheMode
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type
-from .base import SklearnLinearRegressorMixin
+from .base import Data, SklearnLinearRegressorMixin
 
 
 # pylint: disable-next=too-many-instance-attributes
@@ -55,7 +55,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         self.warm_start = warm_start
         self.verbose = verbose
 
-    def _clean_graph(self):
+    def _clean_graph(self) -> None:
         assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
 
         # Remove any operators following gemm, as they will be done in the clear in post-processing
@@ -66,7 +66,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return self._inverse_link(y_preds)
 
-    def predict(self, X, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Call SklearnLinearModelMixin's predict method
         y_preds = super().predict(X, fhe=fhe)
 
@@ -74,7 +74,7 @@ class _GeneralizedLinearRegressor(SklearnLinearRegressorMixin):
         return y_preds
 
     @abstractmethod
-    def _inverse_link(self, y_preds):
+    def _inverse_link(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Apply the link function's inverse on the inputs.
 
         Args:
@@ -189,7 +189,7 @@ class PoissonRegressor(_GeneralizedLinearRegressor):
             verbose=verbose,
         )
 
-    def _inverse_link(self, y_preds) -> numpy.ndarray:
+    def _inverse_link(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return numpy.exp(y_preds)
 
 
@@ -233,7 +233,7 @@ class GammaRegressor(_GeneralizedLinearRegressor):
             verbose=verbose,
         )
 
-    def _inverse_link(self, y_preds) -> numpy.ndarray:
+    def _inverse_link(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         return numpy.exp(y_preds)
 
 
@@ -297,7 +297,7 @@ class TweedieRegressor(_GeneralizedLinearRegressor):
             }
         )
 
-    def _inverse_link(self, y_preds) -> numpy.ndarray:
+    def _inverse_link(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
         if self.post_processing_params["link"] == "auto":
