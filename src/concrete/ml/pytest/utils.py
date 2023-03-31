@@ -8,7 +8,7 @@ import pytest
 import torch
 from torch import nn
 
-from ..common.utils import get_model_name, is_model_class_in_a_list, is_pandas_type
+from ..common.utils import get_model_class, get_model_name, is_model_class_in_a_list, is_pandas_type
 from ..sklearn import (
     DecisionTreeClassifier,
     DecisionTreeRegressor,
@@ -112,6 +112,34 @@ _regressors_and_datasets = [
 
 # All scikit-learn models in Concrete-ML
 sklearn_models_and_datasets = _classifiers_and_datasets + _regressors_and_datasets
+
+
+def get_random_extract_of_sklearn_models_and_datasets():
+    """Return a random sublist of sklearn_models_and_datasets.
+
+    The sublist contains exactly one model of each kind.
+
+    Returns:
+        the sublist
+
+    """
+    unique_model_classes = []
+    done = {}
+
+    # for m in random.sample(sklearn_models_and_datasets, len(sklearn_models_and_datasets)):
+    for m in sklearn_models_and_datasets:
+        t = m.values
+        typ = get_model_class(t[0])
+
+        if typ not in done:
+            done[typ] = True
+            unique_model_classes.append(m)
+
+    # To avoid to make mistakes and return empty list
+    assert len(sklearn_models_and_datasets) == 28
+    assert len(unique_model_classes) == 18
+
+    return unique_model_classes
 
 
 def instantiate_model_generic(model_class, **parameters):

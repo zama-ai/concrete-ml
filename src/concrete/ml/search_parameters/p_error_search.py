@@ -173,7 +173,7 @@ class BinarySearch:
         is_qat: bool = True,
         lower: float = 0.0,
         upper: float = 1.0,
-        max_iter: int = 30,
+        max_iter: int = 20,
         n_simulation: int = 5,
         strategy: Any = all,
         max_metric_loss: float = 0.01,

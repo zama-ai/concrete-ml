@@ -17,10 +17,10 @@ from concrete.ml.common.utils import is_model_class_in_a_list, is_regressor_or_p
 from concrete.ml.pytest.torch_models import QNNFashionMNIST, QuantCustomModel, TorchCustomModel
 from concrete.ml.pytest.utils import (
     data_calibration_processing,
+    get_random_extract_of_sklearn_models_and_datasets,
     get_torchvision_dataset,
     instantiate_model_generic,
     load_torch_model,
-    sklearn_models_and_datasets,
 )
 from concrete.ml.search_parameters import BinarySearch
 from concrete.ml.sklearn import get_sklearn_linear_models
@@ -147,10 +147,19 @@ def test_update_valid_attr_method(attr, value, model_name, quant_type, metric):
     assert getattr(search, attr) == value
 
 
-@pytest.mark.skip(reason="Tests too long")
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-def test_non_convergence_for_built_in_models(model_class, parameters, load_data):
-    """Check that binary search raises a user warning when convergence is not achieved."""
+@pytest.mark.parametrize(
+    "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
+)
+def test_non_convergence_for_built_in_models(model_class, parameters, load_data, is_weekly_option):
+    """Check that binary search raises a user warning when convergence is not achieved.
+
+    The user warning is raised if (1 / n_simulation) ∑ metric_difference_i > max_metric_loss.
+    Since p_error represents a probability, we cannot guarantee that the convergence will not be
+    reached after only one iteration. Therefore, max_metric_loss is set to a negative number.
+    """
+
+    if not is_weekly_option:
+        pytest.skip("Tests too long")
 
     # Linear models are not concerned by this test because they do not have PBS
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
@@ -169,7 +178,7 @@ def test_non_convergence_for_built_in_models(model_class, parameters, load_data)
         metric=metric,
         max_iter=1,
         n_simulation=5,
-        max_metric_loss=1e-9,
+        max_metric_loss=-10,
         is_qat=False,
     )
 
@@ -180,7 +189,12 @@ def test_non_convergence_for_built_in_models(model_class, parameters, load_data)
 
 @pytest.mark.parametrize("model_name, quant_type", [("CustomModel", "qat")])
 def test_non_convergence_for_custom_models(model_name, quant_type):
-    """Check that binary search raises a user warning when convergence is not achieved."""
+    """Check that binary search raises a user warning when convergence is not achieved.
+
+    The user warning is raised if (1 / n_simulation) ∑ metric_difference_i > max_metric_loss.
+    Since p_error represents a probability, we cannot guarantee that the convergence will not be
+    reached after only one iteration. Therefore, max_metric_loss is set to a negative number.
+    """
 
     # Load pretrained model
     model = load_torch_model(
@@ -197,7 +211,7 @@ def test_non_convergence_for_custom_models(model_name, quant_type):
         estimator=model,
         predict="predict",
         metric=top_k_accuracy_score,
-        max_metric_loss=-0.3,
+        max_metric_loss=-10,
         max_iter=1,
         n_simulation=1,
         is_qat=quant_type == "qat",
@@ -290,7 +304,9 @@ def test_binary_search_for_custom_models(model_name, quant_type, threshold):
 
 
 @pytest.mark.parametrize("threshold", [0.02])
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
+)
 @pytest.mark.parametrize("predict", ["predict", "predict_log_proba", "predict_proba"])
 def test_binary_search_for_built_in_models(model_class, parameters, threshold, predict, load_data):
     """Check if the returned `p_error` is valid for built-in models."""
@@ -358,7 +374,9 @@ def test_invalid_estimator_for_custom_models(is_qat):
         search.run(x=x_calib, ground_truth=y, strategy=all, max_iter=1, n_simulation=1)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
+)
 def test_invalid_estimator_for_built_in_models(model_class, parameters, load_data):
     """Check that binary search raises an exception for insupported models."""
 
