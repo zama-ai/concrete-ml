@@ -309,3 +309,41 @@ def test_bitwidth_report(model_class, input_shape, activation_function, default_
             assert op_report["range"][0] == expected_report["range"][0]  # type: ignore[index]
             assert op_report["range"][1] == expected_report["range"][1]  # type: ignore[index]
             assert op_report["bitwidth"] == expected_report["bitwidth"]
+
+
+@pytest.mark.parametrize("model_class, input_shape", [pytest.param(FC, (100, 32 * 32 * 3))])
+def test_quantized_module_rounding_fhe(model_class, input_shape, default_configuration):
+    """Check that rounding is only allowed in simulation mode."""
+
+    torch_fc_model = model_class(activation_function=nn.ReLU)
+    torch_fc_model.eval()
+
+    # Create random input
+    numpy_input = numpy.random.uniform(size=input_shape)
+    torch_input = torch.from_numpy(numpy_input).float()
+    numpy_test = numpy_input[:1]
+
+    # First test a model that is not compiled
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input)
+    post_training_quant = PostTrainingAffineQuantization(2, numpy_fc_model)
+    quantized_model = post_training_quant.quantize_module(numpy_input)
+
+    # Compile with rounding activated
+    quantized_model = compile_torch_model(
+        torch_fc_model,
+        torch_input,
+        False,
+        default_configuration,
+        n_bits=2,
+        p_error=0.01,
+        rounding_threshold_bits=6,
+    )
+
+    # Run quantized_model in simulation
+    quantized_model.forward(numpy_test, fhe="simulate")
+
+    # Try to execute the model with rounding in FHE execution mode
+    with pytest.raises(
+        AssertionError, match="Rounding is not currently optimized for execution in FHE"
+    ):
+        quantized_model.forward(numpy_test, fhe="execute")
