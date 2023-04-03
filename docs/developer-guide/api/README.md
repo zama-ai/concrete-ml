@@ -11,7 +11,11 @@
 - [`concrete.ml.common.serialization`](./concrete.ml.common.serialization.md#module-concretemlcommonserialization): Serialization.
 - [`concrete.ml.common.utils`](./concrete.ml.common.utils.md#module-concretemlcommonutils): Utils that can be re-used by other pieces of code in the module.
 - [`concrete.ml.deployment`](./concrete.ml.deployment.md#module-concretemldeployment): Module for deployment of the FHE model.
+- [`concrete.ml.deployment.deploy_to_aws`](./concrete.ml.deployment.deploy_to_aws.md#module-concretemldeploymentdeploy_to_aws): Methods to deploy a client/server to AWS.
+- [`concrete.ml.deployment.deploy_to_docker`](./concrete.ml.deployment.deploy_to_docker.md#module-concretemldeploymentdeploy_to_docker): Methods to deploy a server using docker.
 - [`concrete.ml.deployment.fhe_client_server`](./concrete.ml.deployment.fhe_client_server.md#module-concretemldeploymentfhe_client_server): APIs for FHE deployment.
+- [`concrete.ml.deployment.server`](./concrete.ml.deployment.server.md#module-concretemldeploymentserver): Deployment server.
+- [`concrete.ml.deployment.utils`](./concrete.ml.deployment.utils.md#module-concretemldeploymentutils): Utils.
 - [`concrete.ml.onnx`](./concrete.ml.onnx.md#module-concretemlonnx): ONNX module.
 - [`concrete.ml.onnx.convert`](./concrete.ml.onnx.convert.md#module-concretemlonnxconvert): ONNX conversion related code.
 - [`concrete.ml.onnx.onnx_impl_utils`](./concrete.ml.onnx.onnx_impl_utils.md#module-concretemlonnxonnx_impl_utils): Utility functions for onnx operator implementations.
@@ -48,6 +52,7 @@
 
 - [`serialization.CustomEncoder`](./concrete.ml.common.serialization.md#class-customencoder): CustomEncoder: custom json encoder to handle non-native types.
 - [`utils.FheMode`](./concrete.ml.common.utils.md#class-fhemode): Enum representing the execution mode.
+- [`deploy_to_aws.AWSInstance`](./concrete.ml.deployment.deploy_to_aws.md#class-awsinstance): AWSInstance.
 - [`fhe_client_server.FHEModelClient`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelclient): Client API to encrypt and decrypt FHE data.
 - [`fhe_client_server.FHEModelDev`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev): Dev API to save the model and then load and run the FHE circuit.
 - [`fhe_client_server.FHEModelServer`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver): Server API to load and run the FHE circuit.
@@ -203,6 +208,8 @@
 - [`serialization.loads`](./concrete.ml.common.serialization.md#function-loads): Load any CML object that has a dump method.
 - [`serialization.loads_onnx`](./concrete.ml.common.serialization.md#function-loads_onnx): Load serialized onnx model.
 - [`serialization.loads_random_state`](./concrete.ml.common.serialization.md#function-loads_random_state): Load random state from string.
+- [`utils.all_values_are_floats`](./concrete.ml.common.utils.md#function-all_values_are_floats): Indicate that all unpacked values are of a supported float dtype.
+- [`utils.all_values_are_integers`](./concrete.ml.common.utils.md#function-all_values_are_integers): Indicate that all unpacked values are of a supported integer dtype.
 - [`utils.check_dtype_and_cast`](./concrete.ml.common.utils.md#function-check_dtype_and_cast): Convert any allowed type into an array and cast it if required.
 - [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
 - [`utils.compute_bits_precision`](./concrete.ml.common.utils.md#function-compute_bits_precision): Compute the number of bits required to represent x.
@@ -220,6 +227,19 @@
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`utils.to_tuple`](./concrete.ml.common.utils.md#function-to_tuple): Make the input a tuple if it is not already the case.
+- [`deploy_to_aws.create_instance`](./concrete.ml.deployment.deploy_to_aws.md#function-create_instance): Create a EC2 instance.
+- [`deploy_to_aws.delete_security_group`](./concrete.ml.deployment.deploy_to_aws.md#function-delete_security_group): Terminate a AWS EC2 instance.
+- [`deploy_to_aws.deploy_to_aws`](./concrete.ml.deployment.deploy_to_aws.md#function-deploy_to_aws): Deploy a model to a EC2 AWS instance.
+- [`deploy_to_aws.main`](./concrete.ml.deployment.deploy_to_aws.md#function-main): Deploy a model.
+- [`deploy_to_aws.terminate_instance`](./concrete.ml.deployment.deploy_to_aws.md#function-terminate_instance): Terminate a AWS EC2 instance.
+- [`deploy_to_aws.wait_instance_termination`](./concrete.ml.deployment.deploy_to_aws.md#function-wait_instance_termination): Wait for AWS EC2 instance termination.
+- [`deploy_to_docker.build_docker_image`](./concrete.ml.deployment.deploy_to_docker.md#function-build_docker_image): Build server docker image.
+- [`deploy_to_docker.delete_image`](./concrete.ml.deployment.deploy_to_docker.md#function-delete_image): Delete a docker image.
+- [`deploy_to_docker.main`](./concrete.ml.deployment.deploy_to_docker.md#function-main): Deploy function.
+- [`deploy_to_docker.stop_container`](./concrete.ml.deployment.deploy_to_docker.md#function-stop_container): Kill all containers that use a given image.
+- [`utils.filter_logs`](./concrete.ml.deployment.utils.md#function-filter_logs): Filter logs based on previous logs.
+- [`utils.is_connexion_available`](./concrete.ml.deployment.utils.md#function-is_connexion_available): Check if ssh connexion is available.
+- [`utils.wait_for_connexion_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connexion_to_be_available): Wait for connexion to be available.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
 - [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the numpy equivalent forward of the provided torch Module.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
@@ -303,6 +323,7 @@
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given dataset.
+- [`utils.get_random_extract_of_sklearn_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_random_extract_of_sklearn_models_and_datasets): Return a random sublist of sklearn_models_and_datasets.
 - [`utils.get_torchvision_dataset`](./concrete.ml.pytest.utils.md#function-get_torchvision_dataset): Get train or testing data-set.
 - [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete-ML model type.
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
