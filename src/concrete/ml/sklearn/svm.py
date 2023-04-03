@@ -4,9 +4,8 @@ from typing import Any, Dict
 import numpy
 import sklearn.linear_model
 
-from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
-from concrete.ml.quantization.quantizers import UniformQuantizer
-
+from .. import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
+from ..quantization.quantizers import UniformQuantizer
 from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
 
 

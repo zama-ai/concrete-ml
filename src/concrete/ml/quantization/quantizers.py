@@ -8,9 +8,8 @@ from typing import IO, Any, Dict, Optional, Union, get_type_hints
 
 import numpy
 
-from concrete.ml.common.serialization import CustomEncoder
-
 from ..common.debugging import assert_true
+from ..common.serialization.encoder import CustomEncoder
 
 STABILITY_CONST = 10**-6
 

@@ -9,9 +9,9 @@ from typing import Any, Optional
 import concrete.numpy as cnp
 import numpy
 
-from concrete.ml.common.serialization import CustomEncoder, load_dict
-
 from ..common.debugging.custom_assert import assert_true
+from ..common.serialization.encoder import CustomEncoder
+from ..common.serialization.loaders import load_dict
 from ..quantization.quantized_module import QuantizedModule
 from ..sklearn import (
     DecisionTreeClassifier,

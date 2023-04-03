@@ -6,11 +6,10 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy
 import xgboost.sklearn
 
-from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
-from concrete.ml.quantization.quantizers import UniformQuantizer
-from concrete.ml.sklearn.tree_to_numpy import tree_to_numpy
-
+from .. import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
 from ..common.debugging.custom_assert import assert_true
+from ..quantization.quantizers import UniformQuantizer
+from ..sklearn.tree_to_numpy import tree_to_numpy
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
 

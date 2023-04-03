@@ -373,6 +373,7 @@ class QuantizedSkorchEstimatorMixin(QuantizedTorchEstimatorMixin):
 
         # Get a numpy array from the tensor to do quantization
         x = x.detach().cpu().numpy()
+        assert isinstance(x, numpy.ndarray)
 
         # Once we finished the data type checks, execute the quantized inference in the clear
         y_pred = self.quantized_module_.forward(x, fhe="disable")

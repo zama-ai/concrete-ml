@@ -25,16 +25,9 @@ from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
 
-from concrete.ml.common.serialization import CustomEncoder
-from concrete.ml.quantization.quantized_module import QuantizedModule, _get_inputset_generator
-from concrete.ml.quantization.quantizers import (
-    QuantizationOptions,
-    UniformQuantizationParameters,
-    UniformQuantizer,
-)
-
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
+from ..common.serialization.encoder import CustomEncoder
 from ..common.utils import (
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
@@ -48,6 +41,12 @@ from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remo
 # here in order to avoid duplicating them.
 from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from ..quantization import PostTrainingQATImporter, QuantizedArray, get_n_bits_dict
+from ..quantization.quantized_module import QuantizedModule, _get_inputset_generator
+from ..quantization.quantizers import (
+    QuantizationOptions,
+    UniformQuantizationParameters,
+    UniformQuantizer,
+)
 from ..torch import NumpyModule
 from .tree_to_numpy import tree_to_numpy
 
@@ -56,8 +55,6 @@ from .tree_to_numpy import tree_to_numpy
 # Silence hummingbird warnings
 warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
-
-# pylint: enable=wrong-import-position,wrong-import-order
 
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
@@ -965,6 +962,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         q_X = self.quantized_module_.quantize_input(X)
 
         assert numpy.array(q_X).dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        assert isinstance(q_X, numpy.ndarray)
         return q_X
 
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -1385,6 +1383,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Since the matmul and the bias both use the same scale and zero-points, we obtain that
         # y = S*(q_y - 2*Z) when dequantizing the values. We therefore need to multiply the initial
         # output zero_point by 2
+        assert output_quantizer.zero_point is not None
         output_quantizer.zero_point *= 2
         self.output_quantizers.append(output_quantizer)
 

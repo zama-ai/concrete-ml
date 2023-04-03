@@ -45,7 +45,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
-from concrete.ml.common.serialization import dump, dumps, load, loads
+from concrete.ml.common.serialization.dumpers import dump, dumps
+from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
     get_model_class,
     get_model_name,

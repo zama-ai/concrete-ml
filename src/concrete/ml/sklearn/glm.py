@@ -9,12 +9,11 @@ from sklearn.linear_model import GammaRegressor as SklearnGammaRegressor
 from sklearn.linear_model import PoissonRegressor as SklearnPoissonRegressor
 from sklearn.linear_model import TweedieRegressor as SklearnTweedieRegressor
 
-from concrete.ml import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
-from concrete.ml.quantization.quantizers import UniformQuantizer
-
+from .. import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import FheMode
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type
+from ..quantization.quantizers import UniformQuantizer
 from .base import Data, SklearnLinearRegressorMixin
 
 

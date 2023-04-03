@@ -15,15 +15,9 @@ import pytest
 import torch
 from numpy.random import RandomState
 
-from concrete.ml.common.serialization import (
-    CustomEncoder,
-    dumps,
-    dumps_onnx,
-    dumps_random_state,
-    loads,
-    loads_onnx,
-    loads_random_state,
-)
+from concrete.ml.common.serialization.dumpers import dumps, dumps_random_state
+from concrete.ml.common.serialization.encoder import CustomEncoder, dumps_onnx
+from concrete.ml.common.serialization.loaders import loads, loads_onnx, loads_random_state
 from concrete.ml.pytest.torch_models import SimpleNet
 from concrete.ml.quantization.quantizers import (
     MinMaxQuantizationStats,
