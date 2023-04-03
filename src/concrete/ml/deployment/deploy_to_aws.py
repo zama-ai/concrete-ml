@@ -301,9 +301,8 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
     if verbose:
         print("SSH connexion available.")
 
-    path_to_files = Path(__file__).parent
-    path_to_server_file = path_to_files / "server.py"
-    path_to_server_requirements = path_to_files / "server_requirements.txt"
+    path_to_server_file = Path(__file__).parent / "server.py"
+    path_to_server_requirements = Path(__file__).parent / "server_requirements.txt"
 
     if verbose:
         print("upload files...")
@@ -335,14 +334,14 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
     commands = [
         # Needed because of the way the AMI is setup
         f"sudo chmod -R 777 /home/{hostname}/venv",
-        f"sudo apt install -y python{python_version}",
-        f"sudo apt install -y python{python_version}-distutils",
+        f"sudo apt install -y python{python_version} python{python_version}-distutils make cmake",
         f"virtualenv deployment_venv --python=python{python_version}",
         # The venv is not activated by default
         "source deployment_venv/bin/activate",
         # Install server requirements
         "python -m pip install -r server_requirements.txt",
         f"python -m pip install concrete-ml=={concrete_ml_version}",
+        # We still need to force concrete-compiler version to be exactly the same as the file
         f"python -m pip install concrete-compiler=={concrete_compiler_version}",
         # Launch server
         f'PORT={port} PATH_TO_MODEL="./{path_to_model.name}" python ./server.py',
@@ -376,13 +375,18 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
     last_tmux_logs = ""
 
     while True:
-        tmux_logs = subprocess.check_output(
-            monitoring_command,
-            shell=True,
-            text=True,
-            encoding="utf-8",
-            stderr=subprocess.DEVNULL,
-        )
+        try:
+            tmux_logs = subprocess.check_output(
+                monitoring_command,
+                shell=True,
+                text=True,
+                encoding="utf-8",
+                stderr=subprocess.DEVNULL,
+            )
+        except subprocess.CalledProcessError as exception:  # pragma: no cover
+            raise RuntimeError(
+                "Something crashed when launching the server.\n" f" Last logs:\n{last_tmux_logs}"
+            ) from exception
 
         if any(
             error_message in tmux_logs
