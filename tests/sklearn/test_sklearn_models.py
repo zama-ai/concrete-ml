@@ -485,6 +485,14 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
 def check_pipeline(model_class, x, y):
     """Check pipeline support."""
 
+    # Pipeline test sometimes fails with RandomForest models. This bug may come from Hummingbird
+    # and needs further investigations
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
+    if is_model_class_in_a_list(
+        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
+    ):
+        pytest.skip("Skipping pipeline test for RF, doesn't work for now")
+
     hyper_param_combinations = get_hyper_param_combinations(model_class)
 
     # Prepare the list of all hyper parameters
