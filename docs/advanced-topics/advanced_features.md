@@ -92,6 +92,8 @@ Concrete-ML provides a tool to find a good `p_error` value that improves inferen
 accuracy. The method is based on binary search, evaluating the latency/accuracy tradeoff iteratively.
 
 ```python
+from time import time
+
 from sklearn.datasets import make_classification
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
@@ -106,9 +108,40 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 
 clf = DecisionTreeClassifier(random_state=42)
 
+# fit the model
+clf.fit(X_train, y_train)
+
+# Compile the model with the default `p_error`
+start_time = time()
+clf.compile(X_train)
+y_pred = clf.predict(X_train, fhe="execute")
+end_time = time()
+
+print(f"With the default p_error≈0, the compilation time is {(end_time - start_time) / 60:.2f} s")
+# Output: With the default p_error≈0, the compilation time is 1.40 s
+print(f"Accuracy = {accuracy_score(y_pred, y_train):.2%}")
+# Output: Accuracy = 100.00%
+
+# Search for the largest `p_error` that provides
+# the best compromise between accuracy and computational efficiency in FHE
 search = BinarySearch(estimator=clf, predict="predict", metric=accuracy_score)
 p_error = search.run(x=X_train, ground_truth=y_train, max_iter=10)
+
+# Compile the model with the optimal `p_error`
+start_time = time()
+clf.compile(X_train, p_error=p_error)
+y_pred = clf.predict(X_train, fhe="execute")
+end_time = time()
+
+print(
+    f"With p_error={p_error:.5f}, the compilation time becomes {(end_time - start_time) / 60:.2f} s"
+)
+# Ouput: With p_error=0.00044, the compilation time becomes 0.49 s
+print(f"Accuracy = {accuracy_score(y_pred, y_train): .2%}")
+# Output: Accuracy = 100.00%
 ```
+
+With this optimal `p_error`, the accuracy is maintained while the execution time is improved by a factor of $2.8$.
 
 ## Rounded activations and quantizers
 

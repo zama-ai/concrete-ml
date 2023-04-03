@@ -60,7 +60,6 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy
 import torch
-from concrete.numpy import Configuration
 from tqdm import tqdm
 
 from ..common.utils import is_brevitas_model, is_model_class_in_a_list
@@ -106,12 +105,6 @@ def compile_and_simulated_fhe_inference(
         ValueError: If the model is neither a built-in model nor a torch neural network.
     """
 
-    configuration = Configuration(
-        # This is for our tests in Virtual Library only
-        dump_artifacts_on_unexpected_failures=True,
-        enable_unsafe_features=True,
-    )
-
     compile_params: Dict = {}
     compile_function: Callable[..., Any]
     dequantized_output: numpy.ndarray
@@ -128,7 +121,6 @@ def compile_and_simulated_fhe_inference(
         quantized_module = compile_function(
             torch_model=estimator,
             torch_inputset=calibration_data,
-            configuration=configuration,
             p_error=p_error,
             **compile_params,
         )
@@ -139,9 +131,9 @@ def compile_and_simulated_fhe_inference(
         estimator, get_sklearn_neural_net_models() + get_sklearn_tree_models()
     ):
         if not estimator.is_fitted:
-            estimator = estimator.fit(calibration_data, ground_truth)
+            estimator.fit(calibration_data, ground_truth)
 
-        estimator.compile(calibration_data, p_error=p_error, configuration=configuration)
+        estimator.compile(calibration_data, p_error=p_error)
         predict_method = getattr(estimator, predict)
         dequantized_output = predict_method(calibration_data, fhe="simulate")
 

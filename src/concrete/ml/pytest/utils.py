@@ -126,7 +126,6 @@ def get_random_extract_of_sklearn_models_and_datasets():
     unique_model_classes = []
     done = {}
 
-    # for m in random.sample(sklearn_models_and_datasets, len(sklearn_models_and_datasets)):
     for m in sklearn_models_and_datasets:
         t = m.values
         typ = get_model_class(t[0])
