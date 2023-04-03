@@ -484,18 +484,6 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
 def check_pipeline(model_class, x, y):
     """Check pipeline support."""
 
-    # Pipeline test fails with QNN
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2943
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        pytest.skip("Skipping pipeline test for NN, doesn't work for now")
-
-    # Pipeline test fails with RF
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
-    if is_model_class_in_a_list(
-        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
-    ):
-        pytest.skip("Skipping pipeline test for RF, doesn't work for now")
-
     hyper_param_combinations = get_hyper_param_combinations(model_class)
 
     # Prepare the list of all hyper parameters
@@ -518,9 +506,17 @@ def check_pipeline(model_class, x, y):
     )
 
     # Do a grid search to find the best hyper-parameters
-    param_grid = {
-        "model__n_bits": [2, 3],
-    }
+    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        param_grid = {
+            "model__module__n_w_bits": [2, 3],
+            "model__module__n_a_bits": [2, 3],
+        }
+
+    else:
+        param_grid = {
+            "model__n_bits": [2, 3],
+        }
+
     grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
 
     # Sometimes, we miss convergence, which is not a problem for our test
