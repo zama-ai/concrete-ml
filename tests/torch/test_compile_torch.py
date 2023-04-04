@@ -309,13 +309,11 @@ def accuracy_test_rounding(
     )
 
     # Check that high precision gives a better match than low precision
-    mae_high_precision = numpy.abs(
-        [results[i] - results_high_precision[i] for i in range(len(results))]
-    ).mean()
-    mae_low_precision = numpy.abs(
-        [results[i] - results_low_precision[i] for i in range(len(results))]
-    ).mean()
-    assert mae_high_precision <= mae_low_precision, "Rounding is not working as expected."
+    # MSE is prefered over MAE here to spot a lack of diversity in the 2 bits rounded model
+    # e.g. results_low_precision = mean(results) should impact more MSE than MAE.
+    mse_high_precision = numpy.mean(numpy.square(numpy.subtract(results, results_high_precision)))
+    mse_low_precision = numpy.mean(numpy.square(numpy.subtract(results, results_low_precision)))
+    assert mse_high_precision <= mse_low_precision, "Rounding is not working as expected."
 
 
 @pytest.mark.parametrize(
