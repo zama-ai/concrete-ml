@@ -787,7 +787,7 @@ jobs:
   # when we do a `make release`. Here, we set an AWS EC2 instance, as GitHub runners had
   # broken configurations
   start-package-release-runner:
-    needs: [build-linux]
+    needs: [matrix-preparation, build-linux]
     name: Start package-release runner
     runs-on: ubuntu-20.04
     if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
