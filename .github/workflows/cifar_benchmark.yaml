@@ -132,15 +132,26 @@ jobs:
       - name: Archive raw predictions
         uses: actions/upload-artifact@v3
         with:
-          name: predictions
+          name: predictions.csv
           path: inference_results.csv
 
       - name: Archive metrics
         uses: actions/upload-artifact@v3
         with:
-          name: metrics
+          name: metrics.json
           path: to_upload.json
 
+      - name: Archive client
+        uses: actions/upload-artifact@v3
+        with:
+          name: client.zip
+          path: client_server/client.zip
+
+      - name: Archive server
+        uses: actions/upload-artifact@v3
+        with:
+          name: server.zip
+          path: client_server/server.zip
 
   stop-runner:
     name: Stop EC2 runner

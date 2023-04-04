@@ -8,9 +8,10 @@ from typing import List
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from concrete.numpy import Configuration
+from concrete.numpy import Circuit, Configuration
 from model import CNV
 
+from concrete.ml.deployment.fhe_client_server import FHEModelDev
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 NUM_SAMPLES = int(os.environ.get("NUM_SAMPLES", 400))
@@ -54,7 +55,7 @@ def main():
     configuration = Configuration(
         show_graph=False,
         show_mlir=False,
-        show_optimizer=False,
+        show_optimizer=True,
     )
 
     # Compile the model
@@ -71,9 +72,13 @@ def main():
     end_compile = time.time()
     print(f"Compilation finished in {end_compile - start_compile:.2f} seconds")
 
+    dev = FHEModelDev(path_dir="./client_server", model=quantized_numpy_module)
+    dev.save()
+
     # Key generation
     print("Generating keys ...")
     start_keygen = time.time()
+    assert isinstance(quantized_numpy_module.fhe_circuit, Circuit)
     quantized_numpy_module.fhe_circuit.keygen()
     end_keygen = time.time()
     print(f"Keygen finished in {end_keygen - start_keygen:.2f} seconds")
