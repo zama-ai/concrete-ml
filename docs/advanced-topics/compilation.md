@@ -2,7 +2,7 @@
 
 Compilation of a model produces machine code that executes the model on encrypted data. In some cases, notably in the client/server setting, the compilation can be done by the server when loading the model for serving.
 
-As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation mode which can help to  quickly evaluate the impact of FHE execution on models.
+As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation mode which can help to quickly evaluate the impact of FHE execution on models.
 
 ## Compilation to FHE
 
@@ -24,9 +24,7 @@ Compilation is performed for built-in models with the `compile` method :
     clf.compile(X_train)
 ```
 
-and, for custom models, with one of the `compile_brevitas_qat_model` (for Brevitas
-models with quantization aware training) or `compile_torch_model` (for post-training quantization of
-PyTorch models) functions:
+and, for custom models, with one of the `compile_brevitas_qat_model` (for Brevitas models with quantization aware training) or `compile_torch_model` (PyTorch models using post-training quantization) functions:
 
 <!--pytest-codeblocks:skip-->	
 
@@ -78,8 +76,7 @@ b = 2
 def linear_model(x):
     return w @ x + b
 
-# A representative input-set is needed to compile the function
-# (used for tracing)
+# A representative input-set is needed to compile the function (used for tracing)
 n_bits_input = 2
 inputset = numpy.arange(0, 2**n_bits_input).reshape(-1, 1)
 circuit = linear_model.compile(inputset)
@@ -87,7 +84,7 @@ circuit = linear_model.compile(inputset)
 # Use the API to get the maximum bit-width in the circuit
 max_bit_width = circuit.graph.maximum_integer_bit_width()
 print("Max bit_width = ", max_bit_width)
-# Max bit_width =  4
+# Max bit_width = 4
 
 # Test our FHE inference
 circuit.encrypt_run_decrypt(numpy.array([3]))

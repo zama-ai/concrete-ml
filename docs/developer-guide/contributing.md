@@ -70,7 +70,7 @@ git commit -m "feat(debugging): add an helper function to draw intermediate repr
 git commit -m "fix(tracing): fix a bug that crashed PyTorch tracer"
 ```
 
-Just a reminder that commit messages are checked in the comformance step and are rejected if they don't follow the rules. To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
+Just a reminder that commit messages are checked in the conformance step and are rejected if they don't follow the rules. To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
 
 ## 4. Rebasing
 
