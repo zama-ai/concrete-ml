@@ -106,7 +106,7 @@ jobs:
           if [[ "${BUILD_TYPE}" == "weekly" ]]; then
             INSTANCE_TYPE="m6i.metal"
           elif [[ "${BUILD_TYPE}" == "release" ]]; then
-            INSTANCE_TYPE="c6i.32xlarge"
+            INSTANCE_TYPE="c6i.16xlarge"
           fi
 
           # Manage python versions
