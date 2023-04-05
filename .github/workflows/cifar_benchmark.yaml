@@ -17,7 +17,7 @@ on:
           - "u-6tb1.112xlarge"
       num_samples:
         description: Number of samples to use
-        default: "10"
+        default: "3"
         type: string
         required: true
 
@@ -73,7 +73,6 @@ jobs:
               {"Key": "Team", "Value": "CML"}
             ]
 
-  # Use machulav
   run-cifar-10:
     needs: [start-cifar-runner]
     name: Run benchmark
@@ -89,11 +88,11 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL }}"
 
-      # We don't need to specify the git-ref here since he are just generating the cli arguments 
       - name: Checkout code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           lfs: true
+          ref: ${{ github.event.inputs.git-ref }}
 
       - name: Set up Python
         uses: actions/setup-python@d27e3f3d7c64b4bbf8e4abfb9b63b83e846e0435
@@ -110,13 +109,10 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
-      - name: Prepare scripts to launch on individual AWS instances
-        id: prepare-commands
+      - name: Benchmark
+        id: benchmark
         run: |
           source .venv/bin/activate
-          # TODO: Install torchvision according to torch version
-          # Should be able to take into account all versions of torch
-          python3 -m pip install torchvision==0.13.1
           NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_brevitas_with_model_splitting/infer_fhe.py
           python3 ./benchmarks/convert_cifar.py
 
