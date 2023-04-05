@@ -130,6 +130,8 @@ filterwarnings = [
     "ignore: allowzero=0 by default.*:UserWarning",
     "ignore:Implicitly cleaning up:ResourceWarning",
     "ignore:non-integer arguments to randrange\\(\\) have been deprecated since Python 3\\.10 and will be removed in a subsequent version:DeprecationWarning",
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3407
+    "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
 ]
 
 [tool.semantic_release]
