@@ -8,10 +8,12 @@ Concrete-ML provides functionality to deploy FHE machine learning models in a cl
 
 The diagram above shows the steps that a developer goes through to prepare a model for encrypted inference in a client/server setting. The training of the model and its compilation to FHE are performed on a development machine. Three different files are created when saving the model:
 
-- `client.zip` contains `client.specs.json` which lists the secure cryptographic parameters needed for the client to generate private and evaluation keys. It also contains `serialized_processing.json` which describes the pre-processing and post-processing required by the machine learning model, such as quantization parameters to quantize the input and de-quantize the output
+- `client.zip` contains `client.specs.json` which lists the secure cryptographic parameters needed for the client to generate private and evaluation keys. It also contains `serialized_processing.json` which describes the pre-processing and post-processing required by the machine learning model, such as quantization parameters to quantize the input and de-quantize the output.
 - `server.zip` contains the compiled model. This file is sufficient to run the model on a server. The compiled model is machine-architecture specific (i.e. a model compiled on x86 cannot run on ARM).
 
 The compiled model (`server.zip`) is deployed to a server and the cryptographic parameters (`client.zip`) are shared with the clients. In some settings, such as a phone application, the `client.zip` can be directly deployed on the client device and the server does not need to host it.
+
+Note that for built-in models, the server output + post-processing adheres to the following guidelines: if the model is a regressor, the output follows the format of the scikit-learn `.predict()` method; if the model is a classifier, the output follows the format of the scikit-learn `.predict_proba()` method.
 
 ## Serving
 
