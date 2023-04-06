@@ -1,13 +1,13 @@
 # Pandas
 
-Concrete-ML provides partial support for Pandas, with most available models (linear and tree-based models) usable on Pandas dataframes just as they would be used with NumPy arrays.
+Concrete-ML fully supports Pandas, allowing built-in models such as linear and tree-based models to use Pandas dataframes and series just as they would be used with NumPy arrays.
 
 The table below summarizes current compatibility:
 
 |         Methods          | Support Pandas dataframe |
 | :----------------------: | :----------------------: |
 |           fit            |            ✓             |
-|         compile          |            ✗             |
+|         compile          |            ✓             |
 | predict (fhe="simulate") |            ✓             |
 | predict (fhe="execute")  |            ✓             |
 
@@ -45,7 +45,7 @@ model.fit(X_train, y_train)
 y_pred_clear = model.predict(X_test)
 
 # Compile the model
-model.compile(X_train.to_numpy())
+model.compile(X_train)
 
 # Perform the inference in FHE
 y_pred_fhe = model.predict(X_test, fhe="execute")

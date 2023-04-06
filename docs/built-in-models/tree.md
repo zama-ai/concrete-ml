@@ -2,14 +2,14 @@
 
 Concrete-ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
 
-|                                                Concrete-ML                                                |                                                                           scikit-learn                                                                           |
+|                                                Concrete-ML                                                |                                                                           Scikit-Learn                                                                           |
 | :-------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [DecisionTreeClassifier](../developer-guide/api/concrete.ml.sklearn.tree.md#class-decisiontreeclassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
 |  [DecisionTreeRegressor](../developer-guide/api/concrete.ml.sklearn.tree.md#class-decisiontreeregressor)  |      [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor)       |
 |  [RandomForestClassifier](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestclassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
 |   [RandomForestRegressor](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
-In addition to support for scikit-learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
+In addition to support for Scikit-Learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
 |                                      Concrete-ML                                       |                                                XGboost                                                 |
 | :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
@@ -25,7 +25,7 @@ For a formal explanation of the mechanisms that enable FHE-compatible decision t
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of Scikit-Learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer
@@ -47,7 +47,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 model = XGBClassifier(n_jobs=1, n_bits=3)
 
 # Define the pipeline
-# We will normalize the data and apply a PCA before fitting the model
+# We normalize the data and apply a PCA before fitting the model
 pipeline = Pipeline(
     [("standard_scaler", StandardScaler()), ("pca", PCA(random_state=0)), ("model", model)]
 )
@@ -59,7 +59,7 @@ param_grid = {
     "model__n_estimators": [5, 10, 20],
 }
 
-# Instantiate the grid search with 5-fold cross validation on all available cores:
+# Instantiate the grid search with 5-fold cross validation on all available cores
 grid = GridSearchCV(pipeline, param_grid, cv=5, n_jobs=-1, scoring="accuracy")
 
 # Launch the grid search
@@ -72,8 +72,8 @@ print(f"Best parameters found: {grid.best_params_}")
 #  Best parameters found: {'model__max_depth': 5, 'model__n_estimators': 10, 'pca__n_components': 5}
 
 # Currently we only focus on model inference in FHE
-# The data transformation will be done in clear (client machine)
-# while the model inference will be done in FHE on a server.
+# The data transformation is done in clear (client machine)
+# while the model inference is done in FHE on a server.
 # The pipeline can be split into 2 parts:
 #   1. data transformation
 #   2. estimator
