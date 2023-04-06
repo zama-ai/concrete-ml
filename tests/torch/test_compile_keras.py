@@ -89,7 +89,7 @@ def compile_and_test_keras(
     quantized_numpy_module.check_model_is_compiled()
 
     check_is_good_execution_for_cml_vs_circuit(
-        x_test, model_function=quantized_numpy_module, simulate=simulate
+        x_test, model=quantized_numpy_module, simulate=simulate
     )
 
 

@@ -146,7 +146,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 
         # Make sure VL and quantized module forward give the same output.
         check_is_good_execution_for_cml_vs_circuit(
-            x_test, model_function=quantized_numpy_module, simulate=simulate
+            x_test, model=quantized_numpy_module, simulate=simulate
         )
     else:
         # Compile our network with 16-bits

@@ -1217,17 +1217,8 @@ def test_predict_correctness(
 
             # Check the `predict` method
             check_is_good_execution_for_cml_vs_circuit(
-                x[:number_of_tests_in_fhe], model_function=model, simulate=simulate
+                x[:number_of_tests_in_fhe], model=model, simulate=simulate
             )
-
-            # If the model is a classifier, check the `predict_proba` method as well
-            if is_classifier_or_partial_classifier(model):
-                check_is_good_execution_for_cml_vs_circuit(
-                    x[:number_of_tests_in_fhe],
-                    model_function=model,
-                    simulate=simulate,
-                    check_proba=True,
-                )
 
             if test_subfunctions_in_fhe and (not simulate):
                 if verbose:

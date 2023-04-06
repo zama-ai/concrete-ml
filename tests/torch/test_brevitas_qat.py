@@ -111,7 +111,7 @@ def test_brevitas_tinymnist_cnn(
 
             # Dequantize the integer predictions
             check_is_good_execution_for_cml_vs_circuit(
-                data, model_function=quantized_module, simulate=use_vl
+                data, model=quantized_module, simulate=use_vl
             )
 
             fhe_mode = "simulate" if use_vl else "execute"

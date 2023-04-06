@@ -430,28 +430,20 @@ def check_is_good_execution_for_cml_vs_circuit():
 
     def check_is_good_execution_for_cml_vs_circuit_impl(
         inputs: Union[tuple, numpy.ndarray],
-        model_function: Union[Callable, QuantizedModule, QuantizedTorchEstimatorMixin],
+        model: Union[Callable, QuantizedModule, QuantizedTorchEstimatorMixin],
         simulate: bool,
         n_allowed_runs: int = 5,
-        check_proba: bool = False,
     ):
         """Check that a model or a quantized module give the same output as the circuit.
 
         Args:
             inputs (tuple, numpy.ndarray): inputs for the model.
-            model_function (Callable, QuantizedModule, QuantizedTorchEstimatorMixin): either the
+            model (Callable, QuantizedModule, QuantizedTorchEstimatorMixin): either the
                 Concrete-ML sklearn built-in model or a quantized module.
             simulate (bool): whether to run the execution in FHE or in simulated mode.
             n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
                 different this allows to run the evaluation multiple times
-            check_proba (bool): Indicate if probabilities should be checked (using
-                `predict_proba`) instead of regular predictions (using `predict`). This can only
-                be used with built-in classifiers only. Default to False.
         """
-        if check_proba:
-            assert is_classifier_or_partial_classifier(
-                model_function
-            ), "The`check_proba` parameter can only be used with built-in classifiers."
 
         inputs = to_tuple(inputs)
 
@@ -464,27 +456,30 @@ def check_is_good_execution_for_cml_vs_circuit():
         fhe_mode = "simulate" if simulate else "execute"
 
         for _ in range(n_allowed_runs):
-            # Check if model_function is QuantizedModule
-            if isinstance(model_function, QuantizedModule):
-                results_cnp_circuit = model_function.forward(*inputs, fhe=fhe_mode)
-                results_model_function = model_function.forward(*inputs, fhe="disable")
+            # Check if model is QuantizedModule
+            if isinstance(model, QuantizedModule):
+                results_cnp_circuit = model.forward(*inputs, fhe=fhe_mode)
+                results_model = model.forward(*inputs, fhe="disable")
 
             else:
                 assert isinstance(
-                    model_function,
+                    model,
                     (QuantizedTorchEstimatorMixin, BaseTreeEstimatorMixin, SklearnLinearModelMixin),
                 )
 
-                if model_function._is_a_public_cml_model:  # pylint: disable=protected-access
-                    if check_proba:
-                        results_cnp_circuit = model_function.predict_proba(*inputs, fhe=fhe_mode)
-                        results_model_function = model_function.predict_proba(
-                            *inputs, fhe="disable"
-                        )
+                if model._is_a_public_cml_model:  # pylint: disable=protected-access
+                    # Only check probabilities for classifiers as we only want to check that the
+                    # circuit's outputs (after de-quantization) are correct. We thus want to avoid
+                    # as much post-processing steps in the clear (that could lead to more flaky
+                    # tests), especially since these results are tested in other tests such as the
+                    # `check_subfunctions_in_fhe`
+                    if is_classifier_or_partial_classifier(model):
+                        results_cnp_circuit = model.predict_proba(*inputs, fhe=fhe_mode)
+                        results_model = model.predict_proba(*inputs, fhe="disable")
 
                     else:
-                        results_cnp_circuit = model_function.predict(*inputs, fhe=fhe_mode)
-                        results_model_function = model_function.predict(*inputs, fhe="disable")
+                        results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)
+                        results_model = model.predict(*inputs, fhe="disable")
 
                 else:
                     raise ValueError(
@@ -495,12 +490,12 @@ def check_is_good_execution_for_cml_vs_circuit():
             # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2806
             # fp64 comparisons do not pass the numpy.array_equal while the quantized
             # int64 values do.
-            if numpy.isclose(results_cnp_circuit, results_model_function).all():
+            if numpy.isclose(results_cnp_circuit, results_model).all():
                 return
 
         raise RuntimeError(
             f"Mismatch between circuit results:\n{results_cnp_circuit}\n"
-            f"and model function results:\n{results_model_function}"
+            f"and model function results:\n{results_model}"
         )
 
     return check_is_good_execution_for_cml_vs_circuit_impl
