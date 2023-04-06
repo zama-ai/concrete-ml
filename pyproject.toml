@@ -35,7 +35,7 @@ readme = "pypi_readme.md"
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2665
 python = ">=3.8.1,<3.11"
 concrete-numpy = "1.0.0rc2"
-setuptools = ">=65.6.3"
+setuptools = "65.6.3"
 skops = {version = "0.5.0"}
 xgboost = "1.6.2"
 skorch = "0.11.0"
@@ -130,8 +130,6 @@ filterwarnings = [
     "ignore: allowzero=0 by default.*:UserWarning",
     "ignore:Implicitly cleaning up:ResourceWarning",
     "ignore:non-integer arguments to randrange\\(\\) have been deprecated since Python 3\\.10 and will be removed in a subsequent version:DeprecationWarning",
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3407
-    "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
 ]
 
 [tool.semantic_release]
