@@ -9,7 +9,6 @@ mkdir -p "${TEST_DIR}"
 # grep -v "^\./\." is to avoid files in .hidden_directories
 # grep -v "api/concrete\.ml" is to avoid autogen API doc since lazydocs produces bad python blocks
 MD_FILES=$(find . -type f -name "*.md" | grep -v "^\./\." | grep -v "api/concrete\.ml")
-NCPU=$(./script/make_utils/ncpus.sh)
 
 # Force NCPU to 1, since using parallel checks makes issues on linux or CI
 NCPU=1
@@ -53,12 +52,14 @@ then
         --capture=tee-sys \
         -n "${NCPU}" \
         --randomly-dont-reorganize \
-        --randomly-dont-reset-seed "${TEST_DIR}"
+        --randomly-dont-reset-seed "${TEST_DIR}" \
+        --durations=10
 else
     poetry run pytest --codeblocks -svv \
         --capture=tee-sys \
         --randomly-dont-reorganize \
-        --randomly-dont-reset-seed "${TEST_DIR}"
+        --randomly-dont-reset-seed "${TEST_DIR}" \
+        --durations=10
 fi
 
 set +x

@@ -42,14 +42,11 @@ source "${PYPI_VENV}/bin/activate"
 python -m pip install --upgrade pip
 python -m pip install poetry==1.2.1 pytest==7.1.1 pandas==1.3.5 tensorflow==2.10.0 tf2onnx==1.13.0 torchvision==0.14.1
 
-# Install additional pytest dependencies for codeblock tests 
-if ${TEST_CODEBLOCKS}; then
-    python -m pip install pytest-cov
-    python -m pip install pytest_codeblocks
-    python -m pip install pytest-xdist
-    python -m pip install pytest-randomly
-    python -m pip install pytest-repeat
-fi
+# Install additional pytest plugins
+python -m pip install pytest-cov==3.0.0
+python -m pip install pytest-xdist==2.5.0
+python -m pip install pytest-randomly==3.12.0
+python -m pip install pytest-repeat==0.9.1
 
 if ${USE_PIP_WHEEL}; then
     # Delete the directory where the pypi wheel file will be created (if it already exists)
@@ -69,9 +66,12 @@ fi
 
 # Run our codeblocks or regular tests
 if ${TEST_CODEBLOCKS}; then
+    # Install additional pytest plugin for codeblock tests 
+    python -m pip install pytest-codeblocks==0.14.0
+
     ./script/make_utils/pytest_codeblocks.sh
 else
-    poetry run pytest -svv tests
+    make pytest
 fi
 
 # Delete the virtual env directory
