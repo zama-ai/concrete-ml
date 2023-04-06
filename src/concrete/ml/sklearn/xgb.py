@@ -129,7 +129,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["framework"] = self.framework
 
         # Classifier
-        metadata["classes_"] = self.classes_
+        metadata["classes_"] = self.target_classes_
         metadata["n_classes_"] = self.n_classes_
 
         metadata["max_depth"] = self.max_depth
@@ -196,7 +196,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         )
 
         # Classifier
-        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.target_classes_ = numpy.array(metadata["classes_"])
         obj.n_classes_ = metadata["n_classes_"]
 
         obj.max_depth = metadata["max_depth"]

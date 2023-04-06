@@ -197,7 +197,7 @@ class LinearSVC(SklearnLinearClassifierMixin):
         metadata["cml_dumped_class_name"] = type(self).__name__
 
         # Classifier
-        metadata["classes_"] = self.classes_
+        metadata["classes_"] = self.target_classes_
         metadata["n_classes_"] = self.n_classes_
         metadata["cml_dumped_class_name"] = type(self).__name__
 
@@ -244,7 +244,7 @@ class LinearSVC(SklearnLinearClassifierMixin):
         )
 
         # Classifier
-        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.target_classes_ = numpy.array(metadata["classes_"])
         obj.n_classes_ = metadata["n_classes_"]
 
         # Linear

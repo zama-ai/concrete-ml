@@ -90,7 +90,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["framework"] = self.framework
 
         # Classifier
-        metadata["classes_"] = self.classes_
+        metadata["classes_"] = self.target_classes_
         metadata["n_classes_"] = self.n_classes_
 
         metadata["n_estimators"] = self.n_estimators
@@ -146,7 +146,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         obj._is_compiled = metadata["_is_compiled"]
 
         # Classifier
-        obj.classes_ = numpy.array(metadata["classes_"])
+        obj.target_classes_ = numpy.array(metadata["classes_"])
         obj.n_classes_ = metadata["n_classes_"]
 
         obj.n_estimators = metadata["n_estimators"]

@@ -1,7 +1,6 @@
-"""Module that contains base classes for our libraries estimators."""
+"""Base classes for all estimators."""
 from __future__ import annotations
 
-import functools
 import json
 import tempfile
 
@@ -11,7 +10,7 @@ import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import IO, Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import IO, Any, Callable, Dict, List, Optional, Set, Type, Union
 
 import brevitas.nn as qnn
 import numpy
@@ -24,6 +23,8 @@ from concrete.numpy.compilation.circuit import Circuit
 from concrete.numpy.compilation.compiler import Compiler
 from concrete.numpy.compilation.configuration import Configuration
 from concrete.numpy.dtypes.integer import Integer
+from sklearn.base import clone
+from skorch.net import NeuralNet as SkorchNeuralNet
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -48,6 +49,7 @@ from ..quantization.quantizers import (
     UniformQuantizer,
 )
 from ..torch import NumpyModule
+from .qnn_module import SparseQuantNeuralNetwork
 from .tree_to_numpy import tree_to_numpy
 
 # Disable pylint to import hummingbird while ignoring the warnings
@@ -78,7 +80,11 @@ Target = Union[
     List,
 ]
 
+# Define QNN's attribute that will be auto-generated when fitting
+QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 
+
+# pylint: disable=too-many-public-methods
 class BaseEstimator:
     """Base class for all estimators in Concrete-ML.
 
@@ -104,6 +110,9 @@ class BaseEstimator:
         in their documentation:
         https://scikit-learn.org/stable/developers/develop.html#:~:text=Estimated%20Attributes%C2%B6
         """
+        #: The equivalent fitted float model. Is None if the model is not fitted.
+        self.sklearn_model: Optional[sklearn.base.BaseEstimator] = None
+
         #: The list of quantizers, which contain all information necessary for applying uniform
         #: quantization to inputs and provide quantization/dequantization functionalities. Is empty
         #: if the model is not fitted
@@ -164,6 +173,12 @@ class BaseEstimator:
         """
         self.fhe_circuit_ = value
 
+    def _sklearn_model_is_not_fitted_error_message(self) -> str:
+        return (
+            f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
+            "cannot be quantized."
+        )  # pragma: no cover
+
     @property
     def is_fitted(self) -> bool:
         """Indicate if the model is fitted.
@@ -188,12 +203,6 @@ class BaseEstimator:
         if not self.is_fitted:
             raise AttributeError(self._is_not_fitted_error_message())
 
-    def _is_not_compiled_error_message(self) -> str:
-        return (
-            f"The {self.__class__.__name__} model is not compiled. "
-            "Please run compile(...) first before executing the prediction in FHE."
-        )
-
     @property
     def is_compiled(self) -> bool:
         """Indicate if the model is compiled.
@@ -202,6 +211,12 @@ class BaseEstimator:
             bool: If the model is compiled.
         """
         return self._is_compiled
+
+    def _is_not_compiled_error_message(self) -> str:
+        return (
+            f"The {self.__class__.__name__} model is not compiled. "
+            "Please run compile(...) first before executing the prediction in FHE."
+        )
 
     def check_model_is_compiled(self) -> None:
         """Check if the model is compiled.
@@ -230,6 +245,7 @@ class BaseEstimator:
         # which will become available once a subclass inherits from it. We therefore disable both
         # pylint and mypy as this behavior is expected
         # pylint: disable-next=no-member
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
         params = super().get_params(deep=deep)  # type: ignore[misc]
 
         # Remove the n_bits parameters as this attribute is added by Concrete-ML
@@ -241,34 +257,36 @@ class BaseEstimator:
         """Set parameters used in post-processing."""
         self.post_processing_params = {}
 
-    def _fit_float_estimator(
-        self, X: Data, y: Target, **fit_parameters
-    ) -> sklearn.base.BaseEstimator:
-        """Fit the model's float equivalent estimator.
+    def _fit_sklearn_model(self, X: Data, y: Target, **fit_parameters):
+        """Fit the model's Scikit-Learn equivalent estimator.
 
         Args:
             X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
             y (Target): The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
                 Series or List.
-            **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
+            **fit_parameters: Keyword arguments to pass to the Scikit-Learn estimator's fit method.
 
         Returns:
-            sklearn.base.BaseEstimator: The fitted float estimator.
+            The fitted Scikit-Learn estimator.
         """
-        # Retrieve the init parameters
-        params = self.get_sklearn_params()
 
-        # Initialize the sklearn model
-        # pylint: disable-next=attribute-defined-outside-init
-        self.sklearn_model = self.sklearn_model_class(**params)
+        # Initialize the underlying Scikit-learn model if it has not already been done or if
+        # `warm_start` is set to False (for neural networks)
+        # This model should be directly initialized in the model's __init__ method instead
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        if self.sklearn_model is None or not getattr(self, "warm_start", False):
+            # Retrieve the init parameters
+            params = self.get_sklearn_params()
 
-        # Fit the sklearn model
+            self.sklearn_model = self.sklearn_model_class(**params)
+
+        # Fit the Scikit-Learn model
         self.sklearn_model.fit(X, y, **fit_parameters)
 
         return self.sklearn_model
 
     @abstractmethod
-    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
+    def fit(self, X: Data, y: Target, **fit_parameters):
         """Fit the estimator.
 
         This method trains a Scikit-Learn estimator, computes its ONNX graph and defines the
@@ -281,7 +299,7 @@ class BaseEstimator:
             **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
 
         Returns:
-            BaseEstimator: The fitted estimator.
+            The fitted estimator.
         """
 
     # Several attributes and methods are called in `fit_benchmark` but will only be accessible
@@ -294,7 +312,7 @@ class BaseEstimator:
         y: Target,
         random_state: Optional[int] = None,
         **fit_parameters,
-    ) -> Tuple[BaseEstimator, sklearn.base.BaseEstimator]:
+    ):
         """Fit both the Concrete-ML and its equivalent float estimators.
 
         Args:
@@ -305,8 +323,7 @@ class BaseEstimator:
             **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
 
         Returns:
-            Tuple[BaseEstimator, sklearn.base.BaseEstimator]: The Concrete-ML and float equivalent
-                fitted estimators.
+            The Concrete-ML and float equivalent fitted estimators.
         """
 
         # Retrieve sklearn's init parameters
@@ -369,11 +386,11 @@ class BaseEstimator:
         """
 
     @abstractmethod
-    def _get_compiler(self) -> Compiler:
-        """Retrieve the compiler instance to compile.
+    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+        """Retrieve the module instance to compile.
 
         Returns:
-            Compiler: The compiler instance to compile.
+            Union[Compiler, QuantizedModule]: The module instance to compile.
         """
 
     def compile(
@@ -433,7 +450,13 @@ class BaseEstimator:
         inputset = _get_inputset_generator(q_X)
 
         # Retrieve the compiler instance
-        module_to_compile = self._get_compiler()
+        module_to_compile = self._get_module_to_compile()
+
+        # Compiling using a QuantizedModule requires different steps and should not be done here
+        assert isinstance(module_to_compile, Compiler), (
+            "Wrong module to compile. Expected to be of type `Compiler` but got "
+            f"{type(module_to_compile)}."
+        )
 
         self.fhe_circuit = module_to_compile.compile(
             inputset,
@@ -486,6 +509,10 @@ class BaseEstimator:
 
         # Check that the model is properly fitted
         self.check_model_is_fitted()
+
+        # Ensure inputs are 2D
+        if isinstance(X, (numpy.ndarray, torch.Tensor)) and X.ndim == 1:
+            X = X.reshape((1, -1))
 
         # Check that X's type and shape are supported
         X = check_array_and_assert(X)
@@ -625,7 +652,7 @@ class BaseClassifier(BaseEstimator):
         super().__init__(*args, **kwargs)
 
         #: The classifier's different target classes. Is None if the model is not fitted.
-        self.classes_: Optional[numpy.ndarray] = None
+        self.target_classes_: Optional[numpy.ndarray] = None
 
         #: The classifier's number of different target classes. Is None if the model is not fitted.
         self.n_classes_: Optional[int] = None
@@ -634,12 +661,12 @@ class BaseClassifier(BaseEstimator):
         super()._set_post_processing_params()
         self.post_processing_params.update({"n_classes_": self.n_classes_})
 
-    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
+    def fit(self, X: Data, y: Target, **fit_parameters):
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Retrieve the different target classes
         classes = numpy.unique(y)
-        self.classes_ = classes
+        self.target_classes_ = classes
 
         # Compute the number of target classes
         self.n_classes_ = len(classes)
@@ -670,14 +697,14 @@ class BaseClassifier(BaseEstimator):
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         # Compute the predicted probabilities
-        y_preds = self.predict_proba(X, fhe=fhe)
+        y_proba = self.predict_proba(X, fhe=fhe)
 
         # Retrieve the class with the highest probability
-        y_preds = numpy.argmax(y_preds, axis=1)
+        y_preds = numpy.argmax(y_proba, axis=1)
 
-        assert self.classes_ is not None, self._is_not_fitted_error_message()
+        assert self.target_classes_ is not None, self._is_not_fitted_error_message()
 
-        return self.classes_[y_preds]
+        return self.target_classes_[y_preds]
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         y_preds = super().post_processing(y_preds)
@@ -690,9 +717,11 @@ class BaseClassifier(BaseEstimator):
         if n_classes_ == 2:
             y_preds = numpy_sigmoid(y_preds)[0]
 
-            # Transform in a 2d array where [1-p, p] is the output as scikit-learn only outputs 1
-            # value when considering 2 classes
-            y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
+            # If the prediction array is 1D (which happens with some models such as XGBCLassifier
+            # models), transform the output into a 2D array [1-p, p], with p the initial
+            # output probabilities
+            if y_preds.ndim == 1 or y_preds.shape[1] == 1:
+                y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
 
         # Else, apply the softmax operator
         else:
@@ -701,6 +730,9 @@ class BaseClassifier(BaseEstimator):
         return y_preds
 
 
+# QNNs do not support serialization yet
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3134
+# pylint: disable-next=abstract-method
 class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API."""
 
@@ -712,13 +744,28 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
                 _ALL_SKLEARN_MODELS.add(cls)
 
     def __init__(self):
+        #: The quantized module used to store the quantized parameters. Is empty if the model is
+        #: not fitted.
         self.quantized_module_ = QuantizedModule()
+
+        #: The input dimension in the underlying model
+        self.module__input_dim: Optional[int] = None
+
+        #: The number of outputs in the underlying model
+        self.module__n_outputs: Optional[int] = None
+
         super().__init__()
 
     @property
-    @abstractmethod
-    def base_module_to_compile(self):
-        """Get the Torch module that should be compiled to FHE."""
+    def base_module(self) -> SparseQuantNeuralNetwork:
+        """Get the Torch module.
+
+        Returns:
+            SparseQuantNeuralNetwork: The fitted underlying module.
+        """
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        return self.sklearn_model.module_
 
     @property
     def input_quantizers(self) -> List[UniformQuantizer]:
@@ -754,37 +801,63 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def fhe_circuit(self, value: Circuit) -> None:
         self.quantized_module_.fhe_circuit = value
 
-    def _set_post_processing_params(self) -> None:
-        # Disable mypy attribute definition error as this method is expected to be reachable
-        # once the model inherits from Skorch
-        params = self._get_predict_nonlinearity()  # type: ignore[attr-defined]
+    def get_params(self, deep: bool = True) -> dict:
+        """Get parameters for this estimator.
 
-        if isinstance(params, functools.partial):
-            post_processing_function_name = params.func.__name__
-            post_processing_function_keywords = params.keywords
-        else:
-            post_processing_function_name = params.__name__
-            post_processing_function_keywords = {}
-        post_processing_params: Dict[str, Any] = {}
-        post_processing_params["post_processing_function_name"] = post_processing_function_name
-        post_processing_params[
-            "post_processing_function_keywords"
-        ] = post_processing_function_keywords
-        self.post_processing_params = post_processing_params
+        This method is overloaded in order to make sure that auto-computed parameters are not
+        considered when cloning the model (e.g during a GridSearchCV call).
 
-    def _fit_float_estimator(
-        self, X: Data, y: Target, **fit_parameters
-    ) -> sklearn.base.BaseEstimator:
-        # Call Skorch's fit that will train the network. This will instantiate the model class if
-        # it's not already done
-        return self.sklearn_model_class.fit(self, X, y, **fit_parameters)
+        Args:
+            deep (bool): If True, will return the parameters for this estimator and
+                contained subobjects that are estimators.
 
-    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
+        Returns:
+            params (dict): Parameter names mapped to their values.
+        """
+        # Retrieve the Skorch estimator's init parameters
+        # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch, which
+        # will become available once a subclass inherits from it. We therefore disable both pylint
+        # and mypy as this behavior is expected
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        # pylint: disable-next=no-member
+        params = super().get_params(deep)  # type: ignore[misc]
+
+        # Remove `module` since it is automatically set to SparseQuantNeuralNetImpl. Therefore,
+        # we don't need to pass module again when cloning this estimator
+        params.pop("module", None)
+
+        # Remove the parameters that are auto-computed by `fit` as well
+        for kwarg in QNN_AUTO_KWARGS:
+            params.pop(kwarg, None)
+
+        return params
+
+    def get_sklearn_params(self, deep: bool = True) -> Dict:
+        # Retrieve the Skorch estimator's init parameters
+        # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch, which
+        # will become available once a subclass inherits from it. We therefore disable both pylint
+        # and mypy as this behavior is expected
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        # pylint: disable-next=no-member
+        params = super().get_params(deep=deep)  # type: ignore[misc]
+
+        # Set the quantized module to SparseQuantNeuralNetwork
+        params["module"] = SparseQuantNeuralNetwork
+
+        return params
+
+    def _fit_sklearn_model(self, X: Data, y: Target, **fit_parameters):
+        super()._fit_sklearn_model(X, y, **fit_parameters)
+
+        # Make pruning permanent by removing weights associated to pruned neurons
+        self.base_module.make_pruning_permanent()
+
+    def fit(self, X: Data, y: Target, **fit_parameters):
         """Fit he estimator.
 
         If the module was already initialized, the module will be re-initialized unless
         `warm_start` is set to True. In addition to the torch training step, this method performs
-        quantization of the trained Torch model.
+        quantization of the trained Torch model using Quantization Aware Training (QAT).
 
         Values of dtype float64 are not supported and will be casted to float32.
 
@@ -795,7 +868,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             **fit_parameters: Keyword arguments to pass to Skorch's fit method.
 
         Returns:
-            BaseEstimator: The fitted estimator.
+            The fitted estimator.
         """
         # Reset for double fit
         self._is_fitted = False
@@ -812,7 +885,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         for arg_name in args_to_convert_to_tensor:
             if hasattr(self, arg_name):
                 attr_value = getattr(self, arg_name)
-                # The parameter could be a list, numpy.ndaray or tensor
+                # The parameter could be a list, numpy.ndarray or tensor
                 if isinstance(attr_value, list):
                     attr_value = numpy.asarray(attr_value, numpy.float32)
 
@@ -821,18 +894,17 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
                 assert_true(
                     isinstance(getattr(self, arg_name), torch.Tensor),
-                    f"NeuralNetClassifier parameter `{arg_name}` must "
-                    "be a numpy.ndarray, list or torch.Tensor",
+                    f"Parameter `{arg_name}` must be a numpy.ndarray, list or torch.Tensor",
                 )
 
         # Fit the model by using Skorch's fit
-        self._fit_float_estimator(X, y, **fit_parameters)
+        self._fit_sklearn_model(X, y, **fit_parameters)
 
         # Export the brevitas model to ONNX
         output_onnx_file_path = Path(tempfile.mkstemp(suffix=".onnx")[1])
 
         BrevitasONNXManager.export(
-            self.base_module_to_compile,
+            self.base_module,
             input_shape=X[[0], ::].shape,
             export_path=str(output_onnx_file_path),
             keep_initializers_as_inputs=False,
@@ -852,11 +924,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Note that the ONNXConverter will use a default value for network input bits
         # Furthermore, Brevitas ONNX contains bitwidths in the ONNX file
         # which override the bitwidth that we pass here
-        # Thus, this parameter, set by the inheriting classes, such as NeuralNetClassifier
-        # is only used to check consistency during import (onnx file vs import)
-        # Disable mypy attribute definition error as this attribute is expected to be
-        # initialized once the model inherits from Skorch
-        n_bits = self.n_bits_quant  # type: ignore[attr-defined]
+        # Thus, this parameter is only used to check consistency during import (onnx file vs import)
+        n_bits = self.base_module.n_a_bits
 
         # Import the quantization aware trained model
         qat_model = PostTrainingQATImporter(n_bits, numpy_model)
@@ -882,7 +951,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         layer_index = -1
 
         # Iterate over the model's sub-modules
-        for module in self.base_module_to_compile.features:
+        for module in self.base_module.features:
+
             # If the module is not a QuantIdentity, it's either a QuantLinear or an activation
             if not isinstance(module, qnn.QuantIdentity):
                 # If the module is a QuantLinear, replace it with a Linear module
@@ -906,11 +976,33 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return float_module
 
-    # Skorch's Neural Networks don't support a random_state as parameter, we therefore need to
-    # disable pylint as the BaseEstimator class expect the fit method to support it.
+    def _get_equivalent_float_estimator(self) -> SkorchNeuralNet:
+        """Initialize a topologically equivalent estimator that can be used on floating points.
+
+        Returns:
+            float_estimator (SkorchNeuralNet): An instance of the equivalent float estimator.
+        """
+        # Retrieve the Skorch estimator's init parameters
+        sklearn_params = self.get_params()
+
+        # Retrieve all parameters related to the module
+        module_param_names = [name for name in sklearn_params if "module__" in name]
+
+        # Remove all parameters related to the module
+        for name in module_param_names:
+            sklearn_params.pop(name, None)
+
+        # Retrieve the estimator's float topological equivalent module
+        float_module = self._get_equivalent_float_module()
+
+        # Instantiate the float estimator
+        float_estimator = self.sklearn_model_class(float_module, **sklearn_params)
+
+        return float_estimator
+
     def fit_benchmark(
         self, X: Data, y: Target, random_state: Optional[int] = None, **fit_parameters
-    ) -> Tuple[BaseEstimator, sklearn.base.BaseEstimator]:
+    ):
         """Fit the quantized estimator as well as its equivalent float estimator.
 
         This function returns both the quantized estimator (itself) as well as its non-quantized
@@ -931,8 +1023,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             **fit_parameters: Keyword arguments to pass to Skorch's fit method.
 
         Returns:
-            Tuple[BaseEstimator, sklearn.base.BaseEstimator]: The Concrete-ML and equivalent Skorch
-                fitted estimators.
+            The Concrete-ML and equivalent Skorch fitted estimators.
         """
 
         assert (
@@ -942,17 +1033,10 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Fit the quantized estimator
         self.fit(X, y, **fit_parameters)
 
-        # Retrieve the Skorch estimator's training parameters
-        estimator_parameters = self.get_sklearn_params()
+        # Instantiate the equivalent float estimator
+        float_estimator = self._get_equivalent_float_estimator()
 
-        # Retrieve the estimator's float topological equivalent module
-        float_module = self._get_equivalent_float_module()
-
-        # Instantiate the float estimator
-        skorch_estimator_type = self.sklearn_model_class
-        float_estimator = skorch_estimator_type(float_module, **estimator_parameters)
-
-        # Fit the float estimator
+        # Fit the float equivalent estimator
         float_estimator.fit(X, y, **fit_parameters)
 
         return self, float_estimator
@@ -969,7 +1053,19 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         self.check_model_is_fitted()
         return self.quantized_module_.dequantize_output(q_y_preds)
 
-    def compile(self, X: Data, *args, **kwargs) -> Circuit:
+    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+        return self.quantized_module_
+
+    def compile(
+        self,
+        X: Data,
+        configuration: Optional[Configuration] = None,
+        artifacts: Optional[DebugArtifacts] = None,
+        show_mlir: bool = False,
+        p_error: Optional[float] = None,
+        global_p_error: Optional[float] = None,
+        verbose: bool = False,
+    ) -> Circuit:
         # Reset for double compile
         self._is_compiled = False
 
@@ -979,11 +1075,19 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Cast pandas, list or torch to numpy
         X = check_array_and_assert(X)
 
+        # Retrieve the module instance to compile
+        module_to_compile = self._get_module_to_compile()
+
         # Compile the QuantizedModule
-        # The QuantizedModule's compile method does not exactly share the same parameters as the
-        # one from a Compiler instance. We therefore need to override the BaseEstimator's compile
-        # method for that particular reason
-        self.quantized_module_.compile(X, *args, **kwargs)
+        module_to_compile.compile(
+            X,
+            configuration=configuration,
+            artifacts=artifacts,
+            show_mlir=show_mlir,
+            p_error=p_error,
+            global_p_error=global_p_error,
+            verbose=verbose,
+        )
 
         # Make sure that no avoidable TLUs are found in the built-in model
         succ = list(self.fhe_circuit.graph.graph.successors(self.fhe_circuit.graph.input_nodes[0]))
@@ -997,78 +1101,86 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return self.fhe_circuit
 
-    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
-        return self.predict_proba(X, fhe=fhe)
+    def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
 
-    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
-        """Predict values for a regressor and class probabilities for a classifier.
-
-        In Scikit-Learn, predict_proba is not defined for regressors. However, Skorch seems to use
-        it as `predict`, and defines what to return using a post-processing method. We therefore
-        decided to follow the same structure and therefore include `predict_proba` in the QNN's
-        base class.
-
-        Values of dtype float64 are not supported and will be casted to float32.
-
-        Args:
-            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
-                or List.
-            fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete-ML python inference,
-                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
-                Can also be the string representation of any of these values.
-                Default to FheMode.DISABLE.
-
-        Returns:
-            numpy.ndarray: The predicted values or class probabilities.
-        """
-        assert_true(
-            FheMode.is_valid(fhe),
-            "`fhe` mode is not supported. Expected one of 'disable' (resp. FheMode.DISABLE), "
-            "'simulate' (resp. FheMode.SIMULATE) or 'execute' (resp. FheMode.EXECUTE). Got "
-            f"{fhe}",
-        )
-
-        if fhe in ["execute", "simulate"]:
-            # Run over each element of X individually and aggregate predictions in a vector
-            if isinstance(X, (numpy.ndarray, torch.Tensor)) and X.ndim == 1:
-                X = X.reshape((1, -1))
-
-            y_out = super().predict(X, fhe=fhe)
-
-            # Apply post-processing in the clear, such as the softmax or sigmoid functions for
-            # classifiers
-            y_proba = self.post_processing(y_out)
-
-            return y_proba
-
-        # For prediction in the clear, we call the  Skorch's NeuralNet `predict_proba method which
-        # ends up calling `infer`
-        return self.sklearn_model_class.predict_proba(self, X).astype(numpy.float32)
+        return self.quantized_module_.quantized_forward(q_X)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        if self.post_processing_params["post_processing_function_name"] == "softmax":
-            # Get dim argument
-            dim = self.post_processing_params["post_processing_function_keywords"]["dim"]
-
-            # Apply softmax to the output
-            y_preds = numpy_softmax(y_preds, axis=dim)[0]
-
-        elif "sigmoid" in self.post_processing_params["post_processing_function_name"]:
-            # Transform in a 2d array where [p, 1-p] is the output
-            y_preds = numpy.concatenate((y_preds, 1 - y_preds), axis=1)  # pragma: no cover
-
-        elif self.post_processing_params["post_processing_function_name"] == "_identity":
-            pass
-
-        else:
-            raise ValueError(
-                "Unknown post-processing function "
-                f"{self.post_processing_params['post_processing_function_name']}"
-            )  # pragma: no cover
-
-        # To match torch softmax we need to cast to float32
+        # Cast the predictions to float32 in order to match Torch's softmax outputs
         return y_preds.astype(numpy.float32)
+
+    def prune(self, X: Data, y: Target, n_prune_neurons_percentage: float, **fit_params):
+        """Prune a copy of this Neural Network model.
+
+        This can be used when the number of neurons on the hidden layers is too high. For example,
+        when creating a Neural Network model with `n_hidden_neurons_multiplier` high (3-4), it
+        can be used to speed up the model inference in FHE. Many times, up to 50% of
+        neurons can be pruned without losing accuracy, when using this function to fine-tune
+        an already trained model with good accuracy. This method should be used
+        once good accuracy is obtained.
+
+        Args:
+            X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+            y (Target): The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas
+                Series or List.
+            n_prune_neurons_percentage (float): The percentage of neurons to remove. A value of
+                0 (resp. 1.0) means no (resp. all) neurons will be removed.
+            fit_params: Additional parameters to pass to the underlying nn.Module's forward method.
+
+        Returns:
+            A new pruned copy of the Neural Network model.
+
+        Raises:
+            ValueError: If the model has not been trained or has already been pruned.
+        """
+        self.check_model_is_fitted()
+
+        if self.base_module.n_prune_neurons_percentage > 0.0:
+            raise ValueError(
+                "Cannot apply structured pruning optimization to an already pruned model"
+            )
+
+        if n_prune_neurons_percentage >= 1.0 or n_prune_neurons_percentage < 0:
+            raise ValueError(
+                f"Valid values for `n_prune_neurons_percentage` are in the [0..1) range, but "
+                f"{n_prune_neurons_percentage} was given."
+            )
+
+        pruned_model = clone(self)
+
+        # Copy the input/output dims, as they are kept constant. These
+        # are usually computed by .fit, but here we want to manually instantiate the model
+        # before .fit() in order to fine-tune the original model
+        pruned_model.module__input_dim = self.module__input_dim
+        pruned_model.module__n_outputs = self.module__n_outputs
+
+        # Create .module_ if the .module is a class (not an instance)
+        pruned_model.sklearn_model.initialize()
+
+        # Deactivate the default pruning
+        pruned_model.base_module.make_pruning_permanent()
+
+        # Load the original model
+        pruned_model.base_module.load_state_dict(self.base_module.state_dict())
+
+        # Set the new pruning amount
+        pruned_model.base_module.n_prune_neurons_percentage = n_prune_neurons_percentage
+
+        # Enable pruning again, this time with structured pruning
+        pruned_model.base_module.enable_pruning()
+
+        # The .module_ was initialized manually, prevent .fit (for both Skorch and Concrete-ML)
+        # from creating a new one
+        # Setting both attributes could be avoided by initializing `sklearn_model` in __init__
+        # # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        pruned_model.warm_start = True
+        pruned_model.sklearn_model.warm_start = True
+
+        # Now, fine-tune the original module with structured pruning
+        pruned_model.fit(X, y, **fit_params)
+
+        return pruned_model
 
 
 class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
@@ -1096,21 +1208,12 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         self.n_bits: int = n_bits
 
-        #: The equivalent fitted float model. Is None if the model is not fitted.
-        self.sklearn_model: Optional[sklearn.base.BaseEstimator] = None
-
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
         BaseEstimator.__init__(self)
 
-    def _sklearn_model_is_not_fitted_error_message(self) -> str:
-        return (
-            f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
-            "cannot be quantized."
-        )  # pragma: no cover
-
-    def fit(self, X: Data, y: Target, **fit_parameters) -> Any:
+    def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
 
@@ -1126,11 +1229,12 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             q_X[:, i] = input_quantizer.quant(X[:, i])
 
         # Fit the Scikit-Learn model
-        self._fit_float_estimator(q_X, y, **fit_parameters)
+        self._fit_sklearn_model(q_X, y, **fit_parameters)
 
         # Set post-processing parameters
         self._set_post_processing_params()
 
+        # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Convert the tree inference with Numpy operators
@@ -1163,7 +1267,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
         return q_y_preds
 
-    def _get_compiler(self) -> Compiler:
+    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
         assert self._tree_inference is not None, self._is_not_fitted_error_message()
 
         # Generate the proxy function to compile
@@ -1271,9 +1375,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
-        #: The equivalent fitted float model. Is None if the model is not fitted.
-        self.sklearn_model: Optional[sklearn.base.BaseEstimator] = None
-
         #: The quantizer to use for quantizing the model's weights
         self._weight_quantizer: Optional[UniformQuantizer] = None
 
@@ -1285,18 +1386,13 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
-    def _sklearn_model_is_not_fitted_error_message(self) -> str:
-        return (
-            f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
-            "cannot be converted quantized."
-        )  # pragma: no cover
-
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
         """Retrieve the model's ONNX graph using Hummingbird conversion.
 
         Args:
             test_input (numpy.ndarray): An input data used to trace the model execution.
         """
+        # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         self.onnx_model_ = hb_convert(
@@ -1315,7 +1411,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Remove cast operators as they are not needed
         remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
 
-    def fit(self, X: Data, y: Target, **fit_parameters) -> BaseEstimator:
+    def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
 
@@ -1323,8 +1419,9 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Fit the Scikit-Learn model
-        self._fit_float_estimator(X, y, **fit_parameters)
+        self._fit_sklearn_model(X, y, **fit_parameters)
 
+        # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Retrieve the ONNX graph
@@ -1409,7 +1506,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return y_preds
 
-    def _get_compiler(self) -> Compiler:
+    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
         # Define the inference function to compile.
         # This function can neither be a class method nor a static one because self we want to avoid
         # having self as a parameter while still being able to access some of its attribute
@@ -1488,12 +1585,11 @@ class SklearnLinearClassifierMixin(
             numpy.ndarray: The predicted confidence scores.
         """
         # Here, we want to use SklearnLinearModelMixin's `predict` method as confidence scores are
-        # the dot product's output values, without any post-processing (as done in baseClassifier's
-        # one)
+        # the dot product's output values, without any post-processing
         y_preds = SklearnLinearModelMixin.predict(self, X, fhe=fhe)
         return y_preds
 
     def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
-        y_preds = self.decision_function(X, fhe=fhe)
-        y_preds = self.post_processing(y_preds)
-        return y_preds
+        y_logits = self.decision_function(X, fhe=fhe)
+        y_proba = self.post_processing(y_logits)
+        return y_proba

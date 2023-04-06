@@ -370,6 +370,23 @@ def check_subfunctions(fitted_model, model_class, x):
 
     fitted_model.predict(x[:1])
 
+    # Skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
+    # not. We decided to follow Scikit-Learn's API as we build most of our tools on this library.
+    # However, our models are still directly inheriting from Skorch's classes, which makes this
+    # method accessible by anyone, without having any FHE implementation. As this could create some
+    # confusion, a NotImplementedError is raised. This issue could be fixed by making these classes
+    # not inherit from Skorch.
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+    if get_model_name(fitted_model) == "NeuralNetRegressor":
+        with pytest.raises(
+            NotImplementedError,
+            match=(
+                "The `predict_proba` method is not implemented for neural network regressors. "
+                "Please call `predict` instead."
+            ),
+        ):
+            fitted_model.predict_proba(x)
+
     if is_classifier_or_partial_classifier(model_class):
 
         fitted_model.predict_proba(x)
@@ -411,7 +428,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
 
             # Apply the argmax to get the class predictions (in the clear)
             if is_classifier_or_partial_classifier(model):
-                y_class = numpy.argmax(y_proba, axis=1)
+                y_class = numpy.argmax(y_proba, axis=-1)
                 y_pred_fhe += list(y_class)
             else:
                 y_pred_fhe += list(y_proba)

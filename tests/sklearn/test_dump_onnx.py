@@ -25,7 +25,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
     x, y = load_data(model_class, **parameters)
 
     # Set the model
-    model = model_class(n_bits=6)
+    model = model_class()
 
     model_params = model.get_params()
     if "random_state" in model_params:

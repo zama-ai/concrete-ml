@@ -13,7 +13,11 @@ from tensorflow import keras
 from torchvision import datasets, transforms
 
 from concrete.ml.common.check_inputs import check_array_and_assert
-from concrete.ml.common.utils import is_model_class_in_a_list, is_regressor_or_partial_regressor
+from concrete.ml.common.utils import (
+    get_model_name,
+    is_model_class_in_a_list,
+    is_regressor_or_partial_regressor,
+)
 from concrete.ml.pytest.torch_models import QNNFashionMNIST, QuantCustomModel, TorchCustomModel
 from concrete.ml.pytest.utils import (
     data_calibration_processing,
@@ -307,7 +311,7 @@ def test_binary_search_for_custom_models(model_name, quant_type, threshold):
 @pytest.mark.parametrize(
     "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
 )
-@pytest.mark.parametrize("predict", ["predict", "predict_log_proba", "predict_proba"])
+@pytest.mark.parametrize("predict", ["predict", "predict_proba"])
 def test_binary_search_for_built_in_models(model_class, parameters, threshold, predict, load_data):
     """Check if the returned `p_error` is valid for built-in models."""
 
@@ -318,6 +322,13 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
 
     # Linear models are not concerned by this test because they do not have PBS
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        return
+
+    # NeuralNetRegressor models support a `predict_proba` method since it directly inherits from
+    # Skorch but since Scikit-Learn does not, we don't as well. This issue could be fixed by making
+    # neural networks not inherit from Skorch.
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+    if predict == "predict_proba" and get_model_name(model_class) == "NeuralNetRegressor":
         return
 
     metric = r2_score if is_regressor_or_partial_regressor(model) else binary_classification_metric
@@ -348,7 +359,7 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
 
 @pytest.mark.parametrize("is_qat", [False, True])
 def test_invalid_estimator_for_custom_models(is_qat):
-    """Check that binary search raises an exception for insupported models."""
+    """Check that binary search raises an exception for unsupported models."""
 
     model = keras.Sequential(
         [

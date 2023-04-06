@@ -156,8 +156,9 @@ def instantiate_model_generic(model_class, **parameters):
     assert "n_bits" in parameters
     n_bits = parameters["n_bits"]
 
-    extra_kwargs = {}
+    # If the model is a QNN, set the model using appropriate bit-widths
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        extra_kwargs = {}
         if n_bits > 8:
             extra_kwargs["module__n_w_bits"] = 3
             extra_kwargs["module__n_a_bits"] = 3
@@ -167,8 +168,11 @@ def instantiate_model_generic(model_class, **parameters):
             extra_kwargs["module__n_a_bits"] = 2
             extra_kwargs["module__n_accum_bits"] = 7
 
-    # Set the model
-    model = model_class(n_bits=n_bits, **extra_kwargs)
+        model = model_class(**extra_kwargs)
+
+    # Else, set the model using n_bits
+    else:
+        model = model_class(n_bits=n_bits)
 
     # Seed the model
     model_params = model.get_params()

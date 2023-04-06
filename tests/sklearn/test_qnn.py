@@ -7,27 +7,18 @@ import numpy
 import pandas
 import pytest
 import torch
-from sklearn.decomposition import PCA
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from skorch.classifier import NeuralNetClassifier as SKNeuralNetClassifier
-from skorch.exceptions import NotInitializedError
 from torch import nn
 
 from concrete.ml.common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-    check_dtype_and_cast,
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
 )
 from concrete.ml.sklearn import get_sklearn_neural_net_models
-from concrete.ml.sklearn.qnn import (
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    QuantizedSkorchEstimatorMixin,
-    SparseQuantNeuralNetImpl,
-)
+from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
+from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 
 
 @pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
@@ -72,10 +63,18 @@ def test_parameter_validation(model_class, load_data):
     else:
         raise ValueError(f"Data generator not implemented for {str(model_class)}")
 
+    init_module = SparseQuantNeuralNetwork(
+        input_dim=1,
+        n_layers=1,
+        n_outputs=1,
+    )
+
     invalid_params_and_exception_pattern = {
         "init": [
             ("module__n_outputs", 0, ".*module__n_outputs.*"),
             ("module__input_dim", 0, ".*module__input_dim.*"),
+            ("n_bits", 4, "Setting `n_bits` in Quantized Neural Networks is not possible.*"),
+            ("module", init_module, "Setting `module` manually is forbidden..*"),
         ],
         "fit": [
             ("module__n_layers", 0, ".* number of layers.*"),
@@ -92,25 +91,19 @@ def test_parameter_validation(model_class, load_data):
             ValueError,
             match=inv_param[2],
         ):
-            concrete_classifier = model_class(**params)
+            model = model_class(**params)
 
     for inv_param in invalid_params_and_exception_pattern["fit"]:
         params = deepcopy(valid_params)
         params[inv_param[0]] = inv_param[1]
 
-        concrete_classifier = model_class(**params)
+        model = model_class(**params)
 
-        with pytest.raises(
-            NotInitializedError,
-            match=".* Call 'initialize' or 'fit' with appropriate arguments .*",
-        ):
-            _ = concrete_classifier.n_bits_quant
+        with pytest.raises(AssertionError, match=".*The underlying model.*"):
+            _ = model.base_module
 
-        with pytest.raises(
-            ValueError,
-            match=inv_param[2],
-        ):
-            concrete_classifier.fit(x, y)
+        with pytest.raises(ValueError, match=inv_param[2]):
+            model.fit(x, y)
 
 
 @pytest.mark.parametrize(
@@ -219,7 +212,7 @@ def test_compile_and_calib(
     if is_classifier_or_partial_classifier(model_class):
         y_pred_clear = model.predict(x_train, fhe="disable")
         # Check that the predicted classes are all contained in the model class list
-        assert set(numpy.unique(y_pred_clear)).issubset(set(model.classes_))
+        assert set(numpy.unique(y_pred_clear)).issubset(set(model.target_classes_))
 
     # Compile the model
     model.compile(
@@ -231,127 +224,6 @@ def test_compile_and_calib(
     # Since FHE execution introduces some stochastic errors,
     # accuracy of FHE compiled classifiers and regressors is measured in the benchmarks
     model.predict(x_test[0, :], fhe="execute")
-
-
-def test_custom_net_classifier(load_data):
-    """Tests a wrapped custom network.
-
-    Gives an example how to use our API to train a custom Torch network through the quantized
-    sklearn wrapper.
-    """
-
-    class MiniNet(nn.Module):
-        """Sparse Quantized Neural Network classifier."""
-
-        def __init__(
-            self,
-        ):
-            """Construct mini net"""
-            super().__init__()
-            self.features = nn.Sequential(
-                qnn.QuantIdentity(return_quant_tensor=True),
-                qnn.QuantLinear(2, 4, weight_bit_width=3, bias=True),
-                nn.ReLU(),
-                qnn.QuantIdentity(return_quant_tensor=True),
-                qnn.QuantLinear(4, 2, weight_bit_width=3, bias=True),
-            )
-
-        def forward(self, x):
-            """Forward pass."""
-            return self.features(x)
-
-    params = {
-        "max_epochs": 10,
-        "verbose": 0,
-    }
-
-    # pylint: disable-next=abstract-method
-    class MiniCustomNeuralNetClassifier(QuantizedSkorchEstimatorMixin, SKNeuralNetClassifier):
-        """Sklearn API wrapper class for a custom network that will be quantized.
-
-        Minimal work is needed to implement training of a custom class."""
-
-        sklearn_model_class = SKNeuralNetClassifier
-
-        def __init__(self, *args, **kwargs):
-            super().__init__()
-            self.sklearn_model_class.__init__(self, *args, **kwargs)
-
-        @property
-        def n_bits_quant(self):
-            """Return the number of quantization bits"""
-            return 2
-
-        def fit(self, X, y, *args, **kwargs):
-            # We probably can't handle all cases since per Skorch documentation they handle:
-            #  * numpy arrays
-            #  * torch tensors
-            #  * pandas DataFrame or Series
-            #  * scipy sparse CSR matrices
-            #  * a dictionary of the former three
-            #  * a list/tuple of the former three
-            #  * a Dataset
-            # which is a bit much since they don't necessarily
-            # have the same interfaces to handle types
-            X = check_dtype_and_cast(
-                X, "float32", error_information="MiniCustomNeuralNetClassifier input"
-            )
-            y = check_dtype_and_cast(
-                y, "int64", error_information="MiniCustomNeuralNetClassifier target"
-            )
-            return super().fit(X, y, *args, **kwargs)
-
-        def predict(self, X, fhe="disable", **kwargs):
-            # We just need to do argmax on the predicted probabilities
-            return self.predict_proba(X, fhe=fhe, **kwargs).argmax(axis=1)
-
-    model = MiniCustomNeuralNetClassifier(MiniNet, **params)
-
-    # Get the dataset. The data generation is seeded in load_data.
-    x, y = load_data(
-        model,
-        n_samples=1000,
-        n_features=2,
-        n_redundant=0,
-        n_repeated=0,
-        n_informative=2,
-        n_classes=2,
-        class_sep=2,
-    )
-
-    # Perform a classic test-train split (deterministic by fixing the seed)
-    x_train, x_test, y_train, _ = train_test_split(
-        x,
-        y,
-        test_size=0.25,
-        random_state=numpy.random.randint(0, 2**15),
-    )
-
-    # Compute mean/stdev on training set and normalize both train and test sets with them
-    # Optimization algorithms for Neural networks work well on 0-centered inputs
-    normalizer = StandardScaler()
-    x_train = normalizer.fit_transform(x_train)
-    x_test = normalizer.transform(x_test)
-
-    # Train the model
-    model.fit(x_train, y_train)
-
-    # Test the custom network wrapper in a pipeline with grid CV
-    # This will clone the skorch estimator
-    pipe_cv = Pipeline(
-        [
-            ("pca", PCA(n_components=2, random_state=numpy.random.randint(0, 2**15))),
-            ("scaler", StandardScaler()),
-            ("net", MiniCustomNeuralNetClassifier(MiniNet, **params)),
-        ]
-    )
-
-    model = GridSearchCV(
-        pipe_cv,
-        {"net__lr": [0.01, 0.1]},
-        error_score="raise",
-    )
-    model.fit(x_train, y_train)
 
 
 @pytest.mark.parametrize(
@@ -494,20 +366,24 @@ def test_structured_pruning(activation_function, model_class, load_data, default
 
     model = model_class(**params)
 
-    with pytest.raises(ValueError, match=""):
+    with pytest.raises(AttributeError, match=".* model is not fitted.*"):
         model.prune(x_train, y_train, 0.5)
 
     model.fit(x_train, y_train)
 
-    with pytest.raises(ValueError, match=".*Valid values.*"):
+    with pytest.raises(
+        ValueError, match="Valid values for `n_prune_neurons_percentage` are in the.*"
+    ):
         model.prune(x_train, y_train, -0.1)
 
-    with pytest.raises(ValueError, match=".*Valid values.*"):
+    with pytest.raises(
+        ValueError, match="Valid values for `n_prune_neurons_percentage` are in the.*"
+    ):
         model.prune(x_train, y_train, 1.0)
 
     pruned_model = model.prune(x_train, y_train, 0.5)
 
-    def _get_number_of_neurons(module: SparseQuantNeuralNetImpl):
+    def _get_number_of_neurons(module: SparseQuantNeuralNetwork):
         neurons = {}
         idx = 0
         for layer in module.features:
@@ -517,8 +393,8 @@ def test_structured_pruning(activation_function, model_class, load_data, default
             idx += 1
         return neurons
 
-    neurons_orig = _get_number_of_neurons(model.module_)
-    neurons_pruned = _get_number_of_neurons(pruned_model.module_)
+    neurons_orig = _get_number_of_neurons(model.base_module)
+    neurons_pruned = _get_number_of_neurons(pruned_model.base_module)
 
     # Compile the model
     model.compile(
@@ -532,7 +408,9 @@ def test_structured_pruning(activation_function, model_class, load_data, default
         configuration=default_configuration,
     )
 
-    with pytest.raises(ValueError, match=".*Cannot apply.*"):
+    with pytest.raises(
+        ValueError, match="Cannot apply structured pruning optimization to an already pruned model"
+    ):
         pruned_model.prune(x_train, y_train, 0.5)
 
     # Test prediction with QuantizedModule

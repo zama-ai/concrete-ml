@@ -434,11 +434,6 @@ def check_dtype_and_cast(values: Any, expected_dtype: str, error_information: Op
     Raises:
         ValueError: If the values' dtype don't match the expected one or casting is not possible.
     """
-    # This case should not be handled here as this type appears when fitting a model (when calling
-    # the predict_proba method), where inputs and targets already have the right dtypes
-    if isinstance(values, torch.utils.data.dataset.Subset):
-        return values
-
     assert_true(
         expected_dtype in ("float32", "int64"),
         f'Expected dtype parameter should either be "float32" or "int64". Got {expected_dtype}',

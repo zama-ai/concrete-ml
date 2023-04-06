@@ -17,7 +17,7 @@ from concrete.ml.common.utils import (
 )
 from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, TinyQATCNN
 from concrete.ml.sklearn import get_sklearn_neural_net_models
-from concrete.ml.sklearn.qnn import SparseQuantNeuralNetImpl
+from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
@@ -259,7 +259,7 @@ def test_brevitas_intermediary_values(
     concrete_model.fit(x_train, y_train)
 
     # Wrap the original torch module with a debug module that captures intermediary values
-    class DebugQNNModel(SparseQuantNeuralNetImpl):
+    class DebugQNNModel(SparseQuantNeuralNetwork):
         """Wrapper class that extracts intermediary values from a Brevitas QAT net."""
 
         intermediary_values = []
@@ -296,7 +296,7 @@ def test_brevitas_intermediary_values(
 
     # Wrap the original model, and copy its weights
     dbg_model = DebugQNNModel(**params_module, input_dim=input_dim, n_outputs=n_outputs)
-    dbg_model.load_state_dict(concrete_model.module_.state_dict())
+    dbg_model.load_state_dict(concrete_model.base_module.state_dict())
 
     # Execute on the test set and capture debug values
     dbg_model(torch.tensor(x_test.astype(numpy.float64)))
