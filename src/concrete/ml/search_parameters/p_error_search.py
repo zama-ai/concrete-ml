@@ -24,15 +24,13 @@ It's highly recommended to adjust the `p_error` as it is linked to the data-set.
 
 The inference is performed via the FHE simulation mode previously known as Virtual Library (VL)
 
-The goal is to look for the largest `p_error_i`, a float ∈ ]0,1[, which gives a model_i that has
+The goal is to look for the largest `p_error_i`, a float ∈ ]0,0.9[, which gives a model_i that has
 `accuracy_i`, such that: | accuracy_i - accuracy_0| <= Threshold, where: Threshold ∈ R, given
 by the user and `accuracy_0` refers to original model_0 with `p_error_0 = 0.0`.
 
-`p_error` is bounded between 0 and 1
+`p_error` is bounded between 0 and 0.9
 `p_error ~ 0.0`, refers to the original model in clear, that gives an accuracy that we note
-as `accuracy_0`
-`p_error = 1.0`, refers to the worst case scenario, where the model perfoms very badly
-By default, `lower = 0.0` and `uppder = 1.0`.
+as `accuracy_0`.
 
 We assume that the condition is satisfied when we have a match
 A match is defined as a uni-variate function, through `strategy` argument, given by the user, it
@@ -164,7 +162,7 @@ class BinarySearch:
         n_bits: int = 4,
         is_qat: bool = True,
         lower: float = 0.0,
-        upper: float = 1.0,
+        upper: float = 0.9,
         max_iter: int = 20,
         n_simulation: int = 5,
         strategy: Any = all,
@@ -185,7 +183,8 @@ class BinarySearch:
             is_qat (bool): Flag that indicates whether the `estimator` has been trained through
                 QAT (quantization-aware training). Default is True.
             lower (float): The lower bound of the search space for the `p_error`. Default is 0.0.
-            upper (float): The upper bound of the search space for the `p_error`. Default is 1.0.
+            upper (float): The upper bound of the search space for the `p_error`. Default is 0.9.
+                Increasing `p_error` beyond this threshold could lead to unstable executions.
             max_iter (int): The maximum number of iterations to run the binary search
                 algorithm. Default is 20.
             n_simulation (int): The number of simulations to validate the results of the FHE

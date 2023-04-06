@@ -13,7 +13,7 @@
 #   - Computing the features maps of the model on the client side
 
 # 4. Run the search for a given set of hyper-parameters
-#   - The objective is to look for the largest `p_error = i`, with i ∈ ]0,1[ ∩ ℝ,
+#   - The objective is to look for the largest `p_error = i`, with i ∈ ]0,0.9[ ∩ ℝ,
 #       which gives a model_i that has `accuracy_i`, such that:
 #       | accuracy_i - accuracy_0| <= Threshold, where:
 #           - Threshold is given by the user and
@@ -24,19 +24,16 @@
 #       - Else, update the upper bound to be the current p-error
 #   - Update the current p-error with the mean of the bounds
 
-#   - We stop the search either
-#         - when the maximum number of iterations is reached, or
-#         - when the update of the `p_error` is below at a given threshold
+#   - The search terminates once it reaches the maximum number of iterations
 
-#   - The inference is performed via the FHE simulation mode (Virtual Library)
+#   - The inference is performed via the FHE simulation mode
 
-# `p_error` is bounded between 0 and 1
+# `p_error` is bounded between 0 and 0.9
 #       - `p_error ~ 0.0`, refers to the original model in clear, that gives an accuracy
 #           that we note as `accuracy_0`
-#       - `p_error = 1.0`, refers to the worst case scenario, where the model perfoms very badly
-#       - By default, `lower = 0.0` and `uppder` bound to 1.
+#       - By default, `lower = 0.0` and `uppder` bound to 0.9.
 
-#   - Run the inference using the Virtual Library and this `p_error`
+#   - Run the inference in FHE simulation mode
 #   - Define our objective:
 #       - If the objective is matched -> update the lower bound to be the current p-error
 #       - Else, update the upper bound to be the current p-error
@@ -115,7 +112,9 @@ def main(args):
     if args.verbose:
         print("** `p_error` search")
 
-    search = BinarySearch(estimator=model, predict="predict", metric=top_k_accuracy_score)
+    search = BinarySearch(
+        estimator=model, predict="predict", metric=top_k_accuracy_score, verbose=args.verbose
+    )
 
     p_error = search.run(x=x_calib, ground_truth=y, strategy=all)
 
