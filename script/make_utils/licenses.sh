@@ -11,7 +11,7 @@ DO_USER_LICENSES=1
 
 OUTPUT_DIRECTORY="${LICENSE_DIRECTORY}"
 DO_FORCE_UPDATE=0
-CN_VERSION="concrete-numpy[full]"
+CN_VERSION="concrete-python[full]"
 
 while [ -n "$1" ]
 do

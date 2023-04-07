@@ -7,7 +7,6 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Tuple, Union
 
-import concrete.numpy as cnp
 import numpy as np
 import py_progress_tracker as progress
 import torch
@@ -23,18 +22,20 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 
+from concrete import fhe
+
 try:
-    from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
+    from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 except ImportError:  # For backward compatibility purposes
     try:
-        from concrete.numpy.mlir.utils import (
+        from concrete.fhe.mlir.utils import (
             MAXIMUM_SIGNED_BIT_WIDTH_WITH_TLUS as MAXIMUM_TLU_BIT_WIDTH,
         )
     except ImportError:
         try:
-            from concrete.numpy import MAXIMUM_TLU_BIT_WIDTH
+            from concrete.fhe import MAXIMUM_TLU_BIT_WIDTH
         except ImportError:
-            from concrete.numpy import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
+            from concrete.fhe import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
 
 # Hack to import all models currently implemented in CML
 # (but that might not be implemented in targeted version)
@@ -235,7 +236,7 @@ DATASET_VERSIONS = {
 
 
 # This is only for benchmarks to speed up compilation times
-BENCHMARK_CONFIGURATION = cnp.Configuration(
+BENCHMARK_CONFIGURATION = fhe.Configuration(
     dump_artifacts_on_unexpected_failures=True,
     enable_unsafe_features=True,
     use_insecure_key_cache=True,

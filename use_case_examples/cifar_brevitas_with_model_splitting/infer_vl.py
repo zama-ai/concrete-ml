@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torchvision
 from brevitas import config
-from concrete.numpy import Configuration
+from concrete.fhe import Configuration
 from model import CNV
 from scipy.special import softmax
 from torch.backends import cudnn

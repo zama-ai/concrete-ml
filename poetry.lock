@@ -417,35 +417,6 @@ python-versions = "*"
 test = ["flake8 (==3.7.8)", "hypothesis (==3.55.3)"]
 
 [[package]]
-name = "concrete-compiler"
-version = "0.24.0rc5"
-description = "Concrete Compiler"
-category = "main"
-optional = false
-python-versions = "*"
-
-[package.dependencies]
-numpy = "*"
-PyYAML = "*"
-setuptools = "*"
-
-[[package]]
-name = "concrete-numpy"
-version = "1.0.0rc2"
-description = "Concrete Numpy is an open-source library which simplifies the use of fully homomorphic encryption (FHE)."
-category = "main"
-optional = false
-python-versions = ">=3.7,<3.11"
-
-[package.dependencies]
-concrete-compiler = "0.24.0rc5"
-matplotlib = ">=3.5.1,<4.0.0"
-networkx = ">=2.6.3,<3.0.0"
-numpy = {version = ">=1.23.5,<2.0.0", markers = "python_version >= \"3.8\""}
-scipy = {version = ">=1.10.1,<2.0.0", markers = "python_version >= \"3.8\""}
-torch = ">=1.13.1,<2.0.0"
-
-[[package]]
 name = "coverage"
 version = "7.1.0"
 description = "Code coverage measurement for Python"
@@ -482,7 +453,7 @@ test = ["hypothesis (>=1.11.4,!=3.79.2)", "iso8601", "pretend", "pytest (>=6.2.0
 name = "cycler"
 version = "0.11.0"
 description = "Composable style cycles"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -695,7 +666,7 @@ python-versions = "*"
 name = "fonttools"
 version = "4.38.0"
 description = "Tools to manipulate font files"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1344,7 +1315,7 @@ testing = ["flake8 (<5)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-chec
 name = "kiwisolver"
 version = "1.4.4"
 description = "A fast implementation of the Cassowary constraint solver"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1475,7 +1446,7 @@ python-versions = ">=3.7"
 name = "matplotlib"
 version = "3.5.3"
 description = "Python plotting package"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1869,21 +1840,6 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
-name = "networkx"
-version = "2.6.3"
-description = "Python package for creating and manipulating graphs and networks"
-category = "main"
-optional = false
-python-versions = ">=3.7"
-
-[package.extras]
-default = ["matplotlib (>=3.3)", "numpy (>=1.19)", "pandas (>=1.1)", "scipy (>=1.5,!=1.6.1)"]
-developer = ["black (==21.5b1)", "pre-commit (>=2.12)"]
-doc = ["nb2plots (>=0.6)", "numpydoc (>=1.1)", "pillow (>=8.2)", "pydata-sphinx-theme (>=0.6,<1.0)", "sphinx (>=4.0,<5.0)", "sphinx-gallery (>=0.9,<1.0)", "texext (>=0.6.6)"]
-extra = ["lxml (>=4.5)", "pydot (>=1.4.1)", "pygraphviz (>=1.7)"]
-test = ["codecov (>=2.1)", "pytest (>=6.2)", "pytest-cov (>=2.12)"]
-
-[[package]]
 name = "notebook"
 version = "6.5.2"
 description = "A web-based notebook environment for interactive computing"
@@ -2209,7 +2165,7 @@ python-versions = "*"
 name = "pillow"
 version = "9.4.0"
 description = "Python Imaging Library (Fork)"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -2545,7 +2501,7 @@ tests = ["hypothesis (>=3.27.0)", "pytest (>=3.2.1,!=3.3.0)"]
 name = "pyparsing"
 version = "3.0.9"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6.8"
 
@@ -3103,7 +3059,7 @@ testing-integration = ["build[virtualenv]", "filelock (>=3.4.0)", "jaraco.envs (
 name = "setuptools-scm"
 version = "6.4.2"
 description = "the blessed package to manage your versions by scm tags"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -3613,7 +3569,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -3980,7 +3936,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "763f0ce6f9f7ecf546c07ee4d71141a22208e59b21e4a813ab4141fc623714b1"
+content-hash = "52aff97b416c0b072d10cf06190a8c6eb3936f251339a2bcb2846b8dd86a4e5a"
 
 [metadata.files]
 absl-py = [
@@ -4344,18 +4300,6 @@ coloredlogs = [
 commonmark = [
     {file = "commonmark-0.9.1-py2.py3-none-any.whl", hash = "sha256:da2f38c92590f83de410ba1a3cbceafbc74fee9def35f9251ba9a971d6d66fd9"},
     {file = "commonmark-0.9.1.tar.gz", hash = "sha256:452f9dc859be7f06631ddcb328b6919c67984aca654e5fefb3914d54691aed60"},
-]
-concrete-compiler = [
-    {file = "concrete_compiler-0.24.0rc5-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:c99e79d72f55af33695361bdc366287c725c0c0e9bde148c97e5c63139554870"},
-    {file = "concrete_compiler-0.24.0rc5-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:0cc24dbc02f6b974720dbb31cf9b737866d8a4e425a86d0342e6116b93381665"},
-    {file = "concrete_compiler-0.24.0rc5-cp37-cp37m-manylinux_2_28_x86_64.whl", hash = "sha256:b94f39d114be84ca483bf093304ab60ad73b8d9984a58697fe0f9d6e990c9b96"},
-    {file = "concrete_compiler-0.24.0rc5-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:72ef65c9827e8bcd38fd87a0ac356f89f850d5d9c178fe1224d3a8dcccc181c9"},
-    {file = "concrete_compiler-0.24.0rc5-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:893789cb25227049e8e8c6a9dfb80c2a5132c4beef38105d6d464e10cd0221b3"},
-    {file = "concrete_compiler-0.24.0rc5-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:4e1aef7eae87daffcc500b84fbc36c1c460d5d202cdc31ee753a3eafe4866269"},
-    {file = "concrete_compiler-0.24.0rc5-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:8de4396fbb48c0a20b65e448cf3ee2ef15f801d75bf358c343a5f350f49b5a56"},
-]
-concrete-numpy = [
-    {file = "concrete_numpy-1.0.0rc2-py3-none-any.whl", hash = "sha256:776a91814477670fe133f6e53e9bac947e1777b37bd61cc5f7d8fda2ef238a2a"},
 ]
 coverage = [
     {file = "coverage-7.1.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:3b946bbcd5a8231383450b195cfb58cb01cbe7f8949f5758566b881df4b33baf"},
@@ -5255,10 +5199,6 @@ nbsphinx = [
 nest-asyncio = [
     {file = "nest_asyncio-1.5.6-py3-none-any.whl", hash = "sha256:b9a953fb40dceaa587d109609098db21900182b16440652454a146cffb06e8b8"},
     {file = "nest_asyncio-1.5.6.tar.gz", hash = "sha256:d267cc1ff794403f7df692964d1d2a3fa9418ffea2a3f6859a439ff482fef290"},
-]
-networkx = [
-    {file = "networkx-2.6.3-py3-none-any.whl", hash = "sha256:80b6b89c77d1dfb64a4c7854981b60aeea6360ac02c6d4e4913319e0a313abef"},
-    {file = "networkx-2.6.3.tar.gz", hash = "sha256:c0946ed31d71f1b732b5aaa6da5a0388a345019af232ce2f49c766e2d6795c51"},
 ]
 notebook = [
     {file = "notebook-6.5.2-py3-none-any.whl", hash = "sha256:e04f9018ceb86e4fa841e92ea8fb214f8d23c1cedfde530cc96f92446924f0e4"},

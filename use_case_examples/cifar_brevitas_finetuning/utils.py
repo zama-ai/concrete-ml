@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from brevitas import config
-from concrete.numpy.compilation import Configuration
+from concrete.fhe.compilation import Configuration
 from models import Fp32VGG11
 from sklearn.metrics import top_k_accuracy_score
 from torch.utils.data.dataloader import DataLoader

@@ -3,7 +3,7 @@
 from typing import Tuple, Union
 
 import numpy
-from concrete.numpy import ones as cnp_ones
+from concrete.fhe import ones as cnp_ones
 from concrete.onnx import conv as cnp_conv
 
 from ..common.debugging import assert_true
@@ -21,7 +21,7 @@ def numpy_onnx_pad(
         x (numpy.ndarray): input tensor to pad
         pads (List[int]): padding values according to ONNX spec
         pad_value (Optional[Union[float, int]]): value used to fill in padding, default 0
-        int_only (bool): set to True to generate integer only code with Concrete-Numpy
+        int_only (bool): set to True to generate integer only code with Concrete-Python
 
     Returns:
         res(numpy.ndarray): the input tensor with padding applied
@@ -47,7 +47,7 @@ def numpy_onnx_pad(
         # the values on the edges to the input zero_point, which corresponds
         # to the real-axis 0
         if int_only:
-            # Work in integer Concrete-Numpy mode
+            # Work in integer Concrete-Python mode
             x_pad = cnp_ones(tuple(padded_shape)) * numpy.int64(pad_value)
         else:
             # Floating point mode

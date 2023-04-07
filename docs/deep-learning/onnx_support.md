@@ -19,7 +19,7 @@ import tensorflow
 import tf2onnx
 
 from concrete.ml.torch.compile import compile_onnx_model
-from concrete.numpy.compilation import Configuration
+from concrete.fhe.compilation import Configuration
 
 
 class FC(tensorflow.keras.Model):

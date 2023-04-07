@@ -51,7 +51,7 @@ print(f"Similarity: {int((y_pred_fhe == y_pred_clear).mean()*100)}%")
 This example shows the typical flow of a Concrete-ML model:
 
 - The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete-ML quantizes the model to use only integers during inference.
-- The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete-Numpy program, then compiled.
+- The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete-Python program, then compiled.
 - Inference can then be done on encrypted data. The above example shows encrypted inference in the model-development phase. Alternatively, during [deployment](getting-started/cloud.md) in a client/server setting, the data is encrypted by the client, processed securely by the server, and then decrypted by the client.
 
 ## Current limitations

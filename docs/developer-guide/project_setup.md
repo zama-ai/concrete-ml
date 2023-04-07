@@ -45,10 +45,6 @@ To manually install Python, you can follow [this](https://realpython.com/install
 
 `Poetry` is used as the package manager. It drastically simplifies dependency and environment management. You can follow [this](https://python-poetry.org/docs/#installation) official guide to install it.
 
-{% hint style="danger" %}
-As there is no `concrete-compiler` package for Windows, only the dev dependencies can be installed. This requires Poetry >= 1.2.
-{% endhint %}
-
 ### make
 
 The dev tools use `make` to launch various commands.

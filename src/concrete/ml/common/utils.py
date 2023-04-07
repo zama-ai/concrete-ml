@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy
 import onnx
 import torch
-from concrete.numpy.dtypes import Integer
+from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
 
 from ..common.check_inputs import check_array_and_assert
@@ -155,16 +155,16 @@ def manage_parameters_for_pbs_errors(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
 ):
-    """Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
+    """Return (p_error, global_p_error) that we want to give to Concrete-Python and the compiler.
 
     The returned (p_error, global_p_error) depends on user's parameters and the way we want to
     manage defaults in Concrete-ML, which may be different from the way defaults are managed in
-    Concrete-Numpy
+    Concrete-Python
 
     Principle:
         - if none are set, we set global_p_error to a default value of our choice
         - if both are set, we raise an error
-        - if one is set, we use it and forward it to Concrete-Numpy and the compiler
+        - if one is set, we use it and forward it to Concrete-Python and the compiler
 
     Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
 
@@ -176,7 +176,7 @@ def manage_parameters_for_pbs_errors(
         (p_error, global_p_error): parameters to give to the compiler
 
     Raises:
-        ValueError: if the two parameters are set (this is _not_ as in Concrete-Numpy)
+        ValueError: if the two parameters are set (this is _not_ as in Concrete-Python)
 
     """
     # Default probability of error of a circuit. Only used if p_error is set to None
@@ -199,7 +199,7 @@ def manage_parameters_for_pbs_errors(
 def check_there_is_no_p_error_options_in_configuration(configuration):
     """Check the user did not set p_error or global_p_error in configuration.
 
-    It would be dangerous, since we set them in direct arguments in our calls to Concrete-Numpy.
+    It would be dangerous, since we set them in direct arguments in our calls to Concrete-Python.
 
     Args:
         configuration: Configuration object to use

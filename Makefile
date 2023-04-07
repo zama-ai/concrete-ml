@@ -16,13 +16,13 @@ APIDOCS_OUTPUT?="./docs/developer-guide/api"
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CN_VERSION_SPEC_FOR_RC="concrete-numpy==1.0.0rc2"
+CN_VERSION_SPEC_FOR_RC="concrete-python==2023.4.5"
 
 # If one wants to use the last RC version
 # CN_VERSION_SPEC_FOR_RC="$$(poetry run python \
 # ./script/make_utils/pyproject_version_parser_helper.py \
 # --pyproject-toml-file pyproject.toml \
-# --get-pip-install-spec-for-dependency concrete-numpy)"
+# --get-pip-install-spec-for-dependency concrete-python)"
 
 .PHONY: setup_env # Set up the environment
 setup_env:

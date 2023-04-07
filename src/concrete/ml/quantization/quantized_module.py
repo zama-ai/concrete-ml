@@ -4,10 +4,10 @@ import re
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
 
 import numpy
-from concrete.numpy.compilation.artifacts import DebugArtifacts
-from concrete.numpy.compilation.circuit import Circuit
-from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import Configuration
+from concrete.fhe.compilation.artifacts import DebugArtifacts
+from concrete.fhe.compilation.circuit import Circuit
+from concrete.fhe.compilation.compiler import Compiler
+from concrete.fhe.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
 from ..common.utils import (
@@ -549,7 +549,7 @@ class QuantizedModule:
             "already-quantized values."
         )
 
-        # concrete-numpy does not support variable *args-style functions, so compile a proxy
+        # concrete-python does not support variable *args-style functions, so compile a proxy
         # function dynamically with a suitable number of arguments
         forward_proxy, orig_args_to_proxy_func_args = generate_proxy_function(
             self._clear_forward, self.ordered_module_input_names

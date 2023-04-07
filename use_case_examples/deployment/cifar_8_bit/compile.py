@@ -6,7 +6,7 @@ from pathlib import Path
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from concrete.numpy import Configuration
+from concrete.fhe import Configuration
 from model import CNV
 
 from concrete.ml.deployment import FHEModelDev

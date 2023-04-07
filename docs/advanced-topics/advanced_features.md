@@ -65,7 +65,7 @@ If the `p_error` value is specified and the [Simulation](compilation.md#fhe-simu
 
 ### A global error probability for the entire model
 
-A `global_p_error` is also available and defines the probability of success for the entire model. Here, the `p_error` for every PBS is computed internally in Concrete-Numpy such that the `global_p_error` is reached.
+A `global_p_error` is also available and defines the probability of success for the entire model. Here, the `p_error` for every PBS is computed internally in Concrete-Python such that the `global_p_error` is reached.
 
 There might be cases where the user encounters a `No cryptography parameter found` error message. In such a case, increasing the `p_error` or the `global_p_error` might help.
 
@@ -228,7 +228,7 @@ Computation Graph
 return %15
 ```
 
-- the MLIR, produced by Concrete-Numpy and given to the compiler
+- the MLIR, produced by Concrete-Python and given to the compiler
 
 ```
 MLIR

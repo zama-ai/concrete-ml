@@ -8,7 +8,7 @@ from typing import List
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from concrete.numpy import Circuit, Configuration
+from concrete.fhe import Circuit, Configuration
 from model import CNV
 
 from concrete.ml.deployment.fhe_client_server import FHEModelDev

@@ -15,7 +15,7 @@ from common import (
     run_and_report_classification_metrics,
     seed_everything,
 )
-from concrete.numpy.compilation.circuit import Circuit
+from concrete.fhe.compilation.circuit import Circuit
 from sklearn.datasets import load_digits
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split

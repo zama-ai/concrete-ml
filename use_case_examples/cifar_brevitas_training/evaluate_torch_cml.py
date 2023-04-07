@@ -3,7 +3,7 @@ import pathlib
 
 import numpy as np
 import torch
-from concrete.numpy.compilation.configuration import Configuration
+from concrete.fhe.compilation.configuration import Configuration
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from torchvision import transforms

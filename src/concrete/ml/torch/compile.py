@@ -10,8 +10,8 @@ import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
 from brevitas.nn.quant_layer import QuantInputOutputLayer as QNNMixingLayer
 from brevitas.nn.quant_layer import QuantNonLinearActLayer as QNNUnivariateLayer
-from concrete.numpy.compilation.artifacts import DebugArtifacts
-from concrete.numpy.compilation.configuration import Configuration
+from concrete.fhe.compilation.artifacts import DebugArtifacts
+from concrete.fhe.compilation.configuration import Configuration
 
 from ..common.debugging import assert_false, assert_true
 from ..common.utils import (
@@ -66,7 +66,7 @@ def _compile_torch_or_onnx_model(
     """Compile a torch module or ONNX into a FHE equivalent.
 
     Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and
-    finally compile it with Concrete-Numpy
+    finally compile it with Concrete-Python
 
     Args:
         model (Union[torch.nn.Module, onnx.ModelProto]): the model to quantize, either in torch or
@@ -156,7 +156,7 @@ def compile_torch_model(
     """Compile a torch module into a FHE equivalent.
 
     Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
-    compile it with Concrete-Numpy
+    compile it with Concrete-Python
 
     Args:
         torch_model (torch.nn.Module): the model to quantize
@@ -229,7 +229,7 @@ def compile_onnx_model(
     """Compile a torch module into a FHE equivalent.
 
     Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
-    compile it with Concrete-Numpy
+    compile it with Concrete-Python
 
     Args:
         onnx_model (onnx.ModelProto): the model to quantize

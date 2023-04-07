@@ -15,7 +15,7 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from concrete.numpy.compilation.configuration import Configuration
+from concrete.fhe.compilation.configuration import Configuration
 from matplotlib.colors import ListedColormap
 from sklearn.datasets import make_circles, make_classification, make_moons
 from sklearn.metrics import accuracy_score

@@ -38,7 +38,7 @@ should not be used in production. Here is an example that shows how to enable ke
 ```python
 from sklearn.datasets import fetch_openml, make_circles
 from concrete.ml.sklearn import RandomForestClassifier
-from concrete.numpy import Configuration
+from concrete.fhe import Configuration
 debug_config = Configuration(
     enable_unsafe_features=True,
     use_insecure_key_cache=True,

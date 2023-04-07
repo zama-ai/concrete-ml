@@ -325,7 +325,7 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
             versions = json.load(file)
 
     python_version = ".".join(versions["python"].split(".")[0:2])
-    concrete_compiler_version = versions["concrete-compiler"]
+    concrete_python_version = versions["concrete-python"]
     concrete_ml_version = versions["concrete-ml"]
     # FIXME: change once 1.y.z is released
     concrete_ml_version = "0.6.1"
@@ -341,8 +341,8 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
         # Install server requirements
         "python -m pip install -r server_requirements.txt",
         f"python -m pip install concrete-ml=={concrete_ml_version}",
-        # We still need to force concrete-compiler version to be exactly the same as the file
-        f"python -m pip install concrete-compiler=={concrete_compiler_version}",
+        # We still need to force concrete-python version to be exactly the same as the file
+        f"python -m pip install concrete-python=={concrete_python_version}",
         # Launch server
         f'PORT={port} PATH_TO_MODEL="./{path_to_model.name}" python ./server.py',
     ]

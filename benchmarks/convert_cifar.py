@@ -91,7 +91,7 @@ def main():
         "model_name": model_name,
         "dataset_name": dataset_name,
         "cml_version": version("concrete-ml"),
-        "cnp_version": version("concrete-numpy"),
+        "cnp_version": version("concrete-python"),
     }
     experiment_representation["git_hash"] = current_git_hash
     experiment_representation["git_timestamp"] = current_git_hash_timestamp

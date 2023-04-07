@@ -18,7 +18,7 @@ Also, only some versions of `python` are supported: in the current release, thes
 
 Concrete-ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)), but not on Google Colab ([see question on community for more details](https://community.zama.ai/t/how-do-i-install-run-concrete-ml-on-google-colab/338)).
 
-Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Numpy and Concrete-Compiler). Support for more platforms will be added in the future.
+Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Python). Support for more platforms will be added in the future.
 
 ## Using PyPi
 

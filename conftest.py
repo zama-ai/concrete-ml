@@ -8,9 +8,9 @@ from typing import Any, Callable, Optional, Union
 import numpy
 import pytest
 import torch
-from concrete.numpy import Graph as CNPGraph
-from concrete.numpy.compilation import Circuit, Configuration
-from concrete.numpy.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
+from concrete.fhe import Graph as CNPGraph
+from concrete.fhe.compilation import Circuit, Configuration
+from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
 
 from concrete.ml.common.utils import (
@@ -426,7 +426,7 @@ def load_data():
 
 @pytest.fixture
 def check_is_good_execution_for_cml_vs_circuit():
-    """Compare quantized module or built-in inference vs Concrete-Numpy circuit."""
+    """Compare quantized module or built-in inference vs Concrete-Python circuit."""
 
     def check_is_good_execution_for_cml_vs_circuit_impl(
         inputs: Union[tuple, numpy.ndarray],

@@ -18,11 +18,11 @@ import onnx
 import sklearn
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
-from concrete.numpy.compilation.artifacts import DebugArtifacts
-from concrete.numpy.compilation.circuit import Circuit
-from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import Configuration
-from concrete.numpy.dtypes.integer import Integer
+from concrete.fhe.compilation.artifacts import DebugArtifacts
+from concrete.fhe.compilation.circuit import Circuit
+from concrete.fhe.compilation.compiler import Compiler
+from concrete.fhe.compilation.configuration import Configuration
+from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
 from skorch.net import NeuralNet as SkorchNeuralNet
 
@@ -154,7 +154,7 @@ class BaseEstimator:
         """Get the FHE circuit.
 
         The FHE circuit combines computational graph, mlir, client and server into a single object.
-        More information available in Concrete-Numpy documentation:
+        More information available in Concrete-Python documentation:
         https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology
         Is None if the model is not fitted.
 

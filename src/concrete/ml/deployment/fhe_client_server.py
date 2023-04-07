@@ -6,8 +6,9 @@ import zipfile
 from pathlib import Path
 from typing import Any, Optional
 
-import concrete.numpy as cnp
 import numpy
+
+from concrete import fhe
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.encoder import CustomEncoder
@@ -71,7 +72,7 @@ except ImportError:  # pragma: no cover
 class FHEModelServer:
     """Server API to load and run the FHE circuit."""
 
-    server: cnp.Server
+    server: fhe.Server
 
     def __init__(self, path_dir: str):
         """Initialize the FHE API.
@@ -97,7 +98,7 @@ class FHEModelServer:
                 versions = json.load(file)
 
         errors = []
-        packages_to_check = {"concrete-compiler"}
+        packages_to_check = {"concrete-python"}
         for package_name, package_version in versions.items():
             if package_name not in packages_to_check:
                 continue
@@ -115,7 +116,7 @@ class FHEModelServer:
         ):  # pragma: no cover
             raise ValueError("Not the same python version between the compiler and the server.")
 
-        self.server = cnp.Server.load(Path(self.path_dir).joinpath("server.zip"))
+        self.server = fhe.Server.load(Path(self.path_dir).joinpath("server.zip"))
 
     def run(
         self,
@@ -134,10 +135,10 @@ class FHEModelServer:
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        deserialized_encrypted_quantized_data = self.server.client_specs.unserialize_public_args(
+        deserialized_encrypted_quantized_data = self.server.client_specs.deserialize_public_args(
             serialized_encrypted_quantized_data
         )
-        deserialized_evaluation_keys = cnp.EvaluationKeys.unserialize(serialized_evaluation_keys)
+        deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
         result = self.server.run(
             deserialized_encrypted_quantized_data, deserialized_evaluation_keys
         )
@@ -191,8 +192,8 @@ class FHEModelDev:
         """Export all needed artifacts for the client and server.
 
         Arguments:
-            via_mlir (bool): serialize with `via_mlir` option from Concrete-Numpy.
-                For more details on the topic please refer to Concrete-Numpy's documentation.
+            via_mlir (bool): serialize with `via_mlir` option from Concrete-Python.
+                For more details on the topic please refer to Concrete-Python's documentation.
 
         Raises:
             Exception: path_dir is not empty
@@ -231,7 +232,7 @@ class FHEModelDev:
         versions_path = Path(self.path_dir).joinpath("versions.json")
         versions = {
             package_name: version(package_name)
-            for package_name in ["concrete-ml", "concrete-numpy", "concrete-compiler"]
+            for package_name in ["concrete-ml", "concrete-python"]
         }
         versions[
             "python"
@@ -252,7 +253,7 @@ class FHEModelDev:
 class FHEModelClient:
     """Client API to encrypt and decrypt FHE data."""
 
-    client: cnp.Client
+    client: fhe.Client
 
     def __init__(self, path_dir: str, key_dir: Optional[str] = None):
         """Initialize the FHE API.
@@ -278,7 +279,7 @@ class FHEModelClient:
         Raises:
             ValueError: if mismatch in versions between serialized file and runtime
         """
-        self.client = cnp.Client.load(Path(self.path_dir).joinpath("client.zip"), self.key_dir)
+        self.client = fhe.Client.load(Path(self.path_dir).joinpath("client.zip"), self.key_dir)
 
         # Load the quantizers
         with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
@@ -291,7 +292,7 @@ class FHEModelClient:
                 versions = json.load(file)
 
         errors = []
-        packages_to_check = {"concrete-compiler"}
+        packages_to_check = {"concrete-python"}
         for package_name, package_version in versions.items():
             if package_name not in packages_to_check:
                 continue
@@ -383,7 +384,7 @@ class FHEModelClient:
             numpy.ndarray: the decrypted and deserialized values
         """
         # Deserialize the encrypted values
-        deserialized_encrypted_quantized_result = self.client.specs.unserialize_public_result(
+        deserialized_encrypted_quantized_result = self.client.specs.deserialize_public_result(
             serialized_encrypted_quantized_result
         )
 

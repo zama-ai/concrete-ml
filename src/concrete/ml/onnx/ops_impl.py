@@ -8,7 +8,7 @@ import numpy
 import onnx
 import onnx.helper
 from brevitas.function import max_int, min_int
-from concrete.numpy import univariate
+from concrete.fhe import univariate
 from concrete.onnx import conv as cnp_conv
 from concrete.onnx import maxpool as cnp_maxpool
 from scipy import special
@@ -278,7 +278,7 @@ def numpy_gemm(
     Returns:
         Tuple[numpy.ndarray]: The tuple containing the result tensor
     """
-    # If alpha and beta are integer, apply the int type for concrete-numpy
+    # If alpha and beta are integer, apply the int type for concrete-python
     # to see they are integers (see issue #277)
     processed_alpha = int(alpha) if round(alpha) == alpha else alpha
     processed_beta = int(beta) if round(beta) == beta else beta

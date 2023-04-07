@@ -2,12 +2,12 @@
 import json
 from typing import Any
 
-import concrete.numpy as cnp
 import numpy
 import onnx
 import sklearn
 from numpy.random import RandomState
 
+from concrete import fhe
 from concrete.ml import dumps_sklearn
 
 
@@ -26,7 +26,7 @@ class CustomEncoder(json.JSONEncoder):
             The serialized object.
 
         Raises:
-            NotImplementedError: if a cnp.Circuit is given.
+            NotImplementedError: if a fhe.Circuit is given.
         """
 
         # Use __getstate__, __setstate__ if RandomState, either easy
@@ -53,9 +53,9 @@ class CustomEncoder(json.JSONEncoder):
             return o.dump_dict()
 
         # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1841
-        if isinstance(o, cnp.Circuit):  # pragma: no cover
+        if isinstance(o, fhe.Circuit):  # pragma: no cover
             raise NotImplementedError(
-                "Concrete-Numpy Circuit object serialization is not implemented yet"
+                "Concrete-Python Circuit object serialization is not implemented yet"
             )
 
         # Call the default method for other types

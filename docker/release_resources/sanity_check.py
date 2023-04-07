@@ -5,9 +5,9 @@ import shutil
 from pathlib import Path
 
 import numpy
-from concrete.numpy.compilation import configuration
-from concrete.numpy.compilation.compiler import Compiler
-from concrete.numpy.compilation.configuration import Configuration
+from concrete.fhe.compilation import configuration
+from concrete.fhe.compilation.compiler import Compiler
+from concrete.fhe.compilation.configuration import Configuration
 from sklearn.datasets import make_classification
 from sklearn.metrics import average_precision_score, confusion_matrix
 from sklearn.model_selection import train_test_split

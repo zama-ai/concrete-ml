@@ -4,8 +4,9 @@ from copy import deepcopy
 from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
 
-import concrete.numpy as cnp
 import numpy
+
+from concrete import fhe
 
 from ..common.debugging import assert_false, assert_true
 from ..common.utils import compute_bits_precision
@@ -790,12 +791,12 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         )
 
     def cnp_round(
-        self, x: Union[numpy.ndarray, cnp.tracing.Tracer], calibrate_rounding: bool
+        self, x: Union[numpy.ndarray, fhe.tracing.Tracer], calibrate_rounding: bool
     ) -> numpy.ndarray:
         """Round the input array to the specified number of bits.
 
         Args:
-            x (Union[numpy.ndarray, cnp.tracing.Tracer]): The input array to be rounded.
+            x (Union[numpy.ndarray, fhe.tracing.Tracer]): The input array to be rounded.
             calibrate_rounding (bool): Whether to calibrate the rounding
                 (compute the lsbs_to_remove)
 
@@ -807,7 +808,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         if self.rounding_threshold_bits is not None:
             if calibrate_rounding:
                 assert_true(
-                    not isinstance(x, cnp.tracing.Tracer),
+                    not isinstance(x, fhe.tracing.Tracer),
                     "Can't compute lsbs_to_remove at compilation time.",
                 )
                 assert_true(
@@ -823,6 +824,6 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
 
             # Apply rounding if needed
             if self.lsbs_to_remove > 0:
-                x = cnp.round_bit_pattern(x, lsbs_to_remove=self.lsbs_to_remove)
+                x = fhe.round_bit_pattern(x, lsbs_to_remove=self.lsbs_to_remove)
 
         return x

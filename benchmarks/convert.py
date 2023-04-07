@@ -108,7 +108,7 @@ def convert_to_new_postgres(
             "model_name": model_name,
             "dataset_name": dataset_name,
             "cml_version": version("concrete-ml"),
-            "cnp_version": version("concrete-numpy"),
+            "cnp_version": version("concrete-python"),
         }
         experiment_representation["experiment_metadata"].update(hyper_args)
         experiment_representation["git_hash"] = current_git_hash

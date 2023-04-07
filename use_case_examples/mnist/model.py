@@ -1,8 +1,5 @@
 # Brevitas
 import brevitas.nn as qnn
-
-# Concrete-Numpy
-import concrete.numpy as cnp
 import numpy as np
 
 # Torch
@@ -27,6 +24,9 @@ from brevitas.quant.solver import *
 from brevitas.quant.solver import ActQuantSolver, WeightQuantSolver
 from dependencies import value
 from torch.nn import init
+
+# Concrete-Python
+from concrete import fhe
 
 
 class MNISTQATModel(nn.Module):

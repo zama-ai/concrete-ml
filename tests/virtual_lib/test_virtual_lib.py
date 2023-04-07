@@ -1,7 +1,7 @@
 """Test file for virtual lib specific tests."""
 import numpy
-from concrete.numpy.compilation.circuit import Circuit
-from concrete.numpy.compilation.compiler import Compiler
+from concrete.fhe.compilation.circuit import Circuit
+from concrete.fhe.compilation.compiler import Compiler
 
 
 def test_torch_matmul_virtual_lib(default_configuration):

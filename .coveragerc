@@ -3,3 +3,6 @@
 omit = 
   src/concrete/ml/deployment/deploy_to_docker.py
   src/concrete/ml/deployment/server.py
+  # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3426
+  src/concrete/ml/deployment/deploy_to_aws.py
+  src/concrete/ml/deployment/utils.py

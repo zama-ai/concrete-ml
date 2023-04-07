@@ -7,11 +7,12 @@
 
 from typing import Any, Dict, Optional, Sequence, Set, Union
 
-import concrete.numpy as cnp
 import numpy
 from concrete.onnx import conv as cnp_conv
 from concrete.onnx import maxpool as cnp_maxpool
 from typing_extensions import SupportsIndex
+
+from concrete import fhe  # pylint: disable=ungrouped-imports
 
 from ..common.debugging import assert_false, assert_true
 from ..onnx.onnx_impl_utils import (
@@ -192,7 +193,7 @@ class QuantizedGemm(QuantizedMixingOp):
         transpose_inputs = attrs.get("transA", False)
         transpose_w = attrs.get("transB", False)
 
-        with cnp.tag(self.op_instance_name + ".input"):
+        with fhe.tag(self.op_instance_name + ".input"):
             input_q_values = (
                 numpy.transpose(q_input.qvalues) if transpose_inputs else q_input.qvalues
             )
@@ -219,7 +220,7 @@ class QuantizedGemm(QuantizedMixingOp):
         p = weights_q_values.shape[0]
 
         # Core matmul operation in full integers with a shape change (INTEGERS)
-        with cnp.tag(self.op_instance_name + ".matmul"):
+        with fhe.tag(self.op_instance_name + ".matmul"):
             matmul = input_q_values @ weights_q_values
 
         # If the weights have symmetric quantization, their zero point will be 0
@@ -227,12 +228,12 @@ class QuantizedGemm(QuantizedMixingOp):
         # large bitwidth, in the case where it would be multiplied by zero
         if q_weights.quantizer.zero_point != 0:
             # Sum operation in full integers resulting in large integers (INTEGERS)
-            with cnp.tag(self.op_instance_name + ".matmul_inputsum"):
+            with fhe.tag(self.op_instance_name + ".matmul_inputsum"):
                 sum_input = -q_weights.quantizer.zero_point * numpy.sum(
                     input_q_values, axis=1, keepdims=True
                 )
 
-            with cnp.tag(self.op_instance_name + ".matmul_add_inputsum"):
+            with fhe.tag(self.op_instance_name + ".matmul_add_inputsum"):
                 # Last part that has to be done in integer
                 numpy_q_out = matmul + sum_input
         else:
@@ -270,7 +271,7 @@ class QuantizedGemm(QuantizedMixingOp):
             # to properly dequantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
-        with cnp.tag(self.op_instance_name + ".matmul_rounding"):
+        with fhe.tag(self.op_instance_name + ".matmul_rounding"):
             # Apply Concrete rounding (if relevant)
             numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
 
@@ -669,7 +670,7 @@ class QuantizedConv(QuantizedMixingOp):
         # and is thus manually performed in the code above
         fake_pads = [0] * len(self.pads)
 
-        with cnp.tag(self.op_instance_name + ".conv"):
+        with fhe.tag(self.op_instance_name + ".conv"):
             conv_wx = cnp_conv(
                 q_input_pad,
                 q_weights.qvalues,
@@ -693,7 +694,7 @@ class QuantizedConv(QuantizedMixingOp):
                 f"Zero point of weights tensor in {self.op_type} "
                 f"op {self.op_instance_name} must be integer",
             )
-            with cnp.tag(self.op_instance_name + ".conv_inputsum"):
+            with fhe.tag(self.op_instance_name + ".conv_inputsum"):
                 zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
                     q_input_pad,
                     q_weights_1,
@@ -704,7 +705,7 @@ class QuantizedConv(QuantizedMixingOp):
                     group=self.group,
                 )
 
-            with cnp.tag(self.op_instance_name + ".conv_add_inputsum"):
+            with fhe.tag(self.op_instance_name + ".conv_add_inputsum"):
                 numpy_q_out = conv_wx + zw_conv_1x
         else:
             numpy_q_out = conv_wx
@@ -749,7 +750,7 @@ class QuantizedConv(QuantizedMixingOp):
             # to properly dequantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
-        with cnp.tag(self.op_instance_name + ".conv_rounding"):
+        with fhe.tag(self.op_instance_name + ".conv_rounding"):
             # Apply Concrete rounding (if relevant)
             numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
 
@@ -890,14 +891,14 @@ class QuantizedAvgPool(QuantizedMixingOp):
             q_input_pad_ceil[:, :, 0 : q_input_pad.shape[2], 0 : q_input_pad.shape[3]] = q_input_pad
             q_input_pad = q_input_pad_ceil
 
-        # Remark that here, we are _not_ using Concrete-Numpy pad, since it would pad with
+        # Remark that here, we are _not_ using Concrete-Python pad, since it would pad with
         # 0's while we want to pad with zero-point's. So, instead, he have done the padding
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
-        with cnp.tag(self.op_instance_name + ".avgpool"):
+        with fhe.tag(self.op_instance_name + ".avgpool"):
             sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
 
-        with cnp.tag(self.op_instance_name + ".avgpool_rounding"):
+        with fhe.tag(self.op_instance_name + ".avgpool_rounding"):
             # Apply Concrete rounding (if relevant)
             sum_result = self.cnp_round(sum_result, calibrate_rounding)
 
@@ -1011,7 +1012,7 @@ class QuantizedMaxPool(QuantizedOp):
             q_input.qvalues, pool_pads, q_input.quantizer.zero_point, int_only=True
         )
 
-        # Remark that here, we are _not_ using Concrete-Numpy pad, since it would pad with
+        # Remark that here, we are _not_ using Concrete-Python pad, since it would pad with
         # 0's while we want to pad with zero-point's. So, instead, he have done the padding
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
