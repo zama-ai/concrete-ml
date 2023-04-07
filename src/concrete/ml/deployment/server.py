@@ -19,7 +19,7 @@ import uvicorn
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
-from ..deployment import FHEModelServer
+from concrete.ml.deployment import FHEModelServer
 
 if __name__ == "__main__":
     app = FastAPI(debug=False)
