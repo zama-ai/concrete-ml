@@ -5,7 +5,7 @@ import warnings
 from collections import OrderedDict
 from pathlib import Path
 from time import time
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,7 +20,6 @@ from torchvision import datasets, transforms
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-from concrete.ml.pytest.utils import get_torchvision_dataset
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -72,6 +71,38 @@ DATASETS_ARGS = {
 }
 
 
+def get_torchvision_dataset(
+    dataset_config: Dict,
+    train_set: bool,
+    max_examples: Optional[int] = None,
+):
+    """Get train or testing data-set.
+
+    Args:
+        param (Dict): Set of hyper-parameters to use based on the selected torchvision data-set.
+            It must contain: data-set transformations (torchvision.transforms.Compose), and the
+            data-set_size (Optional[int]).
+        train_set (bool): Use train data-set if True, else testing data-set
+
+    Returns:
+        A torchvision datasets.
+    """
+
+    transform = dataset_config["train_transform"] if train_set else dataset_config["test_transform"]
+    dataset = dataset_config["dataset"](
+        download=True, root="./data", train=train_set, transform=transform
+    )
+
+    if max_examples is not None:
+        assert len(dataset) > max_examples, "Invalid max number of examples"
+        dataset = torch.utils.data.random_split(
+            dataset,
+            [max_examples, len(dataset) - max_examples],
+        )[0]
+
+    return dataset
+
+
 def get_dataloader(
     param: Dict,
 ) -> Tuple[DataLoader, DataLoader]:
@@ -92,9 +123,14 @@ def get_dataloader(
     torch.manual_seed(param["seed"])
     random.seed(param["seed"])
 
-    train_dataset = get_torchvision_dataset(DATASETS_ARGS[param["dataset_name"]], train_set=True)
+    max_examples = param.get("dataset_size", None)
+    train_dataset = get_torchvision_dataset(
+        DATASETS_ARGS[param["dataset_name"]], train_set=True, max_examples=max_examples
+    )
 
-    test_dataset = get_torchvision_dataset(DATASETS_ARGS[param["dataset_name"]], train_set=False)
+    test_dataset = get_torchvision_dataset(
+        DATASETS_ARGS[param["dataset_name"]], train_set=False, max_examples=max_examples
+    )
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset,
@@ -193,7 +229,7 @@ def plot_baseline(param: Dict, data: DataLoader, device: str) -> None:
     """
     # The accuracy of the counterpart pre-trained model in fp32 will be used as a baseline.
     # That we try to catch up during the Quantization Aware Training.
-    checkpoint = torch.load(f"{param['dir']}/{param['pretrained_path']}")
+    checkpoint = torch.load(f"{param['dir']}/{param['pretrained_path']}", map_location=device)
     fp32_vgg = Fp32VGG11(param["output_size"])
     fp32_vgg.load_state_dict(checkpoint)
     baseline = torch_inference(fp32_vgg, data, param, device)
@@ -372,27 +408,19 @@ def torch_inference(
     Returns:
         float: The top_k accuracy.
     """
-    acc_top_k = []
+    correct = []
     total_example = 0
     model = model.to(device)
 
     with torch.no_grad():
         model.eval()
-        start_time = time()
         for x, y in tqdm(data, disable=verbose is False):
-            x, y = x.to(device), y.to(device)
-            yhat = model(x)
-            acc_top_k.append(
-                top_k_accuracy_score(
-                    y_true=y.cpu(), y_score=yhat.cpu(), k=k, labels=np.arange(param["output_size"])
-                )
-            )
+            x, y = x.to(device), y
+            yhat = model(x).cpu().detach()
+            correct.append(yhat.argmax(1) == y)
             total_example += len(x)
 
-    if verbose:
-        print(f"Running time: {(time() - start_time) / total_example:.4f} sec.")
-
-    return np.mean(acc_top_k, dtype="float64")
+    return np.mean(np.vstack(correct), dtype="float64")
 
 
 def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
@@ -462,46 +490,33 @@ def mapping_keys(pretrained_weights: Dict, model: nn.Module, device: str) -> nn.
     return model
 
 
-def fhe_simulation_inference(
-    quantized_module, data_loader, output_size: int, step: int = None, verbose: bool = False
-) -> float:
+def fhe_simulation_inference(quantized_module, data_loader, verbose: bool = False) -> float:
     """Evaluate the model in FHE simulation mode.
 
     Args:
         quantized_module (Callable): The quantized module.
         data_loader (int): The test or evaluation set.
-        output_size (int): The number of classes, it's 10 for CIFAR_10 and 100 for CIFAR_100.
         step (int): Display the accuracy every batch % step.
 
     Returns:
-        float: The accuracy given by the Virtual Library (VL).
+        float: The accuracy measured through FHE simulation
     """
-    accuracy_vl = []
+    correct_sim = []
     total_example = 0
     start_time = time()
 
-    for j, (data, labels) in tqdm(enumerate((data_loader)), disable=verbose is False):
+    disable_tqdm = not verbose
+    for data, labels in tqdm(data_loader, disable=disable_tqdm):
 
         data, labels = data.detach().cpu().numpy(), labels.detach().cpu().numpy()
 
-        predictions = np.zeros(shape=(data.shape[0], output_size))
+        # Store the predicted quantized probabilities
+        predictions = quantized_module.forward(data, fhe="simulate")
 
-        for idx, x in enumerate(data):
-            x_q = quantized_module.quantize_input(np.expand_dims(x, 0))
+        total_example += data.shape[0]
 
-            # Store the predicted quantized probabilities
-            predictions[idx] = quantized_module.quantized_forward(x_q, fhe="simulate")
+        # Store the class predictions
+        correct_sim.extend(predictions.argmax(1) == labels)
 
-            total_example += 1
-
-        # Dequantized the predicted probabilities and store the class predictions
-        predictions = quantized_module.dequantize_output(predictions)
-        accuracy_vl.extend(predictions.argmax(1) == labels)
-
-        if step and (j % step) == 0:
-            print(f"Epoch {j:2}: VL_Acc = {np.mean(accuracy_vl)}")
-
-    if verbose:
-        print(f"Running time: {(time() - start_time) / total_example:.4f} sec.")
-
-    return np.mean(accuracy_vl, dtype="float64")
+    acc = np.mean(correct_sim, dtype="float64")
+    return acc

@@ -124,7 +124,7 @@ q_x_numpy, execution_time = measure_execution_time(quantized_numpy_module.quanti
 print(f"Quantization of a single input (image) took {execution_time} seconds")
 print(f"Size of CLEAR input is {q_x_numpy.nbytes} bytes\n")
 
-expected_prediction = quantized_numpy_module.forward(q_x_numpy)
+expected_prediction = quantized_numpy_module.quantized_forward(q_x_numpy)
 
 # Encrypt the input
 encrypted_q_x_numpy, execution_time = measure_execution_time(

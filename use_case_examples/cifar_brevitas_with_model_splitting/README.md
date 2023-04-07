@@ -2,6 +2,14 @@
 
 In this [notebook](./Cifar10.ipynb) we show how train and compile a FHE VGG-like model to achieve a good speed/accuracy tradeoff on CIFAR-10 images.
 
+## Installation
+
+To use this code, you need to have Python 3.8 and install the following dependencies:
+
+```
+pip install -r requirements.txt
+```
+
 ## Model design
 
 As there is a trade-off between accumulator bit-width and FHE inference speed, this tutorial targets

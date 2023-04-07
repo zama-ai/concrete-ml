@@ -1,25 +1,9 @@
-## Installation
-
-To use this code, you need to have Python 3.8 and the following dependencies installed:
-
-```
-concrete-ml
-torchvision
-```
-
-You can install these dependencies using pip and the requirements.txt file available in this directory as follows:
-
-`pip install -r requirements.txt`
-
-You can use PyTorch with CUDA in Concrete-ML, just put the right cuda version:
-
-`pip3 install --upgrade torch==1.12 torchvision torchsummary --extra-index-url https://download.pytorch.org/whl/cu113`
-
 # Description
 
-In this directory, i.e. `cifar_brevitas_finetuning` we show how to solve a classification task on CIFAR-10 and CIFAR-100, by converting any pre-trained network in floating point to its fully homomorphic encryption (FHE) equivalent using Quantization Aware Training (QAT) with Brevitas, and then evaluating it using FHE simulation with concrete-ML.
+In this directory we show how to solve a classification task on CIFAR-10 and CIFAR-100, by converting a pre-trained CNN to its fully homomorphic encryption (FHE) equivalent using Quantization Aware Training (QAT) and Concrete-ML. We evaluate it using the FHE simulation
+mode provided by the Concrete stack.
 
-To do so, we divided this use case in 3 notebooks :
+To do so, we divided this use case in 4 notebooks :
 
 1. [FromImageNetToCifar.ipynb](FromImageNetToCifar.ipynb) : in this notebook, we used a VGG11 network from [torch.hub](https://pytorch.org/hub/pytorch_vision_vgg/), on which we applied some changes on the original architecture in order to speed up the FHE execution and therefore make it more user-friendly :
 
@@ -30,11 +14,22 @@ To do so, we divided this use case in 3 notebooks :
 
    This notebook may be skipped if the user already has a pre-trained floating point CIFAR-10 / CIFAR-100 model.
 
-1. [CifarQuantizationAwareTraining.ipynb](CifarQuantizationAwareTraining.ipynb): in this notebook, we explain the **(FHE) restrictions** and how to **quantize the pretrained** neural networks, an important step, because FHE operates only over intergers
+1. [CifarQuantizationAwareTraining.ipynb](CifarQuantizationAwareTraining.ipynb): explains the **(FHE) constraints** and how to **quantize the pretrained** neural network to make it work in FHE.
 
-1. [CifarInFhe.ipynb](CifarInFhe.ipynb): in this last notebook, we compute the accuracy of the quantized models using FHE simulation
+1. [CifarInFhe.ipynb](CifarInFhe.ipynb): computes the accuracy of the quantized models using FHE simulation
 
-## Accuracy
+1. [CifarInFheWithSmallerAccumulators.ipynb](./CifarInFheWithSmallerAccumulators.ipynb): shows how to use the rounded PBS operation
+   to lower the accumulator size, thus decreasing the inference time in FHE
+
+## Installation
+
+To use this code, you need to have Python 3.8 and install the following dependencies:
+
+```
+pip install -r requirements.txt
+```
+
+## Results
 
 <!-- Add FHE inference accuracy -->
 

@@ -94,6 +94,9 @@ def main(path_to_model: Path, image_name: str):
 
     build_docker_image(path_to_model, image_name)
 
+    if args.only_build:
+        return
+
     # Run newly created docker server
     try:
         with open("./url.txt", mode="w", encoding="utf-8") as file:
@@ -114,5 +117,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--path-to-model", dest="path_to_model", type=Path, default=Path("./dev"))
     parser.add_argument("--image-name", dest="image_name", type=Path, default="server")
+    parser.add_argument("--only-build", dest="only_build", action="store_true")
     args = parser.parse_args()
     main(path_to_model=args.path_to_model, image_name=args.image_name)

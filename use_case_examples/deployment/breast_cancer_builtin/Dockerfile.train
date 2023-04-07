@@ -1,4 +1,4 @@
-FROM concrete-ml-release:latest
+FROM zamafhe/concrete-ml
 WORKDIR /project
 COPY ./train.py ./train.py
 ENTRYPOINT python train.py

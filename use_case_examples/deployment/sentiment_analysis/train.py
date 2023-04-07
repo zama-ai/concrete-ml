@@ -18,13 +18,14 @@ from concrete.ml.sklearn import XGBClassifier
 
 
 def train(dev_folder="./dev"):
-    # Get data
-    if not os.path.isfile("local_datasets/twitter-airline-sentiment/Tweets.csv"):
+    # Download the data-sets
+    if not os.path.isfile("Tweets.csv"):
         raise ValueError(
             "Please launch the `download_data.sh` script in order to get the datasets."
         )
 
-    train = pd.read_csv("local_datasets/twitter-airline-sentiment/Tweets.csv", index_col=0)
+    train = pd.read_csv("Tweets.csv", index_col=0)
+
     text_X = train["text"]
     y = train["airline_sentiment"]
     y = y.replace(["negative", "neutral", "positive"], [0, 1, 2])

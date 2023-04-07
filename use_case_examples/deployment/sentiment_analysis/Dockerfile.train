@@ -1,6 +1,6 @@
-FROM concrete-ml-release:latest
+FROM zamafhe/concrete-ml
 WORKDIR /project
-COPY ./local_datasets ./local_datasets
+COPY ./Tweets.csv ./Tweets.csv
 COPY ./train_requirements.txt ./train_requirements.txt
 RUN python -m pip install -r train_requirements.txt
 COPY ./train.py ./train.py

@@ -2,23 +2,16 @@
 
 ## Description
 
-In this directory, i.e. `cifar_brevitas_training` we provide Python code for training and evaluating a VGG-like neural network using Brevitas and give a script to run the neural network in the Fully Homomorphic Encryption (FHE) settings.
+In this directory we provide Python code for training, from scratch, a VGG-like neural network using Brevitas on CIFAR-10. We also give a script to run the neural network in the Fully Homomorphic Encryption (FHE) settings.
 
 Original files can be found in the [Brevitas](https://github.com/Xilinx/brevitas/) repository. The model in the `models/` folder has a few modifications from the original to make it compatible with Concrete-ML:
 
 - `MaxPool` layers have been replaced by `AvgPool` layers. This is mainly because max pooling is a costly operation in FHE which we want to avoid for less FHE costly operations such as average pooling.
-- Quantization is applied after each AvgPool as this is needed for Concrete-ML to capture the quantization parameter. A QuantizedIdenty Brevitas layer does it.
-- The `x.view(x.shape[0], -1)` has been replaced by `torch.flatten(x, 1)` which offers equivalent operation but is compatible with Concrete-ML
-- `x = 2.0 * x - torch.tensor([1.0], device=x.device)` line has been removed and applied during the pre-processing as this is a transformation on the raw data (normalization between -1 and +1).
+- Quantization is applied after each AvgPool as this is needed for Concrete-ML to capture the quantization parameter. A QuantIdentity Brevitas layer achieves this.
 
 ## Installation
 
-To use this code, you will need to have Python 3.8 and the following dependencies installed:
-
-- concrete-ml
-- torchvision
-
-You can install these dependencies using pip and the requirements.txt file available in this directory as follows:
+To use this code, you need to have Python 3.8 and install the following dependencies:
 
 <!--pytest-codeblocks:skip-->
 
