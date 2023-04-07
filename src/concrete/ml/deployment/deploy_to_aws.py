@@ -43,6 +43,7 @@ class AWSInstance:
         verbose: bool = False,
         terminate_on_shutdown: bool = True,
         region_name: Optional[str] = None,
+        ami_id: str = "ami-0d7427e883fa00ff3",
     ):
         metadata = create_instance(
             instance_type=instance_type,
@@ -50,6 +51,7 @@ class AWSInstance:
             instance_name=instance_name,
             verbose=verbose,
             region_name=region_name,
+            ami_id=ami_id,
         )
         self.instance_metadata = metadata
         self.terminate_on_shutdown = terminate_on_shutdown
@@ -95,6 +97,7 @@ def create_instance(
     instance_name: Optional[str] = None,
     verbose: bool = False,
     region_name: Optional[str] = None,
+    ami_id="ami-0d7427e883fa00ff3",
 ) -> Dict[str, Any]:
     """Create a EC2 instance.
 
@@ -104,6 +107,7 @@ def create_instance(
         instance_name (Optional[str]): the name to use for AWS created objects
         verbose (bool): show logs or not
         region_name (Optional[str]): AWS region
+        ami_id (str): AMI to use
 
     Returns:
         Dict[str, Any]: some information about the newly created instance.
@@ -123,8 +127,7 @@ def create_instance(
         name = f"deploy-cml-{str_now}" if instance_name is None else f"{instance_name}-{str_now}"
 
         # Get VPC
-        response: Dict = client.describe_vpcs()
-        vpc_id: str = response.get("Vpcs", [{}])[0].get("VpcId", "")
+        vpc_id: str = client.describe_vpcs().get("Vpcs", [{}])[0].get("VpcId", "")
         # OPTION 1: get fist vpc available
         if vpc_id:
             vpc = resources.Vpc(vpc_id)
@@ -143,10 +146,9 @@ def create_instance(
             subnet = subnets[0]
 
         # Create security group
-        response = client.create_security_group(
+        security_group_id = client.create_security_group(
             GroupName=name, Description=f"Deploy Concrete ML {str_now}", VpcId=vpc_id
-        )
-        security_group_id = response["GroupId"]
+        )["GroupId"]
         if verbose:
             print(f"Security Group Created {security_group_id} in vpc {vpc_id}.")
 
@@ -172,8 +174,7 @@ def create_instance(
 
         # Create key-pair
         keypair_name = f"{name}-keypair"
-        response = client.create_key_pair(KeyName=keypair_name)
-        private_key: str = response["KeyMaterial"]
+        private_key: str = client.create_key_pair(KeyName=keypair_name)["KeyMaterial"]
 
         # Keep the key if we want to ssh to check what happened on the instance
         key_folder = (Path(__file__).parent / "ssh_keys").resolve()
@@ -186,7 +187,7 @@ def create_instance(
         # Create instance
         instances = resources.create_instances(
             # Concrete ML official AMI ID to make sure to have everything needed
-            ImageId="ami-0d7427e883fa00ff3",
+            ImageId=ami_id,
             InstanceType=instance_type,  # Instance type
             DryRun=False,
             InstanceInitiatedShutdownBehavior="terminate",
