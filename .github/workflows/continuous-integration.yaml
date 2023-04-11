@@ -903,6 +903,22 @@ jobs:
           IS_PRERELEASE=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_prerelease')
           echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
 
+          # Fail on public if pre-release
+          if [[ "${{ github.repository }}" == "concrete-ml" ]];then
+            if [[ "${IS_PRERELEASE}" == "true" ]];then
+              echo "Pre-releases are handled on the internal repository"
+              exit 1
+            fi
+          fi
+
+          # Fail on internal if public release
+          if [[ "${{ github.repository }}" == "concrete-ml-internal" ]];then
+            if [[ "${IS_PRERELEASE}" == "false" ]];then
+              echo "Releases are handled on the public repository"
+              exit 1
+            fi
+          fi
+
           if [[ "${IS_LATEST}" == "true" ]]; then
             RELEASE_IMG_LATEST_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:latest"
             RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${RELEASE_IMG_LATEST_TAG}"
