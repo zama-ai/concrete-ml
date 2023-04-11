@@ -117,8 +117,8 @@ clf.compile(X_train)
 y_pred = clf.predict(X_train, fhe="execute")
 end_time = time()
 
-print(f"With the default p_error≈0, the compilation time is {(end_time - start_time) / 60:.2f} s")
-# Output: With the default p_error≈0, the compilation time is 1.40 s
+print(f"With the default p_error≈0, the inference time is {(end_time - start_time) / 60:.2f} s")
+# Output: With the default p_error≈0, the inference time is 1.40 s
 print(f"Accuracy = {accuracy_score(y_pred, y_train):.2%}")
 # Output: Accuracy = 100.00%
 
@@ -134,9 +134,9 @@ y_pred = clf.predict(X_train, fhe="execute")
 end_time = time()
 
 print(
-    f"With p_error={p_error:.5f}, the compilation time becomes {(end_time - start_time) / 60:.2f} s"
+    f"With p_error={p_error:.5f}, the inference time becomes {(end_time - start_time) / 60:.2f} s"
 )
-# Ouput: With p_error=0.00044, the compilation time becomes 0.49 s
+# Ouput: With p_error=0.00044, the inference time becomes 0.49 s
 print(f"Accuracy = {accuracy_score(y_pred, y_train): .2%}")
 # Output: Accuracy = 100.00%
 ```
