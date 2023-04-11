@@ -1,6 +1,6 @@
 <p align="center">
 <!-- product name logo -->
-  <img width=1200 src="https://user-images.githubusercontent.com/5758427/231102561-c88b80c5-f472-461e-8877-6f0196ddefd1.png">
+  <img width=1200 src="https://user-images.githubusercontent.com/5758427/231113429-cab94a15-5239-4c18-9f94-ebbd02f8b348.png">
 </p>
 <hr>
 
@@ -23,7 +23,7 @@
 </p>
 <hr>
 
-Concrete-ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete-ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete-ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+Concrete-ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete-ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete-ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 
 ## Main features.
 
@@ -149,9 +149,8 @@ To cite Concrete-ML, notably in academic papers, please use the following entry,
 ```
 
 ## Need support?
-
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://user-images.githubusercontent.com/5758427/191792238-b132e413-05f9-4fee-bee3-1371f3d81c28.png">
+  <img src="https://user-images.githubusercontent.com/5758427/231115030-21195b55-2629-4c01-9809-be5059243999.png">
 </a>
 
 ## License.
