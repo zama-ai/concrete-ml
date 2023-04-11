@@ -24,7 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
 ]
-readme = "pypi_readme.md"
+readme = "README.md"
 
 [tool.poetry.urls]
 "README" = "https://github.com/zama-ai/concrete-ml/blob/main/README.md"
