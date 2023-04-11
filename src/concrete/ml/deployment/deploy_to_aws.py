@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 
 import boto3
 
-from concrete.ml.deployment.utils import filter_logs, wait_for_connexion_to_be_available
+from ..deployment.utils import filter_logs, wait_for_connexion_to_be_available
 
 DATE_FORMAT: str = "%Y_%m_%d_%H_%M_%S"
 

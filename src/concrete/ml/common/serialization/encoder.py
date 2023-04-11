@@ -8,7 +8,8 @@ import sklearn
 from numpy.random import RandomState
 
 from concrete import fhe
-from concrete.ml import dumps_sklearn
+
+from ... import dumps_sklearn
 
 
 # Register all models
