@@ -1,33 +1,27 @@
 <p align="center">
 <!-- product name logo -->
-  <img width=600 src="https://user-images.githubusercontent.com/5758427/188829741-8503b6c3-98ca-4285-9955-455508f50863.png">
+  <img width=1200 src="https://user-images.githubusercontent.com/5758427/231102561-c88b80c5-f472-461e-8877-6f0196ddefd1.png">
+</p>
+<hr>
+
+<p align="center">
+  <a href="https://docs.zama.ai/concrete-ml"> 📒 Read documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a>
 </p>
 <p align="center">
 <!-- Version badge using shields.io -->
   <a href="https://github.com/zama-ai/concrete-ml/releases">
     <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
   </a>
-<!-- Link to docs badge using shields.io -->
-  <a href="https://docs.zama.ai/concrete-ml">
-    <img src="https://img.shields.io/badge/read-documentation-yellow?style=flat-square">
-  </a>
 <!-- Link to tutorials badge using shields.io -->
   <a href="https://github.com/zama-ai/concrete-ml-internal#online-demos-and-tutorials">
-    <img src="https://img.shields.io/badge/tutorials-and%20demos-orange?style=flat-square">
+    <img src="https://img.shields.io/badge/Learn-%20Tutorials%20and%20demos-orange?style=flat-square">
   </a>
-<!-- Community forum badge using shields.io -->
-  <a href="https://community.zama.ai/c/concrete-ml">
-    <img src="https://img.shields.io/badge/community%20forum-online-brightgreen?style=flat-square">
-  </a>
-<!-- Open source badge using shields.io -->
-  <a href="https://docs.zama.ai/concrete-ml/developer-guide/contributing">
-    <img src="https://img.shields.io/badge/we're%20open%20source-contributing.md-blue?style=flat-square">
-  </a>
-<!-- Follow on twitter badge using shields.io -->
-  <a href="https://twitter.com/zama_fhe">
-    <img src="https://img.shields.io/badge/follow-zama%20fhe-1DA1F2?logo=twitter&style=flat-square">
+<!-- Zama Bounty Program -->
+  <a href="https://github.com/zama-ai/bounty-program">
+    <img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-yellow?style=flat-square">
   </a>
 </p>
+<hr>
 
 Concrete-ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [The Concrete Framework](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete-ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete-ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 
