@@ -309,7 +309,7 @@ def accuracy_test_rounding(
     )
 
     # Check that high precision gives a better match than low precision
-    # MSE is prefered over MAE here to spot a lack of diversity in the 2 bits rounded model
+    # MSE is preferred over MAE here to spot a lack of diversity in the 2 bits rounded model
     # e.g. results_low_precision = mean(results) should impact more MSE than MAE.
     mse_high_precision = numpy.mean(numpy.square(numpy.subtract(results, results_high_precision)))
     mse_low_precision = numpy.mean(numpy.square(numpy.subtract(results, results_low_precision)))
