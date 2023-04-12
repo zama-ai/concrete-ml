@@ -44,11 +44,11 @@ Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 |               Windows                |         Yes         |   Coming soon    |
 |     Windows Subsystem for Linux      |         Yes         |       Yes        |
 |            macOS (Intel)             |         Yes         |       Yes        |
-| macOS (Apple Silicon, ie M1, M2 etc) |     Coming soon     |   Coming soon    |
+| macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |       Yes        |
 
 Note: Concrete-ML only supports Python `3.8`, `3.9` and `3.10`.
 
-Concrete-ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)), but not on Google Colab ([see question on community for more details](https://community.zama.ai/t/how-do-i-install-run-concrete-ml-on-google-colab/338)).
+Concrete-ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
 
 ### Docker
 
