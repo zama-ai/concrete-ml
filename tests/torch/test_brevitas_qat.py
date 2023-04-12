@@ -76,8 +76,9 @@ def test_brevitas_tinymnist_cnn(
         # Create the tiny CNN module with 10 output classes
         net = TinyQATCNN(10, qat_bits, 4 if qat_bits <= 3 else 20, signed, narrow)
 
-        # Train a single epoch to have a fast test, accuracy should still be the same VL vs torch
-        # But train 3 epochs for the VL test to check that training works well
+        # Train a single epoch to have a fast test, accuracy should still be the same for both
+        # FHE simulation and torch
+        # But train 3 epochs for the FHE similation test to check that training works well
         n_epochs = 1 if qat_bits <= 3 else 3
 
         # Train the network with Adam, output the test set accuracy every epoch
@@ -94,7 +95,7 @@ def test_brevitas_tinymnist_cnn(
         # Retrain while training is bad
         trained_ok = torch_correct > 0
 
-    def test_with_concrete(quantized_module, test_loader, use_vl):
+    def test_with_concrete(quantized_module, test_loader, use_fhe_simulation):
         """Test a neural network that is quantized and compiled with Concrete-ML."""
 
         all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
@@ -111,10 +112,10 @@ def test_brevitas_tinymnist_cnn(
 
             # Dequantize the integer predictions
             check_is_good_execution_for_cml_vs_circuit(
-                data, model=quantized_module, simulate=use_vl
+                data, model=quantized_module, simulate=use_fhe_simulation
             )
 
-            fhe_mode = "simulate" if use_vl else "execute"
+            fhe_mode = "simulate" if use_fhe_simulation else "execute"
 
             y_pred = quantized_module.forward(data, fhe=fhe_mode)
 
@@ -127,28 +128,28 @@ def test_brevitas_tinymnist_cnn(
 
     net.eval()
 
-    q_module_vl = compile_brevitas_qat_model(
+    q_module_simulated = compile_brevitas_qat_model(
         net,
         x_all,
         configuration=default_configuration,
     )
 
-    vl_correct = test_with_concrete(
-        q_module_vl,
+    fhe_s_correct = test_with_concrete(
+        q_module_simulated,
         test_dataloader,
-        use_vl=True,
+        use_fhe_simulation=True,
     )
 
     # Accept, at most, 1% examples that are classified differently (currently 5)
     # For now, the correctness test has been disabled as it was too flaky, it should however be put
     # back at one point
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2550
-    # assert abs(vl_correct - torch_correct) <= numpy.ceil(0.01 * len(y_test))
+    # assert abs(fhe_simulation_correct - torch_correct) <= numpy.ceil(0.01 * len(y_test))
 
-    assert vl_correct.shape == torch_correct.shape
+    assert fhe_s_correct.shape == torch_correct.shape
 
-    check_graph_input_has_no_tlu(q_module_vl.fhe_circuit.graph)
-    check_graph_output_has_no_tlu(q_module_vl.fhe_circuit.graph)
+    check_graph_input_has_no_tlu(q_module_simulated.fhe_circuit.graph)
+    check_graph_output_has_no_tlu(q_module_simulated.fhe_circuit.graph)
 
 
 # Note that this test is currently disabled until the pytorch dtype issue is found

@@ -144,7 +144,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
 
         quantized_numpy_module.check_model_is_compiled()
 
-        # Make sure VL and quantized module forward give the same output.
+        # Make sure FHE simulation and quantized module forward give the same output.
         check_is_good_execution_for_cml_vs_circuit(
             x_test, model=quantized_numpy_module, simulate=simulate
         )
@@ -299,7 +299,7 @@ def accuracy_test_rounding(
         results_high_precision.append(result_high_precision)
         results_low_precision.append(result_low_precision)
 
-    # Check modules predictions VL vs CML.
+    # Check modules predictions FHE simulation vs CML.
     check_is_good_execution_for_cml_vs_circuit(x_test, quantized_numpy_module, simulate=simulate)
     check_is_good_execution_for_cml_vs_circuit(
         x_test, quantized_numpy_module_round_high_precision, simulate=simulate
@@ -338,7 +338,7 @@ def accuracy_test_rounding(
     "input_output_feature",
     [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
-@pytest.mark.parametrize("simulate", [True, False], ids=["virtual", "FHE"])
+@pytest.mark.parametrize("simulate", [True, False], ids=["FHE_simulation", "FHE"])
 @pytest.mark.parametrize("is_onnx", [True, False], ids=["is_onnx", ""])
 def test_compile_torch_or_onnx_networks(
     input_output_feature,
@@ -621,7 +621,7 @@ def test_pretrained_mnist_qat(
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
 ):
-    """Load a QAT MNIST model and make sure we get the same results in VL as with ONNX."""
+    """Load a QAT MNIST model and confirm we get the same results in FHE simulation as with ONNX."""
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3164
     pytest.skip("Compilation is too long.")
@@ -656,7 +656,7 @@ def test_pretrained_mnist_qat(
         )
         onnx_results[i] = numpy.argmax(onnx_outputs[0])
 
-    # Compile to Concrete ML with the Virtual Library, with a high bitwidth
+    # Compile to Concrete ML in FHE simulation mode, with a high bitwidth
     n_bits = {
         "model_inputs": 16,
         "op_weights": 2,
@@ -677,7 +677,7 @@ def test_pretrained_mnist_qat(
 
     check_is_good_execution_for_cml_vs_circuit(inputset, quantized_numpy_module, simulate=True)
 
-    # Collect VL results
+    # Collect FHE simuation results
     results = []
     for i in range(inputset.shape[0]):
 
@@ -689,13 +689,13 @@ def test_pretrained_mnist_qat(
         result = numpy.argmax(quantized_numpy_module.forward(*x, fhe="simulate"))
         results.append(result)
 
-    # Compare ONNX runtime vs Virtual Lib
+    # Compare ONNX runtime vs FHE simulation mode
     check_accuracy(onnx_results, results, threshold=0.999)
 
     # Make sure absolute accuracy is good, this model should have at least 90% accuracy
     check_accuracy(mnist_data["gt"], results, threshold=0.9)
 
-    # Compile to Concrete ML with the Virtual Library with a FHE compatible bitwidth
+    # Compile to Concrete-ML using the FHE simulation mode and compatible bit-width
     n_bits = {
         "model_inputs": 7,
         "op_weights": 2,

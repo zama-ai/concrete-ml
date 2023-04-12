@@ -1,11 +1,11 @@
-"""Test file for virtual lib specific tests."""
+"""Test file for FHE simulation specific tests."""
 import numpy
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
 
 
-def test_torch_matmul_virtual_lib(default_configuration):
-    """Test special cases of matmul compilation with virtual_lib"""
+def test_torch_matmul_fhe_simulation(default_configuration):
+    """Test special cases of matmul compilation with FHE simulation"""
 
     def f(x, weights):
         return x @ weights
@@ -16,15 +16,15 @@ def test_torch_matmul_virtual_lib(default_configuration):
 
     # Special inputset
     inputset = [thousand_ones]
-    virtual_fhe_circuit = matmul_thousand_ones_compiler.compile(
+    fhe_simulation_circuit = matmul_thousand_ones_compiler.compile(
         inputset,
         default_configuration,
     )
 
-    assert isinstance(virtual_fhe_circuit, Circuit)
+    assert isinstance(fhe_simulation_circuit, Circuit)
 
     # 10 is >= log2(1000), so we expect the sum of 1000 ones to have bit width <= 10
-    max_bit_width = virtual_fhe_circuit.graph.maximum_integer_bit_width()
+    max_bit_width = fhe_simulation_circuit.graph.maximum_integer_bit_width()
     assert max_bit_width == 10
 
     # Test to check that canceling out ones give the expected bit width as well
@@ -38,15 +38,15 @@ def test_torch_matmul_virtual_lib(default_configuration):
 
     # Special inputset
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
-    virtual_fhe_circuit = matmul_three_thousand_plus_minus_ones_compiler.compile(
+    fhe_simulation_circuit = matmul_three_thousand_plus_minus_ones_compiler.compile(
         inputset,
         default_configuration,
     )
 
-    assert isinstance(virtual_fhe_circuit, Circuit)
+    assert isinstance(fhe_simulation_circuit, Circuit)
 
     # 10 is >= log2(1000), so we expect (2000 - 1000) == 1000 to have bit width <= 10
-    max_bit_width = virtual_fhe_circuit.graph.maximum_integer_bit_width()
+    max_bit_width = fhe_simulation_circuit.graph.maximum_integer_bit_width()
     assert max_bit_width == 10
 
     # Additional test with a simulated PBS with 10 bits
@@ -60,12 +60,12 @@ def test_torch_matmul_virtual_lib(default_configuration):
 
     # Special inputset
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
-    virtual_fhe_circuit = sin_matmul_three_thousand_plus_minus_ones_compiler.compile(
+    fhe_simulation_circuit = sin_matmul_three_thousand_plus_minus_ones_compiler.compile(
         inputset,
         default_configuration,
     )
 
-    assert isinstance(virtual_fhe_circuit, Circuit)
+    assert isinstance(fhe_simulation_circuit, Circuit)
 
-    max_bit_width = virtual_fhe_circuit.graph.maximum_integer_bit_width()
+    max_bit_width = fhe_simulation_circuit.graph.maximum_integer_bit_width()
     assert max_bit_width == 10

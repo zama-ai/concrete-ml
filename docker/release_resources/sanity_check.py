@@ -81,16 +81,16 @@ def ml_check(args, keyring_dir_as_str):
 
     nb_samples = 1 if is_fast else 10
 
-    # Predict in VL for a few examples
-    y_pred_vl = model.predict(x_test[:nb_samples], fhe="execute")
+    # Predict in FHE simulation for a few examples
+    y_pred_simulated = model.predict(x_test[:nb_samples], fhe="execute")
 
-    # Check prediction VL vs sklearn
-    print(f"Prediction VL:      {y_pred_vl}")
-    print(f"Prediction sklearn: {y_pred[:nb_samples]}")
+    # Check prediction FHE simulation vs sklearn
+    print(f"Prediction FHE simulation: {y_pred_simulated}")
+    print(f"Prediction sklearn       : {y_pred[:nb_samples]}")
 
     print(
-        f"{numpy.sum(y_pred_vl==y_pred[:nb_samples])}/{nb_samples} "
-        "predictions are similar between the VL model and the clear sklearn model."
+        f"{numpy.sum(y_pred_simulated==y_pred[:nb_samples])}/{nb_samples} "
+        "predictions are similar between the FHE simulated model and the clear sklearn model."
     )
 
 

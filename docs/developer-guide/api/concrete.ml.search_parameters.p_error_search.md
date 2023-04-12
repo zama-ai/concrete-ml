@@ -25,7 +25,7 @@ At Zama, non-linear operations are represented by table lookup (TLU), which are 
 
 It's highly recommended to adjust the `p_error` as it is linked to the data-set.
 
-The inference is performed via the FHE simulation mode previously known as Virtual Library (VL)
+The inference is performed via the FHE simulation mode.
 
 The goal is to look for the largest `p_error_i`, a float ∈ \]0,1\[, which gives a model_i that has `accuracy_i`, such that: | accuracy_i - accuracy_0| \<= Threshold, where: Threshold ∈ R, given by the user and `accuracy_0` refers to original model_0 with `p_error_0 = 0.0`.
 

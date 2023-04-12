@@ -72,21 +72,19 @@ def _compile_torch_or_onnx_model(
         model (Union[torch.nn.Module, onnx.ModelProto]): the model to quantize, either in torch or
             in ONNX
         torch_inputset (Dataset): the calibration inputset, can contain either torch
-            tensors or numpy.ndarray.
+            tensors or numpy.ndarray
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
-            in its computation graph and that Concrete ML should not requantize it.
-        configuration (Configuration): Configuration object to use
-            during compilation
-        artifacts (DebugArtifacts): Artifacts object to fill
-            during compilation
+            in its computation graph and that Concrete ML should not requantize it
+        configuration (Configuration): Configuration object to use during compilation
+        artifacts (DebugArtifacts): Artifacts object to fill during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
-            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+            to be sent to the compiler backend is shown on the screen, e.g. for debugging or demo
         n_bits: the number of bits for the quantization
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
-            by the VL, i.e., taken as 0
+        global_p_error (Optional[float]): probability of error of the full circuit. In FHE
+            simulation `global_p_error` is set to 0
         verbose (bool): whether to show compilation information
 
     Returns:
@@ -174,8 +172,8 @@ def compile_torch_model(
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
-            by the VL, i.e., taken as 0
+        global_p_error (Optional[float]): probability of error of the full circuit. In FHE
+            simulation `global_p_error` is set to 0
         verbose (bool): whether to show compilation information
 
     Returns:
@@ -247,8 +245,8 @@ def compile_onnx_model(
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
-            by the VL, i.e., taken as 0
+        global_p_error (Optional[float]): probability of error of the full circuit. In FHE
+            simulation `global_p_error` is set to 0
         verbose (bool): whether to show compilation information
 
     Returns:
@@ -317,8 +315,8 @@ def compile_brevitas_qat_model(
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
-        global_p_error (Optional[float]): probability of error of the full circuit. Not simulated
-            by the VL, i.e., taken as 0
+        global_p_error (Optional[float]): probability of error of the full circuit. In FHE
+            simulation `global_p_error` is set to 0
         output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
             is generated
         verbose (bool): whether to show compilation information
@@ -409,7 +407,7 @@ def compile_brevitas_qat_model(
     )
 
     # Compile using the ONNX conversion flow, in QAT mode
-    q_module_vl = compile_onnx_model(
+    q_module = compile_onnx_model(
         onnx_model,
         torch_inputset,
         n_bits=n_bits,
@@ -427,4 +425,4 @@ def compile_brevitas_qat_model(
     if use_tempfile:
         output_onnx_file_path.unlink()
 
-    return q_module_vl
+    return q_module

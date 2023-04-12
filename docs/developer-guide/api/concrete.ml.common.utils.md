@@ -102,7 +102,7 @@ Principle:
 \- if both are set, we raise an error
 \- if one is set, we use it and forward it to Concrete-Numpy and the compiler
 
-Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
+Note that in FHE simulation mode global_p_error is set to 0.
 
 **Args:**
 

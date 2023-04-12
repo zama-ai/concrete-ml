@@ -166,7 +166,7 @@ def manage_parameters_for_pbs_errors(
         - if both are set, we raise an error
         - if one is set, we use it and forward it to Concrete-Python and the compiler
 
-    Note that global_p_error is currently not simulated by the VL, i.e., taken as 0.
+    Note that global_p_error is currently set to 0 in the FHE simulation mode.
 
     Args:
         p_error (Optional[float]): probability of error of a single PBS.

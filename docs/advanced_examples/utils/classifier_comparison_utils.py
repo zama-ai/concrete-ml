@@ -154,8 +154,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                 DecisionTreeClassifier,
             ]
 
-            # Compile the Concrete-ML model with the Virtual Library to evaluate
-            # the domain grid
+            # Compile the Concrete-ML model with FHE simulation mode to evaluate the domain grid
             circuit = concrete_model.compile(
                 X_train,
             )

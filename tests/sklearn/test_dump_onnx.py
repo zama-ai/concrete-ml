@@ -40,7 +40,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
         model.fit(x, y)
 
     with warnings.catch_warnings():
-        # Use virtual lib to not have issues with precision
+        # Use FHE simulation to not have issues with precision
         model.compile(x, default_configuration)
 
     # Get ONNX model

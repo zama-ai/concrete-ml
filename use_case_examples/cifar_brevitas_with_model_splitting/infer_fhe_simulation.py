@@ -1,4 +1,4 @@
-"""Run the inference of the model using the Virtual Library"""
+"""Run the inference of the model using the FHE simulation mode."""
 import csv
 import random
 import time
@@ -105,16 +105,16 @@ def main():
     net.load_state_dict(loaded["model_state_dict"])
     net.eval()
 
-    # Torch + VL
+    # Torch + FHE simulation
     # Pre-processing -> images -> feature maps
     with torch.no_grad():
         train_features_sub_set = net.clear_module(train_sub_set)
 
-    # Use VL
+    # Use FHE simulation
     optional_kwargs = {}
     optional_kwargs["configuration"] = Configuration(
         dump_artifacts_on_unexpected_failures=True,
-        enable_unsafe_features=True,  # This is for our tests in Virtual Library only
+        enable_unsafe_features=True,  # This is for our tests in FHE simulation only
         show_graph=False,
         show_mlir=False,
         show_optimizer=False,
@@ -133,7 +133,7 @@ def main():
     end_compile = time.time()
     print(f"Compilation finished in {end_compile - start_compile:.2f} seconds")
 
-    prediction_file = checkpoint_path / "predictions_vl.csv"
+    prediction_file = checkpoint_path / "predictions_fhe_simulation.csv"
     with open(prediction_file, "w", newline="") as csv_file:
         csv_writer = csv.writer(csv_file, delimiter=",", quotechar="|", quoting=csv.QUOTE_MINIMAL)
         csv_writer.writerow([f"{elt}_prob" for elt in classes] + ["label"])

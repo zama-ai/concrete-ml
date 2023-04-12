@@ -42,7 +42,7 @@ from concrete.ml.torch.compile import compile_torch_model
     "model_class, simulate, has_tlu",
     [
         pytest.param(TorchSum, False, False, id="sum_leveled_in_FHE"),
-        pytest.param(TorchSumMod, True, True, id="sum_with_pbs_in_VL"),
+        pytest.param(TorchSumMod, True, True, id="sum_with_pbs_in_fhe_simulation"),
     ],
 )
 # pylint: disable-next=too-many-arguments,too-many-locals

@@ -48,7 +48,7 @@ def evaluate(torch_model, cml_model):
 
     # Model to device
     torch_model = torch_model.to(device)
-    for i, data in enumerate(test_loader):
+    for _, data in enumerate(test_loader):
 
         (input, target) = data
 
@@ -61,10 +61,10 @@ def evaluate(torch_model, cml_model):
         numpy_input = input.detach().cpu().numpy()
 
         # Compute cml output
-        y_cml_vl = cml_inference(cml_model, numpy_input)
+        y_cml_simulated = cml_inference(cml_model, numpy_input)
 
-        # y_cml_vl to torch to device
-        y_cml_vl = torch.tensor(y_cml_vl).to(device)
+        # y_cml_simulated to torch to device
+        y_cml_simulated = torch.tensor(y_cml_simulated).to(device)
 
         # Compute torch loss
         pred = output.data.argmax(1, keepdim=True)
@@ -77,11 +77,11 @@ def evaluate(torch_model, cml_model):
         top5_torch.append(prec5.item())
 
         # Compute cml loss
-        pred = y_cml_vl.data.argmax(1, keepdim=True)
+        pred = y_cml_simulated.data.argmax(1, keepdim=True)
         correct = pred.eq(target.data.view_as(pred)).sum()
         prec1 = 100.0 * correct.float() / input.size(0)
 
-        _, prec5 = accuracy(y_cml_vl, target, topk=(1, 5))
+        _, prec5 = accuracy(y_cml_simulated, target, topk=(1, 5))
 
         top1_cml.append(prec1.item())
         top5_cml.append(prec5.item())
@@ -115,7 +115,7 @@ def main(rounding_threshold_bits_list):
     # Eval mode
     model.eval()
 
-    # Compile with CML using the simulation mode (VL)
+    # Compile with CML using the FHE simulation mode
     cfg = Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod

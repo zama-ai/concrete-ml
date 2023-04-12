@@ -2,7 +2,7 @@
 
 Generic tests test:
   - model (with n_bits)
-  - virtual_lib or not
+  - FHE simulation or not
   - fit
   - double fit
   - compile
@@ -433,14 +433,14 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
             else:
                 y_pred_fhe += list(y_proba)
 
-        # Compare with VL
-        y_pred_expected_in_vl = model.predict(x, fhe="simulate")
-        if numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_vl).all():
+        # Compare with the FHE simulation mode
+        y_pred_expected_in_simulation = model.predict(x, fhe="simulate")
+        if numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_simulation).all():
             break
 
-    assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_vl).all(), (
+    assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_simulation).all(), (
         "computations are not the same between individual functions (in FHE) "
-        "and predict function (in VL)"
+        "and predict function (in FHE simulation mode)"
     )
 
 
@@ -1120,7 +1120,7 @@ def test_pipeline(
 @pytest.mark.parametrize(
     "simulate",
     [
-        pytest.param(False, id="no_virtual_lib"),
+        pytest.param(False, id="fhe"),
         pytest.param(True, id="simulate"),
     ],
 )

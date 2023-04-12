@@ -22,14 +22,14 @@ A single PBS operation has `p_error` chances of being incorrect.
 
 It's highly recommended to adjust the `p_error` as it is linked to the data-set.
 
-The inference is performed via the FHE simulation mode previously known as Virtual Library (VL)
+The inference is performed via the FHE simulation mode.
 
 The goal is to look for the largest `p_error_i`, a float ∈ ]0,0.9[, which gives a model_i that has
 `accuracy_i`, such that: | accuracy_i - accuracy_0| <= Threshold, where: Threshold ∈ R, given
-by the user and `accuracy_0` refers to original model_0 with `p_error_0 = 0.0`.
+by the user and `accuracy_0` refers to original model_0 with `p_error_0 ≈ 0.0`.
 
 `p_error` is bounded between 0 and 0.9
-`p_error ~ 0.0`, refers to the original model in clear, that gives an accuracy that we note
+`p_error ≈ 0.0`, refers to the original model in clear, that gives an accuracy that we note
 as `accuracy_0`.
 
 We assume that the condition is satisfied when we have a match
@@ -313,14 +313,14 @@ class BinarySearch:
         Considering:
         -  a given threshold ∈ R
         - `p_error = i`, with i ∈ ]0,1[ ∩ R, which gives a model_i that has `accuracy_i`
-        - `accuracy_0` refers to original model_0 with `p_error ~ 0.0`
+        - `accuracy_0` refers to original model_0 with `p_error ≈ 0.0`
 
         | accuracy_i - accuracy_0| <= Threshold and p_error_i > p_error_0
 
         Args:
-            reference_output (numpy.ndarray): The inference of a original model with p_error ~ 0
+            reference_output (numpy.ndarray): The inference of a original model with p_error ≈ 0
             estimated_output (numpy.ndarray): The inference of a model with p_error in ]0,1[
-            reference_score (float): The score computed by the original model with p_error ~ 0
+            reference_score (float): The score computed by the original model with p_error ≈ 0
             estimated_score (float): The score computed by the original model with p_error in ]0,1[
 
         Returns:
@@ -393,7 +393,7 @@ class BinarySearch:
         binary search approach. Where the goal to look for the largest `p_error_i`, a float ∈ ]0,1[,
         which gives a model_i that has `accuracy_i`, such that
         | accuracy_i - accuracy_0| <= max_metric_loss, where max_metric_loss ∈ R and `accuracy_0`
-        refers to original model_0 with `p_error ~ 0.0`.
+        refers to original model_0 with `p_error ≈ 0.0`.
 
         We assume that the condition is satisfied when we have a match. A match is defined as a
         uni-variate function, specified through `strategy` argument.
@@ -428,7 +428,7 @@ class BinarySearch:
         self.history = []
 
         # Reference predictions:
-        # Compile the model in FHE simulation, then compute the score with a model of `p_error ~ 0`
+        # Compile the model in FHE simulation, then compute the score with a model of `p_error ≈ 0`
         reference_output, reference_score = compile_and_simulated_fhe_inference(
             estimator=self.estimator,
             calibration_data=x,

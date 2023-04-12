@@ -8,7 +8,7 @@ Please take note of the following changes when upgrading to version 1.0.0:
 
 - `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe="disable|simulate|execute"`. The `disable` option runs the model in Python, while `simulate` performs a FHE simulation, and `execute` provides actual FHE execution.
 
-- `encrypt_run_decrypt` function can now __only__ be executed in FHE. For Virtual Library simulations, please use the `simulate` function instead.
+- `encrypt_run_decrypt` function can now __only__ be executed in FHE. For FHE simulations, please use the `simulate` function instead.
 
 - In some models, the `forward_fhe` function has been renamed to `fhe_circuit` for consistency across all models.
 

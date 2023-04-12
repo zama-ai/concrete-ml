@@ -70,7 +70,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHe simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
@@ -114,7 +114,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHe simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
@@ -157,7 +157,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. Not simulated  by the VL, i.e., taken as 0
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHe simulation `global_p_error` is set to 0
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated
 - <b>`verbose`</b> (bool):  whether to show compilation information
 

@@ -420,7 +420,7 @@ class BaseEstimator:
                 error to a default value.
             global_p_error (Optional[float]): Probability of error of the full circuit. A
                 global_p_error value cannot be given if a p_error value is already set. This feature
-                is not supported during Virtual Library simulation, meaning the probability is
+                is not supported during the FHE simulation mode, meaning the probability is
                 currently set to 0. Default to None, which sets this error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
