@@ -37,7 +37,7 @@ While pruning weights can reduce the prediction performance of the neural networ
 
 ## Pruning in practice
 
-In the formula above, in the worst case, the maximum number of the input and weights that can make the result exceed $n$ bits is given by:
+In the formula above, in the worst case, the maximum number of the input and weights that can make the result exceed $$n$$ bits is given by:
 
 $$\Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{weights}}} - 1)(2^{n_{\mathsf{inputs}}} - 1)} \right)$$
 

@@ -157,7 +157,7 @@ Then, the rounding operation can be computed as:
 
 $$ \mathrm{round\_to\_t\_bits}(x, t) = \left\lfloor  \frac{x}{2^t} \right\rceil \cdot 2^t $$
 
-where $x$ is the input number, and $\lfloor \cdot \rceil$ denotes the operation that rounds to the nearest integer.
+where $$x$$ is the input number, and $$\lfloor \cdot \rceil$$ denotes the operation that rounds to the nearest integer.
 
 In Concrete-ML, this feature is currently implemented for custom neural networks through the compile functions, including
 
