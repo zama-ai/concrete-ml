@@ -1003,7 +1003,7 @@ jobs:
           CN_VERSION_SPEC_FOR_RC="$(poetry run python \
           ./script/make_utils/pyproject_version_parser_helper.py \
           --pyproject-toml-file pyproject.toml \
-          --get-pip-install-spec-for-dependency concrete-numpy)"
+          --get-pip-install-spec-for-dependency concrete-python)"
 
           SECRETS_FILE="$(mktemp)"
           if [[ "${IS_PRERELEASE}" == "true" ]]; then
