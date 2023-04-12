@@ -8,7 +8,10 @@
 - [`concrete.ml.common.check_inputs`](./concrete.ml.common.check_inputs.md#module-concretemlcommoncheck_inputs): Check and conversion tools.
 - [`concrete.ml.common.debugging`](./concrete.ml.common.debugging.md#module-concretemlcommondebugging): Module for debugging.
 - [`concrete.ml.common.debugging.custom_assert`](./concrete.ml.common.debugging.custom_assert.md#module-concretemlcommondebuggingcustom_assert): Provide some variants of assert.
-- [`concrete.ml.common.serialization`](./concrete.ml.common.serialization.md#module-concretemlcommonserialization): Serialization.
+- [`concrete.ml.common.serialization`](./concrete.ml.common.serialization.md#module-concretemlcommonserialization)
+- [`concrete.ml.common.serialization.dumpers`](./concrete.ml.common.serialization.dumpers.md#module-concretemlcommonserializationdumpers): Dump functions for serialization.
+- [`concrete.ml.common.serialization.encoder`](./concrete.ml.common.serialization.encoder.md#module-concretemlcommonserializationencoder): Custom encoder for serialization.
+- [`concrete.ml.common.serialization.loaders`](./concrete.ml.common.serialization.loaders.md#module-concretemlcommonserializationloaders): Load functions for serialization.
 - [`concrete.ml.common.utils`](./concrete.ml.common.utils.md#module-concretemlcommonutils): Utils that can be re-used by other pieces of code in the module.
 - [`concrete.ml.deployment`](./concrete.ml.deployment.md#module-concretemldeployment): Module for deployment of the FHE model.
 - [`concrete.ml.deployment.deploy_to_aws`](./concrete.ml.deployment.deploy_to_aws.md#module-concretemldeploymentdeploy_to_aws): Methods to deploy a client/server to AWS.
@@ -34,10 +37,11 @@
 - [`concrete.ml.search_parameters`](./concrete.ml.search_parameters.md#module-concretemlsearch_parameters): Modules for `p_error` search.
 - [`concrete.ml.search_parameters.p_error_search`](./concrete.ml.search_parameters.p_error_search.md#module-concretemlsearch_parametersp_error_search): p_error binary search for classification and regression tasks.
 - [`concrete.ml.sklearn`](./concrete.ml.sklearn.md#module-concretemlsklearn): Import sklearn models.
-- [`concrete.ml.sklearn.base`](./concrete.ml.sklearn.base.md#module-concretemlsklearnbase): Module that contains base classes for our libraries estimators.
+- [`concrete.ml.sklearn.base`](./concrete.ml.sklearn.base.md#module-concretemlsklearnbase): Base classes for all estimators.
 - [`concrete.ml.sklearn.glm`](./concrete.ml.sklearn.glm.md#module-concretemlsklearnglm): Implement sklearn's Generalized Linear Models (GLM).
 - [`concrete.ml.sklearn.linear_model`](./concrete.ml.sklearn.linear_model.md#module-concretemlsklearnlinear_model): Implement sklearn linear model.
-- [`concrete.ml.sklearn.qnn`](./concrete.ml.sklearn.qnn.md#module-concretemlsklearnqnn): Scikit-learn interface for concrete quantized neural networks.
+- [`concrete.ml.sklearn.qnn`](./concrete.ml.sklearn.qnn.md#module-concretemlsklearnqnn): Scikit-learn interface for fully-connected quantized neural networks.
+- [`concrete.ml.sklearn.qnn_module`](./concrete.ml.sklearn.qnn_module.md#module-concretemlsklearnqnn_module): Sparse Quantized Neural Network torch module.
 - [`concrete.ml.sklearn.rf`](./concrete.ml.sklearn.rf.md#module-concretemlsklearnrf): Implement RandomForest models.
 - [`concrete.ml.sklearn.svm`](./concrete.ml.sklearn.svm.md#module-concretemlsklearnsvm): Implement Support Vector Machine.
 - [`concrete.ml.sklearn.tree`](./concrete.ml.sklearn.tree.md#module-concretemlsklearntree): Implement DecisionTree models.
@@ -50,7 +54,7 @@
 
 ## Classes
 
-- [`serialization.CustomEncoder`](./concrete.ml.common.serialization.md#class-customencoder): CustomEncoder: custom json encoder to handle non-native types.
+- [`encoder.CustomEncoder`](./concrete.ml.common.serialization.encoder.md#class-customencoder): CustomEncoder: custom json encoder to handle non-native types.
 - [`utils.FheMode`](./concrete.ml.common.utils.md#class-fhemode): Enum representing the execution mode.
 - [`deploy_to_aws.AWSInstance`](./concrete.ml.deployment.deploy_to_aws.md#class-awsinstance): AWSInstance.
 - [`fhe_client_server.FHEModelClient`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelclient): Client API to encrypt and decrypt FHE data.
@@ -176,11 +180,9 @@
 - [`linear_model.LinearRegression`](./concrete.ml.sklearn.linear_model.md#class-linearregression): A linear regression model with FHE.
 - [`linear_model.LogisticRegression`](./concrete.ml.sklearn.linear_model.md#class-logisticregression): A logistic regression model with FHE.
 - [`linear_model.Ridge`](./concrete.ml.sklearn.linear_model.md#class-ridge): A Ridge regression model with FHE.
-- [`qnn.FixedTypeSkorchNeuralNet`](./concrete.ml.sklearn.qnn.md#class-fixedtypeskorchneuralnet): A mixin with a helpful modification to a skorch estimator that fixes the module type.
-- [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): Scikit-learn interface for quantized FHE compatible neural networks.
-- [`qnn.NeuralNetRegressor`](./concrete.ml.sklearn.qnn.md#class-neuralnetregressor): Scikit-learn interface for quantized FHE compatible neural networks.
-- [`qnn.QuantizedSkorchEstimatorMixin`](./concrete.ml.sklearn.qnn.md#class-quantizedskorchestimatormixin): Mixin class that adds quantization features to Skorch NN estimators.
-- [`qnn.SparseQuantNeuralNetImpl`](./concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl): Sparse Quantized Neural Network classifier.
+- [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): A Fully-Connected Neural Network classifier with FHE.
+- [`qnn.NeuralNetRegressor`](./concrete.ml.sklearn.qnn.md#class-neuralnetregressor): A Fully-Connected Neural Network regressor with FHE.
+- [`qnn_module.SparseQuantNeuralNetwork`](./concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork): Sparse Quantized Neural Network.
 - [`rf.RandomForestClassifier`](./concrete.ml.sklearn.rf.md#class-randomforestclassifier): Implements the RandomForest classifier.
 - [`rf.RandomForestRegressor`](./concrete.ml.sklearn.rf.md#class-randomforestregressor): Implements the RandomForest regressor.
 - [`svm.LinearSVC`](./concrete.ml.sklearn.svm.md#class-linearsvc): A Classification Support Vector Machine (SVM).
@@ -199,15 +201,15 @@
 - [`custom_assert.assert_false`](./concrete.ml.common.debugging.custom_assert.md#function-assert_false): Provide a custom assert to check that the condition is False.
 - [`custom_assert.assert_not_reached`](./concrete.ml.common.debugging.custom_assert.md#function-assert_not_reached): Provide a custom assert to check that a piece of code is never reached.
 - [`custom_assert.assert_true`](./concrete.ml.common.debugging.custom_assert.md#function-assert_true): Provide a custom assert to check that the condition is True.
-- [`serialization.dump`](./concrete.ml.common.serialization.md#function-dump): Dump any CML object that has a dump method.
-- [`serialization.dumps`](./concrete.ml.common.serialization.md#function-dumps): Dump as string any object.
-- [`serialization.dumps_onnx`](./concrete.ml.common.serialization.md#function-dumps_onnx): Dump onnx model as string.
-- [`serialization.dumps_random_state`](./concrete.ml.common.serialization.md#function-dumps_random_state): Dump random state to string.
-- [`serialization.load`](./concrete.ml.common.serialization.md#function-load): Load any CML object that has a dump method.
-- [`serialization.load_dict`](./concrete.ml.common.serialization.md#function-load_dict): Load any CML object that has a dump method.
-- [`serialization.loads`](./concrete.ml.common.serialization.md#function-loads): Load any CML object that has a dump method.
-- [`serialization.loads_onnx`](./concrete.ml.common.serialization.md#function-loads_onnx): Load serialized onnx model.
-- [`serialization.loads_random_state`](./concrete.ml.common.serialization.md#function-loads_random_state): Load random state from string.
+- [`dumpers.dump`](./concrete.ml.common.serialization.dumpers.md#function-dump): Dump any CML object that has a dump method.
+- [`dumpers.dumps`](./concrete.ml.common.serialization.dumpers.md#function-dumps): Dump as string any object.
+- [`dumpers.dumps_random_state`](./concrete.ml.common.serialization.dumpers.md#function-dumps_random_state): Dump random state to string.
+- [`encoder.dumps_onnx`](./concrete.ml.common.serialization.encoder.md#function-dumps_onnx): Dump onnx model as string.
+- [`loaders.load`](./concrete.ml.common.serialization.loaders.md#function-load): Load any CML object that has a dump method.
+- [`loaders.load_dict`](./concrete.ml.common.serialization.loaders.md#function-load_dict): Load any CML object that has a dump method.
+- [`loaders.loads`](./concrete.ml.common.serialization.loaders.md#function-loads): Load any CML object that has a dump method.
+- [`loaders.loads_onnx`](./concrete.ml.common.serialization.loaders.md#function-loads_onnx): Load serialized onnx model.
+- [`loaders.loads_random_state`](./concrete.ml.common.serialization.loaders.md#function-loads_random_state): Load random state from string.
 - [`utils.all_values_are_floats`](./concrete.ml.common.utils.md#function-all_values_are_floats): Indicate that all unpacked values are of a supported float dtype.
 - [`utils.all_values_are_integers`](./concrete.ml.common.utils.md#function-all_values_are_integers): Indicate that all unpacked values are of a supported integer dtype.
 - [`utils.check_dtype_and_cast`](./concrete.ml.common.utils.md#function-check_dtype_and_cast): Convert any allowed type into an array and cast it if required.
@@ -224,7 +226,7 @@
 - [`utils.is_pandas_series`](./concrete.ml.common.utils.md#function-is_pandas_series): Indicate if the input container is a Pandas Series.
 - [`utils.is_pandas_type`](./concrete.ml.common.utils.md#function-is_pandas_type): Indicate if the input container is a Pandas DataFrame or Series.
 - [`utils.is_regressor_or_partial_regressor`](./concrete.ml.common.utils.md#function-is_regressor_or_partial_regressor): Indicate if the model class represents a regressor.
-- [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete-Numpy and the compiler.
+- [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
 - [`utils.to_tuple`](./concrete.ml.common.utils.md#function-to_tuple): Make the input a tuple if it is not already the case.
 - [`deploy_to_aws.create_instance`](./concrete.ml.deployment.deploy_to_aws.md#function-create_instance): Create a EC2 instance.

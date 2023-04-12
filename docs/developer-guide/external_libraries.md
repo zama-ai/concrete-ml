@@ -50,7 +50,7 @@ This wrapper implements Torch training boilerplate code, lessening the work requ
 
 skorch allows the user to easily create a classifier or regressor around a neural network (NN), implemented in Torch as a `nn.Module`, which is used by Concrete ML to provide a fully-connected, multi-layer NN with a configurable number of layers and optional pruning (see [pruning](../advanced-topics/pruning.md) and the [neural network documentation](../built-in-models/neural-networks.md) for more information).
 
-Under the hood, Concrete ML uses a skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetImpl`. More information can be found [in the API guide](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl).
+Under the hood, Concrete ML uses a skorch wrapper around a single PyTorch module, `SparseQuantNeuralNetwork`. More information can be found [in the API guide](../developer-guide/api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork).
 
 ```
 class SparseQuantNeuralNetImpl(nn.Module):
@@ -93,4 +93,4 @@ For examples of such a _"mixed integer"_ network design, please see the Quantiza
 
 or go to the [MNIST use-case example](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/mnist/mnist_in_fhe.ipynb).
 
-You can also refer to the [`SparseQuantNeuralNetImpl`](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-sparsequantneuralnetimpl) class, which is the basis of the built-in `NeuralNetworkClassifier`.
+You can also refer to the [`SparseQuantNeuralNetImpl`](../developer-guide/api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork) class, which is the basis of the built-in `NeuralNetworkClassifier`.

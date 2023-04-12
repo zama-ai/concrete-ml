@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.search_parameters.p_error_search`
 
@@ -27,9 +27,9 @@ It's highly recommended to adjust the `p_error` as it is linked to the data-set.
 
 The inference is performed via the FHE simulation mode.
 
-The goal is to look for the largest `p_error_i`, a float ∈ \]0,1\[, which gives a model_i that has `accuracy_i`, such that: | accuracy_i - accuracy_0| \<= Threshold, where: Threshold ∈ R, given by the user and `accuracy_0` refers to original model_0 with `p_error_0 = 0.0`.
+The goal is to look for the largest `p_error_i`, a float ∈ \]0,0.9\[, which gives a model_i that has `accuracy_i`, such that: | accuracy_i - accuracy_0| \<= Threshold, where: Threshold ∈ R, given by the user and `accuracy_0` refers to original model_0 with `p_error_0 ≈ 0.0`.
 
-`p_error` is bounded between 0 and 1 `p_error ~ 0.0`, refers to the original model in clear, that gives an accuracy that we note as `accuracy_0` `p_error = 1.0`, refers to the worst case scenario, where the model perfoms very badly By default, `lower = 0.0` and `uppder = 1.0`.
+`p_error` is bounded between 0 and 0.9 `p_error ≈ 0.0`, refers to the original model in clear, that gives an accuracy that we note as `accuracy_0`.
 
 We assume that the condition is satisfied when we have a match A match is defined as a uni-variate function, through `strategy` argument, given by the user, it can be
 
@@ -43,7 +43,7 @@ If we don't reach the convergence, a user warning is raised.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_and_simulated_fhe_inference`
 
@@ -91,13 +91,13 @@ Supported models are:
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L160"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BinarySearch`
 
 Class for `p_error` hyper-parameter search for classification and regression tasks.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -109,7 +109,7 @@ __init__(
     n_bits: int = 4,
     is_qat: bool = True,
     lower: float = 0.0,
-    upper: float = 1.0,
+    upper: float = 0.9,
     max_iter: int = 20,
     n_simulation: int = 5,
     strategy: Any = <built-in function all>,
@@ -132,7 +132,7 @@ __init__(
 - <b>`n_bits`</b> (int):  Quantization bits, for PTQ models. Default is 4.
 - <b>`is_qat`</b> (bool):  Flag that indicates whether the `estimator` has been trained through  QAT (quantization-aware training). Default is True.
 - <b>`lower`</b> (float):  The lower bound of the search space for the `p_error`. Default is 0.0.
-- <b>`upper`</b> (float):  The upper bound of the search space for the `p_error`. Default is 1.0.
+- <b>`upper`</b> (float):  The upper bound of the search space for the `p_error`. Default is 0.9.  Increasing `p_error` beyond this threshold could lead to unstable executions.
 - <b>`max_iter`</b> (int):  The maximum number of iterations to run the binary search  algorithm. Default is 20.
 - <b>`n_simulation`</b> (int):  The number of simulations to validate the results of the FHE  simulation. Default is 5.
 - <b>`strategy`</b> (Any):  A uni-variate function that defines a "match". It can be built-in  functions provided in Python, such as any() or all(), or custom functions, like:
@@ -147,7 +147,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L272"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `eval_match`
 
@@ -174,7 +174,7 @@ Eval the matches.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reset_history`
 
@@ -186,7 +186,7 @@ Clean history.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/search_parameters/p_error_search.py#L390"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -203,7 +203,7 @@ Get an optimal `p_error` using binary search for classification and regression t
 
 PyTorch models and built-in models are supported.
 
-To find an optimal `p_error` that  offers a balance between speed and efficiency, we use a binary search approach. Where the goal to look for the largest `p_error_i`, a float ∈ \]0,1\[, which gives a model_i that has `accuracy_i`, such that | accuracy_i - accuracy_0| \<= max_metric_loss, where max_metric_loss ∈ R and `accuracy_0` refers to original model_0 with `p_error ~ 0.0`.
+To find an optimal `p_error` that  offers a balance between speed and efficiency, we use a binary search approach. Where the goal to look for the largest `p_error_i`, a float ∈ \]0,1\[, which gives a model_i that has `accuracy_i`, such that | accuracy_i - accuracy_0| \<= max_metric_loss, where max_metric_loss ∈ R and `accuracy_0` refers to original model_0 with `p_error ≈ 0.0`.
 
 We assume that the condition is satisfied when we have a match. A match is defined as a uni-variate function, specified through `strategy` argument.
 

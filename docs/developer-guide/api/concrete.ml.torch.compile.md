@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/torch/compile.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.torch.compile`
 
@@ -13,7 +13,7 @@ torch compilation function.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/torch/compile.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_torch_tensor_or_numpy_array_to_numpy_array`
 
@@ -35,7 +35,7 @@ Convert a torch tensor or a numpy array to a numpy array.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/torch/compile.py#L143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -57,7 +57,7 @@ compile_torch_model(
 
 Compile a torch module into a FHE equivalent.
 
-Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Numpy
+Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete
 
 **Args:**
 
@@ -70,7 +70,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHe simulation `global_p_error` is set to 0
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
@@ -79,7 +79,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/torch/compile.py#L216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -101,7 +101,7 @@ compile_onnx_model(
 
 Compile a torch module into a FHE equivalent.
 
-Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Numpy
+Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Python
 
 **Args:**
 
@@ -114,7 +114,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHe simulation `global_p_error` is set to 0
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
 
 **Returns:**
@@ -123,7 +123,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/release/1.0.x/src/concrete/ml/torch/compile.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/torch/compile.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -157,7 +157,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
-- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHe simulation `global_p_error` is set to 0
+- <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated
 - <b>`verbose`</b> (bool):  whether to show compilation information
 

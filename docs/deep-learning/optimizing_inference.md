@@ -12,7 +12,7 @@ It is possible to chose quantization and pruning configurations that reduce the 
 
 ## Structured pruning
 
-While un-structured pruning is used to ensure the accumulator bit-width stays low, [structured pruning](https://pytorch.org/docs/stable/generated/torch.nn.utils.prune.ln_structured.html) can eliminate entire neurons from the network. Many neural networks are over-parametrized (since this enables easier training) and some neurons can be removed. Structured pruning, applied to a trained network as a fine-tuning step, can be applied to built-in neural networks using the [prune](../developer-guide/api/concrete.ml.sklearn.qnn.md#method-prune) helper function as shown in [this example](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb). To apply structured pruning to
+While un-structured pruning is used to ensure the accumulator bit-width stays low, [structured pruning](https://pytorch.org/docs/stable/generated/torch.nn.utils.prune.ln_structured.html) can eliminate entire neurons from the network. Many neural networks are over-parametrized (since this enables easier training) and some neurons can be removed. Structured pruning, applied to a trained network as a fine-tuning step, can be applied to built-in neural networks using the [prune](../developer-guide/api/concrete.ml.sklearn.base.md#method-prune) helper function as shown in [this example](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb). To apply structured pruning to
 custom models, it is recommended to use the [torch-pruning](https://github.com/VainF/Torch-Pruning) package.
 
 ## Rounded activations and quantizers

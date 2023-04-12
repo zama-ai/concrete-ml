@@ -481,11 +481,11 @@ upgrade_py_deps:
 pytest_codeblocks:
 	./script/make_utils/pytest_codeblocks.sh
 
-.PHONY: pytest_codeblocks_pypi_wheel_cml # Test code blocks using the PyPI local wheel of Concrete-ML
+.PHONY: pytest_codeblocks_pypi_wheel_cml # Test code blocks using the PyPI local wheel of Concrete ML
 pytest_codeblocks_pypi_wheel_cml:
 	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CN_VERSION_SPEC_FOR_RC)" --codeblocks
 
-.PHONY: pytest_codeblocks_pip_cml # Test code blocks using PyPI Concrete-ML
+.PHONY: pytest_codeblocks_pip_cml # Test code blocks using PyPI Concrete ML
 pytest_codeblocks_pip_cml:
 	./script/make_utils/pytest_pypi_cml.sh --codeblocks
 
@@ -796,11 +796,11 @@ update_dependabot_prs:
 check_unused_images:
 	./script/make_utils/check_all_images_are_used.sh
 
-.PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete-ML
+.PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml:
 	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CN_VERSION_SPEC_FOR_RC)"
 
-.PHONY: pytest_pip_cml # Run tests using PyPI Concrete-ML
+.PHONY: pytest_pip_cml # Run tests using PyPI Concrete ML
 pytest_pip_cml:
 	./script/make_utils/pytest_pypi_cml.sh
 
