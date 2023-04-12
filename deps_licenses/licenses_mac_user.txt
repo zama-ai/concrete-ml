@@ -8,7 +8,7 @@ certifi, 2022.12.7, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.1.0, MIT License
 click, 8.1.3, BSD License
 coloredlogs, 15.0.1, MIT License
-concrete-python, 1.0.0rc1, BSD-3-Clause
+concrete-python, 1.0.0, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
 fastapi, 0.93.0, MIT License
