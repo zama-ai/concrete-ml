@@ -1,6 +1,6 @@
 # Pandas
 
-Concrete-ML fully supports Pandas, allowing built-in models such as linear and tree-based models to use Pandas dataframes and series just as they would be used with NumPy arrays.
+Concrete ML fully supports Pandas, allowing built-in models such as linear and tree-based models to use Pandas dataframes and series just as they would be used with NumPy arrays.
 
 The table below summarizes current compatibility:
 

@@ -2,13 +2,13 @@
 
 Compilation of a model produces machine code that executes the model on encrypted data. In some cases, notably in the client/server setting, the compilation can be done by the server when loading the model for serving.
 
-As FHE execution is much slower than execution on non-encrypted data, Concrete-ML has a simulation mode which can help to quickly evaluate the impact of FHE execution on models.
+As FHE execution is much slower than execution on non-encrypted data, Concrete ML has a simulation mode which can help to quickly evaluate the impact of FHE execution on models.
 
 ## Compilation to FHE
 
-Concrete-ML implements model inference using Concrete-Python as a backend. In order to execute in FHE, a numerical program written in Concrete-Python needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete-ML hides away most of the complexity of this step, completing the entire compilation process itself.
+Concrete ML implements model inference using Concrete-Python as a backend. In order to execute in FHE, a numerical program written in Concrete-Python needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
 
-From the perspective of the Concrete-ML user, the compilation process performed by Concrete-Python can be broken up into 3 steps:
+From the perspective of the Concrete ML user, the compilation process performed by Concrete-Python can be broken up into 3 steps:
 
 1. tracing the NumPy program and creating a Concrete-Python op-graph
 1. checking the op-graph for FHE compatability
@@ -41,7 +41,7 @@ The result of this single step of the compilation pipeline allows the:
 - execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but it is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate model hyper-parameters
 - verification of the maximum bit-width of the op-graph and the intermediary bit-widths of model layers, to evaluate their impact on FHE execution latency
 
-Simulation is enabled for all Concrete-ML models once they are compiled as shown above. Obtaining the simulated predictions of the models is done by setting the `fhe="simulate"` argument to prediction methods:
+Simulation is enabled for all Concrete ML models once they are compiled as shown above. Obtaining the simulated predictions of the models is done by setting the `fhe="simulate"` argument to prediction methods:
 
 <!--pytest-codeblocks:skip-->	
 
@@ -59,13 +59,13 @@ Moreover, the maximum accumulator bit-width is determined as follows:
 
 ## A simple Concrete-Python example
 
-While Concrete-ML hides away all the Concrete-Numpy code that performs model inference, it can be useful to understand how Concrete-Numpy code works. Here is a toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
+While Concrete ML hides away all the Concrete-Numpy code that performs model inference, it can be useful to understand how Concrete-Numpy code works. Here is a toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
 
 ```python
 import numpy
 from concrete.fhe import compiler
 
-# Assume Quantization has been applied and we are left with integers only. This is essentially the work of Concrete-ML
+# Assume Quantization has been applied and we are left with integers only. This is essentially the work of Concrete ML
 
 # Some parameters (weight and bias) for our model taking a single feature
 w = [2]

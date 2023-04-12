@@ -16,7 +16,7 @@ ______________________________________________________________________
 
 ## <kbd>class</kbd> `BaseEstimator`
 
-Base class for all estimators in Concrete-ML.
+Base class for all estimators in Concrete ML.
 
 This class does not inherit from sklearn.base.BaseEstimator as it creates some conflicts with Skorch in QuantizedTorchEstimatorMixin's subclasses (more specifically, the `get_params` method is not properly inherited).
 
@@ -255,7 +255,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -266,7 +266,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -280,7 +280,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -392,7 +392,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -426,7 +426,7 @@ ______________________________________________________________________
 
 ## <kbd>class</kbd> `BaseClassifier`
 
-Base class for linear and tree-based classifiers in Concrete-ML.
+Base class for linear and tree-based classifiers in Concrete ML.
 
 This class inherits from BaseEstimator and modifies some of its methods in order to align them with classifier behaviors. This notably include applying a sigmoid/softmax post-processing to the predicted values as well as handling a mapping of classes in case they are not ordered.
 
@@ -643,7 +643,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -654,7 +654,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -668,7 +668,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -779,7 +779,7 @@ Predict class probabilities.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -1041,7 +1041,7 @@ Values of dtype float64 are not supported and will be casted to float32.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and equivalent Skorch  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and equivalent Skorch  fitted estimators.
 
 ______________________________________________________________________
 
@@ -1055,7 +1055,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -1170,7 +1170,7 @@ Values of dtype float64 are not supported and will be casted to float32.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -1379,7 +1379,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -1390,7 +1390,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -1404,7 +1404,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -1700,7 +1700,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -1711,7 +1711,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -1725,7 +1725,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -2017,7 +2017,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -2028,7 +2028,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -2042,7 +2042,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -2153,7 +2153,7 @@ Predict class probabilities.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -2388,7 +2388,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -2399,7 +2399,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -2413,7 +2413,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -2525,7 +2525,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -2760,7 +2760,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -2771,7 +2771,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -2785,7 +2785,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 
@@ -2897,7 +2897,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -3061,7 +3061,7 @@ Predict confidence scores.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete-ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -3150,7 +3150,7 @@ fit_benchmark(
 ) → Tuple[BaseEstimator, BaseEstimator]
 ```
 
-Fit both the Concrete-ML and its equivalent float estimators.
+Fit both the Concrete ML and its equivalent float estimators.
 
 **Args:**
 
@@ -3161,7 +3161,7 @@ Fit both the Concrete-ML and its equivalent float estimators.
 
 **Returns:**
 
-- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete-ML and float equivalent  fitted estimators.
+- <b>`Tuple[BaseEstimator, sklearn.base.BaseEstimator]`</b>:  The Concrete ML and float equivalent  fitted estimators.
 
 ______________________________________________________________________
 
@@ -3175,7 +3175,7 @@ get_sklearn_params(deep: 'bool' = True) → dict
 
 Get parameters for this estimator.
 
-This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
+This method is used to instantiate a Scikit-Learn model using the Concrete ML model's parameters. It does not override Scikit-Learn's existing `get_params` method in order to not break its implementation of `set_params`.
 
 **Args:**
 

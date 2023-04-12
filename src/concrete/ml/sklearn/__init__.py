@@ -12,10 +12,10 @@ from .xgb import XGBClassifier, XGBRegressor
 
 
 def get_sklearn_models():
-    """Return the list of available models in Concrete-ML.
+    """Return the list of available models in Concrete ML.
 
     Returns:
-        the lists of models in Concrete-ML
+        the lists of models in Concrete ML
     """
 
     # Import anything in sklearn, just to force the import, to populate _ALL_SKLEARN_MODELS list
@@ -68,7 +68,7 @@ def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name
 def get_sklearn_linear_models(
     classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
 ):
-    """Return the list of available linear models in Concrete-ML.
+    """Return the list of available linear models in Concrete ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
@@ -77,7 +77,7 @@ def get_sklearn_linear_models(
             class name
 
     Returns:
-        the lists of linear models in Concrete-ML
+        the lists of linear models in Concrete ML
     """
     prelist = get_sklearn_models()["linear"]
     return _filter_models(prelist, classifier, regressor, str_in_class_name)
@@ -86,7 +86,7 @@ def get_sklearn_linear_models(
 def get_sklearn_tree_models(
     classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
 ):
-    """Return the list of available tree models in Concrete-ML.
+    """Return the list of available tree models in Concrete ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
@@ -95,7 +95,7 @@ def get_sklearn_tree_models(
             class name
 
     Returns:
-        the lists of tree models in Concrete-ML
+        the lists of tree models in Concrete ML
     """
     prelist = get_sklearn_models()["tree"]
     return _filter_models(prelist, classifier, regressor, str_in_class_name)
@@ -104,7 +104,7 @@ def get_sklearn_tree_models(
 def get_sklearn_neural_net_models(
     classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
 ):
-    """Return the list of available neural net models in Concrete-ML.
+    """Return the list of available neural net models in Concrete ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
@@ -113,7 +113,7 @@ def get_sklearn_neural_net_models(
             class name
 
     Returns:
-        the lists of neural net models in Concrete-ML
+        the lists of neural net models in Concrete ML
     """
     prelist = get_sklearn_models()["neural_net"]
     return _filter_models(prelist, classifier, regressor, str_in_class_name)

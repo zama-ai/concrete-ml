@@ -110,7 +110,7 @@ _regressors_and_datasets = [
     for model in _regressor_models
 ]
 
-# All scikit-learn models in Concrete-ML
+# All scikit-learn models in Concrete ML
 sklearn_models_and_datasets = _classifiers_and_datasets + _regressors_and_datasets
 
 
@@ -142,7 +142,7 @@ def get_random_extract_of_sklearn_models_and_datasets():
 
 
 def instantiate_model_generic(model_class, **parameters):
-    """Instantiate any Concrete-ML model type.
+    """Instantiate any Concrete ML model type.
 
     Args:
         model_class (class): The type of the model to instantiate

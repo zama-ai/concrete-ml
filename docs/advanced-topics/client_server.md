@@ -1,6 +1,6 @@
 # Production Deployment
 
-Concrete-ML provides functionality to deploy FHE machine learning models in a client/server setting. The deployment workflow and model serving pattern is as follows:
+Concrete ML provides functionality to deploy FHE machine learning models in a client/server setting. The deployment workflow and model serving pattern is as follows:
 
 ## Deployment
 
@@ -27,7 +27,7 @@ The encrypted result is then returned by the server to the client, which decrypt
 
 ![](../figures/concretemlgraph2.jpg)
 
-The server-side implementation of a Concrete-ML model follows the diagram above. The public evaluation keys sent by clients are stored. They are then retrieved for the client that is querying the service and used to evaluate the machine learning model stored in `server.zip`. Finally, the server sends the encrypted result of the computation back to the client.
+The server-side implementation of a Concrete ML model follows the diagram above. The public evaluation keys sent by clients are stored. They are then retrieved for the client that is querying the service and used to evaluate the machine learning model stored in `server.zip`. Finally, the server sends the encrypted result of the computation back to the client.
 
 ## Example notebook
 
@@ -44,7 +44,7 @@ Once this first setup is done you can simply launch `python src/concrete/ml/depl
 
 ### Docker
 
-Running Docker with the latest version of Concrete-ML will require you to build a Docker image as we do for releases.
+Running Docker with the latest version of Concrete ML will require you to build a Docker image as we do for releases.
 To do so run the following command: `poetry build && mkdir pkg && cp dist/* pkg/ && make release_docker`. You will need to have `make`, `poetry` and `docker` installed on your system.
 To test locally there is a dedicated script: `python src/concrete/ml/deployment/deploy_to_docker.py --path-to-model <path_to_your_serialized_model>` from the root of the repository to create an Docker that runs a FastAPI server serving the model.
 

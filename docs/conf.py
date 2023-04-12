@@ -19,10 +19,10 @@ import os
 
 # -- Project information -----------------------------------------------------
 
-project = "Concrete-ML"
+project = "Concrete ML"
 copyright = "2022-2023, Zama"
 author = "Zama"
-description = "Zama Concrete-ML"
+description = "Zama Concrete ML"
 root_url = os.environ.get("DOC_ROOT_URL", "/concrete-ml")
 root_url = root_url if root_url.endswith("/") else root_url + "/"
 

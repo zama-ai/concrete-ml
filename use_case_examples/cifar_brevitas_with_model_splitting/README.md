@@ -26,7 +26,7 @@ The method is generic and can be applied to any neural network model, but the co
 
 ## Running this example
 
-To run this notebook properly you will need the usual Concrete-ML dependencies plus the extra dependencies from `requirements.txt` that you can install using `pip install -r requirements.txt` .
+To run this notebook properly you will need the usual Concrete ML dependencies plus the extra dependencies from `requirements.txt` that you can install using `pip install -r requirements.txt` .
 
 We also provide a script to run the model in FHE.
 

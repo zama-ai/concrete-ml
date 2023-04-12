@@ -1,6 +1,6 @@
 # Prediction with FHE
 
-Concrete-ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE and decryption, in a single step. However, there is the option to execute the individual steps separately, for more fine-grained control. The APIs to accomplish this are different for:
+Concrete ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE and decryption, in a single step. However, there is the option to execute the individual steps separately, for more fine-grained control. The APIs to accomplish this are different for:
 
 - [Built-in models](#built-in-models)
 - [Custom models](#custom-models)
@@ -8,7 +8,7 @@ Concrete-ML has APIs that make it easy, during model development and testing, to
 ## Built-in models
 
 The following example shows how to create a synthetic data-set and how to use it
-to train a LogisticRegression model from Concrete-ML.
+to train a LogisticRegression model from Concrete ML.
 Next, the dedicated functions for encryption, inference and decryption are discussed.
 
 ```python
@@ -34,8 +34,8 @@ y_pred_clear = model.predict(x_test)
 fhe_circuit = model.compile(x_train)
 ```
 
-All Concrete-ML built-in models have a monolithic `predict` method that performs the encryption, FHE execution and decryption with a single function call.
-Thus, Concrete-ML models follow the same API as Scikit-Learn models, transparently performing the steps related to encryption to accentuate convenience.
+All Concrete ML built-in models have a monolithic `predict` method that performs the encryption, FHE execution and decryption with a single function call.
+Thus, Concrete ML models follow the same API as Scikit-Learn models, transparently performing the steps related to encryption to accentuate convenience.
 
 <!--pytest-codeblocks:cont-->
 

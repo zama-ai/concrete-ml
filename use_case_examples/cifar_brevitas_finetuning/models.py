@@ -14,7 +14,7 @@ from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
 # the input data or to encapsulate a Pytorch layer inside the Brevitas model.
 # C: Convolutional layer.
 # P: Pooling layer, we replaced the original `MaxPool2d` in VGG-11 by a `AvgPool2d` layer.
-# Because in the current version of Concrete-ML `MaxPool2d` isn't available yet.
+# Because in the current version of Concrete ML `MaxPool2d` isn't available yet.
 # R: ReLU activation.
 FEATURES_MAPS = [
     ("I",),
@@ -85,7 +85,7 @@ class Fp32VGG11(nn.Module):
         x = self.features(x)
         x = self.avgpool(x)
         # Replace `x.view(x.shape[0], -1)` by `torch.flatten(x, 1)` which is equivalent.
-        # But is compatible with Concrete-ML.
+        # But is compatible with Concrete ML.
         x = nn.Flatten()(x)
         x = self.final_layer(x)
         return x
@@ -175,7 +175,7 @@ class QuantVGG11(nn.Module):
         # layers to ensure that all intermediate values of the network are properly quantized.
         x = torch.flatten(x, 1)
         # Replace `x.view(x.shape[0], -1)` by `torch.flatten(x, 1)` which is an equivalent
-        # But is compatible with Concrete-ML.
+        # But is compatible with Concrete ML.
         x = self.identity2(x)
         x = self.final_layer(x)
         return x.value

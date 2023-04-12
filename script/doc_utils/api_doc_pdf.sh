@@ -44,7 +44,7 @@ else
   ENGINE="--latex-engine"
 fi
 
-pandoc --metadata=title:"Concrete-ML API Documentation"                 \
+pandoc --metadata=title:"Concrete ML API Documentation"                 \
        --toc --toc-depth=4 --from=markdown+abbreviations      \
        $ENGINE=xelatex                                        \
        --output=$OUTPUT_DIR_PDF/pdoc.pdf tmp.pdoc.output.txt

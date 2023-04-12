@@ -158,7 +158,7 @@ def manage_parameters_for_pbs_errors(
     """Return (p_error, global_p_error) that we want to give to Concrete-Python and the compiler.
 
     The returned (p_error, global_p_error) depends on user's parameters and the way we want to
-    manage defaults in Concrete-ML, which may be different from the way defaults are managed in
+    manage defaults in Concrete ML, which may be different from the way defaults are managed in
     Concrete-Python
 
     Principle:

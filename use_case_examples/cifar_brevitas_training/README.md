@@ -4,10 +4,10 @@
 
 In this directory we provide Python code for training, from scratch, a VGG-like neural network using Brevitas on CIFAR-10. We also give a script to run the neural network in the Fully Homomorphic Encryption (FHE) settings.
 
-Original files can be found in the [Brevitas](https://github.com/Xilinx/brevitas/) repository. The model in the `models/` folder has a few modifications from the original to make it compatible with Concrete-ML:
+Original files can be found in the [Brevitas](https://github.com/Xilinx/brevitas/) repository. The model in the `models/` folder has a few modifications from the original to make it compatible with Concrete ML:
 
 - `MaxPool` layers have been replaced by `AvgPool` layers. This is mainly because max pooling is a costly operation in FHE which we want to avoid for less FHE costly operations such as average pooling.
-- Quantization is applied after each AvgPool as this is needed for Concrete-ML to capture the quantization parameter. A QuantIdentity Brevitas layer achieves this.
+- Quantization is applied after each AvgPool as this is needed for Concrete ML to capture the quantization parameter. A QuantIdentity Brevitas layer achieves this.
 
 ## Installation
 
@@ -39,9 +39,9 @@ To evaluate the trained model:
 python3 bnn_pynq_train.py --evaluate --resume ./experiments/CNV_2W2A_2W2A_20221114_131345/checkpoints/best.tar
 ```
 
-### Simulation in Concrete-ML
+### Simulation in Concrete ML
 
-In Concrete-ML, you can test your model before running it in FHE such that you don't have to pay the cost of FHE runtime during development.
+In Concrete ML, you can test your model before running it in FHE such that you don't have to pay the cost of FHE runtime during development.
 
 You can launch this evaluation as follows:
 
@@ -51,7 +51,7 @@ You can launch this evaluation as follows:
 python3 evaluate_torch_cml.py
 ```
 
-It evaluates the model with Torch and Concrete-ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
+It evaluates the model with Torch and Concrete ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
 
 Optionally, you can change the default rounding bits (default to 6) applied on the model as follows:
 
@@ -83,7 +83,7 @@ Here, a picture from the CIFAR10 data-set is randomly chosen and preprocessed. T
 
 Warning: this execution can be quite costly.
 
-While it is the ambition of Concrete-ML to execute such large CNNs in reasonable time on various hardware accelerators, currently on a CPU the execution times are very high, more than 10 hours for a large many-core machine. This is a work in progress and will be improved significantly in future releases
+While it is the ambition of Concrete ML to execute such large CNNs in reasonable time on various hardware accelerators, currently on a CPU the execution times are very high, more than 10 hours for a large many-core machine. This is a work in progress and will be improved significantly in future releases
 
 <!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3007 -->
 

@@ -1,6 +1,6 @@
 # Contributing
 
-There are three ways to contribute to Concrete-ML:
+There are three ways to contribute to Concrete ML:
 
 - You can open issues to report bugs and typos and to suggest ideas.
 - You can ask to become an official contributor by emailing [hello@zama.ai](mailto:hello@zama.ai). Only approved contributors can send pull requests (PR), so please make sure to get in touch before you do.
@@ -28,7 +28,7 @@ git checkout -b 42_tracing_indexing
 
 ### 2.1 Conformance
 
-Each commit to Concrete-ML should conform to the standards of the project. You can let the development tools fix some issues automatically with the following command:
+Each commit to Concrete ML should conform to the standards of the project. You can let the development tools fix some issues automatically with the following command:
 
 ```shell
 make conformance
@@ -56,7 +56,7 @@ There may be cases where covering your code is not possible (an exception that c
 
 ## 3. Committing
 
-Concrete-ML uses a consistent commit naming scheme, and you are expected to follow it as well (the CI will make sure you do). The accepted format can be printed to your terminal by running:
+Concrete ML uses a consistent commit naming scheme, and you are expected to follow it as well (the CI will make sure you do). The accepted format can be printed to your terminal by running:
 
 ```shell
 make show_scope

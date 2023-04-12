@@ -9,7 +9,7 @@ Generic tests test:
   - grid search
   - hyper parameters
   - offset
-  - correctness (with accuracy and r2) of Concrete-ML vs scikit-learn in clear
+  - correctness (with accuracy and r2) of Concrete ML vs scikit-learn in clear
   - correctness tests with fhe = "disable", "simulate" and "execute", depending on
   limits (see N_BITS_THRESHOLD* constants) which are either due to execution time or limits of
   the compiler or minimal number of bits for precise computations
@@ -151,7 +151,7 @@ def check_correctness_with_sklearn(
     hyper_parameters_including_n_bits,
     fhe="disable",
 ):
-    """Check that Concrete-ML and scikit-learn models are 'equivalent'."""
+    """Check that Concrete ML and scikit-learn models are 'equivalent'."""
     assert "n_bits" in hyper_parameters_including_n_bits
 
     model = instantiate_model_generic(model_class, **hyper_parameters_including_n_bits)
@@ -273,11 +273,11 @@ def check_serialization_dump_load(model, x):
             temp_dump.seek(0)
             serialized_model_dict: Dict = json.load(temp_dump)
 
-            # Load the model from the file using Concrete-ML's method
+            # Load the model from the file using Concrete ML's method
             temp_dump.seek(0)
             loaded_model = load_method(file=temp_dump)
 
-            # Dump the loaded model into the file using Concrete-ML's method
+            # Dump the loaded model into the file using Concrete ML's method
             temp_dump.seek(0)
             temp_dump.truncate(0)
             dump_method(loaded_model, file=temp_dump)
@@ -846,7 +846,7 @@ def check_class_mapping(model, x, y):
     # Compute the predictions
     y_pred_shuffled = model.predict(x)
 
-    # Check that the mapping of labels was kept by Concrete-ML
+    # Check that the mapping of labels was kept by Concrete ML
     numpy.array_equal(classes[y_pred], y_pred_shuffled)
 
 
@@ -899,7 +899,7 @@ def test_correctness_with_sklearn(
     is_weekly_option,
     verbose=True,
 ):
-    """Test that Concrete-ML and scikit-learn models are 'equivalent'."""
+    """Test that Concrete ML and scikit-learn models are 'equivalent'."""
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check correctness with sklearn (if we have sufficiently bits of precision)

@@ -1,8 +1,8 @@
 # Using Torch
 
-In addition to the built-in models, Concrete-ML supports generic machine learning models implemented with Torch, or [exported as ONNX graphs](onnx_support.md).
+In addition to the built-in models, Concrete ML supports generic machine learning models implemented with Torch, or [exported as ONNX graphs](onnx_support.md).
 
-As [Quantization Aware Training (QAT)](../advanced-topics/quantization.md) is the most appropriate method of training neural networks that are compatible with [FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), Concrete-ML works with [Brevitas](../developer-guide/external_libraries.md#brevitas), a library providing QAT support for PyTorch.
+As [Quantization Aware Training (QAT)](../advanced-topics/quantization.md) is the most appropriate method of training neural networks that are compatible with [FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints), Concrete ML works with [Brevitas](../developer-guide/external_libraries.md#brevitas), a library providing QAT support for PyTorch.
 
 The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy.
 
@@ -34,7 +34,7 @@ class QATSimpleNet(nn.Module):
 
 ```
 
-Once the model is trained, calling the [`compile_brevitas_qat_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) from Concrete-ML will automatically perform conversion and compilation of a QAT network. Here, 3-bit quantization is used for both the weights and activations. The `compile_brevitas_qat_model` function automatically
+Once the model is trained, calling the [`compile_brevitas_qat_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) from Concrete ML will automatically perform conversion and compilation of a QAT network. Here, 3-bit quantization is used for both the weights and activations. The `compile_brevitas_qat_model` function automatically
 identifies the number of quantization bits used in the Brevitas model.
 
 <!--pytest-codeblocks:cont-->
@@ -121,7 +121,7 @@ Lookup error can be adjusted using `p_error`/`global_p_error` as described in th
 
 ## Generic Quantization Aware Training import
 
-While the example above shows how to import a Brevitas/PyTorch model, Concrete-ML also provides an option to import generic QAT models implemented either in PyTorch or through ONNX. Interestingly, deep learning models made with TensorFlow or Keras should be usable, by preliminary converting them to ONNX.
+While the example above shows how to import a Brevitas/PyTorch model, Concrete ML also provides an option to import generic QAT models implemented either in PyTorch or through ONNX. Interestingly, deep learning models made with TensorFlow or Keras should be usable, by preliminary converting them to ONNX.
 
 QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
@@ -149,7 +149,7 @@ When importing QAT models using this generic pipeline, a representative calibrat
 
 ## Supported operators and activations
 
-Concrete-ML supports a variety of PyTorch operators that can be used to build fully connected or convolutional neural networks, with normalization and activation layers. Moreover, many element-wise operators are supported.
+Concrete ML supports a variety of PyTorch operators that can be used to build fully connected or convolutional neural networks, with normalization and activation layers. Moreover, many element-wise operators are supported.
 
 ### Operators
 
@@ -178,7 +178,7 @@ Concrete-ML supports a variety of PyTorch operators that can be used to build fu
 - [`torch.matmul`](https://pytorch.org/docs/stable/generated/torch.matmul.html)
 - [`torch.nn.Linear`](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
 
-Please note that Concrete-ML supports these operators but also the QAT equivalents from Brevitas.
+Please note that Concrete ML supports these operators but also the QAT equivalents from Brevitas.
 
 - `brevitas.nn.QuantLinear`
 - `brevitas.nn.QuantConv2d`

@@ -8,7 +8,7 @@ Let's use following conventions for the docs. If a new convention needs to be de
 
 1. The documentation can address the user directly e.g. "you can find out more at ..", but this
    style should not be abused, do not be too colloquial !
-1. The documentation should not refer to its writers or to Concrete-ML developers/Zama as "we",
+1. The documentation should not refer to its writers or to Concrete ML developers/Zama as "we",
    and thus it should not use "our" either.
 
 ## Terms
@@ -24,8 +24,7 @@ Let's use following conventions for the docs. If a new convention needs to be de
 1. Programs:
    - Jupyter
    - NumPy but "Concrete Numpy"
-   - Concrete-ML in text but Concrete ML in titles, same Concrete-anything; concrete-ml when in command line
-   - Concrete\[- \]Something without \*\*
+   - Concrete ML (no Concrete-ML)
    - pytest except when title where it is capitalized
    - Python
    - torch (for the code) and PyTorch (for the product)

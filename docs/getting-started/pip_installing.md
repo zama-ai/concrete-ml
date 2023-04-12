@@ -4,7 +4,7 @@
 Please note that not all hardware/OS combinations are supported. Determine your platform, OS version, and Python version before referencing the table below.
 {% endhint %}
 
-Depending on your OS, Concrete-ML may be installed with Docker or with pip:
+Depending on your OS, Concrete ML may be installed with Docker or with pip:
 
 |               OS / HW                | Available on Docker | Available on pip |
 | :----------------------------------: | :-----------------: | :--------------: |
@@ -14,9 +14,9 @@ Depending on your OS, Concrete-ML may be installed with Docker or with pip:
 |            macOS (Intel)             |         Yes         |       Yes        |
 | macOS (Apple Silicon, ie M1, M2 etc) |         Yes         |       Yes        |
 
-Also, only some versions of `python` are supported: in the current release, these are `3.8`, `3.9` and `3.10`. Moreover, the Concrete-ML Python package requires `glibc >= 2.28`. On Linux, you can check your `glibc` version by running `ldd --version`.
+Also, only some versions of `python` are supported: in the current release, these are `3.8`, `3.9` and `3.10`. Moreover, the Concrete ML Python package requires `glibc >= 2.28`. On Linux, you can check your `glibc` version by running `ldd --version`.
 
-Concrete-ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
+Concrete ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
 
 Most of these limits are shared with the rest of the Concrete stack (namely Concrete-Python). Support for more platforms will be added in the future.
 
@@ -24,13 +24,13 @@ Most of these limits are shared with the rest of the Concrete stack (namely Conc
 
 ### Requirements
 
-Installing Concrete-ML using PyPi requires a Linux-based OS or macOS running on an x86 CPU. For Apple Silicon, Docker is the only currently supported option (see [below](pip_installing.md#using-docker)).
+Installing Concrete ML using PyPi requires a Linux-based OS or macOS running on an x86 CPU. For Apple Silicon, Docker is the only currently supported option (see [below](pip_installing.md#using-docker)).
 
-Installing on Windows can be done using Docker or WSL. On WSL, Concrete-ML will work as long as the package is not installed in the /mnt/c/ directory, which corresponds to the host OS filesystem.
+Installing on Windows can be done using Docker or WSL. On WSL, Concrete ML will work as long as the package is not installed in the /mnt/c/ directory, which corresponds to the host OS filesystem.
 
 ### Installation
 
-To install Concrete-ML from PyPi, run the following:
+To install Concrete ML from PyPi, run the following:
 
 ```shell
 pip install -U pip wheel setuptools
@@ -41,7 +41,7 @@ This will automatically install all dependencies, notably Concrete-Numpy.
 
 ## Using Docker
 
-Concrete-ML can be installed using Docker by either pulling the latest image or a specific version:
+Concrete ML can be installed using Docker by either pulling the latest image or a specific version:
 
 ```shell
 docker pull zamafhe/concrete-ml:latest
@@ -61,7 +61,7 @@ docker run --rm -it -p 8888:8888 zamafhe/concrete-ml
 docker run --rm -it -p 8888:8888 -v /host/path:/data zamafhe/concrete-ml
 ```
 
-This will launch a Concrete-ML enabled Jupyter server in Docker that can be accessed directly from a browser.
+This will launch a Concrete ML enabled Jupyter server in Docker that can be accessed directly from a browser.
 
 Alternatively, a shell can be lauched in Docker, with or without volumes:
 

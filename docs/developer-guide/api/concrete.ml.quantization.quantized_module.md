@@ -170,8 +170,8 @@ This method executes the forward pass in the clear, with simulation or in FHE. I
 **Args:**
 
 - <b>`*x (numpy.ndarray)`</b>:  Input float values to consider.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction. Can be FheMode.DISABLE for  Concrete-ML python inference, FheMode.SIMULATE for FHE simulation and  FheMode.EXECUTE for actual FHE execution. Can also be the string representation of  any of these values. Default to FheMode.DISABLE.
-- <b>`debug`</b> (bool):  In debug mode, returns quantized intermediary values of the computation.  This is useful when a model's intermediary values in Concrete-ML need to be  compared with the intermediary values obtained in pytorch/onnx. When set, the  second return value is a dictionary containing ONNX operation names as keys and,  as values, their input QuantizedArray or ndarray. The use can thus extract the  quantized or float values of quantized inputs. This feature is only available in  FheMode.DISABLE mode. Default to False.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction. Can be FheMode.DISABLE for  Concrete ML python inference, FheMode.SIMULATE for FHE simulation and  FheMode.EXECUTE for actual FHE execution. Can also be the string representation of  any of these values. Default to FheMode.DISABLE.
+- <b>`debug`</b> (bool):  In debug mode, returns quantized intermediary values of the computation.  This is useful when a model's intermediary values in Concrete ML need to be  compared with the intermediary values obtained in pytorch/onnx. When set, the  second return value is a dictionary containing ONNX operation names as keys and,  as values, their input QuantizedArray or ndarray. The use can thus extract the  quantized or float values of quantized inputs. This feature is only available in  FheMode.DISABLE mode. Default to False.
 
 **Returns:**
 
@@ -237,7 +237,7 @@ Forward function for the FHE circuit.
 **Args:**
 
 - <b>`*q_x (numpy.ndarray)`</b>:  Input integer values to consider.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction. Can be FheMode.DISABLE for  Concrete-ML python inference, FheMode.SIMULATE for FHE simulation and  FheMode.EXECUTE for actual FHE execution. Can also be the string representation of  any of these values. Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction. Can be FheMode.DISABLE for  Concrete ML python inference, FheMode.SIMULATE for FHE simulation and  FheMode.EXECUTE for actual FHE execution. Can also be the string representation of  any of these values. Default to FheMode.DISABLE.
 
 **Returns:**
 

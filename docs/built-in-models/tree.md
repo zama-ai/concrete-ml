@@ -1,17 +1,17 @@
 # Tree-based Models
 
-Concrete-ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
+Concrete ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
 
-|                                                Concrete-ML                                                |                                                                           Scikit-Learn                                                                           |
+|                                                Concrete ML                                                |                                                                           Scikit-Learn                                                                           |
 | :-------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [DecisionTreeClassifier](../developer-guide/api/concrete.ml.sklearn.tree.md#class-decisiontreeclassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
 |  [DecisionTreeRegressor](../developer-guide/api/concrete.ml.sklearn.tree.md#class-decisiontreeregressor)  |      [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor)       |
 |  [RandomForestClassifier](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestclassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
 |   [RandomForestRegressor](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
-In addition to support for Scikit-Learn, Concrete-ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
+In addition to support for Scikit-Learn, Concrete ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
-|                                      Concrete-ML                                       |                                                XGboost                                                 |
+|                                      Concrete ML                                       |                                                XGboost                                                 |
 | :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
 | [XGBClassifier](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbclassifier) | [XGBClassifier](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBClassifier) |
 |  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
@@ -109,13 +109,13 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have a FHE inference equal to the clear inference
 ```
 
-In a similar example, the decision boundaries of the Concrete-ML model can be plotted, and, then, compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
+In a similar example, the decision boundaries of the Concrete ML model can be plotted, and, then, compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
 
 ![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 
 ## Quantization parameters
 
-This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete-ML FHE decision tree models. As the quantization is done individually on each input feature, the impact of quantization is strongly reduced, and, thus, FHE tree-based models reach similar accuracy as their floating point equivalents. Using 6 bits for quantization makes the Concrete-ML model reach or exceed the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
+This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree models. As the quantization is done individually on each input feature, the impact of quantization is strongly reduced, and, thus, FHE tree-based models reach similar accuracy as their floating point equivalents. Using 6 bits for quantization makes the Concrete ML model reach or exceed the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
 
 When `n_bits` is set low, the quantization process may sometimes create some artifacts that could lead to a decrease in performance, but the execution speed in FHE decreases. In this way, it is possible to adjust the accuracy/speed trade-off, and some accuracy can be recovered by increasing the `n_estimators`.
 

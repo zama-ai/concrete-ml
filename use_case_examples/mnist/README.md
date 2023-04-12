@@ -1,6 +1,6 @@
 # MNIST With FHE
 
-The `mnist_in_fhe.ipynb` notebook shows how to use Concrete-ML to train a custom neural network
+The `mnist_in_fhe.ipynb` notebook shows how to use Concrete ML to train a custom neural network
 on the MNIST data-set.
 
 ## Installation

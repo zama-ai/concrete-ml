@@ -37,7 +37,7 @@ ______________________________________________________________________
 instantiate_model_generic(model_class, **parameters)
 ```
 
-Instantiate any Concrete-ML model type.
+Instantiate any Concrete ML model type.
 
 **Args:**
 

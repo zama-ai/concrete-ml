@@ -96,7 +96,7 @@ def test_brevitas_tinymnist_cnn(
         trained_ok = torch_correct > 0
 
     def test_with_concrete(quantized_module, test_loader, use_fhe_simulation):
-        """Test a neural network that is quantized and compiled with Concrete-ML."""
+        """Test a neural network that is quantized and compiled with Concrete ML."""
 
         all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
 
@@ -290,7 +290,7 @@ def test_brevitas_intermediary_values(
         if "module__" in param
     }
 
-    # Concrete-ML and CNP use float64, so we need to force pytorch to use the same, as
+    # Concrete ML and CNP use float64, so we need to force pytorch to use the same, as
     # it defaults to float32. Note that this change is global and may interfere with
     # threading or multiprocessing. Thus this test can not be launched in parallel with others.
     torch.set_default_dtype(torch.float64)
@@ -302,7 +302,7 @@ def test_brevitas_intermediary_values(
     # Execute on the test set and capture debug values
     dbg_model(torch.tensor(x_test.astype(numpy.float64)))
 
-    # Execute the Concrete-ML model on the test set and capture debug values
+    # Execute the Concrete ML model on the test set and capture debug values
     _, cml_debug_values = concrete_model.quantized_module_.forward(
         x_test, debug=True, fhe="disable"
     )
@@ -382,8 +382,8 @@ def test_brevitas_intermediary_values(
 def test_brevitas_constant_folding(default_configuration):
     """Test that a network that does not quantize its inputs raises the right exception.
 
-    The network tested is not a valid QAT network for Concrete-ML as it does not
-    quantize its inputs. However, in previous versions of Concrete-ML a bug
+    The network tested is not a valid QAT network for Concrete ML as it does not
+    quantize its inputs. However, in previous versions of Concrete ML a bug
     in constant folding prevented the correct error being raised.
     """
 

@@ -372,7 +372,7 @@ def load_data():
         For classifier, Sklearn's make_classification() method is directly called.
 
         Args:
-            model_class (Callable): The Concrete-ML model class to generate the data for.
+            model_class (Callable): The Concrete ML model class to generate the data for.
             *args: Positional arguments to consider for generating the data.
             random_state (int): Determines random number generation for data-set creation.
             **kwargs: Keyword arguments to consider for generating the data.
@@ -417,7 +417,7 @@ def load_data():
             return tuple(generated_regression)
 
         raise ValueError(
-            "Model class type is unsupported. Expected a Concrete-ML regressor or classifier, or "
+            "Model class type is unsupported. Expected a Concrete ML regressor or classifier, or "
             f"a functool.partial version of it, but got {model_class}."
         )
 
@@ -426,7 +426,7 @@ def load_data():
 
 @pytest.fixture
 def check_is_good_execution_for_cml_vs_circuit():
-    """Compare quantized module or built-in inference vs Concrete-Python circuit."""
+    """Compare quantized module or built-in inference vs Concrete Python circuit."""
 
     def check_is_good_execution_for_cml_vs_circuit_impl(
         inputs: Union[tuple, numpy.ndarray],
@@ -439,7 +439,7 @@ def check_is_good_execution_for_cml_vs_circuit():
         Args:
             inputs (tuple, numpy.ndarray): inputs for the model.
             model (Callable, QuantizedModule, QuantizedTorchEstimatorMixin): either the
-                Concrete-ML sklearn built-in model or a quantized module.
+                Concrete ML sklearn built-in model or a quantized module.
             simulate (bool): whether to run the execution in FHE or in simulated mode.
             n_allowed_runs (int): in case of FHE execution randomness can make the output slightly
                 different this allows to run the evaluation multiple times

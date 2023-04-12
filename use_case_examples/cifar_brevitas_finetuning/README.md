@@ -1,13 +1,13 @@
 # Description
 
-In this directory we show how to solve a classification task on CIFAR-10 and CIFAR-100, by converting a pre-trained CNN to its fully homomorphic encryption (FHE) equivalent using Quantization Aware Training (QAT) and Concrete-ML. We evaluate it using the FHE simulation
+In this directory we show how to solve a classification task on CIFAR-10 and CIFAR-100, by converting a pre-trained CNN to its fully homomorphic encryption (FHE) equivalent using Quantization Aware Training (QAT) and Concrete ML. We evaluate it using the FHE simulation
 mode provided by the Concrete stack.
 
 To do so, we divided this use case in 4 notebooks :
 
 1. [FromImageNetToCifar.ipynb](FromImageNetToCifar.ipynb) : in this notebook, we used a VGG11 network from [torch.hub](https://pytorch.org/hub/pytorch_vision_vgg/), on which we applied some changes on the original architecture in order to speed up the FHE execution and therefore make it more user-friendly :
 
-   - replacing the `MaxPool2d` by the `AvgPool2d`, because in the current version of Concrete-ML `MaxPool2d` isn't available yet
+   - replacing the `MaxPool2d` by the `AvgPool2d`, because in the current version of Concrete ML `MaxPool2d` isn't available yet
    - changing the kernel and stride size in some pooling layers, because we have chosen to keep the initial input size of $3*32*32$ instead of the recommended input size of $3*224*224$
    - changing the kernel size from $7$ to $1$ in the `AdaptiveAvgPool2d` to further reduce the image's size
    - removing the classification part of the original VGG11 architecture to speed up computation

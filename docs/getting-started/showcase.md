@@ -1,6 +1,6 @@
 # Demos and Tutorials
 
-This section lists several demos that apply Concrete-ML to some popular machine learning problems. They show
+This section lists several demos that apply Concrete ML to some popular machine learning problems. They show
 how to build ML models that perform well under FHE constraints, and then how to perform the conversion to FHE.
 
 Simpler tutorials that discuss only model usage and compilation are also available for

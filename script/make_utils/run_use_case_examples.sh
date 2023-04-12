@@ -17,14 +17,14 @@ USE_CASE_REL_DIR="use_case_examples"
 USE_CASE_DIR="${CML_DIR}/${USE_CASE_REL_DIR}"
 
 if [ ! -d "$USE_CASE_DIR" ]; then
-    echo "This script must be run in the Concrete-ML source root where the '$USE_CASE_REL_DIR' directory is present"
+    echo "This script must be run in the Concrete ML source root where the '$USE_CASE_REL_DIR' directory is present"
     exit 1
 fi
 
 echo "Refreshing notebooks with PIP installed CML"
 # shellcheck disable=SC2143
 if [[ $(git ls-files --others --exclude-standard | grep ${USE_CASE_REL_DIR}) ]]; then
-    echo "This script must be run in a clean clone of the Concrete-ML repo"
+    echo "This script must be run in a clean clone of the Concrete ML repo"
     echo "This directory has untracked files in ${USE_CASE_REL_DIR}"
     echo "You can LIST all untracked files using: "
     echo
@@ -84,12 +84,12 @@ do
     pip install -e . &> "/tmp/log_cml_pip_${EXAMPLE_NAME}"
     hresult=$?
     if [ $hresult -ne 0 ]; then
-        echo "Could not install Concrete-ML in the virtualenv, see /tmp/log_cml_pip_${EXAMPLE_NAME}"
+        echo "Could not install Concrete ML in the virtualenv, see /tmp/log_cml_pip_${EXAMPLE_NAME}"
         rm -rf "$VENV_PATH"
         continue
     fi
     set -e
-    echo " - Concrete-ML installed in $VENV_PATH"
+    echo " - Concrete ML installed in $VENV_PATH"
 
     # Install example requirements
     cd "$EXAMPLE"
@@ -99,7 +99,7 @@ do
         hresult=$?
         set -e
         if [ $hresult -ne 0 ]; then
-            echo "Could not install Concrete-ML in the virtualenv, see /tmp/log_reqs_${EXAMPLE_NAME}"
+            echo "Could not install Concrete ML in the virtualenv, see /tmp/log_reqs_${EXAMPLE_NAME}"
             rm -rf "$VENV_PATH"
             continue
         fi     

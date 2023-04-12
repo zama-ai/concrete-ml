@@ -4,7 +4,7 @@
 # Code source: Gaël Varoquaux
 #              Andreas Müller
 # Modified for documentation by Jaques Grobler
-# Modified to integrate Concrete-ML functions by Zama
+# Modified to integrate Concrete ML functions by Zama
 # License: BSD 3 clause
 
 import warnings
@@ -110,14 +110,14 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             # Instantiate the model
             model = classifier()
 
-            # Train the model and retrieve both the Concrete-ML model and its equivalent one from
+            # Train the model and retrieve both the Concrete ML model and its equivalent one from
             # scikit-learn
             concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
 
             # Compute the predictions in clear using the scikit-learn model
             sklearn_y_pred = sklearn_model.predict(X_test)
 
-            # Compile the Concrete-ML model
+            # Compile the Concrete ML model
             circuit = concrete_model.compile(X_train)
 
             # If the prediction are done in FHE, generate the key
@@ -135,7 +135,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                 if verbose:
                     print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
 
-            # Compute the predictions in FHE using the Concrete-ML model
+            # Compute the predictions in FHE using the Concrete ML model
             time_begin = time.time()
             concrete_y_pred = concrete_model.predict(X_test, fhe="execute")
 
@@ -154,7 +154,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                 DecisionTreeClassifier,
             ]
 
-            # Compile the Concrete-ML model with FHE simulation mode to evaluate the domain grid
+            # Compile the Concrete ML model with FHE simulation mode to evaluate the domain grid
             circuit = concrete_model.compile(
                 X_train,
             )
@@ -185,7 +185,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             for k, (framework, score, Z) in enumerate(
                 zip(
-                    ["scikit-learn", "Concrete-ML"],
+                    ["scikit-learn", "Concrete ML"],
                     [sklearn_score, concrete_score],
                     [sklearn_Z, concrete_Z],
                 )
@@ -234,7 +234,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                     horizontalalignment="right",
                 )
 
-                if bitwidth and framework == "Concrete-ML":
+                if bitwidth and framework == "Concrete ML":
                     ax.text(
                         xx.max() - 0.3,
                         yy.min() + 1.0,

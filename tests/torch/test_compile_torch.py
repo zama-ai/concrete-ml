@@ -695,7 +695,7 @@ def test_pretrained_mnist_qat(
     # Make sure absolute accuracy is good, this model should have at least 90% accuracy
     check_accuracy(mnist_data["gt"], results, threshold=0.9)
 
-    # Compile to Concrete-ML using the FHE simulation mode and compatible bit-width
+    # Compile to Concrete ML using the FHE simulation mode and compatible bit-width
     n_bits = {
         "model_inputs": 7,
         "op_weights": 2,

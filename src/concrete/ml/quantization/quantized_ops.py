@@ -1097,7 +1097,7 @@ class QuantizedPad(QuantizedOp):
 
         assert_true(
             all(pads[i] == 0 and pads[4 + i] == 0 for i in range(0, 2)),
-            "Concrete-ML only supports padding along the width & height dimensions, padding"
+            "Concrete ML only supports padding along the width & height dimensions, padding"
             f" requested was {pads}",
         )
 
@@ -1111,7 +1111,7 @@ class QuantizedPad(QuantizedOp):
         pad_value = 0 if prepared_inputs[2] is None else prepared_inputs[2]
         assert_true(
             pad_value == 0,
-            "Concrete-ML only supports padding with constant zero values",
+            "Concrete ML only supports padding with constant zero values",
         )
 
         assert q_input.quantizer.zero_point is not None

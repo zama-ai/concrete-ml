@@ -1,6 +1,6 @@
 FROM zamafhe/concrete-ml
 WORKDIR /project
-# FIXME: to update once Concrete-ML 1.x is released
+# FIXME: to update once Concrete ML 1.x is released
 # https://github.com/zama-ai/concrete-ml-internal/issues/3302
 RUN python -m pip install torchvision==0.13 --no-deps
 RUN python -m pip install requests

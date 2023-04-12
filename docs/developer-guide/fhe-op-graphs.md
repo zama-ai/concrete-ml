@@ -1,10 +1,10 @@
 # FHE Op-graph Design
 
-The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to a FHE-compatible Concrete-ML op-graph. This section describes the implementation of operations in the Concrete-ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
+The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to a FHE-compatible Concrete ML op-graph. This section describes the implementation of operations in the Concrete ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
 
 ## Float vs. quantized operations
 
-Concrete, the underlying implementation of TFHE that powers Concrete-ML, enables two types of operations on integers:
+Concrete, the underlying implementation of TFHE that powers Concrete ML, enables two types of operations on integers:
 
 1. **arithmetic operations**: the addition of two encrypted values and multiplication of encrypted values with clear scalars. These are used, for example, in dot-products, matrix multiplication (linear layers), and convolution.
 1. **table lookup operations (TLU)**: using an encrypted value as an index, return the value of a lookup table at that index. This is implemented using Programmable Bootstrapping. This operation is used to perform any non-linear computation such as activation functions, quantization, and normalization.
@@ -19,7 +19,7 @@ For example, in the following graph there is a single input, which must be an en
 
 ## ONNX operations
 
-Concrete-ML implements ONNX operations using Concrete-Numpy, which can handle floating point operations, as long as they can be fused to an integer lookup table. The ONNX operations implementations are based on the `QuantizedOp` class.
+Concrete ML implements ONNX operations using Concrete-Numpy, which can handle floating point operations, as long as they can be fused to an integer lookup table. The ONNX operations implementations are based on the `QuantizedOp` class.
 
 There are two modes of creation of a single table lookup for a chain of ONNX operations:
 
@@ -60,7 +60,7 @@ The diagram above shows that both float ops and integer ops need to quantize the
 
 ### Putting it all together
 
-To chain the operation types described above following the ONNX graph, Concrete-ML constructs a function that calls the `q_impl` of the `QuantizedOp` instances in the graph in sequence, and uses Concrete-Numpy to trace the execution and compile to FHE. Thus, in this chain of function calls, all groups of that instruction that operate in floating point will be fused to TLUs. In FHE, this lookup table is computed with a PBS.
+To chain the operation types described above following the ONNX graph, Concrete ML constructs a function that calls the `q_impl` of the `QuantizedOp` instances in the graph in sequence, and uses Concrete-Numpy to trace the execution and compile to FHE. Thus, in this chain of function calls, all groups of that instruction that operate in floating point will be fused to TLUs. In FHE, this lookup table is computed with a PBS.
 
 ![](../.gitbook/assets/image_6.png)
 
@@ -85,7 +85,7 @@ When the op implements element-wise operations between the inputs and constants 
 
 When the op implements operations that mix the various scalars in the input encrypted tensor, the operation cannot fuse, as table lookups are univariate. Thus, operations such as `QuantizedGemm` and `QuantizedConv` return `False` in `can_fuse`.
 
-Some operations may be found in both settings above. A mechanism is implemented in Concrete-ML to determine if the inputs of a `QuantizedOp` are produced by a unique integer tensor. Therefore, the `can_fuse` function of some `QuantizedOp` types (addition, subtraction) will allow fusion to take place if both operands are produced by a unique integer tensor:
+Some operations may be found in both settings above. A mechanism is implemented in Concrete ML to determine if the inputs of a `QuantizedOp` are produced by a unique integer tensor. Therefore, the `can_fuse` function of some `QuantizedOp` types (addition, subtraction) will allow fusion to take place if both operands are produced by a unique integer tensor:
 
 ```python
 def can_fuse(self) -> bool:

@@ -1,4 +1,4 @@
-"""Script to gather Community statistics. Made for Concrete-ML but can be easily modified for
+"""Script to gather Community statistics. Made for Concrete ML but can be easily modified for
 another team."""
 
 import os

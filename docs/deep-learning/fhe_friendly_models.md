@@ -6,9 +6,9 @@ In general, quantization can be carried out in two different ways: either during
 
 Regarding FHE-friendly neural networks, QAT is the best way to reach optimal accuracy under [FHE constrains](../README.md#current-limitations). This technique allows weights and activations to be reduced to very low bit-widths (e.g. 2-3 bits), which, combined with pruning, can keep accumulator bit-widths low.
 
-Concrete-ML uses the third party library [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for PyTorch NNs, but options exist for other frameworks such as Keras/Tensorflow.
+Concrete ML uses the third party library [Brevitas](https://github.com/Xilinx/brevitas) to perform QAT for PyTorch NNs, but options exist for other frameworks such as Keras/Tensorflow.
 
-Several [demos and tutorials](../getting-started/showcase.md) that use Brevitas are available in Concrete-ML library, such as the [CIFAR classification tutorial](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
+Several [demos and tutorials](../getting-started/showcase.md) that use Brevitas are available in Concrete ML library, such as the [CIFAR classification tutorial](https://github.com/zama-ai/concrete-ml-internal/blob/main/use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
 
 This guide is based on a [notebook tutorial](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb), from which some code blocks are documented here.
 
@@ -69,7 +69,7 @@ The accumulator size is determined by Concrete-Numpy as being the maximum bit-wi
 
 ## Quantization Aware Training:
 
-[Quantization Aware Training](../advanced-topics/quantization.md) using [Brevitas](https://github.com/Xilinx/brevitas) is the best way to guarantee a good accuracy for Concrete-ML compatible neural networks.
+[Quantization Aware Training](../advanced-topics/quantization.md) using [Brevitas](https://github.com/Xilinx/brevitas) is the best way to guarantee a good accuracy for Concrete ML compatible neural networks.
 
 Brevitas provides a quantized version of almost all PyTorch layers (`Linear` layer becomes `QuantLinear`, `ReLU` layer becomes `QuantReLU` and so one), plus some extra quantization parameters, such as :
 
@@ -78,9 +78,9 @@ Brevitas provides a quantized version of almost all PyTorch layers (`Linear` lay
 - `weight_bit_width`: precision quantization bits for weights
 - `weight_quant`: quantization protocol for the weights
 
-In order to use FHE, the network must be quantized from end to end, and thanks to the Brevitas's `QuantIdentity` layer, it is possible to quantize the input by placing it at the entry point of the network. Moreover, it is also possible to combine PyTorch and Brevitas layers, provided that a `QuantIdentity` is placed after this PyTorch layer. The following table gives the replacements to be made to convert a PyTorch NN for Concrete-ML compatibility.
+In order to use FHE, the network must be quantized from end to end, and thanks to the Brevitas's `QuantIdentity` layer, it is possible to quantize the input by placing it at the entry point of the network. Moreover, it is also possible to combine PyTorch and Brevitas layers, provided that a `QuantIdentity` is placed after this PyTorch layer. The following table gives the replacements to be made to convert a PyTorch NN for Concrete ML compatibility.
 
-| PyTorch fp32 layer   | Concrete-ML model with PyTorch/Brevitas               |
+| PyTorch fp32 layer   | Concrete ML model with PyTorch/Brevitas               |
 | -------------------- | ----------------------------------------------------- |
 | `torch.nn.Linear`    | `brevitas.quant.QuantLinear`                          |
 | `torch.nn.Conv2d`    | `brevitas.quant.Conv2d`                               |
@@ -97,7 +97,7 @@ Furthermore, some PyTorch operators (from the PyTorch functional API), require a
 | `torch.flatten`                              |
 
 {% hint style="info" %}
-The QAT import tool in Concrete-ML is a work in progress. While it has been tested with some networks built with Brevitas, it is possible to use other tools to obtain QAT networks.
+The QAT import tool in Concrete ML is a work in progress. While it has been tested with some networks built with Brevitas, it is possible to use other tools to obtain QAT networks.
 {% endhint %}
 
 For instance, with Brevitas, the network above becomes :
@@ -156,7 +156,7 @@ Training this network with pruning (see below) with 30 out of 100 total non-zero
 | Non-zero neurons              | 30    |
 | ----------------------------- | ----- |
 | 3-bit accuracy brevitas       | 95.4% |
-| 3-bit accuracy in Concrete-ML | 95.4% |
+| 3-bit accuracy in Concrete ML | 95.4% |
 | Accumulator size              | 7     |
 
 {% hint style="info" %}
@@ -169,11 +169,11 @@ Quantization Aware Training is somewhat slower than normal training. QAT introdu
 
 ### Pruning using torch
 
-Considering that FHE only works with limited integer precision, there is a risk of overflowing in the accumulator, which will make Concrete-ML raise an error.
+Considering that FHE only works with limited integer precision, there is a risk of overflowing in the accumulator, which will make Concrete ML raise an error.
 
 To understand how to overcome this limitation, consider a scenario where 2 bits are used for weights and layer inputs/outputs. The `Linear` layer computes a dot product between weights and inputs $$y = \sum_i w_i x_i$$. With 2 bits, no overflow can occur during the computation of the `Linear` layer as long the number of neurons does not exceed 14, i.e. the sum of 14 products of 2-bit numbers does not exceed 7 bits.
 
-By default, Concrete-ML uses symmetric quantization for model weights, with values in the interval $$\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$$. For example, for $$n_{bits}=2$$ the possible values are $$[-2, -1, 0, 1]$$, for $$n_{bits}=3$$ the values can be $$[-4,-3,-2,-1,0,1,2,3]$$.
+By default, Concrete ML uses symmetric quantization for model weights, with values in the interval $$\left[-2^{n_{bits}-1}, 2^{n_{bits}-1}-1\right]$$. For example, for $$n_{bits}=2$$ the possible values are $$[-2, -1, 0, 1]$$, for $$n_{bits}=3$$ the values can be $$[-4,-3,-2,-1,0,1,2,3]$$.
 
 However, in a typical setting, the weights will not all have the maximum or minimum values (e.g. $$-2^{n_{bits}-1}$$). Instead, weights typically have a normal distribution around 0, which is one of the motivating factors for their symmetric quantization. A symmetric distribution and many zero-valued weights are desirable because opposite sign weights can cancel each other out and zero weights do not increase the accumulator size.
 

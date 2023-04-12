@@ -421,8 +421,8 @@ def main():
         in four different ways:
         - using scikit-learn's model, in clear
         - using scikit-learn's model on PCA reduced features, in clear
-        - using Concrete-ML's model on PCA reduced features, in clear
-        - using Concrete-ML's model on PCA reduced features, in FHE
+        - using Concrete ML's model on PCA reduced features, in clear
+        - using Concrete ML's model on PCA reduced features, in FHE
         The corresponding deviance scores are then computed in order to determine the impact of
         quantization on the models' performances as well as to verify that executing them in FHE
         correctly gives the same outputs as its equivalent model compiled 'in clear'.
@@ -502,7 +502,7 @@ def main():
             time_current = time.time()
             print("Compile")
 
-        # Compile the Concrete-ML model for FHE, which needs some preprocessed data in order to run
+        # Compile the Concrete ML model for FHE, which needs some preprocessed data in order to run
         x_train_subset_pca = model_pca["pca"].transform(
             model_pca["preprocessor"].transform(fit_parameters["X"].head(100))
         )
@@ -590,8 +590,8 @@ def main():
 
         # Let's check what prediction performance we lose due to PCA
         if args.verbose:
-            print("Evaluation in clear with PCA transformation (Concrete-ML):", score)
-            print("Evaluation in FHE with PCA transformation (Concrete-ML):", fhe_score)
+            print("Evaluation in clear with PCA transformation (Concrete ML):", score)
+            print("Evaluation in FHE with PCA transformation (Concrete ML):", fhe_score)
 
         progress.measure(
             id="quantized-deviance-score",

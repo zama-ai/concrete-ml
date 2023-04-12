@@ -460,7 +460,7 @@ def report_compiler_feedback(fhe_circuit: Circuit):
 
 
 def concrete_inference(quantized_module: QuantizedModule, x: np.ndarray, in_fhe: bool):
-    """Execute the model's inference using Concrete-ML (quantized clear or FHE).
+    """Execute the model's inference using Concrete ML (quantized clear or FHE).
 
     Args:
         quantized_module (QuantizedModule): The quantized module representing the model.
@@ -522,11 +522,11 @@ def evaluate_module(
     train: bool = False,
     in_fhe: bool = False,
 ):
-    """Evaluate several metrics using a Torch or Concrete-ML module.
+    """Evaluate several metrics using a Torch or Concrete ML module.
 
     Args:
         framework (str): The framework to evaluate, either 'concrete' or 'torch'.
-        module (Union[nn.Module, QuantizedModule]): The Torch or Concrete-ML module representing
+        module (Union[nn.Module, QuantizedModule]): The Torch or Concrete ML module representing
             the model to evaluate.
         test_loader (DataLoader): The test data loader.
         n_classes (int): The number of classes to target.
@@ -535,7 +535,7 @@ def evaluate_module(
         metric_label_prefix (Optional[str]): The label's prefix to consider when tracking the
             metrics. Default to None.
         train (bool): Indicate if the evaluation is done during training. If so, the test accuracy
-            is printed but not tracked. This parameter cannot be set while using the Concrete-ML
+            is printed but not tracked. This parameter cannot be set while using the Concrete ML
             framework. Default to False.
         in_fhe (bool): Indicate if the inference should be executed in FHE. This parameter cannot
             be set while using the torch framework. Default to False.
@@ -583,7 +583,7 @@ def evaluate_module(
         # truth labels
         for batch_i, (data, target) in enumerate(test_loader):
 
-            # Execute Concrete-ML's inference
+            # Execute Concrete ML's inference
             if framework == "concrete":
                 y_pred, y_pred_proba = concrete_inference(module, data.numpy(), in_fhe)
 
@@ -613,7 +613,7 @@ def evaluate_module(
             metric_id_prefix is not None and metric_label_prefix is not None
         ), "Please prove metric prefixes when executing the inference."
 
-        # If we evaluate a Concrete-ML module in FHE, the inference execution time is also tracked
+        # If we evaluate a Concrete ML module in FHE, the inference execution time is also tracked
         if framework == "concrete" and in_fhe:
             progress.measure(
                 id=metric_id_prefix + "-execution-time-per-sample",
@@ -632,8 +632,8 @@ def evaluate_module(
 def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, cli_args):
     """Evaluate the pre-trained CNN model on the dataset.
 
-    It first evaluates both the Torch and Concrete-ML models in the clear bu computing their
-    accuracy score on the full dataset. Then, the Concrete-ML model's inference is executed on a
+    It first evaluates both the Torch and Concrete ML models in the clear bu computing their
+    accuracy score on the full dataset. Then, the Concrete ML model's inference is executed on a
     sub-sample in the clear as well as in FHE in order to compute a MSE score between them.
 
     Args:
@@ -715,7 +715,7 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
 
     if cli_args.verbose:
         print("\nMax numbers of bits reached during the inference:", circuit_bitwidth)
-        print("\nEvaluating the Concrete-ML model's quantized clear inference an all test samples:")
+        print("\nEvaluating the Concrete ML model's quantized clear inference an all test samples:")
 
     # Evaluate the quantized clear inference using the full dataset
     evaluate_module(
@@ -731,7 +731,7 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
     fhe_test_loader = get_data_loader(x_test, y_test, samples=cli_args.fhe_samples)
 
     if cli_args.verbose:
-        print("\nEvaluating the Concrete-ML model's quantized clear inference on FHE samples:")
+        print("\nEvaluating the Concrete ML model's quantized clear inference on FHE samples:")
 
     # Evaluate the quantized clear inference using a specific number of FHE samples
     q_y_preds_proba_clear = evaluate_module(
@@ -745,7 +745,7 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
 
     if not cli_args.dont_execute_in_fhe:
         if cli_args.verbose:
-            print("\nEvaluating the Concrete-ML model's inference in FHE on FHE samples:")
+            print("\nEvaluating the Concrete ML model's inference in FHE on FHE samples:")
 
         # Evaluate the FHE inference using a specific number of FHE samples
         q_y_preds_proba_fhe = evaluate_module(

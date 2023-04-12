@@ -17,7 +17,7 @@ def check_array_and_assert(X, *args, **kwargs):
     """sklearn.utils.check_array with an assert.
 
     Equivalent of sklearn.utils.check_array, with a final assert that the type is one which
-    is supported by Concrete-ML.
+    is supported by Concrete ML.
 
     Args:
         X (object): Input object to check / convert
@@ -36,7 +36,7 @@ def check_X_y_and_assert(X, y, *args, **kwargs):
     """sklearn.utils.check_X_y with an assert.
 
     Equivalent of sklearn.utils.check_X_y, with a final assert that the type is one which
-    is supported by Concrete-ML.
+    is supported by Concrete ML.
 
     Args:
         X (ndarray, list, sparse matrix): Input data
@@ -58,7 +58,7 @@ def check_X_y_and_assert_multi_output(X, y, *args, **kwargs):
     """sklearn.utils.check_X_y with an assert and multi-output handling.
 
     Equivalent of sklearn.utils.check_X_y, with a final assert that the type is one which
-    is supported by Concrete-ML. If y is 2D, allows multi-output.
+    is supported by Concrete ML. If y is 2D, allows multi-output.
 
     Args:
         X (ndarray, list, sparse matrix): Input data

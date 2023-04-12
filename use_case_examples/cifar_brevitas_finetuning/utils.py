@@ -449,7 +449,7 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
         torch_inputset=data,
         configuration=configuration,
         show_mlir=False,
-        # Concrete-ML uses table lookup (TLU) to represent any non-linear operation.
+        # Concrete ML uses table lookup (TLU) to represent any non-linear operation.
         # This TLU is implemented through the Programmable Bootstrapping (PBS).
         # A single PBS operation has P_ERROR chances of being incorrect.
         # Default value = 6.3342483999973e-05.

@@ -635,7 +635,7 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     # Pad the input if needed
 
     # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
-    # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
+    # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
     tx_pad = torch.nn.functional.pad(
         torch.Tensor(net_input.copy()), (pads[1], pads[3], pads[0], pads[2])
     )
@@ -746,7 +746,7 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
     tinputs = torch.Tensor(net_input.copy())
 
     # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
-    # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
+    # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
     tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
 
     # Compute the torch average pool
@@ -861,7 +861,7 @@ def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_flo
     tinputs = torch.Tensor(net_input.copy())
 
     # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
-    # While ONNX and Concrete-ML use (padding_top, padding_left, padding_bottom, padding_right)
+    # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
     tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
 
     # Compute the torch max pool
@@ -1581,7 +1581,7 @@ def make_single_function_onnx_and_run(onnx_op, op_args_dict, op_attrs_dict, inpu
     ],
 )
 def test_quantized_slice(starts, ends, steps, axes):
-    """Check that the Concrete-ML Slice operator is equivalent to the ONNX slice operator."""
+    """Check that the Concrete ML Slice operator is equivalent to the ONNX slice operator."""
 
     # Cast all inputs to numpy arrays
     starts = numpy.asarray(starts)

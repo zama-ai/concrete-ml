@@ -1,15 +1,15 @@
 # Neural Networks
 
-Concrete-ML provides simple built-in neural networks models with a Scikit-Learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
+Concrete ML provides simple built-in neural networks models with a Scikit-Learn interface through the `NeuralNetClassifier` and `NeuralNetRegressor` classes.
 
-|                                            Concrete-ML                                             | Scikit-Learn                                                                                                 |
+|                                            Concrete ML                                             | Scikit-Learn                                                                                                 |
 | :------------------------------------------------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------ |
 | [NeuralNetClassifier](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier) | [MLPClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html) |
 |  [NeuralNetRegressor](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetregressor)  | [MLPRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html)   |
 
 The neural network models are implemented with [skorch](https://skorch.readthedocs.io/en/stable/index.html), which provides a Scikit-Learn-like interface to Torch models (more [here](../developer-guide/external_libraries.md#skorch)).
 
-The Concrete-ML models are multi-layer, fully-connected networks with customizable activation functions and a number of neurons in each layer. This approach is similar to what is available in Scikit-Learn using the `MLPClassifier`/`MLPRegressor` classes. The built-in models train easily with a single call to `.fit()`, which will automatically quantize the weights and activations. These models use Quantization Aware Training, allowing good performance for low precision (down to 2-3 bit) weights and activations.
+The Concrete ML models are multi-layer, fully-connected networks with customizable activation functions and a number of neurons in each layer. This approach is similar to what is available in Scikit-Learn using the `MLPClassifier`/`MLPRegressor` classes. The built-in models train easily with a single call to `.fit()`, which will automatically quantize the weights and activations. These models use Quantization Aware Training, allowing good performance for low precision (down to 2-3 bit) weights and activations.
 
 While `NeuralNetClassifier` and `NeuralNetClassifier` provide Scikit-Learn-like models, their architecture is somewhat restricted in order to make training easy and robust. If you need more advanced models, you can convert custom neural networks as described in the [FHE-friendly models documentation](../deep-learning/fhe_friendly_models.md).
 
@@ -51,7 +51,7 @@ The [Classifier Comparison notebook](ml_examples.md) shows the behavior of built
 
 ![Comparison neural networks](../figures/neural_nets_builtin.png)
 
-The figure above shows, on the right, the Concrete-ML neural network, trained with Quantization Aware Training, in a FHE-compatible configuration. The figure compares this network to the floating-point equivalent, trained with Scikit-Learn.
+The figure above shows, on the right, the Concrete ML neural network, trained with Quantization Aware Training, in a FHE-compatible configuration. The figure compares this network to the floating-point equivalent, trained with Scikit-Learn.
 
 ### Architecture parameters
 

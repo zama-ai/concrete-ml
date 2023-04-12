@@ -86,7 +86,7 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 
 # pylint: disable=too-many-public-methods
 class BaseEstimator:
-    """Base class for all estimators in Concrete-ML.
+    """Base class for all estimators in Concrete ML.
 
     This class does not inherit from sklearn.base.BaseEstimator as it creates some conflicts
     with Skorch in QuantizedTorchEstimatorMixin's subclasses (more specifically, the `get_params`
@@ -230,7 +230,7 @@ class BaseEstimator:
     def get_sklearn_params(self, deep: bool = True) -> dict:
         """Get parameters for this estimator.
 
-        This method is used to instantiate a Scikit-Learn model using the Concrete-ML model's
+        This method is used to instantiate a Scikit-Learn model using the Concrete ML model's
         parameters. It does not override Scikit-Learn's existing `get_params` method in order to
         not break its implementation of `set_params`.
 
@@ -248,7 +248,7 @@ class BaseEstimator:
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
         params = super().get_params(deep=deep)  # type: ignore[misc]
 
-        # Remove the n_bits parameters as this attribute is added by Concrete-ML
+        # Remove the n_bits parameters as this attribute is added by Concrete ML
         params.pop("n_bits", None)
 
         return params
@@ -313,7 +313,7 @@ class BaseEstimator:
         random_state: Optional[int] = None,
         **fit_parameters,
     ):
-        """Fit both the Concrete-ML and its equivalent float estimators.
+        """Fit both the Concrete ML and its equivalent float estimators.
 
         Args:
             X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
@@ -323,7 +323,7 @@ class BaseEstimator:
             **fit_parameters: Keyword arguments to pass to the float estimator's fit method.
 
         Returns:
-            The Concrete-ML and float equivalent fitted estimators.
+            The Concrete ML and float equivalent fitted estimators.
         """
 
         # Retrieve sklearn's init parameters
@@ -347,12 +347,12 @@ class BaseEstimator:
         # Train the Scikit-Learn model
         sklearn_model.fit(X, y, **fit_parameters)
 
-        # Update the Concrete-ML model's parameters
+        # Update the Concrete ML model's parameters
         # Disable mypy attribute definition errors as this attribute is expected to be
         # initialized once the model inherits from Skorch
         self.set_params(n_bits=self.n_bits, **params)  # type: ignore[attr-defined]
 
-        # Train the Concrete-ML model
+        # Train the Concrete ML model
         self.fit(X, y, **fit_parameters)
 
         return self, sklearn_model
@@ -491,7 +491,7 @@ class BaseEstimator:
             X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
                 or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete-ML python inference,
+                Can be FheMode.DISABLE for Concrete ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values.
                 Default to FheMode.DISABLE.
@@ -641,7 +641,7 @@ class BaseEstimator:
 # methods are implemented and we need to disable pylint from checking that
 # pylint: disable-next=abstract-method
 class BaseClassifier(BaseEstimator):
-    """Base class for linear and tree-based classifiers in Concrete-ML.
+    """Base class for linear and tree-based classifiers in Concrete ML.
 
     This class inherits from BaseEstimator and modifies some of its methods in order to align them
     with classifier behaviors. This notably include applying a sigmoid/softmax post-processing to
@@ -685,7 +685,7 @@ class BaseClassifier(BaseEstimator):
             X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
                 or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete-ML python inference,
+                Can be FheMode.DISABLE for Concrete ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values.
                 Default to FheMode.DISABLE.
@@ -1023,7 +1023,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             **fit_parameters: Keyword arguments to pass to Skorch's fit method.
 
         Returns:
-            The Concrete-ML and equivalent Skorch fitted estimators.
+            The Concrete ML and equivalent Skorch fitted estimators.
         """
 
         assert (
@@ -1170,7 +1170,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Enable pruning again, this time with structured pruning
         pruned_model.base_module.enable_pruning()
 
-        # The .module_ was initialized manually, prevent .fit (for both Skorch and Concrete-ML)
+        # The .module_ was initialized manually, prevent .fit (for both Skorch and Concrete ML)
         # from creating a new one
         # Setting both attributes could be avoided by initializing `sklearn_model` in __init__
         # # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
@@ -1576,7 +1576,7 @@ class SklearnLinearClassifierMixin(
             X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
                 or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete-ML python inference,
+                Can be FheMode.DISABLE for Concrete ML python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values.
                 Default to FheMode.DISABLE.

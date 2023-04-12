@@ -1158,7 +1158,7 @@ class PaddingNet(nn.Module):
         x = torch.nn.functional.pad(x, (3, 2))
         x = torch.nn.functional.pad(x, (1, 2, 3, 4))
 
-        # Concrete-ML only supports padding on the last two dimensions as this is the
+        # Concrete ML only supports padding on the last two dimensions as this is the
         # most common setting
         x = torch.nn.functional.pad(x, (1, 1, 2, 2, 0, 0, 0, 0))
         return x

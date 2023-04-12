@@ -300,7 +300,7 @@ def compile_brevitas_qat_model(
         torch_inputset (Dataset): the calibration inputset, can contain either torch
             tensors or numpy.ndarray.
         n_bits (Optional[Union[int, dict]): the number of bits for the quantization. By default,
-            for most models, a value of None should be given, which instructs Concrete-ML to use the
+            for most models, a value of None should be given, which instructs Concrete ML to use the
             bit-widths configured using Brevitas quantization options. For some networks, that
             perform a non-linear operation on an input on an output, if None is given, a default
             value of 8 bits is used for the input/output quantization. For such models the user can

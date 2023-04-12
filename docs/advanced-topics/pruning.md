@@ -1,12 +1,12 @@
 # Pruning
 
-Pruning is a method to reduce neural network complexity, usually applied in order to reduce the computation cost or memory size. Pruning is used in Concrete-ML to control the size of accumulators in neural networks, thus making them FHE-compatible. See [here](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints) for an explanation of accumulator bit-width constraints.
+Pruning is a method to reduce neural network complexity, usually applied in order to reduce the computation cost or memory size. Pruning is used in Concrete ML to control the size of accumulators in neural networks, thus making them FHE-compatible. See [here](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints) for an explanation of accumulator bit-width constraints.
 
 ## Overview of pruning in Concrete ML
 
-Pruning is used in Concrete-ML for two types of neural networks:
+Pruning is used in Concrete ML for two types of neural networks:
 
-1. Built-in [neural networks](../built-in-models/neural-networks.md) include a pruning mechanism that can be parameterized by the user. The pruning type is based on L1-norm. To comply with FHE constraints, Concrete-ML uses _unstructured_ pruning, as the aim is not to eliminate neurons or convolutional filters completely, but to decrease their accumulator bit-width.
+1. Built-in [neural networks](../built-in-models/neural-networks.md) include a pruning mechanism that can be parameterized by the user. The pruning type is based on L1-norm. To comply with FHE constraints, Concrete ML uses _unstructured_ pruning, as the aim is not to eliminate neurons or convolutional filters completely, but to decrease their accumulator bit-width.
 1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) (e.g.L1-Unstructured) to good effect.
 
 ## Basics of pruning
@@ -23,7 +23,7 @@ When building a full neural network, each layer will contain multiple neurons, w
 
 ![Fully Connected Neural Network](../figures/network.png)
 
-For every neuron shown in each layer of the figure above, the linear combinations of inputs and learned weights are computed. Depending on the values of the inputs and weights, the sum $$v_k = \sum_i w_ix_i$$ - which for Concrete-ML neural networks is computed with integers - can take a range of different values.
+For every neuron shown in each layer of the figure above, the linear combinations of inputs and learned weights are computed. Depending on the values of the inputs and weights, the sum $$v_k = \sum_i w_ix_i$$ - which for Concrete ML neural networks is computed with integers - can take a range of different values.
 
 To respect the bit-width constraint of the FHE [table lookup](https://docs.zama.ai/concrete-numpy/tutorials/table_lookups), the values of the accumulator $$v_k$$ must remain small to be representable using a maximum of 16 bits. In other words, the values must be between 0 and $$2^{16}-1$$.
 
@@ -33,7 +33,7 @@ Fixing some of the weights to 0 makes the network graph look more similar to the
 
 ![Pruned Fully Connected Neural Network](../figures/prunednet.png)
 
-While pruning weights can reduce the prediction performance of the neural network, studies show that a high level of pruning (above 50%) can often be applied. See here how Concrete-ML uses pruning in [Fully Connected Neural Networks](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier).
+While pruning weights can reduce the prediction performance of the neural network, studies show that a high level of pruning (above 50%) can often be applied. See here how Concrete ML uses pruning in [Fully Connected Neural Networks](../developer-guide/api/concrete.ml.sklearn.qnn.md#class-neuralnetclassifier).
 
 ## Pruning in practice
 

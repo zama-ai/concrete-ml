@@ -159,8 +159,8 @@
 - [`quantizers.UniformQuantizationParameters`](./concrete.ml.quantization.quantizers.md#class-uniformquantizationparameters): Quantization parameters for uniform quantization.
 - [`quantizers.UniformQuantizer`](./concrete.ml.quantization.quantizers.md#class-uniformquantizer): Uniform quantizer.
 - [`p_error_search.BinarySearch`](./concrete.ml.search_parameters.p_error_search.md#class-binarysearch): Class for `p_error` hyper-parameter search for classification and regression tasks.
-- [`base.BaseClassifier`](./concrete.ml.sklearn.base.md#class-baseclassifier): Base class for linear and tree-based classifiers in Concrete-ML.
-- [`base.BaseEstimator`](./concrete.ml.sklearn.base.md#class-baseestimator): Base class for all estimators in Concrete-ML.
+- [`base.BaseClassifier`](./concrete.ml.sklearn.base.md#class-baseclassifier): Base class for linear and tree-based classifiers in Concrete ML.
+- [`base.BaseEstimator`](./concrete.ml.sklearn.base.md#class-baseestimator): Base class for all estimators in Concrete ML.
 - [`base.BaseTreeClassifierMixin`](./concrete.ml.sklearn.base.md#class-basetreeclassifiermixin): Mixin class for tree-based classifiers.
 - [`base.BaseTreeEstimatorMixin`](./concrete.ml.sklearn.base.md#class-basetreeestimatormixin): Mixin class for tree-based estimators.
 - [`base.BaseTreeRegressorMixin`](./concrete.ml.sklearn.base.md#class-basetreeregressormixin): Mixin class for tree-based regressors.
@@ -325,15 +325,15 @@
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given dataset.
 - [`utils.get_random_extract_of_sklearn_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_random_extract_of_sklearn_models_and_datasets): Return a random sublist of sklearn_models_and_datasets.
 - [`utils.get_torchvision_dataset`](./concrete.ml.pytest.utils.md#function-get_torchvision_dataset): Get train or testing data-set.
-- [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete-ML model type.
+- [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete ML model type.
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`p_error_search.compile_and_simulated_fhe_inference`](./concrete.ml.search_parameters.p_error_search.md#function-compile_and_simulated_fhe_inference): Get the quantized module of a given model in FHE, simulated or not.
-- [`sklearn.get_sklearn_linear_models`](./concrete.ml.sklearn.md#function-get_sklearn_linear_models): Return the list of available linear models in Concrete-ML.
-- [`sklearn.get_sklearn_models`](./concrete.ml.sklearn.md#function-get_sklearn_models): Return the list of available models in Concrete-ML.
-- [`sklearn.get_sklearn_neural_net_models`](./concrete.ml.sklearn.md#function-get_sklearn_neural_net_models): Return the list of available neural net models in Concrete-ML.
-- [`sklearn.get_sklearn_tree_models`](./concrete.ml.sklearn.md#function-get_sklearn_tree_models): Return the list of available tree models in Concrete-ML.
+- [`sklearn.get_sklearn_linear_models`](./concrete.ml.sklearn.md#function-get_sklearn_linear_models): Return the list of available linear models in Concrete ML.
+- [`sklearn.get_sklearn_models`](./concrete.ml.sklearn.md#function-get_sklearn_models): Return the list of available models in Concrete ML.
+- [`sklearn.get_sklearn_neural_net_models`](./concrete.ml.sklearn.md#function-get_sklearn_neural_net_models): Return the list of available neural net models in Concrete ML.
+- [`sklearn.get_sklearn_tree_models`](./concrete.ml.sklearn.md#function-get_sklearn_tree_models): Return the list of available tree models in Concrete ML.
 - [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
 - [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
 - [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.

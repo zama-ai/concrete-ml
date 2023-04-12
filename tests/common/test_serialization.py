@@ -1,6 +1,6 @@
 """Test serialization.
 
-Here we test the custom dump(s)/load(s) methods we have in Concrete-ML.
+Here we test the custom dump(s)/load(s) methods we have in Concrete ML.
 In all tests we create an object, dump it to and load it again.
 We then check some properties on the loaded object.
 """

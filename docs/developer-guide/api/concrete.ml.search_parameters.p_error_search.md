@@ -74,7 +74,7 @@ Supported models are:
 - <b>`estimator`</b> (torch.nn.Module):  Torch model or a built-in model
 - <b>`calibration_data`</b> (numpy.ndarray):  Calibration data required for compilation
 - <b>`ground_truth`</b> (numpy.ndarray):  The ground truth
-- <b>`p_error`</b> (float):  Concrete-ML uses table lookup (TLU) to represent any non-linear
+- <b>`p_error`</b> (float):  Concrete ML uses table lookup (TLU) to represent any non-linear
 - <b>`n_bits`</b> (int):  Quantization bits
 - <b>`is_qat`</b> (bool):  True, if the NN has been trained through QAT.  If `False` it is converted into post-trained quantized model.
 - <b>`metric`</b> (Callable):  Classification or regression evaluation metric.

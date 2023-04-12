@@ -28,10 +28,10 @@ ______________________________________________________________________
 get_sklearn_models()
 ```
 
-Return the list of available models in Concrete-ML.
+Return the list of available models in Concrete ML.
 
 **Returns:**
-the lists of models in Concrete-ML
+the lists of models in Concrete ML
 
 ______________________________________________________________________
 
@@ -47,7 +47,7 @@ get_sklearn_linear_models(
 )
 ```
 
-Return the list of available linear models in Concrete-ML.
+Return the list of available linear models in Concrete ML.
 
 **Args:**
 
@@ -56,7 +56,7 @@ Return the list of available linear models in Concrete-ML.
 - <b>`str_in_class_name`</b> (str):  if not None, only return models with this as a substring in the  class name
 
 **Returns:**
-the lists of linear models in Concrete-ML
+the lists of linear models in Concrete ML
 
 ______________________________________________________________________
 
@@ -72,7 +72,7 @@ get_sklearn_tree_models(
 )
 ```
 
-Return the list of available tree models in Concrete-ML.
+Return the list of available tree models in Concrete ML.
 
 **Args:**
 
@@ -81,7 +81,7 @@ Return the list of available tree models in Concrete-ML.
 - <b>`str_in_class_name`</b> (str):  if not None, only return models with this as a substring in the  class name
 
 **Returns:**
-the lists of tree models in Concrete-ML
+the lists of tree models in Concrete ML
 
 ______________________________________________________________________
 
@@ -97,7 +97,7 @@ get_sklearn_neural_net_models(
 )
 ```
 
-Return the list of available neural net models in Concrete-ML.
+Return the list of available neural net models in Concrete ML.
 
 **Args:**
 
@@ -106,4 +106,4 @@ Return the list of available neural net models in Concrete-ML.
 - <b>`str_in_class_name`</b> (str):  if not None, only return models with this as a substring in the  class name
 
 **Returns:**
-the lists of neural net models in Concrete-ML
+the lists of neural net models in Concrete ML

@@ -1,4 +1,4 @@
-"""Tests lists of models in Concrete-ML."""
+"""Tests lists of models in Concrete ML."""
 from concrete.ml.sklearn import get_sklearn_models
 from concrete.ml.sklearn.glm import GammaRegressor, PoissonRegressor, TweedieRegressor
 from concrete.ml.sklearn.linear_model import (
@@ -16,7 +16,7 @@ from concrete.ml.sklearn.xgb import XGBClassifier, XGBRegressor
 
 
 def test_get_sklearn_models():
-    """List all available models in Concrete-ML."""
+    """List all available models in Concrete ML."""
     dic = get_sklearn_models()
     cml_list = dic["all"]
     linear_list = dic["linear"]

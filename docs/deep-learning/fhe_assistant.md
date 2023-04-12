@@ -5,13 +5,13 @@ FHE simulation, the key-cache functionality that helps speed-up FHE result debug
 
 ## Simulation
 
-The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation)(previously known as Virtual Library) of Concrete-ML provides a way to evaluate, using clear data, the results that ML models would produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with Concrete-Numpy's Virtual Circuits\](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
+The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation)(previously known as Virtual Library) of Concrete ML provides a way to evaluate, using clear data, the results that ML models would produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with Concrete-Numpy's Virtual Circuits\](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
 
 The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the simulation can help to find the optimal model design.
 
 Simulation is much faster than FHE execution. This allows for faster debugging and model optimization. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
-The following example shows how to use the simulation mode in Concrete-ML.
+The following example shows how to use the simulation mode in Concrete ML.
 
 ```python
 from sklearn.datasets import fetch_openml, make_circles
@@ -117,7 +117,7 @@ return %8
 
 The error `table lookups are only supported on circuits with up to 16-bit integers` indicates that
 the 16-bit limit on the input of the Table Lookup operation has been exceeded. To pinpoint the
-model layer that causes the error Concrete-ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First the
+model layer that causes the error Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First the
 model must be compiled so that it can be [simulated](#simulation). Next, calling the function on the
 module above returns the following:
 
