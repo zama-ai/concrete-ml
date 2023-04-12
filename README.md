@@ -149,6 +149,7 @@ To cite Concrete-ML, notably in academic papers, please use the following entry,
 ```
 
 ## Need support?
+
 <a target="_blank" href="https://community.zama.ai">
   <img src="https://user-images.githubusercontent.com/5758427/231115030-21195b55-2629-4c01-9809-be5059243999.png">
 </a>

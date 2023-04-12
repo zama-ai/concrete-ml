@@ -181,7 +181,8 @@ cov = ["attrs[tests]", "coverage-enable-subprocess", "coverage[toml] (>=5.3)"]
 dev = ["attrs[docs,tests]"]
 docs = ["furo", "myst-parser", "sphinx", "sphinx-notfound-page", "sphinxcontrib-towncrier", "towncrier", "zope.interface"]
 tests = ["attrs[tests-no-zope]", "zope.interface"]
-tests-no-zope = ["cloudpickle", "cloudpickle", "hypothesis", "hypothesis", "mypy (>=0.971,<0.990)", "mypy (>=0.971,<0.990)", "pympler", "pympler", "pytest (>=4.3.0)", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-mypy-plugins", "pytest-xdist[psutil]", "pytest-xdist[psutil]"]
+tests-no-zope = ["cloudpickle", "hypothesis", "mypy (>=0.971,<0.990)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-xdist[psutil]"]
+tests_no_zope = ["cloudpickle", "hypothesis", "mypy (>=0.971,<0.990)", "pympler", "pytest (>=4.3.0)", "pytest-mypy-plugins", "pytest-xdist[psutil]"]
 
 [[package]]
 name = "autopep8"
@@ -328,10 +329,10 @@ typing-extensions = ">=3.7.4"
 [package.extras]
 docs = ["m2r2", "nbsphinx", "nbsphinx-link", "pydata-sphinx-theme", "sphinx (==5.3.0)", "sphinx-autodoc-typehints", "sphinx-gallery (==0.10.1)", "sphinxcontrib-napoleon", "sphinxemoji"]
 export = ["onnx", "onnxoptimizer"]
-finn-integration = ["bitstring", "onnx", "onnxoptimizer", "onnxruntime", "qonnx", "toposort"]
+finn_integration = ["bitstring", "onnx", "onnxoptimizer", "onnxruntime", "qonnx", "toposort"]
 hadamard = ["scipy"]
 notebook = ["jupyter", "nbmake"]
-ort-integration = ["onnx", "onnxoptimizer", "onnxruntime"]
+ort_integration = ["onnx", "onnxoptimizer", "onnxruntime"]
 stt = ["inflect", "librosa", "numba", "pillow (>=4.3.0)", "requests", "ruamel.yaml", "soundfile", "sox", "torch-stft", "tqdm", "unidecode"]
 test = ["hypothesis", "mock", "pytest", "pytest-cases", "pytest-mock", "scipy", "torchvision"]
 tts = ["librosa", "numpy", "pillow", "pyyaml", "scipy", "soundfile", "tqdm"]
@@ -451,7 +452,7 @@ typing = ["mypy (>=0.990)"]
 
 [[package]]
 name = "concrete-python"
-version = "1.0.0rc1"
+version = "1.0.0"
 description = "A state-of-the-art homomorphic encryption framework"
 category = "main"
 optional = false
@@ -808,7 +809,7 @@ six = ">=1.9.0"
 
 [package.extras]
 aiohttp = ["aiohttp (>=3.6.2,<4.0.0dev)", "requests (>=2.20.0,<3.0.0dev)"]
-enterprise-cert = ["cryptography (==36.0.2)", "pyopenssl (==22.0.0)"]
+enterprise_cert = ["cryptography (==36.0.2)", "pyopenssl (==22.0.0)"]
 pyopenssl = ["cryptography (>=38.0.3)", "pyopenssl (>=20.0.0)"]
 reauth = ["pyu2f (>=0.1.5)"]
 requests = ["requests (>=2.20.0,<3.0.0dev)"]
@@ -1080,7 +1081,7 @@ notebook = ["ipywidgets", "notebook"]
 parallel = ["ipyparallel"]
 qtconsole = ["qtconsole"]
 test = ["pytest (<7.1)", "pytest-asyncio", "testpath"]
-test-extra = ["curio", "matplotlib (!=3.2.0)", "nbformat", "numpy (>=1.21)", "pandas", "pytest (<7.1)", "pytest-asyncio", "testpath", "trio"]
+test_extra = ["curio", "matplotlib (!=3.2.0)", "nbformat", "numpy (>=1.21)", "pandas", "pytest (<7.1)", "pytest-asyncio", "testpath", "trio"]
 
 [[package]]
 name = "ipython-genutils"
@@ -1167,12 +1168,12 @@ australis = ["protobuf (>=3.13,<4)"]
 ci = ["jaxlib (==0.4.7)"]
 cpu = ["jaxlib (==0.4.7)"]
 cuda = ["jaxlib (==0.4.7+cuda11.cudnn86)"]
-cuda11-cudnn82 = ["jaxlib (==0.4.7+cuda11.cudnn82)"]
-cuda11-cudnn86 = ["jaxlib (==0.4.7+cuda11.cudnn86)"]
-cuda11-local = ["jaxlib (==0.4.7+cuda11.cudnn86)"]
-cuda11-pip = ["jaxlib (==0.4.7+cuda11.cudnn86)", "nvidia-cublas-cu11 (>=11.11)", "nvidia-cuda-nvcc-cu11 (>=11.8)", "nvidia-cuda-runtime-cu11 (>=11.8)", "nvidia-cudnn-cu11 (>=8.6)", "nvidia-cufft-cu11 (>=10.9)", "nvidia-cusolver-cu11 (>=11.4)", "nvidia-cusparse-cu11 (>=11.7)"]
-cuda12-local = ["jaxlib (==0.4.7+cuda12.cudnn88)"]
-cuda12-pip = ["jaxlib (==0.4.7+cuda12.cudnn88)", "nvidia-cublas-cu12", "nvidia-cuda-nvcc-cu12", "nvidia-cuda-runtime-cu12", "nvidia-cudnn-cu12", "nvidia-cufft-cu12", "nvidia-cusolver-cu12", "nvidia-cusparse-cu12"]
+cuda11_cudnn82 = ["jaxlib (==0.4.7+cuda11.cudnn82)"]
+cuda11_cudnn86 = ["jaxlib (==0.4.7+cuda11.cudnn86)"]
+cuda11_local = ["jaxlib (==0.4.7+cuda11.cudnn86)"]
+cuda11_pip = ["jaxlib (==0.4.7+cuda11.cudnn86)", "nvidia-cublas-cu11 (>=11.11)", "nvidia-cuda-nvcc-cu11 (>=11.8)", "nvidia-cuda-runtime-cu11 (>=11.8)", "nvidia-cudnn-cu11 (>=8.6)", "nvidia-cufft-cu11 (>=10.9)", "nvidia-cusolver-cu11 (>=11.4)", "nvidia-cusparse-cu11 (>=11.7)"]
+cuda12_local = ["jaxlib (==0.4.7+cuda12.cudnn88)"]
+cuda12_pip = ["jaxlib (==0.4.7+cuda12.cudnn88)", "nvidia-cublas-cu12", "nvidia-cuda-nvcc-cu12", "nvidia-cuda-runtime-cu12", "nvidia-cudnn-cu12", "nvidia-cufft-cu12", "nvidia-cusolver-cu12", "nvidia-cusparse-cu12"]
 minimum-jaxlib = ["jaxlib (==0.4.7)"]
 tpu = ["jaxlib (==0.4.7)", "libtpu-nightly (==0.1.dev20230327)", "requests"]
 
@@ -1591,7 +1592,7 @@ mdurl = ">=0.1,<1.0"
 
 [package.extras]
 benchmarking = ["psutil", "pytest", "pytest-benchmark"]
-code-style = ["pre-commit (>=3.0,<4.0)"]
+code_style = ["pre-commit (>=3.0,<4.0)"]
 compare = ["commonmark (>=0.9,<1.0)", "markdown (>=3.4,<4.0)", "mistletoe (>=1.0,<2.0)", "mistune (>=2.0,<3.0)", "panflute (>=2.3,<3.0)"]
 linkify = ["linkify-it-py (>=1,<3)"]
 plugins = ["mdit-py-plugins"]
@@ -1733,7 +1734,7 @@ python-versions = ">=3.7"
 markdown-it-py = ">=1.0.0,<3.0.0"
 
 [package.extras]
-code-style = ["pre-commit"]
+code_style = ["pre-commit"]
 rtd = ["attrs", "myst-parser (>=0.16.1,<0.17.0)", "sphinx-book-theme (>=0.1.0,<0.2.0)"]
 testing = ["coverage", "pytest", "pytest-cov", "pytest-regressions"]
 
@@ -1860,7 +1861,7 @@ pyyaml = "*"
 sphinx = ">=5,<7"
 
 [package.extras]
-code-style = ["pre-commit (>=3.0,<4.0)"]
+code_style = ["pre-commit (>=3.0,<4.0)"]
 linkify = ["linkify-it-py (>=1.0,<2.0)"]
 rtd = ["ipython", "pydata-sphinx-theme (==v0.13.0rc4)", "sphinx-autodoc2 (>=0.4.2,<0.5.0)", "sphinx-book-theme (==1.0.0rc2)", "sphinx-copybutton", "sphinx-design2", "sphinx-pyscript", "sphinx-tippy (>=0.3.1)", "sphinx-togglebutton", "sphinxext-opengraph (>=0.7.5,<0.8.0)", "sphinxext-rediraffe (>=0.2.7,<0.3.0)"]
 testing = ["beautifulsoup4", "coverage[toml]", "pytest (>=7,<8)", "pytest-cov", "pytest-param-files (>=0.3.4,<0.4.0)", "pytest-regressions", "sphinx-pytest"]
@@ -3039,7 +3040,7 @@ urllib3 = ">=1.21.1,<1.27"
 
 [package.extras]
 socks = ["PySocks (>=1.5.6,!=1.5.7)"]
-use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
+use_chardet_on_py3 = ["chardet (>=3.0.2,<6)"]
 
 [[package]]
 name = "requests-oauthlib"
@@ -3432,7 +3433,7 @@ python-versions = ">=3.7"
 sphinx = ">=1.8"
 
 [package.extras]
-code-style = ["pre-commit (==2.12.1)"]
+code_style = ["pre-commit (==2.12.1)"]
 rtd = ["ipython", "myst-nb", "sphinx", "sphinx-book-theme", "sphinx-examples"]
 
 [[package]]
@@ -3899,7 +3900,7 @@ dev = ["GitPython (<3.1.19)", "Pillow", "accelerate (>=0.10.0)", "av (==9.2.0)",
 dev-tensorflow = ["GitPython (<3.1.19)", "Pillow", "beautifulsoup4", "black (>=23.1,<24.0)", "cookiecutter (==1.7.3)", "datasets (!=2.5.0)", "dill (<0.3.5)", "evaluate (>=0.2.0)", "faiss-cpu", "hf-doc-builder", "hf-doc-builder (>=0.3.0)", "isort (>=5.5.4)", "kenlm", "keras-nlp (>=0.3.1)", "librosa", "nltk", "onnxconverter-common", "onnxruntime (>=1.4.0)", "onnxruntime-tools (>=1.4.2)", "parameterized", "phonemizer", "protobuf (<=3.20.2)", "psutil", "pyctcdecode (>=0.4.0)", "pytest", "pytest-timeout", "pytest-xdist", "rjieba", "rouge-score (!=0.0.7,!=0.0.8,!=0.1,!=0.1.1)", "ruff (>=0.0.241)", "sacrebleu (>=1.4.12,<2.0.0)", "sacremoses", "safetensors (>=0.2.1)", "scikit-learn", "sentencepiece (>=0.1.91,!=0.1.92)", "tensorflow (>=2.4,<2.12)", "tensorflow-text", "tf2onnx", "timeout-decorator", "tokenizers (>=0.11.1,!=0.11.3,<0.14)"]
 dev-torch = ["GitPython (<3.1.19)", "Pillow", "beautifulsoup4", "black (>=23.1,<24.0)", "codecarbon (==1.2.0)", "cookiecutter (==1.7.3)", "datasets (!=2.5.0)", "dill (<0.3.5)", "evaluate (>=0.2.0)", "faiss-cpu", "fugashi (>=1.0)", "hf-doc-builder", "hf-doc-builder (>=0.3.0)", "ipadic (>=1.0.0,<2.0)", "isort (>=5.5.4)", "kenlm", "librosa", "nltk", "onnxruntime (>=1.4.0)", "onnxruntime-tools (>=1.4.2)", "optuna", "parameterized", "phonemizer", "protobuf (<=3.20.2)", "psutil", "pyctcdecode (>=0.4.0)", "pytest", "pytest-timeout", "pytest-xdist", "ray[tune]", "rhoknp (>=1.1.0)", "rjieba", "rouge-score (!=0.0.7,!=0.0.8,!=0.1,!=0.1.1)", "ruff (>=0.0.241)", "sacrebleu (>=1.4.12,<2.0.0)", "sacremoses", "safetensors (>=0.2.1)", "scikit-learn", "sentencepiece (>=0.1.91,!=0.1.92)", "sigopt", "sudachidict-core (>=20220729)", "sudachipy (>=0.6.6)", "timeout-decorator", "timm", "tokenizers (>=0.11.1,!=0.11.3,<0.14)", "torch (>=1.7,!=1.12.0)", "torchaudio", "torchvision", "unidic (>=1.0.2)", "unidic-lite (>=1.0.7)"]
 docs = ["Pillow", "accelerate (>=0.10.0)", "av (==9.2.0)", "codecarbon (==1.2.0)", "decord (==0.6.0)", "flax (>=0.4.1)", "hf-doc-builder", "jax (>=0.2.8,!=0.3.2,<=0.3.6)", "jaxlib (>=0.1.65,<=0.3.6)", "kenlm", "keras-nlp (>=0.3.1)", "librosa", "onnxconverter-common", "optax (>=0.0.8)", "optuna", "phonemizer", "protobuf (<=3.20.2)", "pyctcdecode (>=0.4.0)", "ray[tune]", "sentencepiece (>=0.1.91,!=0.1.92)", "sigopt", "tensorflow (>=2.4,<2.12)", "tensorflow-text", "tf2onnx", "timm", "tokenizers (>=0.11.1,!=0.11.3,<0.14)", "torch (>=1.7,!=1.12.0)", "torchaudio", "torchvision"]
-docs-specific = ["hf-doc-builder"]
+docs_specific = ["hf-doc-builder"]
 fairscale = ["fairscale (>0.3)"]
 flax = ["flax (>=0.4.1)", "jax (>=0.2.8,!=0.3.2,<=0.3.6)", "jaxlib (>=0.1.65,<=0.3.6)", "optax (>=0.0.8)"]
 flax-speech = ["kenlm", "librosa", "phonemizer", "pyctcdecode (>=0.4.0)"]
@@ -4175,7 +4176,7 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "5c39f13b5db5a00685e1d3e29a09590b00ef4ecf4a7cf5bfdaa8371c1bca4199"
+content-hash = "cf894f48d38875bd81ed96c8f203eb7430c831d3110268b82e85dc9ccab24847"
 
 [metadata.files]
 absl-py = [
@@ -4586,15 +4587,15 @@ comm = [
     {file = "comm-0.1.3.tar.gz", hash = "sha256:a61efa9daffcfbe66fd643ba966f846a624e4e6d6767eda9cf6e993aadaab93e"},
 ]
 concrete-python = [
-    {file = "concrete_python-1.0.0rc1-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:ddd3bd00a71fe5ee21742372c8d391f1da959717aec25484ae6b28f39b93a572"},
-    {file = "concrete_python-1.0.0rc1-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:7b4b72bc7bffc7a8bfe2019d7215ae077e8a61afba12ebf916bc8c2878f95b7c"},
-    {file = "concrete_python-1.0.0rc1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:ef9a005c6ef260080ecbb18f926907b4c09275de497d353682fa97d95a9ffb48"},
-    {file = "concrete_python-1.0.0rc1-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:856b848b2c3df4d7ae1a3d70a4e964d9ae3dffa2b1c8e5020992099c5cbf2a30"},
-    {file = "concrete_python-1.0.0rc1-cp38-cp38-macosx_12_0_arm64.whl", hash = "sha256:b74cd4cacf84a79bbe6aff3e80ace0322b91d370f7eaeec4126821f039b1a0e2"},
-    {file = "concrete_python-1.0.0rc1-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:4da9729faa0ecddc2aecb2e38f61637f8b473bc30e3fbe727cad2a58747403c5"},
-    {file = "concrete_python-1.0.0rc1-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:0c5867c5c15ad4702c83929fe542b334d20b4e250cdfe1ef343dc5a3b6303295"},
-    {file = "concrete_python-1.0.0rc1-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:7187bd29b8a9dd796dcb39d0921251e80c9f342bd4043cc745276c121798fcda"},
-    {file = "concrete_python-1.0.0rc1-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:c8362a4168528d8631df8dc5186bb9f8305683e56063969a679ac25b8fc54593"},
+    {file = "concrete_python-1.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:b738ca57e7639d72b761bb73b16e8988e0ae2eb15d907f81803d41c59a34ce22"},
+    {file = "concrete_python-1.0.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:a3e3656c58e8707570c81e4f4627f51f86dbd591a592726ca6772e758f1ae956"},
+    {file = "concrete_python-1.0.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:31fa3c6ee0351e03cf465459287451ec655a530c72e404131f4b75e8a5623a16"},
+    {file = "concrete_python-1.0.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:508247ea6a17be424a14766273b4e988dfc9062e3cca97eda43c0b6077709c65"},
+    {file = "concrete_python-1.0.0-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:7d2885ba3a6fe14772223db6eca6ca36bdb6a2d31f1127faa8786a4ac08007e3"},
+    {file = "concrete_python-1.0.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:8c8ea5eec70f69c0024f2a72ea61fe5061bc77b84e7bba33359b80d172f899b0"},
+    {file = "concrete_python-1.0.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:5f9682e763f5dcea18a349d4bec3342e33af5fafc6eef0450ec95ef20ef49c2a"},
+    {file = "concrete_python-1.0.0-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:1bb9bf2af0910f10948fda230ac25666a06f606e37d74da5c7ee401eb461e79b"},
+    {file = "concrete_python-1.0.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:3dca47430095fc88b443ff43790c413b25e0d111c4cb4be82b8f6e3cb75f410d"},
 ]
 contourpy = [
     {file = "contourpy-1.0.7-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:95c3acddf921944f241b6773b767f1cbce71d03307270e2d769fd584d5d1092d"},

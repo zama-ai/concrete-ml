@@ -3,8 +3,8 @@
 from typing import Tuple, Union
 
 import numpy
+from concrete.fhe import conv as cnp_conv
 from concrete.fhe import ones as cnp_ones
-from concrete.onnx import conv as cnp_conv
 
 from ..common.debugging import assert_true
 

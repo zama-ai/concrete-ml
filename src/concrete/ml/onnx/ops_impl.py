@@ -8,9 +8,9 @@ import numpy
 import onnx
 import onnx.helper
 from brevitas.function import max_int, min_int
+from concrete.fhe import conv as cnp_conv
+from concrete.fhe import maxpool as cnp_maxpool
 from concrete.fhe import univariate
-from concrete.onnx import conv as cnp_conv
-from concrete.onnx import maxpool as cnp_maxpool
 from scipy import special
 from typing_extensions import SupportsIndex
 
