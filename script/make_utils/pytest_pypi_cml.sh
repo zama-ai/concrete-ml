@@ -43,7 +43,6 @@ python -m pip install --upgrade pip
 python -m pip install poetry==1.2.1 pytest==7.1.1 pandas==1.3.5 tensorflow==2.10.0 tf2onnx==1.13.0 torchvision==0.14.1
 
 # Install additional pytest plugins
-python -m pip install pytest-cov==3.0.0
 python -m pip install pytest-xdist==2.5.0
 python -m pip install pytest-randomly==3.12.0
 python -m pip install pytest-repeat==0.9.1
@@ -71,7 +70,12 @@ if ${TEST_CODEBLOCKS}; then
 
     ./script/make_utils/pytest_codeblocks.sh
 else
-    make pytest
+    poetry run pytest --version
+    poetry run pytest --durations=10 -svv \
+        --capture=tee-sys \
+        -n 4 \
+        --randomly-dont-reorganize \
+        --randomly-dont-reset-seed 
 fi
 
 # Delete the virtual env directory
