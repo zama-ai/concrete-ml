@@ -110,7 +110,7 @@ Export all needed artifacts for the client and server.
 
 **Arguments:**
 
-- <b>`via_mlir`</b> (bool):  serialize with `via_mlir` option from Concrete-Numpy.  For more details on the topic please refer to Concrete-Numpy's documentation.
+- <b>`via_mlir`</b> (bool):  serialize with `via_mlir` option from Concrete.  For more details on the topic please refer to Concrete's documentation.
 
 **Raises:**
 

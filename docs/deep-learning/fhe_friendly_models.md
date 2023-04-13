@@ -64,7 +64,7 @@ The network was trained using different numbers of neurons in the hidden layers,
 This shows that the fp32 accuracy and accumulator size increases with the number of hidden neurons, while the 3-bit accuracy remains low irrespective of the number of neurons. While all the configurations tried here were FHE-compatible (accumulator \< 16 bits), it is often preferable to have a lower accumulator size in order to speed up the inference time.
 
 {% hint style="info" %}
-The accumulator size is determined by Concrete-Numpy as being the maximum bit-width encountered anywhere in the encrypted circuit.
+The accumulator size is determined by Concrete as being the maximum bit-width encountered anywhere in the encrypted circuit.
 {% endhint %}
 
 ## Quantization Aware Training:

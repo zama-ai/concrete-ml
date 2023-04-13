@@ -35,7 +35,7 @@ fhe_circuit = model.compile(x_train)
 ```
 
 All Concrete ML built-in models have a monolithic `predict` method that performs the encryption, FHE execution and decryption with a single function call.
-Thus, Concrete ML models follow the same API as Scikit-Learn models, transparently performing the steps related to encryption to accentuate convenience.
+Thus, Concrete ML models follow the same API as scikit-learn models, transparently performing the steps related to encryption to accentuate convenience.
 
 <!--pytest-codeblocks:cont-->
 
@@ -44,7 +44,7 @@ Thus, Concrete ML models follow the same API as Scikit-Learn models, transparent
 y_pred_fhe = model.predict(x_test, fhe="execute")
 ```
 
-Regarding this LogisticRegression model, as with Scikit-Learn, it is possible to predict the logits as well as the class probabilities by respectively using the `decision_function` or `predict_proba` methods instead.
+Regarding this LogisticRegression model, as with scikit-learn, it is possible to predict the logits as well as the class probabilities by respectively using the `decision_function` or `predict_proba` methods instead.
 
 Alternatively, it is possible to execute all main steps (key generation, quantization, encryption, FHE execution, decryption) separately.
 

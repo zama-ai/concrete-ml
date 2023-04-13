@@ -111,7 +111,7 @@ This function shall be overloaded by inheriting classes to test self.\_int_input
 
 **Returns:**
 
-- <b>`bool`</b>:  whether this instance of the QuantizedOp produces Concrete Numpy code  that can be fused to TLUs
+- <b>`bool`</b>:  whether this instance of the QuantizedOp produces Concrete code  that can be fused to TLUs
 
 ______________________________________________________________________
 

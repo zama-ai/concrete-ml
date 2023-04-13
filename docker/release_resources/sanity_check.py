@@ -95,7 +95,7 @@ def ml_check(args, keyring_dir_as_str):
 
 
 def cn_check(args, keyring_dir_as_str):
-    """Test about Concrete Numpy functions"""
+    """Test about Concrete functions"""
 
     is_fast = args.fast
 

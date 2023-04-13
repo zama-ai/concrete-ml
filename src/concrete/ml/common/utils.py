@@ -155,16 +155,16 @@ def manage_parameters_for_pbs_errors(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
 ):
-    """Return (p_error, global_p_error) that we want to give to Concrete-Python and the compiler.
+    """Return (p_error, global_p_error) that we want to give to Concrete.
 
     The returned (p_error, global_p_error) depends on user's parameters and the way we want to
     manage defaults in Concrete ML, which may be different from the way defaults are managed in
-    Concrete-Python
+    Concrete.
 
     Principle:
         - if none are set, we set global_p_error to a default value of our choice
         - if both are set, we raise an error
-        - if one is set, we use it and forward it to Concrete-Python and the compiler
+        - if one is set, we use it and forward it to Concrete
 
     Note that global_p_error is currently set to 0 in the FHE simulation mode.
 

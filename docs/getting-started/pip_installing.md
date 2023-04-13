@@ -37,7 +37,7 @@ pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
 
-This will automatically install all dependencies, notably Concrete-Numpy.
+This will automatically install all dependencies, notably Concrete.
 
 ## Using Docker
 

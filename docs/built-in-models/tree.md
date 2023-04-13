@@ -1,15 +1,15 @@
 # Tree-based Models
 
-Concrete ML provides several of the most popular `classification` and `regression` tree models that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
+Concrete ML provides several of the most popular `classification` and `regression` tree models that can be found in [scikit-learn](https://scikit-learn.org/stable/):
 
-|                                                Concrete ML                                                |                                                                           Scikit-Learn                                                                           |
+|                                                Concrete ML                                                |                                                                           scikit-learn                                                                           |
 | :-------------------------------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [DecisionTreeClassifier](../developer-guide/api/concrete.ml.sklearn.tree.md#class-decisiontreeclassifier) |     [DecisionTreeClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html#sklearn.tree.DecisionTreeClassifier)     |
 |  [DecisionTreeRegressor](../developer-guide/api/concrete.ml.sklearn.tree.md#class-decisiontreeregressor)  |      [DecisionTreeRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html#sklearn.tree.DecisionTreeRegressor)       |
 |  [RandomForestClassifier](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestclassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
 |   [RandomForestRegressor](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
-In addition to support for Scikit-Learn, Concrete ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
+In addition to support for scikit-learn, Concrete ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
 
 |                                      Concrete ML                                       |                                                XGboost                                                 |
 | :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
@@ -25,7 +25,7 @@ For a formal explanation of the mechanisms that enable FHE-compatible decision t
 
 ## Example
 
-Here's an example of how to use this model in FHE on a popular data-set using some of Scikit-Learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
+Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
 
 ```python
 from sklearn.datasets import load_breast_cancer

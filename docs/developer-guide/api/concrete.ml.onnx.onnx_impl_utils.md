@@ -28,7 +28,7 @@ Pad a tensor according to ONNX spec, using an optional custom pad value.
 - <b>`x`</b> (numpy.ndarray):  input tensor to pad
 - <b>`pads`</b> (List\[int\]):  padding values according to ONNX spec
 - <b>`pad_value`</b> (Optional\[Union\[float, int\]\]):  value used to fill in padding, default 0
-- <b>`int_only`</b> (bool):  set to True to generate integer only code with Concrete-Numpy
+- <b>`int_only`</b> (bool):  set to True to generate integer only code with Concrete
 
 **Returns:**
 

@@ -278,8 +278,7 @@ def numpy_gemm(
     Returns:
         Tuple[numpy.ndarray]: The tuple containing the result tensor
     """
-    # If alpha and beta are integer, apply the int type for concrete-python
-    # to see they are integers (see issue #277)
+    # If alpha and beta are integer, apply the int type for Concrete to see they are integers
     processed_alpha = int(alpha) if round(alpha) == alpha else alpha
     processed_beta = int(beta) if round(beta) == beta else beta
 
@@ -800,7 +799,7 @@ def numpy_log(
     """
 
     # Epsilon is here to avoid problems with 0 or negative values, which may happen when Concrete
-    # Numpy creates the table (even if these problematic values would normally never be used)
+    # creates the table (even if these problematic values would normally never be used)
     epsilon = 10**-8
 
     return (numpy.log(numpy.maximum(x, epsilon)),)
@@ -1180,7 +1179,7 @@ def numpy_conv(
     assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
     assert_true(
         bool(numpy.all(numpy.asarray(dilations) == 1)),
-        "The convolution operator in Concrete Numpy does not support dilation",
+        "The convolution operator in Concrete does not support dilation",
     )
 
     weight_channels = x.shape[1]

@@ -1,8 +1,8 @@
 # Linear Models
 
-Concrete ML provides several of the most popular linear models for `regression` and `classification` that can be found in [Scikit-Learn](https://scikit-learn.org/stable/):
+Concrete ML provides several of the most popular linear models for `regression` and `classification` that can be found in [scikit-learn](https://scikit-learn.org/stable/):
 
-|                                                Concrete ML                                                |                                                                         Scikit-Learn                                                                         |
+|                                                Concrete ML                                                |                                                                         scikit-learn                                                                         |
 | :-------------------------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------: |
 |   [LinearRegression](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-linearregression)   |    [LinearRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html#sklearn.linear_model.LinearRegression)    |
 | [LogisticRegression](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-logisticregression) | [LogisticRegression](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression) |
@@ -15,13 +15,13 @@ Concrete ML provides several of the most popular linear models for `regression` 
 |              [Ridge](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-ridge)              |                    [Ridge](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge)                     |
 |         [ElasticNet](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-elasticnet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
 
-Using these models in FHE is extremely similar to what can be done with Scikit-Learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists who are used to this framework to get started with Concrete ML.
+Using these models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists who are used to this framework to get started with Concrete ML.
 
-Models are also compatible with some of Scikit-Learn's main workflows, such as `Pipeline()` and `GridSearch()`.
+Models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
 ## Quantization parameters
 
-The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. When non-linear mapping is applied by the model, such as _exp_ or _sigmoid_, currently Concrete ML applies it on the client-side, on clear-text values that are the decrypted output of the linear part of the model. Thus, Linear Models do not use table lookups, and can, therefore, use high precision integers for weight and inputs. The `n_bits` parameter can be set to `8` or more bits for models with up to `300` input dimensions. When the input has more dimensions, `n_bits` must be reduced to `6-7`. All performance metrics are preserved down to `n_bits=6`, compared to the non-quantized float models from Scikit-Learn.
+The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. When non-linear mapping is applied by the model, such as _exp_ or _sigmoid_, currently Concrete ML applies it on the client-side, on clear-text values that are the decrypted output of the linear part of the model. Thus, Linear Models do not use table lookups, and can, therefore, use high precision integers for weight and inputs. The `n_bits` parameter can be set to `8` or more bits for models with up to `300` input dimensions. When the input has more dimensions, `n_bits` must be reduced to `6-7`. All performance metrics are preserved down to `n_bits=6`, compared to the non-quantized float models from scikit-learn.
 
 ## Example
 
@@ -73,8 +73,8 @@ print(
 #  100 examples over 100 have a FHE inference equal to the clear inference
 ```
 
-We can then plot the decision boundary of the classifier and compare those results with a Scikit-Learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
+We can then plot the decision boundary of the classifier and compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ![Sklearn model decision boundaries](../figures/logistic_regression_clear.png) ![FHE model decision boundarires](../figures/logistic_regression_fhe.png)
 
-The overall accuracy scores are identical (93%) between the Scikit-Learn model (executed in the clear) and the Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models are able to consider large precision numbers when quantizing inputs and weights in Concrete ML. Additionally, as the linear models do not use PBS, the FHE computations are always exact, meaning the FHE predictions are always identical to the quantized clear ones.
+The overall accuracy scores are identical (93%) between the scikit-learn model (executed in the clear) and the Concrete ML one (executed in FHE). In fact, quantization has little impact on the decision boundaries, as linear models are able to consider large precision numbers when quantizing inputs and weights in Concrete ML. Additionally, as the linear models do not use PBS, the FHE computations are always exact, meaning the FHE predictions are always identical to the quantized clear ones.

@@ -4,7 +4,7 @@
 
 ![](.gitbook/assets/3.png)
 
-Concrete ML is an open-source, privacy-preserving, machine learning inference framework based on fully homomorphic encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from Scikit-Learn and PyTorch (see how it looks for [linear models](built-in-models/linear.md), [tree-based models](built-in-models/tree.md), and [neural networks](built-in-models/neural-networks.md)).
+Concrete ML is an open-source, privacy-preserving, machine learning inference framework based on fully homomorphic encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how it looks for [linear models](built-in-models/linear.md), [tree-based models](built-in-models/tree.md), and [neural networks](built-in-models/neural-networks.md)).
 
 Fully Homomorphic Encryption (FHE) is an encryption technique that allows computing directly on encrypted data, without needing to decrypt it. With FHE, you can build private-by-design applications without compromising on features. You can learn more about FHE in [this introduction](https://www.zama.ai/post/tfhe-deep-dive-part-1) or by joining the [FHE.org](https://fhe.org) community.
 
@@ -38,14 +38,14 @@ model.compile(X_train)
 # Finally we run the inference on encrypted inputs
 y_pred_fhe = model.predict(X_test, fhe="execute")
 
-print("In clear  :", y_pred_clear)
-print("In FHE    :", y_pred_fhe)
-print(f"Similarity: {int((y_pred_fhe == y_pred_clear).mean()*100)}%")
+print(f"In clear  : {y_pred_clear}")
+print(f"In FHE    : {y_pred_fhe}")
+print(f"Similarity: {(y_pred_fhe == y_pred_clear).mean():.1%}")
 
 # Output:
     # In clear  : [0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 1 1 1 0 0]
     # In FHE    : [0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 1 1 1 0 0]
-    # Similarity: 100%
+    # Similarity: 100.0%
 ```
 
 This example shows the typical flow of a Concrete ML model:
@@ -66,7 +66,7 @@ All of these issues are currently being addressed and significant improvements a
 
 ## Concrete stack
 
-Concrete ML is built on top of Zama's Concrete. It uses [Concrete-Numpy](https://github.com/zama-ai/concrete-numpy), which itself uses the [Concrete-Compiler](https://pypi.org/project/concrete-compiler) and the [Concrete-Library](https://docs.zama.ai/concrete). To use these libraries directly, refer to the [Concrete-Numpy](https://docs.zama.ai/concrete-numpy/) and [Concrete](https://docs.zama.ai/concrete) documentations.
+Concrete ML is built on top of Zama's [Concrete](https://github.com/zama-ai/concrete).
 
 ## Online demos and tutorials
 

@@ -6,11 +6,11 @@ As FHE execution is much slower than execution on non-encrypted data, Concrete M
 
 ## Compilation to FHE
 
-Concrete ML implements model inference using Concrete-Python as a backend. In order to execute in FHE, a numerical program written in Concrete-Python needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete-numpy/getting-started/quick_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
+Concrete ML implements model inference using Concrete as a backend. In order to execute in FHE, a numerical program written in Concrete needs to be compiled. This functionality is [described here](https://docs.zama.ai/concrete/getting-started/quick_start), and Concrete ML hides away most of the complexity of this step, completing the entire compilation process itself.
 
-From the perspective of the Concrete ML user, the compilation process performed by Concrete-Python can be broken up into 3 steps:
+From the perspective of the Concrete ML user, the compilation process performed by Concrete can be broken up into 3 steps:
 
-1. tracing the NumPy program and creating a Concrete-Python op-graph
+1. tracing the NumPy program and creating a Concrete op-graph
 1. checking the op-graph for FHE compatability
 1. producing machine code for the op-graph (this step automatically determines cryptographic parameters)
 
@@ -34,7 +34,7 @@ and, for custom models, with one of the `compile_brevitas_qat_model` (for Brevit
 
 ## FHE Simulation
 
-The first step in the list above takes a Python function implemented using the Concrete-Python [supported operation set](https://docs.zama.ai/concrete-numpy/getting-started/compatibility) and transforms it into an executable operation graph.
+The first step in the list above takes a Python function implemented using the Concrete [supported operation set](https://docs.zama.ai/concrete/getting-started/compatibility) and transforms it into an executable operation graph.
 
 The result of this single step of the compilation pipeline allows the:
 
@@ -57,9 +57,9 @@ Moreover, the maximum accumulator bit-width is determined as follows:
     bit_width = clf.quantized_module_.fhe_circuit.graph.maximum_integer_bit_width()
 ```
 
-## A simple Concrete-Python example
+## A simple Concrete example
 
-While Concrete ML hides away all the Concrete-Numpy code that performs model inference, it can be useful to understand how Concrete-Numpy code works. Here is a toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
+While Concrete ML hides away all the Concrete code that performs model inference, it can be useful to understand how Concrete code works. Here is a toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
 
 ```python
 import numpy

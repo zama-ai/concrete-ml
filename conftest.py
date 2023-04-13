@@ -426,7 +426,7 @@ def load_data():
 
 @pytest.fixture
 def check_is_good_execution_for_cml_vs_circuit():
-    """Compare quantized module or built-in inference vs Concrete Python circuit."""
+    """Compare quantized module or built-in inference vs Concrete circuit."""
 
     def check_is_good_execution_for_cml_vs_circuit_impl(
         inputs: Union[tuple, numpy.ndarray],

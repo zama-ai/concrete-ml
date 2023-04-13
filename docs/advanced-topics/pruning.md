@@ -25,7 +25,7 @@ When building a full neural network, each layer will contain multiple neurons, w
 
 For every neuron shown in each layer of the figure above, the linear combinations of inputs and learned weights are computed. Depending on the values of the inputs and weights, the sum $$v_k = \sum_i w_ix_i$$ - which for Concrete ML neural networks is computed with integers - can take a range of different values.
 
-To respect the bit-width constraint of the FHE [table lookup](https://docs.zama.ai/concrete-numpy/tutorials/table_lookups), the values of the accumulator $$v_k$$ must remain small to be representable using a maximum of 16 bits. In other words, the values must be between 0 and $$2^{16}-1$$.
+To respect the bit-width constraint of the FHE [table lookup](https://docs.zama.ai/concrete/tutorials/table_lookups), the values of the accumulator $$v_k$$ must remain small to be representable using a maximum of 16 bits. In other words, the values must be between 0 and $$2^{16}-1$$.
 
 Pruning a neural network entails fixing some of the weights $$w_k$$ to be zero during training. This is advantageous to meet FHE constraints, as irrespective of the distribution of $$x_i$$, multiplying these input values by 0 does not increase the accumulator value.
 

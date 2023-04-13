@@ -21,7 +21,7 @@ def numpy_onnx_pad(
         x (numpy.ndarray): input tensor to pad
         pads (List[int]): padding values according to ONNX spec
         pad_value (Optional[Union[float, int]]): value used to fill in padding, default 0
-        int_only (bool): set to True to generate integer only code with Concrete-Python
+        int_only (bool): set to True to generate integer only code with Concrete
 
     Returns:
         res(numpy.ndarray): the input tensor with padding applied
@@ -47,7 +47,7 @@ def numpy_onnx_pad(
         # the values on the edges to the input zero_point, which corresponds
         # to the real-axis 0
         if int_only:
-            # Work in integer Concrete-Python mode
+            # Work in integer Concrete mode
             x_pad = cnp_ones(tuple(padded_shape)) * numpy.int64(pad_value)
         else:
             # Floating point mode

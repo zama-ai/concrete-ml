@@ -100,14 +100,20 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("BareOS", []),  # use bare OS
         ("torch", ["import torch", "torch.", "from torch import"]),  # use Torch
         ("numpy", ["import numpy", "from numpy import", "numpy."]),  # use NumPy
-        ("Numpy", ["Concrete-Numpy"]),  # use NumPy
+        ("Numpy", []),  # use NumPy
         ("PoissonRegression", []),  # use Poisson Regression
         ("docker", []),  # Use Docker
         ("poetry", []),  # Use Poetry
         ("Make", []),  # Use make
         ("brevitas", ["import brevitas", "from brevitas", "bit accuracy brevitas"]),  # use Brevitas
-        ("concrete-numpy", []),  # use Concrete-Numpy
-        ("Concrete-numpy", []),  # use Concrete-Numpy
+        ("concrete-numpy", []),  # use Concrete
+        ("concrete-Numpy", []),  # use Concrete
+        ("Concrete-numpy", []),  # use Concrete
+        ("Concrete-Numpy", []),  # use Concrete
+        ("Concrete Numpy", []),  # use Concrete
+        ("Concrete numpy", []),  # use Concrete
+        ("concrete Numpy", []),  # use Concrete
+        ("concrete numpy", []),  # use Concrete
         ("tool-kit", []),  # use toolkit
         ("tool-kits", []),  # use toolkits
         ("preprocessing", []),  # use pre-processing
@@ -125,14 +131,16 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("combinaison", []),  # use combination
         ("zeropoint", []),  # use zero-point
         ("pretrained", []),  # use pre-trained
-        ("i.e.,", []),  # ie
-        ("e.g.,", []),  # eg
+        ("i.e.,", []),  # i.e.
+        ("e.g.,", []),  # e.g.
         ("discord", []),  # use Discord
         ("worst-case", []),  # use worst case
         ("FHE friendly", []),  # use FHE-friendly
         ("slow-down", []),  # use slow down
         ("counter-part", []),  # use counterpart
-        ("Scikit-learn", []),  # use Scikit-Learn
+        ("Scikit-learn", []),  # use scikit-learn
+        ("Scikit-Learn", []),  # use scikit-learn
+        ("scikit-Learn", []),  # use scikit-learn
         ("it's", []),  # use `it is`
         ("It's", []),  # use `It is`
         ("let's", []),  # keep a consistent impersonal style

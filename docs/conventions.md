@@ -23,7 +23,6 @@ Let's use following conventions for the docs. If a new convention needs to be de
 1. google is a verb ("you can google" but not "you can Google") : but try to avoid this
 1. Programs:
    - Jupyter
-   - NumPy but "Concrete Numpy"
    - Concrete ML (no Concrete-ML)
    - pytest except when title where it is capitalized
    - Python
@@ -49,4 +48,4 @@ Let's use following conventions for the docs. If a new convention needs to be de
 
 ## Links
 
-- Use links from doc root (ie, ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move
+- Use links from doc root (i.e. ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move

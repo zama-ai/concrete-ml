@@ -154,8 +154,8 @@ class BaseEstimator:
         """Get the FHE circuit.
 
         The FHE circuit combines computational graph, mlir, client and server into a single object.
-        More information available in Concrete-Python documentation:
-        https://docs.zama.ai/concrete-numpy/developer/terminology_and_structure#terminology
+        More information available in Concrete documentation:
+        https://docs.zama.ai/concrete/developer/terminology_and_structure#terminology
         Is None if the model is not fitted.
 
         Returns:

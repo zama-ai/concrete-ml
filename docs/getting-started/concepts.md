@@ -1,6 +1,6 @@
 # Key Concepts
 
-Concrete ML is built on top of Concrete-Numpy, which enables Numpy programs to be converted into FHE circuits.
+Concrete ML is built on top of Concrete, which enables NumPy programs to be converted into FHE circuits.
 
 ## Lifecycle of a Concrete ML model
 
@@ -25,7 +25,7 @@ You can see an example of the model deployment workflow [here](https://github.co
 
 ## Cryptography concepts
 
-Concrete ML and Concrete-Numpy are tools that hide away the details of the underlying cryptography scheme, called TFHE. However, some cryptography concepts are still useful when using these two toolkits:
+Concrete ML and Concrete are tools that hide away the details of the underlying cryptography scheme, called TFHE. However, some cryptography concepts are still useful when using these two toolkits:
 
 1. **encryption/decryption:** These operations transform plaintext, i.e. human-readable information, into ciphertext, i.e. data that contains a form of the original plaintext that is unreadable by a human or computer without the proper key to decrypt it. Encryption takes plaintext and an encryption key and produces ciphertext, while decryption is the inverse operation.
 1. **encrypted inference:** FHE allows a third party to execute (i.e. run inference or predict) a machine learning model on encrypted data (a ciphertext). The result of the inference is also encrypted and can only be read by the person who receives the decryption key.

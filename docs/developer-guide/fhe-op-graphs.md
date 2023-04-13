@@ -19,7 +19,7 @@ For example, in the following graph there is a single input, which must be an en
 
 ## ONNX operations
 
-Concrete ML implements ONNX operations using Concrete-Numpy, which can handle floating point operations, as long as they can be fused to an integer lookup table. The ONNX operations implementations are based on the `QuantizedOp` class.
+Concrete ML implements ONNX operations using Concrete, which can handle floating point operations, as long as they can be fused to an integer lookup table. The ONNX operations implementations are based on the `QuantizedOp` class.
 
 There are two modes of creation of a single table lookup for a chain of ONNX operations:
 
@@ -60,11 +60,11 @@ The diagram above shows that both float ops and integer ops need to quantize the
 
 ### Putting it all together
 
-To chain the operation types described above following the ONNX graph, Concrete ML constructs a function that calls the `q_impl` of the `QuantizedOp` instances in the graph in sequence, and uses Concrete-Numpy to trace the execution and compile to FHE. Thus, in this chain of function calls, all groups of that instruction that operate in floating point will be fused to TLUs. In FHE, this lookup table is computed with a PBS.
+To chain the operation types described above following the ONNX graph, Concrete ML constructs a function that calls the `q_impl` of the `QuantizedOp` instances in the graph in sequence, and uses Concrete to trace the execution and compile to FHE. Thus, in this chain of function calls, all groups of that instruction that operate in floating point will be fused to TLUs. In FHE, this lookup table is computed with a PBS.
 
 ![](../.gitbook/assets/image_6.png)
 
-The red contours show the groups of elementary Concrete-Numpy instructions that will be converted to TLUs.
+The red contours show the groups of elementary Concrete instructions that will be converted to TLUs.
 
 Note that the input is slightly different from the `QuantizedOp`. Since the encrypted function takes integers as inputs, the input needs to be de-quantized first.
 
@@ -100,7 +100,7 @@ You can check `ops_impl.py` to see how some operations are implemented in NumPy.
 - The optional inputs should be positional or keyword arguments between the `/` and `*`, which marks the limits of positional or keyword arguments.
 - The operator attributes should be keyword arguments only after the `*`.
 
-The proper use of positional/keyword arguments is required to allow the `QuantizedOp` class to properly populate metadata automatically. It uses Python inspect modules and stores relevant information for each argument related to its positional/keyword status. This allows using the Concrete-Numpy implementation as specifications for `QuantizedOp`, which removes some data duplication and generates a single source of truth for `QuantizedOp` and ONNX-NumPy implementations.
+The proper use of positional/keyword arguments is required to allow the `QuantizedOp` class to properly populate metadata automatically. It uses Python inspect modules and stores relevant information for each argument related to its positional/keyword status. This allows using the Concrete implementation as specifications for `QuantizedOp`, which removes some data duplication and generates a single source of truth for `QuantizedOp` and ONNX-NumPy implementations.
 
 In that case (unless the quantized implementation requires special handling like `QuantizedGemm`), you can just set `_impl_for_op_named` to the name of the ONNX op for which the quantized class is implemented (this uses the mapping `ONNX_OPS_TO_NUMPY_IMPL` in `onnx_utils.py` to get the correct implementation).
 

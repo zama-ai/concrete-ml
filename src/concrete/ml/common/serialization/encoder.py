@@ -56,7 +56,7 @@ class CustomEncoder(json.JSONEncoder):
         # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1841
         if isinstance(o, fhe.Circuit):  # pragma: no cover
             raise NotImplementedError(
-                "Concrete-Python Circuit object serialization is not implemented yet"
+                "Concrete Circuit object serialization is not implemented yet"
             )
 
         # Call the default method for other types

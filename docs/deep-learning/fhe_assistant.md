@@ -5,7 +5,7 @@ FHE simulation, the key-cache functionality that helps speed-up FHE result debug
 
 ## Simulation
 
-The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation)(previously known as Virtual Library) of Concrete ML provides a way to evaluate, using clear data, the results that ML models would produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with Concrete-Numpy's Virtual Circuits\](https://docs.zama.ai/concrete-numpy/tutorials/virtual_circuits).
+The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation) of Concrete ML provides a way to evaluate, using clear data, the results that ML models would produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with [Concrete's simulation](https://docs.zama.ai/concrete/tutorials/simulation).
 
 The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the simulation can help to find the optimal model design.
 

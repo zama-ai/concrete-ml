@@ -66,7 +66,7 @@ def _compile_torch_or_onnx_model(
     """Compile a torch module or ONNX into a FHE equivalent.
 
     Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and
-    finally compile it with Concrete-Python
+    finally compile it with Concrete
 
     Args:
         model (Union[torch.nn.Module, onnx.ModelProto]): the model to quantize, either in torch or
@@ -154,7 +154,7 @@ def compile_torch_model(
     """Compile a torch module into a FHE equivalent.
 
     Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally
-    compile it with Concrete-Python
+    compile it with Concrete
 
     Args:
         torch_model (torch.nn.Module): the model to quantize

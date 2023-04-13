@@ -4,9 +4,9 @@ These examples illustrate the basic usage of built-in Concrete ML models. For mo
 
 ## FHE constraints considerations
 
-In Concrete ML, built-in linear models are exact equivalents to their Scikit-Learn counterparts. Indeed, since they do not apply any non-linearity during inference, these models are very fast (~1ms FHE inference time) and can use high precision integers (between 20-25 bits).
+In Concrete ML, built-in linear models are exact equivalents to their scikit-learn counterparts. Indeed, since they do not apply any non-linearity during inference, these models are very fast (~1ms FHE inference time) and can use high precision integers (between 20-25 bits).
 
-Tree-based models apply non-linear functions that enable comparisons of inputs and trained thresholds. Thus, they are limited with respect to the number of bits used to represent the inputs. But as these examples show, in practice 5-6 bits are sufficient to exactly reproduce the behavior of their Scikit-Learn counterpart models.
+Tree-based models apply non-linear functions that enable comparisons of inputs and trained thresholds. Thus, they are limited with respect to the number of bits used to represent the inputs. But as these examples show, in practice 5-6 bits are sufficient to exactly reproduce the behavior of their scikit-learn counterpart models.
 
 As shown in the examples below, built-in neural networks can be configured to work with user-specified accumulator sizes, which allow the user to adjust the speed/accuracy tradeoff.
 
