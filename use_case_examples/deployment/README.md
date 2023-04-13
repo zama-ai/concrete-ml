@@ -17,15 +17,3 @@ For all of them the workflow is the same:
 1. Run the inference using the client (locally or in Docker)
 
 The script to deploy the model compiled to a FHE circuit is the same for all. The main difference between them is the client. Each use-case needs its own client.
-
-<!-- 
-Needed while 1.x Docker image hasn't been released yet
-FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3231
--->
-
-WARNING: Before running these examples you will need to build a Docker image with the current version of the repository.
-To do so run the following command from the root of the repository (you will need Poetry that is a development dependency, please refer to the [adequate documentation](../../docs/developer-guide/project_setup.md)):
-
-```
-poetry build && mkdir pkg && cp dist/* pkg/ && make release_docker
-```
