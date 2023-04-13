@@ -335,7 +335,7 @@ def is_pandas_type(input_container: Any) -> bool:
 
 
 def _get_dtype(values: Any):
-    """Get a set of values' dtype in a string format to facilitate opetations between sets.
+    """Get a set of values' dtype in a string format to facilitate operations between sets.
 
     Args:
         values (Any): The values to consider
@@ -382,7 +382,7 @@ def _is_of_dtype(values: Any, valid_dtypes: Dict) -> bool:
         valid_dtypes (Dict): The only dtype(s) to consider.
 
     Returns:
-        bool: If the values' dtype(s) matche the given ones.
+        bool: If the values' dtype(s) matches the given ones.
 
     Examples:
         values_types = _get_dtype(pandas.DataFrame([[1, 0.5, '1']]))
@@ -522,7 +522,7 @@ def all_values_are_integers(*values: Any) -> bool:
         *values (Any): The values to consider.
 
     Returns:
-        bool: Wether all values are supported integers or not.
+        bool: Whether all values are supported integers or not.
 
     """
     return all(_is_of_dtype(value, SUPPORTED_INT_TYPES) for value in values)
@@ -535,7 +535,7 @@ def all_values_are_floats(*values: Any) -> bool:
         *values (Any): The values to consider.
 
     Returns:
-        bool: Wether all values are supported floating points or not.
+        bool: Whether all values are supported floating points or not.
 
     """
     return all(_is_of_dtype(value, SUPPORTED_FLOAT_TYPES) for value in values)

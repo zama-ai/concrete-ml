@@ -267,7 +267,7 @@ class ONNXConverter:
         q_impl_attr = quantized_op.attrs.copy()
         q_impl_attr.update(calibrate_attr)
 
-        # Dequantize to have the value in clear and ready for next calibration
+        # De-quantize to have the value in clear and ready for next calibration
         quant_result = quantized_op.q_impl(*q_calibration_data, **q_impl_attr)
         if quantized_op.produces_graph_output:
 
@@ -481,7 +481,7 @@ class ONNXConverter:
                 )
 
                 # Note that the output of a quantized op could be a network output
-                # Thus the quantized op outputs are quantized to the network output bitwidth
+                # Thus the quantized op outputs are quantized to the network output bit-width
                 quantized_op_instance = quantized_op_class(
                     self.n_bits_model_outputs,
                     node.name,
@@ -492,7 +492,7 @@ class ONNXConverter:
                 )
 
                 # Determine if this op computes a tensor that is a graph output, i.e. a tensor
-                # that will be decrypted and dequantized in the clear
+                # that will be decrypted and de-quantized in the clear
                 quantized_op_instance.produces_graph_output = output_name in graph_output_names
 
                 # Store the output tensor's integer producers
@@ -828,7 +828,7 @@ class PostTrainingAffineQuantization(ONNXConverter):
         are usually non-symmetric
 
         Symmetric quantization will have a zero zero-point, which avoids the computation
-        of a term in the quantized Gemm, leading to lower overall circuit bitwidth
+        of a term in the quantized Gemm, leading to lower overall circuit bit-width
         and faster speed. However, symmetric quantization can lose precision if the distribution
         of the original values is not symmetric
 

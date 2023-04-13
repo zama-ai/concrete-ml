@@ -35,7 +35,7 @@ def test_parameter_validation(model_class, load_data):
         "verbose": 0,
     }
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
             model_class,
@@ -50,7 +50,7 @@ def test_parameter_validation(model_class, load_data):
 
         valid_params["criterion__weight"] = [1, 1]
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
             model_class,
@@ -78,9 +78,9 @@ def test_parameter_validation(model_class, load_data):
         ],
         "fit": [
             ("module__n_layers", 0, ".* number of layers.*"),
-            ("module__n_w_bits", 0, ".* quantization bitwidth.*"),
-            ("module__n_a_bits", 0, ".* quantization bitwidth.*"),
-            ("module__n_accum_bits", 0, ".* accumulator bitwidth.*"),
+            ("module__n_w_bits", 0, ".* quantization bit-width.*"),
+            ("module__n_a_bits", 0, ".* quantization bit-width.*"),
+            ("module__n_accum_bits", 0, ".* accumulator bit-width.*"),
         ],
     }
     for inv_param in invalid_params_and_exception_pattern["init"]:
@@ -127,7 +127,7 @@ def test_compile_and_calib(
 
     n_features = 10
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
             model_class,
@@ -143,7 +143,7 @@ def test_compile_and_calib(
         # Add an offset to the labels to check that it is supported
         y += 10
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
             model_class,
@@ -301,7 +301,7 @@ def test_structured_pruning(activation_function, model_class, load_data, default
     inputs"""
     n_features = 10
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
             model_class,
@@ -317,7 +317,7 @@ def test_structured_pruning(activation_function, model_class, load_data, default
         # Add an offset to the labels to check that it is supported
         y += 10
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
             model_class,

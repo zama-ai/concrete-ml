@@ -6,10 +6,10 @@
 # Steps:
 # 1. Load CIFAR-10 8-bits model
 
-# 2. Load CIFAR-10 dataset
+# 2. Load CIFAR-10 data-set
 
-# 3. Pre-process the dataset, in our case, that means:
-#   - Reducing the dataset size (that we will can calibration data in our experiments)
+# 3. Pre-process the data-set, in our case, that means:
+#   - Reducing the data-set size (that we will can calibration data in our experiments)
 #   - Computing the features maps of the model on the client side
 
 # 4. Run the search for a given set of hyper-parameters

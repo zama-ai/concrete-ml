@@ -240,7 +240,7 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
 
     # Back to the client
 
-    # Decrypt and dequantize the result
+    # Decrypt and de-quantize the result
     y_pred_on_client_quantized = fhemodel_client.deserialize_decrypt(serialized_result)
     y_pred_on_client_dequantized = fhemodel_client.deserialize_decrypt_dequantize(serialized_result)
 

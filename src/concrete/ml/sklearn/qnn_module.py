@@ -13,7 +13,7 @@ class SparseQuantNeuralNetwork(nn.Module):
     """Sparse Quantized Neural Network.
 
     This class implements an MLP that is compatible with FHE constraints. The weights and
-    activations are quantized to low bitwidth and pruning is used to ensure accumulators do not
+    activations are quantized to low bit-width and pruning is used to ensure accumulators do not
     surpass an user-provided accumulator bit-width. The number of classes and number of layers
     are specified by the user, as well as the breadth of the network
     """
@@ -40,11 +40,11 @@ class SparseQuantNeuralNetwork(nn.Module):
             n_outputs: Number of output classes or regression targets
             n_w_bits: Number of weight bits
             n_a_bits: Number of activation and input bits
-            n_accum_bits: Maximal allowed bitwidth of intermediate accumulators
+            n_accum_bits: Maximal allowed bit-width of intermediate accumulators
             n_hidden_neurons_multiplier: The number of neurons on the hidden will be the number
                 of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note that
                 pruning is used to adjust the accumulator size to attempt to
-                keep the maximum accumulator bitwidth to
+                keep the maximum accumulator bit-width to
                 `n_accum_bits`, meaning that not all hidden layer neurons will be active.
                 The default value for `n_hidden_neurons_multiplier` is chosen for small dimensions
                 of the input. Reducing this value decreases the FHE inference time considerably
@@ -59,7 +59,7 @@ class SparseQuantNeuralNetwork(nn.Module):
             quant_signed : whether to use signed quantized integer values
 
         Raises:
-            ValueError: if the parameters have invalid values or the computed accumulator bitwidth
+            ValueError: if the parameters have invalid values or the computed accumulator bit-width
                         is zero
         """
 
@@ -76,7 +76,7 @@ class SparseQuantNeuralNetwork(nn.Module):
             )
 
         if n_w_bits <= 0 or n_a_bits <= 0:
-            raise ValueError("The weight & activation quantization bitwidth cannot be less than 1")
+            raise ValueError("The weight & activation quantization bit-width cannot be less than 1")
 
         for idx in range(n_layers):
             out_features = (
@@ -232,7 +232,7 @@ class SparseQuantNeuralNetwork(nn.Module):
 
         if max_neuron_connections == 0:
             raise ValueError(
-                "The maximum accumulator bitwidth is too low "
+                "The maximum accumulator bit-width is too low "
                 "for the quantization parameters requested. No neurons would be created in the "
                 "requested configuration"
             )
@@ -252,8 +252,8 @@ class SparseQuantNeuralNetwork(nn.Module):
             fan_in = numpy.prod(layer_shape[1:])
             fan_out = layer_shape[0]
 
-            # To satisfy accumulator bitwidth constraints each dot-product between an input line and
-            # weight column must not exceed n_accum_bits bits. We thus prune the layer to have
+            # To satisfy accumulator bit-width constraints each dot-product between an input line
+            # and weight column must not exceed n_accum_bits bits. We thus prune the layer to have
             # at most max_neuron_connections non-zero weights
             if fan_in > max_neuron_connections and layer not in self.pruned_layers:
                 pruning.l1_unstructured(

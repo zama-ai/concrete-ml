@@ -625,7 +625,7 @@ class TinyCNN(nn.Module):
 
 
 class TinyQATCNN(nn.Module):
-    """A very small QAT CNN to classify the sklearn digits dataset.
+    """A very small QAT CNN to classify the sklearn digits data-set.
 
     This class also allows pruning to a maximum of 10 active neurons, which
     should help keep the accumulator bit width low.
@@ -1134,7 +1134,7 @@ class PaddingNet(nn.Module):
     def __init__(self):
         super().__init__()
 
-        # Use a QAT network to allow the torch result to be the same as the CML result
+        # Use a QAT network to allow the torch result to be the same as the Concrete ML result
         self.input_quant = qnn.QuantIdentity(bit_width=8)
 
     def forward(self, x):

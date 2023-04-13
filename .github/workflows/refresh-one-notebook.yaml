@@ -143,13 +143,13 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
-      - name: Download Sentiment classification datasets
+      - name: Download Sentiment classification data-sets
         if: ${{ env.NOTEBOOK_NAME == 'SentimentClassification' }}
         run: |
           source .venv/bin/activate
           cd ./use_case_examples/encrypted_sentiment_analysis && ./download_data.sh
 
-      - name: Download Titanic datasets
+      - name: Download Titanic data-sets
         if: ${{ env.NOTEBOOK_NAME == 'KaggleTitanic' }}
         run: |
           source .venv/bin/activate

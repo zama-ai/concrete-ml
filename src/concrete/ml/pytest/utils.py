@@ -75,7 +75,7 @@ _classifier_models = [
     ),
 ]
 
-# Get the datasets. The data generation is seeded in load_data.
+# Get the data-sets. The data generation is seeded in load_data.
 _classifiers_and_datasets = [
     pytest.param(
         model,
@@ -92,7 +92,7 @@ _classifiers_and_datasets = [
     for n_classes in [2, 4]
 ]
 
-# Get the datasets. The data generation is seeded in load_data.
+# Get the data-sets. The data generation is seeded in load_data.
 # Only LinearRegression supports multi targets
 # GammaRegressor, PoissonRegressor and TweedieRegressor only handle positive target values
 _regressors_and_datasets = [
@@ -197,7 +197,7 @@ def get_torchvision_dataset(
         train_set (bool): Use train data-set if True, else testing data-set
 
     Returns:
-        A torchvision datasets.
+        A torchvision data-sets.
     """
 
     transform = param["train_transform"] if train_set else param["test_transform"]
@@ -213,7 +213,7 @@ def get_torchvision_dataset(
 
 
 def data_calibration_processing(data, n_sample: int, targets=None):
-    """Reduce size of the given dataset.
+    """Reduce size of the given data-set.
 
     Args:
         data: The input container to consider
@@ -254,7 +254,7 @@ def data_calibration_processing(data, n_sample: int, targets=None):
         y = numpy.array(targets)
     else:
         raise TypeError(
-            "Only numpy arrays, torch tensors and torchvision datasets are supported. "
+            "Only numpy arrays, torch tensors and torchvision data-sets are supported. "
             f"Got `{type(data)}` as input type and `{type(targets)}` as target type"
         )
 

@@ -149,7 +149,7 @@ def test_univariate_ops_no_attrs(
     assert numpy.max(qvalues) <= 2**n_bits - 1
     assert numpy.min(qvalues) >= 0
 
-    # Dequantized values must be close to original values
+    # De-quantized values must be close to original values
     dequant_values = q_output.dequant()
 
     # Check that all values are close
@@ -190,7 +190,7 @@ def test_exp_op(
     assert numpy.max(qvalues) <= 2**n_bits - 1
     assert numpy.min(qvalues) >= 0
 
-    # Dequantized values must be close to original values
+    # De-quantized values must be close to original values
     dequant_values = q_output.dequant()
 
     # Check that all values are close
@@ -232,7 +232,7 @@ def test_clip_op(
     assert numpy.max(qvalues) <= 2**n_bits - 1
     assert numpy.min(qvalues) >= 0
 
-    # Dequantized values must be close to original values
+    # De-quantized values must be close to original values
     dequant_values = q_output.dequant()
 
     # Check that all values are close
@@ -366,7 +366,7 @@ def test_all_arith_ops(
     check_float_arrays_equal(quantized_output_cv, quantized_output_vc)
 
     # As V+C and C+V work on float values they will not be exactly equal to
-    # the V+V case which works in quantized, we only check R2 for a high bitwidth in this case
+    # the V+V case which works in quantized, we only check R2 for a high bit-width in this case
     if supports_enc_with_enc:
         check_r2_score(quantized_output_vc, quantized_output_vv)
 
@@ -1038,7 +1038,7 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     assert numpy.max(qvalues) <= 2**n_bits - 1
     assert numpy.min(qvalues) >= 0
 
-    # Dequantized values must be close to original values
+    # De-quantized values must be close to original values
     dequant_values = q_output.dequant()
 
     # Check that all values are close
@@ -1683,5 +1683,5 @@ def test_quantized_shape(shape):
     q_op = ONNXShape(8, "shape_op")
     result = q_op(q_input)
 
-    # Check that the CML op returns the shape
+    # Check that the Concrete ML op returns the shape
     assert np_input.shape == tuple(result)

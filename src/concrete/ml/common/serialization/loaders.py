@@ -14,7 +14,7 @@ LOADS_METHODS: Dict[str, Callable] = {}
 
 
 def load_dict(metadata: Dict[str, Any]) -> Any:
-    """Load any CML object that has a dump method.
+    """Load any Concrete ML object that has a dump method.
 
     Arguments:
         metadata (Dict[str, Any]): a dict of a serialized object.
@@ -39,13 +39,13 @@ def load_dict(metadata: Dict[str, Any]) -> Any:
     try:
         class_name = metadata["cml_dumped_class_name"]
     except KeyError as exception:
-        raise ValueError("The content provided is not a CML dumped model.") from exception
+        raise ValueError("The content provided is not a Concrete ML dumped model.") from exception
 
     return LOADS_METHODS[class_name](metadata)
 
 
 def loads(content: str) -> Any:
-    """Load any CML object that has a dump method.
+    """Load any Concrete ML object that has a dump method.
 
     Arguments:
         content (str): a serialized object.
@@ -58,7 +58,7 @@ def loads(content: str) -> Any:
 
 
 def load(file: TextIO):
-    """Load any CML object that has a dump method.
+    """Load any Concrete ML object that has a dump method.
 
     Arguments:
         file (TextIO): a file containing the serialized object.
@@ -94,11 +94,11 @@ def loads_random_state(serialized_random_state: str) -> Union[RandomState, int, 
 
 
     """
-    unserialized = json.loads(serialized_random_state)
-    if isinstance(unserialized, int) or (unserialized is None):
-        return unserialized
-    assert isinstance(unserialized, list)
-    unserialized = tuple(unserialized)
+    deserialized = json.loads(serialized_random_state)
+    if isinstance(deserialized, int) or (deserialized is None):
+        return deserialized
+    assert isinstance(deserialized, list)
+    deserialized = tuple(deserialized)
     random_state = RandomState()
-    random_state.set_state(unserialized)
+    random_state.set_state(deserialized)
     return random_state

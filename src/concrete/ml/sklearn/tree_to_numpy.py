@@ -159,7 +159,7 @@ def preprocess_tree_predictions(
 def tree_onnx_graph_preprocessing(
     onnx_model: onnx.ModelProto, framework: str, expected_number_of_outputs: int
 ):
-    """Apply pre-precessing onto the ONNX graph.
+    """Apply pre-processing onto the ONNX graph.
 
     Args:
         onnx_model (onnx.ModelProto): The ONNX model.
@@ -195,7 +195,7 @@ def tree_onnx_graph_preprocessing(
         workaround_squeeze_node_xgboost(onnx_model)
     else:
         # Add a transpose node after the last node.
-        # Sklearn models apply the reduce sum before the transpose.
+        # sklearn models apply the reduce sum before the transpose.
         # To have equivalent output between xgboost in sklearn,
         # apply the transpose before returning the output.
         add_transpose_after_last_node(onnx_model)
@@ -266,7 +266,7 @@ def tree_to_numpy(
 
     Returns:
         Tuple[Callable, List[QuantizedArray], onnx.ModelProto]: A tuple with a function that takes a
-            numpy array and returns a numpy array, QuantizedArray object to quantize and dequantize
+            numpy array and returns a numpy array, QuantizedArray object to quantize and de-quantize
             the output of the tree, and the ONNX model.
     """
     # mypy

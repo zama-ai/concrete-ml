@@ -12,7 +12,7 @@ In this script, we provide an approach to find out an optimal `p_error`, which w
 an interesting compromise between speed and efficiency.
 
 The `p_error` represents the probability of a single PBS being incorrect. Know that the FHE
-scheme allows to perfom 2 types of operations
+scheme allows to perform 2 types of operations
 - Linear operations: additions and multiplications
 - Non-linear operation: uni-variate activation functions
 
@@ -93,10 +93,10 @@ def compile_and_simulated_fhe_inference(
             If `False` it is converted into post-trained quantized model.
         metric (Callable): Classification or regression evaluation metric.
         predict (str): The predict method to use.
-        kwargs (Dict): Metric's hyper-parameters.
+        kwargs (Dict): Hyper-parameters to use for the metric.
 
     Returns:
-        Tuple[numpy.ndarray, float]: Dequantized or quantized output model depending on
+        Tuple[numpy.ndarray, float]: De-quantized or quantized output model depending on
         `is_benchmark_test` and the score.
 
     Raises:
@@ -369,7 +369,7 @@ class BinarySearch:
             kwargs (Dict): Hyper-parameters
 
         Raises:
-            AttributeError: If the attribut is not in the class.
+            AttributeError: If the attribute is not in the class.
         """
         for attr, new_value in kwargs.items():
             if hasattr(self, attr):
@@ -506,7 +506,7 @@ class BinarySearch:
                 f"`{self.estimator.__class__}` model, you can:\n"
                 "  - Increase the number of iterations `max_iter` or `n_simulation`.\n"
                 "  - Choose another strategy.\n"
-                "  - Increase the size of the calibration dataset."
+                "  - Increase the size of the calibration data-set."
             )
             warnings.simplefilter("always")
             warnings.warn(warning_message, category=UserWarning, stacklevel=2)

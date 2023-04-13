@@ -61,7 +61,7 @@ def _get_inputset_generator(q_inputs: Union[numpy.ndarray, Tuple[numpy.ndarray, 
     """
     q_inputs = to_tuple(q_inputs)
 
-    assert len(q_inputs) > 0, "Inputset cannot be empty"
+    assert len(q_inputs) > 0, "The input-set cannot be empty"
 
     if len(q_inputs) > 1:
         return (
@@ -162,13 +162,13 @@ class QuantizedModule:
 
     # pylint: disable-next=no-self-use
     def post_processing(self, values: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the dequantized values.
+        """Apply post-processing to the de-quantized values.
 
         For quantized modules, there is no post-processing step but the method is kept to make the
         API consistent for the client-server API.
 
         Args:
-            values (numpy.ndarray): The dequantized values to post-process.
+            values (numpy.ndarray): The de-quantized values to post-process.
 
         Returns:
             numpy.ndarray: The post-processed values.
@@ -286,7 +286,7 @@ class QuantizedModule:
 
         q_y_pred = self.quantized_forward(*q_x, fhe=fhe)
 
-        # Dequantize the output predicted values
+        # De-quantize the output predicted values
         y_pred = self.dequantize_output(q_y_pred)
 
         return y_pred
@@ -425,7 +425,7 @@ class QuantizedModule:
         results_cnp_circuit_list = []
         for i in range(q_x[0].shape[0]):
 
-            # Extract the i th example from every element in the tuple q_x
+            # Extract example i from every element in the tuple q_x
             q_input = tuple(q_x[input][[i]] for input in range(len(q_x)))
 
             # For mypy
@@ -468,13 +468,13 @@ class QuantizedModule:
         return q_x[0] if len(q_x) == 1 else q_x
 
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Take the last layer q_out and use its dequant function.
+        """Take the last layer q_out and use its de-quant function.
 
         Args:
             q_y_preds (numpy.ndarray): Quantized output values of the last layer.
 
         Returns:
-            numpy.ndarray: Dequantized output values of the last layer.
+            numpy.ndarray: De-quantized output values of the last layer.
         """
         y_preds = tuple(
             output_quantizer.dequant(q_y_preds) for output_quantizer in self.output_quantizers
@@ -563,7 +563,7 @@ class QuantizedModule:
         # Quantize the inputs
         q_inputs = self.quantize_input(*inputs)
 
-        # Generate the inputset with proper dimensions
+        # Generate the input-set with proper dimensions
         inputset = _get_inputset_generator(q_inputs)
 
         # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
@@ -590,13 +590,13 @@ class QuantizedModule:
     def bitwidth_and_range_report(
         self,
     ) -> Optional[Dict[str, Dict[str, Union[Tuple[int, ...], int]]]]:
-        """Report the ranges and bitwidths for layers that mix encrypted integer values.
+        """Report the ranges and bit-widths for layers that mix encrypted integer values.
 
         Returns:
             op_names_to_report (Dict): a dictionary with operation names as keys. For each
-                operation, (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned.
+                operation, (e.g. conv/gemm/add/avgpool ops), a range and a bit-width are returned.
                 The range contains the min/max values encountered when computing the operation and
-                the bitwidth gives the number of bits needed to represent this range.
+                the bit-width gives the number of bits needed to represent this range.
         """
 
         if self.fhe_circuit is None:

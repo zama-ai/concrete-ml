@@ -88,7 +88,7 @@ assert (
 )
 
 # If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
-# returned by fit_benchmark (the CML model and the scikit-learn model) are equivalent
+# returned by fit_benchmark (the Concrete ML model and the scikit-learn model) are equivalent
 N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 
 # There is a risk that no cryptographic parameters are available for high precision linear
@@ -111,26 +111,26 @@ N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS = 9
 
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
-    """Prepare the the (x, y) dataset."""
+    """Prepare the the (x, y) data-set."""
 
     if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     x, y = load_data(model_class, **parameters)
 
     return x, y
 
 
 def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
-    """Prepare the fitted model, and the (x, y) dataset."""
+    """Prepare the fitted model, and the (x, y) data-set."""
 
     if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds")
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -222,7 +222,7 @@ def check_double_fit(model_class, n_bits, x, y):
         # First fit: here, we really need to fit, we can't reuse an already fitted model
         if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
 
-            # Generate a seed for the PyTorch RNG
+            # Generate a seed for PyTorch
             main_seed = numpy.random.randint(0, 2**63)
             torch.manual_seed(main_seed)
 
@@ -418,7 +418,7 @@ def check_subfunctions_in_fhe(model, fhe_circuit, x):
             # Decrypt the result (integer)
             q_y = fhe_circuit.decrypt(q_y_enc)
 
-            # Dequantize the result
+            # De-quantize the result
             y = model.dequantize_output(q_y)
 
             # Apply either the sigmoid if it is a binary classification task,
@@ -591,7 +591,7 @@ def check_grid_search(model_class, x, y):
 
 
 def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score):
-    """Check equivalence between the two models returned by fit_benchmark: the CML model and
+    """Check equivalence between the two models returned by fit_benchmark: the Concrete ML model and
     the scikit-learn model."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
@@ -1160,13 +1160,13 @@ def test_predict_correctness(
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # How many samples for tests in FHE (ie, predict with fhe = "execute" or "simulate")
+    # How many samples for tests in FHE (i.e. predict with fhe = "execute" or "simulate")
     if is_weekly_option or simulate:
         number_of_tests_in_fhe = 5
     else:
         number_of_tests_in_fhe = 1
 
-    # How many samples for tests in quantized module (ie, predict with fhe = "disable")
+    # How many samples for tests in quantized module (i.e. predict with fhe = "disable")
     if is_weekly_option:
         number_of_tests_in_non_fhe = 50
     else:
@@ -1278,13 +1278,13 @@ def test_p_error_global_p_error_simulation(
     Description:
         A model is compiled with a large p_error. The test then checks the predictions for
         simulated and fully homomorphic encryption (FHE) inference, and asserts
-        that the predictions for both are different from the exepceted predictions.
+        that the predictions for both are different from the expected predictions.
     """
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
     if "global_p_error" in error_param:
         pytest.skip("global_p_error behave very differently depending on the type of model.")
 
-    # Get dataset
+    # Get data-set
     n_bits = min(N_BITS_REGULAR_BUILDS)
 
     # Initialize and fit the model
@@ -1315,7 +1315,7 @@ def test_p_error_global_p_error_simulation(
     if is_linear_model:
 
         # In FHE, high p_error affect the crypto parameters which
-        # makes the predictions slighlty different
+        # makes the predictions slightly different
         assert fhe_diff_found, "FHE predictions should be different for linear models"
 
         # linear models p_error is not simulated

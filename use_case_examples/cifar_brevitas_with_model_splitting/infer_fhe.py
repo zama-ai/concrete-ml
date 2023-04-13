@@ -64,7 +64,7 @@ def main():
     start_compile = time.time()
     quantized_numpy_module = compile_brevitas_qat_model(
         torch_model=model.encrypted_module,  # our model
-        torch_inputset=train_features_sub_set,  # a representative inputset to be used for both quantization and compilation
+        torch_inputset=train_features_sub_set,  # a representative input-set to be used for both quantization and compilation
         configuration=configuration,
         p_error=0.05,
         output_onnx_file=compilation_onnx_path,
@@ -124,7 +124,7 @@ def main():
         decryption_end = time.time()
         decryption_time = decryption_end - decryption_start
 
-        # Dequantization of the output
+        # De-quantization of the output
         dequantization_start = time.time()
         output = quantized_numpy_module.dequantize_output(quantized_output)
         dequantization_end = time.time()

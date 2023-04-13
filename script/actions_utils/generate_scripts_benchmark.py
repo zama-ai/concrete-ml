@@ -59,7 +59,7 @@ def batchify_commands(
 def main():
     """Generate the list of commands to be launched.
 
-    One command == one benchmark (one model + one set of hyper-parameters + one dataset)
+    One command == one benchmark (one model + one set of hyper-parameters + one data-set)
 
     Raises:
         ValueError: if the list_length parameter is not `short` or `long`.

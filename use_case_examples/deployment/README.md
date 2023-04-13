@@ -1,6 +1,6 @@
 # Deployment
 
-In this folder we explain how to deploy CML models.
+In this folder we explain how to deploy Concrete ML models.
 We show-case how to do this on 3 examples:
 
 - Breast cancer classification using a simple XGBoost model

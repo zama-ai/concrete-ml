@@ -26,12 +26,13 @@ ALL_QUANTIZED_OPS: Set[Type] = set()
 ONNX_OPS_TO_QUANTIZED_IMPL: Dict[str, Type["QuantizedOp"]] = {}
 
 # This constant determines the number of bits for the quantization of input and output values
-# of an ML model. This is not necessarily the maximum bitwidth in the network, as Gemm/Conv ops
-# have output bitwidth that is related to their weights and inputs.
+# of an ML model. This is not necessarily the maximum bit-width in the network, as Gemm/Conv ops
+# have output bit-width that is related to their weights and inputs.
 # Run time in FHE is strongly impacted by the number of bits, with increases of 5-20x for
 # each additional bit. However, strong quantization of inputs and outputs can negatively impact
 # accuracy. This value is chosen as a compromise between run time and model accuracy. This default
-# value is used only if the user does not specifically specify a value for input or output bitwidth.
+# value is used only if the user does not specifically specify a value for input or output
+# bit-width.
 DEFAULT_MODEL_BITS = 5
 
 
@@ -41,7 +42,7 @@ class QuantizedOp:
     Args:
         n_bits_output (int): The number of bits to use for the quantization of the output
         op_instance_name (str): The name that should be assigned to this operation, used
-            to retrieve it later or get debugging information about this op (bitwidth, value range,
+            to retrieve it later or get debugging information about this op (bit-width, value range,
             integer intermediary values, op-specific error messages). Usually this name is the same
             as the ONNX operation name for which this operation is constructed.
         int_input_names (Set[str]): The set of names of integer tensors that are inputs to this op
@@ -84,7 +85,7 @@ class QuantizedOp:
     op_instance_name: str
 
     # Determines if this op computes a tensor that is a graph output, i.e. a tensor
-    # that will be decrypted and dequantized in the clear
+    # that will be decrypted and de-quantized in the clear
     produces_graph_output = False
 
     # Determines if the op produces a raw output (not quantized). This can
@@ -180,7 +181,7 @@ class QuantizedOp:
         if self.can_fuse():
             self.input_quant_opts.is_qat = False
 
-        # Set the operation's name, which is used to identify this op in the CML op graph
+        # Set the operation's name, which is used to identify this op in the Concrete ML op graph
         # with respect to the ONNX graph (usually we keep use ONNX op name)
         self.op_instance_name = op_instance_name
 

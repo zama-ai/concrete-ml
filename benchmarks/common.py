@@ -37,7 +37,7 @@ except ImportError:  # For backward compatibility purposes
         except ImportError:
             from concrete.fhe import MAXIMUM_BIT_WIDTH as MAXIMUM_TLU_BIT_WIDTH
 
-# Hack to import all models currently implemented in CML
+# Hack to import all models currently implemented in Concrete ML
 # (but that might not be implemented in targeted version)
 # Since we can make no assumption about which models are
 # imported and that one model not existing would cause the
@@ -131,7 +131,7 @@ NN_BENCHMARK_CONFIGS = (
     + [
         # Pruned configurations that have approx. the same number of active neurons as the
         # FHE compatible config. This evaluates the accuracy that can be attained
-        # for different accumulator bitwidths
+        # for different accumulator bit-widths
         {
             "module__n_layers": 3,
             "module__n_w_bits": n_b,
@@ -498,9 +498,9 @@ def train_and_test_classifier(
     classifier: type, dataset: str, config: Dict[str, Any], local_args: argparse.Namespace
 ):
     """
-    Train and test a classifier on a dataset
+    Train and test a classifier on a data-set
 
-    This function trains a classifier type (caller must pass a class name) on an OpenML dataset
+    This function trains a classifier type (caller must pass a class name) on an OpenML data-set
     identified by its name.
     """
 
@@ -511,13 +511,13 @@ def train_and_test_classifier(
         print("Start")
         time_current = time.time()
 
-    # Sometimes we want a specific version of a dataset, otherwise just get the 'active' one
+    # Sometimes we want a specific version of a data-set, otherwise just get the 'active' one
     version = DATASET_VERSIONS.get(dataset, "active")
     x_all, y_all = fetch_openml(
         name=dataset, version=version, as_frame=False, cache=True, return_X_y=True
     )
 
-    # The OpenML datasets have target variables that might not be integers (for classification
+    # The OpenML data-sets have target variables that might not be integers (for classification
     # integers would represent class ids). Mostly the targets are strings which we do not support.
     # We use an ordinal encoder to encode strings to integers
     if not y_all.dtype == np.int64:
@@ -574,7 +574,7 @@ def train_and_test_classifier(
         time_current = time.time()
         print("Predict with scikit-learn")
 
-    # Predict with the sklearn classifier and compute accuracy. Although some datasets might be
+    # Predict with the sklearn classifier and compute accuracy. Although some data-sets might be
     # imbalanced, we are not interested in the best metric for the case, but we want to measure
     # the difference in accuracy between the sklearn classifier and ours
     y_pred_sklearn = sklearn_classifier.predict(x_test)
@@ -666,10 +666,7 @@ def train_and_test_classifier(
 
 # pylint: disable-next=redefined-outer-name
 def benchmark_generator(local_args) -> Iterator[Tuple[str, type, Dict[str, Any]]]:
-    """Generates all elements to test.
-
-    local_args must have classification_datasets and classifiers as attributes.
-    """
+    """Generates all elements to test."""
     for dataset in local_args.datasets:
         for model_class_ in local_args.models:
             if local_args.configs is None:
@@ -700,7 +697,7 @@ def compute_number_of_components(n_bits: Union[Dict, int]) -> int:
 def benchmark_name_generator(
     dataset_name: str, model: type, config: Dict[str, Any], joiner: str = "_"
 ) -> str:
-    """Turns a combination of dataset + model + hyper-parameters and returns a string"""
+    """Turns a combination of data-set + model + hyper-parameters and returns a string"""
     assert isinstance(model, type), f"Wrong type: {type(model)} - {model}"
 
     model_name = model.__name__

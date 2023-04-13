@@ -144,7 +144,7 @@ def create_instance(
 
         # Create security group
         response = client.create_security_group(
-            GroupName=name, Description=f"Deploy CML {str_now}", VpcId=vpc_id
+            GroupName=name, Description=f"Deploy Concrete ML {str_now}", VpcId=vpc_id
         )
         security_group_id = response["GroupId"]
         if verbose:
@@ -175,7 +175,7 @@ def create_instance(
         response = client.create_key_pair(KeyName=keypair_name)
         private_key: str = response["KeyMaterial"]
 
-        # Keep the key if we want to ssh to check what happenned on the instance
+        # Keep the key if we want to ssh to check what happened on the instance
         key_folder = (Path(__file__).parent / "ssh_keys").resolve()
         key_folder.mkdir(exist_ok=True)
         key_path = key_folder / f"{keypair_name}.pem"
@@ -185,7 +185,7 @@ def create_instance(
 
         # Create instance
         instances = resources.create_instances(
-            # CML official AMI ID to make sure to have everything needed
+            # Concrete ML official AMI ID to make sure to have everything needed
             ImageId="ami-0d7427e883fa00ff3",
             InstanceType=instance_type,  # Instance type
             DryRun=False,
@@ -256,8 +256,8 @@ def deploy_to_aws(
             created using AWSInstance or create_instance
         path_to_model (Path): the path to the serialized model
         number_of_ssh_retries (int): the number of ssh retries (-1 is no limit)
-        wait_bar (bool): wheter to show a wait bar when waiting for ssh connexion to be available
-        verbose (bool): wheter to show a logs
+        wait_bar (bool): whether to show a wait bar when waiting for ssh connection to be available
+        verbose (bool): whether to show a logs
 
     Returns:
         instance_metadata (Dict[str, Any])
@@ -286,7 +286,7 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
         )
 
     if verbose:
-        print("Waiting for SSH connexion to be available...")
+        print("Waiting for SSH connection to be available...")
 
     # Connect to instance
     wait_for_connection_to_be_available(
@@ -299,7 +299,7 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
     )
 
     if verbose:
-        print("SSH connexion available.")
+        print("SSH connection available.")
 
     path_to_server_file = Path(__file__).parent / "server.py"
     path_to_server_requirements = Path(__file__).parent / "server_requirements.txt"
@@ -460,7 +460,7 @@ def main(
         instance_type (str): type of AWS EC2 instance to use.
         instance_name (Optional[str]): the name to use for AWS created objects
         verbose (bool): show logs or not
-        wait_bar (bool): show progress bar when waiting for ssh connexion
+        wait_bar (bool): show progress bar when waiting for ssh connection
         terminate_on_shutdown (bool): terminate instance when script is over
     """
 
