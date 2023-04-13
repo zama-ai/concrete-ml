@@ -290,7 +290,7 @@ def test_brevitas_intermediary_values(
         if "module__" in param
     }
 
-    # Concrete ML and CNP use float64, so we need to force pytorch to use the same, as
+    # Concrete ML and CP use float64, so we need to force pytorch to use the same, as
     # it defaults to float32. Note that this change is global and may interfere with
     # threading or multiprocessing. Thus this test can not be launched in parallel with others.
     torch.set_default_dtype(torch.float64)
