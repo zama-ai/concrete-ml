@@ -16,10 +16,10 @@ APIDOCS_OUTPUT?="./docs/developer-guide/api"
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CN_VERSION_SPEC_FOR_RC="concrete-python==1.0.0"
+CP_VERSION_SPEC_FOR_RC="concrete-python==1.0.0"
 
 # If one wants to use the last RC version
-# CN_VERSION_SPEC_FOR_RC="$$(poetry run python \
+# CP_VERSION_SPEC_FOR_RC="$$(poetry run python \
 # ./script/make_utils/pyproject_version_parser_helper.py \
 # --pyproject-toml-file pyproject.toml \
 # --get-pip-install-spec-for-dependency concrete-python)"
@@ -43,8 +43,8 @@ setup_env:
 		poetry install; \
 	fi
 
-	echo "Installing $(CN_VERSION_SPEC_FOR_RC)" && \
-	poetry run python -m pip install -U --pre "$(CN_VERSION_SPEC_FOR_RC)"
+	echo "Installing $(CP_VERSION_SPEC_FOR_RC)" && \
+	poetry run python -m pip install -U --pre "$(CP_VERSION_SPEC_FOR_RC)"
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: check_poetry_version
@@ -115,7 +115,7 @@ pylint_src:
 pylint_tests:
 	@# Disable duplicate code detection (R0801) in tests
 	@# Disable unnecessary lambda (W0108) for tests
-	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CN
+	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CP
 	find ./tests/ -type f -name "*.py" | xargs poetry run pylint --disable=R0801,W0108,C0412 \
 		--rcfile=pylintrc
 
@@ -126,7 +126,7 @@ pylint_tests:
 pylint_benchmarks:
 	@# Disable duplicate code detection (R0801) in benchmarks
 	@# Disable duplicate code detection, docstring requirement, too many locals/statements
-	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CN
+	@# Disable ungrouped-imports (C0412) because pylint does mistakes between our package and CP
 	find ./benchmarks/ -type f -name "*.py" | xargs poetry run pylint \
 	--disable=R0801,R0914,R0915,C0103,C0114,C0115,C0116,C0302,W0108,C0412 --rcfile=pylintrc
 
@@ -469,7 +469,7 @@ release_docker:
 	--new-version "$${PROJECT_VERSION}" \
 	--existing-versions "$${PROJECT_VERSION}" | jq -rc '.is_prerelease')" && \
 	echo "PRERELEASE=$${IS_PRERELEASE}" >> "$${EV_FILE}" && \
-	echo "CN_VERSION='$(CN_VERSION_SPEC_FOR_RC)'" >> "$${EV_FILE}" && \
+	echo "CP_VERSION='$(CP_VERSION_SPEC_FOR_RC)'" >> "$${EV_FILE}" && \
 	echo "" >> "$${EV_FILE}" && \
 	./docker/build_release_image.sh "$${EV_FILE}" && rm -f "$${EV_FILE}" || rm -f "$${EV_FILE}"
 
@@ -483,7 +483,7 @@ pytest_codeblocks:
 
 .PHONY: pytest_codeblocks_pypi_wheel_cml # Test code blocks using the PyPI local wheel of Concrete ML
 pytest_codeblocks_pypi_wheel_cml:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CN_VERSION_SPEC_FOR_RC)" --codeblocks
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --codeblocks
 
 .PHONY: pytest_codeblocks_pip_cml # Test code blocks using PyPI Concrete ML
 pytest_codeblocks_pip_cml:
@@ -555,17 +555,17 @@ show_type:show_scope
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
-	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)"
+	./script/make_utils/licenses.sh --cp_version "$(CP_VERSION_SPEC_FOR_RC)"
 
 .PHONY: force_licenses # Generate the list of licenses of dependencies (force the regeneration)
 force_licenses:
-	./script/make_utils/licenses.sh --cn_version "$(CN_VERSION_SPEC_FOR_RC)" --force_update
+	./script/make_utils/licenses.sh --cp_version "$(CP_VERSION_SPEC_FOR_RC)" --force_update
 
 .PHONY: check_licenses # Check if the licenses of dependencies have changed
 check_licenses:
 	@TMP_OUT="$$(mktemp)" && \
 	if ! poetry run env bash ./script/make_utils/licenses.sh --check \
-		--cn_version "$(CN_VERSION_SPEC_FOR_RC)" > "$${TMP_OUT}"; then \
+		--cp_version "$(CP_VERSION_SPEC_FOR_RC)" > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
 		echo "Error while checking licenses, see log above."; \
@@ -728,7 +728,7 @@ check_links:
 		--ignore-url=.gitbook/assets
 
 	@# We don't want links to our internal GitBook. We may have to switch this test off for a
-	@# moment if we link to links which are not made public in CN documentation, eg. Worse case, it
+	@# moment if we link to links which are not made public in CP documentation, e.g. Worse case, it
 	@# is tested in check_links_after_release
 	./script/doc_utils/check_no_gitbook_links.sh
 
@@ -798,7 +798,7 @@ check_unused_images:
 
 .PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CN_VERSION_SPEC_FOR_RC)"
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)"
 
 .PHONY: pytest_pip_cml # Run tests using PyPI Concrete ML
 pytest_pip_cml:
