@@ -34,13 +34,13 @@ from sklearn.preprocessing import (
 def get_data() -> Tuple[pandas.DataFrame, str]:
     """Fetch, merge and clean the GLM data-set."""
 
-    # Getting the original data set containing the risk features
+    # Getting the original data-set containing the risk features
     # Link: https://www.openml.org/d/41214
     risks_data, _ = fetch_openml(
         data_id=41214, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
     )
 
-    # Getting the data set containing claims amount
+    # Getting the data-set containing claims amount
     # Link: https://www.openml.org/d/41215
     claims_data, _ = fetch_openml(
         data_id=41215, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
@@ -266,7 +266,7 @@ def score_estimator(
     """Evaluate the score of a GLM using its predictions."""
 
     # Ignore non-positive predictions, as they are invalid for the Tweedie deviance. We want to
-    # issue a warning if for some reason (e.g. low quantization, user error), the regressor
+    # issue a warning if for some reason (eg low quantization, user error), the regressor
     # predictions are negative.
 
     # Concrete predictions' shape is (n, 1) but mean_tweedie_deviance only accepts arrays
@@ -447,7 +447,7 @@ def main():
         if n_components == 0:
             raise ValueError(f"n_bits = {n_bits} is too high. Please lower its value(s).")
 
-        # Let's instantiate the pipelines
+        # Instantiate the pipelines
         model_pca = Pipeline(
             [
                 ("preprocessor", preprocessor),
@@ -588,7 +588,7 @@ def main():
                 f"computing {regressor.__name__}'s deviance score."
             )
 
-        # Let's check what prediction performance we lose due to PCA
+        # Check what prediction performance we lose due to PCA
         if args.verbose:
             print("Evaluation in clear with PCA transformation (Concrete ML):", score)
             print("Evaluation in FHE with PCA transformation (Concrete ML):", fhe_score)

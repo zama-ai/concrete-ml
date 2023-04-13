@@ -47,7 +47,7 @@ def train(dev_folder="./dev"):
     # #
     # # [**Transformers**](https://en.wikipedia.org/wiki/Transformer_(machine_learning_model)) are neural networks that are often trained to predict the next words to appear in a text (this is commonly called self-supervised learning).
     # #
-    # # They are powerful tools for all kind of Natural Language Processing tasks but supporting a transformer model in FHE might not always be ideal as they are quite big models. However, we can still leverage their hidden representation for any text and feed it to a more FHE friendly machine learning model (in this notebook we will use XGBoost) for classification.
+    # # They are powerful tools for all kind of Natural Language Processing tasks but supporting a transformer model in FHE might not always be ideal as they are quite big models. However, we can still leverage their hidden representation for any text and feed it to a more FHE-friendly machine learning model (in this notebook we will use XGBoost) for classification.
     # #
     # # Here we will use the transformer model from the amazing [**Huggingface**](https://huggingface.co/) repository.
 
@@ -61,7 +61,7 @@ def train(dev_folder="./dev"):
         "cardiffnlp/twitter-roberta-base-sentiment-latest"
     )
 
-    # Let's vectorize the text using the transformer
+    # Vectorize the text using the transformer
     list_text_X_train = text_X_train.tolist()
     list_text_X_test = text_X_test.tolist()
 
@@ -69,7 +69,7 @@ def train(dev_folder="./dev"):
     X_test_transformer = text_to_tensor(list_text_X_test, transformer_model, tokenizer, device)
     # Now we have a representation for each tweet, we can train a model on these.
 
-    # Let's build our model
+    # Build our model
     model = XGBClassifier()
 
     # A gridsearch to find the best parameters
@@ -120,7 +120,7 @@ def train(dev_folder="./dev"):
     # Get probabilities predictions in clear
     y_pred_test = best_model.predict_proba(X_test_transformer)
 
-    # Let's see what are the top predictions based on the probabilities in y_pred_test
+    # See what are the top predictions based on the probabilities in y_pred_test
     print("5 most positive tweets (class 2):")
     for i in range(5):
         print(text_X_test.iloc[y_pred_test[:, 2].argsort()[-1 - i]])
@@ -131,7 +131,7 @@ def train(dev_folder="./dev"):
     for i in range(5):
         print(text_X_test.iloc[y_pred_test[:, 0].argsort()[-1 - i]])
 
-    # Now let's see where the model is wrong
+    # Now we can see where the model is wrong
     y_pred_test_0 = y_pred_test[y_test == 0]
     text_X_test_0 = text_X_test[y_test == 0]
 
@@ -149,11 +149,11 @@ def train(dev_folder="./dev"):
 
     # Interestingly, these misclassifications are not obvious and some actually look rather like mislabeled. Also, it seems that the model is having a hard time to find ironic tweets.
     #
-    # Now we have our model trained which has some great accuracy. Let's have it predict over the encrypted representation.
+    # Now we have our model trained which has some great accuracy. We can have it predict over the encrypted representation.
 
     # ### Sentiment Analysis of the Tweet with Fully Homomorphic Encryption
     #
-    # Now that we have our model ready for FHE inference and our data ready for encryption let's use the model in a privacy preserving manner with FHE.
+    # Now that we have our model ready for FHE inference and our data ready for encryption we can use the model in a privacy preserving manner with FHE.
 
     # Compile the model to get the FHE inference engine
     # (this may take a few minutes depending on the selected model)
@@ -162,12 +162,12 @@ def train(dev_folder="./dev"):
     end = time.perf_counter()
     print(f"Compilation time: {end - start:.4f} seconds")
 
-    # Let's write a custom example and predict in FHE
+    # Write a custom example and predict in FHE
     tested_tweet = ["AirFrance is awesome, almost as much as Zama!"]
     X_tested_tweet = text_to_tensor(tested_tweet, transformer_model, tokenizer, device)
     clear_proba = best_model.predict_proba(X_tested_tweet)
 
-    # Now let's predict with FHE over a single tweet and print the time it takes
+    # Now we predict with FHE over a single tweet and print the time it takes
     start = time.perf_counter()
     decrypted_proba = best_model.predict_proba(X_tested_tweet, fhe="execute")
     end = time.perf_counter()
@@ -177,7 +177,7 @@ def train(dev_folder="./dev"):
     print(f"Probabilities from the FHE inference: {decrypted_proba}")
     print(f"Probabilities from the clear model: {clear_proba}")
 
-    # Let's export the final model such that we can reuse it in a client/server environment
+    # Export the final model such that we can reuse it in a client/server environment
 
     # Export the model to ONNX
     onnx.save(best_model.onnx_model_, "server_model.onnx")  # pylint: disable=protected-access
@@ -191,7 +191,7 @@ def train(dev_folder="./dev"):
     # to csv
     X_test_numpy_df.to_csv("samples_for_compilation.csv")
 
-    # Let's save the model to be pushed to a server later
+    # Save the model to be pushed to a server later
     from concrete.ml.deployment import FHEModelDev
 
     fhe_api = FHEModelDev(dev_folder, best_model)

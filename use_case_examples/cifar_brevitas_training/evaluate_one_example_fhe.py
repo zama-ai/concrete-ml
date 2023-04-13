@@ -46,7 +46,7 @@ def measure_execution_time(func):
 
 
 # Instantiate the model
-torch_model = cnv_2w2a(pretrained=False)
+torch_model = cnv_2w2a(pre_trained=False)
 torch_model.eval()
 
 
@@ -57,7 +57,7 @@ checkpoint = torch.load(
 )
 torch_model.load_state_dict(checkpoint["state_dict"], strict=False)
 
-# Let's get some data that will be used to compile the model to FHE standards
+# Get some data that will be used to compile the model to FHE standards
 transform_to_tensor = transforms.Compose(
     [
         transforms.ToTensor(),

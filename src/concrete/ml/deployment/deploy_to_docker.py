@@ -1,13 +1,13 @@
-"""Methods to deploy a server using docker.
+"""Methods to deploy a server using Docker.
 
 It takes as input a folder with:
     - client.zip
     - server.zip
     - processing.json
 
-It builds a docker image and spawns a docker container that runs the server.
+It builds a Docker image and spawns a Docker container that runs the server.
 
-This module is untested as it would require to first build the release docker image.
+This module is untested as it would require to first build the release Docker image.
 FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3347
 """
 
@@ -23,7 +23,7 @@ DATE_FORMAT: str = "%Y_%m_%d_%H_%M_%S"
 
 
 def delete_image(image_name: str):
-    """Delete a docker image.
+    """Delete a Docker image.
 
     Arguments:
         image_name (str): to name of the image to delete.
@@ -39,7 +39,7 @@ def stop_container(image_name: str):
     """Kill all containers that use a given image.
 
     Arguments:
-        image_name (str): name of docker image for which to stop docker containers.
+        image_name (str): name of Docker image for which to stop Docker containers.
     """
     to_delete = subprocess.check_output(
         f"docker ps -q --filter ancestor={image_name}", shell=True
@@ -49,7 +49,7 @@ def stop_container(image_name: str):
 
 
 def build_docker_image(path_to_model: Path, image_name: str):
-    """Build server docker image.
+    """Build server Docker image.
 
     Arguments:
         path_to_model (Path): path to serialized model to serve.
@@ -83,13 +83,13 @@ def build_docker_image(path_to_model: Path, image_name: str):
 def main(path_to_model: Path, image_name: str):
     """Deploy function.
 
-    - Builds docker image.
-    - Runs docker server.
+    - Builds Docker image.
+    - Runs Docker server.
     - Stop container and delete image.
 
     Arguments:
         path_to_model (Path): path to model to server
-        image_name (str): name of the docker image
+        image_name (str): name of the Docker image
     """
 
     build_docker_image(path_to_model, image_name)
@@ -97,7 +97,7 @@ def main(path_to_model: Path, image_name: str):
     if args.only_build:
         return
 
-    # Run newly created docker server
+    # Run newly created Docker server
     try:
         with open("./url.txt", mode="w", encoding="utf-8") as file:
             file.write("http://localhost:5000")

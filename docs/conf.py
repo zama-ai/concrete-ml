@@ -76,16 +76,16 @@ nbsphinx_codecell_lexer = "ipython3"
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
+# a list of built-in themes.
 #
 
 # We may be back with sphinx_zama_theme, as soon as it provides something which is very close to
-# GitBook look, or keep ReadsTheDocs theme e.g. if we want to push docs there
+# GitBook look, or keep ReadsTheDocs theme eg if we want to push docs there
 html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
+# relative to this directory. They are copied after the built-in static files,
+# so a file named "default.css" will overwrite the built-in "default.css".
 html_static_path = ["_static"]
 
 # Were options for sphinx_zama_theme theme

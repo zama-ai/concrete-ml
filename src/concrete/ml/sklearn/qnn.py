@@ -59,7 +59,7 @@ class NeuralNetRegressor(QuantizedTorchEstimatorMixin, SkorchNeuralNetRegressor)
     """A Fully-Connected Neural Network regressor with FHE.
 
     This class wraps a quantized neural network implemented using Torch tools as a Scikit-Learn
-    estimator. The Skorch package allows to handle training and Scikit-Learn compatibility,
+    estimator. The skorch package allows to handle training and Scikit-Learn compatibility,
     and adds quantization as well as compilation functionalities. The neural network implemented
     by this class is a multi layer fully connected network trained with Quantization Aware Training
     (QAT).
@@ -150,12 +150,12 @@ class NeuralNetRegressor(QuantizedTorchEstimatorMixin, SkorchNeuralNetRegressor)
         # Call QuantizedTorchEstimatorMixin's fit_benchmark method
         return super().fit_benchmark(X, y, *args, **kwargs)
 
-    # Skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
+    # skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
     # not. We decided to follow Scikit-Learn's API as we build most of our tools on this library.
-    # However, our models are still directly inheriting from Skorch's classes, which makes this
+    # However, our models are still directly inheriting from skorch's classes, which makes this
     # method accessible by anyone, without having any FHE implementation. As this could create some
     # confusion, a NotImplementedError is raised. This issue could be fixed by making these classes
-    # not inherit from Skorch.
+    # not inherit from skorch.
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
     def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         raise NotImplementedError(
@@ -181,7 +181,7 @@ class NeuralNetClassifier(BaseClassifier, QuantizedTorchEstimatorMixin, SkorchNe
     """A Fully-Connected Neural Network classifier with FHE.
 
     This class wraps a quantized neural network implemented using Torch tools as a Scikit-Learn
-    estimator. The Skorch package allows to handle training and Scikit-Learn compatibility,
+    estimator. The skorch package allows to handle training and Scikit-Learn compatibility,
     and adds quantization as well as compilation functionalities. The neural network implemented
     by this class is a multi layer fully connected network trained with Quantization Aware Training
     (QAT).

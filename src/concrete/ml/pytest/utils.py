@@ -52,7 +52,7 @@ _regressor_models = [
         module__n_layers=3,
         module__n_w_bits=2,
         module__n_a_bits=2,
-        module__n_accum_bits=7,  # Let's stay with 7 bits for test exec time
+        module__n_accum_bits=7,  # Stay with 7 bits for test exec time
         module__n_hidden_neurons_multiplier=1,
         module__activation_function=nn.ReLU,
         max_epochs=10,
@@ -273,13 +273,13 @@ def load_torch_model(
     """Load an object saved with torch.save() from a file or dict.
 
     Args:
-        model_class (torch.nn.Module): A Pytorch or Brevitas network.
+        model_class (torch.nn.Module): A PyTorch or Brevitas network.
         state_dict_or_path (Optional[Union[str, Path, Dict[str, Any]]]): Path or state_dict
         params (Dict): Model's parameters
         device (str):  Device type.
 
     Returns:
-        torch.nn.Module: A Pytorch or Brevitas network.
+        torch.nn.Module: A PyTorch or Brevitas network.
     """
     model = model_class(**params)
 

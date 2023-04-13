@@ -4,14 +4,14 @@ import torch
 import torch.nn as nn
 from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
 
-""" In this models.py we provide the code for the Pytorch and Brevitas networks."""
+""" In this models.py we provide the code for the PyTorch and Brevitas networks."""
 
 # This architecture is inspired by the original VGG-11 network available in
-# Pytorch.hub (https://pytorch.org/hub/pytorch_vision_vgg/)
+# PyTorch.hub (https://pytorch.org/hub/pytorch_vision_vgg/)
 
-# Each tuple refers to a Pytorch or Brevitas layer:
+# Each tuple refers to a PyTorch or Brevitas layer:
 # I: QuantIdentity layer, only required for the Brevitas network. Mainly used to quantize
-# the input data or to encapsulate a Pytorch layer inside the Brevitas model.
+# the input data or to encapsulate a PyTorch layer inside the Brevitas model.
 # C: Convolutional layer.
 # P: Pooling layer, we replaced the original `MaxPool2d` in VGG-11 by a `AvgPool2d` layer.
 # Because in the current version of Concrete ML `MaxPool2d` isn't available yet.
@@ -70,8 +70,8 @@ class Fp32VGG11(nn.Module):
             else:
                 raise NameError(f"{t} not defined")
 
-        # For the Pytorch model, we don't take into account the `QuantIdentity` layers.
-        # Because, it's a Brevitas layer.
+        # For the PyTorch model, we don't take into account the `QuantIdentity` layers.
+        # Because, it is a Brevitas layer.
         self.features = nn.Sequential(*[make_layers(t) for t in FEATURES_MAPS if t[0] != "I"])
 
         # The original values in VGG-11 is output_size=(7, 7).
@@ -138,7 +138,7 @@ class QuantVGG11(nn.Module):
                 )
             if t[0] == "I":
                 # According to the literature, the first layer holds the most information
-                # about the input data. So, it's possible to quantize the input using more
+                # about the input data. So, it is possible to quantize the input using more
                 # precision bit-width than the rest of the network.
                 identity_quant = t[1] if len(t) == 2 else bit
                 return qnn.QuantIdentity(
@@ -171,7 +171,7 @@ class QuantVGG11(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.identity1(x)
-        # As `torch.flatten` is a Pytorch layer, you must place it between two `QuantIdentity`
+        # As `torch.flatten` is a PyTorch layer, you must place it between two `QuantIdentity`
         # layers to ensure that all intermediate values of the network are properly quantized.
         x = torch.flatten(x, 1)
         # Replace `x.view(x.shape[0], -1)` by `torch.flatten(x, 1)` which is an equivalent

@@ -54,7 +54,7 @@ class SparseQuantNeuralNetwork(nn.Module):
                 be used in when setting `n_hidden_neurons_multiplier` high (3-4), once good accuracy
                 is obtained, to speed up the model in FHE.
             activation_function: a torch class that is used to construct activation functions in
-                the network (e.g. torch.ReLU, torch.SELU, torch.Sigmoid, etc)
+                the network (eg torch.ReLU, torch.SELU, torch.Sigmoid, etc)
             quant_narrow : whether this network should use narrow range quantized integer values
             quant_signed : whether to use signed quantized integer values
 

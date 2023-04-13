@@ -116,7 +116,7 @@ def compute_onnx_pool_padding(
 ) -> Tuple[int, ...]:
     """Compute any additional padding needed to compute pooling layers.
 
-    The ONNX standard uses ceil_mode=1 to match tensorflow style pooling output computation.
+    The ONNX standard uses ceil_mode=1 to match TensorFlow style pooling output computation.
     In this setting, the kernel can be placed at a valid position even though it contains values
     outside of the input shape including padding. The ceil_mode parameter controls whether
     this mode is enabled. If the mode is not enabled, the output shape follows PyTorch rules.
@@ -137,7 +137,7 @@ def compute_onnx_pool_padding(
 
     pads2 = list(pads)
     if ceil_mode == 1:
-        # We will pad the input with additional rows to respect tensorflow style
+        # We will pad the input with additional rows to respect TensorFlow style
         # padding (ceil_mode == 1)
 
         # Compute the dimensions for floor/ceil output computation modes
@@ -178,7 +178,7 @@ def onnx_avgpool_compute_norm_const(
         res (float): tensor or scalar, corresponding to normalization factors to apply for the
             average pool computation for each valid kernel position
     """
-    # Handle the tensorflow pooling mode
+    # Handle the TensorFlow pooling mode
     if ceil_mode == 1:
         n_in_channels = input_shape[1]
         kernel = numpy.ones(
@@ -186,7 +186,7 @@ def onnx_avgpool_compute_norm_const(
             dtype=numpy.int64,
         )
 
-        # Tensorflow (and ONNX pool with ceil_mode==1) allow the kernel of the pooling op
+        # TensorFlow (and ONNX pool with ceil_mode==1) allow the kernel of the pooling op
         # to be placed in positions that include out-of-bounds indices.
         # For example an input of size 2 containing values V,
         # with padding P of 1 to the left and right:
@@ -203,7 +203,7 @@ def onnx_avgpool_compute_norm_const(
         # Compute the padded input tensor in Floor mode (PyTorch)
         pool_pads_floor = compute_onnx_pool_padding(input_shape, kernel_shape, pads, strides, 0)
 
-        # Compute it again in tensorflow mode
+        # Compute it again in TensorFlow mode
         pool_pads_ceil = compute_onnx_pool_padding(input_shape, kernel_shape, pads, strides, 1)
 
         # Create a tensor of ones for PyTorch mode and one of zeros for TF mode

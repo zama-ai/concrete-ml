@@ -5,7 +5,7 @@ from concrete.ml.deployment import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.sklearn import XGBClassifier
 
 if __name__ == "__main__":
-    # Let's first get some data and train a model.
+    # First get some data and train a model.
     X, y = load_breast_cancer(return_X_y=True)
 
     assert isinstance(X, numpy.ndarray)

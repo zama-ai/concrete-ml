@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import tempfile
 
-# Disable pylint as some names like X and q_X are used, following Scikit-Learn's standard. The file
+# Disable pylint as some names like X and q_X are used, following scikit-Learn's standard. The file
 # is also more than 1000 lines long.
 # pylint: disable=too-many-lines,invalid-name
 import warnings
@@ -52,9 +52,9 @@ from ..torch import NumpyModule
 from .qnn_module import SparseQuantNeuralNetwork
 from .tree_to_numpy import tree_to_numpy
 
-# Disable pylint to import hummingbird while ignoring the warnings
+# Disable pylint to import Hummingbird while ignoring the warnings
 # pylint: disable=wrong-import-position,wrong-import-order
-# Silence hummingbird warnings
+# Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 
@@ -89,7 +89,7 @@ class BaseEstimator:
     """Base class for all estimators in Concrete ML.
 
     This class does not inherit from sklearn.base.BaseEstimator as it creates some conflicts
-    with Skorch in QuantizedTorchEstimatorMixin's subclasses (more specifically, the `get_params`
+    with skorch in QuantizedTorchEstimatorMixin's subclasses (more specifically, the `get_params`
     method is not properly inherited).
 
     Attributes:
@@ -106,7 +106,7 @@ class BaseEstimator:
         """Initialize the base class with common attributes used in all estimators.
 
         An underscore "_" is appended to attributes that were created while fitting the model. This
-        is done in order to follow Scikit-Learn's standard format. More information available
+        is done in order to follow scikit-Learn's standard format. More information available
         in their documentation:
         https://scikit-learn.org/stable/developers/develop.html#:~:text=Estimated%20Attributes%C2%B6
         """
@@ -230,8 +230,8 @@ class BaseEstimator:
     def get_sklearn_params(self, deep: bool = True) -> dict:
         """Get parameters for this estimator.
 
-        This method is used to instantiate a Scikit-Learn model using the Concrete ML model's
-        parameters. It does not override Scikit-Learn's existing `get_params` method in order to
+        This method is used to instantiate a scikit-learn model using the Concrete ML model's
+        parameters. It does not override scikit-learn's existing `get_params` method in order to
         not break its implementation of `set_params`.
 
         Args:
@@ -241,7 +241,7 @@ class BaseEstimator:
         Returns:
             params (dict): Parameter names mapped to their values.
         """
-        # Here, the `get_params` method is the `BaseEstimator.get_params` method from Scikit-Learn,
+        # Here, the `get_params` method is the `BaseEstimator.get_params` method from scikit-learn,
         # which will become available once a subclass inherits from it. We therefore disable both
         # pylint and mypy as this behavior is expected
         # pylint: disable-next=no-member
@@ -258,19 +258,19 @@ class BaseEstimator:
         self.post_processing_params = {}
 
     def _fit_sklearn_model(self, X: Data, y: Target, **fit_parameters):
-        """Fit the model's Scikit-Learn equivalent estimator.
+        """Fit the model's scikit-learn equivalent estimator.
 
         Args:
             X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
             y (Target): The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
                 Series or List.
-            **fit_parameters: Keyword arguments to pass to the Scikit-Learn estimator's fit method.
+            **fit_parameters: Keyword arguments to pass to the scikit-learn estimator's fit method.
 
         Returns:
-            The fitted Scikit-Learn estimator.
+            The fitted scikit-learn estimator.
         """
 
-        # Initialize the underlying Scikit-learn model if it has not already been done or if
+        # Initialize the underlying scikit-learn model if it has not already been done or if
         # `warm_start` is set to False (for neural networks)
         # This model should be directly initialized in the model's __init__ method instead
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
@@ -280,7 +280,7 @@ class BaseEstimator:
 
             self.sklearn_model = self.sklearn_model_class(**params)
 
-        # Fit the Scikit-Learn model
+        # Fit the scikit-learn model
         self.sklearn_model.fit(X, y, **fit_parameters)
 
         return self.sklearn_model
@@ -289,7 +289,7 @@ class BaseEstimator:
     def fit(self, X: Data, y: Target, **fit_parameters):
         """Fit the estimator.
 
-        This method trains a Scikit-Learn estimator, computes its ONNX graph and defines the
+        This method trains a scikit-learn estimator, computes its ONNX graph and defines the
         quantization parameters needed for proper FHE inference.
 
         Args:
@@ -341,15 +341,15 @@ class BaseEstimator:
             else:
                 params["random_state"] = numpy.random.randint(0, 2**15)
 
-        # Initialize the Scikit-Learn model
+        # Initialize the scikit-learn model
         sklearn_model = self.sklearn_model_class(**params)
 
-        # Train the Scikit-Learn model
+        # Train the scikit-learn model
         sklearn_model.fit(X, y, **fit_parameters)
 
         # Update the Concrete ML model's parameters
         # Disable mypy attribute definition errors as this attribute is expected to be
-        # initialized once the model inherits from Skorch
+        # initialized once the model inherits from skorch
         self.set_params(n_bits=self.n_bits, **params)  # type: ignore[attr-defined]
 
         # Train the Concrete ML model
@@ -408,7 +408,7 @@ class BaseEstimator:
         Args:
             X (Data): A representative set of input values used for building cryptographic
                 parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
-                usually the training data set or s sub-set of it.
+                usually the training data-set or s sub-set of it.
             configuration (Optional[Configuration]): Options to use for compilation. Default
                 to None.
             artifacts (Optional[DebugArtifacts]): Artifacts information about the compilation
@@ -491,7 +491,7 @@ class BaseEstimator:
             X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
                 or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete ML python inference,
+                Can be FheMode.DISABLE for Concrete ML Python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values.
                 Default to FheMode.DISABLE.
@@ -685,7 +685,7 @@ class BaseClassifier(BaseEstimator):
             X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
                 or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete ML python inference,
+                Can be FheMode.DISABLE for Concrete ML Python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values.
                 Default to FheMode.DISABLE.
@@ -814,8 +814,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Returns:
             params (dict): Parameter names mapped to their values.
         """
-        # Retrieve the Skorch estimator's init parameters
-        # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch, which
+        # Retrieve the skorch estimator's init parameters
+        # Here, the `get_params` method is the `NeuralNet.get_params` method from skorch, which
         # will become available once a subclass inherits from it. We therefore disable both pylint
         # and mypy as this behavior is expected
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
@@ -833,8 +833,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         return params
 
     def get_sklearn_params(self, deep: bool = True) -> Dict:
-        # Retrieve the Skorch estimator's init parameters
-        # Here, the `get_params` method is the `NeuralNet.get_params` method from Skorch, which
+        # Retrieve the skorch estimator's init parameters
+        # Here, the `get_params` method is the `NeuralNet.get_params` method from skorch, which
         # will become available once a subclass inherits from it. We therefore disable both pylint
         # and mypy as this behavior is expected
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
@@ -865,7 +865,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
             y (Target): The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas
                 Series or List.
-            **fit_parameters: Keyword arguments to pass to Skorch's fit method.
+            **fit_parameters: Keyword arguments to pass to skorch's fit method.
 
         Returns:
             The fitted estimator.
@@ -897,7 +897,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
                     f"Parameter `{arg_name}` must be a numpy.ndarray, list or torch.Tensor",
                 )
 
-        # Fit the model by using Skorch's fit
+        # Fit the model by using skorch's fit
         self._fit_sklearn_model(X, y, **fit_parameters)
 
         # Export the brevitas model to ONNX
@@ -953,7 +953,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Iterate over the model's sub-modules
         for module in self.base_module.features:
 
-            # If the module is not a QuantIdentity, it's either a QuantLinear or an activation
+            # If the module is not a QuantIdentity, it is either a QuantLinear or an activation
             if not isinstance(module, qnn.QuantIdentity):
                 # If the module is a QuantLinear, replace it with a Linear module
                 if isinstance(module, qnn.QuantLinear):
@@ -968,7 +968,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
                     float_module.add_module(linear_name, linear_layer)
 
-                # Else, it's a module representing the activation function, which needs to be
+                # Else, it is a module representing the activation function, which needs to be
                 # added as well
                 else:
                     activation_name = f"act{layer_index}"
@@ -982,7 +982,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         Returns:
             float_estimator (SkorchNeuralNet): An instance of the equivalent float estimator.
         """
-        # Retrieve the Skorch estimator's init parameters
+        # Retrieve the skorch estimator's init parameters
         sklearn_params = self.get_params()
 
         # Retrieve all parameters related to the module
@@ -1017,13 +1017,13 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             X (Data): The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
             y (Target): The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas
                 Series or List.
-            random_state (Optional[int]): The random state to use when fitting. However, Skorch
+            random_state (Optional[int]): The random state to use when fitting. However, skorch
                 does not handle such a parameter and setting it will have no effect. Defaults
                 to None.
-            **fit_parameters: Keyword arguments to pass to Skorch's fit method.
+            **fit_parameters: Keyword arguments to pass to skorch's fit method.
 
         Returns:
-            The Concrete ML and equivalent Skorch fitted estimators.
+            The Concrete ML and equivalent skorch fitted estimators.
         """
 
         assert (
@@ -1170,7 +1170,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Enable pruning again, this time with structured pruning
         pruned_model.base_module.enable_pruning()
 
-        # The .module_ was initialized manually, prevent .fit (for both Skorch and Concrete ML)
+        # The .module_ was initialized manually, prevent .fit (for both skorch and Concrete ML)
         # from creating a new one
         # Setting both attributes could be avoided by initializing `sklearn_model` in __init__
         # # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
@@ -1186,7 +1186,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """Mixin class for tree-based estimators.
 
-    This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's
+    This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
     `get_params` and `set_params` methods.
     """
 
@@ -1228,7 +1228,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             self.input_quantizers.append(input_quantizer)
             q_X[:, i] = input_quantizer.quant(X[:, i])
 
-        # Fit the Scikit-Learn model
+        # Fit the scikit-learn model
         self._fit_sklearn_model(q_X, y, **fit_parameters)
 
         # Set post-processing parameters
@@ -1327,7 +1327,7 @@ class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin
     """Mixin class for tree-based regressors.
 
     This class is used to create a tree-based regressor class that inherits from
-    sklearn.base.RegressorMixin, which essentially gives access to Scikit-Learn's `score` method
+    sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method
     for regressors.
     """
 
@@ -1338,7 +1338,7 @@ class BaseTreeClassifierMixin(
     """Mixin class for tree-based classifiers.
 
     This class is used to create a tree-based classifier class that inherits from
-    sklearn.base.ClassifierMixin, which essentially gives access to Scikit-Learn's `score` method
+    sklearn.base.ClassifierMixin, which essentially gives access to scikit-learn's `score` method
     for classifiers.
 
     Additionally, this class adjusts some of the tree-based base class's methods in order to make
@@ -1350,7 +1350,7 @@ class BaseTreeClassifierMixin(
 class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """A Mixin class for sklearn linear models with FHE.
 
-    This class inherits from sklearn.base.BaseEstimator in order to have access to Scikit-Learn's
+    This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
     `get_params` and `set_params` methods.
     """
 
@@ -1418,7 +1418,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # LinearRegression handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)
 
-        # Fit the Scikit-Learn model
+        # Fit the scikit-learn model
         self._fit_sklearn_model(X, y, **fit_parameters)
 
         # Check that the underlying sklearn model has been set and fit
@@ -1517,7 +1517,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 q_X (numpy.ndarray): The quantized input data
 
             Returns:
-                numpy.ndarray: The circuit's outputs.
+                numpy.ndarray: The circuit is outputs.
             """
             return self._inference(q_X)
 
@@ -1541,7 +1541,7 @@ class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.Regresso
     """A Mixin class for sklearn linear regressors with FHE.
 
     This class is used to create a linear regressor class that inherits from
-    sklearn.base.RegressorMixin, which essentially gives access to Scikit-Learn's `score` method
+    sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method
     for regressors.
     """
 
@@ -1552,7 +1552,7 @@ class SklearnLinearClassifierMixin(
     """A Mixin class for sklearn linear classifiers with FHE.
 
     This class is used to create a linear classifier class that inherits from
-    sklearn.base.ClassifierMixin, which essentially gives access to Scikit-Learn's `score` method
+    sklearn.base.ClassifierMixin, which essentially gives access to scikit-learn's `score` method
     for classifiers.
 
     Additionally, this class adjusts some of the tree-based base class's methods in order to make
@@ -1576,7 +1576,7 @@ class SklearnLinearClassifierMixin(
             X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
                 or List.
             fhe (Union[FheMode, str]): The mode to use for prediction.
-                Can be FheMode.DISABLE for Concrete ML python inference,
+                Can be FheMode.DISABLE for Concrete ML Python inference,
                 FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
                 Can also be the string representation of any of these values.
                 Default to FheMode.DISABLE.
