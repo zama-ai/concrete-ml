@@ -184,7 +184,8 @@ class BinarySearch:
                 QAT (quantization-aware training). Default is True.
             lower (float): The lower bound of the search space for the `p_error`. Default is 0.0.
             upper (float): The upper bound of the search space for the `p_error`. Default is 0.9.
-                Increasing `p_error` beyond this threshold could lead to unstable executions.
+                Increasing the upper bound beyond this range may result in longer execution times
+                especially when `p_error≈1`.
             max_iter (int): The maximum number of iterations to run the binary search
                 algorithm. Default is 20.
             n_simulation (int): The number of simulations to validate the results of the FHE

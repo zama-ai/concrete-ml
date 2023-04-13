@@ -108,17 +108,21 @@ X_train, _, y_train, _ = train_test_split(x, y, test_size=10, random_state=42)
 
 clf = DecisionTreeClassifier(random_state=42)
 
-# fit the model
+# Fit the model
 clf.fit(X_train, y_train)
 
 # Compile the model with the default `p_error`
+fhe_circuit = clf.compile(X_train)
+
+# Key Generation
+fhe_circuit.client.keygen(force=False)
+
 start_time = time()
-clf.compile(X_train)
 y_pred = clf.predict(X_train, fhe="execute")
 end_time = time()
 
 print(f"With the default p_error≈0, the inference time is {(end_time - start_time) / 60:.2f} s")
-# Output: With the default p_error≈0, the inference time is 1.40 s
+# Output: With the default p_error≈0, the inference time is 0.89 s
 print(f"Accuracy = {accuracy_score(y_pred, y_train):.2%}")
 # Output: Accuracy = 100.00%
 
@@ -128,20 +132,26 @@ search = BinarySearch(estimator=clf, predict="predict", metric=accuracy_score)
 p_error = search.run(x=X_train, ground_truth=y_train, max_iter=10)
 
 # Compile the model with the optimal `p_error`
+fhe_circuit = clf.compile(X_train, p_error=p_error)
+
+# Key Generation
+fhe_circuit.client.keygen(force=False)
+
 start_time = time()
-clf.compile(X_train, p_error=p_error)
 y_pred = clf.predict(X_train, fhe="execute")
 end_time = time()
 
 print(
     f"With p_error={p_error:.5f}, the inference time becomes {(end_time - start_time) / 60:.2f} s"
 )
-# Ouput: With p_error=0.00044, the inference time becomes 0.49 s
+# Ouput: With p_error=0.00043, the inference time becomes 0.56 s
 print(f"Accuracy = {accuracy_score(y_pred, y_train): .2%}")
 # Output: Accuracy = 100.00%
 ```
 
-With this optimal `p_error`, the accuracy is maintained while the execution time is improved by a factor of 2.8.
+With this optimal `p_error`, the accuracy is maintained while the execution time is improved by a factor of 1.51.
+
+Please note that the default setting for the search interval is restricted to a range of 0.0 and 0.9. Increasing the upper bound beyond this range may result in longer execution times, especially when `p_error≈1`.
 
 ## Rounded activations and quantizers
 
