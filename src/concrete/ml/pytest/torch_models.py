@@ -628,7 +628,7 @@ class TinyQATCNN(nn.Module):
     """A very small QAT CNN to classify the sklearn digits data-set.
 
     This class also allows pruning to a maximum of 10 active neurons, which
-    should help keep the accumulator bit width low.
+    should help keep the accumulator bit-width low.
     """
 
     def __init__(self, n_classes, n_bits, n_active, signed, narrow) -> None:
@@ -890,7 +890,7 @@ class QATTestModule(nn.Module):
 
 
 class SingleMixNet(nn.Module):
-    """Torch model that with a single conv layer that produces the output, e.g. a blur filter."""
+    """Torch model that with a single conv layer that produces the output, eg a blur filter."""
 
     mixing_layer: Union[nn.Module, nn.Sequential]
 

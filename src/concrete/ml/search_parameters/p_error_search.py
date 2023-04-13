@@ -1,6 +1,6 @@
 """p_error binary search for classification and regression tasks.
 
-Only Pytorch neural networks and Concrete built-in models are supported.
+Only PyTorch neural networks and Concrete built-in models are supported.
 - Concrete built-in models include trees and QNN
 - Quantized aware trained model are supported using Brevitas framework
 - Torch models can be converted into post-trained quantized models
@@ -176,7 +176,7 @@ class BinarySearch:
         """`p_error` binary search algorithm.
 
         Args:
-            estimator : Custom model (Brevitas or Pytorch) or built-in models (trees or QNNs).
+            estimator : Custom model (Brevitas or PyTorch) or built-in models (trees or QNNs).
             predict (str): The prediction method to use for built-in tree models.
             metric (Callable): Evaluation metric for classification or regression tasks.
             n_bits (int): Quantization bits, for PTQ models. Default is 4.
@@ -413,7 +413,7 @@ class BinarySearch:
             ground_truth (numpy.ndarray): The ground truth
             kwargs (Dict): Class parameters
             strategy (Callable): A uni-variate function that defines a "match". It can be: a
-                built-in functions provided in python, like: any or all or a custom function, like:
+                built-in functions provided in Python, like: any or all or a custom function, like:
                 mean = lambda all_matches: numpy.mean(all_matches) >= 0.5
                 median = lambda all_matches: numpy.median(all_matches) == 1
                 Default is `all`.

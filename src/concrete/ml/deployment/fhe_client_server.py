@@ -114,7 +114,7 @@ class FHEModelServer:
         if not versions["python"].startswith(
             f"{sys.version_info.major}.{sys.version_info.minor}"
         ):  # pragma: no cover
-            raise ValueError("Not the same python version between the compiler and the server.")
+            raise ValueError("Not the same Python version between the compiler and the server.")
 
         self.server = fhe.Server.load(Path(self.path_dir).joinpath("server.zip"))
 

@@ -53,7 +53,7 @@ def main():
     with open("./serialized_processing.json", "wb") as file:
         file.write(zip_response.content)
 
-    # Let's create the client
+    # Create the client
     client = FHEModelClient(path_dir="./", key_dir="./keys")
 
     # The client first need to create the private and evaluation keys.

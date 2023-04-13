@@ -5,7 +5,7 @@ from typing import Type
 def _custom_assert(
     condition: bool, on_error_msg: str = "", error_type: Type[Exception] = AssertionError
 ):
-    """Provide a custom assert which is kept even if the optimized python mode is used.
+    """Provide a custom assert which is kept even if the optimized Python mode is used.
 
     See https://docs.python.org/3/reference/simple_stmts.html#assert for the documentation
     on the classical assert function

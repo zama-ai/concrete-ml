@@ -337,7 +337,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
 
     def fit(self, X, y, *args, **kwargs) -> Any:
 
-        # HummingBird and XGBoost don't properly manage multi-outputs cases
+        # Hummingbird and XGBoost don't properly manage multi-outputs cases
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1856
 
         assert_true(

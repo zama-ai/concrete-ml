@@ -19,10 +19,15 @@ do
    shift
 done
 
-
+# Check documentation
 MD_FILES=$(find ./*.md use_case_examples docs -type f -name "*.md")
 
 # shellcheck disable=SC2086
 poetry run python script/doc_utils/check_forbidden_words.py --files $MD_FILES $EXTRA_OPTIONS
 
+# Check sources
+PY_FILES=$(find ./*.py src benchmarks use_case_examples docs -type f -name "*.py")
+
+# shellcheck disable=SC2086
+poetry run python script/doc_utils/check_forbidden_words.py --files $PY_FILES $EXTRA_OPTIONS
 

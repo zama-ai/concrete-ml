@@ -4,7 +4,7 @@ import os
 from .version import __version__
 
 # If the use of skops needs to be disabled.
-# This could be useful when loading a model with python 3.7 with a higher version
+# This could be useful when loading a model with Python 3.7 with a higher version
 USE_SKOPS = int(os.environ.get("USE_SKOPS", 1))
 
 # These are all the trusted types that are considered by skops

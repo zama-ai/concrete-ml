@@ -45,20 +45,20 @@ def get_model_cfg(name):
     return cfg
 
 
-def model_with_cfg(name, pretrained):
+def model_with_cfg(name, pre_trained):
     cfg = get_model_cfg(name)
     arch = cfg.get("MODEL", "ARCH")
     model = model_impl[arch](cfg)
-    if pretrained:
+    if pre_trained:
         checkpoint = cfg.get("MODEL", "PRETRAINED_URL")
         state_dict = hub.load_state_dict_from_url(checkpoint, progress=True, map_location="cpu")
         model.load_state_dict(state_dict, strict=True)
     return model, cfg
 
 
-def cnv_2w2a(pretrained=False):
+def cnv_2w2a(pre_trained=False):
     assert (
-        pretrained == False
+        pre_trained == False
     ), "No online pre-trained network are available. Use --resume instead with a valid checkpoint."
-    model, _ = model_with_cfg("cnv_2w2a", pretrained)
+    model, _ = model_with_cfg("cnv_2w2a", pre_trained)
     return model

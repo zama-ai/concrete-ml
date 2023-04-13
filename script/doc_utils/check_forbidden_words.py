@@ -57,106 +57,107 @@ def process_file(file_str: str, do_open_problematic_files=False):
         return True, 0
 
     # forbidden_word_list is a list of tuples: each tuple is of the form
-    # (forbidden_word, exceptions), where:
+    # (forbidden_word, exceptions, excepted_file_types), where:
     #       forbidden_word: is the forbidden word
     #       exceptions: is a list (possibly empty) of exceptions; if the forbidden_word is found
     #           but one of the elements in the exceptions match the string, it is not considered as
     #           an error
-    forbidden_word_list: List[Tuple[str, List]]
+    #       excepted_file_types: is a list of possibly empty file types for which this forbidden
+    #           word is ignored
+    forbidden_word_list: List[Tuple[str, List, List[str]]]
     forbidden_word_list = [
-        ("Concrete-ml", []),  # use `Concrete ML`
-        ("Concrete-Ml", []),  # use `Concrete ML`
-        ("Concrete-ML", []),  # use `Concrete ML`
-        ("concrete ml", []),  # use `Concrete ML`
-        ("concrete-ml", []),  # use `Concrete ML`
-        ("pytorch", []),  # use `PyTorch`
-        ("Pytorch", []),  # use `PyTorch`
-        ("pytorch", []),  # use `PyTorch`
-        ("bitwidth", []),  # use `bit-width`
-        ("bit width", []),  # use `bit-width`
-        ("inputset", []),  # use `input-set`
-        ("dataset", []),  # use `data-set`
-        ("data set", []),  # use `data-set`
-        ("data-base", []),  # use `database`
-        ("code-base", []),  # use `codebase`
-        ("dequantize", []),  # use de-quantize
-        ("requantize", []),  # use re-quantize
-        ("an FHE", []),  # use `a FHE`
-        ("can Google", []),  # google is a verb
-        ("jupyter", []),  # use Jupyter
-        ("PyTest", []),  # use pytest
-        ("pyTest", []),  # use pytest
-        ("Pytest", []),  # use pytest
-        ("python", ["python client.py"]),  # use Python
-        ("HummingBird", []),  # use Hummingbird
+        ("Concrete-ml", [], []),  # use `Concrete ML`
+        ("Concrete-Ml", [], []),  # use `Concrete ML`
+        ("Concrete-ML", [], []),  # use `Concrete ML`
+        ("concrete ml", [], []),  # use `Concrete ML`
+        ("concrete-ml", [], []),  # use `Concrete ML`
+        ("pytorch", [], []),  # use `PyTorch`
+        ("Pytorch", [], []),  # use `PyTorch`
+        ("pytorch", [], []),  # use `PyTorch`
+        ("bitwidth", [], [".py"]),  # use `bit-width`
+        ("bit width", [], []),  # use `bit-width`
+        ("inputset", [], [".py"]),  # use `input-set`
+        ("dataset", [], [".py"]),  # use `data-set`
+        ("data set", [], []),  # use `data-set`
+        ("data-base", [], []),  # use `database`
+        ("code-base", [], []),  # use `codebase`
+        ("dequantize", [], []),  # use de-quantize
+        ("dequantization", [], []),  # use de-quantization
+        ("requantize", [], []),  # use re-quantize
+        ("an FHE", [], []),  # use `a FHE`
+        ("can Google", [], []),  # google is a verb
+        ("jupyter", [], []),  # use Jupyter
+        ("PyTest", [], []),  # use pytest
+        ("pyTest", [], []),  # use pytest
+        ("Pytest", [], []),  # use pytest
+        ("python", ["python client.py", "python ./server.py"], []),  # use Python
+        ("HummingBird", [], []),  # use Hummingbird
         (
             "hummingbird",
             ["from hummingbird import", "import hummingbird", "from hummingbird."],
+            [],
         ),  # use Hummingbird
-        ("MacOS", []),  # use macOS
-        ("macos", []),  # use macOS
-        ("MacOs", []),  # use macOS
-        ("bareOS", []),  # use bare OS
-        ("BareOS", []),  # use bare OS
-        ("torch", ["import torch", "torch.", "from torch import"]),  # use Torch
-        ("numpy", ["import numpy", "from numpy import", "numpy."]),  # use NumPy
-        ("Numpy", []),  # use NumPy
-        ("PoissonRegression", []),  # use Poisson Regression
-        ("docker", []),  # Use Docker
-        ("poetry", []),  # Use Poetry
-        ("Make", []),  # Use make
-        ("brevitas", ["import brevitas", "from brevitas", "bit accuracy brevitas"]),  # use Brevitas
-        ("concrete-numpy", []),  # use Concrete
-        ("concrete-Numpy", []),  # use Concrete
-        ("Concrete-numpy", []),  # use Concrete
-        ("Concrete-Numpy", []),  # use Concrete
-        ("Concrete Numpy", []),  # use Concrete
-        ("Concrete numpy", []),  # use Concrete
-        ("concrete Numpy", []),  # use Concrete
-        ("concrete numpy", []),  # use Concrete
-        ("tool-kit", []),  # use toolkit
-        ("tool-kits", []),  # use toolkits
-        ("preprocessing", []),  # use pre-processing
-        ("preprocess", []),  # use pre-process
-        ("keras", []),  # use Keras
-        ("tensorflow", ["= tensorflow."]),  # use TensorFlow
-        ("Tensorflow", []),  # use TensorFlow
-        ("gauss", []),  # use Gauss
-        ("gaussian", []),  # use Gaussian
-        ("netron", []),  # use Netron
-        ("information are", []),  # information is
-        ("builtin", []),  # use built-in
-        ("hyper parameters", []),  # use hyper-parameters
-        ("hyperparameters", []),  # use hyper-parameters
-        ("combinaison", []),  # use combination
-        ("zeropoint", []),  # use zero-point
-        ("pretrained", []),  # use pre-trained
-        ("i.e.,", []),  # i.e.
-        ("e.g.,", []),  # e.g.
-        ("discord", []),  # use Discord
-        ("worst-case", []),  # use worst case
-        ("FHE friendly", []),  # use FHE-friendly
-        ("slow-down", []),  # use slow down
-        ("counter-part", []),  # use counterpart
-        ("Scikit-learn", []),  # use scikit-learn
-        ("Scikit-Learn", []),  # use scikit-learn
-        ("scikit-Learn", []),  # use scikit-learn
-        ("it's", []),  # use `it is`
-        ("It's", []),  # use `It is`
-        ("let's", []),  # keep a consistent impersonal style
-        ("Let's", []),  # keep a consistent impersonal style
-        ("let us", ["feel free to let us know"]),  # keep a consistent impersonal style
-        ("Let us", []),  # keep a consistent impersonal style
-        ("github", []),  # use GitHub
-        ("elementwise", []),  # use element-wise
-        ("favourite", []),  # use favorite
+        ("MacOS", [], []),  # use macOS
+        ("macos", [], []),  # use macOS
+        ("MacOs", [], []),  # use macOS
+        ("bareOS", [], []),  # use bare OS
+        ("BareOS", [], []),  # use bare OS
+        ("torch", ["import torch", "torch.", "from torch import"], [".py"]),  # use Torch
+        ("numpy", ["import numpy", "from numpy import", "numpy."], [".py"]),  # use NumPy
+        ("Numpy", ["Concrete-Numpy"], [".py"]),  # use NumPy
+        ("PoissonRegression", [], []),  # use Poisson Regression
+        ("docker", ["docker ps -a"], []),  # Use Docker
+        ("poetry", [], []),  # Use Poetry
+        ("Make", [], [".py"]),  # Use make
+        (
+            "brevitas",
+            ["import brevitas", "from brevitas", "bit accuracy brevitas"],
+            [".py"],
+        ),  # use Brevitas
+        ("concrete-numpy", [], []),  # use Concrete-Numpy
+        ("Concrete-numpy", [], []),  # use Concrete-Numpy
+        ("tool-kit", [], []),  # use toolkit
+        ("tool-kits", [], []),  # use toolkits
+        ("preprocessing", [], []),  # use pre-processing
+        ("preprocess", [], []),  # use pre-process
+        ("keras", [], []),  # use Keras
+        ("tensorflow", ["= tensorflow."], []),  # use TensorFlow
+        ("Tensorflow", [], []),  # use TensorFlow
+        ("gauss", [], []),  # use Gauss
+        ("gaussian", [], []),  # use Gaussian
+        ("netron", [], []),  # use Netron
+        ("information are", [], []),  # information is
+        ("builtin", [], []),  # use built-in
+        ("hyper parameters", [], []),  # use hyper-parameters
+        ("hyperparameters", [], []),  # use hyper-parameters
+        ("combinaison", [], []),  # use combination
+        ("zeropoint", [], []),  # use zero-point
+        ("pretrained", [], []),  # use pre-trained
+        ("i.e.,", [], []),  # ie
+        ("e.g.,", [], []),  # eg
+        ("discord", [], []),  # use Discord
+        ("worst-case", [], []),  # use worst case
+        ("FHE friendly", [], []),  # use FHE-friendly
+        ("slow-down", [], []),  # use slow down
+        ("counter-part", [], []),  # use counterpart
+        ("Scikit-learn", [], []),  # use Scikit-Learn
+        ("it's", [], []),  # use `it is`
+        ("It's", [], []),  # use `It is`
+        ("let's", [], []),  # keep a consistent impersonal style
+        ("Let's", [], []),  # keep a consistent impersonal style
+        ("let us", ["feel free to let us know"], []),  # keep a consistent impersonal style
+        ("Let us", [], []),  # keep a consistent impersonal style
+        ("github", [], []),  # use GitHub
+        ("elementwise", [], []),  # use element-wise
+        ("favourite", [], []),  # use favorite
         (
             "speed up",
             ["to speed up", "will speed up", "will not speed up", "it speeds up", "this speeds up"],
+            [".py"],
         ),
-        ("de-activate", []),  # use deactivate
-        ("Skorch", []),  # use skorch
-        ("fhe", ["execute_in_fhe", "forward_fhe", "fhe_circuit", "fhe.org"]),  # use `FHE`
+        ("de-activate", [], []),  # use deactivate
+        ("Skorch", [], []),  # use skorch
+        ("fhe", ["execute_in_fhe", "forward_fhe", "fhe_circuit", "fhe.org"], [".py"]),  # use `FHE`
     ]
     # For later
     #   "We" or "Our", or more generally, passive form
@@ -172,10 +173,17 @@ def process_file(file_str: str, do_open_problematic_files=False):
 
             line = line.rstrip()
 
-            for forbidden_word, exceptions in forbidden_word_list:
+            for forbidden_word, exceptions, excepted_file_types in forbidden_word_list:
 
                 stop = False
 
+                # Exceptions on file types
+                for t in excepted_file_types:
+                    if t in str(file_path):
+                        stop = True
+                        break
+
+                # Exceptions for the given line
                 for exception in exceptions:
                     if exception in line:
                         stop = True

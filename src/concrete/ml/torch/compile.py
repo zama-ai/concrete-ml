@@ -78,7 +78,7 @@ def _compile_torch_or_onnx_model(
         configuration (Configuration): Configuration object to use during compilation
         artifacts (DebugArtifacts): Artifacts object to fill during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
-            to be sent to the compiler backend is shown on the screen, e.g. for debugging or demo
+            to be sent to the compiler backend is shown on the screen, eg for debugging or demo
         n_bits: the number of bits for the quantization
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
@@ -167,7 +167,7 @@ def compile_torch_model(
         artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
-            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+            to be sent to the compiler backend is shown on the screen, eg, for debugging or demo
         n_bits: the number of bits for the quantization
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
@@ -240,7 +240,7 @@ def compile_onnx_model(
         artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
-            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+            to be sent to the compiler backend is shown on the screen, eg, for debugging or demo
         n_bits: the number of bits for the quantization
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
@@ -311,7 +311,7 @@ def compile_brevitas_qat_model(
         artifacts (DebugArtifacts): Artifacts object to fill
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
-            to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
+            to be sent to the compiler backend is shown on the screen, eg, for debugging or demo
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS

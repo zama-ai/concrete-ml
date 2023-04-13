@@ -1,4 +1,4 @@
-"""ONNX ops implementation in python + numpy."""
+"""ONNX ops implementation in Python + NumPy."""
 
 # pylint: disable=too-many-lines
 from inspect import signature
@@ -129,7 +129,7 @@ def numpy_where_body(
     """Compute the equivalent of numpy.where.
 
     This function is not mapped to any ONNX operator (as opposed to numpy_where). It is usable by
-    functions which are mapped to ONNX operators, e.g. numpy_div or numpy_where.
+    functions which are mapped to ONNX operators, eg numpy_div or numpy_where.
 
     Args:
         c (numpy.ndarray): Condition operand.
@@ -183,7 +183,7 @@ def numpy_add(
     return (a + b,)
 
 
-# input, min and max are python built-in but we need to match the ONNX naming, ignore the lint
+# input, min and max are Python built-in but we need to match the ONNX naming, ignore the lint
 # pylint: disable=redefined-builtin
 @onnx_func_raw_args("min", "max")
 def numpy_clip(a: numpy.ndarray, min=None, max=None) -> Tuple[numpy.ndarray]:
@@ -268,11 +268,11 @@ def numpy_gemm(
             Defaults to 1.
         beta (float): Scalar multiplier for input tensor C.
             Defaults to 1.
-        transA (int): Whether A should be transposed. The type is kept as int as it's the
-            type used by ONNX and it can easily be interpreted by python as a boolean.
+        transA (int): Whether A should be transposed. The type is kept as int as it is the
+            type used by ONNX and it can easily be interpreted by Python as a boolean.
             Defaults to 0.
-        transB (int): Whether B should be transposed. The type is kept as int as it's the
-            type used by ONNX and it can easily be interpreted by python as a boolean.
+        transB (int): Whether B should be transposed. The type is kept as int as it is the
+            type used by ONNX and it can easily be interpreted by Python as a boolean.
             Defaults to 0.
 
     Returns:
@@ -1631,7 +1631,7 @@ def numpy_brevitas_quant(
         rounding_mode (str): Rounding mode (default and only accepted option is "ROUND")
         signed (int): Whether this op quantizes to signed integers (default 1),
         narrow (int): Whether this op quantizes to a narrow range of integers
-            e.g. [-2**n_bits-1 .. 2**n_bits-1] (default 0),
+            eg [-2**n_bits-1 .. 2**n_bits-1] (default 0),
 
     Returns:
         result (numpy.ndarray): Tensor with float quantized values

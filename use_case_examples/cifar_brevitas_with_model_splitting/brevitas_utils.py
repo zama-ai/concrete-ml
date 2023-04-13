@@ -64,7 +64,7 @@ class CommonQuant(ExtendedInjector):
 
 class CommonIntWeightPerTensorQuant(Int8WeightPerTensorFloat):
     """
-    Common per-tensor weight quantizer with bit-width set to None so that it's forced to be
+    Common per-tensor weight quantizer with bit-width set to None so that it is forced to be
     specified by each layer.
     """
 
@@ -74,7 +74,7 @@ class CommonIntWeightPerTensorQuant(Int8WeightPerTensorFloat):
 
 class CommonIntWeightPerChannelQuant(CommonIntWeightPerTensorQuant):
     """
-    Common per-channel weight quantizer with bit-width set to None so that it's forced to be
+    Common per-channel weight quantizer with bit-width set to None so that it is forced to be
     specified by each layer.
     """
 

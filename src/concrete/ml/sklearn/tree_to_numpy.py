@@ -19,7 +19,7 @@ from ..quantization.quantizers import UniformQuantizer
 
 # pylint: disable=wrong-import-position,wrong-import-order
 
-# Silence hummingbird warnings
+# Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 
@@ -41,7 +41,7 @@ def get_onnx_model(model: Callable, x: numpy.ndarray, framework: str) -> onnx.Mo
         onnx.ModelProto: The ONNX model.
     """
 
-    # Silence hummingbird warnings
+    # Silence Hummingbird warnings
     warnings.filterwarnings("ignore")
 
     extra_config = {
@@ -167,7 +167,7 @@ def tree_onnx_graph_preprocessing(
             (options: 'xgboost', 'sklearn')
         expected_number_of_outputs (int): The expected number of outputs in the ONNX model.
     """
-    # Make sure the ONNX version returned by hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
+    # Make sure the ONNX version returned by Hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
     assert_true(
         onnx_version == OPSET_VERSION_FOR_ONNX_EXPORT,

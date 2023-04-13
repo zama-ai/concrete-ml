@@ -27,7 +27,7 @@ import sys
 import torch
 from trainer import Trainer
 
-# Pytorch precision
+# PyTorch precision
 torch.set_printoptions(precision=10)
 
 
@@ -67,7 +67,7 @@ def parse_args(args):
         "--resume",
         dest="resume",
         type=none_or_str,
-        help="Resume from checkpoint. Overrides --pretrained flag.",
+        help="Resume from checkpoint. Overrides --pre-trained flag.",
     )
     add_bool_arg(parser, "detect_nan", default=False)
     # Compute resources
@@ -88,7 +88,7 @@ def parse_args(args):
     parser.add_argument("--random_seed", default=1, type=int, help="Random seed")
     # Neural network Architecture
     parser.add_argument("--network", default="CNV_2W2A", type=str, help="neural network")
-    parser.add_argument("--pretrained", action="store_true", help="Load pre-trained model")
+    parser.add_argument("--pre-trained", action="store_true", help="Load pre-trained model")
     parser.add_argument("--strict", action="store_true", help="Strict state dictionary loading")
     return parser.parse_args(args)
 
