@@ -240,8 +240,8 @@
 - [`deploy_to_docker.main`](./concrete.ml.deployment.deploy_to_docker.md#function-main): Deploy function.
 - [`deploy_to_docker.stop_container`](./concrete.ml.deployment.deploy_to_docker.md#function-stop_container): Kill all containers that use a given image.
 - [`utils.filter_logs`](./concrete.ml.deployment.utils.md#function-filter_logs): Filter logs based on previous logs.
-- [`utils.is_connexion_available`](./concrete.ml.deployment.utils.md#function-is_connexion_available): Check if ssh connexion is available.
-- [`utils.wait_for_connexion_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connexion_to_be_available): Wait for connexion to be available.
+- [`utils.is_connection_available`](./concrete.ml.deployment.utils.md#function-is_connection_available): Check if ssh connexion is available.
+- [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connexion to be available.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
 - [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the numpy equivalent forward of the provided torch Module.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.

@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 
 import boto3
 
-from ..deployment.utils import filter_logs, wait_for_connexion_to_be_available
+from ..deployment.utils import filter_logs, wait_for_connection_to_be_available
 
 DATE_FORMAT: str = "%Y_%m_%d_%H_%M_%S"
 
@@ -289,7 +289,7 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
         print("Waiting for SSH connexion to be available...")
 
     # Connect to instance
-    wait_for_connexion_to_be_available(
+    wait_for_connection_to_be_available(
         hostname=hostname,
         ip_address=ip_address,
         path_to_private_key=key_path,
