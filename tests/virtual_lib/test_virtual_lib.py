@@ -14,7 +14,7 @@ def test_torch_matmul_fhe_simulation(default_configuration):
 
     matmul_thousand_ones_compiler = Compiler(lambda x: f(x, thousand_ones), {"x": "encrypted"})
 
-    # Special inputset
+    # Special input-set
     inputset = [thousand_ones]
     fhe_simulation_circuit = matmul_thousand_ones_compiler.compile(
         inputset,
@@ -36,7 +36,7 @@ def test_torch_matmul_fhe_simulation(default_configuration):
         {"x": "encrypted"},
     )
 
-    # Special inputset
+    # Special input-set
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     fhe_simulation_circuit = matmul_three_thousand_plus_minus_ones_compiler.compile(
         inputset,
@@ -58,7 +58,7 @@ def test_torch_matmul_fhe_simulation(default_configuration):
         {"x": "encrypted"},
     )
 
-    # Special inputset
+    # Special input-set
     inputset = [numpy.ones((3000,), dtype=numpy.int64)]
     fhe_simulation_circuit = sin_matmul_three_thousand_plus_minus_ones_compiler.compile(
         inputset,

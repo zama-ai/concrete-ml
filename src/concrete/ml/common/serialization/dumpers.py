@@ -26,7 +26,7 @@ def dumps_random_state(random_state: Union[RandomState, int, None]) -> str:
 
 
 def dump(obj: Any, file: TextIO):
-    """Dump any CML object that has a dump method.
+    """Dump any Concrete ML object that has a dump method.
 
     Arguments:
         obj (Any): the object to dump.

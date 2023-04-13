@@ -36,7 +36,7 @@ N_MAX_COMPILE_FHE = 200
 class _CustomCNN(nn.Module):
     """A CNN to classify images.
 
-    This class also allows pruning, which should help with keeping the accumulator bitwidth low.
+    This class also allows pruning, which should help with keeping the accumulator bit-width low.
     This is done by defining a maximum number of active neurons (i.e. weight != 0) allowed
     as inputs to other neurons.
     """
@@ -217,7 +217,7 @@ def load_data(dataset: str = "mnist") -> Tuple[np.ndarray, np.ndarray, np.ndarra
     """Load the data.
 
     Args:
-        dataset (str): The dataset to use.
+        dataset (str): the data-set to use.
 
     Returns:
         x_train, x_test, y_train, y_test (Tuple): The input and target values to
@@ -235,7 +235,7 @@ def load_data(dataset: str = "mnist") -> Tuple[np.ndarray, np.ndarray, np.ndarra
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
 
-        # The Scikit-Learn MNIST dataset keeps the images flattened, we therefore need to reshape
+        # The Scikit-Learn MNIST data-set keeps the images flattened, we therefore need to reshape
         # them to 2D array of 8x8 (grayscale) in order to be able to apply convolutions in the
         # first layer.
         X = np.expand_dims(X.reshape((-1, 8, 8)), 1)
@@ -246,7 +246,7 @@ def load_data(dataset: str = "mnist") -> Tuple[np.ndarray, np.ndarray, np.ndarra
         )
 
     else:
-        raise ValueError(f"Wrong dataset. Expected one of {CNN_DATASETS}, got {dataset}.")
+        raise ValueError(f"Wrong data-set. Expected one of {CNN_DATASETS}, got {dataset}.")
 
     return x_train, x_test, y_train, y_test
 
@@ -280,11 +280,11 @@ def get_data_loader(
 
 
 def get_pt_file(model_name: str, dataset: str) -> Path:
-    """Retrieve the model's pre-trained file associated to the given dataset.
+    """Retrieve the model's pre-trained file associated to the given data-set.
 
     Args:
         model_name (str): The model's name.
-        dataset (str): The dataset's name.
+        dataset (str): the data-set's name.
 
     Returns:
         Path: The model's pre-trained file.
@@ -297,7 +297,7 @@ def load_pre_trained_cnn_model(cnn_model: Any, dataset: str) -> Any:
 
     Args:
         cnn_model (Any): The instantiated model.
-        dataset (str): The dataset's name.
+        dataset (str): the data-set's name.
 
     Returns:
         Any: The pre-trained model.
@@ -368,11 +368,11 @@ def train_one_epoch(
 
 
 def train_cnn_model(cnn_class: Any, dataset: str, epochs: int, batch_size: int):
-    """Train the model on the dataset for several epochs and save the weights in a file.
+    """Train the model on the data-set for several epochs and save the weights in a file.
 
     Args:
         cnn_model (Any): The instantiated model to train.
-        dataset (str): The dataset to train on.
+        dataset (str): the data-set to train on.
         epochs (int): The number of epochs to consider.
         batch_size (int): The training batches' size.
 
@@ -480,7 +480,7 @@ def concrete_inference(quantized_module: QuantizedModule, x: np.ndarray, in_fhe:
     # Execute the forward pass, in FHE or in the clear
     q_y_pred_proba = quantized_module.quantized_forward(q_x, fhe=fhe_mode)
 
-    # Dequantize the output probabilities
+    # De-quantize the output probabilities
     y_pred_proba = quantized_module.dequantize_output(q_y_pred_proba)
 
     # Apply the argmax in the clear
@@ -602,7 +602,7 @@ def evaluate_module(
 
     inference_time = time.time() - inference_start
 
-    # If the evaluation is done during trainin, print the test accuracy as a percentage
+    # If the evaluation is done during training, print the test accuracy as a percentage
     if train:
         total_correct = np.sum(targets == y_preds)
         print(f"Test accuracy: {total_correct / total_size * 100:.2f}%\n")
@@ -630,14 +630,14 @@ def evaluate_module(
 
 
 def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, cli_args):
-    """Evaluate the pre-trained CNN model on the dataset.
+    """Evaluate the pre-trained CNN model on the data-set.
 
     It first evaluates both the Torch and Concrete ML models in the clear bu computing their
-    accuracy score on the full dataset. Then, the Concrete ML model's inference is executed on a
+    accuracy score on the full data-set. Then, the Concrete ML model's inference is executed on a
     sub-sample in the clear as well as in FHE in order to compute a MSE score between them.
 
     Args:
-        dataset (str): The dataset to consider.
+        dataset (str): the data-set to consider.
         cnn_class (type): The model's class to train.
         config (dict): The configuration parameters to consider for the model, such as the number
             of bits of quantization to consider during compilation.
@@ -717,7 +717,7 @@ def evaluate_pre_trained_cnn_model(dataset: str, cnn_class: type, config: dict, 
         print("\nMax numbers of bits reached during the inference:", circuit_bitwidth)
         print("\nEvaluating the Concrete ML model's quantized clear inference an all test samples:")
 
-    # Evaluate the quantized clear inference using the full dataset
+    # Evaluate the quantized clear inference using the full data-set
     evaluate_module(
         framework="concrete",
         module=fhe_module,
@@ -795,7 +795,7 @@ def argument_manager():
         type=str,
         nargs="+",
         default=None,
-        help="Dataset(s) to use. All datasets are chosen by default.",
+        help="Dataset(s) to use. All data-sets are chosen by default.",
     )
     parser.add_argument(
         "--models",
@@ -901,7 +901,7 @@ def main():
         return
 
     if args.train:
-        # Train each models on each datasets and stop
+        # Train each models on each data-sets and stop
         for dataset in args.datasets:
             for cnn_class in args.models:
                 train_cnn_model(cnn_class, dataset, args.epochs, args.batch_size)

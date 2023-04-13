@@ -2,7 +2,7 @@
 
 # pylint: disable=too-many-lines
 
-# This file is too long and should be splitted
+# This file is too long and should be split
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/1018
 
 from typing import Any, Dict, Optional, Sequence, Set, Union
@@ -224,7 +224,7 @@ class QuantizedGemm(QuantizedMixingOp):
 
         # If the weights have symmetric quantization, their zero point will be 0
         # The following check avoids the computation of the sum of the inputs, which may have
-        # large bitwidth, in the case where it would be multiplied by zero
+        # large bit-width, in the case where it would be multiplied by zero
         if q_weights.quantizer.zero_point != 0:
             # Sum operation in full integers resulting in large integers (INTEGERS)
             with tag(self.op_instance_name + ".matmul_inputsum"):
@@ -250,13 +250,13 @@ class QuantizedGemm(QuantizedMixingOp):
         final_term = p * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
         # Note that here we do not rescale to the output_scale and we do not add a zero-point
-        # Any following Gemm/MatMul/Conv layers will do the rescaling (during requantization)
+        # Any following Gemm/MatMul/Conv layers will do the rescaling (during re-quantization)
         # by calling _prepare_inputs_with_constants(...quantize_real_values=True)
         m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
 
         # If this operation's result are network outputs, return
         # directly the integer values and a appropriate quantization parameters that
-        # allow direct in-the-clear dequantization, including the bias
+        # allow direct in-the-clear de-quantization, including the bias
         if self.produces_graph_output:
             out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
             if q_bias is not None:
@@ -267,7 +267,7 @@ class QuantizedGemm(QuantizedMixingOp):
 
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
-            # to properly dequantize numpy_q_out
+            # to properly de-quantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
         with tag(self.op_instance_name + ".matmul_rounding"):
@@ -365,9 +365,9 @@ class QuantizedAdd(QuantizedOp):
         assert q_input_1.quantizer.scale is not None
         assert q_input_1.quantizer.zero_point is not None
 
-        # Dequantize with input params and requantize with output parameters
+        # De-quantize with input params and re-quantize with output parameters
         # This will use TLUs over each element of the two inputs
-        # We do the dequantization directly, instead of q_inputs[0].dequant(),
+        # We do the de-quantization directly, instead of q_inputs[0].dequant(),
         # So that we do not lose precision in the computation
 
         rescale_q0 = numpy.rint(
@@ -395,7 +395,7 @@ class QuantizedAdd(QuantizedOp):
         elif self.b_sign == -1:
             sum_q = rescale_q0 - rescale_q1
 
-        # But we would like the output to have n_bits, so we dequantize
+        # But we would like the output to have n_bits, so we de-quantize
         dequant_sum = self.output_quant_params.scale * sum_q
 
         # Return the raw float values without re-quantizing them to the new scale, as any
@@ -544,7 +544,7 @@ class QuantizedConv(QuantizedMixingOp):
         Args:
             n_bits_output: number of bits for the quantization of the outputs of this operator
             op_instance_name (str): The name that should be assigned to this operation, used
-                to retrieve it later or get debugging information about this op (bitwidth, value
+                to retrieve it later or get debugging information about this op (bit-width, value
                 range, integer intermediary values, op-specific error messages). Usually this name
                 is the same as the ONNX operation name for which this operation is constructed.
             int_input_names: names of integer tensors that are taken as input for this operation
@@ -685,7 +685,7 @@ class QuantizedConv(QuantizedMixingOp):
 
         # If the weights have symmetric quantization, their zero point will be 0
         # The following check avoids the computation of the sum of the inputs, which may have
-        # large bitwidth, in the case where it would be multiplied by zero
+        # large bit-width, in the case where it would be multiplied by zero
         if q_weights.quantizer.zero_point != 0:
             # Compute the sum of the inputs (second encrypted term)
             assert_true(
@@ -721,15 +721,15 @@ class QuantizedConv(QuantizedMixingOp):
         # Compute the forth term which is a constant
         final_term = n_weights * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
 
-        # Compute the rescaling factor that dequantizes the input
+        # Compute the rescaling factor that de-quantizes the input
         # This is going to be compiled with a PBS (along with the following activation function)
-        # Note that we don't requantize the output of the conv, this will be done by
+        # Note that we don't re-quantize the output of the conv, this will be done by
         # any Gemm/Add/Conv layers that follow
         m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
 
         # If this operation's result are network outputs, return
         # directly the integer values and an appropriate quantization parameters that
-        # allow direct in-the-clear dequantization, including the bias
+        # allow direct in-the-clear de-quantization, including the bias
         if self.produces_graph_output:
             # Note that to use the bias, we need to rescale it to the output scale
             # For Eq. 7 in  https://arxiv.org/abs/1712.05877, we can write:
@@ -746,7 +746,7 @@ class QuantizedConv(QuantizedMixingOp):
 
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
-            # to properly dequantize numpy_q_out
+            # to properly de-quantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
         with tag(self.op_instance_name + ".conv_rounding"):
@@ -1432,7 +1432,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         Args:
             n_bits_output (int): Number of bits for the operator's quantization of outputs.
             op_instance_name (str): The name that should be assigned to this operation, used
-                to retrieve it later or get debugging information about this op (bitwidth, value
+                to retrieve it later or get debugging information about this op (bit-width, value
                 range, integer intermediary values, op-specific error messages). Usually this name
                 is the same as the ONNX operation name for which this operation is constructed.
             int_input_names (Optional[Set[str]]): Names of input integer tensors. Default to None.
@@ -1518,7 +1518,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         # Sum all the quantized values
         q_sum = numpy.sum(q_values, axis=axes, keepdims=self.keepdims)
 
-        # Determining the number of output zero_points to use for dequantization with the total
+        # Determining the number of output zero_points to use for de-quantization with the total
         # number of elements summed all together, which is the product of all the number of elements
         # found within the given axes
         n_elem = numpy.prod([q_values.shape[axis] for axis in axes])
@@ -1533,7 +1533,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         if self.produces_graph_output:
             return self.make_output_quant_parameters(q_sum, scale, zero_point)
 
-        # Dequantize the sum
+        # De-quantize the sum
         f_sum = scale * (q_sum - zero_point)
 
         sum_qarray = QuantizedArray(
@@ -1605,7 +1605,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         # Retrieve the axis parameter
         axes = prepared_inputs[1]
 
-        # As the calibration inputset and inputs are ran over several samples, we need to apply the
+        # As the calibration input-set and inputs are ran over several samples, we need to apply the
         # sum on all the given axes except the first one (the sample axis), including when axes is
         # set to None (i.e. sum over all axes).
         prepared_inputs[1] = (
@@ -1632,7 +1632,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
 
     _impl_for_op_named: str = "onnx.brevitas.Quant"
     # Note that this should be reset when the correctness test that finds
-    # all mismatches between CML and Brevitas is fixed
+    # all mismatches between Concrete ML and Brevitas is fixed
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2373
     quantize_inputs_with_model_outputs_precision = True
     output_quant_opts: QuantizationOptions
@@ -1652,7 +1652,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
             n_bits_output (int): Number of bits for the operator's quantization of outputs.
                 Not used, will be overridden by the bit_width in ONNX
             op_instance_name (str): The name that should be assigned to this operation, used
-                to retrieve it later or get debugging information about this op (bitwidth, value
+                to retrieve it later or get debugging information about this op (bit-width, value
                 range, integer intermediary values, op-specific error messages). Usually this name
                 is the same as the ONNX operation name for which this operation is constructed.
             int_input_names (Optional[Set[str]]): Names of input integer tensors. Default to None.
@@ -1706,7 +1706,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
             "Can not use narrow range for non-signed Brevitas quantizers",
         )
 
-        # To ensure dequantization produces floats, the following parameters must be float.
+        # To ensure de-quantization produces floats, the following parameters must be float.
         # This should be default export setting in Brevitas
         check_float(
             constant_inputs is not None

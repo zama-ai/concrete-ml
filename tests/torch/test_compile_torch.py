@@ -57,7 +57,7 @@ INPUT_OUTPUT_FEATURE = [5]
 
 
 def create_test_inputset(inputset, n_percent_inputset_examples_test):
-    """Create a test inputset from a given inputset and percentage of examples."""
+    """Create a test input-set from a given input-set and percentage of examples."""
     n_examples_test = int(n_percent_inputset_examples_test * to_tuple(inputset)[0].shape[0])
     x_test = tuple(inputs[:n_examples_test] for inputs in to_tuple(inputset))
     return x_test
@@ -138,8 +138,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             )
 
         n_examples_test = 1
-        # Use some inputset to test the inference.
-        # Using the inputset allows to remove any chance of overflow.
+        # Use some input-set to test the inference.
+        # Using the input-set allows to remove any chance of overflow.
         x_test = tuple(inputs[:n_examples_test] for inputs in inputset)
 
         quantized_numpy_module.check_model_is_compiled()
@@ -251,7 +251,7 @@ def accuracy_test_rounding(
     )
 
     n_percent_inputset_examples_test = 0.1
-    # Using the inputset allows to remove any chance of overflow.
+    # Using the input-set allows to remove any chance of overflow.
     x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
     # Make sure the two modules have the same quantization result
@@ -267,10 +267,9 @@ def accuracy_test_rounding(
     results_low_precision = []
     for i in range(x_test[0].shape[0]):
 
-        # Extract the i th example for each tensor in the tuple qtest
-        # while keeping the dimension of the original tensors.
-        # e.g. if qtest is a tuple of two (100, 10) tensors
-        # then q_x becomes a tuple of two tensors of shape (1, 10).
+        # Extract example i for each tensor in the test tuple with quantized values while
+        # keeping the dimension of the original tensors (e.g. if it is a tuple of two (100, 10)
+        # tensors, then each quantized value becomes a tuple of two tensors of shape (1, 10).
         q_x = tuple(q[[i]] for q in to_tuple(qtest))
 
         # encrypt, run, and decrypt with different precision modes
@@ -285,7 +284,7 @@ def accuracy_test_rounding(
             fhe="simulate",
         )
 
-        # dequantize the results to obtain the actual output values
+        # de-quantize the results to obtain the actual output values
         result = quantized_numpy_module.dequantize_output(q_result)
         result_high_precision = quantized_numpy_module_round_high_precision.dequantize_output(
             q_result_high_precision
@@ -299,7 +298,7 @@ def accuracy_test_rounding(
         results_high_precision.append(result_high_precision)
         results_low_precision.append(result_low_precision)
 
-    # Check modules predictions FHE simulation vs CML.
+    # Check modules predictions FHE simulation vs Concrete ML.
     check_is_good_execution_for_cml_vs_circuit(x_test, quantized_numpy_module, simulate=simulate)
     check_is_good_execution_for_cml_vs_circuit(
         x_test, quantized_numpy_module_round_high_precision, simulate=simulate
@@ -656,7 +655,7 @@ def test_pretrained_mnist_qat(
         )
         onnx_results[i] = numpy.argmax(onnx_outputs[0])
 
-    # Compile to Concrete ML in FHE simulation mode, with a high bitwidth
+    # Compile to Concrete ML in FHE simulation mode, with a high bit-width
     n_bits = {
         "model_inputs": 16,
         "op_weights": 2,
@@ -677,13 +676,13 @@ def test_pretrained_mnist_qat(
 
     check_is_good_execution_for_cml_vs_circuit(inputset, quantized_numpy_module, simulate=True)
 
-    # Collect FHE simuation results
+    # Collect FHE simulation results
     results = []
     for i in range(inputset.shape[0]):
 
-        # Extract the i th example for each tensor in the tuple inputset
+        # Extract example i for each tensor in the tuple input-set
         # while keeping the dimension of the original tensors.
-        # e.g. if inputset is a tuple of two (100, 10) tensors
+        # e.g. if input-set is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
         x = tuple(input[[i]] for input in to_tuple(inputset))
         result = numpy.argmax(quantized_numpy_module.forward(*x, fhe="simulate"))
@@ -741,7 +740,7 @@ def test_qat_import_bits_check(default_configuration):
     # Create random input
     inputset = numpy.random.uniform(-100, 100, size=(n_examples, input_features))
 
-    # Compile with no quantization bitwidth, defaults are used
+    # Compile with no quantization bit-width, defaults are used
     quantized_numpy_module = compile_brevitas_qat_model(
         model,
         inputset,
@@ -749,7 +748,7 @@ def test_qat_import_bits_check(default_configuration):
     )
 
     n_percent_inputset_examples_test = 0.1
-    # Using the inputset allows to remove any chance of overflow.
+    # Using the input-set allows to remove any chance of overflow.
     x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
     # The result of compiling without any n_bits (default)
@@ -795,9 +794,9 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
     error_message_pattern = "Error occurred during quantization aware training.*"
 
     # This first test is trying to import a network that is QAT (has a quantizer in the graph)
-    # but the import bitwidth is wrong (mismatch between bitwidth specified in training
-    # and the bitwidth specified during import). For NNs that are not built with Brevitas
-    # the bitwidth must be manually specified and is used to infer quantization parameters.
+    # but the import bit-width is wrong (mismatch between bit-width specified in training
+    # and the bit-width specified during import). For NNs that are not built with Brevitas
+    # the bit-width must be manually specified and is used to infer quantization parameters.
     with pytest.raises(ValueError, match=error_message_pattern):
         compile_and_test_torch_or_onnx(
             10,
@@ -829,14 +828,14 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
         def __init__(self, input_output, activation_function):
             super().__init__(input_output, activation_function)
 
-            for m in self.modules():
+            for module in self.modules():
                 # assert m.bias is not None
-                # Disable mypy as it properly detects that m's bias term is None end therefore does
-                # not have a `data` attribute but fails to take into consideration the fact that
-                # `torch.nn.init.constant_` actually handles such a case
-                if isinstance(m, (nn.Conv2d, nn.Linear)):
-                    torch.nn.init.constant_(m.weight.data, 0)
-                    torch.nn.init.constant_(m.bias.data, 0)  # type: ignore[union-attr]
+                # Disable mypy as it properly detects that module's bias term is None end therefore
+                # does not have a `data` attribute but fails to take into consideration the fact
+                # that `torch.nn.init.constant_` actually handles such a case
+                if isinstance(module, (nn.Conv2d, nn.Linear)):
+                    torch.nn.init.constant_(module.weight.data, 0)
+                    torch.nn.init.constant_(module.bias.data, 0)  # type: ignore[union-attr]
 
     # A network that may look like QAT but it just zeros all inputs
     with pytest.raises(ValueError, match=error_message_pattern):
@@ -981,7 +980,7 @@ def test_shape_operations_net(
     # must quantize inputs with some default quantization options
 
     # In QAT testing in FHE is fast since there are no TLUs
-    # For PTQ we only test that the model cna be compiled and that it can be executed
+    # For PTQ we only test that the model can be compiled and that it can be executed
     if is_qat or simulate:
         test_input = numpy.random.uniform(size=(1, n_channels, 2, 2))
 
@@ -1024,7 +1023,7 @@ def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
     cml_output = quant_model.forward(test_input, fhe="disable")
 
     # We only care about checking that zeros added with padding are in the same positions
-    # between the torch output and the CML output
+    # between the torch output and the Concrete ML output
     torch_output = torch_output > 0
     cml_output = cml_output > 0
 

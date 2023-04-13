@@ -35,7 +35,7 @@ For a complete example, see [the client-server notebook](https://github.com/zama
 
 ### AWS
 
-We provide scripts that leverage `boto3` to deploy any CML model to AWS.
+We provide scripts that leverage `boto3` to deploy any Concrete ML model to AWS.
 The first required step is to properly setup AWS CLI on your system.
 To do so please follow the instructions in [AWS Documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
 To create Access keys to configure AWS CLI go to the [approriate panel on AWS website](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/security_credentials?section=IAM_credentials).

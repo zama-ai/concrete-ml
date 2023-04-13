@@ -1,4 +1,4 @@
-"""Module to generate figure of evolution of CML-CI time on main for last 4 weeks."""
+"""Module to generate figure of evolution of Concrete ML-CI time on main for last 4 weeks."""
 import argparse
 import datetime
 import json
@@ -16,7 +16,7 @@ from sklearn.linear_model import LinearRegression
 
 @typing.no_type_check
 def generate_figure(data: Dict[str, Any], path_to_csv: Path, path_to_png: Path):
-    """Generate the figure of timing evolution on last 4 weeks using GH API data.
+    """Generate the figure of timing evolution on last 4 weeks using GitHub API data.
 
     Arguments:
         data (Dict[str, Any]): a dict with the results of the Github API
@@ -62,7 +62,7 @@ def generate_figure(data: Dict[str, Any], path_to_csv: Path, path_to_png: Path):
     sub_df = sub_df[mask]
     # Handle dates
     sub_df["time_diff"] = (sub_df["updated_at"] - sub_df["run_started_at"]).astype(int)
-    # ns to seconds
+    # Nanoseconds to seconds
     sub_df["time_diff"] = sub_df["time_diff"] / 1e9
     # seconds to minutes
     sub_df["time_diff"] = sub_df["time_diff"] / 60
@@ -84,7 +84,7 @@ def generate_figure(data: Dict[str, Any], path_to_csv: Path, path_to_png: Path):
     fig, axis = plt.subplots(figsize=(8, 4), dpi=800)
     assert isinstance(axis, Axes)
 
-    fig.suptitle("Successful CML-CI time execution in minutes over the 4 last weeks")
+    fig.suptitle("Successful Concrete ML-CI time execution in minutes over the 4 last weeks")
     axis.set_xlabel("Date")
     axis.set_ylabel("Minutes")
     # ax.set_yscale("log")
@@ -98,7 +98,7 @@ def generate_figure(data: Dict[str, Any], path_to_csv: Path, path_to_png: Path):
 
 
 def get_data(token: str, path_to_json: Path):
-    """Get all information from workflow runs from github for CML-internal.
+    """Get all information from workflow runs from github for Concrete ML-internal.
 
     Arguments:
         token (str): Github API token

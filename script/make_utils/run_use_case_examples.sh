@@ -21,7 +21,7 @@ if [ ! -d "$USE_CASE_DIR" ]; then
     exit 1
 fi
 
-echo "Refreshing notebooks with PIP installed CML"
+echo "Refreshing notebooks with PIP installed Concrete ML"
 # shellcheck disable=SC2143
 if [[ $(git ls-files --others --exclude-standard | grep ${USE_CASE_REL_DIR}) ]]; then
     echo "This script must be run in a clean clone of the Concrete ML repo"
@@ -78,7 +78,7 @@ do
     echo " - VirtualEnv created at $VENV_PATH"
     # shellcheck disable=SC1090
     source "${VENV_PATH}/bin/activate"
-    # Install CML
+    # Install Concrete ML
     set +e
     cd "$CML_DIR"
     pip install -e . &> "/tmp/log_cml_pip_${EXAMPLE_NAME}"

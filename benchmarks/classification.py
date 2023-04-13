@@ -51,7 +51,7 @@ def argument_manager():
         "--model_samples",
         type=int,
         default=1,
-        help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+        help="number of model samples (i.e. overwrite PROGRESS_SAMPLES)",
     )
     parser.add_argument(
         "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
@@ -84,7 +84,7 @@ def argument_manager():
         assert args.execute_in_fhe == "auto"
         args.execute_in_fhe = False
 
-    if args.datasets is None:  # Default to all datasets
+    if args.datasets is None:  # Default to all data-sets
         args.datasets = CLASSIFICATION_DATASETS
 
     if args.models is None:  # Default to all models

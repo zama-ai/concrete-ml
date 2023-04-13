@@ -21,7 +21,7 @@ from concrete.ml.sklearn import get_sklearn_tree_models
 def check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     x, y = load_data(model_class, **parameters)
 
     # Set the model

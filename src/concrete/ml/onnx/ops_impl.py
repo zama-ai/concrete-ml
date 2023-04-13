@@ -140,7 +140,7 @@ def numpy_where_body(
         numpy.ndarray: numpy.where(c, t, f)
 
     """
-    # Use numpy.where (it is currently supported by CN) once we investigate why it outputs a
+    # Use numpy.where (it is currently supported by Concrete) once we investigate why it outputs a
     # a different dtype then the following workaround
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2738
     return c * t + (1.0 - c) * f

@@ -14,7 +14,7 @@ To do so, we divided this use case in 4 notebooks :
 
    This notebook may be skipped if the user already has a pre-trained floating point CIFAR-10 / CIFAR-100 model.
 
-1. [CifarQuantizationAwareTraining.ipynb](CifarQuantizationAwareTraining.ipynb): explains the **(FHE) constraints** and how to **quantize the pretrained** neural network to make it work in FHE.
+1. [CifarQuantizationAwareTraining.ipynb](CifarQuantizationAwareTraining.ipynb): explains the **(FHE) constraints** and how to **quantize the pre-trained** neural network to make it work in FHE.
 
 1. [CifarInFhe.ipynb](CifarInFhe.ipynb): computes the accuracy of the quantized models using FHE simulation
 

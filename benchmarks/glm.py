@@ -32,12 +32,12 @@ from sklearn.preprocessing import (
 
 # pylint: disable=redefined-outer-name
 def get_data() -> Tuple[pandas.DataFrame, str]:
-    """Fetch, merge and clean the GLM dataset."""
+    """Fetch, merge and clean the GLM data-set."""
 
     # Getting the original data set containing the risk features
     # Link: https://www.openml.org/d/41214
     risks_data, _ = fetch_openml(
-        data_id=41214, as_frame=True, cache=True, data_home="~/.cache/sklean", return_X_y=True
+        data_id=41214, as_frame=True, cache=True, data_home="~/.cache/sklearn", return_X_y=True
     )
 
     # Getting the data set containing claims amount
@@ -331,13 +331,13 @@ def argument_manager() -> argparse.Namespace:
         nargs="+",
         type=json.loads,
         default=None,
-        help="Bitwidth config(s) to use",
+        help="Bit-width config(s) to use",
     )
     parser.add_argument(
         "--model_samples",
         type=int,
         default=1,
-        help="number of model samples (ie, overwrite PROGRESS_SAMPLES)",
+        help="number of model samples (i.e. overwrite PROGRESS_SAMPLES)",
     )
     parser.add_argument(
         "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"
@@ -442,7 +442,7 @@ def main():
         # Compute the maximum number of PCA components possible for executing the model in FHE
         n_components = compute_number_of_components(n_bits)
 
-        # If the n_bits input is too high, the model could overflow the max precision bitwidth
+        # If the n_bits input is too high, the model could overflow the max precision bit-width
         # currently available
         if n_components == 0:
             raise ValueError(f"n_bits = {n_bits} is too high. Please lower its value(s).")
@@ -478,7 +478,7 @@ def main():
         score_parameters = parameters["score_parameters"]
         y_test = score_parameters["y_true"].head(args.fhe_samples)
 
-        # Compute the predictions for both Sklearn and Concrete clear models
+        # Compute the predictions for both sklearn and Concrete ML clear models
         if args.verbose:
             print(f"  -- Done in {time.time() - time_current} seconds")
             time_current = time.time()

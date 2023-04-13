@@ -226,7 +226,7 @@ def check_graph_has_no_input_output_tlu_impl(graph: CPGraph):
     check_graph_output_has_no_tlu_impl(graph)
 
 
-# To update when the feature becomes available in CP
+# To update when the feature becomes available Concrete
 # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1714
 def check_circuit_has_no_tlu_impl(circuit: Circuit):
     """Check a circuit has no TLU."""
@@ -364,12 +364,12 @@ def load_data():
     ):
         """Generate a random regression or classification problem.
 
-        Sklearn's make_regression() method generates a random regression problem without any domain
-        restrictions. However, some models can only handle non negative or (strictly) positive
-        target values. This function therefore adapts it in order to make it work for any tested
-        regressors.
+        scikit-learn's make_regression() method generates a random regression problem without any
+        domain restrictions. However, some models can only handle non negative or (strictly)
+        positive target values. This function therefore adapts it in order to make it work for any
+        tested regressors.
 
-        For classifier, Sklearn's make_classification() method is directly called.
+        For classifier, scikit-learn's make_classification() method is directly called.
 
         Args:
             model_class (Callable): The Concrete ML model class to generate the data for.
@@ -381,7 +381,7 @@ def load_data():
         # all tests that use this fixture to be deterministic and thus reproducible.
         random_state = numpy.random.randint(0, 2**15) if random_state is None else random_state
 
-        # If the dataset should be generated for a classification problem.
+        # If the data-set should be generated for a classification problem.
         if is_classifier_or_partial_classifier(model_class) or is_brevitas_model(model_class):
             generated_classifier = list(
                 make_classification(*args, **kwargs, random_state=random_state)
@@ -393,7 +393,7 @@ def load_data():
 
             return tuple(generated_classifier)
 
-        # If the dataset should be generated for a regression problem.
+        # If the data-set should be generated for a regression problem.
         if is_regressor_or_partial_regressor(model_class):
             generated_regression = list(make_regression(*args, **kwargs, random_state=random_state))
 
@@ -404,7 +404,7 @@ def load_data():
             ):
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
 
-            # If the model is a neural network and if the dataset only contains a single target
+            # If the model is a neural network and if the data-set only contains a single target
             # (e.g. of shape (n,)), reshape the target array (e.g. to shape (n,1))
             if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
                 if len(generated_regression[1].shape) == 1:

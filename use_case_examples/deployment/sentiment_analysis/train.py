@@ -21,7 +21,7 @@ def train(dev_folder="./dev"):
     # Download the data-sets
     if not os.path.isfile("Tweets.csv"):
         raise ValueError(
-            "Please launch the `download_data.sh` script in order to get the datasets."
+            "Please launch the `download_data.sh` script in order to get the data-sets."
         )
 
     train = pd.read_csv("Tweets.csv", index_col=0)

@@ -37,7 +37,7 @@ def test_brevitas_tinymnist_cnn(
     # And some helpers for visualization.
     x_all, y_all = load_digits(return_X_y=True)
 
-    # The sklearn Digits dataset, though it contains digit images, keeps these images in vectors
+    # The sklearn Digits data-set, though it contains digit images, keeps these images in vectors
     # so we need to reshape them to 2D first. The images are 8x8 px in size and monochrome
     x_all = numpy.expand_dims(x_all.reshape((-1, 8, 8)), 1)
 
@@ -78,7 +78,7 @@ def test_brevitas_tinymnist_cnn(
 
         # Train a single epoch to have a fast test, accuracy should still be the same for both
         # FHE simulation and torch
-        # But train 3 epochs for the FHE similation test to check that training works well
+        # But train 3 epochs for the FHE simulation test to check that training works well
         n_epochs = 1 if qat_bits <= 3 else 3
 
         # Train the network with Adam, output the test set accuracy every epoch
@@ -110,7 +110,7 @@ def test_brevitas_tinymnist_cnn(
             endidx = idx + target.shape[0]
             all_targets[idx:endidx] = target.numpy()
 
-            # Dequantize the integer predictions
+            # De-quantize the integer predictions
             check_is_good_execution_for_cml_vs_circuit(
                 data, model=quantized_module, simulate=use_fhe_simulation
             )
@@ -153,7 +153,7 @@ def test_brevitas_tinymnist_cnn(
 
 
 # Note that this test is currently disabled until the pytorch dtype issue is found
-# and all mismatches between CML and Brevitas are fixed
+# and all mismatches between Concrete ML and Brevitas are fixed
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2373
 @pytest.mark.parametrize(
     "n_layers",
@@ -201,7 +201,7 @@ def test_brevitas_intermediary_values(
     we print the offending raw floating point values, and, when available, quantization options.
     """
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     if is_classifier_or_partial_classifier(model_class):
         x, y = load_data(
             model_class,
@@ -214,7 +214,7 @@ def test_brevitas_intermediary_values(
             class_sep=2,
         )
 
-    # Get the dataset. The data generation is seeded in load_data.
+    # Get the data-set. The data generation is seeded in load_data.
     elif is_regressor_or_partial_regressor(model_class):
         x, y, _ = load_data(
             model_class,
@@ -290,7 +290,7 @@ def test_brevitas_intermediary_values(
         if "module__" in param
     }
 
-    # Concrete ML and CP use float64, so we need to force pytorch to use the same, as
+    # Concrete ML and Concrete Python use float64, so we need to force pytorch to use the same, as
     # it defaults to float32. Note that this change is global and may interfere with
     # threading or multiprocessing. Thus this test can not be launched in parallel with others.
     torch.set_default_dtype(torch.float64)
@@ -333,7 +333,7 @@ def test_brevitas_intermediary_values(
 
     # pylint: disable-next=consider-using-enumerate
     for idx in range(len(cml_intermediary_values)):
-        # Check if any activations are different between Brevitas and CML
+        # Check if any activations are different between Brevitas and Concrete ML
         diff_inp = numpy.abs(cml_intermediary_values[idx] - dbg_model.intermediary_values[idx])
         error = ""
         if numpy.any(diff_inp) > 0:
@@ -341,8 +341,8 @@ def test_brevitas_intermediary_values(
             indices = numpy.nonzero(diff_inp)
             error = (
                 f"Mismatched values in layer {idx} at input indices: {numpy.transpose(indices)}\n"
-                f"CML Inputs were: {cml_input_values[idx][indices]} \n"
-                f"CML quantized to {cml_intermediary_values[idx][indices]}\n"
+                f"Concrete ML Inputs were: {cml_input_values[idx][indices]} \n"
+                f"Concrete ML quantized to {cml_intermediary_values[idx][indices]}\n"
                 f"Brevitas inputs were {dbg_model.intermediary_inp_values_float[idx][indices]}\n"
                 f"Brevitas quantized to {dbg_model.intermediary_values[idx][indices]}\n "
                 f"Quant params were {str(cml_quantizers[idx].__dict__)}\n "
@@ -351,7 +351,7 @@ def test_brevitas_intermediary_values(
         # Assert if there were any mismatches
         assert numpy.all(diff_inp == 0), error
 
-        # Check if any weights are different between Brevitas and CML
+        # Check if any weights are different between Brevitas and Concrete ML
         diff_weights = numpy.abs(cml_quant_weights[idx] - dbg_model.quant_weights[idx])
         weights_ok = True
 
@@ -368,8 +368,8 @@ def test_brevitas_intermediary_values(
 
             error = (
                 f"Mismatched weights in layer {idx} at input indices: {numpy.transpose(indices)}\n"
-                f"CML raw weights were: {cml_raw_weights[idx][indices]} \n"
-                f"CML quantized to {cml_quant_weights[idx][indices]}\n"
+                f"Concrete ML raw weights were: {cml_raw_weights[idx][indices]} \n"
+                f"Concrete ML quantized to {cml_quant_weights[idx][indices]}\n"
                 f"Brevitas weights were {dbg_model.raw_weights[idx][indices]}\n"
                 f"Brevitas quantized to {dbg_model.quant_weights[idx][indices]}\n "
             )

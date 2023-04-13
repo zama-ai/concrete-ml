@@ -83,7 +83,7 @@ class Trainer(object):
         torch.manual_seed(args.random_seed)
         torch.cuda.manual_seed_all(args.random_seed)
 
-        # Datasets
+        # Data-sets
         transform_to_tensor = transforms.Compose(
             [
                 transforms.ToTensor(),

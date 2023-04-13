@@ -145,10 +145,10 @@ def test_serialize_onnx():
 
 
 def test_crash():
-    """Test that trying to load a non-CML object crashes."""
+    """Test that trying to load a non-Concrete ML object crashes."""
     serialized = dumps({42: 24})
 
-    with pytest.raises(ValueError, match="The content provided is not a CML dumped model."):
+    with pytest.raises(ValueError, match="The content provided is not a Concrete ML dumped model."):
         loads(serialized)
 
 

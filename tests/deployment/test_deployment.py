@@ -19,9 +19,9 @@ STATUS_OK = 200
 
 
 def test_timeout_ssh_connection():
-    """Test timeout error raised on ssh connexion"""
+    """Test timeout error raised on ssh connection"""
     with pytest.raises(
-        TimeoutError, match="Timeout reached while trying to check for connexion .*"
+        TimeoutError, match="Timeout reached while trying to check for connection .*"
     ):
         wait_for_connection_to_be_available(
             ip_address="17.57.244.197",

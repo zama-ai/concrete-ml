@@ -1,4 +1,4 @@
-"""Helper script to turn GitBook cardboards into something sphinx-style."""
+"""Helper script to turn GitBook card boards into something sphinx-style."""
 
 import argparse
 import multiprocessing

@@ -398,26 +398,26 @@ class FHEModelClient:
     def deserialize_decrypt_dequantize(
         self, serialized_encrypted_quantized_result: bytes
     ) -> numpy.ndarray:
-        """Deserialize, decrypt and dequantize the values.
+        """Deserialize, decrypt and de-quantize the values.
 
         Args:
             serialized_encrypted_quantized_result (bytes): the serialized, encrypted
                 and quantized result
 
         Returns:
-            numpy.ndarray: the decrypted (dequantized) values
+            numpy.ndarray: the decrypted (de-quantized) values
         """
         # Decrypt and deserialize the values
         deserialized_decrypted_quantized_result = self.deserialize_decrypt(
             serialized_encrypted_quantized_result
         )
 
-        # Dequantize the values
+        # De-quantize the values
         deserialized_decrypted_dequantized_result = self.model.dequantize_output(
             deserialized_decrypted_quantized_result
         )
 
-        # Apply post-processing the to dequantized values
+        # Apply post-processing the to de-quantized values
         deserialized_decrypted_dequantized_result = self.model.post_processing(
             deserialized_decrypted_dequantized_result
         )

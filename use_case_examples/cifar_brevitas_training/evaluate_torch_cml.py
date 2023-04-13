@@ -60,7 +60,7 @@ def evaluate(torch_model, cml_model):
 
         numpy_input = input.detach().cpu().numpy()
 
-        # Compute cml output
+        # Compute Concrete ML output
         y_cml_simulated = cml_inference(cml_model, numpy_input)
 
         # y_cml_simulated to torch to device
@@ -76,7 +76,7 @@ def evaluate(torch_model, cml_model):
         top1_torch.append(prec1.item())
         top5_torch.append(prec5.item())
 
-        # Compute cml loss
+        # Compute Concrete ML loss
         pred = y_cml_simulated.data.argmax(1, keepdim=True)
         correct = pred.eq(target.data.view_as(pred)).sum()
         prec1 = 100.0 * correct.float() / input.size(0)
@@ -87,10 +87,10 @@ def evaluate(torch_model, cml_model):
         top5_cml.append(prec5.item())
 
     print("Torch accuracy top1:", np.mean(top1_torch))
-    print("CML accuracy top1:", np.mean(top1_cml))
+    print("Concrete ML accuracy top1:", np.mean(top1_cml))
 
     print("Torch accuracy top5:", np.mean(top5_torch))
-    print("CML accuracy top5:", np.mean(top5_cml))
+    print("Concrete ML accuracy top5:", np.mean(top5_cml))
 
 
 def main(rounding_threshold_bits_list):
@@ -115,7 +115,7 @@ def main(rounding_threshold_bits_list):
     # Eval mode
     model.eval()
 
-    # Compile with CML using the FHE simulation mode
+    # Compile with Concrete ML using the FHE simulation mode
     cfg = Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
@@ -128,19 +128,19 @@ def main(rounding_threshold_bits_list):
 
         quantized_numpy_module = compile_brevitas_qat_model(
             model,  # our torch model
-            x,  # a representative inputset to be used for both quantization and compilation
+            x,  # a representative input-set to be used for both quantization and compilation
             n_bits={"model_inputs": 8, "model_outputs": 8},
             configuration=cfg,
             rounding_threshold_bits=rounding_threshold_bits,
         )
 
-        # Print max bitwidth in the circuit
+        # Print max bit-width in the circuit
         print(
-            "Max bitwidth in the circuit: ",
+            "Max bit-width in the circuit: ",
             quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width(),
         )
 
-        # Evaluate torch and CML model
+        # Evaluate torch and Concrete ML model
         evaluate(model, quantized_numpy_module)
 
 
