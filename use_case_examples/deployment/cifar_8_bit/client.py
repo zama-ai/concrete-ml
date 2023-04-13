@@ -1,24 +1,21 @@
 """Client script.
 
 This script does the following:
-    - Query crypto-parameters and pre/post-processing parameters
+    - Query crypto-parameters and pre/post-processing parameters (client.zip)
     - Quantize the inputs using the parameters
     - Encrypt data using the crypto-parameters
     - Send the encrypted data to the server (async using grequests)
     - Collect the data and decrypt it
     - De-quantize the decrypted results
 """
-import base64
 import io
 import os
 import sys
-import time
 from pathlib import Path
-from typing import List
 
 # Append CIFAR-10 8-bit example
 PATH_TO_CIFAR_MODEL = Path(__file__).parent / "../../cifar_brevitas_with_model_splitting/"
-sys.path.append(PATH_TO_CIFAR_MODEL)
+sys.path.append(str(PATH_TO_CIFAR_MODEL.resolve()))
 
 import grequests
 import numpy
@@ -80,12 +77,6 @@ def main():
     zip_response = requests.get(f"{URL}/get_client")
     assert zip_response.status_code == STATUS_OK
     with open("./client.zip", "wb") as file:
-        file.write(zip_response.content)
-
-    # serialized_processing.json
-    zip_response = requests.get(f"{URL}/get_processing")
-    assert zip_response.status_code == STATUS_OK
-    with open("./serialized_processing.json", "wb") as file:
         file.write(zip_response.content)
 
     # Get the data to infer

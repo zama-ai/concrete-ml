@@ -76,7 +76,7 @@ do
     fi
     virtualenv -q "$VENV_PATH"
     echo " - VirtualEnv created at $VENV_PATH"
-    # shellcheck disable=SC1090
+    # shellcheck disable=SC1090,SC1091
     source "${VENV_PATH}/bin/activate"
     # Install Concrete ML
     set +e

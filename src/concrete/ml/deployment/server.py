@@ -9,9 +9,6 @@ Routes:
 import io
 import os
 import uuid
-
-# pylint: disable=import-error
-import zipfile
 from pathlib import Path
 from typing import Dict
 
@@ -19,6 +16,7 @@ import uvicorn
 from fastapi import FastAPI, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
+# No relative import here because when not used in the package itself
 from concrete.ml.deployment import FHEModelServer
 
 if __name__ == "__main__":
@@ -40,22 +38,6 @@ if __name__ == "__main__":
     assert PATH_TO_CLIENT.exists()
     assert PATH_TO_SERVER.exists()
 
-    # remove this hack once 1.x is released
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3251
-    PATH_TO_PROCESSING = CLIENT_SERVER_PATH / "serialized_processing.json"
-    if not PATH_TO_PROCESSING.exists():  # then try to extract it from client
-        with zipfile.ZipFile(PATH_TO_CLIENT) as client_zip:
-            path_in_client = zipfile.Path(client_zip) / "serialized_processing.json"
-            if not path_in_client.exists():
-                raise FileNotFoundError(f"{path_in_client} does not exists")
-            with client_zip.open("serialized_processing.json", mode="r") as file_in_json, open(
-                PATH_TO_PROCESSING, mode="wb"
-            ) as file_out:
-                file_out.write(file_in_json.read())
-    # populate client with processing too
-    with zipfile.ZipFile(PATH_TO_CLIENT, "a") as zip_file:
-        zip_file.write(filename=PATH_TO_PROCESSING, arcname="serialized_processing.json")
-
     @app.get("/get_client")
     def get_client():
         """Get client.
@@ -70,29 +52,6 @@ if __name__ == "__main__":
         if not path_to_client.exists():
             raise HTTPException(status_code=500, detail="Could not find client.")
         return FileResponse(path_to_client, media_type="application/zip")
-
-    # Needed for legacy reasons (to remove once 1.x is released)
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3225
-    @app.get("/get_processing")
-    def get_processing():
-        """Get processing.
-
-        Returns:
-            FileResponse: serialized_processing.json
-
-        Raises:
-            HTTPException: if the file can't be find locally
-        """
-        # Backward compatibility issue
-        # This root has to be removed once 1.x is released
-
-        path_to_processing = (CLIENT_SERVER_PATH / "serialized_processing.json").resolve()
-        if not path_to_processing.exists():
-            raise HTTPException(status_code=500, detail="Could not find client.")
-        return FileResponse(
-            path_to_processing,
-            media_type="application/json",
-        )
 
     @app.post("/add_key")
     async def add_key(key: UploadFile):
