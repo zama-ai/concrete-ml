@@ -132,7 +132,7 @@ __init__(
 - <b>`n_bits`</b> (int):  Quantization bits, for PTQ models. Default is 4.
 - <b>`is_qat`</b> (bool):  Flag that indicates whether the `estimator` has been trained through  QAT (quantization-aware training). Default is True.
 - <b>`lower`</b> (float):  The lower bound of the search space for the `p_error`. Default is 0.0.
-- <b>`upper`</b> (float):  The upper bound of the search space for the `p_error`. Default is 0.9.  Increasing `p_error` beyond this threshold could lead to unstable executions.
+- <b>`upper`</b> (float):  The upper bound of the search space for the `p_error`. Default is 0.9.  Increasing the upper bound beyond this range may result in longer execution times  especially when `p_error≈1`.
 - <b>`max_iter`</b> (int):  The maximum number of iterations to run the binary search  algorithm. Default is 20.
 - <b>`n_simulation`</b> (int):  The number of simulations to validate the results of the FHE  simulation. Default is 5.
 - <b>`strategy`</b> (Any):  A uni-variate function that defines a "match". It can be built-in  functions provided in Python, such as any() or all(), or custom functions, like:
@@ -147,7 +147,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L272"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `eval_match`
 
@@ -174,7 +174,7 @@ Eval the matches.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L242"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reset_history`
 
@@ -186,7 +186,7 @@ Clean history.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L381"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 

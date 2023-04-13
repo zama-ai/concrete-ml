@@ -34,10 +34,10 @@ ______________________________________________________________________
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/utils.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `wait_for_connexion_to_be_available`
+## <kbd>function</kbd> `wait_for_connection_to_be_available`
 
 ```python
-wait_for_connexion_to_be_available(
+wait_for_connection_to_be_available(
     hostname: str,
     ip_address: str,
     path_to_private_key: Path,
@@ -68,10 +68,10 @@ ______________________________________________________________________
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/utils.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `is_connexion_available`
+## <kbd>function</kbd> `is_connection_available`
 
 ```python
-is_connexion_available(
+is_connection_available(
     hostname: str,
     ip_address: str,
     path_to_private_key: Path,

@@ -29,7 +29,7 @@ def filter_logs(previous_logs: str, current_logs: str) -> str:
     return ""
 
 
-def wait_for_connexion_to_be_available(
+def wait_for_connection_to_be_available(
     hostname: str,
     ip_address: str,
     path_to_private_key: Path,
@@ -56,7 +56,7 @@ def wait_for_connexion_to_be_available(
         # We can't cover infinite retry without risking an infinite loop
         if max_retries < 0:  # pragma: no cover
             while True:
-                if is_connexion_available(
+                if is_connection_available(
                     hostname=hostname,
                     ip_address=ip_address,
                     timeout=timeout,
@@ -67,7 +67,7 @@ def wait_for_connexion_to_be_available(
                 pbar.update(1)
         else:
             for _ in range(max_retries):
-                if is_connexion_available(
+                if is_connection_available(
                     hostname=hostname,
                     ip_address=ip_address,
                     timeout=timeout,
@@ -83,7 +83,7 @@ def wait_for_connexion_to_be_available(
     )
 
 
-def is_connexion_available(
+def is_connection_available(
     hostname: str, ip_address: str, path_to_private_key: Path, timeout: int = 1
 ):
     """Check if ssh connexion is available.

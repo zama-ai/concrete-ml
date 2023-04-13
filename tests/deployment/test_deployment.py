@@ -11,7 +11,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.deployment import FHEModelClient, FHEModelDev
 from concrete.ml.deployment.deploy_to_aws import AWSInstance, deploy_to_aws
-from concrete.ml.deployment.utils import wait_for_connexion_to_be_available
+from concrete.ml.deployment.utils import wait_for_connection_to_be_available
 from concrete.ml.pytest.utils import instantiate_model_generic
 from concrete.ml.sklearn.linear_model import LogisticRegression
 
@@ -23,7 +23,7 @@ def test_timeout_ssh_connection():
     with pytest.raises(
         TimeoutError, match="Timeout reached while trying to check for connexion .*"
     ):
-        wait_for_connexion_to_be_available(
+        wait_for_connection_to_be_available(
             ip_address="17.57.244.197",
             hostname="user",
             path_to_private_key=Path(__file__),
