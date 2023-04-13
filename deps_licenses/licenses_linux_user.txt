@@ -28,10 +28,10 @@ nvidia-cublas-cu11, 11.10.3.66, Other/Proprietary License
 nvidia-cuda-nvrtc-cu11, 11.7.99, Other/Proprietary License
 nvidia-cuda-runtime-cu11, 11.7.99, Other/Proprietary License
 nvidia-cudnn-cu11, 8.5.0.96, Other/Proprietary License
-onnx, 1.13.0, Apache License v2.0
+onnx, 1.13.1, Apache License v2.0
 onnxconverter-common, 1.13.0, MIT License
 onnxmltools, 1.11.0, Apache Software License
-onnxoptimizer, 0.2.7, Apache License v2.0
+onnxoptimizer, 0.3.10, Apache License v2.0
 onnxruntime, 1.13.1, MIT License
 packaging, 23.0, Apache Software License; BSD License
 protobuf, 3.20.3, BSD-3-Clause
