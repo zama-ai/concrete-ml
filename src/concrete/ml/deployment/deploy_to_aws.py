@@ -327,8 +327,6 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
     python_version = ".".join(versions["python"].split(".")[0:2])
     concrete_python_version = versions["concrete-python"]
     concrete_ml_version = versions["concrete-ml"]
-    # FIXME: change once 1.y.z is released
-    concrete_ml_version = "0.6.1"
 
     # Launch commands
     commands = [
