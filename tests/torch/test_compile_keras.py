@@ -12,6 +12,7 @@ with warnings.catch_warnings():
     import tensorflow
     import tf2onnx
 
+from concrete.ml.common.utils import to_tuple
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.torch.compile import compile_onnx_model
 
@@ -54,7 +55,6 @@ def compile_and_test_keras(
 
     n_bits = 2
     input_shape = (input_output_feature,)
-    num_inputs = 1
     n_examples = 50
 
     # Define the Keras model
@@ -82,9 +82,7 @@ def compile_and_test_keras(
 
     # Create test data from the same distribution and quantize using
     # learned quantization parameters during compilation
-    x_test = tuple(
-        numpy.random.uniform(-100, 100, size=(1, *input_shape)) for _ in range(num_inputs)
-    )
+    x_test = tuple(inputs[:1] for inputs in to_tuple(inputset))
 
     quantized_numpy_module.check_model_is_compiled()
 
