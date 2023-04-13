@@ -114,7 +114,7 @@ class QuantizationOptions:
         assert_true(not self.is_symmetric or self.is_signed)
 
     def dump_dict(self) -> Dict:
-        """Dump itelf to a dict.
+        """Dump itself to a dict.
 
         Returns:
             metadata (Dict): dict of serialized object
@@ -130,7 +130,7 @@ class QuantizationOptions:
         return metadata
 
     def dumps(self) -> str:
-        """Dump itelf to a string.
+        """Dump itself to a string.
 
         Returns:
             metadata (str): string of serialized object
@@ -139,7 +139,7 @@ class QuantizationOptions:
         return json.dumps(self.dump_dict(), cls=CustomEncoder)
 
     def dump(self, file: IO[str]):
-        """Dump itelf to a file.
+        """Dump itself to a file.
 
         Args:
             file (IO[str]): file of where to dump.
@@ -150,7 +150,7 @@ class QuantizationOptions:
     # Loading
     @staticmethod
     def load_dict(metadata: Dict):
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (Dict): dict of serialized object
@@ -170,7 +170,7 @@ class QuantizationOptions:
 
     @staticmethod
     def load(file: IO[str]) -> QuantizationOptions:
-        """Load itelf from a file.
+        """Load itself from a file.
 
         Args:
             file (IO[str]): file of serialized object
@@ -183,7 +183,7 @@ class QuantizationOptions:
 
     @staticmethod
     def loads(metadata: str) -> QuantizationOptions:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (str): serialized object
@@ -263,7 +263,7 @@ class MinMaxQuantizationStats:
         self.uvalues = uvalues
 
     def dump_dict(self) -> Dict:
-        """Dump itelf to a dict.
+        """Dump itself to a dict.
 
         Returns:
             metadata (Dict): dict of serialized object
@@ -276,7 +276,7 @@ class MinMaxQuantizationStats:
         return metadata
 
     def dumps(self) -> str:
-        """Dump itelf to a string.
+        """Dump itself to a string.
 
         Returns:
             metadata (str): string of serialized object
@@ -285,7 +285,7 @@ class MinMaxQuantizationStats:
         return json.dumps(self.dump_dict(), cls=CustomEncoder)
 
     def dump(self, file: IO[str]):
-        """Dump itelf to a file.
+        """Dump itself to a file.
 
         Args:
             file (IO[str]): file of where to dump.
@@ -296,7 +296,7 @@ class MinMaxQuantizationStats:
     # Loading
     @staticmethod
     def load_dict(metadata: Dict):
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (Dict): dict of serialized object
@@ -314,7 +314,7 @@ class MinMaxQuantizationStats:
 
     @staticmethod
     def load(file: IO[str]) -> MinMaxQuantizationStats:
-        """Load itelf from a file.
+        """Load itself from a file.
 
         Args:
             file (IO[str]): file of serialized object
@@ -327,7 +327,7 @@ class MinMaxQuantizationStats:
 
     @staticmethod
     def loads(metadata: str) -> MinMaxQuantizationStats:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (str): serialized object
@@ -433,7 +433,7 @@ class UniformQuantizationParameters:
         self.offset = offset
 
     def dump_dict(self) -> Dict:
-        """Dump itelf to a dict.
+        """Dump itself to a dict.
 
         Returns:
             metadata (Dict): dict of serialized object
@@ -446,7 +446,7 @@ class UniformQuantizationParameters:
         return metadata
 
     def dumps(self) -> str:
-        """Dump itelf to a string.
+        """Dump itself to a string.
 
         Returns:
             metadata (str): string of serialized object
@@ -455,7 +455,7 @@ class UniformQuantizationParameters:
         return json.dumps(self.dump_dict(), cls=CustomEncoder)
 
     def dump(self, file: IO[str]):
-        """Dump itelf to a file.
+        """Dump itself to a file.
 
         Args:
             file (IO[str]): file of where to dump.
@@ -466,7 +466,7 @@ class UniformQuantizationParameters:
     # Loading
     @staticmethod
     def load_dict(metadata: Dict) -> UniformQuantizationParameters:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (Dict): dict of serialized object
@@ -483,7 +483,7 @@ class UniformQuantizationParameters:
 
     @staticmethod
     def load(file: IO[str]) -> UniformQuantizationParameters:
-        """Load itelf from a file.
+        """Load itself from a file.
 
         Args:
             file (IO[str]): file of serialized object
@@ -496,7 +496,7 @@ class UniformQuantizationParameters:
 
     @staticmethod
     def loads(metadata: str) -> UniformQuantizationParameters:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (str): serialized object
@@ -643,7 +643,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
     """Uniform quantizer.
 
     Contains all information necessary for uniform quantization and provides
-    quantization/dequantization functionality on numpy arrays.
+    quantization/de-quantization functionality on numpy arrays.
 
     Args:
         options (QuantizationOptions): Quantization options set
@@ -713,13 +713,13 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         return qvalues.astype(numpy.int64)
 
     def dequant(self, qvalues: numpy.ndarray) -> Union[Any, numpy.ndarray]:
-        """Dequantize values.
+        """De-quantize values.
 
         Args:
-            qvalues (numpy.ndarray): integer values to dequantize
+            qvalues (numpy.ndarray): integer values to de-quantize
 
         Returns:
-            Union[Any, numpy.ndarray]: Dequantized float values.
+            Union[Any, numpy.ndarray]: De-quantized float values.
         """
 
         # for mypy
@@ -739,7 +739,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         return ans
 
     def dump_dict(self) -> Dict:
-        """Dump itelf to a dict.
+        """Dump itself to a dict.
 
         Returns:
             metadata (Dict): dict of serialized object
@@ -753,7 +753,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         return metadata
 
     def dumps(self) -> str:
-        """Dump itelf to a string.
+        """Dump itself to a string.
 
         Returns:
             metadata (str): string of serialized object
@@ -762,7 +762,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         return json.dumps(metadata, cls=CustomEncoder)
 
     def dump(self, file: IO[str]) -> None:
-        """Dump itelf to a file.
+        """Dump itself to a file.
 
         Args:
             file (IO[str]): file of where to dump.
@@ -773,7 +773,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
     # Loading
     @staticmethod
     def load_dict(metadata: Dict) -> UniformQuantizer:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (Dict): dict of serialized object
@@ -790,7 +790,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
     @staticmethod
     def load(file: IO[str]) -> UniformQuantizer:
-        """Load itelf from a file.
+        """Load itself from a file.
 
         Args:
             file (IO[str]): file of serialized object
@@ -803,7 +803,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
     @staticmethod
     def loads(metadata: str) -> UniformQuantizer:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (str): serialized object
@@ -983,20 +983,20 @@ class QuantizedArray:
         return self.qvalues
 
     def dequant(self) -> numpy.ndarray:
-        """Dequantize self.qvalues.
+        """De-quantize self.qvalues.
 
         Returns:
-            numpy.ndarray: Dequantized values.
+            numpy.ndarray: De-quantized values.
         """
         self.values = self.quantizer.dequant(self.qvalues)
         assert_true(
             not isinstance(self.values, numpy.ndarray) or self.values.dtype == numpy.float64,
-            "Dequantized values must be float64",
+            "De-quantized values must be float64",
         )
         return self.values
 
     def dump_dict(self) -> Dict:
-        """Dump itelf to a dict.
+        """Dump itself to a dict.
 
         Returns:
             metadata (Dict): dict of serialized object
@@ -1012,7 +1012,7 @@ class QuantizedArray:
         return metadata
 
     def dumps(self) -> str:
-        """Dump itelf to a string.
+        """Dump itself to a string.
 
         Returns:
             metadata (str): string of serialized object
@@ -1021,7 +1021,7 @@ class QuantizedArray:
         return json.dumps(metadata, cls=CustomEncoder)
 
     def dump(self, file: IO[str]) -> None:
-        """Dump itelf to a file.
+        """Dump itself to a file.
 
         Args:
             file (IO[str]): file of where to dump.
@@ -1032,7 +1032,7 @@ class QuantizedArray:
     # Loading
     @staticmethod
     def load_dict(metadata: Dict) -> QuantizedArray:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (Dict): dict of serialized object
@@ -1051,7 +1051,7 @@ class QuantizedArray:
 
     @staticmethod
     def load(file: IO[str]) -> QuantizedArray:
-        """Load itelf from a file.
+        """Load itself from a file.
 
         Args:
             file (IO[str]): file of serialized object
@@ -1064,7 +1064,7 @@ class QuantizedArray:
 
     @staticmethod
     def loads(metadata: str) -> QuantizedArray:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (str): serialized object

@@ -1,4 +1,4 @@
-# This workflow uses GH CLI to get timings of last 50 runs of Concrete-ML main CI 
+# This workflow uses GitHub CLI to get timings of last 50 runs of Concrete-ML main CI 
 # and send it to slack and add it as an artifact on the workflow
 name: CML build time
 on:

@@ -38,7 +38,7 @@ def wait_for_connection_to_be_available(
     max_retries: int = 20,
     wait_bar: bool = False,
 ):
-    """Wait for connexion to be available.
+    """Wait for connection to be available.
 
     Arguments:
         hostname (str): host name
@@ -78,7 +78,7 @@ def wait_for_connection_to_be_available(
                 pbar.update(1)
 
     raise TimeoutError(
-        "Timeout reached while trying to check for connexion "
+        "Timeout reached while trying to check for connection "
         f"availability on {hostname}@{ip_address}"
     )
 
@@ -86,7 +86,7 @@ def wait_for_connection_to_be_available(
 def is_connection_available(
     hostname: str, ip_address: str, path_to_private_key: Path, timeout: int = 1
 ):
-    """Check if ssh connexion is available.
+    """Check if ssh connection is available.
 
     Arguments:
         hostname (str): host name
@@ -95,7 +95,7 @@ def is_connection_available(
         timeout: ssh timeout option
 
     Returns:
-        bool: True if connexion succeeded
+        bool: True if connection succeeded
     """
 
     command = (

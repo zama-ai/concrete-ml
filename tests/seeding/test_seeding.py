@@ -104,7 +104,7 @@ def test_seed_sklearn(model_class, parameters, load_data, default_configuration)
 
     print(f"sklearn_model = {sklearn_model}")
 
-    # Test the determinism of our package (even if the bitwidth may be too large)
+    # Test the determinism of our package (even if the bit-width may be too large)
     try:
         model.compile(x, configuration=default_configuration, show_mlir=True)
     except RuntimeError as err:

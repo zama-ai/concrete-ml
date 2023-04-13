@@ -68,7 +68,7 @@ def test_sum(
     dim = tuple(axis for axis in range(len(size))) if axes is None else axes
     torch_model = model_class(dim=dim, keepdim=keepdims)
 
-    # Generate the inputset with several samples
+    # Generate the input-set with several samples
     inputset = data_generator(size=(200,) + size)
 
     # Compile the torch model
@@ -88,7 +88,7 @@ def test_sum(
     else:
         check_circuit_has_no_tlu(quantized_module.fhe_circuit)
 
-    # Take an inputset's subset as inputs
+    # Take an input-set's subset as inputs
     numpy_input = inputset[:5]
 
     quantized_module.check_model_is_compiled()
@@ -99,7 +99,7 @@ def test_sum(
     computed_sum = quantized_module.forward(numpy_input, fhe=fhe_mode)
 
     # Compute the expected sum
-    # As the calibration inputset and inputs are ran over several samples, we need to apply the
+    # As the calibration input-set and inputs are ran over several samples, we need to apply the
     # sum on all the given axes except the first one (the sample axis), including when axes is
     # set to None (i.e. sum over all axes). The same transformation is done within the ReduceSum
     # operator.

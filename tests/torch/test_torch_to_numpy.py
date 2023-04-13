@@ -82,7 +82,8 @@ def test_torch_to_numpy(model_class, input_shape, activation_function, check_r2_
     # Since we have networks with Batch Normalization, we need to manually set them to evaluation
     # mode. ONNX export does the same, so to ensure torch results are the same as the results
     # when running the ONNX graph through NumpyMode we need to call .eval()
-    # Calling .eval() fixes the mean/var of the BN layer and stops is being updated during .forward
+    # Calling .eval() fixes the mean/var of the batchnormalization layer and stops is being updated
+    # during .forward
     torch_fc_model.eval()
 
     # Create random input

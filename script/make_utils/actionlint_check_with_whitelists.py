@@ -29,7 +29,7 @@ def main():
     """Do the test
 
     Raises:
-        ValueError: if non whitelisted error occured
+        ValueError: if non whitelisted error occurred
     """
     status = 0
     bad_lines = []

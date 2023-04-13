@@ -188,7 +188,7 @@ class NeuralNetClassifier(BaseClassifier, QuantizedTorchEstimatorMixin, SkorchNe
 
     Inputs that are float64 will be casted to float32 before training as Torch does not
     handle float64 types properly. Thus should not have a significant impact on the model's
-    performances. If the targets are integers of lower bitwidth, they will be safely casted to
+    performances. If the targets are integers of lower bit-width, they will be safely casted to
     int64. Else, an error is raised.
     """
 
@@ -250,7 +250,7 @@ class NeuralNetClassifier(BaseClassifier, QuantizedTorchEstimatorMixin, SkorchNe
     def fit(self, X: Data, y: Target, *args, **kwargs):
         # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
         # casted to float32 as this should not have a great impact on the model's performances. If
-        # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
+        # the targets are integers of lower bit-width, they will be safely casted to int64. Else, an
         # error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
         y = check_dtype_and_cast(y, "int64", error_information="Neural Network classifier target")
@@ -276,7 +276,7 @@ class NeuralNetClassifier(BaseClassifier, QuantizedTorchEstimatorMixin, SkorchNe
     def fit_benchmark(self, X: Data, y: Target, *args, **kwargs):
         # Check that inputs are float32 and targets are int64. If inputs are float64, they will be
         # casted to float32 as this should not have a great impact on the model's performances. If
-        # the targets are integers of lower bitwidth, they will be safely casted to int64. Else, an
+        # the targets are integers of lower bit-width, they will be safely casted to int64. Else, an
         # error is raised.
         X = check_dtype_and_cast(X, "float32", error_information="Neural Network classifier input")
         y = check_dtype_and_cast(y, "int64", error_information="Neural Network classifier target")

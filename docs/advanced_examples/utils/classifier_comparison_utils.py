@@ -56,15 +56,15 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
     fig.suptitle(title, fontsize=20)
     fig.patch.set_facecolor("white")
 
-    # Iterate over datasets
+    # Iterate over data-sets
     for i, dataset in enumerate(datasets):
-        # Preprocess dataset
+        # Preprocess data-set
         X, y = dataset
         X = X.astype(np.float32)
         X = StandardScaler().fit_transform(X)
 
         # Split the data into training and test sets
-        # Use 15 percent (30 points for a dataset of 200 points) for prediction
+        # Use 15 percent (30 points for a data-set of 200 points) for prediction
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
 
         x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
@@ -159,7 +159,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                 X_train,
             )
 
-            # If the model is not a tree-based model, retrieve the maximum integer bitwidth
+            # If the model is not a tree-based model, retrieve the maximum integer bit-width
             # reached within its circuit.
             bitwidth = None
             if not is_a_tree_based_model:
@@ -238,7 +238,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                     ax.text(
                         xx.max() - 0.3,
                         yy.min() + 1.0,
-                        f"bitwidth={bitwidth}",
+                        f"bit-width={bitwidth}",
                         size=font_size_text,
                         horizontalalignment="right",
                     )

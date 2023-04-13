@@ -126,7 +126,7 @@ def main():
     start_compile = time.time()
     quantized_numpy_module = compile_brevitas_qat_model(
         torch_model=net.encrypted_module,  # our model
-        torch_inputset=train_features_sub_set,  # a representative inputset to be used for compilation
+        torch_inputset=train_features_sub_set,  # a representative input-set to be used for compilation
         **optional_kwargs,
         output_onnx_file=compilation_onnx_path,
     )

@@ -69,7 +69,7 @@ for f_input in x_test:
     # Decrypt the result (integer)
     q_y = fhe_circuit.decrypt(q_y_enc)
 
-    # Dequantize the result
+    # De-quantize the result
     y = model.dequantize_output(q_y)
 
     # Apply either the sigmoid if it is a binary classification task, which is the case in this 

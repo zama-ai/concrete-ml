@@ -85,7 +85,7 @@ def get_torchvision_dataset(
         train_set (bool): Use train data-set if True, else testing data-set
 
     Returns:
-        A torchvision datasets.
+        A torchvision data-sets.
     """
 
     transform = dataset_config["train_transform"] if train_set else dataset_config["test_transform"]
@@ -106,9 +106,9 @@ def get_torchvision_dataset(
 def get_dataloader(
     param: Dict,
 ) -> Tuple[DataLoader, DataLoader]:
-    """Returns the training and the test loaders of either CIFAR-10 or CIFAR-100 dataset.
+    """Returns the training and the test loaders of either CIFAR-10 or CIFAR-100 data-set.
 
-    The CIFAR dataset contains of `32*32` colored images.
+    The CIFAR data-set contains of `32*32` colored images.
 
     Args:
         param (Dict): Set of hyper-parameters to use depending on whether
@@ -347,10 +347,10 @@ def train(
             param["loss_train_history"].append(np.mean(loss_batch_train))
 
             # Evaluation during training:
-            # Disable autograd engine (no backprop)
+            # Disable autograd engine (no backpropagation)
             # To reduce memory usage and speed up computations
             with torch.no_grad():
-                # Notify batchnorm & dropout layers to work in eval mode
+                # Notify batchnormalization & dropout layers to work in eval mode
                 model.eval()
                 loss_batch_test, accuracy_batch_test = [], []
                 for x, y in test_loader:

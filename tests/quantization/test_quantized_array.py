@@ -17,7 +17,7 @@ from concrete.ml.quantization import QuantizedArray
 )
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
 def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_array_equality):
-    """Test the quant and dequant function."""
+    """Test the quant and de-quant function."""
 
     quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
     qvalues = quant_array.quant()
@@ -31,7 +31,7 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
     # pylint: disable-next=invalid-unary-operand-type
     assert numpy.min(qvalues) >= -quant_array.quantizer.offset
 
-    # Dequantized values must be close to original values
+    # De-quantized values must be close to original values
     dequant_values = quant_array.dequant()
 
     # Check that all values are close
@@ -39,16 +39,16 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
     assert numpy.isclose(dequant_values, values, atol=tolerance).all()
 
     # Explain the choice of tolerance
-    # This test checks the values are quantized and dequantized correctly
+    # This test checks the values are quantized and de-quantized correctly
     # Each quantization have a maximum error per quantized value an it's `scale / 2`
 
     # To give an intuition, let's say you have the scale of 0.5
-    #     the range `[a + 0.00, a + 0.25]` will be quantized into 0, dequantized into `a + 0.00`
-    #     the range `[a + 0.25, a + 0.75]` will be quantized into 1, dequantized into `a + 0.50`
-    #     the range `[a + 0.75, a + 1.25]` will be quantized into 2, dequantized into `a + 1.00`
+    #     the range `[a + 0.00, a + 0.25]` will be quantized into 0, de-quantized into `a + 0.00`
+    #     the range `[a + 0.25, a + 0.75]` will be quantized into 1, de-quantized into `a + 0.50`
+    #     the range `[a + 0.75, a + 1.25]` will be quantized into 2, de-quantized into `a + 1.00`
     #     ...
 
-    # So for each quantization-then-dequantization operation,
+    # So for each quantization-then-de-quantization operation,
     # the maximum error is `0.25`, which is `scale / 2`
 
     # Test update functions

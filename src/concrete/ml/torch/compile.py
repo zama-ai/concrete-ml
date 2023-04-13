@@ -71,10 +71,10 @@ def _compile_torch_or_onnx_model(
     Args:
         model (Union[torch.nn.Module, onnx.ModelProto]): the model to quantize, either in torch or
             in ONNX
-        torch_inputset (Dataset): the calibration inputset, can contain either torch
+        torch_inputset (Dataset): the calibration input-set, can contain either torch
             tensors or numpy.ndarray
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
-            in its computation graph and that Concrete ML should not requantize it
+            in its computation graph and that Concrete ML should not re-quantize it
         configuration (Configuration): Configuration object to use during compilation
         artifacts (DebugArtifacts): Artifacts object to fill during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
@@ -96,9 +96,9 @@ def _compile_torch_or_onnx_model(
     )
 
     # Tracing needs to be done with the batch size of 1 since we compile our models to FHE with
-    # this batch size. The input set contains many examples, to determine a representative bitwidth,
-    # but for tracing we only take a single one. We need the ONNX tracing batch size to match
-    # the batch size during FHE inference which can only be 1 for the moment.
+    # this batch size. The input set contains many examples, to determine a representative
+    # bit-width, but for tracing we only take a single one. We need the ONNX tracing batch size to
+    # match the batch size during FHE inference which can only be 1 for the moment.
     # Use batch size > 1 in FHE once it is available
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/758
     dummy_input_for_tracing = tuple(
@@ -158,7 +158,7 @@ def compile_torch_model(
 
     Args:
         torch_model (torch.nn.Module): the model to quantize
-        torch_inputset (Dataset): the calibration inputset, can contain either torch
+        torch_inputset (Dataset): the calibration input-set, can contain either torch
             tensors or numpy.ndarray.
         import_qat (bool): Set to True to import a network that contains quantizers and was
             trained using quantization aware training
@@ -231,10 +231,10 @@ def compile_onnx_model(
 
     Args:
         onnx_model (onnx.ModelProto): the model to quantize
-        torch_inputset (Dataset): the calibration inputset, can contain either torch
+        torch_inputset (Dataset): the calibration input-set, can contain either torch
             tensors or numpy.ndarray.
         import_qat (bool): Flag to signal that the network being imported contains quantizers in
-            in its computation graph and that Concrete ML should not requantize it.
+            in its computation graph and that Concrete ML should not re-quantize it.
         configuration (Configuration): Configuration object to use
             during compilation
         artifacts (DebugArtifacts): Artifacts object to fill
@@ -297,7 +297,7 @@ def compile_brevitas_qat_model(
 
     Args:
         torch_model (torch.nn.Module): the model to quantize
-        torch_inputset (Dataset): the calibration inputset, can contain either torch
+        torch_inputset (Dataset): the calibration input-set, can contain either torch
             tensors or numpy.ndarray.
         n_bits (Optional[Union[int, dict]): the number of bits for the quantization. By default,
             for most models, a value of None should be given, which instructs Concrete ML to use the

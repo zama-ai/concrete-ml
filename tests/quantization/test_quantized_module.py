@@ -187,7 +187,7 @@ def test_intermediary_values(n_bits, model_class, input_shape, activation_functi
     # Execute the forward pass in the clear
     _, debug_values = quantized_model.forward(numpy_input, debug=True, fhe="disable")
 
-    # Count the number of Gemm/Conv layers in the CML debug values
+    # Count the number of Gemm/Conv layers in the Concrete ML debug values
     num_gemm_conv = 0
     for layer_name in debug_values:
         if "Gemm" not in layer_name and "Conv" not in layer_name:
@@ -202,7 +202,7 @@ def test_intermediary_values(n_bits, model_class, input_shape, activation_functi
             continue
         num_torch_gemm_conv += 1
 
-    # Make sure we have debug output for all conv/gemm layers in CML
+    # Make sure we have debug output for all conv/gemm layers in Concrete ML
     assert num_gemm_conv == num_torch_gemm_conv
 
 
@@ -237,7 +237,7 @@ def test_bitwidth_report(model_class, input_shape, activation_function, default_
     post_training_quant = PostTrainingAffineQuantization(2, numpy_fc_model)
     quantized_model = post_training_quant.quantize_module(numpy_input)
 
-    # A QuantizedModule that is not compiled can not report bitwidths and value ranges
+    # A QuantizedModule that is not compiled can not report bit-widths and value ranges
     assert quantized_model.bitwidth_and_range_report() is None
 
     # Finally test a compiled QuantizedModule
@@ -250,7 +250,7 @@ def test_bitwidth_report(model_class, input_shape, activation_function, default_
         p_error=0.01,
     )
 
-    # Get all ops for which the user would want to know the bitwidths
+    # Get all ops for which the user would want to know the bit-widths
     ops_check_have_report = set()
     for node in quantized_model.onnx_model.graph.node:
         if "Gemm" in node.op_type or "Conv" in node.op_type:

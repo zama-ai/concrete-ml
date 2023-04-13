@@ -20,7 +20,7 @@ from concrete.ml.sklearn import get_sklearn_neural_net_models
     ],
 )
 def test_failure_bad_param(model_class, bad_value, expected_error):
-    """Check our checks see if ever the Panda dataset is not correct."""
+    """Check our checks see if ever the Pandas data-set is not correct."""
 
     # For NeuralNetworks, a type error will be raised, which is tested
     # in test_failure_bad_data_types
@@ -39,7 +39,7 @@ def test_failure_bad_param(model_class, bad_value, expected_error):
 
     model = model_class(n_bits=2)
 
-    # The error message changed in one of our dependancies
+    # The error message changed in one of our dependencies
     assert sys.version_info.major == 3
     if sys.version_info.minor <= 7:
         if expected_error == "Input X contains NaN.":

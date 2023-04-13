@@ -83,7 +83,7 @@ MODELS_ARGS = {
 
 
 def binary_classification_metric(y_true: numpy.ndarray, y_pred: numpy.ndarray) -> float:
-    """Binary classifcation metric.
+    """Binary classification metric.
     Args:
         y_true (numpy.ndarray): Ground truth
         y_pred (numpy.ndarray): Model predictions.
@@ -203,7 +203,7 @@ def test_non_convergence_for_custom_models(model_name, quant_type):
     reached after only one iteration. Therefore, max_metric_loss is set to a negative number.
     """
 
-    # Load pretrained model
+    # Load pre-trained model
     model = load_torch_model(
         MODELS_ARGS[model_name][quant_type]["model_class"],
         MODELS_ARGS[model_name][quant_type]["path"],
@@ -278,7 +278,7 @@ def test_invalid_strategy(strategy, model_name, quant_type):
 def test_binary_search_for_custom_models(model_name, quant_type, threshold):
     """Check if the returned `p_error` is valid for custom NNs."""
 
-    # Load pretrained model
+    # Load pre-trained model
     model = load_torch_model(
         MODELS_ARGS[model_name][quant_type]["model_class"],
         MODELS_ARGS[model_name][quant_type]["path"],
@@ -395,7 +395,7 @@ def test_invalid_estimator_for_custom_models(is_qat):
     "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
 )
 def test_invalid_estimator_for_built_in_models(model_class, parameters, load_data):
-    """Check that binary search raises an exception for insupported models."""
+    """Check that binary search raises an exception for unsupported models."""
 
     x, y = load_data(model_class, **parameters)
     x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=100)

@@ -95,9 +95,9 @@ quantized_numpy_module, execution_time = measure_execution_time(compile_brevitas
 
 print(f"Compilation time took {execution_time} seconds")
 
-# Display the max bitwidth in the model
+# Display the max bit-width in the model
 print(
-    "Max bitwidth used in the circuit: ",
+    "Max bit-width used in the circuit: ",
     f"{quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width()} bits",
 )
 

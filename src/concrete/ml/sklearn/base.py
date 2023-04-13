@@ -114,12 +114,12 @@ class BaseEstimator:
         self.sklearn_model: Optional[sklearn.base.BaseEstimator] = None
 
         #: The list of quantizers, which contain all information necessary for applying uniform
-        #: quantization to inputs and provide quantization/dequantization functionalities. Is empty
+        #: quantization to inputs and provide quantization/de-quantization functionalities. Is empty
         #: if the model is not fitted
         self.input_quantizers: List[UniformQuantizer] = []
 
         #: The list of quantizers, which contain all information necessary for applying uniform
-        #: quantization to outputs and provide quantization/dequantization functionalities. Is
+        #: quantization to outputs and provide quantization/de-quantization functionalities. Is
         #: empty if the model is not fitted
         self.output_quantizers: List[UniformQuantizer] = []
 
@@ -374,15 +374,15 @@ class BaseEstimator:
 
     @abstractmethod
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Dequantize the output.
+        """De-quantize the output.
 
         This step ensures that the fit method has been called.
 
         Args:
-            q_y_preds (numpy.ndarray): The quantized output values to dequantize.
+            q_y_preds (numpy.ndarray): The quantized output values to de-quantize.
 
         Returns:
-            numpy.ndarray: The dequantized output values.
+            numpy.ndarray: The de-quantized output values.
         """
 
     @abstractmethod
@@ -446,7 +446,7 @@ class BaseEstimator:
         # Quantize the inputs
         q_X = self.quantize_input(X)
 
-        # Generate the compilation inputset with proper dimensions
+        # Generate the compilation input-set with proper dimensions
         inputset = _get_inputset_generator(q_X)
 
         # Retrieve the compiler instance
@@ -546,14 +546,14 @@ class BaseEstimator:
         else:
             q_y_pred = self._inference(q_X)
 
-        # Dequantize the predicted values in the clear
+        # De-quantize the predicted values in the clear
         y_pred = self.dequantize_output(q_y_pred)
 
         return y_pred
 
     # pylint: disable-next=no-self-use
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Apply post-processing to the dequantized predictions.
+        """Apply post-processing to the de-quantized predictions.
 
         This post-processing step can include operations such as applying the sigmoid or softmax
         function for classifiers, or summing an ensemble's outputs. These steps are done in the
@@ -565,7 +565,7 @@ class BaseEstimator:
         need to use attributes stored in `post_processing_params`.
 
         Args:
-            y_preds (numpy.ndarray): The dequantized predictions to post-process.
+            y_preds (numpy.ndarray): The de-quantized predictions to post-process.
 
         Returns:
             numpy.ndarray: The post-processed predictions.
@@ -581,7 +581,7 @@ class BaseEstimator:
         """
 
     def dumps(self) -> str:
-        """Dump itelf to a string.
+        """Dump itself to a string.
 
         Returns:
             metadata (str): string of serialized object
@@ -590,7 +590,7 @@ class BaseEstimator:
         return json.dumps(metadata, cls=CustomEncoder)
 
     def dump(self, file: IO[str]) -> None:
-        """Dump itelf to a file.
+        """Dump itself to a file.
 
         Args:
             file (IO[str]): file of where to dump.
@@ -601,7 +601,7 @@ class BaseEstimator:
     @classmethod
     @abstractmethod
     def load_dict(cls, metadata: Dict[str, Any]) -> BaseEstimator:
-        """Load itelf from a dict.
+        """Load itself from a dict.
 
         Args:
             metadata (Dict[str, Any]): dict of metadata of the object
@@ -612,7 +612,7 @@ class BaseEstimator:
 
     @classmethod
     def load(cls, file: IO[str]) -> BaseEstimator:
-        """Load itelf from a file.
+        """Load itself from a file.
 
         Args:
             file (IO[str]): file of serialized object
@@ -625,7 +625,7 @@ class BaseEstimator:
 
     @classmethod
     def loads(cls, metadata: str) -> BaseEstimator:
-        """Load itelf from a string.
+        """Load itself from a string.
 
         Args:
             metadata (str): serialized object
@@ -922,8 +922,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         # Set the quantization bits for import
         # Note that the ONNXConverter will use a default value for network input bits
-        # Furthermore, Brevitas ONNX contains bitwidths in the ONNX file
-        # which override the bitwidth that we pass here
+        # Furthermore, Brevitas ONNX contains bit-widths in the ONNX file
+        # which override the bit-width that we pass here
         # Thus, this parameter is only used to check consistency during import (onnx file vs import)
         n_bits = self.base_module.n_a_bits
 
@@ -1478,7 +1478,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._q_bias = output_quantizer.quant(self.sklearn_model.intercept_)
 
         # Since the matmul and the bias both use the same scale and zero-points, we obtain that
-        # y = S*(q_y - 2*Z) when dequantizing the values. We therefore need to multiply the initial
+        # y = S*(q_y - 2*Z) when de-quantizing the values. We therefore need to multiply the initial
         # output zero_point by 2
         assert output_quantizer.zero_point is not None
         output_quantizer.zero_point *= 2
@@ -1501,7 +1501,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        # Dequantize the output values
+        # De-quantize the output values
         y_preds = self.output_quantizers[0].dequant(q_y_preds)
 
         return y_preds
