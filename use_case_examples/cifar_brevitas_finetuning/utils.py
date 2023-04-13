@@ -229,7 +229,7 @@ def plot_baseline(param: Dict, data: DataLoader, device: str) -> None:
     """
     # The accuracy of the counterpart pre-trained model in fp32 will be used as a baseline.
     # That we try to catch up during the Quantization Aware Training.
-    checkpoint = torch.load(f"{param['dir']}/{param['pretrained_path']}", map_location=device)
+    checkpoint = torch.load(f"{param['dir']}/{param['pre_trained_path']}", map_location=device)
     fp32_vgg = Fp32VGG11(param["output_size"])
     fp32_vgg.load_state_dict(checkpoint)
     baseline = torch_inference(fp32_vgg, data, param, device)
@@ -299,7 +299,7 @@ def train(
     """Training the model.
 
     Args:
-        model (nn.Module): A Pytorch or Brevitas network.
+        model (nn.Module): A PyTorch or Brevitas network.
         train_loader (DataLoader): The training set.
         test_loader (DataLoader): The test set.
         param (Dict): Set of hyper-parameters to use depending on whether
@@ -348,7 +348,7 @@ def train(
 
             # Evaluation during training:
             # Disable autograd engine (no backpropagation)
-            # To reduce memory usage and speed up computations
+            # To reduce memory usage and to speed up computations
             with torch.no_grad():
                 # Notify batchnormalization & dropout layers to work in eval mode
                 model.eval()
@@ -399,7 +399,7 @@ def torch_inference(
     """Returns the `top_k` accuracy.
 
     Args:
-        model (nn.Module): A Pytorch or Brevitas network.
+        model (nn.Module): A PyTorch or Brevitas network.
         data (DataLoader): The test or evaluation set.
         param (Dict): Set of hyper-parameters to use depending on whether
             CIFAR-10 or CIFAR-100 is used.
@@ -460,13 +460,13 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
     return qmodel
 
 
-def mapping_keys(pretrained_weights: Dict, model: nn.Module, device: str) -> nn.Module:
+def mapping_keys(pre_trained_weights: Dict, model: nn.Module, device: str) -> nn.Module:
 
     """
     Initialize the quantized model with pre-trained fp32 weights.
 
     Args:
-        pretrained_weights (Dict): The state_dict of the pre-trained fp32 model.
+        pre_trained_weights (Dict): The state_dict of the pre-trained fp32 model.
         model (nn.Module): The Brevitas model.
         device (str): Device type.
 
@@ -477,12 +477,12 @@ def mapping_keys(pretrained_weights: Dict, model: nn.Module, device: str) -> nn.
     # Brevitas requirement to ignore missing keys
     config.IGNORE_MISSING_KEYS = True
 
-    old_keys = list(pretrained_weights.keys())
+    old_keys = list(pre_trained_weights.keys())
     new_keys = list(model.state_dict().keys())
     new_state_dict = OrderedDict()
 
     for old_key, new_key in zip(old_keys, new_keys):
-        new_state_dict[new_key] = pretrained_weights[old_key]
+        new_state_dict[new_key] = pre_trained_weights[old_key]
 
     model.load_state_dict(new_state_dict)
     model = model.to(device)

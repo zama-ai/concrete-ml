@@ -6,7 +6,7 @@ It takes as input a folder with:
     - processing.json
 
 It spawns a AWS EC2 instance with proper security groups.
-Then SSHs to it to rsync the files and update python dependencies.
+Then SSHs to it to rsync the files and update Python dependencies.
 It then launches the server.
 """
 

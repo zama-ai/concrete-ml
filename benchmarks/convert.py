@@ -56,7 +56,7 @@ def get_git_hash_date(hash_str: str, path: Union[None, Path, str]) -> str:
 
 
 def git_iso_to_python_iso(date_str: str) -> str:
-    """Transform git iso into python iso."""
+    """Transform git iso into Python iso."""
     splitted = date_str.split()
     return f"{splitted[0]}T{splitted[1]}{splitted[2][:3]}:{splitted[2][3:]}"
 

@@ -91,7 +91,7 @@ def main():
     # Get the data to infer
     X = train_features_sub_set[:1]
 
-    # Let's create the client
+    # Create the client
     client = FHEModelClient(path_dir="./", key_dir="./keys")
 
     # The client first need to create the private and evaluation keys.

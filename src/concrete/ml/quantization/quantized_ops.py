@@ -187,7 +187,7 @@ class QuantizedGemm(QuantizedMixingOp):
             None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
         )
 
-        # Using snake case here to please the python format, the original attrs don't have the '_'
+        # Using snake case here to please the Python format, the original attrs don't have the '_'
         # Use default false so we also support MatMul impl, MatMul does not have these flags
         transpose_inputs = attrs.get("transA", False)
         transpose_w = attrs.get("transB", False)
@@ -874,7 +874,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         q_input_pad = numpy_onnx_pad(q_input.qvalues, pool_pads, pad_value, int_only=True)
 
         if self.ceil_mode == 1:
-            # Padding for tensorflow style
+            # Padding for TensorFlow style
 
             # Compute padding with ceil and apply it to the input, pad with zeros, the zeros
             # will be ignored in the computation
@@ -1312,7 +1312,7 @@ class QuantizedOr(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Or operator ||.
 
     This operation is not really working as a quantized operation. It just works when things got
-    fused, as in e.g. Act(x) = x || (x + 42))
+    fused, as in eg Act(x) = x || (x + 42))
     """
 
     _impl_for_op_named: str = "Or"
@@ -1322,7 +1322,7 @@ class QuantizedDiv(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Div operator /.
 
     This operation is not really working as a quantized operation. It just works when things got
-    fused, as in e.g. Act(x) = 1000 / (x + 42))
+    fused, as in eg Act(x) = 1000 / (x + 42))
     """
 
     _impl_for_op_named: str = "Div"
@@ -1666,7 +1666,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
                 rounding_mode (str): Rounding mode (default and only accepted option is "ROUND")
                 signed (int): Whether this op quantizes to signed integers (default 1),
                 narrow (int): Whether this op quantizes to a narrow range of integers
-                    e.g. [-2**n_bits-1 .. 2**n_bits-1] (default 0),
+                    eg [-2**n_bits-1 .. 2**n_bits-1] (default 0),
         """
 
         super().__init__(
@@ -1722,7 +1722,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
         # For mypy
         assert constant_inputs is not None
 
-        # The constant inputs can have either int or str keys, here it's int
+        # The constant inputs can have either int or str keys, here it is int
         n_bits = constant_inputs[3]  # type: ignore
 
         # Set the QAT flag on the output of this operation, so that the

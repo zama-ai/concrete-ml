@@ -49,7 +49,7 @@ if __name__ == "__main__":
     assert isinstance(X, numpy.ndarray)
     assert isinstance(y, numpy.ndarray)
 
-    # Let's create the client
+    # Create the client
     client = FHEModelClient(path_dir=ROOT, key_dir=ROOT / "keys")
 
     # The client first need to create the private and evaluation keys.
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     # Check the size of the evaluation keys (in MB)
     print(f"Evaluation keys size: {len(serialized_evaluation_keys) / (10**6):.2f} MB")
 
-    # Let's send this evaluation key to the server (this has to be done only once)
+    # Send this evaluation key to the server (this has to be done only once)
     # send_evaluation_key_to_server(serialized_evaluation_keys)
 
     # Now we have everything for the client to interact with the server

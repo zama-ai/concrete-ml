@@ -93,8 +93,8 @@ def pytest_sessionstart(session: pytest.Session):
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disable=unused-argument
     """Pytest callback when testing ends."""
-    # Hacked together from the source code, they don't have an option to export to file and it's too
-    # much work to get a PR in for such a little thing
+    # Hacked together from the source code, they don't have an option to export to file and it is
+    # too much work to get a PR in for such a little thing
     # https://github.com/pytest-dev/pytest-cov/blob/
     # ec344d8adf2d78238d8f07cb20ed2463d7536970/src/pytest_cov/plugin.py#L329
     if session.config.pluginmanager.hasplugin("_cov"):
@@ -110,7 +110,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
                 and cov_plugin.options.cov_fail_under > 0
             ):
                 failed = cov_plugin.cov_total < cov_plugin.options.cov_fail_under
-                # If failed is False coverage_status is 0, if True it's 1
+                # If failed is False coverage_status is 0, if True it is 1
                 coverage_status = int(failed)
             global_coverage_file_path = Path(global_coverage_file).resolve()
             with open(global_coverage_file_path, "w", encoding="utf-8") as f:
@@ -239,7 +239,7 @@ def check_circuit_precision_impl(circuit: Circuit):
     circuit_precision = circuit.graph.maximum_integer_bit_width()
     if circuit_precision > MAXIMUM_TLU_BIT_WIDTH:
         raise AssertionError(
-            f"The circuit's precision is expected to be less than {MAXIMUM_TLU_BIT_WIDTH}. "
+            f"The circuit is precision is expected to be less than {MAXIMUM_TLU_BIT_WIDTH}. "
             f"Got {circuit_precision}."
         )
 
@@ -387,7 +387,7 @@ def load_data():
                 make_classification(*args, **kwargs, random_state=random_state)
             )
 
-            # Cast inputs to float32 as Skorch QNNs don't handle float64 values
+            # Cast inputs to float32 as skorch QNNs don't handle float64 values
             if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
                 generated_classifier[0] = generated_classifier[0].astype(numpy.float32)
 
@@ -410,7 +410,7 @@ def load_data():
                 if len(generated_regression[1].shape) == 1:
                     generated_regression[1] = generated_regression[1].reshape(-1, 1)
 
-                # Cast inputs and targets to float32 as Skorch QNNs don't handle float64 values
+                # Cast inputs and targets to float32 as skorch QNNs don't handle float64 values
                 generated_regression[0] = generated_regression[0].astype(numpy.float32)
                 generated_regression[1] = generated_regression[1].astype(numpy.float32)
 
@@ -469,7 +469,7 @@ def check_is_good_execution_for_cml_vs_circuit():
 
                 if model._is_a_public_cml_model:  # pylint: disable=protected-access
                     # Only check probabilities for classifiers as we only want to check that the
-                    # circuit's outputs (after de-quantization) are correct. We thus want to avoid
+                    # circuit is outputs (after de-quantization) are correct. We thus want to avoid
                     # as much post-processing steps in the clear (that could lead to more flaky
                     # tests), especially since these results are tested in other tests such as the
                     # `check_subfunctions_in_fhe`

@@ -29,7 +29,7 @@ def remove_unused_constant_nodes(onnx_model: onnx.ModelProto):
 
     for node in onnx_model.graph.node:
         if node.op_type == "Constant":
-            # Initially we don't know if a constant is used, so it's to be removed by default
+            # Initially we don't know if a constant is used, so it is to be removed by default
             constants_to_remove[node.output[0]] = node
             continue
 
