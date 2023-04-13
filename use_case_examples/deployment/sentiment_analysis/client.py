@@ -47,12 +47,6 @@ def main():
     with open("./client.zip", "wb") as file:
         file.write(zip_response.content)
 
-    # serialized_processing.json
-    zip_response = requests.get(f"{URL}/get_processing")
-    assert zip_response.status_code == STATUS_OK
-    with open("./serialized_processing.json", "wb") as file:
-        file.write(zip_response.content)
-
     # Create the client
     client = FHEModelClient(path_dir="./", key_dir="./keys")
 

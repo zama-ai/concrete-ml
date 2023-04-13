@@ -7,5 +7,5 @@ COPY brevitas_utils.py .
 COPY client_requirements.txt .
 COPY clear_module.pt .
 RUN python -m pip install -r client_requirements.txt
-RUN python -m pip install torchvision==0.14 --no-deps
+RUN python -m pip install torchvision==0.14.1 --no-deps
 ENTRYPOINT /bin/bash

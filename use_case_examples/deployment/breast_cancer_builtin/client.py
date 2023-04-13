@@ -33,12 +33,6 @@ if __name__ == "__main__":
     with open(ROOT / "client.zip", "wb") as file:
         file.write(zip_response.content)
 
-    # serialized_processing.json
-    zip_response = requests.get(f"{URL}/get_processing")
-    assert zip_response.status_code == STATUS_OK
-    with open(ROOT / "serialized_processing.json", "wb") as file:
-        file.write(zip_response.content)
-
     # Get the data to infer
     X, y = load_breast_cancer(return_X_y=True)
     assert isinstance(X, numpy.ndarray)
@@ -50,7 +44,7 @@ if __name__ == "__main__":
     assert isinstance(y, numpy.ndarray)
 
     # Create the client
-    client = FHEModelClient(path_dir=ROOT, key_dir=ROOT / "keys")
+    client = FHEModelClient(path_dir=str(ROOT.resolve()), key_dir=str((ROOT / "keys").resolve()))
 
     # The client first need to create the private and evaluation keys.
     client.generate_private_and_evaluation_keys()
