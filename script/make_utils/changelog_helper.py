@@ -28,7 +28,7 @@ def strip_leading_v(version_str: str):
     """Strip leading v of a version which is not SemVer compatible.
 
     Args:
-        version_str: version as string (i.e. either `vX.Y.Z` or `X.Y.Z`)
+        version_str: version as string (i.e., either `vX.Y.Z` or `X.Y.Z`)
 
     Returns:
         str: version without v

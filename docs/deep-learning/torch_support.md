@@ -81,7 +81,7 @@ the following data-sets.
 | cifar10                                                | 88% | 88%  | 75% | 75% | 88%  |
 | cifar100                                               | 73% | 88%  | 61% | 66% | 100% |
 
-Note that the accuracy on larger datasets, when the accumulator size is low, is also reduced
+Note that the accuracy on larger data-sets, when the accumulator size is low, is also reduced
 strongly.
 
 | accuracy for target <br> accumulator bit-width | 8   | 10  | 12  | 14  | 16  |
@@ -91,7 +91,7 @@ strongly.
 
 ## Running encrypted inference
 
-The model can now be used to perform encrypted inference.
+The model can now perform encrypted inference.
 
 <!--pytest-codeblocks:cont-->
 
@@ -101,7 +101,7 @@ x_test = numpy.array([numpy.random.randn(N_FEAT)])
 y_pred = quantized_module.forward(x_test, fhe="execute")
 ```
 
-In this example example, the input values `x_test` and the predicted values `y_pred` are floating points.
+In this example, the input values `x_test` and the predicted values `y_pred` are floating points.
 The quantization (resp. de-quantization) step is done in the clear within the `forward` method, before (resp. after) any FHE computations.
 
 ## Simulated FHE Inference in the clear
@@ -111,17 +111,15 @@ The user can also perform the inference on clear data. Two approaches exist:
 - `quantized_module.forward(quantized_x, fhe="simulate")`: simulates FHE execution taking into account Table Lookup errors.\
   De-quantization must be done in a second step as for actual FHE execution. Simulation takes into
   account the `p_error`/`global_p_error` parameters
-- `quantized_module.forward(quantized_x, fhe="disable")`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on the clear data is useful when debugging, but this does not perform actual FHE simulation.
+- `quantized_module.forward(quantized_x, fhe="disable")`: computes predictions in the clear on quantized data, and then de-quantize the result. The return value of this function contains the de-quantized (float) output of running the model in the clear. Calling this function on clear data is useful when debugging, but this does not perform actual FHE simulation.
 
 {% hint style="info" %}
-FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table
-Lookup error can be adjusted using `p_error`/`global_p_error` as described in the
-[approximate computation section](../advanced-topics/advanced_features.md#approximate-computations).
+FHE simulation allows to measure the impact of the Table Lookup error on the model accuracy. The Table Lookup error can be adjusted using `p_error`/`global_p_error`, as described in the [approximate computation ](../advanced-topics/advanced_features.md#approximate-computations)section.
 {% endhint %}
 
 ## Generic Quantization Aware Training import
 
-While the example above shows how to import a Brevitas/PyTorch model, Concrete ML also provides an option to import generic QAT models implemented either in PyTorch or through ONNX. Interestingly, deep learning models made with TensorFlow or Keras should be usable, by preliminary converting them to ONNX.
+While the example above shows how to import a Brevitas/PyTorch model, Concrete ML also provides an option to import generic QAT models implemented in PyTorch or through ONNX. Deep learning models made with TensorFlow or Keras should be usable by preliminary converting them to ONNX.
 
 QAT models contain quantizers in the PyTorch graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized.
 
@@ -178,7 +176,7 @@ Concrete ML supports a variety of PyTorch operators that can be used to build fu
 - [`torch.matmul`](https://pytorch.org/docs/stable/generated/torch.matmul.html)
 - [`torch.nn.Linear`](https://pytorch.org/docs/stable/generated/torch.nn.Linear.html)
 
-Please note that Concrete ML supports these operators but also the QAT equivalents from Brevitas.
+Concrete ML supports these operators but also the QAT equivalents from Brevitas.
 
 - `brevitas.nn.QuantLinear`
 - `brevitas.nn.QuantConv2d`
@@ -218,5 +216,5 @@ Please note that Concrete ML supports these operators but also the QAT equivalen
 - [`torch.nn.Threshold`](https://pytorch.org/docs/stable/generated/torch.nn.Threshold.html) -- partial support
 
 {% hint style="info" %}
-Note that the equivalent versions from `torch.functional` are also supported.
+The equivalent versions from `torch.functional` are also supported.
 {% endhint %}

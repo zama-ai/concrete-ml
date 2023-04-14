@@ -77,7 +77,7 @@ Report the ranges and bitwidths for layers that mix encrypted integer values.
 
 **Returns:**
 
-- <b>`op_names_to_report`</b> (Dict):  a dictionary with operation names as keys. For each  operation, (e.g. conv/gemm/add/avgpool ops), a range and a bitwidth are returned.  The range contains the min/max values encountered when computing the operation and  the bitwidth gives the number of bits needed to represent this range.
+- <b>`op_names_to_report`</b> (Dict):  a dictionary with operation names as keys. For each  operation, (e.g., conv/gemm/add/avgpool ops), a range and a bitwidth are returned.  The range contains the min/max values encountered when computing the operation and  the bitwidth gives the number of bits needed to represent this range.
 
 ______________________________________________________________________
 

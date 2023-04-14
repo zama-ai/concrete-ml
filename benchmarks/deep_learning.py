@@ -37,7 +37,7 @@ class _CustomCNN(nn.Module):
     """A CNN to classify images.
 
     This class also allows pruning, which should help with keeping the accumulator bit-width low.
-    This is done by defining a maximum number of active neurons (i.e. weight != 0) allowed
+    This is done by defining a maximum number of active neurons (i.e., weight != 0) allowed
     as inputs to other neurons.
     """
 
@@ -235,7 +235,7 @@ def load_data(dataset: str = "mnist") -> Tuple[np.ndarray, np.ndarray, np.ndarra
         scaler = StandardScaler()
         X = scaler.fit_transform(X)
 
-        # The Scikit-Learn MNIST data-set keeps the images flattened, we therefore need to reshape
+        # The scikit-learn MNIST data-set keeps the images flattened, we therefore need to reshape
         # them to 2D array of 8x8 (grayscale) in order to be able to apply convolutions in the
         # first layer.
         X = np.expand_dims(X.reshape((-1, 8, 8)), 1)

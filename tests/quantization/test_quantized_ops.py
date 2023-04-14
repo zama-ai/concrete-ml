@@ -1308,7 +1308,7 @@ def test_quantized_flatten(input_shape, expected_shape, axis, is_signed):
     assert q_reshaped.quantizer.zero_point == q_data.quantizer.zero_point
     assert q_reshaped.quantizer.scale == q_data.quantizer.scale
 
-    # Check that the data was not changed and is in the same order (i.e. no transposition)
+    # Check that the data was not changed and is in the same order (i.e., no transposition)
     assert numpy.all(q_data.qvalues.ravel() == q_reshaped.qvalues.ravel())
 
     # Check that the output has the expected shape

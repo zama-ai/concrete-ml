@@ -594,7 +594,7 @@ class QuantizedModule:
 
         Returns:
             op_names_to_report (Dict): a dictionary with operation names as keys. For each
-                operation, (e.g. conv/gemm/add/avgpool ops), a range and a bit-width are returned.
+                operation, (e.g., conv/gemm/add/avgpool ops), a range and a bit-width are returned.
                 The range contains the min/max values encountered when computing the operation and
                 the bit-width gives the number of bits needed to represent this range.
         """

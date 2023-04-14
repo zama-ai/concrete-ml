@@ -205,7 +205,7 @@ ______________________________________________________________________
 
 An univariate operator of an encrypted value.
 
-This operation is not really operating as a quantized operation. It is useful when the computations get fused into a TLU, as in e.g. Act(x) = x || (x + 42)).
+This operation is not really operating as a quantized operation. It is useful when the computations get fused into a TLU, as in e.g., Act(x) = x || (x + 42)).
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/quantization/base_quantized_op.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 

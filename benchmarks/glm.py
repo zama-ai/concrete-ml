@@ -337,7 +337,7 @@ def argument_manager() -> argparse.Namespace:
         "--model_samples",
         type=int,
         default=1,
-        help="number of model samples (i.e. overwrite PROGRESS_SAMPLES)",
+        help="number of model samples (i.e., overwrite PROGRESS_SAMPLES)",
     )
     parser.add_argument(
         "--fhe_samples", type=int, default=1, help="number of FHE samples on which to predict"

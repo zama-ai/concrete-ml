@@ -104,7 +104,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("BareOS", [], []),  # use bare OS
         ("torch", ["import torch", "torch.", "from torch import"], [".py"]),  # use Torch
         ("numpy", ["import numpy", "from numpy import", "numpy."], [".py"]),  # use NumPy
-        ("Numpy", ["Concrete-Numpy"], [".py"]),  # use NumPy
+        ("Numpy", [], [".py"]),  # use NumPy
         ("PoissonRegression", [], []),  # use Poisson Regression
         ("docker", ["docker ps -a"], []),  # Use Docker
         ("poetry", [], []),  # Use Poetry
@@ -114,8 +114,14 @@ def process_file(file_str: str, do_open_problematic_files=False):
             ["import brevitas", "from brevitas", "bit accuracy brevitas"],
             [".py"],
         ),  # use Brevitas
-        ("concrete-numpy", [], []),  # use Concrete-Numpy
-        ("Concrete-numpy", [], []),  # use Concrete-Numpy
+        ("concrete-numpy", [], []),  # use Concrete
+        ("concrete-Numpy", [], []),  # use Concrete
+        ("Concrete-numpy", [], []),  # use Concrete
+        ("Concrete-Numpy", [], []),  # use Concrete
+        ("concrete numpy", [], []),  # use Concrete
+        ("concrete Numpy", [], []),  # use Concrete
+        ("Concrete numpy", [], []),  # use Concrete
+        ("Concrete Numpy", [], []),  # use Concrete
         ("tool-kit", [], []),  # use toolkit
         ("tool-kits", [], []),  # use toolkits
         ("preprocessing", [], []),  # use pre-processing
@@ -133,14 +139,16 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("combinaison", [], []),  # use combination
         ("zeropoint", [], []),  # use zero-point
         ("pretrained", [], []),  # use pre-trained
-        ("i.e.,", [], []),  # ie
-        ("e.g.,", [], []),  # eg
+        ("i.e.", ["i.e.,"], []),  # i.e.,
+        ("e.g.", ["e.g.,"], []),  # e.g.,
         ("discord", [], []),  # use Discord
         ("worst-case", [], []),  # use worst case
         ("FHE friendly", [], []),  # use FHE-friendly
         ("slow-down", [], []),  # use slow down
         ("counter-part", [], []),  # use counterpart
-        ("Scikit-learn", [], []),  # use Scikit-Learn
+        ("Scikit-learn", [], []),  # use scikit-learn
+        ("Scikit-Learn", [], []),  # use scikit-learn
+        ("scikit-Learn", [], []),  # use scikit-learn
         ("it's", [], []),  # use `it is`
         ("It's", [], []),  # use `It is`
         ("let's", [], []),  # keep a consistent impersonal style
@@ -158,6 +166,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("de-activate", [], []),  # use deactivate
         ("Skorch", [], []),  # use skorch
         ("fhe", ["execute_in_fhe", "forward_fhe", "fhe_circuit", "fhe.org"], [".py"]),  # use `FHE`
+        ("tradoff", [], []),  # use trad-off
     ]
     # For later
     #   "We" or "Our", or more generally, passive form

@@ -59,7 +59,7 @@ numpy_where_body(c: ndarray, t: ndarray, f: Union[ndarray, int]) → ndarray
 
 Compute the equivalent of numpy.where.
 
-This function is not mapped to any ONNX operator (as opposed to numpy_where). It is usable by functions which are mapped to ONNX operators, e.g. numpy_div or numpy_where.
+This function is not mapped to any ONNX operator (as opposed to numpy_where). It is usable by functions which are mapped to ONNX operators, e.g., numpy_div or numpy_where.
 
 **Args:**
 

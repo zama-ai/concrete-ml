@@ -712,7 +712,7 @@ class BaseClassifier(BaseEstimator):
         # Retrieve the number of target classes
         n_classes_ = self.post_processing_params["n_classes_"]
 
-        # If the predictions only has one dimension (i.e. binary classification problem), apply the
+        # If the predictions only has one dimension (i.e., binary classification problem), apply the
         # sigmoid operator
         if n_classes_ == 2:
             y_preds = numpy_sigmoid(y_preds)[0]

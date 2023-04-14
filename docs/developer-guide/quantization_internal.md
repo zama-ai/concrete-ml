@@ -82,7 +82,7 @@ In Concrete ML, the quantized equivalent of a scikit-learn model or a PyTorch `n
 
 Built-in neural networks expose the `quantized_module` member, while a `QuantizedModule` is also the result of the compilation of custom models through `compile_torch_model` and `compile_brevitas_qat_model`.
 
-The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary maps ONNX floating point operators (e.g. Gemm) to their quantized equivalent (e.g. QuantizedGemm). For more information on implementing these operations, please see the [FHE-compatible op-graph section](fhe-op-graphs.md).
+The quantized versions of floating point model operations are stored in the `QuantizedModule`. The `ONNX_OPS_TO_QUANTIZED_IMPL` dictionary maps ONNX floating point operators (e.g., Gemm) to their quantized equivalent (e.g., QuantizedGemm). For more information on implementing these operations, please see the [FHE-compatible op-graph section](fhe-op-graphs.md).
 
 The computation graph is taken from the corresponding floating point ONNX graph exported from scikit-learn [using HummingBird](external_libraries.md#hummingbird), or from the ONNX graph exported by PyTorch. Calibration is used to obtain quantized parameters for the operations in the `QuantizedModule`. Parameters are also determined for the quantization of inputs during model deployment.
 

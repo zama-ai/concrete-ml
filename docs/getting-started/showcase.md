@@ -3,8 +3,7 @@
 This section lists several demos that apply Concrete ML to some popular machine learning problems. They show
 how to build ML models that perform well under FHE constraints, and then how to perform the conversion to FHE.
 
-Simpler tutorials that discuss only model usage and compilation are also available for
-the [built-in models](../built-in-models/ml_examples.md) and for [deep learning](../deep-learning/examples.md).
+Simpler tutorials that discuss only model usage and compilation are also available for [built-in models](../built-in-models/ml_examples.md) and [deep learning](../deep-learning/examples.md).
 
 <table data-view="cards">
    <thead>
