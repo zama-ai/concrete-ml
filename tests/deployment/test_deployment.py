@@ -16,6 +16,8 @@ from concrete.ml.pytest.utils import instantiate_model_generic
 from concrete.ml.sklearn.linear_model import LogisticRegression
 
 STATUS_OK = 200
+# Internal AWS AMI with private credentials
+AMI_ID_WITH_CREDENTIALS = "ami-08fe791e2421787f1"
 
 
 def test_timeout_ssh_connection():
@@ -56,7 +58,6 @@ def test_deploy(load_data, tmp_path):  # pylint: disable=too-many-locals,too-man
            tmp_path (Path): temp path
     (Callable): load data
     """
-    ami_id_with_access = "ami-08fe791e2421787f1"
     # Easier than taking the list of fitted models
     model_class = LogisticRegression
     n_bits = 2
@@ -98,7 +99,7 @@ def test_deploy(load_data, tmp_path):  # pylint: disable=too-many-locals,too-man
         region_name="eu-west-3",
         verbose=True,
         terminate_on_shutdown=True,
-        ami_id=ami_id_with_access,
+        ami_id=AMI_ID_WITH_CREDENTIALS,
     ) as instance_metadata:
 
         metadata = deploy_to_aws(
