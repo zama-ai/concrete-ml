@@ -78,7 +78,9 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("bit width", [], []),  # use `bit-width`
         ("inputset", [], [".py"]),  # use `input-set`
         ("dataset", [], [".py"]),  # use `data-set`
+        ("datasets", [], [".py"]),  # use `data-sets`
         ("data set", [], []),  # use `data-set`
+        ("data sets", [], []),  # use `data-sets`
         ("data-base", [], []),  # use `database`
         ("code-base", [], []),  # use `codebase`
         ("dequantize", [], []),  # use de-quantize
@@ -139,8 +141,8 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("combinaison", [], []),  # use combination
         ("zeropoint", [], []),  # use zero-point
         ("pretrained", [], []),  # use pre-trained
-        ("i.e.", ["i.e.,"], []),  # i.e.,
-        ("e.g.", ["e.g.,"], []),  # e.g.,
+        ("i.e.", ["i.e.,"], []),  # use i.e.,
+        ("e.g.", ["e.g.,"], []),  # use e.g.,
         ("discord", [], []),  # use Discord
         ("worst-case", [], []),  # use worst case
         ("FHE friendly", [], []),  # use FHE-friendly
@@ -166,7 +168,13 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("de-activate", [], []),  # use deactivate
         ("Skorch", [], []),  # use skorch
         ("fhe", ["execute_in_fhe", "forward_fhe", "fhe_circuit", "fhe.org"], [".py"]),  # use `FHE`
-        ("tradoff", [], []),  # use trad-off
+        ("tradeoff", [], []),  # use trade-off
+        ("th", [], []),  # use the
+        ("appropriat", [], []),  # use appropriate
+        ("constrains", [], []),  # use constraints
+        ("CML", [], []),  # use Concrete ML
+        ("CN", ["CNN"], []),  # use Concrete Python
+        ("CP", [], []),  # use Concrete Python
     ]
     # For later
     #   "We" or "Our", or more generally, passive form
