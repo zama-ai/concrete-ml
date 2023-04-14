@@ -47,7 +47,12 @@ echo "${CP_VERSION}" > ${TMP_FILE_CP_VERSION}
 UNAME=$(uname)
 if [ "$UNAME" == "Darwin" ]
 then
-    OS=mac
+  if [ "$(uname -m)" == "arm64" ]
+  then
+    OS=mac_silicon
+  else
+    OS=mac_intel
+  fi
 elif [ "$UNAME" == "Linux" ]
 then
     OS=linux
@@ -90,11 +95,11 @@ then
     fi
 
     rm -rf $TMP_VENV_PATH/tmp_venv
-    python3 -m venv $TMP_VENV_PATH/tmp_venv
+    python -m venv $TMP_VENV_PATH/tmp_venv
 
     # Check that we use a recent python (eg, if we were using an old one, it may create a deprecated
     # license file)
-    CHECK_VERSION=$(python3 --version)
+    CHECK_VERSION=$(python --version)
     IS_CORRECT_PYTHON=0
 
     if [[ "${CHECK_VERSION}" == *"3.8"* ]]; then
@@ -107,7 +112,7 @@ then
 
     if [ $IS_CORRECT_PYTHON -eq 0 ]
     then
-        echo "Error, please don't try to make licenses with an old python (here: $CHECK_VERSION)"
+        echo "Error, please don't try to make licenses with an unsupported python version (here: $CHECK_VERSION)"
         exit 255
     else
         echo "Make licenses with python $CHECK_VERSION"
