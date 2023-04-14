@@ -283,11 +283,11 @@ def tree_to_numpy(
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
 
     # ONNX graph pre-processing to make the model FHE friendly
-    # i.e. delete irrelevant nodes and cut the graph before the final ensemble sum)
+    # i.e., delete irrelevant nodes and cut the graph before the final ensemble sum)
     tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs)
 
     # Tree values pre-processing
-    # i.e. mainly predictions quantization
+    # i.e., mainly predictions quantization
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 

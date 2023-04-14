@@ -881,7 +881,7 @@ ______________________________________________________________________
 
 ## <kbd>class</kbd> `SingleMixNet`
 
-Torch model that with a single conv layer that produces the output, e.g. a blur filter.
+Torch model that with a single conv layer that produces the output, e.g., a blur filter.
 
 <a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/torch_models.py#L897"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 

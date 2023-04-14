@@ -52,7 +52,7 @@ from concrete.ml.torch.compile import (
 # INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
 # (as well as the input of the network itself)
 # Note that when comparing two predictions with few features the r2 score is brittle
-# thus we prefer to avoid values that are too low (e.g. 1, 2)
+# thus we prefer to avoid values that are too low (e.g., 1, 2)
 INPUT_OUTPUT_FEATURE = [5]
 
 
@@ -268,7 +268,7 @@ def accuracy_test_rounding(
     for i in range(x_test[0].shape[0]):
 
         # Extract example i for each tensor in the test tuple with quantized values while
-        # keeping the dimension of the original tensors (e.g. if it is a tuple of two (100, 10)
+        # keeping the dimension of the original tensors (e.g., if it is a tuple of two (100, 10)
         # tensors, then each quantized value becomes a tuple of two tensors of shape (1, 10).
         q_x = tuple(q[[i]] for q in to_tuple(qtest))
 
@@ -309,7 +309,7 @@ def accuracy_test_rounding(
 
     # Check that high precision gives a better match than low precision
     # MSE is preferred over MAE here to spot a lack of diversity in the 2 bits rounded model
-    # e.g. results_low_precision = mean(results) should impact more MSE than MAE.
+    # e.g., results_low_precision = mean(results) should impact more MSE than MAE.
     mse_high_precision = numpy.mean(numpy.square(numpy.subtract(results, results_high_precision)))
     mse_low_precision = numpy.mean(numpy.square(numpy.subtract(results, results_low_precision)))
     assert mse_high_precision <= mse_low_precision, "Rounding is not working as expected."
@@ -682,7 +682,7 @@ def test_pretrained_mnist_qat(
 
         # Extract example i for each tensor in the tuple input-set
         # while keeping the dimension of the original tensors.
-        # e.g. if input-set is a tuple of two (100, 10) tensors
+        # e.g., if input-set is a tuple of two (100, 10) tensors
         # then q_x becomes a tuple of two tensors of shape (1, 10).
         x = tuple(input[[i]] for input in to_tuple(inputset))
         result = numpy.argmax(quantized_numpy_module.forward(*x, fhe="simulate"))

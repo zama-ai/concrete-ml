@@ -63,8 +63,8 @@ class SparseQuantNeuralNetImpl(nn.Module):
 
 While Brevitas provides many types of quantization, for Concrete ML, a custom _"mixed integer"_ quantization applies. This _"mixed integer"_ quantization is much simpler than the _"integer only"_ mode of Brevitas. The _"mixed integer"_ network design is defined as:
 
-- all weights and activations of convolutional, linear and pooling layers must be quantized (e.g. using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
-- PyTorch floating-point versions of univariate functions can be used. E.g. `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`. See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
+- all weights and activations of convolutional, linear and pooling layers must be quantized (e.g., using Brevitas layers, `QuantConv2D`, `QuantAvgPool2D`, `QuantLinear`)
+- PyTorch floating-point versions of univariate functions can be used (e.g., `torch.relu`, `nn.BatchNormalization2D`, `torch.max` (encrypted vs. constant), `torch.add`, `torch.exp`). See the [PyTorch supported layers page](../deep-learning/torch_support.md) for a full list.
 
 The _"mixed integer"_ mode used in Concrete ML neural networks is based on the [_"integer only"_ Brevitas quantization](https://github.com/Xilinx/brevitas#low-precision-integer-only-lenet) that makes both weights and activations representable as integers during training. However, through the use of lookup tables in Concrete ML, floating point univariate PyTorch functions are supported.
 

@@ -7,7 +7,7 @@ Pruning is a method to reduce neural network complexity, usually applied in orde
 Pruning is used in Concrete ML for two types of neural networks:
 
 1. Built-in [neural networks](../built-in-models/neural-networks.md) include a pruning mechanism that can be parameterized by the user. The pruning type is based on L1-norm. To comply with FHE constraints, Concrete ML uses _unstructured_ pruning, as the aim is not to eliminate neurons or convolutional filters completely, but to decrease their accumulator bit-width.
-1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) (e.g.L1-Unstructured) to good effect.
+1. Custom neural networks, to work well under FHE constraints, should include pruning. When implemented with PyTorch, you can use the [framework's pruning mechanism](https://pytorch.org/tutorials/intermediate/pruning_tutorial.html) (e.g., L1-Unstructured) to good effect.
 
 ## Basics of pruning
 
@@ -43,6 +43,6 @@ $$\Omega = \mathsf{floor} \left( \frac{2^{n_{\mathsf{max}}} - 1}{(2^{n_{\mathsf{
 
 Here, $$n_{\mathsf{max}} = 16$$ is the maximum precision allowed.
 
-For example, if $$n_{\mathsf{weights}} = 2$$ and $$n_{\mathsf{inputs}} = 2$$ with $$n_{\mathsf{max}} = 16$$, the worst case is where all inputs and weights are equal to their maximal value $$2^2-1=3$$. In this case, there can be at most $$\Omega = 7281$$ elements in the multi-sums.
+For example, if $$n_{\mathsf{weights}} = 2$$ and $$n_{\mathsf{inputs}} = 2$$ with $$n_{\mathsf{max}} = 16$$, the worst case scenario occurs when all inputs and weights are equal to their maximal value $$2^2-1=3$$. There can be at most $$\Omega = 7281$$ elements in the multi-sums.
 
-In practice, the distribution of the weights of a neural network is Gaussian, with many weights either 0 or having a small value. This enables exceeding the worst case number of active neurons without having to risk overflowing the bit-width. In built-in neural networks, the parameter `n_hidden_neurons_multiplier` is multiplied with $$\Omega$$ to determine the total number of non-zero weights that should be kept in a neuron.
+The distribution of the weights of a neural network is Gaussian, with many weights either 0 or having a small value. This enables exceeding the worst case number of active neurons without having to risk overflowing the bit-width. In built-in neural networks, the parameter `n_hidden_neurons_multiplier` is multiplied with $$\Omega$$ to determine the total number of non-zero weights that should be kept in a neuron.

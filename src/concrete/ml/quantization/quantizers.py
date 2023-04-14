@@ -96,7 +96,8 @@ class QuantizationOptions:
     is_narrow: bool = False
 
     # Determines whether the values handled by the quantizer were produced by a custom
-    # quantization layer that has pre-computed scale and zero-point (i.e. ONNX brevitas quant layer)
+    # quantization layer that has pre-computed scale and zero-point
+    #   (i.e., ONNX brevitas quant layer)
     is_precomputed_qat: bool = False
 
     def __init__(

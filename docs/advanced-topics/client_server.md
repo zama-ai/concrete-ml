@@ -9,7 +9,7 @@ Concrete ML provides functionality to deploy FHE machine learning models in a cl
 The diagram above shows the steps that a developer goes through to prepare a model for encrypted inference in a client/server setting. The training of the model and its compilation to FHE are performed on a development machine. Three different files are created when saving the model:
 
 - `client.zip` contains `client.specs.json` which lists the secure cryptographic parameters needed for the client to generate private and evaluation keys. It also contains `serialized_processing.json` which describes the pre-processing and post-processing required by the machine learning model, such as quantization parameters to quantize the input and de-quantize the output.
-- `server.zip` contains the compiled model. This file is sufficient to run the model on a server. The compiled model is machine-architecture specific (i.e. a model compiled on x86 cannot run on ARM).
+- `server.zip` contains the compiled model. This file is sufficient to run the model on a server. The compiled model is machine-architecture specific (i.e., a model compiled on x86 cannot run on ARM).
 
 The compiled model (`server.zip`) is deployed to a server and the cryptographic parameters (`client.zip`) are shared with the clients. In some settings, such as a phone application, the `client.zip` can be directly deployed on the client device and the server does not need to host it.
 
@@ -35,10 +35,10 @@ For a complete example, see [the client-server notebook](https://github.com/zama
 
 ### AWS
 
-We provide scripts that leverage `boto3` to deploy any Concrete ML model to AWS.
-The first required step is to properly setup AWS CLI on your system.
+We provide scripts that leverage `boto3` to deploy any CML model to AWS.
+The first required step is to properly set up AWS CLI on your system.
 To do so please follow the instructions in [AWS Documentation](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
-To create Access keys to configure AWS CLI go to the [approriate panel on AWS website](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/security_credentials?section=IAM_credentials).
+To create Access keys to configure AWS CLI, go to the [appropriate panel on AWS website](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/security_credentials?section=IAM_credentials).
 
 Once this first setup is done you can simply launch `python src/concrete/ml/deployment/deploy_to_aws.py --path-to-model <path_to_your_serialized_model>` from the root of the repository to create an instance that runs a FastAPI server serving the model.
 

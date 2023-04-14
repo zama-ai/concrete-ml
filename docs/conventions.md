@@ -6,14 +6,14 @@ Let's use following conventions for the docs. If a new convention needs to be de
 
 ## Style
 
-1. The documentation can address the user directly e.g. "you can find out more at ..", but this
+1. The documentation can address the user directly e.g., "you can find out more at ..", but this
    style should not be abused, do not be too colloquial !
 1. The documentation should not refer to its writers or to Concrete ML developers/Zama as "we",
    and thus it should not use "our" either.
 
 ## Terms
 
-1. Use hyphenated versions for portmanteaus, unless the term is in the dictionary e.g.
+1. Use hyphenated versions for portmanteaus, unless the term is in the dictionary, example:
    - bit-width \[not: bitwidth, bit width\]
    - input-set, data-set
    - database, codebase is fine (not data-base, code-base)
@@ -48,4 +48,4 @@ Let's use following conventions for the docs. If a new convention needs to be de
 
 ## Links
 
-- Use links from doc root (i.e. ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move
+- Use links from doc root (i.e., ../../user/explanation/quantization.md) instead of using the smallest number of ../ that works; it makes files easier to move

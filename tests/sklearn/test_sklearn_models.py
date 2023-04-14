@@ -1160,13 +1160,13 @@ def test_predict_correctness(
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # How many samples for tests in FHE (i.e. predict with fhe = "execute" or "simulate")
+    # How many samples for tests in FHE (i.e., predict with fhe = "execute" or "simulate")
     if is_weekly_option or simulate:
         number_of_tests_in_fhe = 5
     else:
         number_of_tests_in_fhe = 1
 
-    # How many samples for tests in quantized module (i.e. predict with fhe = "disable")
+    # How many samples for tests in quantized module (i.e., predict with fhe = "disable")
     if is_weekly_option:
         number_of_tests_in_non_fhe = 50
     else:

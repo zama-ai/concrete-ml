@@ -7,8 +7,8 @@ Several approaches can be used to reduce the overall latency of a neural network
 
 ## Circuit bit-width optimization
 
-[Quantization-aware training](../advanced-topics/quantization.md) and [pruning](../advanced-topics/pruning.md) introduce specific hyper-parameters that influence the accumulator sizes.
-It is possible to chose quantization and pruning configurations that reduce the accumulator size. A tradeoff between latency and accuracy can be obtained by varying these hyper-parameters as described in the [deep learning design guide](torch_support.md#configuring-quantization-parameters).
+[Quantization Aware Training](../advanced-topics/quantization.md) and [pruning](../advanced-topics/pruning.md) introduce specific hyper-parameters that influence the accumulator sizes.
+It is possible to chose quantization and pruning configurations that reduce the accumulator size. A trade-off between latency and accuracy can be obtained by varying these hyper-parameters as described in the [deep learning design guide](torch_support.md#configuring-quantization-parameters).
 
 ## Structured pruning
 
@@ -17,9 +17,9 @@ custom models, it is recommended to use the [torch-pruning](https://github.com/V
 
 ## Rounded activations and quantizers
 
-Reducing the bit-width of the inputs to the TLU operations is a major source of improvements in the latency. Post-training,
+Reducing the bit-width of the inputs to the Table Lookup (TLU) operations is a major source of improvements in the latency. Post-training,
 it is possible to leverage some properties of the fused activation and quantization functions expressed in the TLUs to
-further reduce the accumulator. This is achieved through the _rounded PBS_ feature as described in the [rounded activations and quantizers reference](../advanced-topics/advanced_features.md#rounded-activations-and-quantizers). Adjusting the rounding amount, relative to the initial accumulator size, can bring large improvements in the latency while keeping constant accuracy.
+further reduce the accumulator. This is achieved through the _rounded PBS_ feature as described in the [rounded activations and quantizers reference](../advanced-topics/advanced_features.md#rounded-activations-and-quantizers). Adjusting the rounding amount, relative to the initial accumulator size, can bring large improvements in latency while maintaining accuracy.
 
 ## TLU error probability adjustment
 

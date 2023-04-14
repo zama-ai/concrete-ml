@@ -52,7 +52,7 @@ Sparse Quantized Neural Network constructor.
 - <b>`n_accum_bits`</b>:  Maximal allowed bitwidth of intermediate accumulators
 - <b>`n_hidden_neurons_multiplier`</b>:  The number of neurons on the hidden will be the number  of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note that  pruning is used to adjust the accumulator size to attempt to  keep the maximum accumulator bitwidth to  `n_accum_bits`, meaning that not all hidden layer neurons will be active.  The default value for `n_hidden_neurons_multiplier` is chosen for small dimensions  of the input. Reducing this value decreases the FHE inference time considerably  but also decreases the robustness and accuracy of model training.
 - <b>`n_prune_neurons_percentage`</b>:  How many neurons to prune on the hidden layers. This  should be used mostly through the dedicated `.prune()` mechanism. This can  be used in when setting `n_hidden_neurons_multiplier` high (3-4), once good accuracy  is obtained, to speed up the model in FHE.
-- <b>`activation_function`</b>:  a torch class that is used to construct activation functions in  the network (e.g. torch.ReLU, torch.SELU, torch.Sigmoid, etc)
+- <b>`activation_function`</b>:  a torch class that is used to construct activation functions in  the network (e.g., torch.ReLU, torch.SELU, torch.Sigmoid, etc)
 - <b>`quant_narrow `</b>:  whether this network should use narrow range quantized integer values
 - <b>`quant_signed `</b>:  whether to use signed quantized integer values
 

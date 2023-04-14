@@ -5,9 +5,9 @@ FHE simulation, the key-cache functionality that helps speed-up FHE result debug
 
 ## Simulation
 
-The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation) of Concrete ML provides a way to evaluate, using clear data, the results that ML models would produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with [Concrete's simulation](https://docs.zama.ai/concrete/tutorials/simulation).
+The [simulation functionality](../advanced-topics/compilation.md#fhe-simulation) of Concrete ML provides a way to evaluate, using clear data, the results that ML models produce on encrypted data. The simulation includes any probabilistic behavior FHE may induce. The simulation is implemented with [Concrete's simulation](https://docs.zama.ai/concrete/tutorials/simulation).
 
-The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a tradeoff between number of bits and FHE execution speed, the simulation can help to find the optimal model design.
+The simulation mode can be useful when developing and iterating on an ML model implementation. As FHE non-linear models work with integers up to 16 bits, with a trade-off between number of bits and FHE execution speed, the simulation can help to find the optimal model design.
 
 Simulation is much faster than FHE execution. This allows for faster debugging and model optimization. For example, this was used for the red/blue contours in the [Classifier Comparison notebook](../built-in-models/ml_examples.md), as computing in FHE for the whole grid and all the classifiers would take significant time.
 
@@ -57,7 +57,7 @@ concrete_clf.compile(X, debug_config)
 
 ## Compilation debugging
 
-The following example produces a neural network that is not FHE-compatible:
+The following produces a neural network that is not FHE-compatible:
 
 ```python
 import numpy
@@ -97,7 +97,7 @@ except RuntimeError as err:
     print(err)
 ```
 
-Upon execution, the compiler will raise the following error within the graph representation:
+Upon execution, the Compiler will raise the following error within the graph representation:
 
 ```
 Function you are trying to compile cannot be converted to MLIR:
@@ -115,11 +115,7 @@ Function you are trying to compile cannot be converted to MLIR:
 return %8
 ```
 
-The error `table lookups are only supported on circuits with up to 16-bit integers` indicates that
-the 16-bit limit on the input of the Table Lookup operation has been exceeded. To pinpoint the
-model layer that causes the error Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First the
-model must be compiled so that it can be [simulated](#simulation). Next, calling the function on the
-module above returns the following:
+The error `table lookups are only supported on circuits with up to 16-bit integers` indicates that the 16-bit limit on the input of the Table Lookup operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](#simulation). Then, calling the function on the module above returns the following:
 
 ```
 quantized_numpy_module = compile_torch_model(
@@ -141,8 +137,7 @@ print(res)
 }
 ```
 
-To make this network FHE-compatible one can reduce the bit-width of the second layer named `fc2`. To do this,
-a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
+To make this network FHE-compatible one can reduce the bit-width of the second layer named `fc2`. To do this, a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
 
 Reducing the number of neurons in this layer resolves the error and makes the network FHE-compatible:
 
@@ -160,11 +155,11 @@ quantized_numpy_module = compile_torch_model(
 
 ## Complexity analysis
 
-In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, than simpler encrypted operations such as matrix multiplications, convolution, or additions.
+In FHE, univariate functions are encoded as table lookups, which are then implemented using Programmable Bootstrapping (PBS). PBS is a powerful technique but will require significantly more computing resources, and thus time, compared to simpler encrypted operations such as matrix multiplications, convolution, or additions.
 
 Furthermore, the cost of PBS will depend on the bit-width of the compiled circuit. Every additional bit in the maximum bit-width raises the complexity of the PBS by a significant factor. It may be of interest to the model developer, then, to determine the bit-width of the circuit and the amount of PBS it performs.
 
-This can be done by inspecting the MLIR code produced by the compiler:
+This can be done by inspecting the MLIR code produced by the Compiler:
 
 <!--pytest-codeblocks:cont-->
 

@@ -30,7 +30,7 @@ def main(args):
         raise RuntimeError(f"Invalid version: {to_version}")
 
     # Transform the parsed version to a branch name
-    # e.g. 1.0.0-rc.1 => 1.0.x
+    # e.g., 1.0.0-rc.1 => 1.0.x
     to_version = VersionInfo.parse(to_version)
     to_version = str(to_version.major) + "." + str(to_version.minor) + ".x"
 
