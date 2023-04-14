@@ -84,7 +84,7 @@ class QuantizedOp:
     # The ONNX name of this op instance (eg "Conv_9", "MatMul_5" etc.)
     op_instance_name: str
 
-    # Determines if this op computes a tensor that is a graph output, i.e. a tensor
+    # Determines if this op computes a tensor that is a graph output, i.e., a tensor
     # that will be decrypted and de-quantized in the clear
     produces_graph_output = False
 
@@ -441,7 +441,7 @@ class QuantizedOp:
         """Retrieve all the inputs of an operator in the computational graph.
 
         This helper method will prepare a list of inputs to an operator. Inputs can be variables,
-        i.e. encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
+        i.e., encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
         the slots of a list, as the order of inputs is important.
 
         Usually the input list is populated with QuantizedArrays. Operators that require the

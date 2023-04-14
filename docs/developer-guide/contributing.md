@@ -16,7 +16,7 @@ git checkout -b short-description_$issue_id
 git checkout -b $issue_id_short-description
 ```
 
-e.g.
+For example:
 
 ```shell
 git checkout -b feat/explicit-tlu_11
@@ -62,7 +62,7 @@ Concrete ML uses a consistent commit naming scheme, and you are expected to foll
 make show_scope
 ```
 
-e.g.
+For example:
 
 ```shell
 git commit -m "feat: implement bounds checking"

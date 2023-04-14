@@ -101,7 +101,7 @@ def test_sum(
     # Compute the expected sum
     # As the calibration input-set and inputs are ran over several samples, we need to apply the
     # sum on all the given axes except the first one (the sample axis), including when axes is
-    # set to None (i.e. sum over all axes). The same transformation is done within the ReduceSum
+    # set to None (i.e., sum over all axes). The same transformation is done within the ReduceSum
     # operator.
     axis = (
         tuple(axis + 1 for axis in axes)

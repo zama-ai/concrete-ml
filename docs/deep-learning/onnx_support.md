@@ -9,7 +9,7 @@ ONNX models can be compiled by directly importing models that are already quanti
 The following example shows how to compile an ONNX model using PTQ. The model was initially trained using Keras before being exported to ONNX. The training code is not shown here.
 
 {% hint style="warning" %}
-This example uses Post-Training Quantization, i.e. the quantization is not performed during training. Thus, this model would not have good performance in FHE. Quantization Aware Training should be added by the model developer. Additionally, importing QAT ONNX models can be done [as shown below](onnx_support.md#quantization-aware-training).
+This example uses Post-Training Quantization, i.e., the quantization is not performed during training. This model would not have good performance in FHE. Quantization Aware Training should be added by the model developer. Additionally, importing QAT ONNX models can be done [as shown below](onnx_support.md#quantization-aware-training).
 {% endhint %}
 
 ```python
@@ -83,7 +83,7 @@ print("Equality:           ", numpy.sum(y_clear == y_fhe), "over", numpy.size(y_
 ```
 
 {% hint style="warning" %}
-While Keras was used in this example, it is not officially supported as additional work is needed to test all of Keras' types of layer and models.
+While Keras was used in this example, it is not officially supported. Additional work is needed to test all of Keras's types of layers and models.
 {% endhint %}
 
 ## Quantization Aware Training

@@ -677,7 +677,7 @@ class TinyQATCNN(nn.Module):
 
         """
 
-        # Maximum number of active neurons (i.e. corresponding weight != 0)
+        # Maximum number of active neurons (i.e., corresponding weight != 0)
 
         # Go through all the convolution layers
         for layer in (self.conv1, self.conv2, self.conv3):

@@ -405,7 +405,7 @@ def load_data():
                 generated_regression[1] = numpy.abs(generated_regression[1]) + 1
 
             # If the model is a neural network and if the data-set only contains a single target
-            # (e.g. of shape (n,)), reshape the target array (e.g. to shape (n,1))
+            # (e.g., of shape (n,)), reshape the target array (e.g., to shape (n,1))
             if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
                 if len(generated_regression[1].shape) == 1:
                     generated_regression[1] = generated_regression[1].reshape(-1, 1)

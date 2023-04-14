@@ -290,7 +290,7 @@ def numpy_gemm(
     #
     #       y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
     #
-    # in an efficient way, i.e. to make tracing directly optimized, without expecting any opt from
+    # in an efficient way, i.e., to make tracing directly optimized, without expecting any opt from
     # the compiler here
 
     y = numpy.matmul(a_prime, b_prime)

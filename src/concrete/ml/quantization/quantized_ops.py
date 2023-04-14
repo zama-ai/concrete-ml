@@ -858,7 +858,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         )
 
         # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
-        # parameters (i.e. were fully constructed). This should always be the case, except
+        # parameters (i.e., were fully constructed). This should always be the case, except
         # during the UniformQuantizer initialization when the zero_point can exist as None
         assert q_input.quantizer.zero_point is not None
 
@@ -986,7 +986,7 @@ class QuantizedMaxPool(QuantizedOp):
         q_input: QuantizedArray = prepared_inputs[0]
 
         # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
-        # parameters (i.e. were fully constructed). This should always be the case, except
+        # parameters (i.e., were fully constructed). This should always be the case, except
         # during the UniformQuantizer initialization when the zero_point can exist as None
         assert q_input.quantizer.zero_point is not None
 
@@ -1556,7 +1556,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         """Retrieve all the inputs of an operator in the computational graph.
 
         This helper method will prepare a list of inputs to an operator. Inputs can be variables,
-        i.e. encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
+        i.e., encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
         the slots of a list, as the order of inputs is important.
 
         Usually the input list is populated with QuantizedArrays. Operators that require the
@@ -1607,7 +1607,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
 
         # As the calibration input-set and inputs are ran over several samples, we need to apply the
         # sum on all the given axes except the first one (the sample axis), including when axes is
-        # set to None (i.e. sum over all axes).
+        # set to None (i.e., sum over all axes).
         prepared_inputs[1] = (
             tuple(axes + 1) if axes is not None else tuple(numpy.arange(1, len(shape)))
         )

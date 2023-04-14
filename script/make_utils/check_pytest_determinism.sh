@@ -12,7 +12,7 @@ set +e
 RANDOMLY_SEED=$RANDOMLY_SEED TEST=tests/seeding/test_seeding.py make pytest_one_single_cpu > "${OUTPUT_DIRECTORY}/one.txt"
 
 # This would not be readable
-# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
+# SC2181: Check exit code directly with e.g., 'if mycmd;', not indirectly with $?.
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]
 then
@@ -24,7 +24,7 @@ fi
 RANDOMLY_SEED=$RANDOMLY_SEED TEST=tests/seeding/test_seeding.py make pytest_one_single_cpu > "${OUTPUT_DIRECTORY}/two.txt"
 
 # This would not be readable
-# SC2181: Check exit code directly with e.g. 'if mycmd;', not indirectly with $?.
+# SC2181: Check exit code directly with e.g., 'if mycmd;', not indirectly with $?.
 # shellcheck disable=SC2181
 if [ $? -ne 0 ]
 then
@@ -40,7 +40,7 @@ set -e
 diff "${OUTPUT_DIRECTORY}/one.txt" "${OUTPUT_DIRECTORY}/two.txt" -I "passed in"
 echo "Successful determinism check"
 
-# Now, check --forcing_random_seed, i.e. check that one can reproduce conditions of a bug in a single file
+# Now, check --forcing_random_seed, i.e., check that one can reproduce conditions of a bug in a single file
 # and test without having to relaunch the full pytest, by just picking the right --forcing_random_seed
 
 LIST_FILES=$(grep "tests/seeding/test_seeding.py" "${OUTPUT_DIRECTORY}/one.txt")
@@ -60,7 +60,7 @@ do
 
     echo "poetry run pytest $x -xsvv $EXTRA_OPTION --randomly-dont-reset-seed --forcing_random_seed " "${LIST_SEED[WHICH]}"
 
-    # Only take lines after the header, i.e. after line with 'collecting'
+    # Only take lines after the header, i.e., after line with 'collecting'
     # SC2086 is about double quote to prevent globbing and word splitting, but here, it makes that we have
     # an empty arg in pytest, which is considered as "do pytest for all files"
     # shellcheck disable=SC2086

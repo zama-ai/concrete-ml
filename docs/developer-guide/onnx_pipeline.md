@@ -6,7 +6,7 @@ As ONNX is becoming the standard exchange format for neural networks, this allow
 
 ## Torch to NumPy conversion using ONNX
 
-The diagram below gives an overview of the steps involved in the conversion of an ONNX graph to a FHE-compatible format (i.e. a format that can be compiled to FHE through Concrete).
+The diagram below gives an overview of the steps involved in the conversion of an ONNX graph to a FHE-compatible format (i.e., a format that can be compiled to FHE through Concrete).
 
 All Concrete ML built-in models follow the same pattern for FHE conversion:
 

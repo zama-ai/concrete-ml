@@ -24,7 +24,7 @@ Compilation is performed for built-in models with the `compile` method :
     clf.compile(X_train)
 ```
 
-and, for custom models, with one of the `compile_brevitas_qat_model` (for Brevitas models with quantization aware training) or `compile_torch_model` (PyTorch models using post-training quantization) functions:
+For custom models, with one of the `compile_brevitas_qat_model` (for Brevitas models with Quantization Aware Training) or `compile_torch_model` (PyTorch models using Post-Training Quantization) functions:
 
 <!--pytest-codeblocks:skip-->	
 
@@ -32,13 +32,13 @@ and, for custom models, with one of the `compile_brevitas_qat_model` (for Brevit
     quantized_numpy_module = compile_brevitas_qat_model(torch_model, X_train)
 ```
 
-## FHE Simulation
+## FHE simulation
 
 The first step in the list above takes a Python function implemented using the Concrete [supported operation set](https://docs.zama.ai/concrete/getting-started/compatibility) and transforms it into an executable operation graph.
 
 The result of this single step of the compilation pipeline allows the:
 
-- execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but it is much faster than executing in FHE. This mode is useful for debugging, i.e. to find the appropriate model hyper-parameters
+- execution of the op-graph, which includes TLUs, on clear non-encrypted data. This is, of course, not secure, but it is much faster than executing in FHE. This mode is useful for debugging, especially when looking for appropriate model hyper-parameters
 - verification of the maximum bit-width of the op-graph and the intermediary bit-widths of model layers, to evaluate their impact on FHE execution latency
 
 Simulation is enabled for all Concrete ML models once they are compiled as shown above. Obtaining the simulated predictions of the models is done by setting the `fhe="simulate"` argument to prediction methods:
@@ -59,7 +59,7 @@ Moreover, the maximum accumulator bit-width is determined as follows:
 
 ## A simple Concrete example
 
-While Concrete ML hides away all the Concrete code that performs model inference, it can be useful to understand how Concrete code works. Here is a toy example for a simple linear regression model on integers. Note that this is just an example to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
+While Concrete ML hides away all the Concrete code that performs model inference, it can be useful to understand how Concrete code works. Here is a toy example for a simple linear regression model on integers to illustrate compilation concepts. Generally, it is recommended to use the [built-in models](../built-in-models/linear.md), which provide linear regression out of the box.
 
 ```python
 import numpy

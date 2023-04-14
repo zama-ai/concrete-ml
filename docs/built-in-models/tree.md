@@ -9,7 +9,7 @@ Concrete ML provides several of the most popular `classification` and `regressio
 |  [RandomForestClassifier](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestclassifier)  | [RandomForestClassifier](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier) |
 |   [RandomForestRegressor](../developer-guide/api/concrete.ml.sklearn.rf.md#class-randomforestregressor)   |  [RandomForestRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor)   |
 
-In addition to support for scikit-learn, Concrete ML also supports [XGBoost](https://xgboost.ai/) 's `XGBClassifier`:
+Concrete ML also supports [XGBoost](https://xgboost.ai/)'s `XGBClassifier`:
 
 |                                      Concrete ML                                       |                                                XGboost                                                 |
 | :------------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------------------------: |
@@ -17,10 +17,7 @@ In addition to support for scikit-learn, Concrete ML also supports [XGBoost](htt
 |  [XGBRegressor](../developer-guide/api/concrete.ml.sklearn.xgb.md#class-xgbregressor)  |  [XGBRegressor](https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor)  |
 
 {% hint style="info" %}
-For a formal explanation of the mechanisms that enable FHE-compatible decision trees, please see the following paper.
-
-[Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254)
-
+For a formal explanation of the mechanisms that enable FHE-compatible decision trees, please see the following paper: [Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254)
 {% endhint %}
 
 ## Example
@@ -96,7 +93,7 @@ model.compile(X_train_transformed)
 
 # Perform the inference in FHE
 # Warning: this will take a while. It is recommended to run this with a very small batch of
-# example first (e.g. N_TEST_FHE = 1)
+# example first (e.g., N_TEST_FHE = 1)
 # Note that here the encryption and decryption is done behind the scene.
 N_TEST_FHE = 1
 y_pred_fhe = model.predict(X_test_transformed[:N_TEST_FHE], fhe="execute")
@@ -109,15 +106,15 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have a FHE inference equal to the clear inference
 ```
 
-In a similar example, the decision boundaries of the Concrete ML model can be plotted, and, then, compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
+Similarly, the decision boundaries of the Concrete ML model can be plotted, then compared to the results of the classical XGBoost model executed in the clear. A 6-bits model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
 
 ![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 
 ## Quantization parameters
 
-This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree models. As the quantization is done individually on each input feature, the impact of quantization is strongly reduced, and, thus, FHE tree-based models reach similar accuracy as their floating point equivalents. Using 6 bits for quantization makes the Concrete ML model reach or exceed the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
+This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree models. As quantization is done individually on each input feature, the impact of quantization is strongly reduced, and, thus, FHE tree-based models reach similar accuracy as their floating point equivalents. Using 6 bits for quantization makes the Concrete ML model reach or exceed the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
 
-When `n_bits` is set low, the quantization process may sometimes create some artifacts that could lead to a decrease in performance, but the execution speed in FHE decreases. In this way, it is possible to adjust the accuracy/speed trade-off, and some accuracy can be recovered by increasing the `n_estimators`.
+When `n_bits` is set low, the quantization process may sometimes create some artifacts that could decrease in performance, but the execution speed in FHE decreases. In this way, it is possible to adjust the accuracy/speed trade-off, and some accuracy can be recovered by increasing the `n_estimators`.
 
 The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 

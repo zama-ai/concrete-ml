@@ -491,7 +491,7 @@ class ONNXConverter:
                     **attributes,
                 )
 
-                # Determine if this op computes a tensor that is a graph output, i.e. a tensor
+                # Determine if this op computes a tensor that is a graph output, i.e., a tensor
                 # that will be decrypted and de-quantized in the clear
                 quantized_op_instance.produces_graph_output = output_name in graph_output_names
 
@@ -614,7 +614,8 @@ class ONNXConverter:
         """
 
         # Create several lists:
-        # - a list of layers that use each input directly (i.e. have this input as an integer input)
+        # - a list of layers that use each input directly
+        #   (i.e., have this input as an integer input)
         # - a list of quantizers that are applied to each input node
         # - a list of inputs that have TLUs, for which these TLUs cannot be removed
         layer_using_input: Dict[int, List[QuantizedOp]] = {}
