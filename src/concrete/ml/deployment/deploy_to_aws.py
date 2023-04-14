@@ -25,6 +25,8 @@ import boto3
 from ..deployment.utils import filter_logs, wait_for_connection_to_be_available
 
 DATE_FORMAT: str = "%Y_%m_%d_%H_%M_%S"
+# More up to date public Concrete ML AWS AMI
+DEFAULT_CML_AMI_ID: str = "ami-0d7427e883fa00ff3"
 
 
 class AWSInstance:
@@ -43,7 +45,7 @@ class AWSInstance:
         verbose: bool = False,
         terminate_on_shutdown: bool = True,
         region_name: Optional[str] = None,
-        ami_id: str = "ami-0d7427e883fa00ff3",
+        ami_id: str = DEFAULT_CML_AMI_ID,
     ):
         metadata = create_instance(
             instance_type=instance_type,
@@ -97,7 +99,7 @@ def create_instance(
     instance_name: Optional[str] = None,
     verbose: bool = False,
     region_name: Optional[str] = None,
-    ami_id="ami-0d7427e883fa00ff3",
+    ami_id=DEFAULT_CML_AMI_ID,
 ) -> Dict[str, Any]:
     """Create a EC2 instance.
 
