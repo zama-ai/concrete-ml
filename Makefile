@@ -161,10 +161,14 @@ conformance: finalize_nb python_format licenses nbqa supported_ops mdformat
 check_issues:
 	python ./script/make_utils/check_issues.py
 
+# We need to launch forbidden words aftwerwards because of conflicts with the files created by nbqa
+# https://nbqa.readthedocs.io/en/latest/known-limitations.html#known-limitations
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3516
 .PHONY: pcc # Run pre-commit checks
 pcc:
 	@"$(MAKE)" --keep-going --jobs $$(./script/make_utils/ncpus.sh) --output-sync=recurse \
 	--no-print-directory pcc_internal
+	@"$(MAKE)" check_forbidden_words
 
 .PHONY: spcc # Run selected pre-commit checks (those which break most often, for SW changes)
 spcc:
@@ -174,7 +178,7 @@ spcc:
 PCC_DEPS := check_python_format check_finalize_nb python_linting mypy_ci pydocstyle shell_lint
 PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_ops
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
-PCC_DEPS += check_forbidden_words check_unused_images gitleaks
+PCC_DEPS += check_unused_images gitleaks
 
 # Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
