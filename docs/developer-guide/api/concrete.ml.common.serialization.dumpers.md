@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/dumpers.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.common.serialization.dumpers`
 
@@ -8,7 +8,7 @@ Dump functions for serialization.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/dumpers.py#L11"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L11"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dumps_random_state`
 
@@ -28,7 +28,7 @@ Dump random state to string.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/dumpers.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dump`
 
@@ -36,7 +36,7 @@ ______________________________________________________________________
 dump(obj: Any, file: <class 'TextIO'>)
 ```
 
-Dump any CML object that has a dump method.
+Dump any Concrete ML object that has a dump method.
 
 **Arguments:**
 
@@ -45,7 +45,7 @@ Dump any CML object that has a dump method.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/dumpers.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dumps`
 

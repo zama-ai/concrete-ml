@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_impl_utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.onnx.onnx_impl_utils`
 
@@ -8,7 +8,7 @@ Utility functions for onnx operator implementations.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_impl_utils.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_onnx_pad`
 
@@ -36,7 +36,7 @@ Pad a tensor according to ONNX spec, using an optional custom pad value.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_impl_utils.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_conv_output_dims`
 
@@ -68,7 +68,7 @@ See https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html for detail
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_impl_utils.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_onnx_pool_padding`
 
@@ -84,7 +84,7 @@ compute_onnx_pool_padding(
 
 Compute any additional padding needed to compute pooling layers.
 
-The ONNX standard uses ceil_mode=1 to match tensorflow style pooling output computation. In this setting, the kernel can be placed at a valid position even though it contains values outside of the input shape including padding. The ceil_mode parameter controls whether this mode is enabled. If the mode is not enabled, the output shape follows PyTorch rules.
+The ONNX standard uses ceil_mode=1 to match TensorFlow style pooling output computation. In this setting, the kernel can be placed at a valid position even though it contains values outside of the input shape including padding. The ceil_mode parameter controls whether this mode is enabled. If the mode is not enabled, the output shape follows PyTorch rules.
 
 **Args:**
 
@@ -100,7 +100,7 @@ The ONNX standard uses ceil_mode=1 to match tensorflow style pooling output comp
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/onnx/onnx_impl_utils.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `onnx_avgpool_compute_norm_const`
 

@@ -12,12 +12,12 @@ Some examples constrain accumulators to 7-8 bits, which can be sufficient for si
 
 ### 1. Step-by-step guide to building a custom NN
 
-[<img src="../.gitbook/assets/jupyter_logo.png" width="20px">  Quantization aware training example](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/QuantizationAwareTraining.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png" width="20px">  Quantization aware training example](../advanced_examples/QuantizationAwareTraining.ipynb)
 
 Shows how to use Quantization Aware Training and pruning when starting out from a classical PyTorch network. This example uses a simple data-set and a small NN, which achieves good accuracy with low accumulator size.
 
 ### 2. Custom convolutional NN on the [Digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html) data-set
 
-[<img src="../.gitbook/assets/jupyter_logo.png" width="20px">   Convolutional Neural Network](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png" width="20px">   Convolutional Neural Network](../advanced_examples/ConvolutionalNeuralNetwork.ipynb)
 
 Following the [Step-by-step guide](fhe_friendly_models.md), this notebook implements a Quantization Aware Training convolutional neural network on the MNIST data-set. It uses 3-bit weights and activations, giving a 7-bit accumulator.

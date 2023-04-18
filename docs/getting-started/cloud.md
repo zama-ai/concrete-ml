@@ -18,4 +18,4 @@ The steps detailed above are:
 1. The server uses the _evaluation_ key to securely run inference on the user's data and sends back the encrypted result.
 1. The client now decrypts the result and can send back new requests.
 
-For more information on how to implement this basic secure inference protocol, refer to the [Production Deployment section](../advanced-topics/client_server.md) and to the [client/server example](https://github.com/zama-ai/concrete-ml/blob/release/0.6.x/docs/advanced_examples/ClientServer.ipynb).
+For more information on how to implement this basic secure inference protocol, refer to the [Production Deployment section](../advanced-topics/client_server.md) and to the [client/server example](../advanced_examples/ClientServer.ipynb).

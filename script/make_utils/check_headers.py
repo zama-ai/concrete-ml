@@ -107,6 +107,9 @@ def main():
         if ".venv" not in set(map(str, path.parts))
     ]
 
+    # We don't want to checks links from docs/_build
+    markdown_files = [path for path in markdown_files if "docs/_build/" not in str(path.resolve())]
+
     # Collect ASTs
     asts = {}
     for file_path in markdown_files:
@@ -143,7 +146,7 @@ def main():
 
                 # Check file exists
                 if not abs_file_path.exists():
-                    errors.append(f"{abs_file_path} does not exist")
+                    errors.append(f"Link to {abs_file_path} from {document_path} does not exist")
                     continue
 
                 # Check header is contained

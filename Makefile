@@ -364,6 +364,7 @@ docs: clean_docs check_docs_dollars
 	cd docs-copy && poetry run "$(MAKE)" html SPHINXOPTS='-W --keep-going'
 	@# Copy images from GitBook
 	cp docs/.gitbook/assets/*.png docs-copy/_build/html/_images
+	cp -r use_case_examples docs-copy/_build/
 	cp -r docs-copy/_build docs/
 	rm -rf docs-copy
 	@# Check links
@@ -715,9 +716,8 @@ check_links:
 	@#  --ignore-url=https://www.openml.org: lot of time outs
 	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis: currently
 	@#		private
-	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal: because some files are only
-	@#		private at this time. We'll finally check files with check_links_after_release after
-	@#		everything has been pushed to public repository
+	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: because issues are
+	@#		private at this time.
 	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
 	@# 		them in the docs. But sphinx does not copy such as images to the _build dir since 
 	@#		they are not included by image tags or sphinx image annotations. We ignore links 
@@ -728,7 +728,7 @@ check_links:
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis \
-		--ignore-url=https://github.com/zama-ai/concrete-ml-internal \
+		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=.gitbook/assets
 
 	@# We don't want links to our internal GitBook. We may have to switch this test off for a

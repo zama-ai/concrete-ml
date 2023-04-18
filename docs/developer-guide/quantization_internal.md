@@ -4,14 +4,14 @@
 
 Concrete ML has support for quantized ML models and also provides quantization tools for Quantization Aware Training and Post-Training Quantization. The core of this functionality is the conversion of floating point values to integers and back. This is done using `QuantizedArray` in `concrete.ml.quantization`.
 
-The [`QuantizedArray`](../developer-guide/api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
+The [`QuantizedArray`](./api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
 
 - `n_bits` define the precision of the quantization
 - `values` are floating point values that will be converted to integers
 - `is_signed` determines if the quantized integer values should allow negative values
 - `is_symmetric` determines if the range of floating point values to be quantized should be taken as symmetric around zero
 
-See also the [UniformQuantizer](../developer-guide/api/concrete.ml.quantization.quantizers.md#class-uniformquantizer) reference for more information:
+See also the [UniformQuantizer](./api/concrete.ml.quantization.quantizers.md#class-uniformquantizer) reference for more information:
 
 ```python
 from concrete.ml.quantization import QuantizedArray

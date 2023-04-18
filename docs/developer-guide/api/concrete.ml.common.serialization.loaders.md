@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/loaders.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.common.serialization.loaders`
 
@@ -12,7 +12,7 @@ Load functions for serialization.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/loaders.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_dict`
 
@@ -20,7 +20,7 @@ ______________________________________________________________________
 load_dict(metadata: Dict[str, Any]) → Any
 ```
 
-Load any CML object that has a dump method.
+Load any Concrete ML object that has a dump method.
 
 **Arguments:**
 
@@ -36,7 +36,7 @@ Load any CML object that has a dump method.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/loaders.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L47"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `loads`
 
@@ -44,7 +44,7 @@ ______________________________________________________________________
 loads(content: str) → Any
 ```
 
-Load any CML object that has a dump method.
+Load any Concrete ML object that has a dump method.
 
 **Arguments:**
 
@@ -56,7 +56,7 @@ Load any CML object that has a dump method.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/loaders.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L60"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load`
 
@@ -64,7 +64,7 @@ ______________________________________________________________________
 load(file: <class 'TextIO'>)
 ```
 
-Load any CML object that has a dump method.
+Load any Concrete ML object that has a dump method.
 
 **Arguments:**
 
@@ -76,7 +76,7 @@ Load any CML object that has a dump method.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/loaders.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L73"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `loads_onnx`
 
@@ -96,7 +96,7 @@ Load serialized onnx model.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/common/serialization/loaders.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/loaders.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `loads_random_state`
 

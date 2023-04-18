@@ -1,12 +1,12 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.search_parameters.p_error_search`
 
 p_error binary search for classification and regression tasks.
 
-Only Pytorch neural networks and Concrete built-in models are supported.
+Only PyTorch neural networks and Concrete built-in models are supported.
 
 - Concrete built-in models include trees and QNN
 - Quantized aware trained model are supported using Brevitas framework
@@ -16,7 +16,7 @@ The `p_error` represents an essential hyper-parameter in the FHE computation at 
 
 In this script, we provide an approach to find out an optimal `p_error`, which would offer an interesting compromise between speed and efficiency.
 
-The `p_error` represents the probability of a single PBS being incorrect. Know that the FHE scheme allows to perfom 2 types of operations
+The `p_error` represents the probability of a single PBS being incorrect. Know that the FHE scheme allows to perform 2 types of operations
 
 - Linear operations: additions and multiplications
 - Non-linear operation: uni-variate activation functions
@@ -43,7 +43,7 @@ If we don't reach the convergence, a user warning is raised.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_and_simulated_fhe_inference`
 
@@ -79,11 +79,11 @@ Supported models are:
 - <b>`is_qat`</b> (bool):  True, if the NN has been trained through QAT.  If `False` it is converted into post-trained quantized model.
 - <b>`metric`</b> (Callable):  Classification or regression evaluation metric.
 - <b>`predict`</b> (str):  The predict method to use.
-- <b>`kwargs`</b> (Dict):  Metric's hyper-parameters.
+- <b>`kwargs`</b> (Dict):  Hyper-parameters to use for the metric.
 
 **Returns:**
 
-- <b>`Tuple[numpy.ndarray, float]`</b>:  Dequantized or quantized output model depending on `is_benchmark_test` and the score.
+- <b>`Tuple[numpy.ndarray, float]`</b>:  De-quantized or quantized output model depending on `is_benchmark_test` and the score.
 
 **Raises:**
 
@@ -91,13 +91,13 @@ Supported models are:
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BinarySearch`
 
 Class for `p_error` hyper-parameter search for classification and regression tasks.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -126,7 +126,7 @@ __init__(
 
 **Args:**
 
-- <b>`estimator `</b>:  Custom model (Brevitas or Pytorch) or built-in models (trees or QNNs).
+- <b>`estimator `</b>:  Custom model (Brevitas or PyTorch) or built-in models (trees or QNNs).
 - <b>`predict`</b> (str):  The prediction method to use for built-in tree models.
 - <b>`metric`</b> (Callable):  Evaluation metric for classification or regression tasks.
 - <b>`n_bits`</b> (int):  Quantization bits, for PTQ models. Default is 4.
@@ -147,7 +147,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `eval_match`
 
@@ -174,7 +174,7 @@ Eval the matches.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reset_history`
 
@@ -186,7 +186,7 @@ Clean history.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/search_parameters/p_error_search.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -217,7 +217,7 @@ We stop the search either when the maximum number of iterations is reached or wh
 - <b>`ground_truth`</b> (numpy.ndarray):  The ground truth
 - <b>`kwargs`</b> (Dict):  Class parameters
 - <b>`strategy`</b> (Callable):  A uni-variate function that defines a "match". It can be: a
-- <b>`built-in functions provided in python, like`</b>:  any or all or a custom function, like:
+- <b>`built-in functions provided in Python, like`</b>:  any or all or a custom function, like:
 - <b>`mean = lambda all_matches`</b>:  numpy.mean(all_matches) >= 0.5
 - <b>`median = lambda all_matches`</b>:  numpy.median(all_matches) == 1 Default is `all`.
 
