@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
   </a>
 <!-- Link to tutorials badge using shields.io -->
-  <a href="https://github.com/zama-ai/concrete-ml-internal#online-demos-and-tutorials">
+  <a href="#online-demos-and-tutorials">
     <img src="https://img.shields.io/badge/Learn-%20Tutorials%20and%20demos-orange?style=flat-square">
   </a>
 <!-- Zama Bounty Program -->

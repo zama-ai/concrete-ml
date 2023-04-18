@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.deployment.deploy_to_aws`
 
@@ -11,15 +11,16 @@ It takes as input a folder with:
 \- server.zip
 \- processing.json
 
-It spawns a AWS EC2 instance with proper security groups. Then SSHs to it to rsync the files and update python dependencies. It then launches the server.
+It spawns a AWS EC2 instance with proper security groups. Then SSHs to it to rsync the files and update Python dependencies. It then launches the server.
 
 ## **Global Variables**
 
 - **DATE_FORMAT**
+- **DEFAULT_CML_AMI_ID**
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_instance`
 
@@ -29,7 +30,8 @@ create_instance(
     open_port=5000,
     instance_name: Optional[str] = None,
     verbose: bool = False,
-    region_name: Optional[str] = None
+    region_name: Optional[str] = None,
+    ami_id='ami-0d7427e883fa00ff3'
 ) → Dict[str, Any]
 ```
 
@@ -42,6 +44,7 @@ Create a EC2 instance.
 - <b>`instance_name`</b> (Optional\[str\]):  the name to use for AWS created objects
 - <b>`verbose`</b> (bool):  show logs or not
 - <b>`region_name`</b> (Optional\[str\]):  AWS region
+- <b>`ami_id`</b> (str):  AMI to use
 
 **Returns:**
 
@@ -55,7 +58,7 @@ Create a EC2 instance.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `deploy_to_aws`
 
@@ -76,8 +79,8 @@ Deploy a model to a EC2 AWS instance.
 - <b>`instance_metadata`</b> (Dict\[str, Any\]):  the metadata of AWS EC2 instance  created using AWSInstance or create_instance
 - <b>`path_to_model`</b> (Path):  the path to the serialized model
 - <b>`number_of_ssh_retries`</b> (int):  the number of ssh retries (-1 is no limit)
-- <b>`wait_bar`</b> (bool):  wheter to show a wait bar when waiting for ssh connexion to be available
-- <b>`verbose`</b> (bool):  wheter to show a logs
+- <b>`wait_bar`</b> (bool):  whether to show a wait bar when waiting for ssh connection to be available
+- <b>`verbose`</b> (bool):  whether to show a logs
 
 **Returns:**
 instance_metadata (Dict\[str, Any\])
@@ -88,7 +91,7 @@ instance_metadata (Dict\[str, Any\])
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L412"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `wait_instance_termination`
 
@@ -105,7 +108,7 @@ Wait for AWS EC2 instance termination.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L424"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `terminate_instance`
 
@@ -122,7 +125,7 @@ Terminate a AWS EC2 instance.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L435"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L438"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `delete_security_group`
 
@@ -139,7 +142,7 @@ Terminate a AWS EC2 instance.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L446"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -164,12 +167,12 @@ Deploy a model.
 - <b>`instance_type`</b> (str):  type of AWS EC2 instance to use.
 - <b>`instance_name`</b> (Optional\[str\]):  the name to use for AWS created objects
 - <b>`verbose`</b> (bool):  show logs or not
-- <b>`wait_bar`</b> (bool):  show progress bar when waiting for ssh connexion
+- <b>`wait_bar`</b> (bool):  show progress bar when waiting for ssh connection
 - <b>`terminate_on_shutdown`</b> (bool):  terminate instance when script is over
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `AWSInstance`
 
@@ -177,7 +180,7 @@ AWSInstance.
 
 Context manager for AWS instance that supports ssh and http over one port.
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_aws.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -188,6 +191,7 @@ __init__(
     instance_name: Optional[str] = None,
     verbose: bool = False,
     terminate_on_shutdown: bool = True,
-    region_name: Optional[str] = None
+    region_name: Optional[str] = None,
+    ami_id: str = 'ami-0d7427e883fa00ff3'
 )
 ```
