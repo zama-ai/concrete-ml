@@ -31,7 +31,7 @@ The server-side implementation of a Concrete ML model follows the diagram above.
 
 ## Example notebook
 
-For a complete example, see [the client-server notebook](https://github.com/zama-ai/concrete-ml-internal/tree/main/docs/advanced_examples/ClientServer.ipynb).
+For a complete example, see [the client-server notebook](../advanced_examples/ClientServer.ipynb).
 
 ### AWS
 

@@ -15,7 +15,7 @@
 - [`concrete.ml.common.utils`](./concrete.ml.common.utils.md#module-concretemlcommonutils): Utils that can be re-used by other pieces of code in the module.
 - [`concrete.ml.deployment`](./concrete.ml.deployment.md#module-concretemldeployment): Module for deployment of the FHE model.
 - [`concrete.ml.deployment.deploy_to_aws`](./concrete.ml.deployment.deploy_to_aws.md#module-concretemldeploymentdeploy_to_aws): Methods to deploy a client/server to AWS.
-- [`concrete.ml.deployment.deploy_to_docker`](./concrete.ml.deployment.deploy_to_docker.md#module-concretemldeploymentdeploy_to_docker): Methods to deploy a server using docker.
+- [`concrete.ml.deployment.deploy_to_docker`](./concrete.ml.deployment.deploy_to_docker.md#module-concretemldeploymentdeploy_to_docker): Methods to deploy a server using Docker.
 - [`concrete.ml.deployment.fhe_client_server`](./concrete.ml.deployment.fhe_client_server.md#module-concretemldeploymentfhe_client_server): APIs for FHE deployment.
 - [`concrete.ml.deployment.server`](./concrete.ml.deployment.server.md#module-concretemldeploymentserver): Deployment server.
 - [`concrete.ml.deployment.utils`](./concrete.ml.deployment.utils.md#module-concretemldeploymentutils): Utils.
@@ -24,7 +24,7 @@
 - [`concrete.ml.onnx.onnx_impl_utils`](./concrete.ml.onnx.onnx_impl_utils.md#module-concretemlonnxonnx_impl_utils): Utility functions for onnx operator implementations.
 - [`concrete.ml.onnx.onnx_model_manipulations`](./concrete.ml.onnx.onnx_model_manipulations.md#module-concretemlonnxonnx_model_manipulations): Some code to manipulate models.
 - [`concrete.ml.onnx.onnx_utils`](./concrete.ml.onnx.onnx_utils.md#module-concretemlonnxonnx_utils): Utils to interpret an ONNX model with numpy.
-- [`concrete.ml.onnx.ops_impl`](./concrete.ml.onnx.ops_impl.md#module-concretemlonnxops_impl): ONNX ops implementation in python + numpy.
+- [`concrete.ml.onnx.ops_impl`](./concrete.ml.onnx.ops_impl.md#module-concretemlonnxops_impl): ONNX ops implementation in Python + NumPy.
 - [`concrete.ml.pytest`](./concrete.ml.pytest.md#module-concretemlpytest): Module which is used to contain common functions for pytest.
 - [`concrete.ml.pytest.torch_models`](./concrete.ml.pytest.torch_models.md#module-concretemlpytesttorch_models): Torch modules for our pytests.
 - [`concrete.ml.pytest.utils`](./concrete.ml.pytest.utils.md#module-concretemlpytestutils): Common functions or lists for test files, which can't be put in fixtures.
@@ -87,10 +87,10 @@
 - [`torch_models.ShapeOperationsNet`](./concrete.ml.pytest.torch_models.md#class-shapeoperationsnet): Torch QAT model that reshapes the input.
 - [`torch_models.SimpleNet`](./concrete.ml.pytest.torch_models.md#class-simplenet): Fake torch model used to generate some onnx.
 - [`torch_models.SimpleQAT`](./concrete.ml.pytest.torch_models.md#class-simpleqat): Torch model implements a step function that needs Greater, Cast and Where.
-- [`torch_models.SingleMixNet`](./concrete.ml.pytest.torch_models.md#class-singlemixnet): Torch model that with a single conv layer that produces the output, e.g., a blur filter.
+- [`torch_models.SingleMixNet`](./concrete.ml.pytest.torch_models.md#class-singlemixnet): Torch model that with a single conv layer that produces the output, eg a blur filter.
 - [`torch_models.StepActivationModule`](./concrete.ml.pytest.torch_models.md#class-stepactivationmodule): Torch model implements a step function that needs Greater, Cast and Where.
 - [`torch_models.TinyCNN`](./concrete.ml.pytest.torch_models.md#class-tinycnn): A very small CNN.
-- [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits dataset.
+- [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits data-set.
 - [`torch_models.TorchCustomModel`](./concrete.ml.pytest.torch_models.md#class-torchcustommodel): A small network with Brevitas, trained on make_classification.
 - [`torch_models.TorchSum`](./concrete.ml.pytest.torch_models.md#class-torchsum): Torch model to test the ReduceSum ONNX operator in a leveled circuit.
 - [`torch_models.TorchSumMod`](./concrete.ml.pytest.torch_models.md#class-torchsummod): Torch model to test the ReduceSum ONNX operator in a circuit containing a PBS.
@@ -201,13 +201,13 @@
 - [`custom_assert.assert_false`](./concrete.ml.common.debugging.custom_assert.md#function-assert_false): Provide a custom assert to check that the condition is False.
 - [`custom_assert.assert_not_reached`](./concrete.ml.common.debugging.custom_assert.md#function-assert_not_reached): Provide a custom assert to check that a piece of code is never reached.
 - [`custom_assert.assert_true`](./concrete.ml.common.debugging.custom_assert.md#function-assert_true): Provide a custom assert to check that the condition is True.
-- [`dumpers.dump`](./concrete.ml.common.serialization.dumpers.md#function-dump): Dump any CML object that has a dump method.
+- [`dumpers.dump`](./concrete.ml.common.serialization.dumpers.md#function-dump): Dump any Concrete ML object that has a dump method.
 - [`dumpers.dumps`](./concrete.ml.common.serialization.dumpers.md#function-dumps): Dump as string any object.
 - [`dumpers.dumps_random_state`](./concrete.ml.common.serialization.dumpers.md#function-dumps_random_state): Dump random state to string.
 - [`encoder.dumps_onnx`](./concrete.ml.common.serialization.encoder.md#function-dumps_onnx): Dump onnx model as string.
-- [`loaders.load`](./concrete.ml.common.serialization.loaders.md#function-load): Load any CML object that has a dump method.
-- [`loaders.load_dict`](./concrete.ml.common.serialization.loaders.md#function-load_dict): Load any CML object that has a dump method.
-- [`loaders.loads`](./concrete.ml.common.serialization.loaders.md#function-loads): Load any CML object that has a dump method.
+- [`loaders.load`](./concrete.ml.common.serialization.loaders.md#function-load): Load any Concrete ML object that has a dump method.
+- [`loaders.load_dict`](./concrete.ml.common.serialization.loaders.md#function-load_dict): Load any Concrete ML object that has a dump method.
+- [`loaders.loads`](./concrete.ml.common.serialization.loaders.md#function-loads): Load any Concrete ML object that has a dump method.
 - [`loaders.loads_onnx`](./concrete.ml.common.serialization.loaders.md#function-loads_onnx): Load serialized onnx model.
 - [`loaders.loads_random_state`](./concrete.ml.common.serialization.loaders.md#function-loads_random_state): Load random state from string.
 - [`utils.all_values_are_floats`](./concrete.ml.common.utils.md#function-all_values_are_floats): Indicate that all unpacked values are of a supported float dtype.
@@ -235,13 +235,13 @@
 - [`deploy_to_aws.main`](./concrete.ml.deployment.deploy_to_aws.md#function-main): Deploy a model.
 - [`deploy_to_aws.terminate_instance`](./concrete.ml.deployment.deploy_to_aws.md#function-terminate_instance): Terminate a AWS EC2 instance.
 - [`deploy_to_aws.wait_instance_termination`](./concrete.ml.deployment.deploy_to_aws.md#function-wait_instance_termination): Wait for AWS EC2 instance termination.
-- [`deploy_to_docker.build_docker_image`](./concrete.ml.deployment.deploy_to_docker.md#function-build_docker_image): Build server docker image.
-- [`deploy_to_docker.delete_image`](./concrete.ml.deployment.deploy_to_docker.md#function-delete_image): Delete a docker image.
+- [`deploy_to_docker.build_docker_image`](./concrete.ml.deployment.deploy_to_docker.md#function-build_docker_image): Build server Docker image.
+- [`deploy_to_docker.delete_image`](./concrete.ml.deployment.deploy_to_docker.md#function-delete_image): Delete a Docker image.
 - [`deploy_to_docker.main`](./concrete.ml.deployment.deploy_to_docker.md#function-main): Deploy function.
 - [`deploy_to_docker.stop_container`](./concrete.ml.deployment.deploy_to_docker.md#function-stop_container): Kill all containers that use a given image.
 - [`utils.filter_logs`](./concrete.ml.deployment.utils.md#function-filter_logs): Filter logs based on previous logs.
-- [`utils.is_connection_available`](./concrete.ml.deployment.utils.md#function-is_connection_available): Check if ssh connexion is available.
-- [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connexion to be available.
+- [`utils.is_connection_available`](./concrete.ml.deployment.utils.md#function-is_connection_available): Check if ssh connection is available.
+- [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connection to be available.
 - [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
 - [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the numpy equivalent forward of the provided torch Module.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
@@ -324,7 +324,7 @@
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
-- [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given dataset.
+- [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given data-set.
 - [`utils.get_random_extract_of_sklearn_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_random_extract_of_sklearn_models_and_datasets): Return a random sublist of sklearn_models_and_datasets.
 - [`utils.get_torchvision_dataset`](./concrete.ml.pytest.utils.md#function-get_torchvision_dataset): Get train or testing data-set.
 - [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete ML model type.
@@ -339,7 +339,7 @@
 - [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
 - [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
 - [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.
-- [`tree_to_numpy.tree_onnx_graph_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_onnx_graph_preprocessing): Apply pre-precessing onto the ONNX graph.
+- [`tree_to_numpy.tree_onnx_graph_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_onnx_graph_preprocessing): Apply pre-processing onto the ONNX graph.
 - [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a numpy functions using Hummingbird.
 - [`tree_to_numpy.tree_values_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_values_preprocessing): Pre-process tree values.
 - [`tree_to_numpy.workaround_squeeze_node_xgboost`](./concrete.ml.sklearn.tree_to_numpy.md#function-workaround_squeeze_node_xgboost): Workaround to fix torch issue that does not export the proper axis in the ONNX squeeze node.

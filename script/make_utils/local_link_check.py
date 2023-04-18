@@ -8,7 +8,7 @@ from typing import List, Union
 
 # A regex that matches [foo (bar)](my_link) and returns the my_link
 # used to find all links made in our markdown files.
-MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\".*\"")]
+MARKDOWN_LINK_REGEX = [re.compile(r"\[[^\]]*\]\(([^\)]*)\)"), re.compile(r"href=\"[^\"]*\"")]
 
 
 def check_content_for_dead_links(content: str, file_path: Path) -> List[str]:

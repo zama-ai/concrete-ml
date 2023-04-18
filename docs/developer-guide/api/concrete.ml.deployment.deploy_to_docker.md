@@ -1,19 +1,19 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_docker.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_docker.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.deployment.deploy_to_docker`
 
-Methods to deploy a server using docker.
+Methods to deploy a server using Docker.
 
 It takes as input a folder with:
 \- client.zip
 \- server.zip
 \- processing.json
 
-It builds a docker image and spawns a docker container that runs the server.
+It builds a Docker image and spawns a Docker container that runs the server.
 
-This module is untested as it would require to first build the release docker image. FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3347
+This module is untested as it would require to first build the release Docker image. FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3347
 
 ## **Global Variables**
 
@@ -21,7 +21,7 @@ This module is untested as it would require to first build the release docker im
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_docker.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_docker.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `delete_image`
 
@@ -29,7 +29,7 @@ ______________________________________________________________________
 delete_image(image_name: str)
 ```
 
-Delete a docker image.
+Delete a Docker image.
 
 **Arguments:**
 
@@ -37,7 +37,7 @@ Delete a docker image.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_docker.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_docker.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `stop_container`
 
@@ -49,11 +49,11 @@ Kill all containers that use a given image.
 
 **Arguments:**
 
-- <b>`image_name`</b> (str):  name of docker image for which to stop docker containers.
+- <b>`image_name`</b> (str):  name of Docker image for which to stop Docker containers.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_docker.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_docker.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_docker_image`
 
@@ -61,7 +61,7 @@ ______________________________________________________________________
 build_docker_image(path_to_model: Path, image_name: str)
 ```
 
-Build server docker image.
+Build server Docker image.
 
 **Arguments:**
 
@@ -70,7 +70,7 @@ Build server docker image.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/deployment/deploy_to_docker.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_docker.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -80,11 +80,11 @@ main(path_to_model: Path, image_name: str)
 
 Deploy function.
 
-- Builds docker image.
-- Runs docker server.
+- Builds Docker image.
+- Runs Docker server.
 - Stop container and delete image.
 
 **Arguments:**
 
 - <b>`path_to_model`</b> (Path):  path to model to server
-- <b>`image_name`</b> (str):  name of the docker image
+- <b>`image_name`</b> (str):  name of the Docker image

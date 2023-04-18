@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.pytest.utils`
 
@@ -12,7 +12,7 @@ Common functions or lists for test files, which can't be put in fixtures.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/utils.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_random_extract_of_sklearn_models_and_datasets`
 
@@ -29,7 +29,7 @@ the sublist
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/utils.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `instantiate_model_generic`
 
@@ -51,7 +51,7 @@ Instantiate any Concrete ML model type.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/utils.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_torchvision_dataset`
 
@@ -68,11 +68,11 @@ Get train or testing data-set.
 - <b>`train_set`</b> (bool):  Use train data-set if True, else testing data-set
 
 **Returns:**
-A torchvision datasets.
+A torchvision data-sets.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/utils.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `data_calibration_processing`
 
@@ -80,7 +80,7 @@ ______________________________________________________________________
 data_calibration_processing(data, n_sample: int, targets=None)
 ```
 
-Reduce size of the given dataset.
+Reduce size of the given data-set.
 
 **Args:**
 
@@ -98,7 +98,7 @@ Reduce size of the given dataset.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/pytest/utils.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_torch_model`
 
@@ -115,11 +115,11 @@ Load an object saved with torch.save() from a file or dict.
 
 **Args:**
 
-- <b>`model_class`</b> (torch.nn.Module):  A Pytorch or Brevitas network.
+- <b>`model_class`</b> (torch.nn.Module):  A PyTorch or Brevitas network.
 - <b>`state_dict_or_path`</b> (Optional\[Union\[str, Path, Dict\[str, Any\]\]\]):  Path or state_dict
 - <b>`params`</b> (Dict):  Model's parameters
 - <b>`device`</b> (str):   Device type.
 
 **Returns:**
 
-- <b>`torch.nn.Module`</b>:  A Pytorch or Brevitas network.
+- <b>`torch.nn.Module`</b>:  A PyTorch or Brevitas network.

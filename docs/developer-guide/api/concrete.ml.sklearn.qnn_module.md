@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L0"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 # <kbd>module</kbd> `concrete.ml.sklearn.qnn_module`
 
@@ -12,15 +12,15 @@ Sparse Quantized Neural Network torch module.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SparseQuantNeuralNetwork`
 
 Sparse Quantized Neural Network.
 
-This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bitwidth and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
+This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bit-width and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -49,20 +49,20 @@ Sparse Quantized Neural Network constructor.
 - <b>`n_outputs`</b>:  Number of output classes or regression targets
 - <b>`n_w_bits`</b>:  Number of weight bits
 - <b>`n_a_bits`</b>:  Number of activation and input bits
-- <b>`n_accum_bits`</b>:  Maximal allowed bitwidth of intermediate accumulators
-- <b>`n_hidden_neurons_multiplier`</b>:  The number of neurons on the hidden will be the number  of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note that  pruning is used to adjust the accumulator size to attempt to  keep the maximum accumulator bitwidth to  `n_accum_bits`, meaning that not all hidden layer neurons will be active.  The default value for `n_hidden_neurons_multiplier` is chosen for small dimensions  of the input. Reducing this value decreases the FHE inference time considerably  but also decreases the robustness and accuracy of model training.
+- <b>`n_accum_bits`</b>:  Maximal allowed bit-width of intermediate accumulators
+- <b>`n_hidden_neurons_multiplier`</b>:  The number of neurons on the hidden will be the number  of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note that  pruning is used to adjust the accumulator size to attempt to  keep the maximum accumulator bit-width to  `n_accum_bits`, meaning that not all hidden layer neurons will be active.  The default value for `n_hidden_neurons_multiplier` is chosen for small dimensions  of the input. Reducing this value decreases the FHE inference time considerably  but also decreases the robustness and accuracy of model training.
 - <b>`n_prune_neurons_percentage`</b>:  How many neurons to prune on the hidden layers. This  should be used mostly through the dedicated `.prune()` mechanism. This can  be used in when setting `n_hidden_neurons_multiplier` high (3-4), once good accuracy  is obtained, to speed up the model in FHE.
-- <b>`activation_function`</b>:  a torch class that is used to construct activation functions in  the network (e.g., torch.ReLU, torch.SELU, torch.Sigmoid, etc)
+- <b>`activation_function`</b>:  a torch class that is used to construct activation functions in  the network (eg torch.ReLU, torch.SELU, torch.Sigmoid, etc)
 - <b>`quant_narrow `</b>:  whether this network should use narrow range quantized integer values
 - <b>`quant_signed `</b>:  whether to use signed quantized integer values
 
 **Raises:**
 
-- <b>`ValueError`</b>:  if the parameters have invalid values or the computed accumulator bitwidth  is zero
+- <b>`ValueError`</b>:  if the parameters have invalid values or the computed accumulator bit-width  is zero
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_pruning`
 
@@ -78,7 +78,7 @@ Enable pruning in the network. Pruning must be made permanent to recover pruned 
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L281"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -98,7 +98,7 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L155"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `make_pruning_permanent`
 
@@ -110,7 +110,7 @@ Make the learned pruning permanent in the network.
 
 ______________________________________________________________________
 
-<a href="https://github.com/zama-ai/concrete-ml-internal/tree/main/src/concrete/ml/sklearn/qnn_module.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L135"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `max_active_neurons`
 
