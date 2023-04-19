@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concrete-ml"
-version = "1.0.0"
+version = "1.0.1"
 description = "Concrete ML is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists."
 license = "BSD-3-Clause-Clear"
 authors = [
