@@ -92,7 +92,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("PyTest", [], []),  # use pytest
         ("pyTest", [], []),  # use pytest
         ("Pytest", [], []),  # use pytest
-        ("python", ["python client.py", "python ./server.py"], []),  # use Python
+        ("python", ["python client.py", "python ./server.py", "python -m"], []),  # use Python
         ("HummingBird", [], []),  # use Hummingbird
         (
             "hummingbird",

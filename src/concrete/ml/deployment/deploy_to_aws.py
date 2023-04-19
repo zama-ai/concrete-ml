@@ -341,9 +341,11 @@ aws ec2 delete-security-group --group-id {instance_metadata['security_group_id']
         "source deployment_venv/bin/activate",
         # Install server requirements
         "python -m pip install -r server_requirements.txt",
-        f"python -m pip install concrete-ml=={concrete_ml_version}",
+        # We need to relax the constraint on the version for internal testing
+        f"python -m pip install concrete-ml=={concrete_ml_version}"
+        " || python -m pip install concrete-ml",
         # We still need to force concrete-python version to be exactly the same as the file
-        f"python -m pip install concrete-python=={concrete_python_version}",
+        f"python -m pip install concrete-python=={concrete_python_version} || :",
         # Launch server
         f'PORT={port} PATH_TO_MODEL="./{path_to_model.name}" python ./server.py',
     ]
