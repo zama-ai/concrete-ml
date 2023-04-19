@@ -611,7 +611,7 @@ def test_dump_torch_network(
     )
 
 
-@pytest.mark.parametrize("verbose", [True, False])
+@pytest.mark.parametrize("verbose", [True, False], ids=["with_verbose", "without_verbose"])
 # pylint: disable-next=too-many-locals
 def test_pretrained_mnist_qat(
     default_configuration,
@@ -619,11 +619,11 @@ def test_pretrained_mnist_qat(
     verbose,
     check_graph_output_has_no_tlu,
     check_is_good_execution_for_cml_vs_circuit,
+    is_weekly_option,
 ):
     """Load a QAT MNIST model and confirm we get the same results in FHE simulation as with ONNX."""
-
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3164
-    pytest.skip("Compilation is too long.")
+    if not is_weekly_option:
+        pytest.skip("Tests too long")
 
     onnx_file_path = "tests/data/mnist_2b_s1_1.zip"
     mnist_test_path = "tests/data/mnist_test_batch.zip"
