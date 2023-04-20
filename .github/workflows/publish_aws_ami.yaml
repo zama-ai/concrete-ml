@@ -4,6 +4,13 @@ on:
   release:
     types: [published]
 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to build the AMI
+        required: true
+        type: string
+
 jobs:
   # This job will trigger a build for Python3.9 only. A matrix strategy needs to be set up
   # if a build is needed for other version of Python, or even other platforms (ARM, M1).
@@ -11,15 +18,34 @@ jobs:
     name: Launch AMI build
     runs-on: ubuntu-latest
     steps:
+      # Just a way to check that if triggered by workflow_dispatch the tag exists
+      - name: Checkout Repo
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          ref: ref/tags/${{ inputs.version }}
+          fetch-depth: 1
+          lfs: false
+
+      - name: Handle Git Ref
+        id: git_ref
+        run: |
+          GIT_REF="${{ inputs.version }}"
+          if [[ -z "${GIT_REF}" ]]
+          then
+            GIT_REF="${{ github.ref_name }}"
+          fi
+          echo "git-ref=${GIT_REF}" >> $GITHUB_OUTPUT
+
       - name: Trigger build pipeline via Slab
         run: |
-          PAYLOAD='{"name": "zama-concrete-ml-${{ github.ref_name }}-py39-x86_64",\
-          "description": "Zama Concrete ML ${{ github.ref_name }} (with Python 3.9 for x86_64 architecture)",\
-          "release_tag": "${{ github.ref_name }}",\
+          PAYLOAD='{"name": "zama-concrete-ml-${{ MATRIX }}-py39-x86_64",\
+          "description": "Zama Concrete ML ${{ steps.git_ref.outputs.git-ref }} (with Python 3.9 for x86_64 architecture)",\
+          "release_tag": "${{ steps.git_ref.outputs.git-ref }}",\
           "region": "eu-west-3",\
           "image_pipeline_arn": ${{ secrets.AMI_PIPELINE_ARN }},\
           "distribution_configuration_arn": ${{ secrets.AMI_DISTRIB_CONFIG_ARN }}, \
-          "component_user_data": "cat ci/aws_ami_build_component.yaml | sed -e 's|\(concrete-ml==\)${CML_VERSION}|\1${{ github.ref_name }}|' -e  's|${AWS_ACCOUNT_ID}|${{ secrets.AWS_ACCOUNT_ID }}|' | base64 | tr -d \"\n\""}'
+          "component_user_data": "cat ci/aws_ami_build_component.yaml | sed -e 's|\(concrete-ml==\)${CML_VERSION}|\1${{ steps.git_ref.outputs.git-ref }}|' -e  's|${AWS_ACCOUNT_ID}|${{ secrets.AWS_ACCOUNT_ID }}|' | base64 | tr -d \"\n\""}'
 
           SIGNATURE="$(slab/scripts/hmac_calculator.sh ${PAYLOAD} '${{ secrets.JOB_SECRET }}')"
 
@@ -39,6 +65,6 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "AWS AMI build pipeline triggered for concrete-ml ${{ github.ref_name }}"
+          SLACK_MESSAGE: "AWS AMI build pipeline triggered for concrete-ml ${{ steps.git_ref.outputs.git-ref }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
