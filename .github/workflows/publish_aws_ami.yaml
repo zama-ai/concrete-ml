@@ -41,4 +41,4 @@ jobs:
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE: "AWS AMI build pipeline triggered for concrete-ml ${{ github.ref_name }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
