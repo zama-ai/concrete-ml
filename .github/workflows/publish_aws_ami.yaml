@@ -18,14 +18,34 @@ jobs:
     name: Launch AMI build
     runs-on: ubuntu-latest
     steps:
+
       # Just a way to check that if triggered by workflow_dispatch the tag exists
-      - name: Checkout Repo
+      # TODO: We still need to check that it matches a version tag
+      # This won't work on automatically triggered based on release
+      - name: Checkout Concrete ML Repository
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        uses: actions/checkout@v3
         with:
-          ref: ref/tags/${{ inputs.version }}
+          ref: ${{ inputs.version || github.ref_name}}
           fetch-depth: 1
           lfs: false
+          path: "concrete-ml-version"
+
+      # To use the files and all
+      - name: Checkout Concrete ML Repository
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+          lfs: false
+          path: "concrete-ml-latest"
+
+      - name: Checkout Slab Repository
+        uses: actions/checkout@v3
+        with:
+          repository: "zama-ai/slab"
+          path: "slab"
+          token: ${{ secrets.BOT_TOKEN }}
 
       - name: Handle Git Ref
         id: git_ref
@@ -39,22 +59,27 @@ jobs:
 
       - name: Trigger build pipeline via Slab
         run: |
-          PAYLOAD='{"name": "zama-concrete-ml-${{ MATRIX }}-py39-x86_64",\
-          "description": "Zama Concrete ML ${{ steps.git_ref.outputs.git-ref }} (with Python 3.9 for x86_64 architecture)",\
-          "release_tag": "${{ steps.git_ref.outputs.git-ref }}",\
-          "region": "eu-west-3",\
-          "image_pipeline_arn": ${{ secrets.AMI_PIPELINE_ARN }},\
-          "distribution_configuration_arn": ${{ secrets.AMI_DISTRIB_CONFIG_ARN }}, \
-          "component_user_data": "cat ci/aws_ami_build_component.yaml | sed -e 's|\(concrete-ml==\)${CML_VERSION}|\1${{ steps.git_ref.outputs.git-ref }}|' -e  's|${AWS_ACCOUNT_ID}|${{ secrets.AWS_ACCOUNT_ID }}|' | base64 | tr -d \"\n\""}'
+          
+          CML_VERSION="${{ steps.git_ref.outputs.git-ref }}"
+          CML_VERSION="$(echo $CML_VERSION | cut -d 'v' -f 2)"
+          
+          # This basically takes the files and modifies some values from it
+          COMPONENT_USER_DATA="$(cat concrete-ml-latest/ci/aws_ami_build_component.yaml | sed -e 's|\(concrete-ml==\)${CML_VERSION}|\1'${CML_VERSION}'|' -e  's|${AWS_ACCOUNT_ID}|${{ secrets.AWS_ACCOUNT_ID }}|')"
 
-          SIGNATURE="$(slab/scripts/hmac_calculator.sh ${PAYLOAD} '${{ secrets.JOB_SECRET }}')"
+          COMPONENT_USER_DATA=$(echo "$COMPONENT_USER_DATA" | base64 | tr -d "\n")
+
+          PAYLOAD='{"name": "zama-concrete-ml-py39-x86_64", "description": "Zama Concrete ML ${{ steps.git_ref.outputs.git-ref }} (with Python 3.9 for x86_64 architecture)", "release_tag": "${{ steps.git_ref.outputs.git-ref }}", "region": "eu-west-3", "image_pipeline_arn": "${{ secrets.AMI_PIPELINE_ARN }}", "distribution_configuration_arn": "${{ secrets.AMI_DISTRIB_CONFIG_ARN }}", "component_user_data": "'"${COMPONENT_USER_DATA}"'"}'
+
+          echo -n "${PAYLOAD}" > payload.json
+
+          SIGNATURE="$(bash slab/scripts/hmac_calculator.sh payload.json '${{ secrets.JOB_SECRET }}')"
 
           curl -v -k \
           -H "Content-Type: application/json" \
           -H "X-Slab-Repository: ${{ github.repository }}" \
           -H "X-Slab-Command: build_aws_ami" \
           -H "X-Hub-Signature-256: sha256=${SIGNATURE}" \
-          -d @${{ PAYLOAD }} \
+          -d @payload.json \
           ${{ secrets.SLAB_URL }}
 
       - name: Slack Notification
