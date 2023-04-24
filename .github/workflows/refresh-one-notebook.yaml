@@ -24,6 +24,7 @@ on:
         - LinearRegression \n
         - LogisticRegression \n
         - mnist_in_fhe \n
+        - PerrorImpactOnFMNIST \n
         - PoissonRegression \n
         - QuantizationAwareTraining \n
         - SentimentClassification \n
@@ -59,6 +60,7 @@ env:
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
+  PerrorImpactOnFMNIST: "use_case_examples/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
   SentimentClassification: "use_case_examples/sentiment_analysis_with_transformer/SentimentClassification.ipynb" 

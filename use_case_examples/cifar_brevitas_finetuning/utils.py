@@ -68,6 +68,29 @@ DATASETS_ARGS = {
             ]
         ),
     },
+    # Separate FMNIST from CIFAR directory
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3552
+    "FashionMNIST": {
+        "dataset": datasets.FashionMNIST,
+        "mean": (0.2859),
+        "std": (0.3530),
+        "train_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.2859), (0.3530)),
+                # We apply data augmentation in order to prevent overfitting
+                transforms.RandomRotation(5, fill=(1,)),
+                transforms.GaussianBlur(kernel_size=(3, 3)),
+                transforms.RandomHorizontalFlip(0.5),
+            ]
+        ),
+        "test_transform": transforms.Compose(
+            [
+                transforms.ToTensor(),
+                transforms.Normalize((0.2859), (0.3530)),
+            ]
+        ),
+    },
 }
 
 

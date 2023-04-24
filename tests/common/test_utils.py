@@ -3,7 +3,7 @@ import numpy
 import pandas
 import pytest
 import torch
-from torch.utils.data import TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 
 from concrete.ml.common.debugging.custom_assert import assert_true
 from concrete.ml.common.utils import compute_bits_precision
@@ -36,17 +36,17 @@ def test_compute_bits_precision(x, expected_n_bits):
     assert_true(compute_bits_precision(numpy.array(x)) == expected_n_bits)
 
 
-@pytest.mark.parametrize("input_type", ["pandas", "List", "numpy", "torch"])
+@pytest.mark.parametrize("input_type", ["dataloader", "pandas", "list", "numpy", "torch"])
 def test_data_processing_valid_input(input_type, load_data):
     """Check if the _update_attr method raises an exception when an undefined attribute is given."""
 
     x, y = get_data(load_data)
 
-    if input_type.lower() == "torchvision":
+    if input_type.lower() == "dataloader":
+        # Turn into `torch.utils.data.dataloader.DataLoader`
         x, y = torch.tensor(x), torch.tensor(y)
-        x = TensorDataset(x, y)
+        x = DataLoader(TensorDataset(x, y), batch_size=32)
         y = None
-
     if input_type.lower() == "pandas":
         # Turn into Pandas
         x = pandas.DataFrame(x)

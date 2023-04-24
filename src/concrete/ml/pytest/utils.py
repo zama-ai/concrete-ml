@@ -229,12 +229,23 @@ def data_calibration_processing(data, n_sample: int, targets=None):
         TypeError: If the 'data-set' does not match any expected type.
     """
     assert n_sample >= 1, "`n_sample` must be greater than or equal to `1`"
-    n_sample = min(len(data), n_sample)
 
-    # Generates a random sample from a given 1-D array
-    random_sample = numpy.random.choice(len(data), n_sample, replace=False)
+    if isinstance(data, torch.utils.data.dataloader.DataLoader):
+        n_elements = 0
+        all_y, all_x = [], []
+        # Iterate over n batches, to apply any necessary torch transformations to the data-set
+        for x_batch, y_batch in data:
+            all_x.append(x_batch.numpy())
+            all_y.append(y_batch.numpy())
+            # Number of elements per batch
+            n_elements += y_batch.shape[0]
+            # If the number of elements within n batches is >= `n_element`, break the loop
+            # `n_sample` is reached.
+            if n_sample <= n_elements:
+                break
 
-    if (
+        x, y = numpy.concatenate(all_x), numpy.concatenate(all_y)
+    elif (
         hasattr(data, "__getitem__") and hasattr(data, "__len__") and hasattr(data, "train")
     ) or isinstance(data, torch.utils.data.dataset.Subset):
         assert targets is None, "dataset includes inputs and targets"
@@ -257,6 +268,11 @@ def data_calibration_processing(data, n_sample: int, targets=None):
             "Only numpy arrays, torch tensors and torchvision data-sets are supported. "
             f"Got `{type(data)}` as input type and `{type(targets)}` as target type"
         )
+
+    n_sample = min(len(x), n_sample)
+
+    # Generates a random sample from a given 1-D array
+    random_sample = numpy.random.choice(len(x), n_sample, replace=False)
 
     x = x[random_sample]
     y = y[random_sample]
