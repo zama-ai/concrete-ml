@@ -1,13 +1,17 @@
 """Common functions or lists for test files, which can't be put in fixtures."""
+import io
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import numpy
 import pytest
 import torch
+from numpy.random import RandomState
 from torch import nn
 
+from ..common.serialization.dumpers import dump, dumps
+from ..common.serialization.loaders import load, loads
 from ..common.utils import get_model_class, get_model_name, is_model_class_in_a_list, is_pandas_type
 from ..sklearn import (
     DecisionTreeClassifier,
@@ -57,6 +61,7 @@ _regressor_models = [
         module__activation_function=nn.ReLU,
         max_epochs=10,
         verbose=0,
+        callbacks="disable",
     ),
 ]
 
@@ -72,6 +77,7 @@ _classifier_models = [
         module__activation_function=nn.ReLU,
         max_epochs=10,
         verbose=0,
+        callbacks="disable",
     ),
 ]
 
@@ -174,12 +180,12 @@ def instantiate_model_generic(model_class, **parameters):
     else:
         model = model_class(n_bits=n_bits)
 
-    # Seed the model
+    # Seed the model if it handles "random_state" as a parameter
     model_params = model.get_params()
     if "random_state" in model_params:
         model_params["random_state"] = numpy.random.randint(0, 2**15)
 
-    model.set_params(**model_params)
+        model.set_params(**model_params)
 
     return model
 
@@ -307,3 +313,152 @@ def load_torch_model(
         model.load_state_dict(state_dict)
 
     return model
+
+
+# pylint: disable-next=too-many-return-statements
+def values_are_equal(value_1: Any, value_2: Any) -> bool:
+    """Indicate if two values are equal.
+
+    This method takes into account objects of type None, numpy.ndarray, numpy.floating,
+    numpy.integer, numpy.random.RandomState or any instance that provides a `__eq__` method.
+
+    Args:
+        value_2 (Any): The first value to consider.
+        value_1 (Any): The second value to consider.
+
+    Returns:
+        bool: If the two values are equal.
+    """
+    if value_1 is None:
+        return value_2 is None
+
+    if isinstance(value_1, numpy.ndarray):
+        return (
+            isinstance(value_2, numpy.ndarray)
+            and numpy.array_equal(value_1, value_2)
+            and value_1.dtype == value_2.dtype
+        )
+
+    if isinstance(value_1, (numpy.floating, numpy.integer)):
+        return (
+            isinstance(value_2, (numpy.floating, numpy.integer))
+            and value_1 == value_2
+            and value_1.dtype == value_2.dtype
+        )
+
+    if isinstance(value_1, RandomState):
+        if isinstance(value_2, RandomState):
+            state_1, state_2 = value_1.get_state(), value_2.get_state()
+
+            # Check that values from both states are equal
+            for elt_1, elt_2 in zip(state_1, state_2):
+                if not numpy.array_equal(elt_1, elt_2):
+                    return False
+            return True
+        return False
+
+    return value_1 == value_2
+
+
+def check_serialization(
+    object_to_serialize: Any,
+    expected_type: Type,
+    equal_method: Callable = values_are_equal,
+    check_str: bool = True,
+):
+    """Check that the given object can properly be serialized.
+
+    This function serializes all objects using the `dump`, `dumps`, `load` and `loads` functions
+    from Concrete ML. If the given object provides a `dump` and `dumps` method, they are also
+    serialized using these.
+
+    Args:
+        object_to_serialize (Any): The object to serialize.
+        expected_type (Type): The object's expected type.
+        equal_method (Callable): The function to use to compare the two loaded objects. Default to
+            `values_are_equal`.
+        check_str (bool): If the JSON strings should also be checked. Default to True.
+    """
+    assert (
+        isinstance(object_to_serialize, expected_type)
+        if expected_type is not None
+        else object_to_serialize is None
+    )
+
+    dump_method_to_test = [False]
+
+    # If the given object provides a `dump`, `dumps` `dump_dict` method (which indicates that they
+    # are Concrete ML serializable classes), run the check using these as well
+    if (
+        hasattr(object_to_serialize, "dump")
+        and hasattr(object_to_serialize, "dumps")
+        and hasattr(object_to_serialize, "dump_dict")
+    ):
+        dump_method_to_test.append(True)
+
+    for use_dump_method in dump_method_to_test:
+
+        # Dump the object into a string
+        if use_dump_method:
+            dumped_str = object_to_serialize.dumps()
+        else:
+            dumped_str = dumps(object_to_serialize)
+
+        # Load the object using a string
+        loaded = loads(dumped_str)
+
+        # Assert that the loaded object is equal to the initial one
+        assert isinstance(loaded, expected_type) if expected_type is not None else loaded is None, (
+            f"Loaded object (from string) is not of the expected type. Expected {expected_type}, "
+            f"got {type(loaded)}."
+        )
+        assert equal_method(object_to_serialize, loaded), (
+            "Loaded object (from string) is not equal to the initial one, using equal method "
+            f"{equal_method}."
+        )
+
+        if check_str:
+            # Dump the loaded object into a string
+            if use_dump_method:
+                re_dumped_str = loaded.dumps()
+            else:
+                re_dumped_str = dumps(loaded)
+
+            # Assert that both JSON strings are equal. This will not work if some objects were
+            # dumped using Skops or pickle (such as a scikit-learn model or a Type object)
+            assert isinstance(dumped_str, str) and isinstance(re_dumped_str, str), (
+                f"One of the dumped strings is not a string. Got {type(dumped_str)} and "
+                f"{type(re_dumped_str)}."
+            )
+            assert dumped_str == re_dumped_str, (
+                "Dumped strings are not equal. This could come from objects that were serialized "
+                "in binary strings using Skops or pickle. If this cannot be avoided, please set "
+                "`check_str` to False."
+            )
+
+        # Define a buffer to test serialization in a file
+        with io.StringIO() as buffer:
+            buffer.seek(0, 0)
+
+            # Dump the object in a file
+            if use_dump_method:
+                object_to_serialize.dump(buffer)
+            else:
+                dump(object_to_serialize, buffer)
+
+            buffer.seek(0, 0)
+
+            # Load the object from the file
+            loaded = load(buffer)
+
+            # Assert that the loaded object is equal to the initial one
+            assert (
+                isinstance(loaded, expected_type) if expected_type is not None else loaded is None
+            ), (
+                "Loaded object (from file) is not of the expected type. Expected "
+                f"{expected_type}, got {type(loaded)}."
+            )
+            assert equal_method(object_to_serialize, loaded), (
+                "Loaded object (from file) is not equal to the initial one, using equal method "
+                f"{equal_method}."
+            )

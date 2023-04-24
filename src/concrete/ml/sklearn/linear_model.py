@@ -1,12 +1,8 @@
 """Implement sklearn linear model."""
 from typing import Any, Dict
 
-import numpy
-import sklearn
 import sklearn.linear_model
 
-from .. import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
-from ..quantization.quantizers import UniformQuantizer
 from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
 
 
@@ -54,23 +50,20 @@ class LinearRegression(SklearnLinearRegressorMixin):
 
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = type(self).__name__
-
-        # Linear
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["sklearn_model_class"] = self.sklearn_model_class
-        metadata["fhe_circuit"] = self.fhe_circuit
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
+        metadata["post_processing_params"] = self.post_processing_params
 
+        # Scikit-Learn
         metadata["fit_intercept"] = self.fit_intercept
         metadata["normalize"] = self.normalize
         metadata["copy_X"] = self.copy_X
@@ -81,33 +74,24 @@ class LinearRegression(SklearnLinearRegressorMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = LinearRegression()
-        obj.post_processing_params = metadata["post_processing_params"]
 
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        # Linear
+        # Concrete-ML
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model_class = metadata["sklearn_model_class"]
-        obj.fhe_circuit = metadata["fhe_circuit"]
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
-        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj.onnx_model_ = metadata["onnx_model_"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
+        obj.post_processing_params = metadata["post_processing_params"]
 
-        # Custom
+        # Scikit-Learn
         obj.fit_intercept = metadata["fit_intercept"]
         obj.normalize = metadata["normalize"]
         obj.copy_X = metadata["copy_X"]
@@ -173,23 +157,20 @@ class ElasticNet(SklearnLinearRegressorMixin):
 
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = type(self).__name__
-
-        # Linear
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["sklearn_model_class"] = self.sklearn_model_class
-        metadata["fhe_circuit"] = self.fhe_circuit
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
+        metadata["post_processing_params"] = self.post_processing_params
 
+        # Scikit-Learn
         metadata["alpha"] = self.alpha
         metadata["l1_ratio"] = self.l1_ratio
         metadata["fit_intercept"] = self.fit_intercept
@@ -207,32 +188,24 @@ class ElasticNet(SklearnLinearRegressorMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = ElasticNet()
-        obj.post_processing_params = metadata["post_processing_params"]
 
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        # Linear
+        # Concrete-ML
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model_class = metadata["sklearn_model_class"]
-        obj.fhe_circuit = metadata["fhe_circuit"]
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
-        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj.onnx_model_ = metadata["onnx_model_"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
+        obj.post_processing_params = metadata["post_processing_params"]
 
+        # Scikit-Learn
         obj.alpha = metadata["alpha"]
         obj.l1_ratio = metadata["l1_ratio"]
         obj.fit_intercept = metadata["fit_intercept"]
@@ -304,23 +277,20 @@ class Lasso(SklearnLinearRegressorMixin):
 
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = type(self).__name__
-
-        # Linear
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["sklearn_model_class"] = self.sklearn_model_class
-        metadata["fhe_circuit"] = self.fhe_circuit
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
+        metadata["post_processing_params"] = self.post_processing_params
 
+        # Scikit-Learn
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
         metadata["normalize"] = self.normalize
@@ -337,32 +307,24 @@ class Lasso(SklearnLinearRegressorMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = Lasso()
-        obj.post_processing_params = metadata["post_processing_params"]
 
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        # Linear
+        # Concrete-ML
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model_class = metadata["sklearn_model_class"]
-        obj.fhe_circuit = metadata["fhe_circuit"]
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
-        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj.onnx_model_ = metadata["onnx_model_"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
+        obj.post_processing_params = metadata["post_processing_params"]
 
+        # Scikit-Learn
         obj.alpha = metadata["alpha"]
         obj.fit_intercept = metadata["fit_intercept"]
         obj.normalize = metadata["normalize"]
@@ -429,23 +391,20 @@ class Ridge(SklearnLinearRegressorMixin):
 
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = type(self).__name__
-
-        # Linear
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["sklearn_model_class"] = self.sklearn_model_class
-        metadata["fhe_circuit"] = self.fhe_circuit
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
+        metadata["post_processing_params"] = self.post_processing_params
 
+        # Scikit-Learn
         metadata["alpha"] = self.alpha
         metadata["fit_intercept"] = self.fit_intercept
         metadata["normalize"] = self.normalize
@@ -460,32 +419,24 @@ class Ridge(SklearnLinearRegressorMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = Ridge()
-        obj.post_processing_params = metadata["post_processing_params"]
 
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        # Linear
+        # Concrete-ML
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model_class = metadata["sklearn_model_class"]
-        obj.fhe_circuit = metadata["fhe_circuit"]
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
-        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj.onnx_model_ = metadata["onnx_model_"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
+        obj.post_processing_params = metadata["post_processing_params"]
 
+        # Scikit-Learn
         obj.alpha = metadata["alpha"]
         obj.fit_intercept = metadata["fit_intercept"]
         obj.normalize = metadata["normalize"]
@@ -561,29 +512,24 @@ class LogisticRegression(SklearnLinearClassifierMixin):
 
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = type(self).__name__
-
-        # Classifier
-        metadata["classes_"] = self.target_classes_
-        metadata["n_classes_"] = self.n_classes_
-        metadata["cml_dumped_class_name"] = type(self).__name__
-
-        # Linear
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["sklearn_model_class"] = self.sklearn_model_class
-        metadata["fhe_circuit"] = self.fhe_circuit
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["_weight_quantizer"] = self._weight_quantizer.dumps()
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["_q_weights"] = self._q_weights
         metadata["_q_bias"] = self._q_bias
+        metadata["post_processing_params"] = self.post_processing_params
 
-        # Specific
+        # Classifier
+        metadata["target_classes_"] = self.target_classes_
+        metadata["n_classes_"] = self.n_classes_
+
+        # Scikit-Learn
         metadata["penalty"] = self.penalty
         metadata["dual"] = self.dual
         metadata["tol"] = self.tol
@@ -604,36 +550,27 @@ class LogisticRegression(SklearnLinearClassifierMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+        # Instantiate the model
         obj = LogisticRegression()
-        obj.post_processing_params = metadata["post_processing_params"]
 
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        # Classifier
-        obj.target_classes_ = numpy.array(metadata["classes_"])
-        obj.n_classes_ = metadata["n_classes_"]
-
-        # Linear
+        # Concrete-ML
         obj.n_bits = metadata["n_bits"]
-        obj.sklearn_model_class = metadata["sklearn_model_class"]
-        obj.fhe_circuit = metadata["fhe_circuit"]
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-        obj._weight_quantizer = UniformQuantizer.loads(metadata["_weight_quantizer"])
-        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj.onnx_model_ = metadata["onnx_model_"]
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
+        obj.post_processing_params = metadata["post_processing_params"]
 
+        # Classifier
+        obj.target_classes_ = metadata["target_classes_"]
+        obj.n_classes_ = metadata["n_classes_"]
+
+        # Scikit-Learn
         obj.penalty = metadata["penalty"]
         obj.dual = metadata["dual"]
         obj.tol = metadata["tol"]

@@ -2,11 +2,8 @@
 from typing import Any, Dict
 
 import numpy
-from sklearn.tree import DecisionTreeClassifier as SklearnDecisionTreeClassifier
-from sklearn.tree import DecisionTreeRegressor as SklearnDecisionTreeRegressor
+import sklearn.tree
 
-from .. import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
-from ..quantization.quantizers import UniformQuantizer
 from ..sklearn.tree_to_numpy import tree_to_numpy
 from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegressorMixin
 
@@ -15,7 +12,7 @@ from .base import BaseTreeClassifierMixin, BaseTreeEstimatorMixin, BaseTreeRegre
 class DecisionTreeClassifier(BaseTreeClassifierMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
-    sklearn_model_class = SklearnDecisionTreeClassifier
+    sklearn_model_class = sklearn.tree.DecisionTreeClassifier
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -66,22 +63,22 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["onnx_model_"] = self.onnx_model_
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["output_quantizers"] = self.output_quantizers
+        metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
+        metadata["post_processing_params"] = self.post_processing_params
 
         # Classifier
-        metadata["classes_"] = self.target_classes_
+        metadata["target_classes_"] = self.target_classes_
         metadata["n_classes_"] = self.n_classes_
 
+        # Scikit-Learn
         metadata["criterion"] = self.criterion
         metadata["splitter"] = self.splitter
         metadata["max_depth"] = self.max_depth
@@ -99,39 +96,29 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = cls(n_bits=metadata["n_bits"])
 
-        # Tree
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
+        # Concrete-ML
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
         obj.framework = metadata["framework"]
-
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )
-
         obj.post_processing_params = metadata["post_processing_params"]
-        obj._is_fitted = metadata["_is_fitted"]
-        obj._is_compiled = metadata["_is_compiled"]
 
         # Classifier
-        obj.target_classes_ = numpy.array(metadata["classes_"])
+        obj.target_classes_ = metadata["target_classes_"]
         obj.n_classes_ = metadata["n_classes_"]
 
+        # Scikit-Learn
         obj.criterion = metadata["criterion"]
         obj.splitter = metadata["splitter"]
         obj.max_depth = metadata["max_depth"]
@@ -152,7 +139,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
 class DecisionTreeRegressor(BaseTreeRegressorMixin):
     """Implements the sklearn DecisionTreeClassifier."""
 
-    sklearn_model_class = SklearnDecisionTreeRegressor
+    sklearn_model_class = sklearn.tree.DecisionTreeRegressor
     framework = "sklearn"
     _is_a_public_cml_model = True
 
@@ -195,18 +182,18 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
-        metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["onnx_model_"] = self.onnx_model_
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["output_quantizers"] = self.output_quantizers
+        metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
+        metadata["post_processing_params"] = self.post_processing_params
 
+        # Scikit-Learn
         metadata["criterion"] = self.criterion
         metadata["splitter"] = self.splitter
         metadata["max_depth"] = self.max_depth
@@ -223,35 +210,25 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = cls(n_bits=metadata["n_bits"])
 
-        # Tree
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
+        # Concrete-ML
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
         obj.framework = metadata["framework"]
-
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )
-
         obj.post_processing_params = metadata["post_processing_params"]
-        obj._is_fitted = metadata["_is_fitted"]
-        obj._is_compiled = metadata["_is_compiled"]
 
+        # Scikit-Learn
         obj.criterion = metadata["criterion"]
         obj.splitter = metadata["splitter"]
         obj.max_depth = metadata["max_depth"]

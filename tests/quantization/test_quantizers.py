@@ -1,10 +1,16 @@
 """Tests for the quantized array/tensors."""
-import io
-
 import numpy
 import pytest
 
-from concrete.ml.quantization import QuantizedArray
+from concrete.ml.pytest.utils import check_serialization
+from concrete.ml.quantization.quantizers import (
+    STABILITY_CONST,
+    MinMaxQuantizationStats,
+    QuantizationOptions,
+    QuantizedArray,
+    UniformQuantizationParameters,
+    UniformQuantizer,
+)
 
 
 @pytest.mark.parametrize(
@@ -68,15 +74,6 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
     # Check that the __call__ returns also the qvalues.
     check_array_equality(quant_array(), new_qvalues)
 
-    # Check that we can load the quantized array
-    with io.StringIO() as buffer:
-        quant_array.dump(buffer)
-        buffer.seek(0, 0)
-        loaded_quant_array = QuantizedArray.load(buffer)
-
-    assert (loaded_quant_array.values == quant_array.values).all()
-    assert (loaded_quant_array.qvalues == quant_array.qvalues).all()
-
 
 @pytest.mark.parametrize(
     "n_bits",
@@ -87,7 +84,7 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
 def test_quantized_array_all_zeros(n_bits, is_signed, value_shape):
     """Test case where all values are close to 0 in an interval smaller than STABILITY_CONST."""
 
-    values = numpy.random.uniform(0, QuantizedArray.STABILITY_CONST * 0.99, size=value_shape)
+    values = numpy.random.uniform(0, STABILITY_CONST * 0.99, size=value_shape)
 
     quant_array = QuantizedArray(
         n_bits,
@@ -129,3 +126,71 @@ def test_quantized_array_constructor():
     # Test an incomplete stats structure, should throw an error
     with pytest.raises(TypeError):
         QuantizedArray(2, values, stats=None, rmax=2)
+
+
+# pylint: disable-next=too-many-statements
+def test_serialization():
+    """Test the serialization of quantizers objects."""
+
+    # Array values to consider
+    values = numpy.linspace((1, 2), (10, 20), 10, dtype=numpy.float64)
+
+    # Test the serialization of QuantizationOptions
+    quantization_options = QuantizationOptions(
+        n_bits=20,
+        is_signed=True,
+        is_symmetric=False,
+        is_qat=True,
+    )
+
+    check_serialization(quantization_options, QuantizationOptions)
+
+    # Test the serialization of MinMaxQuantizationStats
+    min_max_quantization_stats = MinMaxQuantizationStats()
+    min_max_quantization_stats.compute_quantization_stats(values)
+
+    check_serialization(min_max_quantization_stats, MinMaxQuantizationStats)
+
+    # Test the serialization of UniformQuantizationParameters
+    uniform_quantization_parameters = UniformQuantizationParameters()
+
+    check_serialization(uniform_quantization_parameters, UniformQuantizationParameters)
+
+    # Test the serialization og UniformQuantizationParameters with compute_quantization_parameters
+    uniform_quantization_parameters = UniformQuantizationParameters()
+    uniform_quantization_parameters.compute_quantization_parameters(
+        stats=min_max_quantization_stats,
+        options=quantization_options,
+    )
+
+    check_serialization(uniform_quantization_parameters, UniformQuantizationParameters)
+
+    # Test the serialization of UniformQuantizer
+    uniform_quantizer = UniformQuantizer(
+        options=quantization_options,
+        stats=min_max_quantization_stats,
+        params=uniform_quantization_parameters,
+    )
+
+    check_serialization(uniform_quantizer, UniformQuantizer)
+
+    # Test the serialization of QuantizedArray
+    quantized_array = QuantizedArray(
+        n_bits=20,
+        values=values,
+        value_is_float=True,
+    )
+
+    check_serialization(quantized_array, QuantizedArray)
+
+    # Test the serialization of QuantizedArray with more kwargs
+    quantized_array = QuantizedArray(
+        n_bits=20,
+        values=values,
+        value_is_float=True,
+        options=quantization_options,
+        stats=min_max_quantization_stats,
+        params=uniform_quantization_parameters,
+    )
+
+    check_serialization(quantized_array, QuantizedArray)

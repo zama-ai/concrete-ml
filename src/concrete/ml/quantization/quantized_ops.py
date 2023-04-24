@@ -1709,21 +1709,21 @@ class QuantizedBrevitasQuant(QuantizedOp):
         # To ensure de-quantization produces floats, the following parameters must be float.
         # This should be default export setting in Brevitas
         check_float(
-            constant_inputs is not None
+            self.constant_inputs is not None
             and self.constant_inputs[self._params_name_to_input_idx["scale"]],
             "Scale of Brevitas Quant op must be float",
         )
         check_float(
-            constant_inputs is not None
+            self.constant_inputs is not None
             and self.constant_inputs[self._params_name_to_input_idx["zero_point"]],
             "Zero Point of Brevitas Quant op must be float",
         )
 
         # For mypy
-        assert constant_inputs is not None
+        assert self.constant_inputs is not None
 
-        # The constant inputs can have either int or str keys, here it is int
-        n_bits = constant_inputs[3]  # type: ignore
+        # The constant inputs can have either int or str keys, here it is an int
+        n_bits = self.constant_inputs[3]  # type: ignore
 
         # Set the QAT flag on the output of this operation, so that the
         # following operation in the graph is aware of this flag and can

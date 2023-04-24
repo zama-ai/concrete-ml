@@ -2,13 +2,14 @@
 
 from copy import deepcopy
 from inspect import Parameter, _empty, signature
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Tuple, Type, Union, cast
 
 import numpy
 
 from concrete import fhe
 
 from ..common.debugging import assert_false, assert_true
+from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import compute_bits_precision
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
 from ..onnx.ops_impl import ONNXMixedFunction, RawOpOutput
@@ -69,7 +70,7 @@ class QuantizedOp:
     constant_inputs: Dict[int, Any]
     attrs: Dict[str, Any] = {}
     _authorized_attr_names: Set[str] = set()
-    # This can be used for custom implementations of some missing or (god forbid) buggy operators.
+    # This can be used for custom implementations of some missing or buggy operators
     _impl_for_op_named: Optional[str] = None
     _default_attrs: Dict[str, Any] = {}
     _params_name_to_input_idx: Dict[str, int] = {}
@@ -137,7 +138,16 @@ class QuantizedOp:
 
         def _convert_input_name_or_idx_to_input_name(input_name_or_idx: Union[str, int]) -> str:
             if isinstance(input_name_or_idx, str):
-                return input_name_or_idx
+
+                # When serializing constant inputs using a JSONEncoder, integer indexes are
+                # automatically converted to strings. We therefore need to put these indexes back
+                # to integers by checking if the current string can be converted to an integer
+                # object.
+                if input_name_or_idx.isdigit():
+                    input_name_or_idx = int(input_name_or_idx)
+                else:
+                    return input_name_or_idx
+
             return self._input_idx_to_params_name[input_name_or_idx]
 
         if constant_inputs is not None:
@@ -185,6 +195,138 @@ class QuantizedOp:
         # with respect to the ONNX graph (usually we keep use ONNX op name)
         self.op_instance_name = op_instance_name
 
+    def dump_dict(self) -> Dict:
+        """Dump itself to a dict.
+
+        Returns:
+            metadata (Dict): Dict of serialized objects.
+        """
+        metadata: Dict[str, Any] = {}
+
+        metadata["_impl_for_op_named"] = self._impl_for_op_named
+
+        # Attributes needed for instantiating a quantized operator
+        metadata["n_bits"] = self.n_bits
+        metadata["op_instance_name"] = self.op_instance_name
+        metadata["_int_input_names"] = self.int_input_names
+        metadata["constant_inputs"] = self.constant_inputs
+        metadata["input_quant_opts"] = self.input_quant_opts
+        metadata["attrs"] = self.attrs
+
+        # Output quantization attributes
+        metadata["output_quant_params"] = self.output_quant_params
+        metadata["output_quant_stats"] = self.output_quant_stats
+        if hasattr(self, "output_quant_opts"):
+            metadata["output_quant_opts"] = self.output_quant_opts
+
+        # QuantizedOp attributes
+        # Set attributes are converted to list since set are not serializable. Additionally, in
+        # order to be able to properly compare identical serialized objects, these lists are sorted
+        metadata["_authorized_attr_names"] = self._authorized_attr_names
+        metadata["_default_attrs"] = self._default_attrs
+        metadata["_params_name_to_input_idx"] = self._params_name_to_input_idx
+        metadata["_input_idx_to_params_name"] = self._input_idx_to_params_name
+        metadata["_params_that_are_onnx_inputs"] = self._params_that_are_onnx_inputs
+        metadata["_params_that_are_onnx_var_inputs"] = self._params_that_are_onnx_var_inputs
+        metadata[
+            "_params_that_are_required_onnx_inputs"
+        ] = self._params_that_are_required_onnx_inputs
+        metadata["_has_attr"] = self._has_attr
+        metadata["_inputs_not_quantized"] = self._inputs_not_quantized
+        metadata[
+            "quantize_inputs_with_model_outputs_precision"
+        ] = self.quantize_inputs_with_model_outputs_precision
+        metadata["produces_graph_output"] = self.produces_graph_output
+        metadata["produces_raw_output"] = self.produces_raw_output
+        metadata["error_tracker"] = self.error_tracker
+        metadata["debug_value_tracker"] = self.debug_value_tracker
+
+        # Additional attributes specific to some quantized operators
+        for attribute_name in vars(self):
+            attribute_value = getattr(self, attribute_name)
+
+            if attribute_name not in metadata:
+                metadata[attribute_name] = attribute_value
+
+        return metadata
+
+    @staticmethod
+    def load_dict(metadata: Dict):
+        """Load itself from a string.
+
+        Args:
+            metadata (Dict): Dict of serialized objects.
+
+        Returns:
+            QuantizedOp: The loaded object.
+        """
+
+        # Instantiate the quantized operator
+        quantized_op = ONNX_OPS_TO_QUANTIZED_IMPL[metadata.pop("_impl_for_op_named")]
+        obj = quantized_op(
+            n_bits_output=metadata.pop("n_bits"),
+            op_instance_name=metadata.pop("op_instance_name"),
+            int_input_names=metadata.pop("_int_input_names"),
+            constant_inputs=metadata.pop("constant_inputs"),
+            input_quant_opts=metadata.pop("input_quant_opts"),
+            **metadata.pop("attrs"),
+        )
+
+        # Output quantization attributes
+        obj.output_quant_params = metadata.pop("output_quant_params")
+        obj.output_quant_stats = metadata.pop("output_quant_stats")
+        if "output_quant_opts" in metadata:
+            assert hasattr(
+                obj, "output_quant_opts"
+            ), f"{obj.__class__.__name__} has no output_quant_opts attribute."
+
+            obj.output_quant_opts = metadata.pop("output_quant_opts")  # type: ignore[arg-type]
+
+        # QuantizedOp attributes
+        # pylint: disable=protected-access
+        obj._authorized_attr_names = metadata.pop("_authorized_attr_names")
+        obj._default_attrs = metadata.pop("_default_attrs")
+        obj._params_name_to_input_idx = metadata.pop("_params_name_to_input_idx")
+        obj._input_idx_to_params_name = metadata.pop("_input_idx_to_params_name")
+        obj._params_that_are_onnx_inputs = metadata.pop("_params_that_are_onnx_inputs")
+        obj._params_that_are_onnx_var_inputs = metadata.pop("_params_that_are_onnx_var_inputs")
+        obj._params_that_are_required_onnx_inputs = metadata.pop(
+            "_params_that_are_required_onnx_inputs"
+        )
+        obj._has_attr = metadata.pop("_has_attr")
+        obj._inputs_not_quantized = metadata.pop("_inputs_not_quantized")
+        obj.quantize_inputs_with_model_outputs_precision = metadata.pop(
+            "quantize_inputs_with_model_outputs_precision"
+        )
+        obj.produces_graph_output = metadata.pop("produces_graph_output")
+        obj.produces_raw_output = metadata.pop("produces_raw_output")
+        obj.error_tracker = metadata.pop("error_tracker")
+        obj.debug_value_tracker = metadata.pop("debug_value_tracker")
+        # pylint: enable=protected-access
+
+        # Additional attributes specific to some quantized operators
+        for attribute in metadata:
+            if hasattr(obj, attribute):
+                setattr(obj, attribute, metadata[attribute])
+
+        return obj
+
+    def dumps(self) -> str:
+        """Dump itself to a string.
+
+        Returns:
+            metadata (str): String of the serialized object.
+        """
+        return dumps(self)
+
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
+
+        Args:
+            file (TextIO): The file to dump the serialized object into.
+        """
+        dump(self, file)
+
     @classmethod
     def op_type(cls):
         """Get the type of this operation.
@@ -199,7 +341,7 @@ class QuantizedOp:
         """Get the names of encrypted integer tensors that are used by this op.
 
         Returns:
-            List[str]: the names of the tensors
+            Set[str]: the names of the tensors
 
         """
 

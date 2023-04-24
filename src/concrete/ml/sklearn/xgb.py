@@ -6,9 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy
 import xgboost.sklearn
 
-from .. import TRUSTED_SKOPS, USE_SKOPS, loads_sklearn
 from ..common.debugging.custom_assert import assert_true
-from ..quantization.quantizers import UniformQuantizer
 from ..sklearn.tree_to_numpy import tree_to_numpy
 from .base import BaseTreeClassifierMixin, BaseTreeRegressorMixin
 
@@ -117,21 +115,22 @@ class XGBClassifier(BaseTreeClassifierMixin):
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["onnx_model_"] = self.onnx_model_
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["output_quantizers"] = self.output_quantizers
+        metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
+        metadata["post_processing_params"] = self.post_processing_params
 
         # Classifier
-        metadata["classes_"] = self.target_classes_
+        metadata["target_classes_"] = self.target_classes_
         metadata["n_classes_"] = self.n_classes_
 
+        # XGBoost
         metadata["max_depth"] = self.max_depth
         metadata["learning_rate"] = self.learning_rate
         metadata["n_estimators"] = self.n_estimators
@@ -162,43 +161,34 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["use_label_encoder"] = self.use_label_encoder
         metadata["random_state"] = self.random_state
         metadata["verbosity"] = self.verbosity
-        metadata["post_processing_params"] = self.post_processing_params
 
         return metadata
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = XGBClassifier(n_bits=metadata["n_bits"])
 
-        # Tree
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        obj.framework = metadata["framework"]
+        # Concrete-ML
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.framework = metadata["framework"]
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )
+        obj.post_processing_params = metadata["post_processing_params"]
 
         # Classifier
-        obj.target_classes_ = numpy.array(metadata["classes_"])
+        obj.target_classes_ = metadata["target_classes_"]
         obj.n_classes_ = metadata["n_classes_"]
 
+        # XGBoost
         obj.max_depth = metadata["max_depth"]
         obj.learning_rate = metadata["learning_rate"]
         obj.n_estimators = metadata["n_estimators"]
@@ -229,7 +219,6 @@ class XGBClassifier(BaseTreeClassifierMixin):
         obj.use_label_encoder = metadata["use_label_encoder"]
         obj.random_state = metadata["random_state"]
         obj.verbosity = metadata["verbosity"]
-        obj.post_processing_params = metadata["post_processing_params"]
 
         return obj
 
@@ -353,18 +342,18 @@ class XGBRegressor(BaseTreeRegressorMixin):
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+        # Concrete-ML
         metadata["n_bits"] = self.n_bits
-        metadata["input_quantizers"] = [elt.dumps() for elt in self.input_quantizers]
-        metadata["output_quantizers"] = [elt.dumps() for elt in self.output_quantizers]
-        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["sklearn_model"] = self.sklearn_model
-        metadata["onnx_model_"] = self.onnx_model_
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["output_quantizers"] = self.output_quantizers
+        metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
+        metadata["post_processing_params"] = self.post_processing_params
 
-        # Specific
+        # XGBoost
         metadata["max_depth"] = self.max_depth
         metadata["learning_rate"] = self.learning_rate
         metadata["n_estimators"] = self.n_estimators
@@ -395,39 +384,30 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["use_label_encoder"] = self.use_label_encoder
         metadata["random_state"] = self.random_state
         metadata["verbosity"] = self.verbosity
-        metadata["post_processing_params"] = self.post_processing_params
 
         return metadata
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
         obj = XGBRegressor(n_bits=metadata["n_bits"])
 
-        # Tree
-        obj.input_quantizers = [UniformQuantizer.loads(elt) for elt in metadata["input_quantizers"]]
-        obj.output_quantizers = [
-            UniformQuantizer.loads(elt) for elt in metadata["output_quantizers"]
-        ]
-
-        # Load the underlying fitted model
-        loads_sklearn_kwargs = {}
-        if USE_SKOPS:
-            loads_sklearn_kwargs["trusted"] = TRUSTED_SKOPS
-        obj.sklearn_model = loads_sklearn(
-            bytes.fromhex(metadata["sklearn_model"]), **loads_sklearn_kwargs
-        )
-
-        obj.framework = metadata["framework"]
+        # Concrete-ML
+        obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
-
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.framework = metadata["framework"]
         obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )
+        obj.post_processing_params = metadata["post_processing_params"]
 
+        # XGBoost
         obj.max_depth = metadata["max_depth"]
         obj.learning_rate = metadata["learning_rate"]
         obj.n_estimators = metadata["n_estimators"]
@@ -458,6 +438,5 @@ class XGBRegressor(BaseTreeRegressorMixin):
         obj.use_label_encoder = metadata["use_label_encoder"]
         obj.random_state = metadata["random_state"]
         obj.verbosity = metadata["verbosity"]
-        obj.post_processing_params = metadata["post_processing_params"]
 
         return obj

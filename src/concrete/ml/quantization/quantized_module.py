@@ -1,7 +1,7 @@
 """QuantizedModule API."""
 import copy
 import re
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterable, List, Optional, TextIO, Tuple, Union
 
 import numpy
 from concrete.fhe.compilation.artifacts import DebugArtifacts
@@ -10,6 +10,7 @@ from concrete.fhe.compilation.compiler import Compiler
 from concrete.fhe.compilation.configuration import Configuration
 
 from ..common.debugging import assert_true
+from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
     SUPPORTED_FLOAT_TYPES,
     SUPPORTED_INT_TYPES,
@@ -120,6 +121,67 @@ class QuantizedModule:
         assert quant_layers_dict is not None
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
         self.output_quantizers = self._set_output_quantizers()
+
+    def dump_dict(self) -> Dict:
+        """Dump itself to a dict.
+
+        Returns:
+            metadata (Dict): Dict of serialized objects.
+        """
+        metadata: Dict[str, Any] = {}
+
+        metadata["_is_compiled"] = self._is_compiled
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["output_quantizers"] = self.output_quantizers
+        metadata["_onnx_model"] = self._onnx_model
+        metadata["_post_processing_params"] = self._post_processing_params
+        metadata["ordered_module_input_names"] = self.ordered_module_input_names
+        metadata["ordered_module_output_names"] = self.ordered_module_output_names
+        metadata["quant_layers_dict"] = self.quant_layers_dict
+
+        return metadata
+
+    @staticmethod
+    def load_dict(metadata: Dict):
+        """Load itself from a string.
+
+        Args:
+            metadata (Dict): Dict of serialized objects.
+
+        Returns:
+            QuantizedModule: The loaded object.
+        """
+
+        # Instantiate the module
+        obj = QuantizedModule()
+
+        # pylint: disable=protected-access
+        obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._onnx_model = metadata["_onnx_model"]
+        obj.ordered_module_input_names = metadata["ordered_module_input_names"]
+        obj.ordered_module_output_names = metadata["ordered_module_output_names"]
+        obj.quant_layers_dict = metadata["quant_layers_dict"]
+        # pylint: enable=protected-access
+
+        return obj
+
+    def dumps(self) -> str:
+        """Dump itself to a string.
+
+        Returns:
+            metadata (str): String of the serialized object.
+        """
+        return dumps(self)
+
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
+
+        Args:
+            file (TextIO): The file to dump the serialized object into.
+        """
+        dump(self, file)
 
     @property
     def is_compiled(self) -> bool:

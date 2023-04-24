@@ -27,7 +27,7 @@ Are currently missing
 More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
-# pylint: disable=too-many-lines
+# pylint: disable=too-many-lines, too-many-arguments
 import json
 import tempfile
 import warnings
@@ -48,7 +48,6 @@ from torch import nn
 from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
-    get_model_class,
     get_model_name,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
@@ -239,96 +238,62 @@ def check_double_fit(model_class, n_bits, x, y):
     assert numpy.array_equal(y_pred_one, y_pred_two)
 
 
-def check_serialization(model, x):
+def check_serialization(model, x, use_dump_method):
     """Check serialization."""
 
-    model_class = get_model_class(model)
-
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3134
-    # Waiting that QNN are serialized
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        pytest.skip(f"Serialization not supported yet for {model_class}")
-
-    check_serialization_dump_load(model, x)
-    check_serialization_dumps_loads(model, x)
+    check_serialization_dump_load(model, x, use_dump_method)
+    check_serialization_dumps_loads(model, x, use_dump_method)
 
 
-def check_serialization_dump_load(model, x):
-    """Check that a model can be serialized two times using dump/load methods."""
-
-    model_class = get_model_class(model)
+def check_serialization_dump_load(model, x, use_dump_method):
+    """Check that a model can be serialized two times using dump/load."""
 
     with tempfile.TemporaryFile("w+") as temp_dump:
-        # Disable mypy
-        for (dump_method, load_method) in [
-            (dump, load),
-            (model_class.dump, model_class.load),
+        # Dump the model into the file
+        temp_dump.seek(0)
+        temp_dump.truncate(0)
+        if use_dump_method:
+            model.dump(file=temp_dump)
+        else:
+            dump(model, file=temp_dump)
+
+        # Load the model from the file as a dict using json
+        temp_dump.seek(0)
+        serialized_model_dict: Dict = json.load(temp_dump)
+
+        # Load the model from the file using Concrete ML's method
+        temp_dump.seek(0)
+        loaded_model = load(file=temp_dump)
+
+        # Dump the loaded model into the file using Concrete ML's method
+        temp_dump.seek(0)
+        temp_dump.truncate(0)
+        if use_dump_method:
+            loaded_model.dump(file=temp_dump)
+        else:
+            dump(loaded_model, file=temp_dump)
+
+        # Load the model from the file again as a dict using json
+        temp_dump.seek(0)
+        re_serialized_model_dict: Dict = json.load(temp_dump)
+
+        # Check that the dictionaries are identical
+        # We exclude attributes such as `sklearn_model` (for linear and tree-based models) or
+        # `params` (neural networks) since they are serialized using the pickle library, which does
+        # not handle double serialization)
+        for attribute in [
+            "sklearn_model",
+            "params",
+            "criterion",
+            "optimizer",
+            "iterator_train",
+            "iterator_valid",
+            "dataset",
+            "module__activation_function",
         ]:
-            # Dump the model into the file
-            temp_dump.seek(0)
-            temp_dump.truncate(0)
-            dump_method(model, file=temp_dump)
+            serialized_model_dict["serialized_value"].pop(attribute, None)
+            re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
-            # Load the model from the file as a dict using json
-            temp_dump.seek(0)
-            serialized_model_dict: Dict = json.load(temp_dump)
-
-            # Load the model from the file using Concrete ML's method
-            temp_dump.seek(0)
-            loaded_model = load_method(file=temp_dump)
-
-            # Dump the loaded model into the file using Concrete ML's method
-            temp_dump.seek(0)
-            temp_dump.truncate(0)
-            dump_method(loaded_model, file=temp_dump)
-
-            # Load the model from the file again as a dict using json
-            temp_dump.seek(0)
-            re_serialized_model_dict: Dict = json.load(temp_dump)
-
-            # Check that the dictionaries are identical (except for sklearn_model attribute, as
-            # it is serialized using the pickle library, which does not handle double serialization)
-            del serialized_model_dict["sklearn_model"]
-            del re_serialized_model_dict["sklearn_model"]
-            assert serialized_model_dict == re_serialized_model_dict
-
-            # Check that the predictions made by both model are identical
-            y_pred_model = model.predict(x)
-            y_pred_loaded_model = loaded_model.predict(x)
-            assert numpy.array_equal(y_pred_model, y_pred_loaded_model)
-
-            # Check that the predictions made by both Scikit-Learn model are identical
-            y_pred_sklearn_model = model.sklearn_model.predict(x)
-            y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
-            assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
-
-
-def check_serialization_dumps_loads(model, x):
-    """Check that a model can be serialized two times using dumps/loads methods."""
-
-    model_class = get_model_class(model)
-
-    for (dumps_method, loads_method) in [
-        (dumps, loads),
-        (model_class.dumps, model_class.loads),
-    ]:
-        # Dump the model into a string
-        serialized_model = dumps_method(model)
-
-        # Load the model from the string
-        loaded_model = loads_method(serialized_model)
-
-        # Dump the model into a string again
-        re_serialized_model: str = dumps_method(loaded_model)
-
-        # Load both strings using json
-        serialized_model_dict: Dict = json.loads(serialized_model)
-        re_serialized_model_dict: Dict = json.loads(re_serialized_model)
-
-        # Check that the dictionaries are identical (except for sklearn_model attribute, as
-        # it is serialized using the pickle library, which does not handle double serialization)
-        del serialized_model_dict["sklearn_model"]
-        del re_serialized_model_dict["sklearn_model"]
         assert serialized_model_dict == re_serialized_model_dict
 
         # Check that the predictions made by both model are identical
@@ -340,6 +305,58 @@ def check_serialization_dumps_loads(model, x):
         y_pred_sklearn_model = model.sklearn_model.predict(x)
         y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
         assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
+
+
+def check_serialization_dumps_loads(model, x, use_dump_method):
+    """Check that a model can be serialized two times using dumps/loads."""
+
+    # Dump the model into a string
+    if use_dump_method:
+        serialized_model_str = model.dumps()
+    else:
+        serialized_model_str = dumps(model)
+
+    # Load the model from the string
+    loaded_model = loads(serialized_model_str)
+
+    # Dump the model into a string again
+    if use_dump_method:
+        re_serialized_model_str: str = loaded_model.dumps()
+    else:
+        re_serialized_model_str: str = dumps(loaded_model)  # type: ignore[no-redef]
+
+    # Load both strings using json
+    serialized_model_dict: Dict = json.loads(serialized_model_str)
+    re_serialized_model_dict: Dict = json.loads(re_serialized_model_str)
+
+    # Check that the dictionaries are identical
+    # We exclude attributes such as `sklearn_model` (for linear and tree-based models) or
+    # `params` (neural networks) since they are serialized using the pickle library, which does
+    # not handle double serialization)
+    for attribute in [
+        "sklearn_model",
+        "params",
+        "criterion",
+        "optimizer",
+        "iterator_train",
+        "iterator_valid",
+        "dataset",
+        "module__activation_function",
+    ]:
+        serialized_model_dict["serialized_value"].pop(attribute, None)
+        re_serialized_model_dict["serialized_value"].pop(attribute, None)
+
+    assert serialized_model_dict == re_serialized_model_dict
+
+    # Check that the predictions made by both model are identical
+    y_pred_model = model.predict(x)
+    y_pred_loaded_model = loaded_model.predict(x)
+    assert numpy.array_equal(y_pred_model, y_pred_loaded_model)
+
+    # Check that the predictions made by both Scikit-Learn model are identical
+    y_pred_sklearn_model = model.sklearn_model.predict(x)
+    y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
+    assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
 
 
 def check_offset(model_class, n_bits, x, y):
@@ -370,12 +387,12 @@ def check_subfunctions(fitted_model, model_class, x):
 
     fitted_model.predict(x[:1])
 
-    # Skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
+    # skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
     # not. We decided to follow Scikit-Learn's API as we build most of our tools on this library.
-    # However, our models are still directly inheriting from Skorch's classes, which makes this
+    # However, our models are still directly inheriting from skorch's classes, which makes this
     # method accessible by anyone, without having any FHE implementation. As this could create some
     # confusion, a NotImplementedError is raised. This issue could be fixed by making these classes
-    # not inherit from Skorch.
+    # not inherit from skorch.
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
     if get_model_name(fitted_model) == "NeuralNetRegressor":
         with pytest.raises(
@@ -859,7 +876,6 @@ def check_class_mapping(model, x, y):
         if n >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS
     ],
 )
-# pylint: disable=too-many-arguments
 def test_quantization(
     model_class,
     parameters,
@@ -888,7 +904,6 @@ def test_quantization(
         if n >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS
     ],
 )
-# pylint: disable=too-many-arguments
 def test_correctness_with_sklearn(
     model_class,
     parameters,
@@ -922,7 +937,6 @@ def test_correctness_with_sklearn(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
-# pylint: disable=too-many-arguments
 def test_hyper_parameters(
     model_class,
     parameters,
@@ -957,7 +971,6 @@ def test_hyper_parameters(
     "n_bits",
     [3],
 )
-# pylint: disable=too-many-arguments
 def test_grid_search(
     model_class,
     parameters,
@@ -976,26 +989,30 @@ def test_grid_search(
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-@pytest.mark.parametrize(
-    "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
-)
-# pylint: disable=too-many-arguments
+@pytest.mark.parametrize("use_dump_method", [True, False])
 def test_serialization(
     model_class,
     parameters,
-    n_bits,
+    use_dump_method,
     load_data,
     is_weekly_option,
+    default_configuration,
     verbose=True,
 ):
     """Test Serialization."""
+    # This test only checks the serialization's functionalities, so there is no need to test it
+    # over several n_bits
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Compile the model to make sure we consider all possible attributes during the serialization
+    model.compile(x, default_configuration)
 
     if verbose:
         print("Run check_serialization")
 
-    check_serialization(model, x)
+    check_serialization(model, x, use_dump_method)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
@@ -1003,7 +1020,6 @@ def test_serialization(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
-# pylint: disable=too-many-arguments
 def test_double_fit(
     model_class,
     parameters,
@@ -1026,7 +1042,6 @@ def test_double_fit(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
-# pylint: disable=too-many-arguments
 def test_offset(
     model_class,
     parameters,
@@ -1050,7 +1065,6 @@ def test_offset(
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
 @pytest.mark.parametrize("input_type", ["numpy", "torch", "pandas", "list"])
-# pylint: disable=too-many-arguments
 def test_input_support(
     model_class,
     parameters,
@@ -1075,7 +1089,6 @@ def test_input_support(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
-# pylint: disable=too-many-arguments
 def test_subfunctions(
     model_class,
     parameters,
@@ -1098,7 +1111,6 @@ def test_subfunctions(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
-# pylint: disable=too-many-arguments
 def test_pipeline(
     model_class,
     parameters,
@@ -1132,7 +1144,7 @@ def test_pipeline(
         if n >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS
     ],
 )
-# pylint: disable=too-many-arguments, too-many-branches
+# pylint: disable=too-many-branches
 def test_predict_correctness(
     model_class,
     parameters,
