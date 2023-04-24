@@ -1,7 +1,6 @@
 """Base classes for all estimators."""
 from __future__ import annotations
 
-import json
 import tempfile
 
 # Disable pylint as some names like X and q_X are used, following scikit-Learn's standard. The file
@@ -10,12 +9,13 @@ import tempfile
 import warnings
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import IO, Any, Callable, Dict, List, Optional, Set, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
 import brevitas.nn as qnn
 import numpy
 import onnx
 import sklearn
+import skorch.net
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
 from concrete.fhe.compilation.artifacts import DebugArtifacts
@@ -24,11 +24,10 @@ from concrete.fhe.compilation.compiler import Compiler
 from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
-from skorch.net import NeuralNet as SkorchNeuralNet
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
-from ..common.serialization.encoder import CustomEncoder
+from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
@@ -136,6 +135,42 @@ class BaseEstimator:
 
         self.fhe_circuit_: Optional[Circuit] = None
         self.onnx_model_: Optional[onnx.ModelProto] = None
+
+    @abstractmethod
+    def dump_dict(self) -> Dict[str, Any]:
+        """Dump the object as a dict.
+
+        Returns:
+            Dict[str, Any]: Dict of serialized objects.
+        """
+
+    @classmethod
+    @abstractmethod
+    def load_dict(cls, metadata: Dict[str, Any]) -> BaseEstimator:
+        """Load itself from a dict.
+
+        Args:
+            metadata (Dict[str, Any]): Dict of serialized objects.
+
+        Returns:
+            BaseEstimator: The loaded object.
+        """
+
+    def dumps(self) -> str:
+        """Dump itself to a string.
+
+        Returns:
+            metadata (str): String of the serialized object.
+        """
+        return dumps(self)
+
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
+
+        Args:
+            file (TextIO): The file to dump the serialized object into.
+        """
+        dump(self, file)
 
     @property
     def onnx_model(self) -> Optional[onnx.ModelProto]:
@@ -572,70 +607,6 @@ class BaseEstimator:
         """
         return y_preds
 
-    @abstractmethod
-    def dump_dict(self) -> Dict[str, Any]:
-        """Dump the object as a dict.
-
-        Returns:
-            Dict[str, Any]: a dict representing the object
-        """
-
-    def dumps(self) -> str:
-        """Dump itself to a string.
-
-        Returns:
-            metadata (str): string of serialized object
-        """
-        metadata: Dict[str, Any] = self.dump_dict()
-        return json.dumps(metadata, cls=CustomEncoder)
-
-    def dump(self, file: IO[str]) -> None:
-        """Dump itself to a file.
-
-        Args:
-            file (IO[str]): file of where to dump.
-        """
-        metadata: Dict[str, Any] = self.dump_dict()
-        json.dump(metadata, file, cls=CustomEncoder)
-
-    @classmethod
-    @abstractmethod
-    def load_dict(cls, metadata: Dict[str, Any]) -> BaseEstimator:
-        """Load itself from a dict.
-
-        Args:
-            metadata (Dict[str, Any]): dict of metadata of the object
-
-        Returns:
-            BaseEstimator: the loaded object
-        """
-
-    @classmethod
-    def load(cls, file: IO[str]) -> BaseEstimator:
-        """Load itself from a file.
-
-        Args:
-            file (IO[str]): file of serialized object
-
-        Returns:
-            BaseEstimator: the loaded object
-        """
-        metadata: Dict[str, Any] = json.load(file)
-        return cls.load_dict(metadata=metadata)
-
-    @classmethod
-    def loads(cls, metadata: str) -> BaseEstimator:
-        """Load itself from a string.
-
-        Args:
-            metadata (str): serialized object
-
-        Returns:
-            BaseEstimator: the loaded object
-        """
-        _metadata: Dict = json.loads(metadata)
-        return cls.load_dict(metadata=_metadata)
-
 
 # This class only is an equivalent of BaseEstimator applied to classifiers, therefore not all
 # methods are implemented and we need to disable pylint from checking that
@@ -730,8 +701,10 @@ class BaseClassifier(BaseEstimator):
         return y_preds
 
 
-# QNNs do not support serialization yet
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3134
+# Pylint complains that this method does not override the `dump_dict` and `load_dict` methods. This
+# is expected as the QuantizedTorchEstimatorMixin class is not supposed to be used as such. This
+# disable could probably be removed when refactoring the serialization of models
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3250
 # pylint: disable-next=abstract-method
 class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API."""
@@ -911,14 +884,12 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
             opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
         )
 
-        onnx_model = onnx.load(str(output_onnx_file_path))
+        self.onnx_model_ = onnx.load(str(output_onnx_file_path))
 
         output_onnx_file_path.unlink()
 
         # Create corresponding numpy model
-        numpy_model = NumpyModule(onnx_model, torch.tensor(X[[0], ::]))
-
-        self.onnx_model_ = numpy_model.onnx_model
+        numpy_model = NumpyModule(self.onnx_model_, torch.tensor(X[[0], ::]))
 
         # Set the quantization bits for import
         # Note that the ONNXConverter will use a default value for network input bits
@@ -976,11 +947,11 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         return float_module
 
-    def _get_equivalent_float_estimator(self) -> SkorchNeuralNet:
+    def _get_equivalent_float_estimator(self) -> skorch.net.NeuralNet:
         """Initialize a topologically equivalent estimator that can be used on floating points.
 
         Returns:
-            float_estimator (SkorchNeuralNet): An instance of the equivalent float estimator.
+            float_estimator (skorch.net.NeuralNet): An instance of the equivalent float estimator.
         """
         # Retrieve the skorch estimator's init parameters
         sklearn_params = self.get_params()

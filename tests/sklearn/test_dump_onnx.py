@@ -31,7 +31,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
     if "random_state" in model_params:
         model_params["random_state"] = numpy.random.randint(0, 2**15)
 
-    model.set_params(**model_params)
+        model.set_params(**model_params)
 
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test

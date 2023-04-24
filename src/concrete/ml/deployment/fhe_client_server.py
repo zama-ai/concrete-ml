@@ -11,53 +11,9 @@ import numpy
 from concrete import fhe
 
 from ..common.debugging.custom_assert import assert_true
-from ..common.serialization.encoder import CustomEncoder
-from ..common.serialization.loaders import load_dict
-from ..quantization.quantized_module import QuantizedModule
-from ..sklearn import (
-    DecisionTreeClassifier,
-    DecisionTreeRegressor,
-    ElasticNet,
-    GammaRegressor,
-    Lasso,
-    LinearRegression,
-    LinearSVC,
-    LinearSVR,
-    LogisticRegression,
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    PoissonRegressor,
-    RandomForestClassifier,
-    RandomForestRegressor,
-    Ridge,
-    TweedieRegressor,
-    XGBClassifier,
-    XGBRegressor,
-)
+from ..common.serialization.dumpers import dump
+from ..common.serialization.loaders import load
 from ..version import __version__ as CML_VERSION
-
-AVAILABLE_MODEL = [
-    RandomForestClassifier,
-    RandomForestRegressor,
-    XGBClassifier,
-    XGBRegressor,
-    LinearRegression,
-    Lasso,
-    Ridge,
-    ElasticNet,
-    LogisticRegression,
-    LinearSVC,
-    LinearSVR,
-    DecisionTreeClassifier,
-    DecisionTreeRegressor,
-    NeuralNetClassifier,
-    NeuralNetRegressor,
-    TweedieRegressor,
-    GammaRegressor,
-    PoissonRegressor,
-    QuantizedModule,
-]
-
 
 try:
     # 3.8 and above
@@ -171,7 +127,7 @@ class FHEModelDev:
             Path: the path to the json file
         """
         serialized_processing = {
-            "model_type": self.model.__class__.__name__,
+            "model_type": self.model.__class__,
             "model_post_processing_params": self.model.post_processing_params,
             "input_quantizers": self.model.input_quantizers,
             "output_quantizers": self.model.output_quantizers,
@@ -185,7 +141,7 @@ class FHEModelDev:
         # Dump json
         json_path = Path(self.path_dir).joinpath("serialized_processing.json")
         with open(json_path, "w", encoding="utf-8") as file:
-            json.dump(serialized_processing, file, cls=CustomEncoder)
+            dump(serialized_processing, file)
         return json_path
 
     def save(self, via_mlir: bool = False):
@@ -284,7 +240,7 @@ class FHEModelClient:
         # Load the quantizers
         with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
             with client_zip.open("serialized_processing.json", mode="r") as file:
-                serialized_processing = json.load(file)
+                serialized_processing = load(file)
 
         # Load versions for checking
         with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
@@ -313,17 +269,10 @@ class FHEModelClient:
             "Please update to the proper Concrete ML version.",
         )
 
-        # Create dict with available models along with their name
-        model_dict = {model_type().__class__.__name__: model_type for model_type in AVAILABLE_MODEL}
-
         # Initialize the model
-        self.model = model_dict[serialized_processing["model_type"]]()
-        self.model.input_quantizers = [
-            load_dict(elt) for elt in serialized_processing["input_quantizers"]
-        ]
-        self.model.output_quantizers = [
-            load_dict(elt) for elt in serialized_processing["output_quantizers"]
-        ]
+        self.model = serialized_processing["model_type"]()
+        self.model.input_quantizers = serialized_processing["input_quantizers"]
+        self.model.output_quantizers = serialized_processing["output_quantizers"]
 
         # Load the `_is_fitted` private attribute for built-in models
         if "is_fitted" in serialized_processing:

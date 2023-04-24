@@ -6,7 +6,7 @@
 import io
 from collections import OrderedDict
 from functools import partial
-from typing import Callable, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -18,6 +18,7 @@ import pytest
 import torch
 
 from concrete.ml.common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
+from concrete.ml.pytest.utils import check_serialization, values_are_equal
 from concrete.ml.quantization import QuantizedArray
 from concrete.ml.quantization.base_quantized_op import ALL_QUANTIZED_OPS
 from concrete.ml.quantization.quantized_ops import (
@@ -91,6 +92,31 @@ INPUT_RANGES = [
 IS_SIGNED = [pytest.param(True), pytest.param(False)]
 
 OP_DEBUG_NAME = "Test_"
+
+
+def quantized_op_results_are_equal(
+    quantized_op_1: QuantizedOp,
+    quantized_op_2: QuantizedOp,
+    q_input: Optional[numpy.ndarray] = None,
+):
+    """Check if two quantized operator instances are equal.
+
+    Args:
+        quantized_op_1 (QuantizedOp): The first quantized operator object to consider.
+        quantized_op_2 (QuantizedOp): The second quantized operator object to consider.
+        x (numpy.ndarray): The input to use for running the call.
+
+    Returns:
+        bool: If both instances are equal.
+    """
+    if q_input is None:
+        value_1, value_2 = quantized_op_1(), quantized_op_2()
+    elif isinstance(q_input, tuple):
+        value_1, value_2 = quantized_op_1(*q_input), quantized_op_2(*q_input)
+    else:
+        value_1, value_2 = quantized_op_1(q_input), quantized_op_2(q_input)
+
+    return values_are_equal(value_1, value_2)
 
 
 @pytest.mark.parametrize(
@@ -196,6 +222,13 @@ def test_exp_op(
     # Check that all values are close
     check_r2_score(dequant_values, expected_output)
 
+    # Test the serialization of QuantizedExp
+    check_serialization(
+        quantized_op,
+        QuantizedExp,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
+
 
 @pytest.mark.parametrize(
     "n_bits",
@@ -237,6 +270,13 @@ def test_clip_op(
 
     # Check that all values are close
     check_r2_score(dequant_values, expected_output)
+
+    # Test the serialization of QuantizedClip
+    check_serialization(
+        quantized_op,
+        QuantizedClip,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
 
 
 ARITH_N_BITS_LIST = [20, 16, 8]
@@ -322,6 +362,14 @@ def test_all_arith_ops(
 
         # Check the R2 of raw output and quantized output
         check_r2_score(raw_output_vv, quantized_output_vv)
+
+        # Test the serialization of all arithmetic operators that supports enc x enc
+        check_serialization(
+            q_op,
+            operator,
+            equal_method=partial(quantized_op_results_are_equal, q_input=(q_inputs_0, q_inputs_1)),
+        )
+
     else:
         with pytest.raises(
             AssertionError, match="Do not support this type of operation between encrypted tensors"
@@ -369,6 +417,11 @@ def test_all_arith_ops(
     # the V+V case which works in quantized, we only check R2 for a high bit-width in this case
     if supports_enc_with_enc:
         check_r2_score(quantized_output_vc, quantized_output_vv)
+
+    # Test the serialization of all arithmetic operators
+    check_serialization(
+        q_op, operator, equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs_1)
+    )
 
 
 @pytest.mark.parametrize("n_bits", N_BITS_LIST)
@@ -432,6 +485,13 @@ def test_all_gemm_ops(
 
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
 
+    # Test the serialization of QuantizedGemm
+    check_serialization(
+        q_gemm,
+        QuantizedGemm,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
+
     # 2- Same test without bias
     q_gemm = QuantizedGemm(
         n_bits,
@@ -460,6 +520,13 @@ def test_all_gemm_ops(
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
     check_r2_score(expected_mm_outputs, actual_mm_output)
 
+    # Test the serialization of QuantizedGemm without bias
+    check_serialization(
+        q_gemm,
+        QuantizedGemm,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
+
     # 3- Same test but with (alpha, beta) = (1, 0)
     q_gemm = QuantizedGemm(
         n_bits,
@@ -481,14 +548,29 @@ def test_all_gemm_ops(
     # Without a bias, MatMul and Gemm should give the same output
     check_array_equality(actual_mm_output, actual_gemm_output)
 
+    # Test the serialization of QuantizedGemm with (alpha, beta) = (1, 0)
+    check_serialization(
+        q_gemm,
+        QuantizedGemm,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
+
 
 @pytest.mark.parametrize("n_bits", [1, 2, 3, 4, 5, 6])
 @pytest.mark.parametrize("x", [numpy.random.randn(100)])
 def test_identity_op(x, n_bits):
     """Tests for the identity op"""
     q_x = QuantizedArray(n_bits=n_bits, values=x)
-    qx_bis = QuantizedIdentity(n_bits, OP_DEBUG_NAME + "QuantizedIdentity")(q_x)
+    quantized_identity = QuantizedIdentity(n_bits, OP_DEBUG_NAME + "QuantizedIdentity")
+    qx_bis = quantized_identity(q_x)
     assert numpy.array_equal(qx_bis.qvalues, q_x.qvalues)
+
+    # Test the serialization of QuantizedIdentity
+    check_serialization(
+        quantized_identity,
+        QuantizedIdentity,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_x),
+    )
 
 
 @pytest.mark.parametrize("n_bits", [16])
@@ -656,6 +738,11 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     # The fp32 and quantized results should be very similar when quantization precision is high
     check_r2_score(result, expected_result)
 
+    # Test the serialization of QuantizedConv
+    check_serialization(
+        q_op, QuantizedConv, equal_method=partial(quantized_op_results_are_equal, q_input=q_input)
+    )
+
 
 @pytest.mark.parametrize("n_bits", [16])
 @pytest.mark.parametrize(
@@ -759,6 +846,13 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
     # The fp32 and quantized results should be very similar when quantization precision is high
     check_r2_score(expected_result, result)
+
+    # Test the serialization of QuantizedAvgPool
+    check_serialization(
+        q_op,
+        QuantizedAvgPool,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_input),
+    )
 
 
 @pytest.mark.parametrize("n_bits", [16])
@@ -885,6 +979,13 @@ def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_flo
     # The fp32 and quantized results should be very similar when quantization precision is high
     check_r2_score(expected_result, result)
 
+    # Test the serialization of QuantizedMaxPool
+    check_serialization(
+        q_op,
+        QuantizedMaxPool,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_input),
+    )
+
 
 def test_quantized_conv_args():
     """Check that conv arguments are validated"""
@@ -957,6 +1058,11 @@ def test_quantized_pad(pads):
     q_pad_output = q_op(q_data)
     assert numpy.array_equal(q_pad_output.qvalues, pad_torch)
 
+    # Test the serialization of QuantizedPad
+    check_serialization(
+        q_op, QuantizedPad, equal_method=partial(quantized_op_results_are_equal, q_input=q_data)
+    )
+
 
 @pytest.mark.parametrize("mode", ["reflect", "wrap", "edge"])
 def test_quantized_pad_mode_invalid(mode):
@@ -1004,6 +1110,13 @@ def test_quantized_reshape(shape):
     assert q_arr1.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(q_arr0.qvalues == q_arr1.qvalues)
 
+    # Test the serialization of QuantizedReshape
+    check_serialization(
+        reshape,
+        QuantizedReshape,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_arr0),
+    )
+
 
 @pytest.mark.parametrize(
     "n_bits",
@@ -1043,6 +1156,13 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
 
     # Check that all values are close
     check_r2_score(dequant_values, expected_output)
+
+    # Test the serialization of QuantizedPRelu
+    check_serialization(
+        quantized_op,
+        QuantizedPRelu,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
 
 
 @pytest.mark.parametrize(
@@ -1100,6 +1220,27 @@ def test_quantized_comparators_and_where(params, n_bits, comparator, check_r2_sc
 
     check_r2_score(reference_value, result)
 
+    # Test the serialization of QuantizedCast
+    check_serialization(
+        q_op_comparator,
+        comparator,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
+    )
+
+    # Test the serialization of QuantizedCast
+    check_serialization(
+        q_cast,
+        QuantizedCast,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
+    )
+
+    # Test the serialization of QuantizedWhere
+    check_serialization(
+        q_op_where,
+        QuantizedWhere,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
+    )
+
 
 @pytest.mark.parametrize(
     "tensor_shape",
@@ -1143,6 +1284,13 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
 
     # Check that all values are close
     check_r2_score(raw_result, quant_result)
+
+    # Test the serialization of QuantizedBatchNormalization
+    check_serialization(
+        q_op,
+        QuantizedBatchNormalization,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_x),
+    )
 
 
 @pytest.mark.parametrize(
@@ -1199,6 +1347,13 @@ def test_reduce_sum(
     actual_output = actual_output.dequant()
 
     check_r2_score(expected_outputs, actual_output)
+
+    # Test the serialization of QuantizedReduceSum
+    check_serialization(
+        quantized_reduce_sum,
+        QuantizedReduceSum,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
 
 
 def test_all_ops_were_tested():
@@ -1314,6 +1469,13 @@ def test_quantized_flatten(input_shape, expected_shape, axis, is_signed):
     # Check that the output has the expected shape
     assert numpy.all(q_reshaped.qvalues.shape == expected_shape)
 
+    # Test the serialization of QuantizedFlatten
+    check_serialization(
+        flatten_op,
+        QuantizedFlatten,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_data),
+    )
+
 
 @pytest.mark.parametrize("is_signed", [True, False])
 @pytest.mark.parametrize("narrow", [True, False])
@@ -1378,6 +1540,13 @@ def test_brevitas_quant(check_r2_score, is_signed: bool, narrow: bool):
     res_q = quant(q_data).dequant()
     check_r2_score(res_fp32, res_q)
 
+    # Test the serialization of QuantizedBrevitasQuant
+    check_serialization(
+        quant,
+        QuantizedBrevitasQuant,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_data),
+    )
+
 
 @pytest.mark.parametrize(
     "shape, axes", [pytest.param((10, 5), [1, 0]), pytest.param((10, 5, 2), [0, 2, 1])]
@@ -1405,6 +1574,13 @@ def test_quantized_transpose(shape, axes):
     assert q_transposed.quantizer.zero_point == q_arr0.quantizer.zero_point
     assert q_transposed.quantizer.scale == q_arr0.quantizer.scale
     assert numpy.all(numpy.transpose(q_arr0.qvalues, axes) == q_transposed.qvalues)
+
+    # Test the serialization of QuantizedTranspose
+    check_serialization(
+        transpose,
+        QuantizedTranspose,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_arr0),
+    )
 
 
 @pytest.mark.parametrize(
@@ -1446,6 +1622,13 @@ def test_quantized_concat(shape1, shape2, axis):
         numpy.concatenate([q_arr.qvalues, q_arr_to_concat.qvalues], axis) == q_result.qvalues
     )
 
+    # Test the serialization of QuantizedConcat
+    check_serialization(
+        q_concatenated,
+        QuantizedConcat,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_arr),
+    )
+
 
 @pytest.mark.parametrize(
     "shape, axis",
@@ -1476,6 +1659,13 @@ def test_quantized_unsqueeze(shape, axis):
     assert q_result.quantizer.scale == q_arr.quantizer.scale
     assert numpy.all(custom_numpy_unsqueeze(q_arr.qvalues, axes=axis) == q_result.qvalues)
 
+    # Test the serialization of QuantizedUnsqueeze
+    check_serialization(
+        q_unsqueeze,
+        QuantizedUnsqueeze,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_arr),
+    )
+
 
 @pytest.mark.parametrize(
     "shape, axis",
@@ -1504,6 +1694,13 @@ def test_quantized_squeeze(shape, axis):
     assert q_result.quantizer.zero_point == q_arr.quantizer.zero_point
     assert q_result.quantizer.scale == q_arr.quantizer.scale
     assert numpy.all(numpy.squeeze(q_arr.qvalues, axis=axis) == q_result.qvalues)
+
+    # Test the serialization of QuantizedSqueeze
+    check_serialization(
+        q_squeeze,
+        QuantizedSqueeze,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_arr),
+    )
 
 
 def make_single_function_onnx_and_run(onnx_op, op_args_dict, op_attrs_dict, input_value, out_shape):
@@ -1617,6 +1814,11 @@ def test_quantized_slice(starts, ends, steps, axes):
     )
     assert numpy.array_equal(onnx_output, result.qvalues)
 
+    # Test the serialization of ONNXSlice
+    check_serialization(
+        q_op, ONNXSlice, equal_method=partial(quantized_op_results_are_equal, q_input=q_arr)
+    )
+
 
 @pytest.mark.parametrize(
     "indices, axis",
@@ -1656,6 +1858,11 @@ def test_quantized_gather(indices, axis):
     )
     assert numpy.array_equal(onnx_output, result.qvalues)
 
+    # Test the serialization of ONNXGather
+    check_serialization(
+        q_op, ONNXGather, equal_method=partial(quantized_op_results_are_equal, q_input=q_arr)
+    )
+
 
 @pytest.mark.parametrize("shape", [[1], [10, 10], [1, 50, 20, 20]])
 @pytest.mark.parametrize("value", [[0], [-1], [1]])
@@ -1669,6 +1876,9 @@ def test_constant_of_shape(shape, value):
 
     # Check that the created tensor contains the correct values
     assert numpy.array_equal(numpy.ones(tuple(shape)) * value, result)
+
+    # Test the serialization of ONNXConstantOfShape
+    check_serialization(q_op, ONNXConstantOfShape, equal_method=quantized_op_results_are_equal)
 
 
 @pytest.mark.parametrize("shape", [(1,), (10, 10), (1, 50, 20, 20)])
@@ -1685,3 +1895,8 @@ def test_quantized_shape(shape):
 
     # Check that the Concrete ML op returns the shape
     assert np_input.shape == tuple(result)
+
+    # Test the serialization of ONNXShape
+    check_serialization(
+        q_op, ONNXShape, equal_method=partial(quantized_op_results_are_equal, q_input=q_input)
+    )

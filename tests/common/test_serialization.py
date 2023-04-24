@@ -1,130 +1,144 @@
 """Test serialization.
 
-Here we test the custom dump(s)/load(s) methods we have in Concrete ML.
-In all tests we create an object, dump it to and load it again.
-We then check some properties on the loaded object.
+Here we test the custom dump(s)/load(s) functions for all supported objects. We also check that
+serializing unsupported object types properly throws an error.
 """
+import inspect
 import io
-import json
-import random
-from typing import Tuple
+import warnings
+from functools import partial
 
 import numpy
 import onnx
 import pytest
+import sklearn
+import sklearn.base
 import torch
+from concrete.fhe.compilation import Circuit
 from numpy.random import RandomState
+from sklearn.datasets import make_regression
+from sklearn.exceptions import ConvergenceWarning
+from skops.io.exceptions import UntrustedTypesFoundException
+from skorch.dataset import ValidSplit
+from torch import nn
 
-from concrete.ml.common.serialization.dumpers import dumps, dumps_random_state
-from concrete.ml.common.serialization.encoder import CustomEncoder, dumps_onnx
-from concrete.ml.common.serialization.loaders import loads, loads_onnx, loads_random_state
+from concrete.ml.common.serialization import (
+    SUPPORTED_TORCH_ACTIVATIONS,
+    UNSUPPORTED_TORCH_ACTIVATIONS,
+    USE_SKOPS,
+)
+from concrete.ml.common.serialization.dumpers import dumps
+from concrete.ml.common.serialization.loaders import loads
 from concrete.ml.pytest.torch_models import SimpleNet
-from concrete.ml.quantization.quantizers import (
-    MinMaxQuantizationStats,
-    QuantizationOptions,
-    QuantizedArray,
-    UniformQuantizationParameters,
-    UniformQuantizer,
+from concrete.ml.pytest.utils import check_serialization, values_are_equal
+from concrete.ml.quantization import QuantizedModule
+from concrete.ml.sklearn import (
+    LinearRegression,
+    get_sklearn_linear_models,
+    get_sklearn_models,
+    get_sklearn_tree_models,
 )
 
 
-def is_random_state_state_equal(state_1: Tuple, state_2: Tuple) -> bool:
-    """Check if some tuples are equal element-wise.
-
-    If some elements are numpy.array we check that all values are equal.
-    This is used to compare numpy.RandomState states.
+def valid_split_instances_are_equal(instance_1: ValidSplit, instance_2: ValidSplit) -> bool:
+    """Check if two ValidSplit instances are equal.
 
     Args:
-        state_1 (Tuple): a tuple.
-        state_2 (Tuple): another tuple.
+        instance_1 (ValidSplit): The first ValidSplit object to consider.
+        instance_2 (ValidSplit): The second ValidSplit object to consider.
 
     Returns:
-        bool: True if all values are equal, false otherwise.
+        bool: If both instances are equal.
     """
-    for elt_1, elt_2 in zip(state_1, state_2):
-        if isinstance(elt_1, numpy.ndarray):
-            if (elt_1 != elt_2).any():
-                return False
-        elif elt_1 != elt_2:
+    for attribute in ["cv", "stratified", "random_state"]:
+        value_1, value_2 = getattr(instance_1, attribute), getattr(instance_2, attribute)
+        if not values_are_equal(value_1, value_2):
             return False
     return True
 
 
-def test_serialize_random_state():
-    """Test serialization of random_state."""
-    seed = random.randint(a=10, b=1000)
-    random_state = RandomState(seed)
-    serialized = dumps_random_state(random_state)
-    loaded_random_state = loads_random_state(serialized_random_state=serialized)
-    assert isinstance(loaded_random_state, RandomState)
-    state_1, state_2 = loaded_random_state.get_state(), random_state.get_state()
-    assert isinstance(state_1, tuple) and isinstance(state_2, tuple)
-    assert is_random_state_state_equal(state_1, state_2)
+def sklearn_predictions_are_equal(
+    sklearn_model_1: sklearn.base.BaseEstimator,
+    sklearn_model_2: sklearn.base.BaseEstimator,
+    x: numpy.ndarray,
+) -> bool:
+    """Check that the predictions made by both Scikit-Learn models are equal.
 
-    for random_state in [None, 42]:
-        serialized = dumps_random_state(random_state)
-        loaded_random_state = loads_random_state(serialized_random_state=serialized)
-        assert loaded_random_state == random_state
+    scikit-learn does not provide any simple way of comparing two models (attribute-wise) as no
+    __eq__ method is implemented. Therefore, we consider models identical if they both provide the
+    same predictions.
 
-    random_state = RandomState(seed)
-    serialized = json.dumps(random_state, cls=CustomEncoder)
-    loaded_random_state = loads_random_state(serialized_random_state=serialized)
-    assert is_random_state_state_equal(loaded_random_state.get_state(), random_state.get_state())
+    Args:
+        sklearn_model_1 (sklearn.base.BaseEstimator): The first scikit-learn model to consider.
+        sklearn_model_2 (sklearn.base.BaseEstimator): The second scikit-learn model to consider.
+        x (numpy.ndarray): The input to use for running the predictions.
 
+    Returns:
+        bool: If predictions from both models are equal.
+    """
 
-def test_serialize_numpy_integer():
-    """Test serialization of numpy.integer."""
-    value = numpy.array([10])
-    assert isinstance(value[0], numpy.integer)
-    serialized = json.dumps(value[0], cls=CustomEncoder)
-    loaded = json.loads(serialized)
-    # The type did change though
-    assert value[0] == loaded
-
-    serialized = json.dumps(value, cls=CustomEncoder)
-    loaded = numpy.array(json.loads(serialized))
-    # The type did change though
-    assert (value == loaded).all()
+    predictions_1 = sklearn_model_1.predict(x)
+    predictions_2 = sklearn_model_2.predict(x)
+    return values_are_equal(predictions_1, predictions_2)
 
 
-def test_serialize_numpy_float():
-    """Test serialization of numpy.float."""
-    value = numpy.array([10.2], dtype=numpy.float64)
-    assert isinstance(value[0], numpy.floating)
-    serialized = json.dumps(value[0], cls=CustomEncoder)
-    loaded = json.loads(serialized)
-    # The type did change though
-    assert value[0] == loaded
+def get_a_fhe_circuit() -> Circuit:
+    """Generate an arbitrary Circuit object.
 
-    serialized = json.dumps(value, cls=CustomEncoder)
-    loaded = numpy.array(json.loads(serialized))
-    # The type did change though
-    assert (value == loaded).all()
+    Returns:
+        Circuit: An arbitrary circuit object.
+    """
+    # Create the data for regression
+    # pylint: disable-next=unbalanced-tuple-unpacking
+    x, y = make_regression()
 
+    # Instantiate, fit and compile a linear regression model from Scikit Learn in order to retrieve
+    # its underlying FHE Circuit
+    model = LinearRegression()
+    model.fit(x, y)
+    fhe_circuit = model.compile(x)
 
-def test_serialize_numpy_array():
-    """Test serialization of numpy.ndarray."""
-    value = numpy.random.random((10, 10, 10, 3))
-    assert isinstance(value, numpy.ndarray)
-    serialized = json.dumps(value, cls=CustomEncoder)
-    loaded = json.loads(serialized)
-    assert (value == numpy.array(loaded)).all()
+    return fhe_circuit
 
 
-def test_serialize_type():
-    """Test serialization of types."""
-    value = int
-    assert isinstance(value, type)
-    serialized = json.dumps(value, cls=CustomEncoder)
-    loaded = json.loads(serialized)
-    assert value.__name__ == loaded
+@pytest.mark.parametrize(
+    "random_state, random_state_type",
+    [pytest.param(None, None), pytest.param(0, int), pytest.param(RandomState(0), RandomState)],
+)
+def test_serialize_random_state(random_state, random_state_type):
+    """Test serialization of random_state objects."""
+    check_serialization(random_state, random_state_type)
+
+
+@pytest.mark.parametrize(
+    "concrete_model_class",
+    get_sklearn_linear_models() + get_sklearn_tree_models(),
+)
+def test_serialize_sklearn_model(concrete_model_class, load_data):
+    """Test serialization of sklearn_model objects."""
+    # Create the data
+    x, y = load_data(concrete_model_class)
+
+    # Instantiate and fit a Concrete model to recover its underlying Scikit Learn model
+    concrete_model = concrete_model_class()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        _, sklearn_model = concrete_model.fit_benchmark(x, y)
+
+    # Both JSON string are not compared as scikit-learn models are serialized using Skops or pickle,
+    # which does not make string comparison possible
+    check_serialization(
+        sklearn_model,
+        sklearn.base.BaseEstimator,
+        equal_method=partial(sklearn_predictions_are_equal, x=x),
+        check_str=False,
+    )
 
 
 def test_serialize_onnx():
-    """Test serialization of onnx."""
-    inputs = torch.zeros(
-        10,
-    )[None, ...]
+    """Test serialization of onnx graphs."""
+    inputs = torch.zeros(10)[None, ...]
     model = SimpleNet()
     model(inputs)
     io_stream = io.BytesIO(initial_bytes=b"")
@@ -134,130 +148,214 @@ def test_serialize_onnx():
         f=io_stream,
     )
     value = onnx.load_model_from_string(io_stream.getvalue())
-    assert isinstance(value, onnx.ModelProto)
 
-    serialized = json.dumps(value, cls=CustomEncoder)
-    loaded = loads_onnx(json.loads(serialized))
-    assert loaded == value
-
-    loaded = loads_onnx(dumps_onnx(value))
-    assert loaded == value
+    check_serialization(value, onnx.ModelProto)
 
 
-def test_crash():
-    """Test that trying to load a non-Concrete ML object crashes."""
-    serialized = dumps({42: 24})
+def test_serialize_set():
+    """Test serialization of set objects."""
+    value = {1, 2, 3, 4}
 
-    with pytest.raises(ValueError, match="The content provided is not a Concrete ML dumped model."):
-        loads(serialized)
+    check_serialization(value, set)
 
 
-# pylint: disable-next=too-many-statements
-def test_quantizers():
-    """Test serialization of quantizers objects."""
-    # Some array to quantize
-    arr = numpy.linspace((1, 2), (10, 20), 10, dtype=numpy.float64)
+def test_serialize_tuple():
+    """Test serialization of tuple objects."""
+    value = (1, 2, 3, 4)
 
-    # A buffer to test serialization to file.
-    with io.StringIO() as buffer:
-        # Quantization Options
-        quantization_options = QuantizationOptions(
-            n_bits=20,
-            is_signed=True,
-            is_symmetric=False,
-            is_qat=True,
-        )
-        buffer.seek(0, 0)
-        quantization_options.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = QuantizationOptions.load(buffer)
-        buffer.truncate(0)
-        dumpsed = quantization_options.dumps()
-        assert loaded.dumps() == dumpsed
-        assert QuantizationOptions.loads(dumpsed).dumps() == dumpsed
+    check_serialization(value, tuple)
 
-        # MinMaxQuantizationStats
-        min_max_quantization_stats = MinMaxQuantizationStats()
-        min_max_quantization_stats.compute_quantization_stats(arr)
-        buffer.seek(0, 0)
-        min_max_quantization_stats.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = MinMaxQuantizationStats.load(buffer)
-        buffer.truncate(0)
-        dumpsed = min_max_quantization_stats.dumps()
-        assert loaded.dumps() == dumpsed
-        assert MinMaxQuantizationStats.loads(dumpsed).dumps() == dumpsed
 
-        # UniformQuantizationParameters
-        uniform_quantization_parameters = UniformQuantizationParameters()
-        buffer.seek(0, 0)
-        uniform_quantization_parameters.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = UniformQuantizationParameters.load(buffer)
-        buffer.truncate(0)
-        dumpsed = uniform_quantization_parameters.dumps()
-        assert loaded.dumps() == dumpsed
-        assert UniformQuantizationParameters.loads(dumpsed).dumps() == dumpsed
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        numpy.int8,
+        numpy.int16,
+        numpy.int32,
+        numpy.int64,
+    ],
+)
+def test_serialize_numpy_integer(dtype):
+    """Test serialization of numpy.integer objects."""
+    value = numpy.int64(10).astype(dtype)
 
-        # UniformQuantizationParameters with compute_quantization_parameters
-        uniform_quantization_parameters = UniformQuantizationParameters()
-        uniform_quantization_parameters.compute_quantization_parameters(
-            stats=min_max_quantization_stats, options=quantization_options
-        )
-        buffer.seek(0, 0)
-        uniform_quantization_parameters.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = UniformQuantizationParameters.load(buffer)
-        dumpsed = uniform_quantization_parameters.dumps()
-        assert loaded.dumps() == dumpsed
-        assert UniformQuantizationParameters.loads(dumpsed).dumps() == dumpsed
+    check_serialization(value, numpy.integer)
 
-        # UniformQuantizer
-        uniform_quantizer = UniformQuantizer(
-            options=quantization_options,
-            stats=min_max_quantization_stats,
-            params=uniform_quantization_parameters,
-        )
-        buffer.seek(0, 0)
-        uniform_quantizer.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = UniformQuantizer.load(buffer)
-        buffer.truncate(0)
-        dumpsed = uniform_quantizer.dumps()
-        assert loaded.dumps() == dumpsed
-        assert UniformQuantizer.loads(dumpsed).dumps() == dumpsed
 
-        # QuantizedArray
-        quantized_array = QuantizedArray(
-            n_bits=20,
-            values=arr,
-            value_is_float=True,
-        )
-        buffer.seek(0, 0)
-        quantized_array.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = QuantizedArray.load(buffer)
-        buffer.truncate(0)
-        assert (loaded.values == quantized_array.values).all()
-        dumpsed = quantized_array.dumps()
-        assert loaded.dumps() == dumpsed
-        assert QuantizedArray.loads(dumpsed).dumps() == dumpsed
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        numpy.float32,
+        numpy.float64,
+    ],
+)
+def test_serialize_numpy_float(dtype):
+    """Test serialization of numpy.floating objects."""
+    value = numpy.float64(10.2).astype(dtype)
 
-        # QuantizedArray with more kwargs
-        quantized_array = QuantizedArray(
-            n_bits=20,
-            values=arr,
-            value_is_float=True,
-            options=quantization_options,
-            stats=min_max_quantization_stats,
-            params=uniform_quantization_parameters,
-        )
-        buffer.seek(0, 0)
-        quantized_array.dump(buffer)
-        buffer.seek(0, 0)
-        loaded = QuantizedArray.load(buffer)
-        buffer.truncate(0)
-        assert (loaded.values == quantized_array.values).all()
-        dumpsed = quantized_array.dumps()
-        assert loaded.dumps() == dumpsed
-        assert QuantizedArray.loads(dumpsed).dumps() == dumpsed
+    check_serialization(value, numpy.floating)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        numpy.int8,
+        numpy.int16,
+        numpy.int32,
+        numpy.int64,
+        numpy.float32,
+        numpy.float64,
+    ],
+)
+def test_serialize_numpy_array(dtype):
+    """Test serialization of numpy.ndarray objects."""
+    value = numpy.random.random((10, 10, 10, 3)).astype(dtype)
+
+    check_serialization(value, numpy.ndarray)
+
+
+# Test the most important types
+@pytest.mark.parametrize(
+    "value",
+    SUPPORTED_TORCH_ACTIVATIONS + get_sklearn_models()["all"] + [QuantizedModule],
+)
+def test_serialize_type(value):
+    """Test serialization of type objects (trusted by Skops)."""
+    value = torch.nn.modules.activation.ReLU
+
+    check_serialization(value, type, check_str=False)
+
+
+def test_serialize_torch_device():
+    """Test serialization of torch device objects."""
+    value = torch.device("cpu")
+    check_serialization(value, torch.device)
+
+
+@pytest.mark.parametrize(
+    "cross_validation_split, random_state",
+    [
+        pytest.param(None, None),
+        pytest.param(5, None),
+        pytest.param(0.5, None),
+        pytest.param(0.5, 0),
+        pytest.param(0.5, RandomState(0)),
+        pytest.param([1, 2, 3], None),
+    ],
+)
+@pytest.mark.parametrize(
+    "stratified",
+    [
+        True,
+        False,
+    ],
+)
+def test_serialize_valid_split(cross_validation_split, stratified, random_state):
+    """Test serialization of ValidSplit skorch objects."""
+    value = ValidSplit(
+        cv=cross_validation_split,
+        stratified=stratified,
+        random_state=random_state,
+    )
+
+    check_serialization(value, ValidSplit, equal_method=valid_split_instances_are_equal)
+
+
+@pytest.mark.parametrize(
+    "unsupported_object, expected_error, expected_message",
+    [
+        pytest.param(
+            lambda x: x + 1,
+            NotImplementedError,
+            (
+                "Serializing a custom Callable or Generator object is not secure and is therefore "
+                "disabled.*"
+            ),
+        ),
+        pytest.param(
+            (x for x in [1]),
+            NotImplementedError,
+            (
+                "Serializing a custom Callable or Generator object is not secure and is therefore "
+                "disabled.*"
+            ),
+        ),
+        pytest.param(
+            ValidSplit(cv=(x for x in [1])),
+            NotImplementedError,
+            (
+                "Serializing a custom Generator object is not secure and is therefore "
+                "disabled. Please choose a different cross-validation splitting strategy."
+            ),
+        ),
+        pytest.param(
+            torch.Tensor([3, 4]),
+            TypeError,
+            "Object of type Tensor is not JSON serializable",
+        ),
+        # Serializing a Circuit object is currently not supported
+        # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1841
+        pytest.param(
+            get_a_fhe_circuit(),
+            NotImplementedError,
+            "Concrete Circuit object serialization is not implemented.",
+        ),
+    ],
+)
+def test_error_raises_dumps(unsupported_object, expected_error, expected_message):
+    """Test that trying to dump unsupported object correctly raises an error."""
+    with pytest.raises(expected_error, match=expected_message):
+        dumps(unsupported_object)
+
+
+@pytest.mark.parametrize(
+    "unsupported_object, expected_error, expected_message",
+    [
+        pytest.param(
+            {
+                "type_name": "wrong_serialization",
+                "serialized_value": None,
+            },
+            NotImplementedError,
+            "wrong_serialization does not support the `load_dict` method.",
+        ),
+        pytest.param(
+            RandomState,
+            UntrustedTypesFoundException,
+            "Untrusted types found in the file:.*",
+        ),
+    ],
+)
+def test_error_raises_loads(unsupported_object, expected_error, expected_message):
+    """Test that trying to load unsupported object correctly raises an error."""
+
+    if expected_error == UntrustedTypesFoundException and not USE_SKOPS:
+        return
+
+    # Loading an object of an unexpected serialized should throw an error
+    wrong_serialization_str = dumps(unsupported_object)
+    with pytest.raises(expected_error, match=expected_message):
+        loads(wrong_serialization_str)
+
+
+def test_torch_activations():
+    """Test supported and unsupported torch activation list."""
+
+    # Torch activation list defined in Concrete ML
+    all_torch_activations_cml = [
+        activation.__name__
+        for activation in SUPPORTED_TORCH_ACTIVATIONS + UNSUPPORTED_TORCH_ACTIVATIONS
+    ]
+
+    # Torch activation list imported from Torch
+    all_torch_activations_torch = [
+        activation.__name__
+        for _, activation in inspect.getmembers(nn.modules.activation)
+        if inspect.isclass(activation) and "torch.nn.modules.activation" in str(activation)
+    ]
+
+    assert sorted(all_torch_activations_cml) == sorted(all_torch_activations_torch), (
+        "Difference found between activations imported from Torch and the ones considered in "
+        "Concrete ML: "
+        f"{list(set(all_torch_activations_cml).symmetric_difference(all_torch_activations_torch))}"
+    )

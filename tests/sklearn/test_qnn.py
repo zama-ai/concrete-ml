@@ -83,6 +83,9 @@ def test_parameter_validation(model_class, load_data):
             ("module__n_accum_bits", 0, ".* accumulator bit-width.*"),
         ],
     }
+
+    params = deepcopy(valid_params)
+
     for inv_param in invalid_params_and_exception_pattern["init"]:
         params = deepcopy(valid_params)
         params[inv_param[0]] = inv_param[1]
@@ -417,3 +420,68 @@ def test_structured_pruning(activation_function, model_class, load_data, default
     pruned_model.predict(x_test)
 
     assert neurons_pruned[0] < neurons_orig[0]
+
+
+@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+@pytest.mark.parametrize(
+    "unsupported_parameter, expected_error, expected_message",
+    [
+        pytest.param(
+            {"train_split": lambda x: x + 1},
+            NotImplementedError,
+            (
+                "Serializing a custom Callable object is not secure and is therefore disabled. "
+                "Please set `train_split` to either None or a ValidSplit instance."
+            ),
+            id="train_split_callable",
+        ),
+        pytest.param(
+            {"callbacks": lambda x: x + 1},
+            NotImplementedError,
+            "Serializing a custom Callable object is not secure and is therefore disabled. ",
+            id="callbacks_callable",
+        ),
+        pytest.param(
+            {"callbacks": None},
+            NotImplementedError,
+            (
+                "Serializing a custom Callable object is not secure and is therefore disabled. "
+                "Additionally, the serialization of skorch's different callback classes is not "
+                "supported. Please set `callbacks` to 'disable'. Got .*"
+            ),
+            id="callbacks_none",
+        ),
+        pytest.param(
+            {"predict_nonlinearity": lambda x: x + 1},
+            NotImplementedError,
+            (
+                "Serializing a custom Callable object is not secure and is therefore disabled. "
+                "Please set`predict_nonlinearity` to either None or 'auto'."
+            ),
+            id="predict_non_linearity_callable",
+        ),
+    ],
+)
+def test_serialization_unsupported_parameters(
+    model_class,
+    unsupported_parameter,
+    expected_error,
+    expected_message,
+    verbose=True,
+):
+    """Test serialization errors for unsupported parameters."""
+
+    parameters = {
+        "module__n_layers": 1,
+        "callbacks": "disable",
+    }
+
+    parameters.update(unsupported_parameter)
+
+    model = model_class(**parameters)
+
+    if verbose:
+        print("Run check_serialization on unsupported parameters")
+
+    with pytest.raises(expected_error, match=expected_message):
+        model.dumps()

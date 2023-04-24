@@ -1,4 +1,6 @@
 """Sparse Quantized Neural Network torch module."""
+from typing import Set, Type
+
 import brevitas.nn as qnn
 import numpy
 import torch
@@ -18,49 +20,50 @@ class SparseQuantNeuralNetwork(nn.Module):
     are specified by the user, as well as the breadth of the network
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        input_dim,
-        n_layers,
-        n_outputs,
-        n_hidden_neurons_multiplier=4,
-        n_w_bits=3,
-        n_a_bits=3,
-        n_accum_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
-        n_prune_neurons_percentage=0.0,
-        activation_function=nn.ReLU,
-        quant_narrow=False,
-        quant_signed=True,
-    ):  # pylint: disable=too-many-arguments
+        input_dim: int,
+        n_layers: int,
+        n_outputs: int,
+        n_hidden_neurons_multiplier: int = 4,
+        n_w_bits: int = 3,
+        n_a_bits: int = 3,
+        n_accum_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+        n_prune_neurons_percentage: float = 0.0,
+        activation_function: Type = nn.ReLU,
+        quant_narrow: bool = False,
+        quant_signed: bool = True,
+    ):
         """Sparse Quantized Neural Network constructor.
 
         Args:
-            input_dim: Number of dimensions of the input data
-            n_layers: Number of linear layers for this network
-            n_outputs: Number of output classes or regression targets
-            n_w_bits: Number of weight bits
-            n_a_bits: Number of activation and input bits
-            n_accum_bits: Maximal allowed bit-width of intermediate accumulators
-            n_hidden_neurons_multiplier: The number of neurons on the hidden will be the number
-                of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note that
-                pruning is used to adjust the accumulator size to attempt to
-                keep the maximum accumulator bit-width to
-                `n_accum_bits`, meaning that not all hidden layer neurons will be active.
-                The default value for `n_hidden_neurons_multiplier` is chosen for small dimensions
-                of the input. Reducing this value decreases the FHE inference time considerably
-                but also decreases the robustness and accuracy of model training.
-            n_prune_neurons_percentage: How many neurons to prune on the hidden layers. This
-                should be used mostly through the dedicated `.prune()` mechanism. This can
-                be used in when setting `n_hidden_neurons_multiplier` high (3-4), once good accuracy
-                is obtained, to speed up the model in FHE.
-            activation_function: a torch class that is used to construct activation functions in
-                the network (eg torch.ReLU, torch.SELU, torch.Sigmoid, etc)
-            quant_narrow : whether this network should use narrow range quantized integer values
-            quant_signed : whether to use signed quantized integer values
+            input_dim (int): Number of dimensions of the input data.
+            n_layers (int): Number of linear layers for this network.
+            n_outputs (int): Number of output classes or regression targets.
+            n_w_bits (int): Number of weight bits.
+            n_a_bits (int): Number of activation and input bits.
+            n_accum_bits (int): Maximal allowed bit-width of intermediate accumulators.
+            n_hidden_neurons_multiplier (int): The number of neurons on the hidden will be the
+                number of dimensions of the input multiplied by `n_hidden_neurons_multiplier`. Note
+                that pruning is used to adjust the accumulator size to attempt to keep the maximum
+                accumulator bit-width to `n_accum_bits`, meaning that not all hidden layer neurons
+                will be active. The default value for `n_hidden_neurons_multiplier` is chosen for
+                small dimensions of the input. Reducing this value decreases the FHE inference time
+                considerably but also decreases the robustness and accuracy of model training.
+            n_prune_neurons_percentage (float): The percentage of neurons to prune in the hidden
+                layers. This can be used when setting `n_hidden_neurons_multiplier` with a high
+                number (3-4), once good accuracy is obtained, in order to speed up the model in FHE.
+            activation_function (Type): The activation function to use in the network
+                (e.g., torch.ReLU, torch.SELU, torch.Sigmoid, ...).
+            quant_narrow (bool): Whether this network should quantize the values using narrow range
+                (e.g a 2-bits signed quantization uses [-1, 0, 1] instead of [-2, -1, 0, 1]).
+            quant_signed (bool): Whether this network should quantize the values using signed
+                integers.
 
         Raises:
-            ValueError: if the parameters have invalid values or the computed accumulator bit-width
-                        is zero
+            ValueError: If the parameters have invalid values or the computed accumulator bit-width
+                is zero.
         """
 
         super().__init__()
@@ -128,7 +131,7 @@ class SparseQuantNeuralNetwork(nn.Module):
             "Pruning percentage must be expressed as a fraction between 0 and 1. A value of "
             " zero (0) means pruning is disabled",
         )
-        self.pruned_layers = set()
+        self.pruned_layers: Set[nn.Module] = set()
 
         self.enable_pruning()
 
@@ -143,7 +146,7 @@ class SparseQuantNeuralNetwork(nn.Module):
         max_active_neurons.
 
         Returns:
-            n (int): maximum number of active neurons
+            int: The maximum number of active neurons.
         """
 
         return int(
@@ -226,7 +229,7 @@ class SparseQuantNeuralNetwork(nn.Module):
         """Enable pruning in the network. Pruning must be made permanent to recover pruned weights.
 
         Raises:
-            ValueError: if the quantization parameters are invalid
+            ValueError: If the quantization parameters are invalid.
         """
         max_neuron_connections = self.max_active_neurons()
 

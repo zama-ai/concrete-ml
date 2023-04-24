@@ -7,7 +7,8 @@ import torch
 from torch import nn
 
 from concrete.ml.pytest.torch_models import CNN, FC, CNNMaxPool
-from concrete.ml.quantization import PostTrainingAffineQuantization
+from concrete.ml.pytest.utils import check_serialization, values_are_equal
+from concrete.ml.quantization import PostTrainingAffineQuantization, QuantizedModule
 from concrete.ml.torch import NumpyModule
 from concrete.ml.torch.compile import compile_torch_model
 
@@ -93,13 +94,13 @@ def test_quantized_linear(model_class, input_shape, n_bits, activation_function,
 
     # Quantize with post-training static method
     post_training_quant = PostTrainingAffineQuantization(n_bits, numpy_fc_model)
-    quantized_model = post_training_quant.quantize_module(numpy_input)
+    quantized_module = post_training_quant.quantize_module(numpy_input)
 
     # Execution the predictions in the clear using the __call__ method
-    dequant_prediction_call = quantized_model(numpy_input)
+    dequant_prediction_call = quantized_module(numpy_input)
 
     # Execution the predictions in the clear using the forward method
-    dequant_prediction_forward = quantized_model.forward(numpy_input, fhe="disable")
+    dequant_prediction_forward = quantized_module.forward(numpy_input, fhe="disable")
 
     # Both prediction values should be equal
     assert numpy.array_equal(dequant_prediction_call, dequant_prediction_forward)
@@ -347,3 +348,48 @@ def test_quantized_module_rounding_fhe(model_class, input_shape, default_configu
         AssertionError, match="Rounding is not currently optimized for execution in FHE"
     ):
         quantized_model.forward(numpy_test, fhe="execute")
+
+
+def quantized_module_predictions_are_equal(
+    quantized_module_1: QuantizedModule,
+    quantized_module_2: QuantizedModule,
+    x: numpy.ndarray,
+) -> bool:
+    """Check that the predictions made by both quantized modules are identical."""
+
+    predictions_1 = quantized_module_1.forward(x, fhe="disable")
+    predictions_2 = quantized_module_2.forward(x, fhe="disable")
+    return values_are_equal(predictions_1, predictions_2)
+
+
+@pytest.mark.parametrize(
+    "model_class, input_shape",
+    [
+        pytest.param(FC, (100, 32 * 32 * 3)),
+        pytest.param(partial(CNN, input_output=3), (100, 3, 32, 32)),
+        pytest.param(partial(CNNMaxPool, input_output=3), (100, 3, 32, 32)),
+    ],
+)
+def test_serialization(model_class, input_shape):
+    """Test the serialization of quantized modules."""
+
+    # Define the torch model
+    torch_fc_model = model_class(activation_function=nn.ReLU)
+    torch_fc_model.eval()
+
+    # Create a random input
+    numpy_input = numpy.random.uniform(size=input_shape)
+    torch_input = torch.from_numpy(numpy_input).float()
+
+    # Create the corresponding numpy model
+    numpy_fc_model = NumpyModule(torch_fc_model, torch_input)
+
+    # Quantize with post-training static method
+    post_training_quant = PostTrainingAffineQuantization(8, numpy_fc_model)
+    quantized_module = post_training_quant.quantize_module(numpy_input)
+
+    check_serialization(
+        quantized_module,
+        QuantizedModule,
+        equal_method=partial(quantized_module_predictions_are_equal, x=numpy_input),
+    )

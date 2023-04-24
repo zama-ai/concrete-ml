@@ -2,14 +2,13 @@
 # pylint: disable=too-many-lines
 from __future__ import annotations
 
-import json
 from copy import deepcopy
-from typing import IO, Any, Dict, Optional, Union, get_type_hints
+from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
 
 from ..common.debugging import assert_true
-from ..common.serialization.encoder import CustomEncoder
+from ..common.serialization.dumpers import dump, dumps
 
 STABILITY_CONST = 10**-6
 
@@ -114,14 +113,24 @@ class QuantizationOptions:
         # Symmetric quantization is signed
         assert_true(not self.is_symmetric or self.is_signed)
 
+    def __eq__(self, other) -> bool:
+        return (
+            other.n_bits == self.n_bits
+            and other.is_signed == self.is_signed
+            and other.is_symmetric == self.is_symmetric
+            and other.is_qat == self.is_qat
+            and other.is_narrow == self.is_narrow
+            and other.is_precomputed_qat == self.is_precomputed_qat
+        )
+
     def dump_dict(self) -> Dict:
         """Dump itself to a dict.
 
         Returns:
-            metadata (Dict): dict of serialized object
+            metadata (Dict): Dict of serialized objects.
         """
         metadata: Dict[str, Any] = {}
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+
         metadata["n_bits"] = self.n_bits
         metadata["is_signed"] = self.is_signed
         metadata["is_symmetric"] = self.is_symmetric
@@ -130,70 +139,41 @@ class QuantizationOptions:
         metadata["is_precomputed_qat"] = self.is_precomputed_qat
         return metadata
 
-    def dumps(self) -> str:
-        """Dump itself to a string.
-
-        Returns:
-            metadata (str): string of serialized object
-        """
-
-        return json.dumps(self.dump_dict(), cls=CustomEncoder)
-
-    def dump(self, file: IO[str]):
-        """Dump itself to a file.
-
-        Args:
-            file (IO[str]): file of where to dump.
-        """
-        metadata = self.dump_dict()
-        json.dump(metadata, file, cls=CustomEncoder)
-
-    # Loading
     @staticmethod
     def load_dict(metadata: Dict):
         """Load itself from a string.
 
         Args:
-            metadata (Dict): dict of serialized object
+            metadata (Dict): Dict of serialized objects.
 
         Returns:
-            QuantizationOptions: the loaded object
+            QuantizationOptions: The loaded object.
         """
-        to_return = QuantizationOptions(
+        obj = QuantizationOptions(
             n_bits=metadata["n_bits"],
             is_symmetric=metadata["is_symmetric"],
             is_signed=metadata["is_signed"],
             is_qat=metadata["is_qat"],
         )
         for attr_name in ["is_narrow", "is_precomputed_qat"]:
-            setattr(to_return, attr_name, metadata[attr_name])
-        return to_return
+            setattr(obj, attr_name, metadata[attr_name])
+        return obj
 
-    @staticmethod
-    def load(file: IO[str]) -> QuantizationOptions:
-        """Load itself from a file.
-
-        Args:
-            file (IO[str]): file of serialized object
+    def dumps(self) -> str:
+        """Dump itself to a string.
 
         Returns:
-            QuantizationOptions: the loaded object
+            metadata (str): String of the serialized object.
         """
-        metadata = json.load(file)
-        return QuantizationOptions.load_dict(metadata=metadata)
+        return dumps(self)
 
-    @staticmethod
-    def loads(metadata: str) -> QuantizationOptions:
-        """Load itself from a string.
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
 
         Args:
-            metadata (str): serialized object
-
-        Returns:
-            QuantizationOptions: the loaded object
+            file (TextIO): The file to dump the serialized object into.
         """
-        _metadata: Dict = json.loads(metadata)
-        return QuantizationOptions.load_dict(metadata=_metadata)
+        dump(self, file)
 
     def copy_opts(self, opts):
         """Copy the options from a different structure.
@@ -263,81 +243,60 @@ class MinMaxQuantizationStats:
         self.rmin = rmin
         self.uvalues = uvalues
 
+    def __eq__(self, other) -> bool:
+        # Disable mypy as numpy.array_equal properly handles None types
+        return (
+            other.rmax == self.rmax
+            and other.rmin == self.rmin
+            and numpy.array_equal(other.uvalues, self.uvalues)  # type: ignore[arg-type]
+        )
+
     def dump_dict(self) -> Dict:
         """Dump itself to a dict.
 
         Returns:
-            metadata (Dict): dict of serialized object
+            metadata (Dict): Dict of serialized objects.
         """
         metadata: Dict[str, Any] = {}
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
+
         metadata["rmax"] = self.rmax
         metadata["rmin"] = self.rmin
         metadata["uvalues"] = self.uvalues
         return metadata
 
-    def dumps(self) -> str:
-        """Dump itself to a string.
-
-        Returns:
-            metadata (str): string of serialized object
-        """
-
-        return json.dumps(self.dump_dict(), cls=CustomEncoder)
-
-    def dump(self, file: IO[str]):
-        """Dump itself to a file.
-
-        Args:
-            file (IO[str]): file of where to dump.
-        """
-        metadata = self.dump_dict()
-        json.dump(metadata, file, cls=CustomEncoder)
-
-    # Loading
     @staticmethod
     def load_dict(metadata: Dict):
         """Load itself from a string.
 
         Args:
-            metadata (Dict): dict of serialized object
+            metadata (Dict): Dict of serialized objects.
 
         Returns:
-            QuantizationOptions: the loaded object
+            QuantizationOptions: The loaded object.
         """
         to_return = MinMaxQuantizationStats(
             rmax=metadata["rmax"],
             rmin=metadata["rmin"],
-            uvalues=numpy.array(metadata["uvalues"]),
+            uvalues=metadata["uvalues"],
         )
 
         return to_return
 
-    @staticmethod
-    def load(file: IO[str]) -> MinMaxQuantizationStats:
-        """Load itself from a file.
-
-        Args:
-            file (IO[str]): file of serialized object
+    def dumps(self) -> str:
+        """Dump itself to a string.
 
         Returns:
-            MinMaxQuantizationStats: the loaded object
+            metadata (str): String of the serialized object.
         """
-        metadata = json.load(file)
-        return MinMaxQuantizationStats.load_dict(metadata=metadata)
+        return dumps(self)
 
-    @staticmethod
-    def loads(metadata: str) -> MinMaxQuantizationStats:
-        """Load itself from a string.
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
 
         Args:
-            metadata (str): serialized object
-
-        Returns:
-            MinMaxQuantizationStats: the loaded object
+            file (TextIO): The file to dump the serialized object into.
         """
-        _metadata: Dict = json.loads(metadata)
-        return MinMaxQuantizationStats.load_dict(metadata=_metadata)
+        dump(self, file)
 
     def compute_quantization_stats(self, values: numpy.ndarray) -> None:
         """Compute the calibration set quantization statistics.
@@ -433,47 +392,35 @@ class UniformQuantizationParameters:
         self.zero_point = zero_point
         self.offset = offset
 
+    def __eq__(self, other) -> bool:
+        return (
+            other.scale == self.scale
+            and other.zero_point == self.zero_point
+            and other.offset == self.offset
+        )
+
     def dump_dict(self) -> Dict:
         """Dump itself to a dict.
 
         Returns:
-            metadata (Dict): dict of serialized object
+            metadata (Dict): Dict of serialized objects.
         """
         metadata: Dict[str, Any] = {}
-        metadata["cml_dumped_class_name"] = type(self).__name__
+
         metadata["scale"] = self.scale
         metadata["zero_point"] = self.zero_point
         metadata["offset"] = self.offset
         return metadata
 
-    def dumps(self) -> str:
-        """Dump itself to a string.
-
-        Returns:
-            metadata (str): string of serialized object
-        """
-
-        return json.dumps(self.dump_dict(), cls=CustomEncoder)
-
-    def dump(self, file: IO[str]):
-        """Dump itself to a file.
-
-        Args:
-            file (IO[str]): file of where to dump.
-        """
-        metadata = self.dump_dict()
-        json.dump(metadata, file, cls=CustomEncoder)
-
-    # Loading
     @staticmethod
     def load_dict(metadata: Dict) -> UniformQuantizationParameters:
         """Load itself from a string.
 
         Args:
-            metadata (Dict): dict of serialized object
+            metadata (Dict): Dict of serialized objects.
 
         Returns:
-            UniformQuantizationParameters: the loaded object
+            UniformQuantizationParameters: The loaded object.
         """
         to_return = UniformQuantizationParameters(
             scale=metadata["scale"],
@@ -482,31 +429,21 @@ class UniformQuantizationParameters:
         )
         return to_return
 
-    @staticmethod
-    def load(file: IO[str]) -> UniformQuantizationParameters:
-        """Load itself from a file.
-
-        Args:
-            file (IO[str]): file of serialized object
+    def dumps(self) -> str:
+        """Dump itself to a string.
 
         Returns:
-            UniformQuantizationParameters: the loaded object
+            metadata (str): String of the serialized object.
         """
-        metadata = json.load(file)
-        return UniformQuantizationParameters.load_dict(metadata=metadata)
+        return dumps(self)
 
-    @staticmethod
-    def loads(metadata: str) -> UniformQuantizationParameters:
-        """Load itself from a string.
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
 
         Args:
-            metadata (str): serialized object
-
-        Returns:
-            UniformQuantizationParameters: the loaded object
+            file (TextIO): The file to dump the serialized object into.
         """
-        _metadata: Dict = json.loads(metadata)
-        return UniformQuantizationParameters.load_dict(metadata=_metadata)
+        dump(self, file)
 
     def copy_params(self, params) -> None:
         """Copy the parameters from a different structure.
@@ -676,6 +613,118 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         if self.scale is not None:
             self.scale = numpy.float64(self.scale)
 
+    def __eq__(self, other) -> bool:
+
+        is_equal = other.no_clipping == self.no_clipping
+
+        for attribute in [
+            "n_bits",
+            "is_signed",
+            "is_symmetric",
+            "is_qat",
+            "is_narrow",
+            "is_precomputed_qat",
+            "rmax",
+            "rmin",
+            "uvalues",
+            "scale",
+            "zero_point",
+            "offset",
+        ]:
+            # All possible attributes in a UniformQuantizer object are not necessarily available
+            value_1, value_2 = getattr(other, attribute, None), getattr(self, attribute, None)
+
+            if isinstance(value_1, numpy.ndarray):
+                is_equal &= isinstance(value_2, numpy.ndarray) and numpy.array_equal(
+                    value_1, value_2
+                )
+            else:
+                is_equal &= value_1 == value_2
+
+        return is_equal
+
+    def dump_dict(self) -> Dict:
+        """Dump itself to a dict.
+
+        Returns:
+            metadata (Dict): Dict of serialized objects.
+        """
+        metadata: Dict[str, Any] = {}
+
+        for attribute in [
+            "n_bits",
+            "is_signed",
+            "is_symmetric",
+            "is_qat",
+            "is_narrow",
+            "is_precomputed_qat",
+            "rmax",
+            "rmin",
+            "uvalues",
+            "scale",
+            "zero_point",
+            "offset",
+            "no_clipping",
+        ]:
+            if hasattr(self, attribute):
+                metadata[attribute] = getattr(self, attribute)
+
+        return metadata
+
+    @staticmethod
+    def load_dict(metadata: Dict) -> UniformQuantizer:
+        """Load itself from a string.
+
+        Args:
+            metadata (Dict): Dict of serialized objects.
+
+        Returns:
+            UniformQuantizer: The loaded object.
+        """
+
+        # Instantiate the quantizer
+        obj = UniformQuantizer()
+
+        for attribute in [
+            "n_bits",
+            "is_signed",
+            "is_symmetric",
+            "is_qat",
+            "is_narrow",
+            "is_precomputed_qat",
+            "rmax",
+            "rmin",
+            "uvalues",
+            "scale",
+            "zero_point",
+            "offset",
+            "no_clipping",
+        ]:
+            if attribute in metadata:
+                setattr(obj, attribute, metadata[attribute])
+
+        # The `uvalues` attribute needs to be put back to a numpy.array object
+        if "uvalues" in metadata:
+            obj.uvalues = metadata["uvalues"]
+
+        return obj
+
+    def dumps(self) -> str:
+        """Dump itself to a string.
+
+        Returns:
+            metadata (str): String of the serialized object.
+        """
+        return dumps(self)
+
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
+
+        Args:
+            file (TextIO): The file to dump the serialized object into.
+        """
+        dump(self, file)
+
     def quant(self, values: numpy.ndarray) -> numpy.ndarray:
         """Quantize values.
 
@@ -739,82 +788,6 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         return ans
 
-    def dump_dict(self) -> Dict:
-        """Dump itself to a dict.
-
-        Returns:
-            metadata (Dict): dict of serialized object
-        """
-        metadata: Dict[str, Any] = {}
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
-
-        for attribute in ["zero_point", "scale", "offset", "n_bits"]:
-            if hasattr(self, attribute):
-                metadata[attribute] = getattr(self, attribute)
-        return metadata
-
-    def dumps(self) -> str:
-        """Dump itself to a string.
-
-        Returns:
-            metadata (str): string of serialized object
-        """
-        metadata = self.dump_dict()
-        return json.dumps(metadata, cls=CustomEncoder)
-
-    def dump(self, file: IO[str]) -> None:
-        """Dump itself to a file.
-
-        Args:
-            file (IO[str]): file of where to dump.
-        """
-        metadata = self.dump_dict()
-        json.dump(metadata, file, cls=CustomEncoder)
-
-    # Loading
-    @staticmethod
-    def load_dict(metadata: Dict) -> UniformQuantizer:
-        """Load itself from a string.
-
-        Args:
-            metadata (Dict): dict of serialized object
-
-        Returns:
-            UniformQuantizer: the loaded object
-        """
-        obj = UniformQuantizer()
-
-        for attribute in ["zero_point", "scale", "offset", "n_bits"]:
-            if attribute in metadata:
-                setattr(obj, attribute, metadata[attribute])
-        return obj
-
-    @staticmethod
-    def load(file: IO[str]) -> UniformQuantizer:
-        """Load itself from a file.
-
-        Args:
-            file (IO[str]): file of serialized object
-
-        Returns:
-            UniformQuantizer: the loaded object
-        """
-        metadata = json.load(file)
-        return UniformQuantizer.load_dict(metadata=metadata)
-
-    @staticmethod
-    def loads(metadata: str) -> UniformQuantizer:
-        """Load itself from a string.
-
-        Args:
-            metadata (str): serialized object
-
-        Returns:
-            UniformQuantizer: the loaded object
-        """
-        _metadata: Dict = json.loads(metadata)
-        return UniformQuantizer.load_dict(metadata=_metadata)
-
 
 class QuantizedArray:
     """Abstraction of quantized array.
@@ -840,8 +813,6 @@ class QuantizedArray:
         kwargs: Any member of the options, stats, params sets as a key-value pair. The parameter
             sets need to be completely parametrized if their members appear in kwargs.
     """
-
-    STABILITY_CONST = 10**-6
 
     quantizer: UniformQuantizer
     values: numpy.ndarray
@@ -880,6 +851,14 @@ class QuantizedArray:
 
         if values is not None:
             self._values_setup(values, value_is_float, options, stats, params)
+
+    def __eq__(self, other):
+        is_equal = other.n_bits == self.n_bits and other.quantizer == self.quantizer
+
+        for attribute in ["values", "qvalues"]:
+            is_equal &= numpy.array_equal(getattr(other, attribute), getattr(self, attribute))
+
+        return is_equal
 
     def _values_setup(
         self,
@@ -947,6 +926,54 @@ class QuantizedArray:
     def __call__(self) -> Optional[numpy.ndarray]:
         return self.qvalues
 
+    def dump_dict(self) -> Dict:
+        """Dump itself to a dict.
+
+        Returns:
+            metadata (Dict): Dict of serialized objects.
+        """
+        metadata: Dict[str, Any] = {}
+
+        metadata["quantizer"] = self.quantizer
+        metadata["n_bits"] = self.n_bits
+        metadata["values"] = self.values
+        metadata["qvalues"] = self.qvalues
+        return metadata
+
+    @staticmethod
+    def load_dict(metadata: Dict) -> QuantizedArray:
+        """Load itself from a string.
+
+        Args:
+            metadata (Dict): Dict of serialized objects.
+
+        Returns:
+            QuantizedArray: The loaded object.
+        """
+        obj = QuantizedArray(n_bits=metadata["n_bits"], values=metadata["values"])
+
+        obj.quantizer = metadata["quantizer"]
+        obj.values = metadata["values"]
+        obj.qvalues = metadata["qvalues"]
+
+        return obj
+
+    def dumps(self) -> str:
+        """Dump itself to a string.
+
+        Returns:
+            metadata (str): String of the serialized object.
+        """
+        return dumps(self)
+
+    def dump(self, file: TextIO) -> None:
+        """Dump itself to a file.
+
+        Args:
+            file (TextIO): The file to dump the serialized object into.
+        """
+        dump(self, file)
+
     def update_values(self, values: numpy.ndarray) -> numpy.ndarray:
         """Update values to get their corresponding qvalues using the related quantized parameters.
 
@@ -995,83 +1022,3 @@ class QuantizedArray:
             "De-quantized values must be float64",
         )
         return self.values
-
-    def dump_dict(self) -> Dict:
-        """Dump itself to a dict.
-
-        Returns:
-            metadata (Dict): dict of serialized object
-        """
-        metadata: Dict[str, Any] = {}
-        metadata["cml_dumped_class_name"] = str(type(self).__name__)
-        metadata["STABILITY_CONST"] = self.STABILITY_CONST
-        metadata["quantizer"] = self.quantizer
-        metadata["n_bits"] = self.n_bits
-        metadata["values"] = self.values
-        metadata["qvalues"] = self.qvalues
-        metadata["values"] = self.values
-        return metadata
-
-    def dumps(self) -> str:
-        """Dump itself to a string.
-
-        Returns:
-            metadata (str): string of serialized object
-        """
-        metadata = self.dump_dict()
-        return json.dumps(metadata, cls=CustomEncoder)
-
-    def dump(self, file: IO[str]) -> None:
-        """Dump itself to a file.
-
-        Args:
-            file (IO[str]): file of where to dump.
-        """
-        metadata = self.dump_dict()
-        json.dump(metadata, file, cls=CustomEncoder)
-
-    # Loading
-    @staticmethod
-    def load_dict(metadata: Dict) -> QuantizedArray:
-        """Load itself from a string.
-
-        Args:
-            metadata (Dict): dict of serialized object
-
-        Returns:
-            QuantizedArray: the loaded object
-        """
-        obj = QuantizedArray(n_bits=metadata["n_bits"], values=metadata["values"])
-        # pylint: disable-next=invalid-name
-        obj.STABILITY_CONST = metadata["STABILITY_CONST"]
-        obj.quantizer = metadata["quantizer"]
-        obj.values = metadata["values"]
-        obj.qvalues = metadata["qvalues"]
-
-        return obj
-
-    @staticmethod
-    def load(file: IO[str]) -> QuantizedArray:
-        """Load itself from a file.
-
-        Args:
-            file (IO[str]): file of serialized object
-
-        Returns:
-            QuantizedArray: the loaded object
-        """
-        metadata = json.load(file)
-        return QuantizedArray.load_dict(metadata=metadata)
-
-    @staticmethod
-    def loads(metadata: str) -> QuantizedArray:
-        """Load itself from a string.
-
-        Args:
-            metadata (str): serialized object
-
-        Returns:
-            QuantizedArray: the loaded object
-        """
-        _metadata: Dict = json.loads(metadata)
-        return QuantizedArray.load_dict(metadata=_metadata)
