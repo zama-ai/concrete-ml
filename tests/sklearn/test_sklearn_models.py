@@ -145,15 +145,18 @@ def check_correctness_with_sklearn(
     model_class,
     x,
     y,
+    n_bits,
     check_r2_score,
     check_accuracy,
-    hyper_parameters_including_n_bits,
     fhe="disable",
+    hyper_parameters=None,
 ):
     """Check that Concrete ML and scikit-learn models are 'equivalent'."""
-    assert "n_bits" in hyper_parameters_including_n_bits
 
-    model = instantiate_model_generic(model_class, **hyper_parameters_including_n_bits)
+    if hyper_parameters is None:
+        hyper_parameters = {}
+
+    model = instantiate_model_generic(model_class, n_bits=n_bits, **hyper_parameters)
 
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
@@ -733,17 +736,11 @@ def check_hyper_parameters(
 
     for hyper_parameters in hyperparameters_list:
 
-        # Add n_bits
-        hyper_parameters["n_bits"] = n_bits
-
-        model = instantiate_model_generic(model_class, **hyper_parameters)
+        model = instantiate_model_generic(model_class, n_bits=n_bits, **hyper_parameters)
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2450
         # does not work for now, issue in HummingBird
-        if (
-            get_model_name(model_class) == "RandomForestClassifier"
-            and hyper_parameters["n_bits"] == 2
-        ):
+        if get_model_name(model_class) == "RandomForestClassifier" and n_bits == 2:
             continue
 
         # Also fit with these hyper parameters to check it works fine
@@ -760,10 +757,11 @@ def check_hyper_parameters(
                 model_class,
                 x,
                 y,
+                n_bits,
                 check_r2_score,
                 check_accuracy,
-                hyper_parameters_including_n_bits=hyper_parameters,
                 fhe="disable",
+                hyper_parameters=hyper_parameters,
             )
 
 
@@ -925,9 +923,9 @@ def test_correctness_with_sklearn(
         model_class,
         x,
         y,
+        n_bits,
         check_r2_score,
         check_accuracy,
-        hyper_parameters_including_n_bits={"n_bits": n_bits},
         fhe="disable",
     )
 

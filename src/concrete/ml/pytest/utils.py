@@ -147,21 +147,20 @@ def get_random_extract_of_sklearn_models_and_datasets():
     return unique_model_classes
 
 
-def instantiate_model_generic(model_class, **parameters):
+def instantiate_model_generic(model_class, n_bits, **parameters):
     """Instantiate any Concrete ML model type.
 
     Args:
-        model_class (class): The type of the model to instantiate
-        parameters (dict): Hyper-parameters for the model instantiation
+        model_class (class): The type of the model to instantiate.
+        n_bits (int): The number of quantization to use when initializing the model. For QNNs,
+            default parameters are used based on whether `n_bits` is greater or smaller than 8.
+        parameters (dict): Hyper-parameters for the model instantiation. For QNNs, these parameters
+            will override the matching default ones.
 
     Returns:
-        model_name (str): The type of the model as a string
-        model (object): The model instance
+        model_name (str): The type of the model as a string.
+        model (object): The model instance.
     """
-
-    assert "n_bits" in parameters
-    n_bits = parameters["n_bits"]
-
     # If the model is a QNN, set the model using appropriate bit-widths
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         extra_kwargs = {}
@@ -174,11 +173,12 @@ def instantiate_model_generic(model_class, **parameters):
             extra_kwargs["module__n_a_bits"] = 2
             extra_kwargs["module__n_accum_bits"] = 7
 
+        extra_kwargs.update(parameters)
         model = model_class(**extra_kwargs)
 
     # Else, set the model using n_bits
     else:
-        model = model_class(n_bits=n_bits)
+        model = model_class(n_bits=n_bits, **parameters)
 
     # Seed the model if it handles "random_state" as a parameter
     model_params = model.get_params()
