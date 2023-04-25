@@ -99,8 +99,6 @@ def _compile_torch_or_onnx_model(
     # this batch size. The input set contains many examples, to determine a representative
     # bit-width, but for tracing we only take a single one. We need the ONNX tracing batch size to
     # match the batch size during FHE inference which can only be 1 for the moment.
-    # Use batch size > 1 in FHE once it is available
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/758
     dummy_input_for_tracing = tuple(
         torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
     )
