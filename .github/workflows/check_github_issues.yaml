@@ -35,7 +35,9 @@ jobs:
 
       - name: Check GitHub actions
         run: |
-          make check_issues
+          if [[ "${{ github.repository }}" == "concrete-ml-internal"  ]];then
+            make check_issues
+          fi
 
       - name: Slack Notification
         if: ${{ always() && !success() }}
