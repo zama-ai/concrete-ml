@@ -34,6 +34,7 @@
 - [Prediction with FHE](advanced-topics/prediction_with_fhe.md)
 - [Production Deployment](advanced-topics/client_server.md)
 - [Advanced Features](advanced-topics/advanced_features.md)
+- [Serialization](advanced-topics/serialization.md)
 
 ## Developer Guide
 

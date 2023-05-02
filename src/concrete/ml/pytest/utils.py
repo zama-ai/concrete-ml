@@ -398,7 +398,7 @@ def check_serialization(
 
     for use_dump_method in dump_method_to_test:
 
-        # Dump the object into a string
+        # Dump the object as a string
         if use_dump_method:
             dumped_str = object_to_serialize.dumps()
         else:
@@ -418,7 +418,7 @@ def check_serialization(
         )
 
         if check_str:
-            # Dump the loaded object into a string
+            # Dump the loaded object as a string
             if use_dump_method:
                 re_dumped_str = loaded.dumps()
             else:

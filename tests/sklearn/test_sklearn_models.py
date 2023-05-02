@@ -313,7 +313,7 @@ def check_serialization_dump_load(model, x, use_dump_method):
 def check_serialization_dumps_loads(model, x, use_dump_method):
     """Check that a model can be serialized two times using dumps/loads."""
 
-    # Dump the model into a string
+    # Dump the model as a string
     if use_dump_method:
         serialized_model_str = model.dumps()
     else:
@@ -322,7 +322,7 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
     # Load the model from the string
     loaded_model = loads(serialized_model_str)
 
-    # Dump the model into a string again
+    # Dump the model as a string again
     if use_dump_method:
         re_serialized_model_str: str = loaded_model.dumps()
     else:
