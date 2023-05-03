@@ -87,7 +87,7 @@ Loading a built-in model is possible through the following functions:
 
 {% hint style="warning" %}
 A loaded model requires to be compiled once again in order to be able to execute the inference in
-FHE or with simulation. This ie because the underlying FHE circuit is currently not serialized.
+FHE or with simulation. This is because the underlying FHE circuit is currently not serialized.
 There is however no such need when FHE mode is disabled.
 {% endhint %}
 
