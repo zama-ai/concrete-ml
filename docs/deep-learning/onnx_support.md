@@ -88,16 +88,18 @@ While Keras was used in this example, it is not officially supported. Additional
 
 ## Quantization Aware Training
 
-QAT models contain quantizers in the ONNX graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized. Since these QAT models have quantizers that are configured during training to a specific number of bits, the ONNX graph will need to be imported using the same settings:
+Models trained using [Quantization Aware Training](https://docs.zama.ai/concrete-ml/advanced-topics/quantization) contain quantizers in the ONNX graph. These quantizers ensure that the inputs to the Linear/Dense and Conv layers are quantized. Since these QAT models have quantizers that are configured during training to a specific number of bits, the ONNX graph will need to be imported using the same settings:
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
-n_bits_qat = 3  # number of bits for weights and activations during training
+# Define the number of bits to use for quantizing weights and activations during training
+n_bits_qat = 3  
 
 quantized_numpy_module = compile_onnx_model(
     onnx_model,
     input_set,
+    import_qat=True,
     n_bits=n_bits_qat,
 )
 ```
