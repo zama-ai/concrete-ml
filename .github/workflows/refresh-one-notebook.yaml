@@ -23,7 +23,7 @@ on:
         - KaggleTitanic \n
         - LinearRegression \n
         - LogisticRegression \n
-        - mnist_in_fhe \n
+        - MnistInFHE \n
         - PerrorImpactOnFMNIST \n
         - PoissonRegression \n
         - QuantizationAwareTraining \n
@@ -59,7 +59,7 @@ env:
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
-  mnist_in_fhe: "use_case_examples/mnist/mnist_in_fhe.ipynb" 
+  MnistInFHE: "use_case_examples/mnist/MnistInFHE.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
