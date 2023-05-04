@@ -44,7 +44,7 @@ setup_env:
 	fi
 
 	echo "Installing $(CP_VERSION_SPEC_FOR_RC)" && \
-	poetry run python -m pip install -U --pre "$(CP_VERSION_SPEC_FOR_RC)"
+	poetry run python -m pip install -U --pre "$(CP_VERSION_SPEC_FOR_RC)" --no-deps
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: check_poetry_version
