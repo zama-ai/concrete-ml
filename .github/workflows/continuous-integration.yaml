@@ -61,6 +61,16 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # For reasons explained in the issue, we need to manually list the files that we want to download
+  # from LFS. This could be removed if tests stop to use files stored in LFS
+  # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3600 
+  LFS_TEST_FILES: "\
+    tests/data/mnist_2b_s1_1.zip, \
+    tests/data/mnist_test_batch.zip, \
+    tests/parameter_search/FashionMNIST_quant_state_dict.pt, \
+    tests/parameter_search/custom_data_fp32_state_dict.pt, \
+    tests/parameter_search/custom_data_quant_state_dict.pt"
+ 
  
 
 jobs:
@@ -327,12 +337,21 @@ jobs:
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
           apt update && apt install git git-lfs -y
 
+      # By default, `git clone` downloads all LFS files, which we want to avoid in regular CI
+      - name: Disable LFS download by default
+        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) }}
+        run: |
+          git lfs install --skip-smudge
+
+      # Checkout the code
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        # Fetch-detph 0 to have all commits for changelog generation
-        with:
-          fetch-depth: 0
-          lfs: true
+      
+      # Pull the only LFS files needed for regular tests, avoiding to download files stored for 
+      # benchmarks and use cases 
+      - name: Pull LFS test files
+        run: |
+          git lfs pull --include "${{ env.LFS_TEST_FILES }}" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
@@ -647,11 +666,22 @@ jobs:
         run: |
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
-
+    
+      # By default, `git clone` downloads all LFS files, which we want to avoid in regular CI
+      - name: Disable LFS download by default
+        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) }}
+        run: |
+          git lfs install --skip-smudge
+ 
+      # Checkout the code
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-        with:
-          lfs: true
+      
+      # Pull the only LFS files needed for regular tests, avoiding to download files stored for 
+      # benchmarks and use cases 
+      - name: Pull LFS test files
+        run: |
+          git lfs pull --include "${{ env.LFS_TEST_FILES }}" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@57ded4d7d5e986d7296eab16560982c6dd7c923b
