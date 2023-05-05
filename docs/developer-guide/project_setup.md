@@ -17,7 +17,11 @@ rm -rf concrete-ml
 git clone https://github.com/zama-ai/concrete-ml
 ```
 
-Some tests require files tracked by git-lfs to be downloaded. To do so, please follow the instructions on [git-lfs website](https://git-lfs.github.com/), then run `git lfs pull`.
+Several files are tracked by [git-lfs](https://git-lfs.github.com/). While a few are required for running some tests, most of them are used for benchmarking and use case examples. By default, `git clone` downloads all LFS files, which can add up to several hundreds of MB to the directory. Is it however possible to disable such behavior by running the running the following command instead :
+
+```bash
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/zama-ai/concrete-ml
+```
 
 ## Automatic installation
 
