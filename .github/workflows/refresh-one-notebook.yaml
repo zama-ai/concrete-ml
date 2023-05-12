@@ -14,6 +14,7 @@ on:
         - ClientServer \n
         - ConvolutionalNeuralNetwork \n
         - DecisionTreeClassifier \n
+        - DecisionTreeRegressor \n
         - Deployment \n
         - ExperimentPrivacyTreePaper \n
         - FromImageNetToCifar \n
@@ -22,12 +23,15 @@ on:
         - GLMComparison \n
         - KaggleTitanic \n
         - LinearRegression \n
+        - LinearSVR \n
         - LogisticRegression \n
         - MnistInFHE \n
         - PerrorImpactOnFMNIST \n
         - PoissonRegression \n
         - QuantizationAwareTraining \n
+        - RegressorComparison \n
         - SentimentClassification \n
+        - SVMClassifier \n
         - XGBClassifier \n
         - XGBRegressor \n
         "
@@ -50,6 +54,7 @@ env:
   ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
+  DecisionTreeRegressor: "docs/advanced_examples/DecisionTreeRegressor.ipynb" 
   Deployment: "docs/advanced_examples/Deployment.ipynb" 
   ExperimentPrivacyTreePaper: "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb" 
   FromImageNetToCifar: "use_case_examples/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 
@@ -58,12 +63,15 @@ env:
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
+  LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   MnistInFHE: "use_case_examples/mnist/MnistInFHE.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
+  RegressorComparison: "docs/advanced_examples/RegressorComparison.ipynb" 
   SentimentClassification: "use_case_examples/sentiment_analysis_with_transformer/SentimentClassification.ipynb" 
+  SVMClassifier: "docs/advanced_examples/SVMClassifier.ipynb" 
   XGBClassifier: "docs/advanced_examples/XGBClassifier.ipynb" 
   XGBRegressor: "docs/advanced_examples/XGBRegressor.ipynb" 
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [END] ---
