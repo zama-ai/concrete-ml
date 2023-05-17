@@ -136,6 +136,54 @@ class BaseEstimator:
         self.fhe_circuit_: Optional[Circuit] = None
         self.onnx_model_: Optional[onnx.ModelProto] = None
 
+    def __getattr__(self, attr: str):
+        """Get the model's attribute.
+
+        If the attribute's name ends with an underscore ("_"), get the attribute from the underlying
+        scikit-learn model as it represents a training attribute:
+        https://scikit-learn.org/stable/glossary.html#term-attributes
+
+        This method is only called if the attribute has not been found in the class instance:
+        https://docs.python.org/3/reference/datamodel.html?highlight=getattr#object.__getattr__
+
+        Args:
+            attr (str): The attribute's name.
+
+        Returns:
+            The attribute value.
+
+        Raises:
+            AttributeError: If the attribute cannot be found or is not a training attribute.
+        """
+
+        # If the attribute ends with a single underscore and can be found in the underlying
+        # scikit-learn model (once fitted), retrieve its value
+        if (
+            attr.endswith("_")
+            and not attr.endswith("__")
+            and getattr(self, "sklearn_model", None) is not None
+        ):
+            return getattr(self.sklearn_model, attr)
+
+        raise AttributeError(
+            f"Attribute {attr} cannot be found in the Concrete ML {self.__class__.__name__} object "
+            f"and is not a training attribute from the underlying scikit-learn "
+            f"{self.sklearn_model_class} one."
+        )
+
+    # We need to specifically call the default __setattr__ method as QNN models still inherit from
+    # skorch, which provides its own __setattr__ implementation and creates a cyclic loop
+    # with __getattr__. Removing this inheritance once and for all should fix the issue
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+    def __setattr__(self, name: str, value: Any):
+        """Set the value as a model attribute.
+
+        Args:
+            name (str): The attribute's name to consider.
+            value (Any): The attribute's value to consider.
+        """
+        object.__setattr__(self, name, value)
+
     @abstractmethod
     def dump_dict(self) -> Dict[str, Any]:
         """Dump the object as a dict.
@@ -727,7 +775,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         #: The number of outputs in the underlying model
         self.module__n_outputs: Optional[int] = None
 
-        super().__init__()
+        BaseEstimator.__init__(self)
 
     @property
     def base_module(self) -> SparseQuantNeuralNetwork:
