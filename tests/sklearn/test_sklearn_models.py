@@ -39,7 +39,7 @@ import pytest
 import torch
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
-from sklearn.metrics import make_scorer, matthews_corrcoef, mean_squared_error
+from sklearn.metrics import make_scorer, matthews_corrcoef, top_k_accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -569,13 +569,8 @@ def check_pipeline(model_class, x, y):
         grid_search.fit(x, y)
 
 
-def check_grid_search(model_class, x, y):
+def check_grid_search(model_class, x, y, scoring):
     """Check grid search."""
-    if is_classifier_or_partial_classifier(model_class):
-        grid_scorer = make_scorer(matthews_corrcoef, greater_is_better=True)
-    else:
-        grid_scorer = make_scorer(mean_squared_error, greater_is_better=True)
-
     if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
         param_grid = {
             "module__n_layers": [2, 3],
@@ -603,7 +598,7 @@ def check_grid_search(model_class, x, y):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
         _ = GridSearchCV(
-            model_class(), param_grid, cv=5, scoring=grid_scorer, error_score="raise", n_jobs=1
+            model_class(), param_grid, cv=5, scoring=scoring, error_score="raise", n_jobs=1
         ).fit(x, y)
 
 
@@ -867,6 +862,59 @@ def check_class_mapping(model, x, y):
     numpy.array_equal(classes[y_pred], y_pred_shuffled)
 
 
+def check_exposition_of_sklearn_attributes(model, x, y):
+    """Check training scikit-learn attributes are properly exposed in our models."""
+
+    training_attribute = "coef_"
+    # Check that accessing an attribute that follows scikit-learn's naming convention for training
+    # attributes by ending with an underscore properly raises an Attribute error when the model is
+    # not fitted
+    with pytest.raises(
+        AttributeError,
+        match=f".* {training_attribute} cannot be found in the Concrete ML.*",
+    ):
+        getattr(model, training_attribute)
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    for name in vars(model.sklearn_model):
+        if name.endswith("_") and not name.endswith("__"):
+            assert hasattr(
+                model, name
+            ), f"Training attribute {name} is not exposed in {get_model_name(model)} model."
+
+    wrong_training_attribute_1 = "concrete_ml"
+    # Check that accessing an unknown attribute properly raises an Attribute error
+    with pytest.raises(
+        AttributeError,
+        match=f".* {wrong_training_attribute_1} cannot be found in the Concrete ML.*",
+    ):
+        getattr(model, wrong_training_attribute_1)
+
+    wrong_training_attribute_2 = "concrete_ml_"
+    # Check that accessing an unknown attribute that almost follows scikit-learn's naming
+    # convention for training attributes by ending with two underscores properly raises an
+    # Attribute error
+    with pytest.raises(
+        AttributeError,
+        match=f".* object has no attribute '{wrong_training_attribute_2}'",
+    ):
+        getattr(model, wrong_training_attribute_2)
+
+    wrong_training_attribute_3 = "concrete_ml__"
+    # Check that accessing an unknown attribute that almost follows scikit-learn's naming
+    # convention for training attributes by ending with two underscores properly raises an
+    # Attribute error
+    with pytest.raises(
+        AttributeError,
+        match=f".* {wrong_training_attribute_3} cannot be found in the Concrete ML.*",
+    ):
+        getattr(model, wrong_training_attribute_3)
+
+
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -967,14 +1015,40 @@ def test_hyper_parameters(
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("n_bits", [3])
+# The complete list of built-in scoring functions can be found in scikit-learn's documentation:
+# https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
+# Here, we only consider the main ones
 @pytest.mark.parametrize(
-    "n_bits",
-    [3],
+    "scoring, is_classification",
+    [
+        pytest.param("accuracy", True),
+        pytest.param("balanced_accuracy", True),
+        pytest.param(make_scorer(top_k_accuracy_score, k=1), True, id="top_k_accuracy"),
+        pytest.param("average_precision", True),
+        pytest.param("f1", True),
+        pytest.param("precision", True),
+        pytest.param("recall", True),
+        pytest.param("roc_auc", True),
+        pytest.param(
+            make_scorer(matthews_corrcoef, greater_is_better=True), True, id="matthews_corrcoef"
+        ),
+        pytest.param("explained_variance", False),
+        pytest.param("max_error", False),
+        pytest.param("neg_mean_absolute_error", False),
+        pytest.param("neg_mean_squared_error", False),
+        pytest.param("neg_root_mean_squared_error", False),
+        pytest.param("neg_median_absolute_error", False),
+        pytest.param("r2", False),
+        pytest.param("neg_mean_absolute_percentage_error", False),
+    ],
 )
 def test_grid_search(
     model_class,
     parameters,
     n_bits,
+    scoring,
+    is_classification,
     load_data,
     is_weekly_option,
     verbose=True,
@@ -982,10 +1056,27 @@ def test_grid_search(
     """Test Grid search."""
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
+    # If the scoring function is meant for classifiers (resp. regressors) but the model is not a
+    # classifier (resp. regressor), skip the test
+    # Also skip the test if the classification data is multi-class as most of the scoring functions
+    # tested here don't support that
+    if is_classification:
+        if (
+            not is_classifier_or_partial_classifier(model_class)
+            or parameters.get("n_classes", 2) > 2
+        ):
+            return
+    elif not is_regressor_or_partial_regressor(model_class):
+        return
+
+    # Max error does not support multi-output models
+    if scoring == "max_error" and parameters.get("n_targets", 1) > 1:
+        return
+
     if verbose:
         print("Run check_grid_search")
 
-    check_grid_search(model_class, x, y)
+    check_grid_search(model_class, x, y, scoring)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
@@ -1359,3 +1450,24 @@ def test_class_mapping(
         print("Run check_class_mapping")
 
     check_class_mapping(model, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_exposition_of_sklearn_attributes(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test the exposition of scikit-learn training attributes."""
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    if verbose:
+        print("Run check_exposition_of_sklearn_attributes")
+
+    check_exposition_of_sklearn_attributes(model, x, y)
