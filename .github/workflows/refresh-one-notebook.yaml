@@ -13,7 +13,7 @@ on:
         - ClassifierComparison \n
         - ClientServer \n
         - ConvolutionalNeuralNetwork \n
-        - CreditScoringWithGraphics \n
+        - CreditScoring \n
         - DecisionTreeClassifier \n
         - DecisionTreeRegressor \n
         - Deployment \n
@@ -54,7 +54,7 @@ env:
   ClassifierComparison: "docs/advanced_examples/ClassifierComparison.ipynb" 
   ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
-  CreditScoringWithGraphics: "use_case_examples/credit_scoring/CreditScoringWithGraphics.ipynb" 
+  CreditScoring: "use_case_examples/credit_scoring/CreditScoring.ipynb" 
   DecisionTreeClassifier: "docs/advanced_examples/DecisionTreeClassifier.ipynb" 
   DecisionTreeRegressor: "docs/advanced_examples/DecisionTreeRegressor.ipynb" 
   Deployment: "docs/advanced_examples/Deployment.ipynb" 
