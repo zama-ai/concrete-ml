@@ -27,6 +27,7 @@ from concrete.ml.pytest.torch_models import (
     FCSmall,
     MultiInputNN,
     MultiInputNNConfigurable,
+    MultiInputNNDifferentSize,
     NetWithLoops,
     PaddingNet,
     ShapeOperationsNet,
@@ -49,12 +50,6 @@ from concrete.ml.torch.compile import (
 )
 
 # pylint: enable=ungrouped-imports
-
-# INPUT_OUTPUT_FEATURE is the number of input and output of each of the network layers.
-# (as well as the input of the network itself)
-# Note that when comparing two predictions with few features the r2 score is brittle
-# thus we prefer to avoid values that are too low (e.g., 1, 2)
-INPUT_OUTPUT_FEATURE = [5]
 
 
 def create_test_inputset(inputset, n_percent_inputset_examples_test):
@@ -86,7 +81,7 @@ def get_and_compile_quantized_module(model, inputset, import_qat, n_bits, config
     return quantized_numpy_module
 
 
-# pylint: disable-next=too-many-arguments
+# pylint: disable-next=too-many-arguments, too-many-branches
 def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many-statements
     input_output_feature,
     model_class,
@@ -100,26 +95,33 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     expected_onnx_str=None,
     verbose=False,
     get_and_compile=False,
+    input_shape=None,
+    is_brevitas_qat=False,
 ) -> QuantizedModule:
     """Test the different model architecture from torch numpy."""
 
     # Define an input shape (n_examples, n_features)
     n_examples = 500
 
-    input_output_feature = to_tuple(input_output_feature)
-
     # Define the torch model
     torch_model = model_class(
-        input_output=input_output_feature[0], activation_function=activation_function
+        input_output=input_output_feature, activation_function=activation_function
     )
 
     num_inputs = len(signature(torch_model.forward).parameters)
 
+    # If no specific input shape is given, use the number of input/output features
+    if input_shape is None:
+        input_shape = input_output_feature
+
     # Create random input
-    inputset = tuple(
-        numpy.random.uniform(-100, 100, size=(n_examples, *input_output_feature))
-        for _ in range(num_inputs)
-    )
+    if num_inputs > 1:
+        inputset = tuple(
+            numpy.random.uniform(-100, 100, size=(n_examples, *to_tuple(input_shape[i])))
+            for i in range(num_inputs)
+        )
+    else:
+        inputset = (numpy.random.uniform(-100, 100, size=(n_examples, *to_tuple(input_shape))),)
 
     # FHE vs Quantized are not done in the test anymore (see issue #177)
     if not simulate:
@@ -163,7 +165,18 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
                     verbose=verbose,
                 )
         else:
-            if get_and_compile:
+            if is_brevitas_qat:
+                n_bits = qat_bits
+
+                quantized_numpy_module = compile_brevitas_qat_model(
+                    torch_model=torch_model,
+                    torch_inputset=inputset,
+                    n_bits=n_bits,
+                    configuration=default_configuration,
+                    verbose=verbose,
+                )
+
+            elif get_and_compile:
                 quantized_numpy_module = get_and_compile_quantized_module(
                     model=torch_model,
                     inputset=inputset,
@@ -195,39 +208,51 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             x_test, model=quantized_numpy_module, simulate=simulate
         )
     else:
-        # Compile our network with 16-bits
-        # to compare to torch (8b weights + float 32 activations)
-        if qat_bits == 0:
-            n_bits_w_a = 4
-        else:
-            n_bits_w_a = qat_bits
+        if is_brevitas_qat:
+            n_bits = qat_bits
 
-        n_bits = {
-            "model_inputs": 8,
-            "op_weights": n_bits_w_a,
-            "op_inputs": n_bits_w_a,
-            "model_outputs": 8,
-        }
-
-        if get_and_compile:
-            quantized_numpy_module = get_and_compile_quantized_module(
-                model=torch_model,
-                inputset=inputset,
-                import_qat=qat_bits != 0,
+            quantized_numpy_module = compile_brevitas_qat_model(
+                torch_model=torch_model,
+                torch_inputset=inputset,
                 n_bits=n_bits,
                 configuration=default_configuration,
                 verbose=verbose,
             )
 
         else:
-            quantized_numpy_module = compile_torch_model(
-                torch_model,
-                inputset,
-                import_qat=qat_bits != 0,
-                configuration=default_configuration,
-                n_bits=n_bits,
-                verbose=verbose,
-            )
+            # Compile our network with 16-bits
+            # to compare to torch (8b weights + float 32 activations)
+            if qat_bits == 0:
+                n_bits_w_a = 4
+            else:
+                n_bits_w_a = qat_bits
+
+            n_bits = {
+                "model_inputs": 8,
+                "op_weights": n_bits_w_a,
+                "op_inputs": n_bits_w_a,
+                "model_outputs": 8,
+            }
+
+            if get_and_compile:
+                quantized_numpy_module = get_and_compile_quantized_module(
+                    model=torch_model,
+                    inputset=inputset,
+                    import_qat=qat_bits != 0,
+                    n_bits=n_bits,
+                    configuration=default_configuration,
+                    verbose=verbose,
+                )
+
+            else:
+                quantized_numpy_module = compile_torch_model(
+                    torch_model,
+                    inputset,
+                    import_qat=qat_bits != 0,
+                    configuration=default_configuration,
+                    n_bits=n_bits,
+                    verbose=verbose,
+                )
 
         accuracy_test_rounding(
             torch_model,
@@ -239,6 +264,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             simulate=simulate,
             verbose=verbose,
             check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
+            is_brevitas_qat=is_brevitas_qat,
         )
 
         if dump_onnx:
@@ -261,6 +287,7 @@ def accuracy_test_rounding(
     simulate,
     verbose,
     check_is_good_execution_for_cml_vs_circuit,
+    is_brevitas_qat=False,
 ):
     """Check rounding behavior.
 
@@ -283,39 +310,68 @@ def accuracy_test_rounding(
 
     # Compile with a rounding threshold equal to the maximum bit-width
     # computed in the original quantized_numpy_module
-    quantized_numpy_module_round_high_precision = compile_torch_model(
-        torch_model,
-        inputset,
-        import_qat=import_qat,
-        configuration=configuration,
-        n_bits=n_bits,
-        verbose=verbose,
-        rounding_threshold_bits=quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width()
-        - 1,
-    )
+    if is_brevitas_qat:
+        quantized_numpy_module_round_high_precision = compile_brevitas_qat_model(
+            torch_model,
+            inputset,
+            n_bits=n_bits,
+            configuration=configuration,
+            rounding_threshold_bits=(
+                quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() - 1
+            ),
+            verbose=verbose,
+        )
 
-    # and another quantized module with a rounding threshold equal to 2 bits
-    quantized_numpy_module_round_low_precision = compile_torch_model(
-        torch_model,
-        inputset,
-        import_qat=import_qat,
-        configuration=configuration,
-        n_bits=n_bits,
-        verbose=verbose,
-        rounding_threshold_bits=2,
-    )
+        # and another quantized module with a rounding threshold equal to 2 bits
+        quantized_numpy_module_round_low_precision = compile_brevitas_qat_model(
+            torch_model,
+            inputset,
+            n_bits=n_bits,
+            configuration=configuration,
+            rounding_threshold_bits=2,
+            verbose=verbose,
+        )
+
+    else:
+        quantized_numpy_module_round_high_precision = compile_torch_model(
+            torch_model,
+            inputset,
+            import_qat=import_qat,
+            configuration=configuration,
+            n_bits=n_bits,
+            rounding_threshold_bits=(
+                quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() - 1
+            ),
+            verbose=verbose,
+        )
+
+        # and another quantized module with a rounding threshold equal to 2 bits
+        quantized_numpy_module_round_low_precision = compile_torch_model(
+            torch_model,
+            inputset,
+            import_qat=import_qat,
+            configuration=configuration,
+            n_bits=n_bits,
+            verbose=verbose,
+            rounding_threshold_bits=2,
+        )
 
     n_percent_inputset_examples_test = 0.1
     # Using the input-set allows to remove any chance of overflow.
     x_test = create_test_inputset(inputset, n_percent_inputset_examples_test)
 
     # Make sure the two modules have the same quantization result
-    qtest = quantized_numpy_module.quantize_input(*x_test)
-    qtest_high = quantized_numpy_module_round_high_precision.quantize_input(*x_test)
-    qtest_low = quantized_numpy_module_round_low_precision.quantize_input(*x_test)
+    qtest = to_tuple(quantized_numpy_module.quantize_input(*x_test))
+    qtest_high = to_tuple(quantized_numpy_module_round_high_precision.quantize_input(*x_test))
+    qtest_low = to_tuple(quantized_numpy_module_round_low_precision.quantize_input(*x_test))
 
-    numpy.testing.assert_array_equal(qtest, qtest_high)
-    numpy.testing.assert_array_equal(qtest, qtest_low)
+    assert all(
+        numpy.array_equal(qtest_i, qtest_high_i)
+        for (qtest_i, qtest_high_i) in zip(qtest, qtest_high)
+    )
+    assert all(
+        numpy.array_equal(qtest_i, qtest_low_i) for (qtest_i, qtest_low_i) in zip(qtest, qtest_low)
+    )
 
     results = []
     results_high_precision = []
@@ -377,20 +433,17 @@ def accuracy_test_rounding(
     ],
 )
 @pytest.mark.parametrize(
-    "model",
+    "model, input_output_feature",
     [
-        pytest.param(FCSmall),
-        pytest.param(partial(NetWithLoops, n_fc_layers=2)),
-        pytest.param(BranchingModule),
-        pytest.param(BranchingGemmModule),
-        pytest.param(MultiInputNN),
-        pytest.param(UnivariateModule),
-        pytest.param(StepActivationModule),
+        pytest.param(FCSmall, 5),
+        pytest.param(partial(NetWithLoops, n_fc_layers=2), 5),
+        pytest.param(BranchingModule, 5),
+        pytest.param(BranchingGemmModule, 5),
+        pytest.param(MultiInputNN, [5, 5]),
+        pytest.param(MultiInputNNDifferentSize, [5, 10]),
+        pytest.param(UnivariateModule, 5),
+        pytest.param(StepActivationModule, 5),
     ],
-)
-@pytest.mark.parametrize(
-    "input_output_feature",
-    [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 @pytest.mark.parametrize("simulate", [True, False], ids=["FHE_simulation", "FHE"])
 @pytest.mark.parametrize("is_onnx", [True, False], ids=["is_onnx", ""])
@@ -413,18 +466,18 @@ def test_compile_torch_or_onnx_networks(
         if model not in [FCSmall, BranchingModule]:
             pytest.skip("Avoid too many tests")
 
-    # To signal that this network is not using QAT set the QAT bits to 0
+    # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
 
     compile_and_test_torch_or_onnx(
-        input_output_feature,
-        model,
-        activation_function,
-        qat_bits,
-        default_configuration,
-        simulate,
-        is_onnx,
-        check_is_good_execution_for_cml_vs_circuit,
+        input_output_feature=input_output_feature,
+        model_class=model,
+        activation_function=activation_function,
+        qat_bits=qat_bits,
+        default_configuration=default_configuration,
+        simulate=simulate,
+        is_onnx=is_onnx,
+        check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
         get_and_compile=get_and_compile,
     )
@@ -457,19 +510,23 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
 ):
     """Test the different model architecture from torch numpy."""
 
-    # To signal that this network is not using QAT set the QAT bits to 0
+    # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
 
+    input_shape = (6, 7, 7)
+    input_output = input_shape[0]
+
     q_module = compile_and_test_torch_or_onnx(
-        (6, 7, 7),
-        model,
-        activation_function,
-        qat_bits,
-        default_configuration,
-        simulate,
-        is_onnx,
-        check_is_good_execution_for_cml_vs_circuit,
+        input_output_feature=input_output,
+        model_class=model,
+        activation_function=activation_function,
+        qat_bits=qat_bits,
+        default_configuration=default_configuration,
+        simulate=simulate,
+        is_onnx=is_onnx,
+        check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
+        input_shape=input_shape,
     )
 
     check_graph_input_has_no_tlu(q_module.fhe_circuit.graph)
@@ -514,14 +571,10 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     ],
 )
 @pytest.mark.parametrize(
-    "model",
+    "model, input_output_feature",
     [
-        pytest.param(FCSmall),
+        pytest.param(FCSmall, 5),
     ],
-)
-@pytest.mark.parametrize(
-    "input_output_feature",
-    [pytest.param(input_output_feature) for input_output_feature in INPUT_OUTPUT_FEATURE],
 )
 @pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
@@ -536,7 +589,7 @@ def test_compile_torch_or_onnx_activations(
 ):
     """Test the different model architecture from torch numpy."""
 
-    # To signal that this network is not using QAT set the QAT bits to 0
+    # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
 
     compile_and_test_torch_or_onnx(
@@ -593,6 +646,50 @@ def test_compile_torch_qat(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
+    )
+
+
+@pytest.mark.parametrize(
+    "model_class, input_output_feature, is_brevitas_qat",
+    [pytest.param(partial(MultiInputNNDifferentSize, is_brevitas_qat=True), [5, 10], True)],
+)
+@pytest.mark.parametrize(
+    "n_bits",
+    [pytest.param(n_bits) for n_bits in [2]],
+)
+@pytest.mark.parametrize("simulate", [True, False])
+def test_compile_brevitas_qat(
+    model_class,
+    input_output_feature,
+    is_brevitas_qat,
+    n_bits,
+    simulate,
+    default_configuration,
+    check_is_good_execution_for_cml_vs_circuit,
+):
+    """Test compile_brevitas_qat_model."""
+
+    model_class = partial(model_class, n_bits=n_bits)
+
+    # If this is a Brevitas QAT model, use n_bits for QAT bits
+    if is_brevitas_qat:
+        qat_bits = n_bits
+
+    # The QAT bits is set to 0 in order to signal that the network is not using QAT
+    else:
+        qat_bits = 0
+
+    compile_and_test_torch_or_onnx(
+        input_output_feature=input_output_feature,
+        model_class=model_class,
+        activation_function=None,
+        qat_bits=qat_bits,
+        default_configuration=default_configuration,
+        simulate=simulate,
+        is_onnx=False,
+        check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
+        verbose=False,
+        is_brevitas_qat=is_brevitas_qat,
     )
 
 
@@ -834,7 +931,9 @@ def test_qat_import_bits_check(default_configuration):
 
     # Test that giving a dictionary with invalid keys does not work
     for n_bits in n_bits_invalid:
-        with pytest.raises(AssertionError, match=".*n_bits can only contain the following keys.*"):
+        with pytest.raises(
+            AssertionError, match=".*n_bits should only contain the following keys.*"
+        ):
             quantized_numpy_module = compile_brevitas_qat_model(
                 model,
                 inputset,
@@ -867,10 +966,13 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             check_is_good_execution_for_cml_vs_circuit,
         )
 
+    input_shape = (1, 7, 7)
+    input_output = input_shape[0]
+
     # The second case is a network that is not QAT but is being imported as a QAT network
     with pytest.raises(ValueError, match=error_message_pattern):
         compile_and_test_torch_or_onnx(
-            (1, 7, 7),
+            input_output,
             CNNOther,
             nn.ReLU,
             qat_bits,
@@ -878,6 +980,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
+            input_shape=input_shape,
         )
 
     class AllZeroCNN(CNNOther):
@@ -895,10 +998,13 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
                     torch.nn.init.constant_(module.weight.data, 0)
                     torch.nn.init.constant_(module.bias.data, 0)  # type: ignore[union-attr]
 
+    input_shape = (1, 7, 7)
+    input_output = input_shape[0]
+
     # A network that may look like QAT but it just zeros all inputs
     with pytest.raises(ValueError, match=error_message_pattern):
         compile_and_test_torch_or_onnx(
-            (1, 7, 7),
+            input_output,
             AllZeroCNN,
             nn.ReLU,
             qat_bits,
@@ -906,6 +1012,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
             simulate,
             False,
             check_is_good_execution_for_cml_vs_circuit,
+            input_shape=input_shape,
         )
 
 
@@ -935,6 +1042,12 @@ def test_net_has_no_tlu(
     check_graph_output_has_no_tlu,
 ):
     """Tests that there is no TLU in nets with a single conv/linear."""
+
+    # Skip the test if the model is MultiInputNNConfigurable and use_qat is True as the module is
+    # not QAT (it has no Brevitas layer)
+    if num_inputs > 1 and use_qat:
+        return
+
     use_conv = isinstance(input_shape, tuple) and len(input_shape) > 1
 
     net = module(use_conv, use_qat, input_shape, n_bits)
@@ -944,11 +1057,6 @@ def test_net_has_no_tlu(
         # No need to force the presence of a TLU if there are TLUs in the body of the
         # network
         force_tlu = False
-
-    if num_inputs > 1:
-        # It seems Brevitas does not support multiple inputs, only test
-        # multiple inputs with regular Torch
-        use_qat = False
 
     if module is DoubleQuantQATMixNet:
         use_qat = True

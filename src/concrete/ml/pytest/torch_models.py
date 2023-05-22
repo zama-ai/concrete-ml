@@ -349,6 +349,61 @@ class MultiInputNNConfigurable(nn.Module):
         return self.layer1(x + y)
 
 
+class MultiInputNNDifferentSize(nn.Module):
+    """Torch model to test multiple inputs with different shape in the forward pass."""
+
+    def __init__(
+        self,
+        input_output,
+        activation_function=None,
+        is_brevitas_qat=False,
+        n_bits=3,
+    ):  # pylint: disable=unused-argument
+        super().__init__()
+
+        # input_output is expected to be a list of two integers representing in and out features
+        # for both x and y
+        if is_brevitas_qat:
+            # n_bits is used for quantizing both the inputs and the weights, therefore we need
+            # to make sure that it is at least 2 bits
+            assert n_bits > 1, "Weights cannot be quantized over a single bit"
+
+            self.quant1 = qnn.QuantIdentity(bit_width=n_bits)
+            self.quant2 = qnn.QuantIdentity(bit_width=n_bits)
+            self.quant3 = qnn.QuantIdentity(bit_width=n_bits)
+            self.layer1 = qnn.QuantLinear(
+                input_output[0], input_output[0], bias=False, weight_bit_width=n_bits
+            )
+            self.layer2 = qnn.QuantLinear(
+                input_output[1], input_output[0], bias=False, weight_bit_width=n_bits
+            )
+
+        else:
+            self.layer1 = nn.Linear(input_output[0], input_output[0])
+            self.layer2 = nn.Linear(input_output[1], input_output[0])
+
+        self.is_brevitas_qat = is_brevitas_qat
+
+    def forward(self, x, y):
+        """Forward pass.
+
+        Args:
+            x: The first input of the NN.
+            y: The second input of the NN.
+
+        Returns:
+            The output of the NN.
+        """
+        if self.is_brevitas_qat:
+            x = self.layer1(self.quant1(x))
+            y = self.layer2(self.quant2(y))
+            return self.layer1(self.quant3(x + y))
+
+        x = self.layer1(x)
+        y = self.layer2(y)
+        return self.layer1(x + y)
+
+
 class BranchingModule(nn.Module):
     """Torch model with some branching and skip connections."""
 

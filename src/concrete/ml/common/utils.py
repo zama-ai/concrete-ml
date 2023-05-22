@@ -30,6 +30,8 @@ SUPPORTED_INT_TYPES = {
     "int8": torch.int8,
 }
 
+SUPPORTED_TYPES = {**SUPPORTED_FLOAT_TYPES, **SUPPORTED_INT_TYPES}
+
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 
 
@@ -516,7 +518,7 @@ def to_tuple(x: Any) -> tuple:
 
 
 def all_values_are_integers(*values: Any) -> bool:
-    """Indicate that all unpacked values are of a supported integer dtype.
+    """Indicate if all unpacked values are of a supported integer dtype.
 
     Args:
         *values (Any): The values to consider.
@@ -529,7 +531,7 @@ def all_values_are_integers(*values: Any) -> bool:
 
 
 def all_values_are_floats(*values: Any) -> bool:
-    """Indicate that all unpacked values are of a supported float dtype.
+    """Indicate if all unpacked values are of a supported float dtype.
 
     Args:
         *values (Any): The values to consider.
@@ -539,3 +541,31 @@ def all_values_are_floats(*values: Any) -> bool:
 
     """
     return all(_is_of_dtype(value, SUPPORTED_FLOAT_TYPES) for value in values)
+
+
+def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool:
+    """Indicate if all unpacked values are of the specified dtype(s).
+
+    Args:
+        *values (Any): The values to consider.
+        dtypes (Union[str, List[str]]): The dtype(s) to consider.
+
+    Returns:
+        bool: Whether all values are of the specified dtype(s) or not.
+
+    """
+    if isinstance(dtypes, str):
+        dtypes = [dtypes]
+
+    supported_dtypes = {}
+    for dtype in dtypes:
+        supported_dtype = SUPPORTED_TYPES.get(dtype, None)
+
+        assert supported_dtype is not None, (
+            f"The given dtype is not supported. Expected one of {SUPPORTED_TYPES.keys()}, "
+            f"got {dtype}."
+        )
+
+        supported_dtypes[dtype] = supported_dtype
+
+    return all(_is_of_dtype(value, supported_dtypes) for value in values)

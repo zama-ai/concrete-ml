@@ -18,6 +18,7 @@ from ..common.utils import (
     FheMode,
     all_values_are_floats,
     all_values_are_integers,
+    all_values_are_of_dtype,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
@@ -523,7 +524,8 @@ class QuantizedModule:
 
         q_x = tuple(self.input_quantizers[idx].quant(x[idx]) for idx in range(len(x)))
 
-        assert numpy.array(q_x).dtype == numpy.int64, "Inputs were not quantized to int64 x"
+        # Make sure all inputs are quantized to int64
+        assert all_values_are_of_dtype(*q_x, dtypes="int64"), "Inputs were not quantized to int64"
 
         return q_x[0] if len(q_x) == 1 else q_x
 
