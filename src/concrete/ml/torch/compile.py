@@ -400,12 +400,13 @@ def compile_brevitas_qat_model(
     # This is needed because AvgPool2d adds a 0-Pad operation that then breaks the compilation
     # A list of steps that can be added can be found in the following link
     # https://github.com/onnx/optimizer/blob/master/onnxoptimizer/pass_registry.h
+    # In the export function, the `args` parameter is used instead of the `input_shape` one in
+    # order to be able to handle multi-inputs models
     exporter.onnx_passes.append("eliminate_nop_pad")
     exporter.onnx_passes.append("fuse_pad_into_conv")
-
     onnx_model = exporter.export(
         torch_model,
-        input_shape=dummy_input_for_tracing[0].shape,
+        args=dummy_input_for_tracing,
         export_path=str(output_onnx_file_path),
         keep_initializers_as_inputs=False,
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
@@ -428,9 +429,9 @@ def compile_brevitas_qat_model(
         }
     elif isinstance(n_bits, dict):
         assert_true(
-            isinstance(n_bits, dict) and set(n_bits.keys()) == {"model_inputs", "model_outputs"},
-            "When importing a Brevitas QAT network, n_bits can only contain the following keys: "
-            '"model_inputs", "model_outputs"',
+            set(n_bits.keys()) == {"model_inputs", "model_outputs"},
+            "When importing a Brevitas QAT network, n_bits should only contain the following keys: "
+            f'"model_inputs", "model_outputs". Instead, got {n_bits.keys()}',
         )
 
         n_bits = {
