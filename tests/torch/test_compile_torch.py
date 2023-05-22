@@ -15,7 +15,7 @@ import torch
 import torch.quantization
 from torch import nn
 
-from concrete.ml.common.utils import to_tuple
+from concrete.ml.common.utils import manage_parameters_for_pbs_errors, to_tuple
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.pytest.torch_models import (
     FC,
@@ -42,6 +42,7 @@ from concrete.ml.quantization import QuantizedModule
 # packages/projects, disable the warning
 # pylint: disable=ungrouped-imports
 from concrete.ml.torch.compile import (
+    build_quantized_module,
     compile_brevitas_qat_model,
     compile_onnx_model,
     compile_torch_model,
@@ -63,6 +64,28 @@ def create_test_inputset(inputset, n_percent_inputset_examples_test):
     return x_test
 
 
+def get_and_compile_quantized_module(model, inputset, import_qat, n_bits, configuration, verbose):
+    """Get and compile the quantized module built from the given model."""
+    quantized_numpy_module = build_quantized_module(
+        model,
+        inputset,
+        import_qat=import_qat,
+        n_bits=n_bits,
+    )
+
+    p_error, global_p_error = manage_parameters_for_pbs_errors(None, None)
+
+    quantized_numpy_module.compile(
+        inputset,
+        configuration=configuration,
+        p_error=p_error,
+        global_p_error=global_p_error,
+        verbose=verbose,
+    )
+
+    return quantized_numpy_module
+
+
 # pylint: disable-next=too-many-arguments
 def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many-statements
     input_output_feature,
@@ -76,6 +99,7 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
     dump_onnx=False,
     expected_onnx_str=None,
     verbose=False,
+    get_and_compile=False,
 ) -> QuantizedModule:
     """Test the different model architecture from torch numpy."""
 
@@ -119,23 +143,45 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             onnx_model = onnx.load_model(str(output_onnx_file_path))
             onnx.checker.check_model(onnx_model)
 
-            quantized_numpy_module = compile_onnx_model(
-                onnx_model,
-                inputset,
-                import_qat=qat_bits != 0,
-                configuration=default_configuration,
-                n_bits=n_bits,
-                verbose=verbose,
-            )
+            if get_and_compile:
+                quantized_numpy_module = get_and_compile_quantized_module(
+                    model=onnx_model,
+                    inputset=inputset,
+                    import_qat=qat_bits != 0,
+                    n_bits=n_bits,
+                    configuration=default_configuration,
+                    verbose=verbose,
+                )
+
+            else:
+                quantized_numpy_module = compile_onnx_model(
+                    onnx_model,
+                    inputset,
+                    import_qat=qat_bits != 0,
+                    configuration=default_configuration,
+                    n_bits=n_bits,
+                    verbose=verbose,
+                )
         else:
-            quantized_numpy_module = compile_torch_model(
-                torch_model,
-                inputset,
-                import_qat=qat_bits != 0,
-                configuration=default_configuration,
-                n_bits=n_bits,
-                verbose=verbose,
-            )
+            if get_and_compile:
+                quantized_numpy_module = get_and_compile_quantized_module(
+                    model=torch_model,
+                    inputset=inputset,
+                    import_qat=qat_bits != 0,
+                    n_bits=n_bits,
+                    configuration=default_configuration,
+                    verbose=verbose,
+                )
+
+            else:
+                quantized_numpy_module = compile_torch_model(
+                    torch_model,
+                    inputset,
+                    import_qat=qat_bits != 0,
+                    configuration=default_configuration,
+                    n_bits=n_bits,
+                    verbose=verbose,
+                )
 
         n_examples_test = 1
         # Use some input-set to test the inference.
@@ -163,14 +209,25 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             "model_outputs": 8,
         }
 
-        quantized_numpy_module = compile_torch_model(
-            torch_model,
-            inputset,
-            import_qat=qat_bits != 0,
-            configuration=default_configuration,
-            n_bits=n_bits,
-            verbose=verbose,
-        )
+        if get_and_compile:
+            quantized_numpy_module = get_and_compile_quantized_module(
+                model=torch_model,
+                inputset=inputset,
+                import_qat=qat_bits != 0,
+                n_bits=n_bits,
+                configuration=default_configuration,
+                verbose=verbose,
+            )
+
+        else:
+            quantized_numpy_module = compile_torch_model(
+                torch_model,
+                inputset,
+                import_qat=qat_bits != 0,
+                configuration=default_configuration,
+                n_bits=n_bits,
+                verbose=verbose,
+            )
 
         accuracy_test_rounding(
             torch_model,
@@ -184,10 +241,8 @@ def compile_and_test_torch_or_onnx(  # pylint: disable=too-many-locals, too-many
             check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
         )
 
-        onnx_model = quantized_numpy_module.onnx_model
-
         if dump_onnx:
-            str_model = onnx.helper.printable_graph(onnx_model.graph)
+            str_model = onnx.helper.printable_graph(quantized_numpy_module.onnx_model.graph)
             print("ONNX model:")
             print(str_model)
             assert str_model == expected_onnx_str
@@ -339,6 +394,7 @@ def accuracy_test_rounding(
 )
 @pytest.mark.parametrize("simulate", [True, False], ids=["FHE_simulation", "FHE"])
 @pytest.mark.parametrize("is_onnx", [True, False], ids=["is_onnx", ""])
+@pytest.mark.parametrize("get_and_compile", [True, False], ids=["get_and_compile", "compile"])
 def test_compile_torch_or_onnx_networks(
     input_output_feature,
     model,
@@ -346,6 +402,7 @@ def test_compile_torch_or_onnx_networks(
     default_configuration,
     simulate,
     is_onnx,
+    get_and_compile,
     check_is_good_execution_for_cml_vs_circuit,
     is_weekly_option,
 ):
@@ -369,6 +426,7 @@ def test_compile_torch_or_onnx_networks(
         is_onnx,
         check_is_good_execution_for_cml_vs_circuit,
         verbose=False,
+        get_and_compile=get_and_compile,
     )
 
 
