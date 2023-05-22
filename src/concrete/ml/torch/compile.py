@@ -49,6 +49,57 @@ def convert_torch_tensor_or_numpy_array_to_numpy_array(
     )
 
 
+def build_quantized_module(
+    model: Union[torch.nn.Module, onnx.ModelProto],
+    torch_inputset: Dataset,
+    import_qat: bool = False,
+    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    rounding_threshold_bits: Optional[int] = None,
+) -> QuantizedModule:
+    """Build a quantized module from a Torch or ONNX model.
+
+    Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and
+    retrieve the associated quantized module.
+
+    Args:
+        model (Union[torch.nn.Module, onnx.ModelProto]): The model to quantize, either in torch or
+            in ONNX.
+        torch_inputset (Dataset): the calibration input-set, can contain either torch
+            tensors or numpy.ndarray
+        import_qat (bool): Flag to signal that the network being imported contains quantizers in
+            in its computation graph and that Concrete ML should not re-quantize it
+        n_bits: the number of bits for the quantization
+        rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
+            to the given bits of precision
+
+    Returns:
+        QuantizedModule: The resulting QuantizedModule.
+    """
+    inputset_as_numpy_tuple = tuple(
+        convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
+    )
+
+    # Tracing needs to be done with the batch size of 1 since we compile our models to FHE with
+    # this batch size. The input set contains many examples, to determine a representative
+    # bit-width, but for tracing we only take a single one. We need the ONNX tracing batch size to
+    # match the batch size during FHE inference which can only be 1 for the moment.
+    dummy_input_for_tracing = tuple(
+        torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
+    )
+
+    # Create corresponding numpy model
+    numpy_model = NumpyModule(model, dummy_input_for_tracing)
+
+    # Quantize with post-training static method, to have a model with integer weights
+    post_training = PostTrainingQATImporter if import_qat else PostTrainingAffineQuantization
+    post_training_quant = post_training(n_bits, numpy_model, rounding_threshold_bits)
+
+    # Build the quantized module
+    quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
+
+    return quantized_module
+
+
 # pylint: disable-next=too-many-arguments
 def _compile_torch_or_onnx_model(
     model: Union[torch.nn.Module, onnx.ModelProto],
@@ -95,28 +146,17 @@ def _compile_torch_or_onnx_model(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
     )
 
-    # Tracing needs to be done with the batch size of 1 since we compile our models to FHE with
-    # this batch size. The input set contains many examples, to determine a representative
-    # bit-width, but for tracing we only take a single one. We need the ONNX tracing batch size to
-    # match the batch size during FHE inference which can only be 1 for the moment.
-    # Use batch size > 1 in FHE once it is available
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/758
-    dummy_input_for_tracing = tuple(
-        torch.from_numpy(val[[0], ::]).float() for val in inputset_as_numpy_tuple
+    # Build the quantized module
+    quantized_module = build_quantized_module(
+        model=model,
+        torch_inputset=inputset_as_numpy_tuple,
+        import_qat=import_qat,
+        n_bits=n_bits,
+        rounding_threshold_bits=rounding_threshold_bits,
     )
 
-    # Create corresponding numpy model
-    numpy_model = NumpyModule(model, dummy_input_for_tracing)
-    onnx_model = numpy_model.onnx_model
-
-    # Quantize with post-training static method, to have a model with integer weights
-    post_training = PostTrainingQATImporter if import_qat else PostTrainingAffineQuantization
-    post_training_quant = post_training(n_bits, numpy_model, rounding_threshold_bits)
-
-    quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
-
-    # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
-    # configuration and in direct arguments
+    # Check that p_error or global_p_error is not set in both the configuration and in the direct
+    # parameters
     check_there_is_no_p_error_options_in_configuration(configuration)
 
     # Find the right way to set parameters for compiler, depending on the way we want to default
@@ -131,8 +171,6 @@ def _compile_torch_or_onnx_model(
         global_p_error=global_p_error,
         verbose=verbose,
     )
-
-    quantized_module.onnx_model = onnx_model
 
     return quantized_module
 

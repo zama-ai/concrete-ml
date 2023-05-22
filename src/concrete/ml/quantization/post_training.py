@@ -594,9 +594,14 @@ class ONNXConverter:
 
         # Create quantized module from self.quant_layers_dict
         quantized_module = QuantizedModule(
-            (graph_input.name for graph_input in self.numpy_model.onnx_model.graph.input),
-            (graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output),
-            self.quant_ops_dict,
+            ordered_module_input_names=(
+                graph_input.name for graph_input in self.numpy_model.onnx_model.graph.input
+            ),
+            ordered_module_output_names=(
+                graph_output.name for graph_output in self.numpy_model.onnx_model.graph.output
+            ),
+            quant_layers_dict=self.quant_ops_dict,
+            onnx_model=self.numpy_model.onnx_model,
         )
 
         self._process_input_quantizers(quantized_module, calibration_data)

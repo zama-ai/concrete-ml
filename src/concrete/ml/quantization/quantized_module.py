@@ -4,6 +4,7 @@ import re
 from typing import Any, Dict, Generator, Iterable, List, Optional, TextIO, Tuple, Union
 
 import numpy
+import onnx
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -89,6 +90,7 @@ class QuantizedModule:
         ordered_module_input_names: Iterable[str] = None,
         ordered_module_output_names: Iterable[str] = None,
         quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]] = None,
+        onnx_model: onnx.ModelProto = None,
     ):
         # Set base attributes for API consistency. This could be avoided if an abstract base class
         # is created for both Concrete ML models and QuantizedModule
@@ -97,7 +99,7 @@ class QuantizedModule:
         self._is_compiled = False
         self.input_quantizers = []
         self.output_quantizers = []
-        self._onnx_model = None
+        self._onnx_model = onnx_model
         self._post_processing_params: Dict[str, Any] = {}
 
         # If any of the arguments are not provided, skip the init
@@ -269,10 +271,6 @@ class QuantizedModule:
            _onnx_model (onnx.ModelProto): the ONNX model
         """
         return self._onnx_model
-
-    @onnx_model.setter
-    def onnx_model(self, value):
-        self._onnx_model = value
 
     def __call__(self, *x: numpy.ndarray):
         """Define the QuantizedModule's call method.
@@ -628,8 +626,8 @@ class QuantizedModule:
         # Generate the input-set with proper dimensions
         inputset = _get_inputset_generator(q_inputs)
 
-        # Don't let the user shoot in her foot, by having p_error or global_p_error set in both
-        # configuration and in direct arguments
+        # Check that p_error or global_p_error is not set in both the configuration and in the
+        # direct parameters
         check_there_is_no_p_error_options_in_configuration(configuration)
 
         # Find the right way to set parameters for compiler, depending on the way we want to default
