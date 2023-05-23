@@ -1040,13 +1040,11 @@ def test_shape_operations_net(
     # In QAT testing in FHE is fast since there are no TLUs
     # For PTQ we only test that the model can be compiled and that it can be executed
     if is_qat or simulate:
-        test_input = numpy.random.uniform(size=(1, n_channels, 2, 2))
-
         fhe_mode = "simulate" if simulate else "execute"
 
-        predictions = quantized_module.forward(test_input, fhe=fhe_mode)
+        predictions = quantized_module.forward(inputset, fhe=fhe_mode)
 
-        torch_output = net(torch.tensor(test_input)).detach().numpy()
+        torch_output = net(torch.tensor(inputset)).detach().numpy()
 
         # In PTQ the results do not match because of a-priori set quantization options
         # Currently no solution for concat/reshape/transpose correctness in PTQ is proposed.

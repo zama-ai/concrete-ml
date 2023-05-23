@@ -1,6 +1,7 @@
 # Credit Scoring in FHE
 
 In this directory, we present two notebooks:
+
 - CreditScoringWithGraphics.ipynb, which derives from an existing notebook https://www.kaggle.com/code/ajay1735/my-credit-scoring-model: here we modified only slightly, to replace scikit-learn models with our Concrete ML models, and fix some minor typos or issues with our formatting rules
 - CreditScoring.ipynb, FIXME, which is a shorter notebook, with just the models and a comparison between scikit-learn models and Concrete ML models, in term of speed and accuracy
 
