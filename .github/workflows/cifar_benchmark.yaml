@@ -1,5 +1,4 @@
-name: CIFAR-10 8-bit benchmark CML
-
+name: CIFAR-10 benchmark CML
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +7,13 @@ on:
         default: "main"
         required: true
         type: string
+      benchmark:
+        description: Benchmark to run (cifar-10-8b or cifar-10-16b)
+        default: "cifar-10-16b"
+        type: choice
+        options:
+          - "cifar-10-8b"
+          - "cifar-10-16b"
       instance_type:
         description: Instance type on which to launch benchmarks
         default: "m6i.metal"
@@ -63,7 +69,7 @@ jobs:
           security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
           aws-resource-tags: >
             [
-              {"Key": "Name", "Value": "cml-benchmark-cifar10-8bit"},
+              {"Key": "Name", "Value": "cml-benchmark-cifar10"},
               {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
               {"Key": "Actor", "Value": "${{ github.actor }}"},
               {"Key": "Action", "Value": "${{ github.action }}"},
@@ -109,12 +115,21 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
-      - name: Benchmark
-        id: benchmark
+      # CIFAR-10-8b benchmark
+      - name: Benchmark - CIFAR-10-8b
+        if: github.event.inputs.benchmark == 'cifar-10-8b'
         run: |
           source .venv/bin/activate
           NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_brevitas_with_model_splitting/infer_fhe.py
-          python3 ./benchmarks/convert_cifar.py
+          python3 ./benchmarks/convert_cifar.py --model-name "8-bit-split-v0"
+
+      # CIFAR-10-16b benchmark
+      - name: Benchmark - CIFAR-10-16b
+        if: github.event.inputs.benchmark == 'cifar-10-16b'
+        run: |
+          source .venv/bin/activate
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_brevitas_training/evaluate_one_example_fhe.py
+          python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
       - name: Upload results
         id: upload-results
@@ -136,6 +151,18 @@ jobs:
         with:
           name: metrics.json
           path: to_upload.json
+
+      - name: Archive MLIR
+        uses: actions/upload-artifact@v3
+        with:
+          name: mlir.txt
+          path: cifar10.mlir
+
+      - name: Archive Graph
+        uses: actions/upload-artifact@v3
+        with:
+          name: graph.txt
+          path: cifar10.graph
 
       - name: Archive client
         uses: actions/upload-artifact@v3
@@ -184,7 +211,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ needs.run-cifar-10.result }}
-          SLACK_MESSAGE: "Benchmark action: (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-cifar-10.result }}"
+          SLACK_MESSAGE: "Benchmark action: ${{ github.event.inputs.benchmark }} (${{ env.ACTION_RUN_URL }}) ended with result: ${{ needs.run-cifar-10.result }}"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 

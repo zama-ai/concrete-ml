@@ -1,5 +1,6 @@
-"""Takes the csv dumped by infer_fhe and generates a proper json for the benchmark DB"""
+"""Takes a csv dumped and generates a proper json for the benchmark DB"""
 
+import argparse
 import datetime
 import json
 from importlib.metadata import version
@@ -27,7 +28,7 @@ def minimum_bribes(q):
     return bribes
 
 
-def main():
+def main(model_name):
     # Get metrics
     results = pd.read_csv("./inference_results.csv")
     assert isinstance(results, pd.DataFrame)
@@ -84,9 +85,9 @@ def main():
 
     # Create experiments
     experiments = []
-    model_name, dataset_name = "8-bit-split-v0", "CIFAR-10"
+    dataset_name = "CIFAR-10"
     experiment_representation: Dict[str, Any] = {}
-    experiment_representation["experiment_name"] = "cifar-10-8-bit-split-v0"
+    experiment_representation["experiment_name"] = f"cifar-10-{model_name}"
     experiment_representation["experiment_metadata"] = {
         "model_name": model_name,
         "dataset_name": dataset_name,
@@ -123,4 +124,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="FHE Inference on CIFAR10")
+    parser.add_argument("--model-name", help="Model name for the experiment.")
+    args = parser.parse_args()
+    main(args.model_name)

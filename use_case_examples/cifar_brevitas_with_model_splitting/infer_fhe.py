@@ -72,6 +72,11 @@ def main():
     end_compile = time.time()
     print(f"Compilation finished in {end_compile - start_compile:.2f} seconds")
 
+    # Save the graph and mlir
+    print("Saving graph and mlir to disk.")
+    open("cifar10.graph", "w").write(str(quantized_numpy_module.fhe_circuit))
+    open("cifar10.mlir", "w").write(quantized_numpy_module.fhe_circuit.mlir)
+
     dev = FHEModelDev(path_dir="./client_server", model=quantized_numpy_module)
     dev.save()
 
