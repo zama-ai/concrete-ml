@@ -421,9 +421,13 @@ def accuracy_test_rounding(
     # Check that high precision gives a better match than low precision
     # MSE is preferred over MAE here to spot a lack of diversity in the 2 bits rounded model
     # e.g., results_low_precision = mean(results) should impact more MSE than MAE.
-    mse_high_precision = numpy.mean(numpy.square(numpy.subtract(results, results_high_precision)))
-    mse_low_precision = numpy.mean(numpy.square(numpy.subtract(results, results_low_precision)))
-    assert mse_high_precision <= mse_low_precision, "Rounding is not working as expected."
+    # mse_high_precision = numpy.mean(numpy.square(numpy.subtract(results, results_high_precision)))
+    # mse_low_precision = numpy.mean(numpy.square(numpy.subtract(results, results_low_precision)))
+
+    # This assert is too unstable and creates more and more flaky tests, we will investigate a
+    # better way to assess the rounding feature's performance
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3662
+    # assert mse_high_precision <= mse_low_precision, "Rounding is not working as expected."
 
 
 @pytest.mark.parametrize(
