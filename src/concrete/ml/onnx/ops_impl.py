@@ -1929,14 +1929,14 @@ def numpy_gather(
     Returns:
         result (Tuple[numpy.ndarray]): the values gathered from the input tensor as a new tensor
     """
+    # Support both negative and positive axis
+    axis = axis % x.ndim
 
-    slices: List[Union[slice, numpy.ndarray]] = []
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3605
+    # Convert indices to a list
+    indices_list = indices.tolist()
 
-    for axis_iter in range(x.ndim):
-        # Support both negative and positive axis
-        if (axis >= 0 and axis_iter == axis) or (axis < 0 and axis_iter == x.ndim + axis):
-            slices.append(indices)
-        else:
-            slices.append(slice(0, x.shape[axis_iter]))
+    # Create a tuple of slices for all dimensions except the specified axis
+    slices = tuple(slice(None) if i != axis else indices_list for i in range(x.ndim))
 
-    return (x[tuple(slices)],)
+    return (x[slices],)
