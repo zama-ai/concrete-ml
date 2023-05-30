@@ -1,10 +1,10 @@
 Name, Version, License
 PyYAML, 6.0, MIT License
 anyio, 3.6.2, MIT License
-boto3, 1.26.108, Apache Software License
-botocore, 1.29.108, Apache Software License
+boto3, 1.26.141, Apache Software License
+botocore, 1.29.141, Apache Software License
 brevitas, 0.8.0, UNKNOWN
-certifi, 2022.12.7, Mozilla Public License 2.0 (MPL 2.0)
+certifi, 2023.5.7, Mozilla Public License 2.0 (MPL 2.0)
 charset-normalizer, 3.1.0, MIT License
 click, 8.1.3, BSD License
 coloredlogs, 15.0.1, MIT License
@@ -12,10 +12,11 @@ concrete-python, 2023.4.27, BSD-3-Clause
 dependencies, 2.0.1, BSD License
 dill, 0.3.6, BSD License
 fastapi, 0.93.0, MIT License
-filelock, 3.11.0, The Unlicense (Unlicense)
+filelock, 3.12.0, The Unlicense (Unlicense)
 flatbuffers, 2.0.7, Apache Software License
+fsspec, 2023.5.0, BSD License
 h11, 0.14.0, MIT License
-huggingface-hub, 0.13.4, Apache Software License
+huggingface-hub, 0.14.1, Apache Software License
 humanfriendly, 10.0, MIT License
 hummingbird-ml, 0.4.8, MIT License
 idna, 3.4, BSD License
@@ -33,14 +34,14 @@ onnxconverter-common, 1.13.0, MIT License
 onnxmltools, 1.11.0, Apache Software License
 onnxoptimizer, 0.3.10, Apache License v2.0
 onnxruntime, 1.13.1, MIT License
-packaging, 23.0, Apache Software License; BSD License
+packaging, 23.1, Apache Software License; BSD License
 protobuf, 3.20.3, BSD-3-Clause
-psutil, 5.9.4, BSD License
-pydantic, 1.10.7, MIT License
+psutil, 5.9.5, BSD License
+pydantic, 1.10.8, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 python-multipart, 0.0.6, Apache Software License
-requests, 2.28.2, Apache Software License
-s3transfer, 0.6.0, Apache Software License
+requests, 2.31.0, Apache Software License
+s3transfer, 0.6.1, Apache Software License
 scikit-learn, 1.1.3, BSD License
 scipy, 1.10.1, BSD License
 six, 1.16.0, MIT License
@@ -49,12 +50,12 @@ skops, 0.5.0, MIT
 skorch, 0.11.0, new BSD 3-Clause
 sniffio, 1.3.0, Apache Software License; MIT License
 starlette, 0.25.0, BSD License
-sympy, 1.11.1, BSD License
+sympy, 1.12, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.1.0, BSD License
 torch, 1.13.1, BSD License
 tqdm, 4.65.0, MIT License; Mozilla Public License 2.0 (MPL 2.0)
 typing_extensions, 4.4.0, Python Software Foundation License
-urllib3, 1.26.15, MIT License
+urllib3, 1.26.16, MIT License
 uvicorn, 0.21.1, BSD License
 xgboost, 1.6.2, Apache Software License
