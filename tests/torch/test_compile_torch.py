@@ -13,6 +13,7 @@ import onnxruntime as ort
 import pytest
 import torch
 import torch.quantization
+from concrete.fhe import ParameterSelectionStrategy  # pylint: disable=ungrouped-imports
 from torch import nn
 
 from concrete.ml.common.utils import manage_parameters_for_pbs_errors, to_tuple
@@ -295,7 +296,8 @@ def accuracy_test_rounding(
     The original quantized_numpy_module, compiled over the torch_model without rounding is
     compared against quantized_numpy_module_round_low_precision, the torch_model compiled with
     a rounding threshold of 2 bits, and quantized_numpy_module_round_high_precision,
-    the torch_model compiled with maximum bit-width computed in the quantized_numpy_module - 1.
+    the torch_model compiled with maximum bit-width computed with 8 bits (we can't go higher
+    as rounding does not work with CRT enconding).
 
     The final assertion tests whether the mean absolute error between
     quantized_numpy_module_round_high_precision and quantized_numpy_module is lower than
@@ -309,17 +311,24 @@ def accuracy_test_rounding(
     # feature with enough precision.
     assert quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() >= 4
 
+    # IMPORTANT: rounding should always be used with the config:
+    # single_precision = False and to have decent runtime in FHE also use
+    # parameter_selection_strategy = ParameterSelectionStrategy.MULTI
+    configuration.single_precision = False
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3674
+    configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+
     # Compile with a rounding threshold equal to the maximum bit-width
     # computed in the original quantized_numpy_module
     if is_brevitas_qat:
+        # the q_result_high_precision should round to 8 bits as we can't round higher
         quantized_numpy_module_round_high_precision = compile_brevitas_qat_model(
             torch_model,
             inputset,
             n_bits=n_bits,
             configuration=configuration,
-            rounding_threshold_bits=(
-                quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() - 1
-            ),
+            rounding_threshold_bits=8,
             verbose=verbose,
         )
 
@@ -334,15 +343,14 @@ def accuracy_test_rounding(
         )
 
     else:
+        # the q_result_high_precision should round to 8 bits as we can't round higher
         quantized_numpy_module_round_high_precision = compile_torch_model(
             torch_model,
             inputset,
             import_qat=import_qat,
             configuration=configuration,
             n_bits=n_bits,
-            rounding_threshold_bits=(
-                quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() - 1
-            ),
+            rounding_threshold_bits=8,
             verbose=verbose,
         )
 
