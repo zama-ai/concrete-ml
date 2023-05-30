@@ -1444,3 +1444,60 @@ class TorchCustomModel(nn.Module):
         x = torch.relu(self.linear2(x))
         x = self.linear3(x)
         return x
+
+
+class ConcatFancyIndexing(nn.Module):
+    """Concat with fancy indexing."""
+
+    def __init__(
+        self, input_shape, hidden_shape, output_shape, n_bits: int = 4, n_blocks: int = 3
+    ) -> None:
+        """Torch Model.
+
+        Args:
+            input_shape (int):  Input size
+            output_shape (int): Output size
+            hidden_shape (int): Hidden size
+            n_bits (int):       Number of bits
+            n_blocks (int):     Number of blocks
+        """
+        super().__init__()
+
+        self.n_blocks = n_blocks
+        self.quant_1 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.fc1 = qnn.QuantLinear(input_shape, hidden_shape, bias=False, weight_bit_width=n_bits)
+
+        self.quant_concat = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+
+        self.quant_2 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.fc2 = qnn.QuantLinear(
+            hidden_shape * self.n_blocks, hidden_shape, bias=True, weight_bit_width=n_bits
+        )
+
+        self.quant_3 = qnn.QuantIdentity(bit_width=n_bits, return_quant_tensor=True)
+        self.fc4 = qnn.QuantLinear(hidden_shape, output_shape, bias=True, weight_bit_width=n_bits)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model.
+
+        Returns:
+            torch.tensor: Output of the network.
+        """
+        x_pre = []
+
+        for i in range(self.n_blocks):
+            x_block = x[:, i, :]
+            q1_out = self.quant_1(x_block)
+            fc1_out = self.fc1(q1_out)
+            q_concat_out = self.quant_concat(fc1_out)
+
+            x_pre.append(q_concat_out)
+
+        x_pre_concat = torch.cat(x_pre, dim=1)
+        x = self.quant_2(x_pre_concat)
+        x = torch.relu(self.fc2(x))
+        x = self.fc4(self.quant_3(x))
+        return x

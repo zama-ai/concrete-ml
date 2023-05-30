@@ -23,6 +23,7 @@ from concrete.ml.pytest.torch_models import (
     BranchingModule,
     CNNGrouped,
     CNNOther,
+    ConcatFancyIndexing,
     DoubleQuantQATMixNet,
     FCSmall,
     MultiInputNN,
@@ -1229,3 +1230,16 @@ def test_compilation_functions_check_model_types(default_configuration):
             inputset,
             configuration=default_configuration,
         )
+
+
+@pytest.mark.parametrize(
+    "model_object",
+    [
+        pytest.param(ConcatFancyIndexing),
+    ],
+)
+def test_fancy_indexing_torch(model_object, default_configuration):
+    """Test fancy indexing torch."""
+    model = model_object(10, 10, 2, 4, 3)
+    x = numpy.random.randint(0, 2, size=(100, 3, 10)).astype(numpy.float64)
+    compile_brevitas_qat_model(model, x, n_bits=4, configuration=default_configuration)
