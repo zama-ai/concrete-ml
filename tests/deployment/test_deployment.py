@@ -1,6 +1,7 @@
 """Test deployment."""
 import io
 import time
+import uuid
 import warnings
 from pathlib import Path
 
@@ -42,7 +43,7 @@ def test_instance_management():
     with AWSInstance(
         instance_type="t3.nano",
         region_name="eu-west-3",
-        instance_name="cml_test_aws_deploy",
+        instance_name=f"cml_test_aws_deploy-{uuid.uuid4()}",
         verbose=True,
     ) as metadata:
         time.sleep(1)
@@ -94,7 +95,7 @@ def test_deploy(load_data, tmp_path):  # pylint: disable=too-many-locals,too-man
 
     with AWSInstance(
         instance_type="c5.large",
-        instance_name="cml_test_aws_deploy",
+        instance_name=f"cml_test_aws_deploy-{uuid.uuid4()}",
         open_port=5000,
         region_name="eu-west-3",
         verbose=True,
