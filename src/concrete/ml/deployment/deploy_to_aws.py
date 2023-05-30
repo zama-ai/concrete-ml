@@ -14,6 +14,7 @@ import argparse
 import json
 import subprocess
 import time
+import uuid
 import zipfile
 from contextlib import closing
 from datetime import datetime
@@ -126,7 +127,11 @@ def create_instance(
     with closing(boto3.client("ec2", region_name=region_name)) as client:
         resources = boto3.resource("ec2", region_name=region_name)
         str_now = datetime.now().strftime(DATE_FORMAT)
-        name = f"deploy-cml-{str_now}" if instance_name is None else f"{instance_name}-{str_now}"
+        name = (
+            f"deploy-cml-{str_now}-{uuid.uuid4()}"
+            if instance_name is None
+            else f"{instance_name}-{str_now}"
+        )
 
         # Get VPC
         vpc_id: str = client.describe_vpcs().get("Vpcs", [{}])[0].get("VpcId", "")
