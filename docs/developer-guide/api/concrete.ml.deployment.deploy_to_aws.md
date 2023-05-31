@@ -91,7 +91,7 @@ instance_metadata (Dict\[str, Any\])
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `wait_instance_termination`
 
@@ -108,7 +108,7 @@ Wait for AWS EC2 instance termination.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L429"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `terminate_instance`
 
@@ -125,7 +125,7 @@ Terminate a AWS EC2 instance.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L438"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L440"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `delete_security_group`
 
@@ -142,7 +142,7 @@ Terminate a AWS EC2 instance.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L451"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 

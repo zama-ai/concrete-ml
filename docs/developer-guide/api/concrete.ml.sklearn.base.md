@@ -13,7 +13,7 @@ Base classes for all estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L87"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseEstimator`
 
@@ -25,7 +25,7 @@ This class does not inherit from sklearn.base.BaseEstimator as it creates some c
 
 - <b>`_is_a_public_cml_model`</b> (bool):  Private attribute indicating if the class is a public model  (as opposed to base or mixin classes).
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -83,7 +83,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -99,7 +99,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -115,7 +115,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -149,7 +149,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -171,23 +171,23 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -199,11 +199,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -215,11 +215,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L371"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -242,7 +242,7 @@ The fitted estimator.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -269,7 +269,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -291,27 +291,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -323,35 +303,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L555"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L638"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -375,7 +335,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -399,7 +359,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L362"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -421,7 +381,7 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L643"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L662"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseClassifier`
 
@@ -429,7 +389,7 @@ Base class for linear and tree-based classifiers in Concrete ML.
 
 This class inherits from BaseEstimator and modifies some of its methods in order to align them with classifier behaviors. This notably include applying a sigmoid/softmax post-processing to the predicted values as well as handling a mapping of classes in case they are not ordered.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -483,7 +443,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -499,7 +459,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -515,7 +475,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -549,7 +509,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -571,23 +531,23 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -599,11 +559,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -615,11 +575,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L664"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -629,7 +589,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -656,7 +616,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -678,27 +638,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -710,35 +650,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L728"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -748,7 +668,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -761,7 +681,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L681"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -785,7 +705,7 @@ Predict class probabilities.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L362"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -807,13 +727,13 @@ This step ensures that the fit method has been called.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L757"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedTorchEstimatorMixin`
 
 Mixin that provides quantization for a torch module and follows the Estimator API.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L746"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L767"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -889,7 +809,7 @@ Get the output quantizers.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -905,7 +825,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -921,7 +841,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1059"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1078"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -939,7 +859,7 @@ compile(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1052"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1071"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -949,23 +869,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -977,11 +897,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -993,11 +913,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L855"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L876"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1022,7 +942,7 @@ The fitted estimator.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1003"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1022"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1053,7 +973,7 @@ The Concrete ML and equivalent skorch fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L804"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L825"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_params`
 
@@ -1075,7 +995,7 @@ This method is overloaded in order to make sure that auto-computed parameters ar
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L835"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L856"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1085,27 +1005,7 @@ get_sklearn_params(deep: 'bool' = True) → Dict
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1117,35 +1017,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L1109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1128"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1155,7 +1035,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1179,7 +1059,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1132"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `prune`
 
@@ -1207,7 +1087,7 @@ A new pruned copy of the Neural Network model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1044"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1063"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -1217,7 +1097,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1186"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeEstimatorMixin`
 
@@ -1225,7 +1105,7 @@ Mixin class for tree-based estimators.
 
 This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1285,7 +1165,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -1301,7 +1181,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -1317,7 +1197,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1327,7 +1207,7 @@ compile(*args, **kwargs) → Circuit
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1337,23 +1217,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -1365,11 +1245,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -1381,11 +1261,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1395,7 +1275,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1422,7 +1302,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1444,27 +1324,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1476,35 +1336,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L1316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1514,7 +1354,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1311"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1527,7 +1367,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -1537,7 +1377,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1326"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeRegressorMixin`
 
@@ -1545,7 +1385,7 @@ Mixin class for tree-based regressors.
 
 This class is used to create a tree-based regressor class that inherits from sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method for regressors.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1203"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1605,7 +1445,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -1621,7 +1461,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -1637,7 +1477,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1647,7 +1487,7 @@ compile(*args, **kwargs) → Circuit
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1657,23 +1497,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -1685,11 +1525,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -1701,11 +1541,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1216"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -1715,7 +1555,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -1742,7 +1582,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -1764,27 +1604,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -1796,35 +1616,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L1316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -1834,7 +1634,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1311"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -1847,7 +1647,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -1857,7 +1657,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1335"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1354"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BaseTreeClassifierMixin`
 
@@ -1867,7 +1667,7 @@ This class is used to create a tree-based classifier class that inherits from sk
 
 Additionally, this class adjusts some of the tree-based base class's methods in order to make them compliant with classification workflows.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1921,7 +1721,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -1937,7 +1737,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -1953,7 +1753,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1286"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -1963,7 +1763,7 @@ compile(*args, **kwargs) → Circuit
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1264"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -1973,23 +1773,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -2001,11 +1801,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -2017,11 +1817,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L664"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -2031,7 +1831,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -2058,7 +1858,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -2080,27 +1880,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -2112,35 +1892,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L728"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -2150,7 +1910,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -2163,7 +1923,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L681"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L700"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -2187,7 +1947,7 @@ Predict class probabilities.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1271"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -2197,7 +1957,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1369"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearModelMixin`
 
@@ -2205,7 +1965,7 @@ A Mixin class for sklearn linear models with FHE.
 
 This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1364"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2267,7 +2027,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -2283,7 +2043,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -2299,7 +2059,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -2333,7 +2093,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -2343,23 +2103,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -2371,11 +2131,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -2387,11 +2147,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -2401,7 +2161,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -2428,7 +2188,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -2450,27 +2210,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -2482,35 +2222,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L555"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L638"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -2534,7 +2254,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -2558,7 +2278,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -2568,7 +2288,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1540"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1559"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearRegressorMixin`
 
@@ -2576,7 +2296,7 @@ A Mixin class for sklearn linear regressors with FHE.
 
 This class is used to create a linear regressor class that inherits from sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method for regressors.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1364"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1383"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -2638,7 +2358,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -2654,7 +2374,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -2670,7 +2390,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -2704,7 +2424,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -2714,23 +2434,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -2742,11 +2462,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -2758,11 +2478,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1414"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -2772,7 +2492,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -2799,7 +2519,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -2821,27 +2541,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -2853,35 +2553,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L555"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L638"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -2905,7 +2585,7 @@ For some simple models such a linear regression, there is no post-processing ste
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L487"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -2929,7 +2609,7 @@ Predict values for X, in FHE or in the clear.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -2939,7 +2619,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1568"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnLinearClassifierMixin`
 
@@ -2949,7 +2629,7 @@ This class is used to create a linear classifier class that inherits from sklear
 
 Additionally, this class adjusts some of the tree-based base class's methods in order to make them compliant with classification workflows.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L670"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3003,7 +2683,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_compiled`
 
@@ -3019,7 +2699,7 @@ Check if the model is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L197"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_model_is_fitted`
 
@@ -3035,7 +2715,7 @@ Check if the model is fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L396"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -3069,7 +2749,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1570"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1589"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `decision_function`
 
@@ -3093,7 +2773,7 @@ Predict confidence scores.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -3103,23 +2783,23 @@ dequantize_output(q_y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -3131,11 +2811,11 @@ Dump the object as a dict.
 
 **Returns:**
 
-- <b>`Dict[str, Any]`</b>:  a dict representing the object
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L583"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L207"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -3147,11 +2827,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L664"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L683"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -3161,7 +2841,7 @@ fit(X: 'Data', y: 'Target', **fit_parameters)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit_benchmark`
 
@@ -3188,7 +2868,7 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L313"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
 
@@ -3210,27 +2890,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L613"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `load`
-
-```python
-load(file: 'IO[str]') → BaseEstimator
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L601"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -3242,35 +2902,15 @@ Load itself from a dict.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict\[str, Any\]):  dict of metadata of the object
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`BaseEstimator`</b>:  the loaded object
+- <b>`BaseEstimator`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L626"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>classmethod</kbd> `loads`
-
-```python
-loads(metadata: 'str') → BaseEstimator
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`BaseEstimator`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L709"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L728"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -3280,7 +2920,7 @@ post_processing(y_preds: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -3293,7 +2933,7 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1592"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict_proba`
 
@@ -3306,7 +2946,7 @@ predict_proba(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 

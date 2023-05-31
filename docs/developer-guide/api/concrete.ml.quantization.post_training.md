@@ -130,7 +130,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L714"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L719"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingAffineQuantization`
 
@@ -229,7 +229,7 @@ Following https://arxiv.org/abs/1712.05877 guidelines.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/post_training.py#L858"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/post_training.py#L863"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `PostTrainingQATImporter`
 

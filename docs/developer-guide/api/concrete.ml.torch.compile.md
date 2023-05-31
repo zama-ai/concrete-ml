@@ -35,7 +35,39 @@ Convert a torch tensor or a numpy array to a numpy array.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `build_quantized_module`
+
+```python
+build_quantized_module(
+    model: Union[Module, ModelProto],
+    torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
+    import_qat: bool = False,
+    n_bits=8,
+    rounding_threshold_bits: Optional[int] = None
+) → QuantizedModule
+```
+
+Build a quantized module from a Torch or ONNX model.
+
+Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and retrieve the associated quantized module.
+
+**Args:**
+
+- <b>`model`</b> (Union\[torch.nn.Module, onnx.ModelProto\]):  The model to quantize, either in torch or  in ONNX.
+- <b>`torch_inputset`</b> (Dataset):  the calibration input-set, can contain either torch  tensors or numpy.ndarray
+- <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not re-quantize it
+- <b>`n_bits`</b>:  the number of bits for the quantization
+- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+
+**Returns:**
+
+- <b>`QuantizedModule`</b>:  The resulting QuantizedModule.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/compile.py#L179"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -79,7 +111,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -123,7 +155,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L317"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
