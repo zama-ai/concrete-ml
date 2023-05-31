@@ -363,7 +363,7 @@ def values_are_equal(value_1: Any, value_2: Any) -> bool:
 def check_serialization(
     object_to_serialize: Any,
     expected_type: Type,
-    equal_method: Callable = values_are_equal,
+    equal_method: Optional[Callable] = None,
     check_str: bool = True,
 ):
     """Check that the given object can properly be serialized.
@@ -375,10 +375,14 @@ def check_serialization(
     Args:
         object_to_serialize (Any): The object to serialize.
         expected_type (Type): The object's expected type.
-        equal_method (Callable): The function to use to compare the two loaded objects. Default to
-            `values_are_equal`.
+        equal_method (Optional[Callable]): The function to use to compare the two loaded objects.
+            Default to `values_are_equal`.
         check_str (bool): If the JSON strings should also be checked. Default to True.
     """
+    # apidocs does not work properly when the function is directly in the default value.
+    if equal_method is None:
+        equal_method = values_are_equal
+
     assert (
         isinstance(object_to_serialize, expected_type)
         if expected_type is not None
