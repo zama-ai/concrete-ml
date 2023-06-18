@@ -196,7 +196,7 @@ jobs:
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -593,7 +593,7 @@ jobs:
     if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -737,7 +737,7 @@ jobs:
           rm docs.tar
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -798,7 +798,7 @@ jobs:
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id || '' }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -1060,7 +1060,7 @@ jobs:
           fi
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -1229,7 +1229,7 @@ jobs:
     if: ${{ always() && (needs.start-package-release-runner.result != 'skipped') }}
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e1e17a757e536f70e52b5a12b2e8d1d1c60e04ef
+        uses: aws-actions/configure-aws-credentials@5fd3084fc36e372ff1fff382a39b10d03659f355
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
