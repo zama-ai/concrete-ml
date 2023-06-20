@@ -126,7 +126,11 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("Concrete Numpy", [], []),  # use Concrete
         ("tool-kit", [], []),  # use toolkit
         ("tool-kits", [], []),  # use toolkits
-        ("preprocessing", [], []),  # use pre-processing
+        (
+            "preprocessing",
+            ["import preprocessing", "preprocessing."],
+            [".py"],
+        ),  # use pre-processing
         ("preprocess", [], []),  # use pre-process
         ("keras", [], []),  # use Keras
         ("tensorflow", ["= tensorflow."], []),  # use TensorFlow

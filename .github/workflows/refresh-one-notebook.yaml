@@ -22,6 +22,7 @@ on:
         - FullyConnectedNeuralNetwork \n
         - FullyConnectedNeuralNetworkOnMNIST \n
         - GLMComparison \n
+        - HealthCarePrediction \n
         - KaggleTitanic \n
         - LinearRegression \n
         - LinearSVR \n
@@ -63,6 +64,7 @@ env:
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
+  HealthCarePrediction: "use_case_examples/disease_prediction/HealthCarePrediction.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
   LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
