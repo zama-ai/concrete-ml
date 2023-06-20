@@ -40,6 +40,8 @@ def test_timeout_ssh_connection():
 @pytest.mark.filterwarnings("ignore::ResourceWarning")  # Due to boto3
 def test_instance_management():
     """Test instance creation."""
+    pytest.skip(reason="Issues with AWS")
+
     with AWSInstance(
         instance_type="t3.nano",
         region_name="eu-west-3",
@@ -59,6 +61,8 @@ def test_deploy(load_data, tmp_path):  # pylint: disable=too-many-locals,too-man
            tmp_path (Path): temp path
     (Callable): load data
     """
+    pytest.skip(reason="Issues with AWS")
+
     # Easier than taking the list of fitted models
     model_class = LogisticRegression
     n_bits = 2
