@@ -168,7 +168,8 @@ class BaseEstimator:
         raise AttributeError(
             f"Attribute {attr} cannot be found in the Concrete ML {self.__class__.__name__} object "
             f"and is not a training attribute from the underlying scikit-learn "
-            f"{self.sklearn_model_class} one."
+            f"{self.sklearn_model_class} one. If the attribute is meant to represent one from that "
+            f"latter, please check that the model is properly fitted."
         )
 
     # We need to specifically call the default __setattr__ method as QNN models still inherit from

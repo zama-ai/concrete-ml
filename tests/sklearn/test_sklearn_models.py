@@ -913,6 +913,52 @@ def check_exposition_of_sklearn_attributes(model, x, y):
         getattr(model, wrong_training_attribute_3)
 
 
+def check_exposition_structural_methods_decision_trees(model, x, y):
+    """Check structural methods from scikit-learn are properly exposed in decision tree models."""
+
+    # Check that accessing an attribute that follows scikit-learn's naming convention for training
+    # attributes by ending with an underscore properly raises an Attribute error when the model is
+    # not fitted
+    with pytest.raises(
+        AttributeError,
+        match=".* get_n_leaves cannot be found in the Concrete ML.*",
+    ):
+        model.get_n_leaves()
+
+    with pytest.raises(
+        AttributeError,
+        match=f".* get_depth cannot be found in the Concrete ML.*",
+    ):
+        model.get_depth()
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    # Get the number of leaves from both the scikit-learn and Concrete ML models
+    concrete_value = model.get_n_leaves()
+    sklearn_value = model.sklearn_model.get_n_leaves()
+
+    model_name = get_model_name(model)
+
+    assert concrete_value == sklearn_value, (
+        f"Method get_n_leaves of model {model_name} do not output the same value as with its "
+        f"scikit-learn equivalent. Got {concrete_value}, expected {sklearn_value}."
+    )
+
+    # Get the tree depth from both the scikit-learn and Concrete ML models
+    concrete_value = model.get_depth()
+    sklearn_value = model.sklearn_model.get_depth()
+
+    model_name = get_model_name(model)
+
+    assert concrete_value == sklearn_value, (
+        f"Method get_depth of model {model_name} do not output the same value as with its "
+        f"scikit-learn equivalent. Got {concrete_value}, expected {sklearn_value}."
+    )
+
+
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -1469,3 +1515,27 @@ def test_exposition_of_sklearn_attributes(
         print("Run check_exposition_of_sklearn_attributes")
 
     check_exposition_of_sklearn_attributes(model, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_exposition_structural_methods_decision_trees(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test the exposition of specific structural methods found in decision tree models."""
+    if get_model_name(model_class) not in ["DecisionTreeClassifier", "DecisionTreeRegressor"]:
+        return
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    if verbose:
+        print("Run check_exposition_structural_methods_decision_trees")
+
+    check_exposition_structural_methods_decision_trees(model, x, y)

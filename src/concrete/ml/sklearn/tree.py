@@ -54,6 +54,17 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
 
+    def __getattr__(self, attr: str):
+        # We directly expose the following methods as they are commonly used with decision trees
+        # and only represent their topological structure
+        if (
+            attr in ["get_depth", "get_n_leaves"]
+            and getattr(self, "sklearn_model", None) is not None
+        ):
+            return getattr(self.sklearn_model, attr)
+
+        return super().__getattr__(attr)
+
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         # Here, we want to use BaseTreeEstimatorMixin's `post-processing` method as
         # DecisionTreeClassifier models directly computes probabilities and therefore don't require
@@ -178,6 +189,17 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         self.random_state = random_state
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+
+    def __getattr__(self, attr: str):
+        # We directly expose the following methods as they are commonly used with decision trees
+        # and only represent their topological structure
+        if (
+            attr in ["get_depth", "get_n_leaves"]
+            and getattr(self, "sklearn_model", None) is not None
+        ):
+            return getattr(self.sklearn_model, attr)
+
+        return super().__getattr__(attr)
 
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
