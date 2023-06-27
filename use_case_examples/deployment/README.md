@@ -12,8 +12,8 @@ You can run these example locally using Docker, or on AWS if you have your crede
 For all of them the workflow is the same:
 0\. Optional: Train the model
 
-1. Compile the model to a FHE circuit
+1. Compile the model to an FHE circuit
 1. Deploy to AWS, Docker or localhost
 1. Run the inference using the client (locally or in Docker)
 
-The script to deploy the model compiled to a FHE circuit is the same for all. The main difference between them is the client. Each use-case needs its own client.
+The script to deploy the model compiled to an FHE circuit is the same for all. The main difference between them is the client. Each use-case needs its own client.

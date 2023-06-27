@@ -6,7 +6,7 @@ As ONNX is becoming the standard exchange format for neural networks, this allow
 
 ## Torch to NumPy conversion using ONNX
 
-The diagram below gives an overview of the steps involved in the conversion of an ONNX graph to a FHE-compatible format (i.e., a format that can be compiled to FHE through Concrete).
+The diagram below gives an overview of the steps involved in the conversion of an ONNX graph to an FHE-compatible format (i.e., a format that can be compiled to FHE through Concrete).
 
 All Concrete ML built-in models follow the same pattern for FHE conversion:
 
@@ -21,7 +21,7 @@ Moreover, by passing a user provided `nn.Module` to step 2 of the above process,
 
 ![Torch compilation flow with ONNX](../_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
 
-Once an ONNX model is imported, it is converted to a `NumpyModule`, then to a `QuantizedModule` and, finally, to a FHE circuit. However, as the diagram shows, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the PyTorch model as NumPy code without doing quantization.
+Once an ONNX model is imported, it is converted to a `NumpyModule`, then to a `QuantizedModule` and, finally, to an FHE circuit. However, as the diagram shows, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the PyTorch model as NumPy code without doing quantization.
 
 {% hint style="info" %}
 Note that the `NumpyModule` interpreter currently [supports the following ONNX operators](../deep-learning/onnx_support.md#supported-operators).

@@ -16,10 +16,12 @@ It is recommended to use [simulation](../advanced-topics/compilation.md#fhe-simu
 
 ## List of examples
 
-### 1. Linear and logistic regression
+### 1. Linear models
 
 [<img src="../.gitbook/assets/jupyter_logo.png">   Linear Regression example](../advanced_examples/LinearRegression.ipynb)
 [<img src="../.gitbook/assets/jupyter_logo.png">   Logistic Regression example](../advanced_examples/LogisticRegression.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">   Linear Support Vector Regression example](../advanced_examples/LinearSVR.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">   Linear SVM classification](../advanced_examples/SVMClassifier.ipynb)
 
 These examples show how to use the built-in linear models on synthetic data, which allows for easy visualization of the decision boundaries or trend lines. Executing these 1D and 2D models in FHE takes around 1 millisecond.
 
@@ -32,9 +34,13 @@ These two examples show generalized linear models (GLM) on the real-world [OpenM
 
 ### 3. Decision tree
 
-[<img src="../.gitbook/assets/jupyter_logo.png">    Decision Tree example](../advanced_examples/DecisionTreeClassifier.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">    Decision Tree Classifier](../advanced_examples/DecisionTreeClassifier.ipynb)
 
 Using the [OpenML spams](https://www.openml.org/d/44) data-set, this example shows how to train a classifier that detects spam, based on features extracted from email messages. A grid-search is performed over decision-tree hyper-parameters to find the best ones.
+
+[<img src="../.gitbook/assets/jupyter_logo.png">    Decision Tree Regressor](../advanced_examples/DecisionTreeRegressor.ipynb)
+
+Using the [House Price prediction](https://www.openml.org/search?type=data&sort=runs&id=537) data-set, this example shows how to train regressor that predicts house prices.
 
 ### 4. XGBoost and Random Forest classifier
 
@@ -55,8 +61,9 @@ Privacy-preserving prediction of house prices is shown in this example, using th
 
 Two different configurations of the built-in, fully-connected neural networks are shown. First, a small bit-width accumulator network is trained on [Iris](https://www.openml.org/d/61) and compared to a PyTorch floating point network. Second, a larger accumulator (>8 bits) is demonstrated on [MNIST](http://yann.lecun.com/exdb/mnist/).
 
-### 7. Comparison of classifiers
+### 7. Comparison of models
 
 [<img src="../.gitbook/assets/jupyter_logo.png">   Classifier comparison](../advanced_examples/ClassifierComparison.ipynb)
+[<img src="../.gitbook/assets/jupyter_logo.png">   Regressor comparison](../advanced_examples/RegressorComparison.ipynb)
 
 Based on three different synthetic data-sets, all the built-in classifiers are demonstrated in this notebook, showing accuracies, inference times, accumulator bit-widths, and decision boundaries.

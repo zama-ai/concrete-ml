@@ -86,7 +86,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("dequantize", [], []),  # use de-quantize
         ("dequantization", [], []),  # use de-quantization
         ("requantize", [], []),  # use re-quantize
-        ("an FHE", [], []),  # use `a FHE`
+        ("a FHE", [], []),  # use `an FHE`
         ("can Google", [], []),  # google is a verb
         ("jupyter", [], []),  # use Jupyter
         ("PyTest", [], []),  # use pytest
@@ -179,6 +179,12 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("CML", [], []),  # use Concrete ML
         ("CN", ["CNN"], []),  # use Concrete Python
         ("CP", [], []),  # use Concrete Python
+        ("ie", [], []),  # use i.e.,
+        ("ie,", [], []),  # use i.e.,
+        ("ie.,", [], []),  # use i.e.,
+        ("eg", [], []),  # use e.g.,
+        ("eg,", [], []),  # use e.g.,
+        ("eg., ", [], []),  # use e.g.,
     ]
     # For later
     #   "We" or "Our", or more generally, passive form

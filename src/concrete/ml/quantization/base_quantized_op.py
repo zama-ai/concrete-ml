@@ -82,7 +82,7 @@ class QuantizedOp:
     _inputs_not_quantized: Set[str] = set()
     quantize_inputs_with_model_outputs_precision: bool = False
 
-    # The ONNX name of this op instance (eg "Conv_9", "MatMul_5" etc.)
+    # The ONNX name of this op instance (e.g., "Conv_9", "MatMul_5" etc.)
     op_instance_name: str
 
     # Determines if this op computes a tensor that is a graph output, i.e., a tensor
@@ -639,7 +639,7 @@ class QuantizedOp:
             while prepared_inputs[curr_input_fill_idx] is not None:
                 curr_input_fill_idx += 1
 
-            # This is an integer scalar (eg tensor shape). This is not an encrypted
+            # This is an integer scalar (e.g., tensor shape). This is not an encrypted
             # value, it is not traced
             is_clear_value = isinstance(input_, RawOpOutput)
 
@@ -810,7 +810,7 @@ class QuantizedOpUnivariateOfEncrypted(QuantizedOp, is_utility=True):
     """An univariate operator of an encrypted value.
 
     This operation is not really operating as a quantized operation. It is useful when the
-    computations get fused into a TLU, as in eg Act(x) = x || (x + 42)).
+    computations get fused into a TLU, as in e.g., Act(x) = x || (x + 42)).
     """
 
     def __init__(

@@ -1,6 +1,6 @@
 # FHE Op-graph Design
 
-The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to a FHE-compatible Concrete ML op-graph. This section describes the implementation of operations in the Concrete ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
+The [ONNX import](onnx_pipeline.md) section gave an overview of the conversion of a generic ONNX graph to an FHE-compatible Concrete ML op-graph. This section describes the implementation of operations in the Concrete ML op-graph and the way floating point can be used in some parts of the op-graphs through table lookup operations.
 
 ## Float vs. quantized operations
 

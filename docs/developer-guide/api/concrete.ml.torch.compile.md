@@ -55,7 +55,7 @@ compile_torch_model(
 ) → QuantizedModule
 ```
 
-Compile a torch module into a FHE equivalent.
+Compile a torch module into an FHE equivalent.
 
 Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete
 
@@ -99,7 +99,7 @@ compile_onnx_model(
 ) → QuantizedModule
 ```
 
-Compile a torch module into a FHE equivalent.
+Compile a torch module into an FHE equivalent.
 
 Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs and finally compile it with Concrete-Python
 

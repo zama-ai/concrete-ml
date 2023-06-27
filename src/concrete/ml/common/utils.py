@@ -118,7 +118,7 @@ def generate_proxy_function(
         Tuple[Callable, Dict[str, str]]: the proxy function and the mapping of the original arg name
             to the new and sanitized arg names.
     """
-    # Some input names can be invalid arg names (eg coming from torch input.0) so sanitize them
+    # Some input names can be invalid arg names (e.g., coming from torch input.0) so sanitize them
     # to be valid Python arg names.
     orig_args_to_proxy_func_args = {
         arg_name: f"_{replace_invalid_arg_name_chars(arg_name)}"

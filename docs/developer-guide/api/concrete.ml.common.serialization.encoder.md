@@ -55,4 +55,4 @@ The serialized object.
 
 **Raises:**
 
-- <b>`NotImplementedError`</b>:  if a fhe.Circuit is given.
+- <b>`NotImplementedError`</b>:  if an FHE.Circuit is given.

@@ -1312,7 +1312,7 @@ class QuantizedOr(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Or operator ||.
 
     This operation is not really working as a quantized operation. It just works when things got
-    fused, as in eg Act(x) = x || (x + 42))
+    fused, as in e.g., Act(x) = x || (x + 42))
     """
 
     _impl_for_op_named: str = "Or"
@@ -1322,7 +1322,7 @@ class QuantizedDiv(QuantizedOpUnivariateOfEncrypted, QuantizedOp):
     """Div operator /.
 
     This operation is not really working as a quantized operation. It just works when things got
-    fused, as in eg Act(x) = 1000 / (x + 42))
+    fused, as in e.g., Act(x) = 1000 / (x + 42))
     """
 
     _impl_for_op_named: str = "Div"
@@ -1666,7 +1666,7 @@ class QuantizedBrevitasQuant(QuantizedOp):
                 rounding_mode (str): Rounding mode (default and only accepted option is "ROUND")
                 signed (int): Whether this op quantizes to signed integers (default 1),
                 narrow (int): Whether this op quantizes to a narrow range of integers
-                    eg [-2**n_bits-1 .. 2**n_bits-1] (default 0),
+                    e.g., [-2**n_bits-1 .. 2**n_bits-1] (default 0),
         """
 
         super().__init__(

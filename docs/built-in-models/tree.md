@@ -20,6 +20,11 @@ Concrete ML also supports [XGBoost](https://xgboost.ai/)'s `XGBClassifier`:
 For a formal explanation of the mechanisms that enable FHE-compatible decision trees, please see the following paper: [Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254)
 {% endhint %}
 
+{% hint style="info" %}
+As the maximum depth parameter of decision trees and tree-ensemble models strongly increases the number of nodes in the trees, we recommend
+using the XGBoost models which achieve better performance with lower depth.
+{% endhint %}
+
 ## Example
 
 Here's an example of how to use this model in FHE on a popular data-set using some of scikit-learn's pre-processing tools. A more complete example can be found in the [XGBClassifier notebook](ml_examples.md).
@@ -100,10 +105,10 @@ y_pred_fhe = model.predict(X_test_transformed[:N_TEST_FHE], fhe="execute")
 
 # Assert that FHE predictions are the same as the clear predictions
 print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
-      f"examples over {N_TEST_FHE} have a FHE inference equal to the clear inference.")
+      f"examples over {N_TEST_FHE} have an FHE inference equal to the clear inference.")
 
 # Output:
-#  1 examples over 1 have a FHE inference equal to the clear inference
+#  1 examples over 1 have an FHE inference equal to the clear inference
 ```
 
 Similarly, the decision boundaries of the Concrete ML model can be plotted, then compared to the results of the classical XGBoost model executed in the clear. A 6-bits model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
@@ -119,3 +124,13 @@ When `n_bits` is set low, the quantization process may sometimes create some art
 The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 
 ![XGBoost n_bits comparison](../figures/XGBClassifier_nbits.png)
+
+## FHE Inference time considerations
+
+The inference time in FHE is strongly dependant on the maximum circuit bit-width. For trees, in most cases, the quantization bit-width
+will be the same as the circuit bit-width. Therefore, reducing the quantization bit-width to 4 or less will result in fast inference times.
+Adding more bits will increase FHE inference exponentially.
+
+In more rare cases, the bit-width of the circuit can be higher than the quantization bit-width: when the quantization bit-width is low but the tree-depth is high. In such cases, the circuit bit-width is upper bounded by `ceil(log2(max_depth + 1) + 1)`.
+
+For more information on the inference time of FHE decision trees and tree-ensemble models please see [Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254).

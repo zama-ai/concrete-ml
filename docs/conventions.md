@@ -18,7 +18,7 @@ Let's use following conventions for the docs. If a new convention needs to be de
    - input-set, data-set
    - database, codebase is fine (not data-base, code-base)
    - de-quantize/re-quantize
-1. "a FHE program" not "an FHE program"
+1. "an FHE program" not "a FHE program"
 1. Machine Learning or machine learning, depends on the context
 1. google is a verb ("you can google" but not "you can Google") : but try to avoid this
 1. Programs:

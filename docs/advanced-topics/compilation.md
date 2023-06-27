@@ -16,6 +16,8 @@ From the perspective of the Concrete ML user, the compilation process performed 
 
 Additionally, the [client/server API](client_server.md) packages the result of the last step in a way that allows the deployment of the encrypted circuit to a server, as well as key generation, encryption, and decryption on the client side.
 
+### Built-in models
+
 Compilation is performed for built-in models with the `compile` method :
 
 <!--pytest-codeblocks:skip-->	
@@ -23,6 +25,49 @@ Compilation is performed for built-in models with the `compile` method :
 ```python
     clf.compile(X_train)
 ```
+
+### scikit-learn pipelines
+
+When using a pipeline, the Concrete ML model can predict with FHE during the pipeline execution, but it needs
+to be compiled beforehand. The compile function must be called on the Concrete ML model:
+
+```python
+import numpy
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from concrete.ml.sklearn import LogisticRegression
+from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
+
+# Create the data for classification:
+X, y = make_classification(
+    n_features=30,
+    n_redundant=0,
+    n_informative=2,
+    random_state=2,
+    n_clusters_per_class=1,
+    n_samples=250,
+)
+
+# Retrieve train and test sets:
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
+
+model_pca = Pipeline(
+    [
+        ("preprocessor", PCA()),
+        ("cml_model", LogisticRegression(n_bits=8))
+    ]
+)
+
+model_pca.fit(X_train, y_train)
+
+# Compile the Concrete ML model
+model_pca["cml_model"].compile(X_train)
+
+model_pca.predict(X_test[[0]], fhe="execute")
+```
+
+### Custom models
 
 For custom models, with one of the `compile_brevitas_qat_model` (for Brevitas models with Quantization Aware Training) or `compile_torch_model` (PyTorch models using Post-Training Quantization) functions:
 

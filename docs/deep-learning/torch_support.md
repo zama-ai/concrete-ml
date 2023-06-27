@@ -162,6 +162,7 @@ Concrete ML supports a variety of PyTorch operators that can be used to build fu
 - [`torch.mul, torch.Tensor operator *`](https://pytorch.org/docs/stable/generated/torch.mul.html)
 - [`torch.div, torch.Tensor operator /`](https://pytorch.org/docs/stable/generated/torch.div.html)
 - [`torch.nn.identity`](https://pytorch.org/docs/stable/generated/torch.nn.Identity.html)
+- [`torch.nn.BatchNorm2d`](https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html)
 
 #### shape modifying operators
 

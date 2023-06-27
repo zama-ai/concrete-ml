@@ -184,7 +184,7 @@ class ConcreteEncoder(JSONEncoder):
                 format.
 
         Raises:
-            NotImplementedError: If a fhe.Circuit, a Callable or a Generator object is given.
+            NotImplementedError: If an FHE.Circuit, a Callable or a Generator object is given.
         """
 
         # Serializing a Circuit object is currently not supported

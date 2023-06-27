@@ -11,7 +11,7 @@ One can also run this example locally using Docker, or just by running the scrip
 
 Deployment this model on your personal machine is not recommended as running a VGG in FHE is computationally intensive. It is recommended to run this on a `m6i.metal` instance from AWS.
 
-1. To compile your model you can use `compile.py`, or `compile_with_docker.py` to use Docker. This will compile the model to a FHE circuit and [serialize it](../../../docs/advanced-topics/client_server.md). This will result in a new folder called `./dev`.
+1. To compile your model you can use `compile.py`, or `compile_with_docker.py` to use Docker. This will compile the model to an FHE circuit and [serialize it](../../../docs/advanced-topics/client_server.md). This will result in a new folder called `./dev`.
 1. Once that's done you can use the script provided in Concrete ML in `src/concrete/ml/deployment/`, either use `deploy_to_aws.py` or `deploy_to_docker.py` according to your need.
 
 - `python -m concrete.ml.deployment.deploy_to_docker`

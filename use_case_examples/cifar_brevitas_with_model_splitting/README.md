@@ -1,6 +1,6 @@
 # CIFAR-10 classification with a split clear/FHE model
 
-In this [notebook](./Cifar10.ipynb) we show how train and compile a FHE VGG-like model to achieve a good speed/accuracy trade-off on CIFAR-10 images.
+In this [notebook](./Cifar10.ipynb) we show how train and compile an FHE VGG-like model to achieve a good speed/accuracy trade-off on CIFAR-10 images.
 
 ## Installation
 

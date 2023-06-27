@@ -51,14 +51,14 @@ print(f"Similarity: {(y_pred_fhe == y_pred_clear).mean():.1%}")
 This example shows the typical flow of a Concrete ML model:
 
 - The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete ML quantizes the model to use only integers during inference.
-- The quantized model is compiled to a FHE equivalent. Under the hood, the model is first converted to a Concrete Python program, then compiled.
+- The quantized model is compiled to an FHE equivalent. Under the hood, the model is first converted to a Concrete Python program, then compiled.
 - Inference can then be done on encrypted data. The above example shows encrypted inference in the model-development phase. Alternatively, during [deployment](getting-started/cloud.md) in a client/server setting, the data is encrypted by the client, processed securely by the server, and then decrypted by the client.
 
 ## Current limitations
 
 To make a model work with FHE, the only constraint is to make it run within the supported precision limitations of Concrete ML (currently 16-bit integers). Thus, machine learning models must be quantized, which sometimes leads to a loss of accuracy versus the original model, which operates on plaintext.
 
-Additionally, Concrete ML currently only supports FHE _inference_. Training has to be done on unencrypted data, producing a model which is then converted to a FHE equivalent that can perform encrypted inference (i.e., prediction over encrypted data).
+Additionally, Concrete ML currently only supports FHE _inference_. Training has to be done on unencrypted data, producing a model which is then converted to an FHE equivalent that can perform encrypted inference (i.e., prediction over encrypted data).
 
 Finally, there is currently no support for pre-processing model inputs and post-processing model outputs. These processing stages may involve text-to-numerical feature transformation, dimensionality reduction, KNN or clustering, featurization, normalization, and the mixing of results of ensemble models.
 

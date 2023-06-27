@@ -129,7 +129,7 @@ def numpy_where_body(
     """Compute the equivalent of numpy.where.
 
     This function is not mapped to any ONNX operator (as opposed to numpy_where). It is usable by
-    functions which are mapped to ONNX operators, eg numpy_div or numpy_where.
+    functions which are mapped to ONNX operators, e.g., numpy_div or numpy_where.
 
     Args:
         c (numpy.ndarray): Condition operand.
@@ -1631,7 +1631,7 @@ def numpy_brevitas_quant(
         rounding_mode (str): Rounding mode (default and only accepted option is "ROUND")
         signed (int): Whether this op quantizes to signed integers (default 1),
         narrow (int): Whether this op quantizes to a narrow range of integers
-            eg [-2**n_bits-1 .. 2**n_bits-1] (default 0),
+            e.g., [-2**n_bits-1 .. 2**n_bits-1] (default 0),
 
     Returns:
         result (numpy.ndarray): Tensor with float quantized values

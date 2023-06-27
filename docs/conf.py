@@ -80,7 +80,7 @@ nbsphinx_codecell_lexer = "ipython3"
 #
 
 # We may be back with sphinx_zama_theme, as soon as it provides something which is very close to
-# GitBook look, or keep ReadsTheDocs theme eg if we want to push docs there
+# GitBook look, or keep ReadsTheDocs theme e.g., if we want to push docs there
 html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,

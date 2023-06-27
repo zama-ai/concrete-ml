@@ -6,7 +6,7 @@ This guide aims to help developers who are upgrading from older versions of Conc
 
 Please take note of the following changes when upgrading to version 1.0.0:
 
-- `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe="disable|simulate|execute"`. The `disable` option runs the model in Python, while `simulate` performs a FHE simulation, and `execute` provides actual FHE execution.
+- `execute_in_fhe` argument in `.predict()` methods has been replaced by `fhe="disable|simulate|execute"`. The `disable` option runs the model in Python, while `simulate` performs an FHE simulation, and `execute` provides actual FHE execution.
 
 - `encrypt_run_decrypt` function can now __only__ be executed in FHE. For FHE simulations, please use the `simulate` function instead.
 

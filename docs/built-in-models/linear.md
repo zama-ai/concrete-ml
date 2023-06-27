@@ -66,11 +66,11 @@ y_pred_fhe = model.predict(X_test, fhe="execute")
 # Assert that FHE predictions are the same as the clear predictions:
 print(
     f"{(y_pred_fhe == y_pred_clear).sum()} examples over {len(y_pred_fhe)} "
-    "have a FHE inference equal to the clear inference."
+    "have an FHE inference equal to the clear inference."
 )
 
 # Output:
-#  100 examples over 100 have a FHE inference equal to the clear inference
+#  100 examples over 100 have an FHE inference equal to the clear inference
 ```
 
 We can then plot the decision boundary of the classifier and compare those results with a scikit-learn model executed in clear. The complete code can be found in the [LogisticRegression notebook](ml_examples.md).

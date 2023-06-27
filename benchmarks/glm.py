@@ -266,7 +266,7 @@ def score_estimator(
     """Evaluate the score of a GLM using its predictions."""
 
     # Ignore non-positive predictions, as they are invalid for the Tweedie deviance. We want to
-    # issue a warning if for some reason (eg low quantization, user error), the regressor
+    # issue a warning if for some reason (e.g., low quantization, user error), the regressor
     # predictions are negative.
 
     # Concrete predictions' shape is (n, 1) but mean_tweedie_deviance only accepts arrays

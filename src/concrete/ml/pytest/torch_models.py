@@ -945,7 +945,7 @@ class QATTestModule(nn.Module):
 
 
 class SingleMixNet(nn.Module):
-    """Torch model that with a single conv layer that produces the output, eg a blur filter."""
+    """Torch model that with a single conv layer that produces the output, e.g., a blur filter."""
 
     mixing_layer: Union[nn.Module, nn.Sequential]
 

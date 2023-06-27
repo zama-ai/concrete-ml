@@ -51,7 +51,7 @@ The [Classifier Comparison notebook](ml_examples.md) shows the behavior of built
 
 ![Comparison neural networks](../figures/neural_nets_builtin.png)
 
-The figure above right shows the Concrete ML neural network, trained with Quantization Aware Training in a FHE-compatible configuration. The figure compares this network to the floating-point equivalent, trained with scikit-learn.
+The figure above right shows the Concrete ML neural network, trained with Quantization Aware Training in an FHE-compatible configuration. The figure compares this network to the floating-point equivalent, trained with scikit-learn.
 
 ### Architecture parameters
 
