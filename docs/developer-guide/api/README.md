@@ -8,7 +8,8 @@
 - [`concrete.ml.common.check_inputs`](./concrete.ml.common.check_inputs.md#module-concretemlcommoncheck_inputs): Check and conversion tools.
 - [`concrete.ml.common.debugging`](./concrete.ml.common.debugging.md#module-concretemlcommondebugging): Module for debugging.
 - [`concrete.ml.common.debugging.custom_assert`](./concrete.ml.common.debugging.custom_assert.md#module-concretemlcommondebuggingcustom_assert): Provide some variants of assert.
-- [`concrete.ml.common.serialization`](./concrete.ml.common.serialization.md#module-concretemlcommonserialization)
+- [`concrete.ml.common.serialization`](./concrete.ml.common.serialization.md#module-concretemlcommonserialization): Serialization module.
+- [`concrete.ml.common.serialization.decoder`](./concrete.ml.common.serialization.decoder.md#module-concretemlcommonserializationdecoder): Custom decoder for serialization.
 - [`concrete.ml.common.serialization.dumpers`](./concrete.ml.common.serialization.dumpers.md#module-concretemlcommonserializationdumpers): Dump functions for serialization.
 - [`concrete.ml.common.serialization.encoder`](./concrete.ml.common.serialization.encoder.md#module-concretemlcommonserializationencoder): Custom encoder for serialization.
 - [`concrete.ml.common.serialization.loaders`](./concrete.ml.common.serialization.loaders.md#module-concretemlcommonserializationloaders): Load functions for serialization.
@@ -54,7 +55,8 @@
 
 ## Classes
 
-- [`encoder.CustomEncoder`](./concrete.ml.common.serialization.encoder.md#class-customencoder): CustomEncoder: custom json encoder to handle non-native types.
+- [`decoder.ConcreteDecoder`](./concrete.ml.common.serialization.decoder.md#class-concretedecoder): Custom json decoder to handle non-native types found in serialized Concrete ML objects.
+- [`encoder.ConcreteEncoder`](./concrete.ml.common.serialization.encoder.md#class-concreteencoder): Custom json encoder to handle non-native types found in serialized Concrete ML objects.
 - [`utils.FheMode`](./concrete.ml.common.utils.md#class-fhemode): Enum representing the execution mode.
 - [`deploy_to_aws.AWSInstance`](./concrete.ml.deployment.deploy_to_aws.md#class-awsinstance): AWSInstance.
 - [`fhe_client_server.FHEModelClient`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelclient): Client API to encrypt and decrypt FHE data.
@@ -69,6 +71,7 @@
 - [`torch_models.CNNInvalid`](./concrete.ml.pytest.torch_models.md#class-cnninvalid): Torch CNN model for the tests.
 - [`torch_models.CNNMaxPool`](./concrete.ml.pytest.torch_models.md#class-cnnmaxpool): Torch CNN model for the tests with a max pool.
 - [`torch_models.CNNOther`](./concrete.ml.pytest.torch_models.md#class-cnnother): Torch CNN model for the tests.
+- [`torch_models.ConcatFancyIndexing`](./concrete.ml.pytest.torch_models.md#class-concatfancyindexing): Concat with fancy indexing.
 - [`torch_models.DoubleQuantQATMixNet`](./concrete.ml.pytest.torch_models.md#class-doublequantqatmixnet): Torch model that with two different quantizers on the input.
 - [`torch_models.FC`](./concrete.ml.pytest.torch_models.md#class-fc): Torch model for the tests.
 - [`torch_models.FCSeq`](./concrete.ml.pytest.torch_models.md#class-fcseq): Torch model that should generate MatMul->Add ONNX patterns.
@@ -76,6 +79,7 @@
 - [`torch_models.FCSmall`](./concrete.ml.pytest.torch_models.md#class-fcsmall): Torch model for the tests.
 - [`torch_models.MultiInputNN`](./concrete.ml.pytest.torch_models.md#class-multiinputnn): Torch model to test multiple inputs forward.
 - [`torch_models.MultiInputNNConfigurable`](./concrete.ml.pytest.torch_models.md#class-multiinputnnconfigurable): Torch model to test multiple inputs forward.
+- [`torch_models.MultiInputNNDifferentSize`](./concrete.ml.pytest.torch_models.md#class-multiinputnndifferentsize): Torch model to test multiple inputs with different shape in the forward pass.
 - [`torch_models.MultiOpOnSingleInputConvNN`](./concrete.ml.pytest.torch_models.md#class-multioponsingleinputconvnn): Network that applies two quantized operations on a single input.
 - [`torch_models.NetWithConcatUnsqueeze`](./concrete.ml.pytest.torch_models.md#class-netwithconcatunsqueeze): Torch model to test the concat and unsqueeze operators.
 - [`torch_models.NetWithConstantsFoldedBeforeOps`](./concrete.ml.pytest.torch_models.md#class-netwithconstantsfoldedbeforeops): Torch QAT model that does not quantize the inputs.
@@ -87,7 +91,7 @@
 - [`torch_models.ShapeOperationsNet`](./concrete.ml.pytest.torch_models.md#class-shapeoperationsnet): Torch QAT model that reshapes the input.
 - [`torch_models.SimpleNet`](./concrete.ml.pytest.torch_models.md#class-simplenet): Fake torch model used to generate some onnx.
 - [`torch_models.SimpleQAT`](./concrete.ml.pytest.torch_models.md#class-simpleqat): Torch model implements a step function that needs Greater, Cast and Where.
-- [`torch_models.SingleMixNet`](./concrete.ml.pytest.torch_models.md#class-singlemixnet): Torch model that with a single conv layer that produces the output, eg a blur filter.
+- [`torch_models.SingleMixNet`](./concrete.ml.pytest.torch_models.md#class-singlemixnet): Torch model that with a single conv layer that produces the output, e.g., a blur filter.
 - [`torch_models.StepActivationModule`](./concrete.ml.pytest.torch_models.md#class-stepactivationmodule): Torch model implements a step function that needs Greater, Cast and Where.
 - [`torch_models.TinyCNN`](./concrete.ml.pytest.torch_models.md#class-tinycnn): A very small CNN.
 - [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits data-set.
@@ -201,17 +205,15 @@
 - [`custom_assert.assert_false`](./concrete.ml.common.debugging.custom_assert.md#function-assert_false): Provide a custom assert to check that the condition is False.
 - [`custom_assert.assert_not_reached`](./concrete.ml.common.debugging.custom_assert.md#function-assert_not_reached): Provide a custom assert to check that a piece of code is never reached.
 - [`custom_assert.assert_true`](./concrete.ml.common.debugging.custom_assert.md#function-assert_true): Provide a custom assert to check that the condition is True.
-- [`dumpers.dump`](./concrete.ml.common.serialization.dumpers.md#function-dump): Dump any Concrete ML object that has a dump method.
-- [`dumpers.dumps`](./concrete.ml.common.serialization.dumpers.md#function-dumps): Dump as string any object.
-- [`dumpers.dumps_random_state`](./concrete.ml.common.serialization.dumpers.md#function-dumps_random_state): Dump random state to string.
-- [`encoder.dumps_onnx`](./concrete.ml.common.serialization.encoder.md#function-dumps_onnx): Dump onnx model as string.
-- [`loaders.load`](./concrete.ml.common.serialization.loaders.md#function-load): Load any Concrete ML object that has a dump method.
-- [`loaders.load_dict`](./concrete.ml.common.serialization.loaders.md#function-load_dict): Load any Concrete ML object that has a dump method.
-- [`loaders.loads`](./concrete.ml.common.serialization.loaders.md#function-loads): Load any Concrete ML object that has a dump method.
-- [`loaders.loads_onnx`](./concrete.ml.common.serialization.loaders.md#function-loads_onnx): Load serialized onnx model.
-- [`loaders.loads_random_state`](./concrete.ml.common.serialization.loaders.md#function-loads_random_state): Load random state from string.
-- [`utils.all_values_are_floats`](./concrete.ml.common.utils.md#function-all_values_are_floats): Indicate that all unpacked values are of a supported float dtype.
-- [`utils.all_values_are_integers`](./concrete.ml.common.utils.md#function-all_values_are_integers): Indicate that all unpacked values are of a supported integer dtype.
+- [`decoder.object_hook`](./concrete.ml.common.serialization.decoder.md#function-object_hook): Define a custom object hook that enables loading any supported serialized values.
+- [`dumpers.dump`](./concrete.ml.common.serialization.dumpers.md#function-dump): Dump any Concrete ML object in a file.
+- [`dumpers.dumps`](./concrete.ml.common.serialization.dumpers.md#function-dumps): Dump any object as a string.
+- [`encoder.dump_name_and_value`](./concrete.ml.common.serialization.encoder.md#function-dump_name_and_value): Dump the value into a custom dict format.
+- [`loaders.load`](./concrete.ml.common.serialization.loaders.md#function-load): Load any Concrete ML object that provide a `load_dict` method.
+- [`loaders.loads`](./concrete.ml.common.serialization.loaders.md#function-loads): Load any Concrete ML object that provide a `dump_dict` method.
+- [`utils.all_values_are_floats`](./concrete.ml.common.utils.md#function-all_values_are_floats): Indicate if all unpacked values are of a supported float dtype.
+- [`utils.all_values_are_integers`](./concrete.ml.common.utils.md#function-all_values_are_integers): Indicate if all unpacked values are of a supported integer dtype.
+- [`utils.all_values_are_of_dtype`](./concrete.ml.common.utils.md#function-all_values_are_of_dtype): Indicate if all unpacked values are of the specified dtype(s).
 - [`utils.check_dtype_and_cast`](./concrete.ml.common.utils.md#function-check_dtype_and_cast): Convert any allowed type into an array and cast it if required.
 - [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
 - [`utils.compute_bits_precision`](./concrete.ml.common.utils.md#function-compute_bits_precision): Compute the number of bits required to represent x.
@@ -324,11 +326,13 @@
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
+- [`utils.check_serialization`](./concrete.ml.pytest.utils.md#function-check_serialization): Check that the given object can properly be serialized.
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given data-set.
 - [`utils.get_random_extract_of_sklearn_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_random_extract_of_sklearn_models_and_datasets): Return a random sublist of sklearn_models_and_datasets.
 - [`utils.get_torchvision_dataset`](./concrete.ml.pytest.utils.md#function-get_torchvision_dataset): Get train or testing data-set.
 - [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete ML model type.
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
+- [`utils.values_are_equal`](./concrete.ml.pytest.utils.md#function-values_are_equal): Indicate if two values are equal.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`p_error_search.compile_and_simulated_fhe_inference`](./concrete.ml.search_parameters.p_error_search.md#function-compile_and_simulated_fhe_inference): Get the quantized module of a given model in FHE, simulated or not.
@@ -343,6 +347,7 @@
 - [`tree_to_numpy.tree_to_numpy`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_to_numpy): Convert the tree inference to a numpy functions using Hummingbird.
 - [`tree_to_numpy.tree_values_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_values_preprocessing): Pre-process tree values.
 - [`tree_to_numpy.workaround_squeeze_node_xgboost`](./concrete.ml.sklearn.tree_to_numpy.md#function-workaround_squeeze_node_xgboost): Workaround to fix torch issue that does not export the proper axis in the ONNX squeeze node.
+- [`compile.build_quantized_module`](./concrete.ml.torch.compile.md#function-build_quantized_module): Build a quantized module from a Torch or ONNX model.
 - [`compile.compile_brevitas_qat_model`](./concrete.ml.torch.compile.md#function-compile_brevitas_qat_model): Compile a Brevitas Quantization Aware Training model.
 - [`compile.compile_onnx_model`](./concrete.ml.torch.compile.md#function-compile_onnx_model): Compile a torch module into an FHE equivalent.
 - [`compile.compile_torch_model`](./concrete.ml.torch.compile.md#function-compile_torch_model): Compile a torch module into an FHE equivalent.

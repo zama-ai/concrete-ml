@@ -55,6 +55,7 @@
   - [concrete.ml.common.debugging.custom_assert.md](developer-guide/api/concrete.ml.common.debugging.custom_assert.md)
   - [concrete.ml.common.debugging.md](developer-guide/api/concrete.ml.common.debugging.md)
   - [concrete.ml.common.md](developer-guide/api/concrete.ml.common.md)
+  - [concrete.ml.common.serialization.decoder.md](developer-guide/api/concrete.ml.common.serialization.decoder.md)
   - [concrete.ml.common.serialization.dumpers.md](developer-guide/api/concrete.ml.common.serialization.dumpers.md)
   - [concrete.ml.common.serialization.encoder.md](developer-guide/api/concrete.ml.common.serialization.encoder.md)
   - [concrete.ml.common.serialization.loaders.md](developer-guide/api/concrete.ml.common.serialization.loaders.md)

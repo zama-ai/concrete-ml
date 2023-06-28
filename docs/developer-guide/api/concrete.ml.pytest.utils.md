@@ -12,7 +12,7 @@ Common functions or lists for test files, which can't be put in fixtures.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_random_extract_of_sklearn_models_and_datasets`
 
@@ -29,29 +29,30 @@ the sublist
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `instantiate_model_generic`
 
 ```python
-instantiate_model_generic(model_class, **parameters)
+instantiate_model_generic(model_class, n_bits, **parameters)
 ```
 
 Instantiate any Concrete ML model type.
 
 **Args:**
 
-- <b>`model_class`</b> (class):  The type of the model to instantiate
-- <b>`parameters`</b> (dict):  Hyper-parameters for the model instantiation
+- <b>`model_class`</b> (class):  The type of the model to instantiate.
+- <b>`n_bits`</b> (int):  The number of quantization to use when initializing the model. For QNNs,  default parameters are used based on whether `n_bits` is greater or smaller than 8.
+- <b>`parameters`</b> (dict):  Hyper-parameters for the model instantiation. For QNNs, these parameters  will override the matching default ones.
 
 **Returns:**
 
-- <b>`model_name`</b> (str):  The type of the model as a string
-- <b>`model`</b> (object):  The model instance
+- <b>`model_name`</b> (str):  The type of the model as a string.
+- <b>`model`</b> (object):  The model instance.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_torchvision_dataset`
 
@@ -72,7 +73,7 @@ A torchvision data-sets.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `data_calibration_processing`
 
@@ -98,7 +99,7 @@ Reduce size of the given data-set.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_torch_model`
 
@@ -123,3 +124,52 @@ Load an object saved with torch.save() from a file or dict.
 **Returns:**
 
 - <b>`torch.nn.Module`</b>:  A PyTorch or Brevitas network.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L319"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `values_are_equal`
+
+```python
+values_are_equal(value_1: Any, value_2: Any) → bool
+```
+
+Indicate if two values are equal.
+
+This method takes into account objects of type None, numpy.ndarray, numpy.floating, numpy.integer, numpy.random.RandomState or any instance that provides a `__eq__` method.
+
+**Args:**
+
+- <b>`value_2`</b> (Any):  The first value to consider.
+- <b>`value_1`</b> (Any):  The second value to consider.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the two values are equal.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L363"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `check_serialization`
+
+```python
+check_serialization(
+    object_to_serialize: Any,
+    expected_type: Type,
+    equal_method: Optional[Callable] = None,
+    check_str: bool = True
+)
+```
+
+Check that the given object can properly be serialized.
+
+This function serializes all objects using the `dump`, `dumps`, `load` and `loads` functions from Concrete ML. If the given object provides a `dump` and `dumps` method, they are also serialized using these.
+
+**Args:**
+
+- <b>`object_to_serialize`</b> (Any):  The object to serialize.
+- <b>`expected_type`</b> (Type):  The object's expected type.
+- <b>`equal_method`</b> (Optional\[Callable\]):  The function to use to compare the two loaded objects.  Default to `values_are_equal`.
+- <b>`check_str`</b> (bool):  If the JSON strings should also be checked. Default to True.
