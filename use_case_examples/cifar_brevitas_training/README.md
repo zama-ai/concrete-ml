@@ -51,9 +51,9 @@ You can launch this evaluation as follows:
 python3 evaluate_torch_cml.py
 ```
 
-It evaluates the model with Torch and Concrete ML in simulation mode (a representation of FHE circuit running in the clear) to compare the results.
+### Rounding for Improved Performance
 
-Optionally, you can change the default rounding bits (default to 6) applied on the model as follows:
+In Concrete, a rounding operator is available which removes a specific number of least significant bits to reach a lower desired bit-width. This results in significant performance improvement. The default rounding threshold is set at 6 bits but can be changed to suit your needs.
 
 <!--pytest-codeblocks:skip-->
 
@@ -61,7 +61,7 @@ Optionally, you can change the default rounding bits (default to 6) applied on t
 python3 evaluate_torch_cml.py --rounding_threshold_bits 8
 ```
 
-You can as well test different `rounding_threshold_bits` to check the final accuracy as follows:
+Testing with different rounding_threshold_bits values can help you understand the impact on the final accuracy:
 
 <!--pytest-codeblocks:skip-->
 
@@ -69,9 +69,11 @@ You can as well test different `rounding_threshold_bits` to check the final accu
 python3 evaluate_torch_cml.py --rounding_threshold_bits 1 2 3 4 5 6 7 8
 ```
 
+Using rounding with 6 bits for all accumulators provides a significant speedup for FHE, with only a 1.3% loss in accuracy compared to the original model. More details can be found in the Accuracy and Performance section below.
+
 ## Fully Homomorphic Encryption (FHE)
 
-Once the model has been proposed to have a correct performance, compilation to the FHE settings can be done.
+Once you're satisfied with the model's performance, you can compile it to the FHE settings.
 
 <!--pytest-codeblocks:skip-->
 
@@ -79,13 +81,11 @@ Once the model has been proposed to have a correct performance, compilation to t
 python3 evaluation_one_example_fhe.py
 ```
 
-Here, a picture from the CIFAR10 data-set is randomly chosen and preprocessed. The data is then quantized, encrypted and then given to the FHE circuit that evaluates the encrypted image. The result, encrypted as well, is then decrypted and compared vs. the expected output coming from the clear inference.
+Here, an image from the CIFAR10 data-set is randomly chosen and preprocessed. The data is then quantized, encrypted and then given to the FHE circuit that evaluates the encrypted image. The result, encrypted as well, is then decrypted and compared vs. the expected output coming from the clear inference.
 
-Warning: this execution can be quite costly.
+## Hardware Used for the Experiment
 
-While it is the ambition of Concrete ML to execute such large CNNs in reasonable time on various hardware accelerators, currently on a CPU the execution times are very high, more than 10 hours for a large many-core machine. This is a work in progress and will be improved significantly in future releases
-
-<!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3007 -->
+Experiments were conducted on an m6i.metal machine offering 128 CPU cores and 512GB of memory. The choice of hardware can significantly influence the execution time and performance of the model.
 
 ## Accuracy and performance
 
@@ -97,11 +97,9 @@ While it is the ambition of Concrete ML to execute such large CNNs in reasonable
 | VGG FHE (simulation\*) | 7 bits   | 88.3     |
 | VGG FHE (simulation\*) | 6 bits   | 87.5     |
 | VGG FHE (simulation\*) | 5 bits   | 84.9     |
-| VGG FHE                | NA\*\*   | NA\*\*   |
+| VGG FHE                | 6 bits   | 87.5\*\* |
 
-<!--FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3007 -->
-
-Rounding with 6 bits all accumulators offer a huge boost in FHE (TBD) while the loss compared to the original model is only $1.3\%$.
+We ran the FHE inference over 10 examples and achieved 100% similar predictions between the simulation and FHE. The overall accuracy for the entire data-set is expected to match the simulation. The original model with a maximum of 13 bits of precision ran in around 9 hours on the specified hardware. Using the rounding approach, the final model ran in **31 minutes**, providing a speedup factor of 18x while preserving accuracy. This significant performance improvement demonstrates the benefits of the rounding operator in the FHE setting.
 
 \* Simulation is used to evaluate the accuracy in the clear for faster debugging.
-\*\* Expected to match the VGG FHE simulation. It is a work in progress to assess the actual FHE accuracy on a subset of images.
+\*\* We ran the FHE inference over 10 examples and got 100% similar predictions between the simulation and FHE. The overall accuracy for the entire data-set is expected to match the simulation.
