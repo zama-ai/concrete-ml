@@ -927,7 +927,7 @@ def check_exposition_structural_methods_decision_trees(model, x, y):
 
     with pytest.raises(
         AttributeError,
-        match=f".* get_depth cannot be found in the Concrete ML.*",
+        match=".* get_depth cannot be found in the Concrete ML.*",
     ):
         model.get_depth()
 
