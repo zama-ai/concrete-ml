@@ -18,6 +18,7 @@ import sklearn
 import skorch.net
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
+from concrete.fhe import ParameterSelectionStrategy
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -550,6 +551,8 @@ class BaseEstimator:
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose,
+            single_precision=False,
+            parameter_selection_strategy=ParameterSelectionStrategy.MONO,
         )
 
         self._is_compiled = True

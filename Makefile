@@ -16,7 +16,7 @@ APIDOCS_OUTPUT?="./docs/developer-guide/api"
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CP_VERSION_SPEC_FOR_RC="concrete-python==2023.5.25"
+CP_VERSION_SPEC_FOR_RC="concrete-python==v1.1.0-rc1"
 
 # If one wants to use the last RC version
 # CP_VERSION_SPEC_FOR_RC="$$(poetry run python \

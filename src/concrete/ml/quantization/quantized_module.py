@@ -643,6 +643,7 @@ class QuantizedModule:
             p_error=p_error,
             global_p_error=global_p_error,
             verbose=verbose,
+            single_precision=False,
         )
 
         self._is_compiled = True

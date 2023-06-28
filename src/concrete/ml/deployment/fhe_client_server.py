@@ -91,14 +91,14 @@ class FHEModelServer:
         """
         assert_true(self.server is not None, "Model has not been loaded.")
 
-        deserialized_encrypted_quantized_data = self.server.client_specs.deserialize_public_args(
+        deserialized_encrypted_quantized_data = fhe.Value.deserialize(
             serialized_encrypted_quantized_data
         )
         deserialized_evaluation_keys = fhe.EvaluationKeys.deserialize(serialized_evaluation_keys)
         result = self.server.run(
-            deserialized_encrypted_quantized_data, deserialized_evaluation_keys
+            deserialized_encrypted_quantized_data, evaluation_keys=deserialized_evaluation_keys
         )
-        serialized_result = self.server.client_specs.serialize_public_result(result)
+        serialized_result = result.serialize()
         return serialized_result
 
 
@@ -319,7 +319,7 @@ class FHEModelClient:
         enc_qx = self.client.encrypt(quantized_x)
 
         # Serialize the encrypted values to be sent to the server
-        serialized_enc_qx = self.client.specs.serialize_public_args(enc_qx)
+        serialized_enc_qx = enc_qx.serialize()
         return serialized_enc_qx
 
     def deserialize_decrypt(self, serialized_encrypted_quantized_result: bytes) -> numpy.ndarray:
@@ -333,7 +333,7 @@ class FHEModelClient:
             numpy.ndarray: the decrypted and deserialized values
         """
         # Deserialize the encrypted values
-        deserialized_encrypted_quantized_result = self.client.specs.deserialize_public_result(
+        deserialized_encrypted_quantized_result = fhe.Value.deserialize(
             serialized_encrypted_quantized_result
         )
 

@@ -87,8 +87,6 @@ cfg = Configuration(
     enable_unsafe_features=True,  # Needed to use the insecure key cache location
     use_insecure_key_cache=True,  #  Needed to use the insecure key cache location
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
-    parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
-    single_precision=False,
 )
 
 print("Compiling the model.")
