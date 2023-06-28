@@ -27,7 +27,7 @@ root_url = os.environ.get("DOC_ROOT_URL", "/concrete-ml")
 root_url = root_url if root_url.endswith("/") else root_url + "/"
 
 # The full version, including alpha/beta/rc tags
-release = "1.0.0"
+release = "1.1.0"
 
 
 # -- General configuration ---------------------------------------------------
