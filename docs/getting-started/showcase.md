@@ -88,5 +88,29 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <td><a href="../../use_case_examples/sentiment_analysis_with_transformer">use_case_examples/sentiment_analysis_with_transformer</a></td>
          <!--- end -->
       </tr>
+      <tr>
+         <td><strong>Credit Scoring</strong></td>
+         <td>
+            <p></p>
+            <p>Predict the chance of a given loan applicant defaulting on loan repayment </p>
+         </td>
+         <td></td>
+         <!--- start -->
+         <td><a href="../.gitbook/assets/demo_credit.png">credit.png</a></td>
+         <td><a href="../../use_case_examples/credit_scoring">use_case_examples/credit_scoring</a></td>
+         <!--- end -->
+      </tr>
+      <tr>
+         <td><strong>Healthcare diagnosis</strong></td>
+         <td>
+            <p></p>
+            <p>Give a diagnosis using FHE to preserve the privacy of the patient</p>
+         </td>
+         <td></td>
+         <!--- start -->
+         <td><a href="../.gitbook/assets/demo_health.png">health.png</a></td>
+         <td><a href="../../use_case_examples/disease_prediction">use_case_examples/disease_prediction</a></td>
+         <!--- end -->
+      </tr>            
    </tbody>
 </table>

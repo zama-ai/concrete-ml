@@ -38,13 +38,13 @@ Concrete ML features:
 
 Depending on your OS, Concrete ML may be installed with Docker or with pip:
 
-|               OS / HW               | Available on Docker | Available on pip |
-| :---------------------------------: | :-----------------: | :--------------: |
-|                Linux                |         Yes         |       Yes        |
-|               Windows               |         Yes         |   Coming soon    |
-|     Windows Subsystem for Linux     |         Yes         |       Yes        |
-|            macOS (Intel)            |         Yes         |       Yes        |
-| macOS (Apple Silicon: M1, M2, etc.) |         Yes         |       Yes        |
+|                 OS / HW                 | Available on Docker | Available on pip |
+| :-------------------------------------: | :-----------------: | :--------------: |
+|                  Linux                  |         Yes         |       Yes        |
+|                 Windows                 |         Yes         |   Coming soon    |
+|       Windows Subsystem for Linux       |         Yes         |       Yes        |
+|            macOS 11+ (Intel)            |         Yes         |       Yes        |
+| macOS 11+ (Apple Silicon: M1, M2, etc.) |         Yes         |       Yes        |
 
 Note: Concrete ML only supports Python `3.8`, `3.9` and `3.10`.
 
@@ -119,15 +119,20 @@ Full, comprehensive documentation is available here: [https://docs.zama.ai/concr
 
 Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, several complete use-cases are explored:
 
+- [Credit Scoring](use_case_examples/credit_scoring/): predicts the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. Shows how Concrete ML models easily replace their scikit-learn equivalents
+
+- [Health diagnosis](use_case_examples/disease_prediction/): based on a patient's symptoms, history and other health factors, gives
+  a diagnosis using FHE to preserve the privacy of the patient.
+
 - [MNIST](use_case_examples/mnist): a Python script and notebook showing quantization-aware training following FHE constraints. A fully-connected neural network is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete ML.
 
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): a notebook, which gives a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 
 - [Sentiment analysis with transformers](use_case_examples/sentiment_analysis_with_transformer): a gradio demo which predicts if a tweet / short message is positive, negative or neutral, with FHE of course! The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on Hugging Face. This [blog post](https://huggingface.co/blog/sentiment-analysis-fhe) explains how this demo works!
 
-- [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar_brevitas_training): code for training from scratch a VGG-like FHE-compatible neural network using Brevitas, and a script to run the neural network in FHE. FHE simulation shows an accuracy of 88.7%, but running inference with FHE is still a work-in-progress.
+- [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar_brevitas_training): code for training from scratch a VGG-like FHE-compatible neural network using Brevitas, and a script to run the neural network in FHE. Execution in FHE takes ~20 minutes per image and shows an accuracy of 88.7%.
 
-- [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar_brevitas_finetuning): series of three notebooks, that show how to convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR data-sets, converted for FHE execution with Concrete ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%. True FHE inference is a work-in-progress.
+- [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar_brevitas_finetuning): series of three notebooks, that show how to convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR data-sets, converted for FHE execution with Concrete ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%.
 
 - [FHE neural network splitting for client/server deployment](use_case_examples/cifar_brevitas_with_model_splitting): we explain how to split a computationally-intensive neural network model in two parts. First, we execute the first part on the client side in the clear, and the output of this step is encrypted. Next, to complete the computation, the second part of the model is evaluated with FHE. This tutorial also shows the impact of FHE speed/accuracy trade-off on CIFAR10, limiting PBS to 8-bit, and thus achieving 62% accuracy.
 
