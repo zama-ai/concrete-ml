@@ -66,7 +66,7 @@ Get the post-processing parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L653"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L640"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwidth_and_range_report`
 
@@ -98,7 +98,7 @@ Check if the quantized module is compiled.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L567"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L554"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile`
 
@@ -132,7 +132,7 @@ Compile the module's forward function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L532"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L519"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -270,7 +270,7 @@ For quantized modules, there is no post-processing step but the method is kept t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L507"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -314,7 +314,7 @@ Forward function for the FHE circuit.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L549"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L536"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_inputs_quantization_parameters`
 
