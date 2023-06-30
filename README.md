@@ -119,6 +119,8 @@ Full, comprehensive documentation is available here: [https://docs.zama.ai/concr
 
 Various tutorials are proposed for the [built-in models](docs/built-in-models/ml_examples.md) and for [deep learning](docs/deep-learning/examples.md). In addition, several complete use-cases are explored:
 
+- [Encrypted Large Language Model](use_case_examples/llm/): convert a user-defined part of a Large Language Model for encrypted text generation. Shows the trade-off between quantization and accuracy for text generation and shows how to run the model in FHE.
+
 - [Credit Scoring](use_case_examples/credit_scoring/): predicts the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. Shows how Concrete ML models easily replace their scikit-learn equivalents
 
 - [Health diagnosis](use_case_examples/disease_prediction/): based on a patient's symptoms, history and other health factors, gives

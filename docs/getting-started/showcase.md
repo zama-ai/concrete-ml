@@ -17,6 +17,18 @@ Simpler tutorials that discuss only model usage and compilation are also availab
    </thead>
    <tbody>
       <tr>
+         <td><strong>GPT-2 in FHE</strong></td>
+         <td>
+            <p></p>
+            <p>Privacy-preserving text generation based on a user's prompt</p>
+         </td>
+         <td></td>
+         <!--- start -->
+         <td><a href="../.gitbook/assets/demo_gpt2.png">health.png</a></td>
+         <td><a href="../../use_case_examples/llm">use_case_examples/llm</a></td>
+         <!--- end -->
+      </tr>        
+      <tr>
          <td><strong>Titanic</strong></td>
          <td>
             <p></p>
@@ -111,6 +123,6 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <td><a href="../.gitbook/assets/demo_health.png">health.png</a></td>
          <td><a href="../../use_case_examples/disease_prediction">use_case_examples/disease_prediction</a></td>
          <!--- end -->
-      </tr>            
+      </tr>      
    </tbody>
 </table>
