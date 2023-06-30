@@ -540,7 +540,7 @@ changelog: check_version_coherence
 	PROJECT_VER="$${PROJECT_VER[1]}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
-.PHONY: release # Create a new release
+.PHONY: release # Create a new release from the private repo
 release: check_version_coherence check_apidocs
 	@PROJECT_VER=($$(poetry version)) && \
 	PROJECT_VER="$${PROJECT_VER[1]}" && \
@@ -549,6 +549,14 @@ release: check_version_coherence check_apidocs
 	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
 	git push origin "refs/tags/$${TAG_NAME}"
 
+.PHONY: public_release # Create a new release from the public repo
+public_release: check_version_coherence check_apidocs
+	@PROJECT_VER=($$(poetry version)) && \
+	PROJECT_VER="$${PROJECT_VER[1]}" && \
+	TAG_NAME="v$${PROJECT_VER}" && \
+	git fetch --tags --force && \
+	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
+	git push public "refs/tags/$${TAG_NAME}"
 
 .PHONY: show_scope # Show the accepted types and optional scopes (for git conventional commits)
 show_scope:
