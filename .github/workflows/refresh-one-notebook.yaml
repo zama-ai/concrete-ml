@@ -30,6 +30,8 @@ on:
         - MnistInFHE \n
         - PerrorImpactOnFMNIST \n
         - PoissonRegression \n
+        - QGPT2Evaluate \n
+        - QuantFrameworkExample \n
         - QuantizationAwareTraining \n
         - RegressorComparison \n
         - SentimentClassification \n
@@ -72,6 +74,8 @@ env:
   MnistInFHE: "use_case_examples/mnist/MnistInFHE.ipynb" 
   PerrorImpactOnFMNIST: "use_case_examples/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
+  QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
+  QuantFrameworkExample: "use_case_examples/llm/QuantFrameworkExample.ipynb" 
   QuantizationAwareTraining: "docs/advanced_examples/QuantizationAwareTraining.ipynb" 
   RegressorComparison: "docs/advanced_examples/RegressorComparison.ipynb" 
   SentimentClassification: "use_case_examples/sentiment_analysis_with_transformer/SentimentClassification.ipynb" 
