@@ -304,8 +304,6 @@ def accuracy_test_rounding(
     quantized_numpy_module_round_low_precision and quantized_numpy_module making sure that the
     rounding feature has the expected behavior on the model accuracy.
     """
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-    assert simulate, "Rounding is not available in FHE yet."
 
     # Check that the maximum_integer_bit_width is at least 4 bits to compare the rounding
     # feature with enough precision.
@@ -393,7 +391,6 @@ def accuracy_test_rounding(
         q_x = tuple(q[[i]] for q in to_tuple(qtest))
 
         # encrypt, run, and decrypt with different precision modes
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
         q_result = quantized_numpy_module.quantized_forward(*q_x, fhe="simulate")
         q_result_high_precision = quantized_numpy_module_round_high_precision.quantized_forward(
             *q_x,

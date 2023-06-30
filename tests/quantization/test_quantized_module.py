@@ -343,11 +343,10 @@ def test_quantized_module_rounding_fhe(model_class, input_shape, default_configu
     # Run quantized_model in simulation
     quantized_model.forward(numpy_test, fhe="simulate")
 
-    # Try to execute the model with rounding in FHE execution mode
-    with pytest.raises(
-        AssertionError, match="Rounding is not currently optimized for execution in FHE"
-    ):
-        quantized_model.forward(numpy_test, fhe="execute")
+    # Execute the model with rounding in FHE execution mode
+    quantized_model.forward(numpy_test, fhe="execute")
+
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3800
 
 
 def quantized_module_predictions_are_equal(

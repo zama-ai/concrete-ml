@@ -470,19 +470,6 @@ class QuantizedModule:
             "executing it in FHE.",
         )
 
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2888
-        # Check if rounding is being executed in FHE, which is not currently optimized
-        # Assert that there are rounding nodes in the circuit graph
-        rounding_nodes = self.fhe_circuit.graph.query_nodes(  # type: ignore[union-attr]
-            operation_filter="round_bit_pattern"
-        )
-
-        assert_true(
-            not rounding_nodes or simulate,
-            "Rounding is not currently optimized for execution in FHE. "
-            "Only simulation is allowed with a rounding operator.",
-        )
-
         results_cnp_circuit_list = []
         for i in range(q_x[0].shape[0]):
 
