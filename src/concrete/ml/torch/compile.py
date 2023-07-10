@@ -3,7 +3,7 @@
 import tempfile
 import warnings
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Sequence, Tuple, Union
 
 import numpy
 import onnx
@@ -118,6 +118,7 @@ def _compile_torch_or_onnx_model(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -142,6 +143,8 @@ def _compile_torch_or_onnx_model(
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
         verbose (bool): whether to show compilation information
+        inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
+            for each input. By default all arguments will be encrypted.
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -186,6 +189,7 @@ def _compile_torch_or_onnx_model(
         p_error=p_error,
         global_p_error=global_p_error,
         verbose=verbose,
+        inputs_encryption_status=inputs_encryption_status,
     )
 
     return quantized_module
@@ -199,11 +203,12 @@ def compile_torch_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -229,6 +234,8 @@ def compile_torch_model(
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
         verbose (bool): whether to show compilation information
+        inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
+            for each input. By default all arguments will be encrypted.
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -261,6 +268,7 @@ def compile_torch_model(
         p_error=p_error,
         global_p_error=global_p_error,
         verbose=verbose,
+        inputs_encryption_status=inputs_encryption_status,
     )
 
 
@@ -272,11 +280,12 @@ def compile_onnx_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits: Union[int, Dict] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -302,6 +311,8 @@ def compile_onnx_model(
         global_p_error (Optional[float]): probability of error of the full circuit. In FHE
             simulation `global_p_error` is set to 0
         verbose (bool): whether to show compilation information
+        inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
+            for each input. By default all arguments will be encrypted.
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -326,6 +337,7 @@ def compile_onnx_model(
         p_error=p_error,
         global_p_error=global_p_error,
         verbose=verbose,
+        inputs_encryption_status=inputs_encryption_status,
     )
 
 
@@ -333,7 +345,7 @@ def compile_onnx_model(
 def compile_brevitas_qat_model(
     torch_model: torch.nn.Module,
     torch_inputset: Dataset,
-    n_bits: Optional[Union[int, dict]] = None,
+    n_bits: Optional[Union[int, Dict[str, int]]] = None,
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -342,6 +354,7 @@ def compile_brevitas_qat_model(
     global_p_error: Optional[float] = None,
     output_onnx_file: Union[None, Path, str] = None,
     verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
@@ -374,6 +387,8 @@ def compile_brevitas_qat_model(
         output_onnx_file (str): temporary file to store ONNX model. If None a temporary file
             is generated
         verbose (bool): whether to show compilation information
+        inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
+            for each input. By default all arguments will be encrypted.
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -476,6 +491,7 @@ def compile_brevitas_qat_model(
         p_error=p_error,
         global_p_error=global_p_error,
         verbose=verbose,
+        inputs_encryption_status=inputs_encryption_status,
     )
 
     # Remove the tempfile if we used one

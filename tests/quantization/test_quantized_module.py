@@ -305,10 +305,14 @@ def test_bitwidth_report(model_class, input_shape, activation_function, default_
             )
 
             # Ensure the value are the expected ones
-            # Disable mypy here as it does not seem to understand that the `range` value is
-            # a tuple in both the report dictionaries
-            assert op_report["range"][0] == expected_report["range"][0]  # type: ignore[index]
-            assert op_report["range"][1] == expected_report["range"][1]  # type: ignore[index]
+            assert isinstance(expected_report, dict)
+            assert isinstance(op_report, dict)
+            op_report_range = op_report["range"]
+            expected_report_range = expected_report["range"]
+            assert isinstance(op_report_range, (tuple, list))
+            assert isinstance(expected_report_range, (tuple, list))
+            assert op_report_range[0] == expected_report_range[0]
+            assert op_report_range[1] == expected_report_range[1]
             assert op_report["bitwidth"] == expected_report["bitwidth"]
 
 
@@ -348,7 +352,105 @@ def test_quantized_module_rounding_fhe(model_class, input_shape, default_configu
     # Execute the model with rounding in FHE execution mode
     quantized_model.forward(numpy_test, fhe="execute")
 
-    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3800
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3800
+
+
+# Extend this test with multi-input encryption status
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4011
+@pytest.mark.parametrize("model_class, input_shape", [pytest.param(FC, (100, 32 * 32 * 3))])
+def test_inputs_encryption_status(model_class, input_shape, default_configuration):
+    """Check that giving inputs_encryption_status work properly."""
+
+    torch_fc_model = model_class(activation_function=nn.ReLU)
+    torch_fc_model.eval()
+
+    # Create random input
+    numpy_input = numpy.random.uniform(size=input_shape)
+    torch_input = torch.from_numpy(numpy_input).float()
+    assert isinstance(torch_input, torch.Tensor)
+    assert isinstance(numpy_input, numpy.ndarray)
+
+    # Compile with rounding activated
+    with pytest.raises(ValueError, match="Missing arguments from '.*', expected 1 arguments."):
+        # Empty status
+        compile_torch_model(
+            torch_fc_model,
+            torch_input,
+            False,
+            default_configuration,
+            n_bits=2,
+            p_error=0.01,
+            rounding_threshold_bits=6,
+            inputs_encryption_status=[],
+        )
+
+    # Wrong encryption status
+    with pytest.raises(
+        ValueError, match="Unexpected status from '.*', expected 'clear' or 'encrypted'."
+    ):
+        compile_torch_model(
+            torch_fc_model,
+            torch_input,
+            False,
+            default_configuration,
+            n_bits=2,
+            p_error=0.01,
+            rounding_threshold_bits=6,
+            inputs_encryption_status=("random",),
+        )
+
+    # Additional argument (error from Concrete Python)
+    with pytest.raises(ValueError, match="Too many arguments in '.*', expected 1 arguments."):
+        compile_torch_model(
+            torch_fc_model,
+            torch_input,
+            False,
+            default_configuration,
+            n_bits=2,
+            p_error=0.01,
+            rounding_threshold_bits=6,
+            inputs_encryption_status=(
+                "encrypted",
+                "encrypted",
+            ),
+        )
+
+    # No encrypted value
+    with pytest.raises(ValueError, match="At least one input should be encrypted but got .*"):
+        compile_torch_model(
+            torch_fc_model,
+            torch_input,
+            False,
+            default_configuration,
+            n_bits=2,
+            p_error=0.01,
+            rounding_threshold_bits=6,
+            inputs_encryption_status=("clear",),
+        )
+
+    # Correct
+    compile_torch_model(
+        torch_fc_model,
+        torch_input,
+        False,
+        default_configuration,
+        n_bits=2,
+        p_error=0.01,
+        rounding_threshold_bits=6,
+        inputs_encryption_status=("encrypted",),
+    )
+
+    # Default (redundant with other test)
+    compile_torch_model(
+        torch_fc_model,
+        torch_input,
+        False,
+        default_configuration,
+        n_bits=2,
+        p_error=0.01,
+        rounding_threshold_bits=6,
+        inputs_encryption_status=None,
+    )
 
 
 def quantized_module_predictions_are_equal(
