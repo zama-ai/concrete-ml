@@ -413,9 +413,7 @@ def train(
 def torch_inference(
     model: nn.Module,
     data: DataLoader,
-    param: Dict,
     device: str = "cpu",
-    k: int = 1,
     verbose: bool = False,
 ) -> float:
 
@@ -424,10 +422,8 @@ def torch_inference(
     Args:
         model (nn.Module): A PyTorch or Brevitas network.
         data (DataLoader): The test or evaluation set.
-        param (Dict): Set of hyper-parameters to use depending on whether
-            CIFAR-10 or CIFAR-100 is used.
-        k (int): Number of most likely outcomes considered to find the correct label.
         device (str): Device type.
+        verbose (bool): For display.
     Returns:
         float: The top_k accuracy.
     """
@@ -456,27 +452,12 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
     Returns:
         Callable: Quantized model.
     """
-    configuration = Configuration(
-        dump_artifacts_on_unexpected_failures=False,
-        # This is for our tests only, never use that in prod.
-        enable_unsafe_features=True,
-        # This is for our tests only, never use that in prod.
-        use_insecure_key_cache=True,
-        insecure_key_cache_location="ConcreteNumpyKeyCache",
-        jit=False,
-    )
 
     qmodel = compile_brevitas_qat_model(
         model.to("cpu"),
         # Training
         torch_inputset=data,
-        configuration=configuration,
         show_mlir=False,
-        # Concrete ML uses table lookup (TLU) to represent any non-linear operation.
-        # This TLU is implemented through the Programmable Bootstrapping (PBS).
-        # A single PBS operation has P_ERROR chances of being incorrect.
-        # Default value = 6.3342483999973e-05.
-        p_error=6.3342483999973e-05,
         output_onnx_file="test.onnx",
     )
 
@@ -519,14 +500,13 @@ def fhe_simulation_inference(quantized_module, data_loader, verbose: bool = Fals
     Args:
         quantized_module (Callable): The quantized module.
         data_loader (int): The test or evaluation set.
-        step (int): Display the accuracy every batch % step.
+        verbose (bool): For display.
 
     Returns:
         float: The accuracy measured through FHE simulation
     """
     correct_sim = []
     total_example = 0
-    start_time = time()
 
     disable_tqdm = not verbose
     for data, labels in tqdm(data_loader, disable=disable_tqdm):
