@@ -71,7 +71,7 @@ Accumulator size is determined by Concrete as being the maximum bit-width encoun
 
 [Quantization Aware Training](../advanced-topics/quantization.md) using [Brevitas](https://github.com/Xilinx/brevitas) is the best way to guarantee a good accuracy for Concrete ML compatible neural networks.
 
-Brevitas provides a quantized version of almost all PyTorch layers (`Linear` layer becomes `QuantLinear`, `ReLU` layer becomes `QuantReLU` and so one), plus some extra quantization parameters, such as :
+Brevitas provides a quantized version of almost all PyTorch layers (`Linear` layer becomes `QuantLinear`, `ReLU` layer becomes `QuantReLU` and so on), plus some extra quantization parameters, such as :
 
 - `bit_width`: precision quantization bits for activations
 - `act_quant`: quantization protocol for the activations

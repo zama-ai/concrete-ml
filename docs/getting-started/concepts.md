@@ -19,7 +19,7 @@ You can find examples of the model development workflow [here](../built-in-model
 1. **client/server deployment:** In a client/server setting, the model can be exported in a way that:
    - allows the client to generate keys, encrypt, and decrypt.
    - provides a compiled model that can run on the server to perform inference on encrypted data.
-1. **key generation:** The data owner (client) needs to generate a pair of private keys (to encrypt/decrypt their data and results) and a public evaluation key (for the model's FHE evaluation on the server).
+1. **key generation:** The data owner (client) needs to generate a set of keys: a private key (to encrypt/decrypt their data and results) and a public evaluation key (for the model's FHE evaluation on the server).
 
 You can find an example of the model deployment workflow [here](../advanced_examples/ClientServer.ipynb).
 
@@ -29,9 +29,10 @@ Concrete ML and Concrete are tools that hide away the details of the underlying 
 
 1. **encryption/decryption:** These operations transform plaintext (i.e., human-readable information) into ciphertext (i.e., data that contains a form of the original plaintext that is unreadable by a human or computer without the proper key to decrypt it). Encryption takes plaintext and an encryption key and produces ciphertext, while decryption is the inverse operation.
 1. **encrypted inference:** FHE allows a third party to execute (i.e., run inference or predict) a machine learning model on encrypted data (a ciphertext). The result of the inference is also encrypted and can only be read by the person who receives the decryption key.
-1. **keys:** A key is a series of bits used within an encryption algorithm for encrypting data so that the corresponding ciphertext appears random.
 1. **key generation:** Cryptographic keys need to be generated using random number generators. Their size may be large and key generation may take a long time. However, keys only need to be generated once for each model used by a client.
-1. **guaranteed correctness of encrypted computations:** To achieve security, TFHE, the underlying encryption scheme, adds random noise as ciphertexts. This can induce errors during processing of encrypted data, depending on noise parameters. By default, Concrete ML uses parameters that ensure the correctness of the encrypted computation, so there is no need to account for noise parametrization. Therefore, the results on encrypted data will be the same as the results of simulation on clear data.
+1. **private key:** A private key is a series of bits used within an encryption algorithm for encrypting data so that the corresponding ciphertext appears random.
+1. **public evaluation key:** A public evaluation key is used to perform homomorphic operations on encrypted data, typically by a server.
+1. **guaranteed correctness of encrypted computations:** To achieve security, TFHE, the underlying encryption scheme, adds random noise to ciphertexts. This can induce errors during processing of encrypted data, depending on noise parameters. By default, Concrete ML uses parameters that ensure the correctness of the encrypted computation, so there is no need to account for noise parametrization. Therefore, the results on encrypted data will be the same as the results of simulation on clear data.
 
 While Concrete ML users only need to understand the cryptography concepts above, for a deeper understanding of the cryptography behind the Concrete stack, please see the [whitepaper on TFHE and Programmable Boostrapping](https://whitepaper.zama.ai/) or [this series of blogs](https://www.zama.ai/post/tfhe-deep-dive-part-1).
 

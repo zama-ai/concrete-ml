@@ -86,9 +86,9 @@ Loading a built-in model is possible through the following functions:
 - `load`: loads the model from a file.
 
 {% hint style="warning" %}
-A loaded model requires to be compiled once again in order to be able to execute the inference in
+A loaded model is required to be compiled once again in order for a user to be able to execute the inference in
 FHE or with simulation. This is because the underlying FHE circuit is currently not serialized.
-There is however no such need when FHE mode is disabled.
+There is not required when FHE mode is disabled.
 {% endhint %}
 
 The above logistic regression model can therefore be loaded as below.

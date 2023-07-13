@@ -6,7 +6,7 @@ Concrete ML has support for quantized ML models and also provides quantization t
 
 The [`QuantizedArray`](./api/concrete.ml.quantization.quantizers.md#class-quantizedarray) class takes several arguments that determine how float values are quantized:
 
-- `n_bits` define the precision of the quantization
+- `n_bits` defines the precision used in quantization
 - `values` are floating point values that will be converted to integers
 - `is_signed` determines if the quantized integer values should allow negative values
 - `is_symmetric` determines if the range of floating point values to be quantized should be taken as symmetric around zero

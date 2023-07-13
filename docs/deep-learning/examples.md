@@ -4,7 +4,7 @@ These examples illustrate the basic usage of Concrete ML to build various types 
 
 ## FHE constraints considerations
 
-The examples listed here make use of [simulation](../advanced-topics/compilation.md#fhe-simulation)) to perform evaluation over large test sets. Since FHE execution can be slow, only a few FHE executions can be performed. The [correctness guarantees](../getting-started/concepts.md#cryptography-concepts) of Concrete ML ensure that accuracy measured with simulation is the same that will be obtained during FHE execution.
+The examples listed here make use of [simulation](../advanced-topics/compilation.md#fhe-simulation) to perform evaluation over large test sets. Since FHE execution can be slow, only a few FHE executions can be performed. The [correctness guarantees](../getting-started/concepts.md#cryptography-concepts) of Concrete ML ensure that accuracy measured with simulation is the same as that which will be obtained during FHE execution.
 
 Some examples constrain accumulators to 7-8 bits, which can be sufficient for simple data-sets. Up to 16-bit accumulators can be used, but this introduces a slowdown of 4-5x compared to 8-bit accumulators.
 
@@ -14,7 +14,7 @@ Some examples constrain accumulators to 7-8 bits, which can be sufficient for si
 
 [<img src="../.gitbook/assets/jupyter_logo.png" width="20px">  Quantization aware training example](../advanced_examples/QuantizationAwareTraining.ipynb)
 
-Shows how to use Quantization Aware Training and pruning when starting out from a classical PyTorch network. This example uses a simple data-set and a small NN, which achieves good accuracy with low accumulator size.
+This shows how to use Quantization Aware Training and pruning when starting out from a classical PyTorch network. This example uses a simple data-set and a small NN, which achieves good accuracy with low accumulator size.
 
 ### 2. Custom convolutional NN on the [Digits](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html) data-set
 

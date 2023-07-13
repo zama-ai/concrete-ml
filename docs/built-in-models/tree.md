@@ -111,15 +111,15 @@ print(f"{(y_pred_fhe == y_pred_clear[:N_TEST_FHE]).sum()} "
 #  1 examples over 1 have an FHE inference equal to the clear inference
 ```
 
-Similarly, the decision boundaries of the Concrete ML model can be plotted, then compared to the results of the classical XGBoost model executed in the clear. A 6-bits model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
+Similarly, the decision boundaries of the Concrete ML model can be plotted and compared to the results of the classical XGBoost model executed in the clear. A 6-bit model is shown in order to illustrate the impact of quantization on classification. Similar plots can be found in the [Classifier Comparison notebook](ml_examples.md).
 
 ![Comparison of clasification decision boundaries between FHE and plaintext models](../figures/xgb_comparison_pipeline.png)
 
 ## Quantization parameters
 
-This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree models. As quantization is done individually on each input feature, the impact of quantization is strongly reduced, and, thus, FHE tree-based models reach similar accuracy as their floating point equivalents. Using 6 bits for quantization makes the Concrete ML model reach or exceed the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
+This graph above shows that, when using a sufficiently high bit-width, quantization has little impact on the decision boundaries of the Concrete ML FHE decision tree models. As quantization is done individually on each input feature, the impact of quantization is strongly reduced. This means that FHE tree-based models reach a similar level of accuracy as their floating point equivalents. Using 6 bits for quantization means that the Concrete ML model reaches, or exceeds, the floating point accuracy. The number of bits for quantization can be adjusted through the `n_bits` parameter.
 
-When `n_bits` is set low, the quantization process may sometimes create some artifacts that could decrease in performance, but the execution speed in FHE decreases. In this way, it is possible to adjust the accuracy/speed trade-off, and some accuracy can be recovered by increasing the `n_estimators`.
+When `n_bits` is set to a low value, the quantization process may sometimes create some artifacts that could lead to a decrease in accuracy. At the same time, the execution speed in FHE could improve. In this way, it is possible to adjust the accuracy/speed trade-off, and some accuracy can be recovered by increasing the `n_estimators` parameter.
 
 The following graph shows that using 5-6 bits of quantization is usually sufficient to reach the performance of a non-quantized XGBoost model on floating point data. The metrics plotted are accuracy and F1-score on the `spambase` data-set.
 
@@ -129,8 +129,8 @@ The following graph shows that using 5-6 bits of quantization is usually suffici
 
 The inference time in FHE is strongly dependant on the maximum circuit bit-width. For trees, in most cases, the quantization bit-width
 will be the same as the circuit bit-width. Therefore, reducing the quantization bit-width to 4 or less will result in fast inference times.
-Adding more bits will increase FHE inference exponentially.
+Adding more bits will increase FHE inference time exponentially.
 
-In more rare cases, the bit-width of the circuit can be higher than the quantization bit-width: when the quantization bit-width is low but the tree-depth is high. In such cases, the circuit bit-width is upper bounded by `ceil(log2(max_depth + 1) + 1)`.
+In some rare cases, the bit-width of the circuit can be higher than the quantization bit-width. This could happen when the quantization bit-width is low but the tree-depth is high. In such cases, the circuit bit-width is upper bounded by `ceil(log2(max_depth + 1) + 1)`.
 
 For more information on the inference time of FHE decision trees and tree-ensemble models please see [Privacy-Preserving Tree-Based Inference with Fully Homomorphic Encryption, arXiv:2303.01254](https://arxiv.org/abs/2303.01254).

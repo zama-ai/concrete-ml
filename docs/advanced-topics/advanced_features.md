@@ -26,13 +26,13 @@ In Concrete ML, there are three different ways to define the error probability:
 
 The first way to set error probabilities in Concrete ML is at the local level, by directly setting the probability of error of each individual TLU. This probability is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being successful. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear.
 
-For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so the `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../getting-started/showcase.md)).
+For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
 Here is a visualization of the effect of the `p_error` on a neural network model with a `p_error = 0.1` compared to execution in the clear (i.e., no error):
 
 ![Impact of p_error in a Neural Network](../figures/p_error_nn.png)
 
-Varying the `p_error` in the one hidden-layer neural network above produces the following inference times. Increasing `p_error` to 0.1 halves the inference time with respect to a `p_error` of 0.001. In the graph above, the decision boundary becomes noisier with higher `p_error`.
+Varying `p_error` in the one hidden-layer neural network above produces the following inference times. Increasing `p_error` to 0.1 halves the inference time with respect to a `p_error` of 0.001. In the graph above, the decision boundary becomes noisier with a higher `p_error`.
 
 | p_error | Inference Time (ms) |
 | :-----: | ------------------- |
@@ -40,7 +40,7 @@ Varying the `p_error` in the one hidden-layer neural network above produces the 
 |  0.01   | 0.41                |
 |   0.1   | 0.37                |
 
-The speedup depends on model complexity, but, in an iterative approach, it is possible to search for a good value of `p_error` to obtain a speedup while maintaining good accuracy. Concrete ML provides a tool to find a good `p_error` based on [binary search](advanced_features.md#searching-for-the-best-error-probability) algorithm.
+The speedup depends on model complexity, but, in an iterative approach, it is possible to search for a good value of `p_error` to obtain a speedup while maintaining good accuracy. Concrete ML provides a tool to find a good value for `p_error` based on [binary search](advanced_features.md#searching-for-the-best-error-probability).
 
 Users have the possibility to change this `p_error` by passing an argument to the `compile` function of any of the models. Here is an example:
 
@@ -61,7 +61,7 @@ clf.fit(X_train, y_train)
 clf.compile(X_train, p_error=0.1)
 ```
 
-If the `p_error` value is specified and the [simulation](compilation.md#fhe-simulation) is enabled, the run will take into account the randomness induced by the `p_error`, resulting in statistical similarity to the FHE evaluation.
+If the `p_error` value is specified and [simulation](compilation.md#fhe-simulation) is enabled, the run will take into account the randomness induced by the choice of `p_error`. This results in statistical similarity to the FHE evaluation.
 
 ### A global error probability for the entire model
 
@@ -86,7 +86,7 @@ If neither `p_error` or `global_p_error` are set, Concrete ML employs `p_error =
 
 ### Searching for the best error probability
 
-Currently finding a good `p_error` value _a-priori_ is not possible, as it is difficult to determine the impact of the TLU error on the output of a neural network. Concrete ML provides a tool to find a good `p_error` value that improves inference speed while maintaining accuracy. The method is based on binary search, evaluating the latency/accuracy trade-off iteratively.
+Currently finding a good `p_error` value _a-priori_ is not possible, as it is difficult to determine the impact of the TLU error on the output of a neural network. Concrete ML provides a tool to find a good `p_error` value that improves inference speed while maintaining accuracy. The method is based on binary search and evaluates the latency/accuracy trade-off iteratively.
 
 ```python
 from time import time
@@ -148,7 +148,7 @@ print(f"Accuracy = {accuracy_score(y_pred, y_train): .2%}")
 
 With this optimal `p_error`, accuracy is maintained while execution time is improved by a factor of 1.51.
 
-Please note that the default setting for the search interval is restricted to a range of 0.0 and 0.9. Increasing the upper bound beyond this range may result in longer execution times, especially when `p_error≈1`.
+Please note that the default setting for the search interval is restricted to a range of 0.0 to 0.9. Increasing the upper bound beyond this range may result in longer execution times, especially when `p_error≈1`.
 
 ## Rounded activations and quantizers
 
@@ -172,7 +172,7 @@ In Concrete ML, this feature is currently implemented for custom neural networks
 - `concrete.ml.torch.compile_onnx_model` and
 - `concrete.ml.torch.compile_brevitas_qat_model`.
 
-using `rounding_threshold_bits` argument can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors, it is possible to speed-up computations while maintaining accuracy.
+The `rounding_threshold_bits` argument can be set to a specific bit-width. It is important to choose an appropriate bit-width threshold to balance the trade-off between speed and accuracy. By reducing the bit-width of intermediate tensors, it is possible to speed-up computations while maintaining accuracy.
 
 {% hint style="warning" %}
 The `rounding_threshold_bits` parameter only works in FHE for TLU input bit-width ($$P$$) **less or equal to 8 bits**.
@@ -299,13 +299,13 @@ In this latter optimization, the following information will be provided:
 
 - The bit-width ("6-bit integers") used in the program: for the moment, the compiler only supports a single precision (i.e., that all PBS are promoted to the same bit-width - the largest one). Therefore, this bit-width predominantly drives the speed of the program, and it is essential to reduce it as much as possible for faster execution.
 - The maximal norm2 ("7 manp"), which has an impact on the crypto parameters: The larger this norm2, the slower PBS will be. The norm2 is related to the norm of some constants appearing in your program, in a way which will be clarified in the Concrete documentation.
-- The probability of error of an individual PBS, which was requested by the user ("3.300000e-02 error per pbs call" in User Config)
-- The probability of error of the full circuit, which was requested by the user ("1.000000e+00 error per circuit call" in User Config): Here, the probability 1 stands for "not used", since we had set the individual probability.
-- The probability of error of an individual PBS, which is found by the optimizer ("1/30 errors (3.234529e-02)"
-- The probability of error of the full circuit which is found by the optimizer ("1/10 errors (9.390887e-02)")
+- The probability of error of an individual PBS, which was requested by the user ("3.300000e-02 error per pbs call" in User Config).
+- The probability of error of the full circuit, which was requested by the user ("1.000000e+00 error per circuit call" in User Config). Here, the probability 1 stands for "not used", since we had set the individual probability via `p_error`.
+- The probability of error of an individual PBS, which is found by the optimizer ("1/30 errors (3.234529e-02)").
+- The probability of error of the full circuit which is found by the optimizer ("1/10 errors (9.390887e-02)").
 - An estimation of the cost of the circuit ("4.214000e+02 Millions Operations"): Large values indicate a circuit that will execute more slowly.
 
-Here is some further information about cryptographic parameters, for cryptographers only:
+Here is some further information about cryptographic parameters:
 
 - 1x glwe_dimension
 - 2\*\*11 polynomial (2048)
