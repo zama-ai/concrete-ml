@@ -40,8 +40,10 @@ psutil, 5.9.5, BSD License
 pydantic, 1.10.8, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
 python-multipart, 0.0.6, Apache Software License
+regex, 2023.5.5, Apache Software License
 requests, 2.31.0, Apache Software License
 s3transfer, 0.6.1, Apache Software License
+safetensors, 0.3.1, Apache Software License
 scikit-learn, 1.1.3, BSD License
 scipy, 1.10.1, BSD License
 six, 1.16.0, MIT License
@@ -53,8 +55,10 @@ starlette, 0.25.0, BSD License
 sympy, 1.12, BSD License
 tabulate, 0.8.10, MIT License
 threadpoolctl, 3.1.0, BSD License
+tokenizers, 0.13.3, Apache Software License
 torch, 1.13.1, BSD License
 tqdm, 4.65.0, MIT License; Mozilla Public License 2.0 (MPL 2.0)
+transformers, 4.31.0, Apache Software License
 typing_extensions, 4.4.0, Python Software Foundation License
 urllib3, 1.26.16, MIT License
 uvicorn, 0.21.1, BSD License

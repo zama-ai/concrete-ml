@@ -97,6 +97,9 @@ def build_quantized_module(
     post_training_quant = post_training(n_bits, numpy_model, rounding_threshold_bits)
 
     # Build the quantized module
+    # TODO: mismatch here. We traced with dummy_input_for_tracing which made some operator
+    # only work over shape of (1, ., .). For example, some reshape have newshape hardcoded based
+    # on the inputset we sent in the NumpyModule.
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
 
     return quantized_module
