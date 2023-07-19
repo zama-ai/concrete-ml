@@ -61,8 +61,8 @@ def main(args):
     with open(pyproject_path, encoding="utf-8") as f:
         pyproject_content = tomlkit.loads(f.read())
 
-    project_deps = pyproject_content["tool"]["poetry"]["dependencies"]
-    pkg_infos = project_deps.get(pkg_name, None)
+    project_deps = pyproject_content["tool"]["poetry"]["dependencies"]  # type: ignore[index]
+    pkg_infos = project_deps.get(pkg_name, None)  # type: ignore[union-attr]
     if pkg_infos is None:
         raise RuntimeError(f"No {pkg_name} in the project dependencies.")
 
