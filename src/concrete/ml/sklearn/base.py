@@ -60,11 +60,13 @@ from .tree_to_numpy import tree_to_numpy
 # Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
+from hummingbird.ml.operator_converters import constants
 
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
 _TREE_MODELS: Set[Type] = set()
 _NEURALNET_MODELS: Set[Type] = set()
+_NEIGHBORS_MODELS: Set[Type] = set()
 
 # Define the supported types for both the input data and the target values. Since the Pandas
 # library is currently only a dev dependencies, we cannot import it. We therefore need to use type
@@ -1689,4 +1691,286 @@ class SklearnLinearClassifierMixin(
     def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         y_logits = self.decision_function(X, fhe=fhe)
         y_proba = self.post_processing(y_logits)
+        return y_proba
+
+
+# pylint: disable=invalid-name,too-many-instance-attributes
+# from sklearn.neighbors._base import NeighborsBase
+class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
+    """A Mixin class for sklearn neighbors models with FHE.
+
+    This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
+    `get_params` and `set_params` methods.
+    """
+
+    def __init_subclass__(cls):
+        for klass in cls.__mro__:
+            # pylint: disable-next=protected-access
+            if getattr(klass, "_is_a_public_cml_model", False):
+                _NEIGHBORS_MODELS.add(cls)
+                _ALL_SKLEARN_MODELS.add(cls)
+
+    def __init__(self, n_bits: Union[int, Dict[str, int]] = 8):
+        """Initialize the FHE KNeighbors model.
+
+        Args:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+        for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+        passed, then it should contain "op_inputs" and "op_weights" as keys with
+        corresponding number of quantization bits so that:
+        - op_inputs : number of bits to quantize the input values
+        - op_weights: number of bits to quantize the learned parameters
+        Default to 8.
+        """
+        self.n_bits: Union[int, Dict[str, int]] = n_bits
+
+        #: The quantizer to use for quantizing the model's weights
+        self._weight_quantizer: Optional[UniformQuantizer] = None
+
+        #: The model's quantized data points
+        self._q_points: Optional[numpy.ndarray] = None
+
+        BaseEstimator.__init__(self)
+
+    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+        test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        self.onnx_model_ = hb_convert(
+            self.sklearn_model,
+            backend="onnx",
+            test_input=test_input,
+            # https://github.com/microsoft/hummingbird/issues/422
+            extra_config={
+                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+                 constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],
+            },
+        ).model
+
+        self._clean_graph()
+
+    def _clean_graph(self) -> None:
+        """Clean the ONNX graph from undesired nodes."""
+        
+        assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
+        # Remove cast operators as they are not needed
+        remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
+
+    def fit(self, X: Data, y: Target, **fit_parameters):
+        # Reset for double fit
+        self._is_fitted = False
+
+        # LinearRegression handles multi-labels data
+        X, y = check_X_y_and_assert_multi_output(X, y)
+
+        # Fit the scikit-learn model
+        self._fit_sklearn_model(X, y, **fit_parameters)
+
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        # Retrieve the ONNX graph
+        self._set_onnx_model(X)
+
+        # Convert the n_bits attribute into a proper dictionary
+        n_bits = get_n_bits_dict(self.n_bits)
+
+        input_n_bits = n_bits["op_inputs"]
+        input_options = QuantizationOptions(n_bits=input_n_bits, is_signed=True)
+
+        # Quantize the inputs and store the associated quantizer
+        q_inputs = QuantizedArray(n_bits=input_n_bits, values=X, options=input_options)
+        input_quantizer = q_inputs.quantizer
+        self.input_quantizers.append(input_quantizer)
+
+        weights_n_bits = n_bits["op_weights"]
+        weight_options = QuantizationOptions(n_bits=weights_n_bits, is_signed=True)
+
+        # Quantize the weights and store the associated quantizer
+        # Transpose and expand are necessary in order to make sure the weight array has the correct
+        # shape when calling the Gemm operator on it
+        points = self.sklearn_model._fit_X
+        q_points = QuantizedArray(
+            n_bits=n_bits["op_weights"],
+            values=numpy.expand_dims(points, axis=1) if len(points.shape) == 1 else points,
+            options=weight_options,
+        )
+        self._q_points = q_points.qvalues
+        weight_quantizer = q_points.quantizer
+        self._weight_quantizer = weight_quantizer
+
+        # mypy
+        assert input_quantizer.scale is not None
+        assert weight_quantizer.scale is not None
+
+        # Compute the scale and zero-point of the matmul's outputs, following the same steps from
+        # the QuantizedGemm operator, which are based on equations detailed in
+        # https://arxiv.org/abs/1712.05877
+
+        output_quant_params = UniformQuantizationParameters(
+            scale=input_quantizer.scale * weight_quantizer.scale,
+            zero_point=input_quantizer.zero_point
+            * (
+                numpy.sum(self._q_points, axis=0, keepdims=True)
+                - X.shape[1] * weight_quantizer.zero_point
+            ),
+            offset=0,
+        )
+
+        output_quantizer = UniformQuantizer(params=output_quant_params, no_clipping=True)
+
+        # Since the matmul and the bias both use the same scale and zero-points, we obtain that
+        # y = S*(q_y - 2*Z) when de-quantizing the values. We therefore need to multiply the initial
+        # output zero_point by 2
+        assert output_quantizer.zero_point is not None
+        output_quantizer.zero_point *= 2
+        self.output_quantizers.append(output_quantizer)
+
+        # Updating post-processing parameters
+        self._set_post_processing_params()
+
+        self._is_fitted = True
+
+        return self
+
+    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+        q_X = self.input_quantizers[0].quant(X)
+
+        assert q_X.dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        return q_X
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+
+        # De-quantize the output values
+        y_preds = self.output_quantizers[0].dequant(q_y_preds)
+
+        return y_preds
+
+    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+        # Define the inference function to compile.
+        # This function can neither be a class method nor a static one because self we want to avoid
+        # having self as a parameter while still being able to access some of its attribute
+        def inference_to_compile(q_X: numpy.ndarray) -> numpy.ndarray:
+            """Compile the circuit in FHE using only the inputs as parameters.
+
+            Args:
+            q_X (numpy.ndarray): The quantized input data
+
+            Returns:
+            numpy.ndarray: The circuit is outputs.
+            """
+            return self._inference(q_X)
+
+        # Create the compiler instance
+        compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
+
+        return compiler
+
+
+    def kneighbors(self, X=None, n_neighbors=None, return_distance=True):
+        pass
+
+    def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
+        print("_inference ici")
+        print(q_X.shape)
+        print(q_X[:3])
+
+        assert self.sklearn_model.weights == "uniform", "uniform only, NTM"
+        
+        neigh_dist, neigh_ind = self.kneighbors(q_X)
+
+        classes_ = self.classes_
+        _y = self._y
+
+        #n_queries = _num_samples(X)
+
+        # weights = _get_weights(neigh_dist, self.weights)
+        # if weights is None:
+        #     weights = np.ones_like(neigh_ind)
+
+        # all_rows = np.arange(n_queries)
+        # probabilities = []
+        # for k, classes_k in enumerate(classes_):
+        #     pred_labels = _y[:, k][neigh_ind]
+        #     proba_k = np.zeros((n_queries, classes_k.size))
+
+        #     # a simple ':' index doesn't work right
+        #     for i, idx in enumerate(pred_labels.T):  # loop is O(n_neighbors)
+        #         proba_k[all_rows, idx] += weights[:, i]
+
+        #     # normalize 'votes' into real [0,1] probabilities
+        #     normalizer = proba_k.sum(axis=1)[:, np.newaxis]
+        #     normalizer[normalizer == 0.0] = 1.0
+        #     proba_k /= normalizer
+
+        #     probabilities.append(proba_k)
+
+        # if not self.outputs_2d_:
+        #     probabilities = probabilities[0]
+
+        # return probabilities
+        return q_X @ self._q_points.T
+
+class SklearnKNeighborsClassifierMixin(
+    BaseClassifier, SklearnKNeighborsMixin, sklearn.base.ClassifierMixin, sklearn.neighbors._base.NeighborsBase, ABC
+):
+    """A Mixin class for sklearn neighbors classifiers with FHE.
+
+    This class is used to create a neighbors classifier class that inherits from
+    sklearn.base.ClassifierMixin, which essentially gives access to scikit-learn's `score` method
+    for classifiers.
+
+    Additionally, this class adjusts some of the tree-based base class's methods in order to make
+    them compliant with classification workflows.
+    """
+
+    def _clean_graph(self) -> None:
+        assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
+
+        # Remove any operators following gemm, as they will be done in the clear
+        assert self.onnx_model_ is not None
+        # There is no Gemm node
+        try:
+            clean_graph_after_node_op_type(self.onnx_model_, node_op_type="Gemm")
+        except ValueError:
+            print('No Gemm node in the graph') 
+        SklearnKNeighborsMixin._clean_graph(self)
+
+    def predict(
+        self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE
+    ) -> numpy.ndarray:
+        """Predict confidence scores.
+
+        Args:
+        X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+        or List.
+        fhe (Union[FheMode, str]): The mode to use for prediction.
+        Can be FheMode.DISABLE for Concrete ML Python inference,
+        FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+        Can also be the string representation of any of these values.
+        Default to FheMode.DISABLE.
+
+        Returns:
+        numpy.ndarray: The predicted confidence scores.
+        """
+        # Here, we want to use SklearnKNeighborsMixin's `predict` method as confidence scores are
+        # the dot product's output values, without any post-processing
+        # TODO
+        y_preds = SklearnKNeighborsMixin.predict(self, X, fhe=fhe)
+        return y_preds
+
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        # TODO
+        y_predict = self.predict(X, fhe=fhe)
+        y_proba = self.post_processing(y_predict)
         return y_proba
