@@ -3,11 +3,11 @@ from typing import Any, Dict
 
 import sklearn.linear_model
 
-from .base import SklearnKNeighborsClassifierMixin
+from .base import SklearnKNeighborsMixin
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
-class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
+class KNeighborsClassifier(SklearnKNeighborsMixin):
     """A k-nearest classifier model with FHE.
 
     Parameters:
@@ -49,7 +49,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         self.metric = metric
         self.metric_params = metric_params
         self.n_jobs = n_jobs
-
         self.weights = weights
 
     def dump_dict(self) -> Dict[str, Any]:
@@ -83,6 +82,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["metric"] = self.metric
         metadata["metric_params"] = self.metric_params
         metadata["n_jobs"] = self.n_jobs
+        print(self._fit_X)
 
         return metadata
 
