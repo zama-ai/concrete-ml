@@ -1878,21 +1878,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         print("TOP K")
         return numpy.argsort(distance_matrix, 1)[:,:k] #0 ou 1
 
-        # Get the number of queries (rows) and points (columns)
-        n_queries, n_points = distance_matrix.shape
-        
-        # Initialize an array to store the top-k indices for each query
-        top_k_indices_array = np.empty((n_queries, k), dtype=int)
-        
-        for i in range(n_queries):
-            print("$$$$$$$", i)
-            # Sort the distances for the current query and get the indices of the sorted elements
-            sorted_indices = np.argsort(distance_matrix[i])
-            print(distance_matrix[i])
-            # Get the top-k indices for the current query and store them in the result array
-            top_k_indices_array[i] = sorted_indices[:k]
-        
-        return top_k_indices_array
 
     def majority_vote(self, nearest_classes):
         # Get the number of queries (rows) and k (number of nearest points)
@@ -1912,14 +1897,25 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
 
         # Quantizing weights and inputs makes an additional term appear in the inference function
-        print(q_X.shape, self._q_weights.shape)
+        print("ici", "q_X.shape", q_X.shape, "self._q_weights.shape", self._q_weights.shape)
 
-        distances_matrix = q_X @ self._q_weights # TODO: replace with real minkovski distance 
+        #distances_matrix = q_X @ self._q_weights # TODO: replace with real minkovski distance 
+
+        # sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
         #from sklearn.metrics.pairwise import euclidean_distances
         # y_pred = euclidean_distances(q_X, self._q_weights.T)
 
-        self.distances_matrix = distances_matrix
-        return distances_matrix
+        distances = []
+        for x_i in q_X:
+            distance_xi = []
+            print(f"{x_i.shape=}")
+            for point_i in self._q_weights:
+                print(f"{point_i.shape=}")
+                distance_xi.append(np.sqrt(np.dot(x_i, x_i) - 2 * np.dot(x_i, point_i) + np.dot(point_i, point_i)))
+            distances.append(distance_xi)
+
+        self.distances_matrix =  np.array(distances)
+        return self.distances_matrix
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
         distances_matrix = super().predict(X, fhe)
