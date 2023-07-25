@@ -1267,11 +1267,12 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
+        self.input_quantizers = []
+        self.output_quantizers = []
 
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         q_X = numpy.zeros_like(X)
-        self.input_quantizers = []
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -1486,6 +1487,8 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
+        self.input_quantizers = []
+        self.output_quantizers = []
 
         # LinearRegression handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)

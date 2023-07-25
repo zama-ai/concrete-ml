@@ -27,6 +27,8 @@ Are currently missing
 More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
+import copy
+
 # pylint: disable=too-many-lines, too-many-arguments
 import json
 import tempfile
@@ -214,7 +216,7 @@ def check_correctness_with_sklearn(
         check_r2_score(y_pred_sklearn, y_pred_cml, acceptance_score=acceptance_r2score)
 
 
-def check_double_fit(model_class, n_bits, x, y):
+def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
     """Check double fit."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
@@ -222,24 +224,84 @@ def check_double_fit(model_class, n_bits, x, y):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
-        # First fit: here, we really need to fit, we can't reuse an already fitted model
+        # Set the torch seed manually before fitting a neural network
         if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
 
             # Generate a seed for PyTorch
             main_seed = numpy.random.randint(0, 2**63)
             torch.manual_seed(main_seed)
 
-        model.fit(x, y)
-        y_pred_one = model.predict(x)
+        # Fit and predict on the first dataset
+        model.fit(x_1, y_1)
+        y_pred_1 = model.predict(x_1)
 
-        # Second fit: here, we really need to fit, we can't reuse an already fitted model
+        # Store the input and output quantizers
+        input_quantizers_1 = copy.copy(model.input_quantizers)
+        output_quantizers_1 = copy.copy(model.output_quantizers)
+
+        # Set the same torch seed manually before re-fitting the neural network
         if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
             torch.manual_seed(main_seed)
 
-        model.fit(x, y)
-        y_pred_two = model.predict(x)
+        # Re-fit on the second dataset
+        model.fit(x_2, y_2)
 
-    assert numpy.array_equal(y_pred_one, y_pred_two)
+        # Check that predictions are different
+        y_pred_2 = model.predict(x_2)
+        assert not numpy.array_equal(y_pred_1, y_pred_2)
+
+        # Store the new input and output quantizers
+        input_quantizers_2 = copy.copy(model.input_quantizers)
+        output_quantizers_2 = copy.copy(model.output_quantizers)
+
+        # Random forest and decision tree classifiers can have identical output_quantizers
+        # This is because targets are integers, while these models have a fixed output
+        # precision, which leads the output scale to be the same between models with similar target
+        # classes range
+        if is_model_class_in_a_list(
+            model_class,
+            get_sklearn_tree_models(
+                classifier=True, str_in_class_name=["RandomForest", "DecisionTree"]
+            ),
+        ):
+            quantizers_1 = input_quantizers_1
+            quantizers_2 = input_quantizers_2
+        else:
+            quantizers_1 = input_quantizers_1 + output_quantizers_1
+            quantizers_2 = input_quantizers_2 + output_quantizers_2
+
+        # Check that the new quantizers are different from the first ones. This is because we
+        # currently expect all quantizers to be re-computed when re-fitting a model
+        assert all(
+            quantizer_1 != quantizer_2
+            for (quantizer_1, quantizer_2) in zip(quantizers_1, quantizers_2)
+        )
+
+        # Set the same torch seed manually before re-fitting the neural network
+        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+            torch.manual_seed(main_seed)
+
+        # Re-fit on the first dataset again
+        model.fit(x_1, y_1)
+
+        # Check that predictions are identical to the first ones
+        y_pred_3 = model.predict(x_1)
+        assert numpy.array_equal(y_pred_1, y_pred_3)
+
+        # Store the new input and output quantizers
+        input_quantizers_3 = copy.copy(model.input_quantizers)
+        output_quantizers_3 = copy.copy(model.output_quantizers)
+
+        # Check that the new quantizers are identical from the first ones. Again, we expect the
+        # quantizers to be re-computed when re-fitting. Since we used the same dataset as the first
+        # fit, we also expect these quantizers to be the same.
+        assert all(
+            quantizer_1 == quantizer_3
+            for (quantizer_1, quantizer_3) in zip(
+                input_quantizers_1 + output_quantizers_1,
+                input_quantizers_3 + output_quantizers_3,
+            )
+        )
 
 
 def check_serialization(model, x, use_dump_method):
@@ -1178,12 +1240,15 @@ def test_double_fit(
     verbose=True,
 ):
     """Test Double fit."""
-    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Generate two different datasets
+    x_1, y_1 = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+    x_2, y_2 = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_double_fit")
 
-    check_double_fit(model_class, n_bits, x, y)
+    check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2)
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)

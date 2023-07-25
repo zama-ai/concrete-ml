@@ -1,4 +1,6 @@
 """Import sklearn models."""
+from typing import List
+
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import is_classifier_or_partial_classifier, is_regressor_or_partial_regressor
 from .base import _ALL_SKLEARN_MODELS, _LINEAR_MODELS, _NEURALNET_MODELS, _TREE_MODELS
@@ -33,15 +35,15 @@ def get_sklearn_models():
     return ans
 
 
-def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name: str = None):
+def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name: List[str] = None):
     """Return the models which are in prelist and follow (classifier, regressor) conditions.
 
     Args:
         prelist: list of models
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
-        str_in_class_name (str): if not None, only return models with this as a substring in the
-            class name
+        str_in_class_name (List[str]): if not None, only return models with the given string or
+            list of strings as a substring in their class name
 
     Returns:
         the sublist which fulfills the (classifier, regressor, str_in_class_name) conditions.
@@ -58,7 +60,11 @@ def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name
         answer += [m for m in prelist if is_regressor_or_partial_regressor(m)]
 
     if str_in_class_name is not None:
-        answer = [m for m in answer if str_in_class_name in m.__name__]
+        if isinstance(str_in_class_name, str):
+            str_in_class_name = [str_in_class_name]
+
+        for name in str_in_class_name:
+            answer += [m for m in answer if name in m.__name__]
 
     # We return a sorted list such that it is ordered, to avoid notably issues when it is used
     # in @pytest.mark.parametrize
@@ -66,15 +72,15 @@ def _filter_models(prelist, classifier: bool, regressor: bool, str_in_class_name
 
 
 def get_sklearn_linear_models(
-    classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
+    classifier: bool = True, regressor: bool = True, str_in_class_name: List[str] = None
 ):
     """Return the list of available linear models in Concrete ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
-        str_in_class_name (str): if not None, only return models with this as a substring in the
-            class name
+        str_in_class_name (List[str]): if not None, only return models with the given string or
+            list of strings as a substring in their class name
 
     Returns:
         the lists of linear models in Concrete ML
@@ -84,15 +90,15 @@ def get_sklearn_linear_models(
 
 
 def get_sklearn_tree_models(
-    classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
+    classifier: bool = True, regressor: bool = True, str_in_class_name: List[str] = None
 ):
     """Return the list of available tree models in Concrete ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
-        str_in_class_name (str): if not None, only return models with this as a substring in the
-            class name
+        str_in_class_name (List[str]): if not None, only return models with the given string or
+            list of strings as a substring in their class name
 
     Returns:
         the lists of tree models in Concrete ML
@@ -102,15 +108,15 @@ def get_sklearn_tree_models(
 
 
 def get_sklearn_neural_net_models(
-    classifier: bool = True, regressor: bool = True, str_in_class_name: str = None
+    classifier: bool = True, regressor: bool = True, str_in_class_name: List[str] = None
 ):
     """Return the list of available neural net models in Concrete ML.
 
     Args:
         classifier (bool): whether you want classifiers or not
         regressor (bool): whether you want regressors or not
-        str_in_class_name (str): if not None, only return models with this as a substring in the
-            class name
+        str_in_class_name (List[str]): if not None, only return models with the given string or
+            list of strings as a substring in their class name
 
     Returns:
         the lists of neural net models in Concrete ML
