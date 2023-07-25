@@ -322,6 +322,8 @@ def test_quantized_module_rounding_fhe(model_class, input_shape, default_configu
     # Create random input
     numpy_input = numpy.random.uniform(size=input_shape)
     torch_input = torch.from_numpy(numpy_input).float()
+    assert isinstance(torch_input, torch.Tensor)
+    assert isinstance(numpy_input, numpy.ndarray)
     numpy_test = numpy_input[:1]
 
     # First test a model that is not compiled

@@ -8,6 +8,7 @@ import tempfile
 # pylint: disable=too-many-lines,invalid-name
 import warnings
 from abc import ABC, abstractmethod
+from functools import partial
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
@@ -18,7 +19,6 @@ import sklearn
 import skorch.net
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
-from concrete.fhe import ParameterSelectionStrategy
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -30,10 +30,13 @@ from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_m
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
+    USE_OLD_VL,
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
+    force_mono_parameter_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
+    set_multi_parameter_in_configuration,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
@@ -543,6 +546,8 @@ class BaseEstimator:
             f"{type(module_to_compile)}."
         )
 
+        # Jit compiler is now deprecated and will soon be removed, it is thus forced to False
+        # by default
         self.fhe_circuit = module_to_compile.compile(
             inputset,
             configuration=configuration,
@@ -552,8 +557,15 @@ class BaseEstimator:
             global_p_error=global_p_error,
             verbose=verbose,
             single_precision=False,
-            parameter_selection_strategy=ParameterSelectionStrategy.MONO,
+            fhe_simulation=False,
+            fhe_execution=True,
+            jit=False,
         )
+
+        # CRT simulation is not supported yet
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3841
+        if not USE_OLD_VL:
+            self.fhe_circuit.enable_fhe_simulation()  # pragma: no cover
 
         self._is_compiled = True
 
@@ -618,13 +630,29 @@ class BaseEstimator:
                 # is of shape (n_features,)
                 q_X_i = numpy.expand_dims(q_X_i, 0)
 
-                # Disable mypy's union attribute error as we already check that fhe_circuit is not
-                # None using check_model_is_compiled
-                q_y_pred_i = (
-                    self.fhe_circuit.simulate(q_X_i)  # type: ignore[union-attr]
-                    if fhe == "simulate"
-                    else self.fhe_circuit.encrypt_run_decrypt(q_X_i)  # type: ignore[union-attr]
-                )
+                # For mypy, even though we already check this with self.check_model_is_compiled()
+                assert self.fhe_circuit is not None
+
+                # If the inference should be executed using simulation
+                if fhe == "simulate":
+
+                    # If the old simulation method should be used
+                    if USE_OLD_VL:
+                        predict_method = partial(
+                            self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
+                        )
+
+                    # Else, use the official simulation method
+                    else:
+                        predict_method = self.fhe_circuit.simulate  # pragma: no cover
+
+                # Else, use the FHE execution method
+                else:
+                    predict_method = self.fhe_circuit.encrypt_run_decrypt
+
+                # Execute the inference in FHE or with simulation
+                q_y_pred_i = predict_method(q_X_i)
+
                 q_y_pred_list.append(q_y_pred_i[0])
 
             q_y_pred = numpy.array(q_y_pred_list)
@@ -1307,6 +1335,27 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def compile(self, *args, **kwargs) -> Circuit:
+
+        # Factorize this in the base class once Concrete Python fixes the multi-parameter bug
+        # with fully-leveled circuits
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
+        # Remove this function once the default strategy is set to multi-parameter in Concrete
+        # Python
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3860
+        # If a configuration instance is given as a positional parameter, set the strategy to
+        # multi-parameter
+        if len(args) >= 2:
+            configuration = set_multi_parameter_in_configuration(args[1])
+            args_list = list(args)
+            args_list[1] = configuration
+            args = tuple(args_list)
+
+        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
+        # strategy to multi-parameter
+        else:
+            configuration = kwargs.get("configuration", None)
+            kwargs["configuration"] = set_multi_parameter_in_configuration(configuration)
+
         BaseEstimator.compile(self, *args, **kwargs)
 
         # Check that the graph only has a single output
@@ -1558,6 +1607,26 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         )
         y_pred += self._q_bias
         return y_pred
+
+    # Remove this function once Concrete Python fixes the multi-parameter bug with fully-leveled
+    # circuits and factorize it in the base class
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
+    def compile(self, *args, **kwargs) -> Circuit:
+        # If a configuration instance is given as a positional parameter, set the strategy to
+        # multi-parameter
+        if len(args) >= 2:
+            configuration = force_mono_parameter_in_configuration(args[1])
+            args_list = list(args)
+            args_list[1] = configuration
+            args = tuple(args_list)
+
+        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
+        # strategy to multi-parameter
+        else:
+            configuration = kwargs.get("configuration", None)
+            kwargs["configuration"] = force_mono_parameter_in_configuration(configuration)
+
+        return BaseEstimator.compile(self, *args, **kwargs)
 
 
 class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.RegressorMixin, ABC):

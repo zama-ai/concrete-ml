@@ -69,7 +69,7 @@ class OnDiskNetwork:
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize("n_bits", [3])
 def test_client_server_sklearn(
-    default_configuration_no_jit,
+    default_configuration,
     model_class,
     parameters,
     n_bits,
@@ -97,10 +97,10 @@ def test_client_server_sklearn(
 
     # Running the simulation using a model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
-        client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
+        client_server_simulation(x_train, x_test, model, default_configuration)
 
     fhe_circuit = model.compile(
-        x_train, default_configuration_no_jit, **extra_params, show_mlir=(n_bits <= 8)
+        x_train, default_configuration, **extra_params, show_mlir=(n_bits <= 8)
     )
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
@@ -108,11 +108,11 @@ def test_client_server_sklearn(
     # Check that the FHE execution is correct.
     # With a global_p_error of 1/100_000 we only allow one run.
     check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
-    client_server_simulation(x_train, x_test, model, default_configuration_no_jit)
+    client_server_simulation(x_train, x_test, model, default_configuration)
 
 
 def test_client_server_custom_model(
-    default_configuration_no_jit, check_is_good_execution_for_cml_vs_circuit
+    default_configuration, check_is_good_execution_for_cml_vs_circuit
 ):
     """Tests the client server custom model."""
 
@@ -124,7 +124,7 @@ def test_client_server_custom_model(
         # Instantiate an empty QuantizedModule object
         quantized_module = QuantizedModule()
 
-        client_server_simulation(x_train, x_test, quantized_module, default_configuration_no_jit)
+        client_server_simulation(x_train, x_test, quantized_module, default_configuration)
 
     torch_model = FCSmall(2, nn.ReLU)
     n_bits = 2
@@ -133,7 +133,7 @@ def test_client_server_custom_model(
     quantized_numpy_module = compile_torch_model(
         torch_model,
         x_train,
-        configuration=default_configuration_no_jit,
+        configuration=default_configuration,
         n_bits=n_bits,
         global_p_error=1 / 100_000,
     )
@@ -144,10 +144,10 @@ def test_client_server_custom_model(
         x_test, quantized_numpy_module, simulate=False, n_allowed_runs=1
     )
 
-    client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration_no_jit)
+    client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration)
 
 
-def client_server_simulation(x_train, x_test, model, default_configuration_no_jit):
+def client_server_simulation(x_train, x_test, model, default_configuration):
     """Simulate the client server interaction."""
     # Model has been trained and compiled on the server.
     # Now we use the fhe api to go into production.
@@ -178,7 +178,7 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
 
     fhemodel_client = FHEModelClient(
         path_dir=network.client_dir.name,
-        key_dir=default_configuration_no_jit.insecure_key_cache_location,
+        key_dir=default_configuration.insecure_key_cache_location,
     )
     fhemodel_client.load()
 
@@ -207,7 +207,7 @@ def client_server_simulation(x_train, x_test, model, default_configuration_no_ji
     # And try to load it again
     fhemodel_client_ = FHEModelClient(
         path_dir=network.client_dir.name,
-        key_dir=default_configuration_no_jit.insecure_key_cache_location,
+        key_dir=default_configuration.insecure_key_cache_location,
     )
     fhemodel_client_.load()
 

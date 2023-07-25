@@ -1,5 +1,6 @@
 import os
 import time
+from functools import partial
 from pathlib import Path
 
 import torch
@@ -141,8 +142,11 @@ for image_index in range(NUM_SAMPLES):
     print(f"Quantization of a single input (image) took {quantization_execution_time} seconds")
     print(f"Size of CLEAR input is {q_x_numpy.nbytes} bytes\n")
 
+    # Use new VL with .simulate() once CP's multi-parameter/precision bug is fixed
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3856
+    p_error = quantized_numpy_module.fhe_circuit.p_error
     expected_quantized_prediction, clear_inference_time = measure_execution_time(
-        quantized_numpy_module.fhe_circuit.simulate
+        partial(quantized_numpy_module.fhe_circuit.graph, p_error=p_error)
     )(q_x_numpy)
 
     # Encrypt the input

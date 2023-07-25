@@ -309,14 +309,6 @@ def accuracy_test_rounding(
     # feature with enough precision.
     assert quantized_numpy_module.fhe_circuit.graph.maximum_integer_bit_width() >= 4
 
-    # IMPORTANT: rounding should always be used with the config:
-    # single_precision = False and to have decent runtime in FHE also use
-    # parameter_selection_strategy = ParameterSelectionStrategy.MULTI
-    configuration.single_precision = False
-
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3674
-    configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
-
     # Compile with a rounding threshold equal to the maximum bit-width
     # computed in the original quantized_numpy_module
     if is_brevitas_qat:
@@ -1248,3 +1240,43 @@ def test_fancy_indexing_torch(model_object, default_configuration):
     model = model_object(10, 10, 2, 4, 3)
     x = numpy.random.randint(0, 2, size=(100, 3, 10)).astype(numpy.float64)
     compile_brevitas_qat_model(model, x, n_bits=4, configuration=default_configuration)
+
+
+@pytest.mark.parametrize(
+    "model, input_output_feature",
+    [
+        pytest.param(FCSmall, 5),
+    ],
+)
+@pytest.mark.parametrize("is_onnx", [True, False], ids=["is_onnx", ""])
+def test_mono_parameter_rounding_warning(
+    input_output_feature,
+    model,
+    default_configuration,
+    is_onnx,
+    check_is_good_execution_for_cml_vs_circuit,
+):
+    """Test that setting mono-parameter strategy along rounding properly raises a warning."""
+
+    # The QAT bits is set to 0 in order to signal that the network is not using QAT
+    qat_bits = 0
+
+    # Set the parameter strategy to mono-parameter
+    default_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+
+    with pytest.warns(
+        UserWarning,
+        match=".* set the optimization strategy to multi-parameter when using rounding.*",
+    ):
+        compile_and_test_torch_or_onnx(
+            input_output_feature=input_output_feature,
+            model_class=model,
+            activation_function=nn.ReLU,
+            qat_bits=qat_bits,
+            default_configuration=default_configuration,
+            simulate=True,
+            is_onnx=is_onnx,
+            check_is_good_execution_for_cml_vs_circuit=check_is_good_execution_for_cml_vs_circuit,
+            verbose=False,
+            get_and_compile=False,
+        )

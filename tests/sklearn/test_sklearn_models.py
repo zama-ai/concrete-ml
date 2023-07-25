@@ -37,6 +37,7 @@ import numpy
 import pandas
 import pytest
 import torch
+from concrete.fhe import ParameterSelectionStrategy
 from sklearn.decomposition import PCA
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import make_scorer, matthews_corrcoef, top_k_accuracy_score
@@ -959,6 +960,19 @@ def check_exposition_structural_methods_decision_trees(model, x, y):
     )
 
 
+def check_mono_parameter_warnings(model, x, default_configuration):
+    """Check that setting voluntarily a mono-parameter strategy properly raises a warning."""
+
+    # Set the parameter strategy to mono-parameter
+    default_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+
+    with pytest.warns(
+        UserWarning,
+        match="Setting the parameter_selection_strategy to mono-parameter is not recommended.*",
+    ):
+        model.compile(x, default_configuration)
+
+
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -1467,6 +1481,7 @@ def test_p_error_global_p_error_simulation(
 
         # linear models p_error is not simulated
         assert not simulation_diff_found, "SIMULATE predictions not the same for linear models"
+
     else:
         assert fhe_diff_found and simulation_diff_found, (
             f"Predictions not different in at least one run.\n"
@@ -1539,3 +1554,30 @@ def test_exposition_structural_methods_decision_trees(
         print("Run check_exposition_structural_methods_decision_trees")
 
     check_exposition_structural_methods_decision_trees(model, x, y)
+
+
+@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def test_mono_parameter_warnings(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    default_configuration,
+    verbose=True,
+):
+    """Test that setting voluntarily a mono-parameter strategy properly raises a warning."""
+
+    # Remove this once Concrete Python fixes the multi-parameter bug with fully-leveled circuits
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
+    # Linear models are manually forced to use mono-parameter
+    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        return
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    if verbose:
+        print("Run check_mono_parameter_warnings")
+
+    check_mono_parameter_warnings(model, x, default_configuration)

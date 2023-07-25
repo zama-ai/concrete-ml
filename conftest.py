@@ -9,6 +9,7 @@ import numpy
 import pytest
 import torch
 from concrete.fhe import Graph as CPGraph
+from concrete.fhe import ParameterSelectionStrategy
 from concrete.fhe.compilation import Circuit, Configuration
 from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
@@ -121,25 +122,15 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
 def default_configuration():
     """Return the default test compilation configuration."""
 
+    # Remove parameter_selection_strategy once it is set to multi-parameter in Concrete Python
+    # by default
+    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3860
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
         insecure_key_cache_location="ConcreteNumpyKeyCache",
-        jit=True,
-    )
-
-
-@pytest.fixture
-def default_configuration_no_jit():
-    """Return the default test compilation configuration."""
-
-    return Configuration(
-        dump_artifacts_on_unexpected_failures=False,
-        enable_unsafe_features=True,  # This is for our tests only, never use that in prod
-        use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
-        insecure_key_cache_location="ConcreteNumpyKeyCache",
-        jit=False,
+        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
 

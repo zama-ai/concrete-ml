@@ -1,6 +1,7 @@
 """QuantizedModule API."""
 import copy
 import re
+from functools import partial
 from typing import Any, Dict, Generator, Iterable, List, Optional, TextIO, Tuple, Union
 
 import numpy
@@ -15,6 +16,7 @@ from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
     SUPPORTED_FLOAT_TYPES,
     SUPPORTED_INT_TYPES,
+    USE_OLD_VL,
     FheMode,
     all_values_are_floats,
     all_values_are_integers,
@@ -22,6 +24,7 @@ from ..common.utils import (
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
+    set_multi_parameter_in_configuration,
     to_tuple,
 )
 from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
@@ -479,12 +482,26 @@ class QuantizedModule:
             # For mypy
             assert self.fhe_circuit is not None
 
+            # If the inference should be executed using simulation
+            if simulate:
+
+                # If the old simulation method should be used
+                if USE_OLD_VL:
+                    predict_method = partial(
+                        self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
+                    )
+
+                # Else, use the official simulation method
+                else:
+                    predict_method = self.fhe_circuit.simulate  # pragma: no cover
+
+            # Else, use the FHE execution method
+            else:
+                predict_method = self.fhe_circuit.encrypt_run_decrypt
+
             # Execute the forward pass in FHE or with simulation
-            q_result = (
-                self.fhe_circuit.simulate(*q_input)
-                if simulate
-                else self.fhe_circuit.encrypt_run_decrypt(*q_input)
-            )
+            q_result = predict_method(*q_input)
+
             results_cnp_circuit_list.append(q_result)
 
         results_cnp_circuit = numpy.concatenate(results_cnp_circuit_list, axis=0)
@@ -622,6 +639,13 @@ class QuantizedModule:
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
+        # Remove this function once the default strategy is set to multi-parameter in Concrete
+        # Python
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3860
+        configuration = set_multi_parameter_in_configuration(configuration)
+
+        # Jit compiler is now deprecated and will soon be removed, it is thus forced to False
+        # by default
         self.fhe_circuit = compiler.compile(
             inputset,
             configuration=configuration,
@@ -631,7 +655,15 @@ class QuantizedModule:
             global_p_error=global_p_error,
             verbose=verbose,
             single_precision=False,
+            fhe_simulation=False,
+            fhe_execution=True,
+            jit=False,
         )
+
+        # CRT simulation is not supported yet
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3841
+        if not USE_OLD_VL:
+            self.fhe_circuit.enable_fhe_simulation()  # pragma: no cover
 
         self._is_compiled = True
 

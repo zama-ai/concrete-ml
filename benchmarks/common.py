@@ -236,6 +236,7 @@ DATASET_VERSIONS = {
 
 
 # This is only for benchmarks to speed up compilation times
+# Jit compiler is now deprecated and will soon be removed, it is thus forced to False by default
 BENCHMARK_CONFIGURATION = fhe.Configuration(
     dump_artifacts_on_unexpected_failures=True,
     enable_unsafe_features=True,
@@ -243,7 +244,7 @@ BENCHMARK_CONFIGURATION = fhe.Configuration(
     insecure_key_cache_location="ConcreteNumpyKeyCache",
     show_mlir=False,
     show_graph=False,
-    jit=True,
+    jit=False,
 )
 
 

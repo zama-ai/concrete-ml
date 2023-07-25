@@ -1,6 +1,7 @@
 """torch compilation function."""
 
 import tempfile
+import warnings
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -160,12 +161,16 @@ def _compile_torch_or_onnx_model(
     # parameters
     check_there_is_no_p_error_options_in_configuration(configuration)
 
-    # If rounding is used, we force multi parameters
-    configuration = configuration if configuration is not None else Configuration()
-    if rounding_threshold_bits is not None:
-        configuration.parameter_selection_strategy = ParameterSelectionStrategy.MULTI
-    else:
-        configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+    if (
+        rounding_threshold_bits is not None
+        and configuration is not None
+        and configuration.parameter_selection_strategy != ParameterSelectionStrategy.MULTI
+    ):
+        warnings.warn(
+            "It is recommended to set the optimization strategy to multi-parameter when using "
+            "rounding as it should provide better performance.",
+            stacklevel=2,
+        )
 
     # Find the right way to set parameters for compiler, depending on the way we want to default
     p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
