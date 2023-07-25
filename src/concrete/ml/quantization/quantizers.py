@@ -634,10 +634,15 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             # All possible attributes in a UniformQuantizer object are not necessarily available
             value_1, value_2 = getattr(other, attribute, None), getattr(self, attribute, None)
 
+            # If the first value is a numpy array, check that the second value is also a numpy array
+            # and that values are all equal
             if isinstance(value_1, numpy.ndarray):
                 is_equal &= isinstance(value_2, numpy.ndarray) and numpy.array_equal(
                     value_1, value_2
                 )
+
+            # Else, check that both values are equal. Here, we expect both values to have a __eq__
+            # operator implemented and which returns a boolean
             else:
                 is_equal &= value_1 == value_2
 
