@@ -823,3 +823,11 @@ clean_pycache:
 .PHONY: clean_sklearn_cache # Clean sklearn cache directories, eg for benchmarks
 clean_sklearn_cache:
 	rm -rf ~/scikit_learn_data
+
+.PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, eg use_case_examples/mnist)
+run_one_use_case_example:
+	./script/make_utils/run_use_case_examples.sh
+
+.PHONY: run_all_use_case_examples # Run all use-case examples
+run_all_use_case_examples:
+	USE_CASE="" ./script/make_utils/run_use_case_examples.sh

@@ -1,3 +1,4 @@
-concrete-ml==1.0.0
-jupyter==1.0.0
-torchvision==0.14.1
+concrete-ml
+jupyter
+torch
+torchvision

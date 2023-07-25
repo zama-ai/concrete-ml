@@ -22,6 +22,7 @@ if [ ! -d "$USE_CASE_DIR" ]; then
 fi
 
 echo "Refreshing notebooks with PIP installed Concrete ML"
+
 # shellcheck disable=SC2143
 if [[ $(git ls-files --others --exclude-standard | grep ${USE_CASE_REL_DIR}) ]]; then
     echo "This script must be run in a clean clone of the Concrete ML repo"
@@ -41,7 +42,7 @@ fi
 
 if [[ -z "${USE_CASE}" ]]; then
   # shellcheck disable=SC2207
-  LIST_OF_USE_CASES=($(find "$USE_CASE_DIR/" -mindepth 1 -maxdepth 2 -type d))
+  LIST_OF_USE_CASES=($(find "$USE_CASE_DIR/" -mindepth 1 -maxdepth 2 -type d | grep -v checkpoints))
 else
   LIST_OF_USE_CASES=("${USE_CASE}")
   if [ ! -d "${USE_CASE}" ]; then 
