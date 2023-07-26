@@ -26,7 +26,7 @@ def run_hybrid_model_test(
     # Create a hybrid model
     hybrid_model = HybridFHEModel(model, module_names)
     hybrid_model.compile_model(
-        inputs, n_bits=8, rounding_threshold_bits=8, p_error=0.01, configuration=configuration
+        inputs, n_bits=8, rounding_threshold_bits=8, configuration=configuration
     )
 
     # Check we can run the simulate locally
