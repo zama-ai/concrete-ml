@@ -8,8 +8,7 @@ Have a look to our [Notion page](https://www.notion.so/zamaai/Releasing-84765998
 
 - [ ] Version management
 - [ ] Preparing the right commit: prepare the commit you want to release, either directly on main or in a `release/X.Y.x` branch
-- [ ] Main part of the release: releasing in the internal repository
+- [ ] Main part of the release: releasing in the repository
 - [ ] Management of `release/X.Y.x` branch (if needed)
-- [ ] Fix links in docs: remove `-internal` links, and check it works fine with `make check_links_after_release`
-- [ ] If needed: open-source everything in the public repository
+- [ ] Check links in docs with `make check_links`
 - [ ] If needed: prepare an official release

@@ -98,7 +98,7 @@ def generate_figure(data: Dict[str, Any], path_to_csv: Path, path_to_png: Path):
 
 
 def get_data(token: str, path_to_json: Path):
-    """Get all information from workflow runs from github for Concrete ML-internal.
+    """Get all information from workflow runs from github for the concrete-ml repo.
 
     Arguments:
         token (str): Github API token
@@ -126,7 +126,7 @@ def get_data(token: str, path_to_json: Path):
         "event": "push",
     }
     user = "zama-ai"
-    repo = "concrete-ml-internal"
+    repo = "concrete-ml"
     final_result = {}
 
     while True:
