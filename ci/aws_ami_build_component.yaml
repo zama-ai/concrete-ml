@@ -85,8 +85,8 @@ phases:
         inputs:
           commands:
             - source venv/bin/activate
-            - git clone git@github.com:zama-ai/concrete-ml-internal.git
-            - cd concrete-ml-internal
+            - git clone git@github.com:zama-ai/concrete-ml.git
+            - cd concrete-ml
             - git lfs pull
             - git checkout v$(pip show concrete-ml | grep "Version" | cut -c 10-)
             - pytest ./tests -k "not test_deploy"

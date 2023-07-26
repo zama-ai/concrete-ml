@@ -2,8 +2,8 @@ SHELL:=$(shell /usr/bin/env which bash)
 
 DEV_DOCKER_IMG:=concrete-ml-dev
 DEV_DOCKERFILE:=docker/Dockerfile.dev
-DEV_CONTAINER_VENV_VOLUME:=concrete-ml-internal-venv
-DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-internal-cache
+DEV_CONTAINER_VENV_VOLUME:=concrete-ml-venv
+DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-cache
 DOCKER_VENV_PATH:="$${HOME}"/dev_venv/
 SRC_DIR:=src
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
@@ -180,14 +180,12 @@ PCC_DEPS += check_version_coherence check_licenses check_nbqa check_supported_op
 PCC_DEPS += check_refresh_notebooks_list check_mdformat
 PCC_DEPS += check_unused_images gitleaks
 
-# Not commented on purpose for make help, since internal
 .PHONY: pcc_internal
 pcc_internal: $(PCC_DEPS)
 
 # flake8 has been removed since it is too slow
 SPCC_DEPS := check_python_format pylint_src pylint_tests mypy mypy_test pydocstyle ruff
 
-# Not commented on purpose for make help, since internal
 .PHONY: spcc_internal
 spcc_internal: $(SPCC_DEPS)
 
@@ -722,8 +720,6 @@ check_links:
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
-	@#  --ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis: currently
-	@#		private
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: because issues are
 	@#		private at this time.
 	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
@@ -735,13 +731,10 @@ check_links:
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
-		--ignore-url=https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
 		--ignore-url=.gitbook/assets
 
-	@# We don't want links to our internal GitBook. We may have to switch this test off for a
-	@# moment if we link to links which are not made public in Concrete documentation, for example.  
-	@# Worse case, it is tested in check_links_after_release
+	@# We don't want links to our internal GitBook
 	./script/doc_utils/check_no_gitbook_links.sh
 
 
@@ -771,6 +764,7 @@ check_links_after_release: docs
 	poetry run python -m linkcheckmd docs -local
 	poetry run python -m linkcheckmd README.md
 	poetry run python ./script/make_utils/local_link_check.py
+	poetry run python ./script/make_utils/check_headers.py
 
 	@# For weblinks and internal references
 	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
