@@ -61,16 +61,16 @@ class KNeighborsClassifier(SklearnKNeighborsMixin):
         metadata["sklearn_model"] = self.sklearn_model
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
-        metadata["input_quantizers"] = self.input_quantizers    # TODO: DOUBT
-        metadata["_weight_quantizer"] = self._weight_quantizer  # TODO: DOUBT
-        metadata["output_quantizers"] = self.output_quantizers  # TODO: DOUBT
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["post_processing_params"] = self.post_processing_params
         metadata["cml_dumped_class_name"] = type(self).__name__
         metadata["_q_points"] = self._q_points
 
         # Scikit-learn
-        
+
         metadata["classes_"] = self.target_classes_
         metadata["n_classes_"] = self.n_classes_
         metadata["sklearn_model_class"] = self.sklearn_model_class
