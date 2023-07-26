@@ -59,9 +59,9 @@ from .tree_to_numpy import tree_to_numpy
 # pylint: disable=wrong-import-position,wrong-import-order
 # Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
+import numpy as np
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 from hummingbird.ml.operator_converters import constants
-import numpy as np
 
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
@@ -521,6 +521,7 @@ class BaseEstimator:
         """
         # Reset for double compile
         self._is_compiled = False
+        print("1. Compile based estimator")
 
         # Check that the model is correctly fitted
         self.check_model_is_fitted()
@@ -609,7 +610,7 @@ class BaseEstimator:
             ValueError,
         )
 
-        print("monkey")
+        # print("monkey")
 
         # Check that the model is properly fitted
         self.check_model_is_fitted()
@@ -1696,6 +1697,7 @@ class SklearnLinearClassifierMixin(
         y_proba = self.post_processing(y_logits)
         return y_proba
 
+
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """A Mixin class for sklearn linear models with FHE.
@@ -1708,7 +1710,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
             if getattr(klass, "_is_a_public_cml_model", False):
-                _NEIGHBORS_MODELS.add(cls) # Changed
+                _NEIGHBORS_MODELS.add(cls)  # Changed
                 _ALL_SKLEARN_MODELS.add(cls)
 
     def __init__(self, n_bits: Union[int, Dict[str, int]] = 8):
@@ -1746,9 +1748,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             self.sklearn_model,
             backend="onnx",
             test_input=test_input,
-            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT, 
-                          constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0] # Changed
-                        },
+            extra_config={
+                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+                constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],  # Changed
+            },
         ).model
 
         self._clean_graph()
@@ -1790,47 +1793,37 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         weights_n_bits = n_bits["op_weights"]
         weight_options = QuantizationOptions(n_bits=weights_n_bits, is_signed=True)
 
-        # Quantize the weights and store the associated quantizer
-        # Transpose and expand are necessary in order to make sure the weight array has the correct
-        # shape when calling the Gemm operator on it
-        weights = self.sklearn_model._fit_X.T  # Changed
-        q_weights = QuantizedArray(
+        # Quantize the _X_fit and store the associated quantizer
+        # Weights in KNN algorithms are the train data points
+        # pylint: disable=protected-access
+        _X_fit = self.sklearn_model._fit_X
+        q_X_fit = QuantizedArray(
             n_bits=n_bits["op_weights"],
-            values=numpy.expand_dims(weights, axis=1) if len(weights.shape) == 1 else weights,
+            values=numpy.expand_dims(_X_fit, axis=1) if len(_X_fit.shape) == 1 else _X_fit,
             options=weight_options,
         )
-        self._q_weights = q_weights.qvalues
-        weight_quantizer = q_weights.quantizer
-        self._weight_quantizer = weight_quantizer
+        self._q_X_fit = q_X_fit.qvalues
+        self._q_X_fit_quantizer = q_X_fit.quantizer
 
         # mypy
-        assert input_quantizer.scale is not None
-        assert weight_quantizer.scale is not None
+        assert self._q_X_fit_quantizer.scale is not None
 
-        # Compute the scale and zero-point of the matmul's outputs, following the same steps from
-        # the QuantizedGemm operator, which are based on equations detailed in
+        # We assume that the query has the same distribution as the data in _X_fit.
+        # therefore, they use the same scaling and zero point.
         # https://arxiv.org/abs/1712.05877
 
-        output_quant_params = UniformQuantizationParameters(
-            scale=input_quantizer.scale * weight_quantizer.scale,
-            zero_point=input_quantizer.zero_point
-            * (
-                numpy.sum(self._q_weights, axis=0, keepdims=True)
-                - X.shape[1] * weight_quantizer.zero_point
-            ),
+        self.output_quant_params = UniformQuantizationParameters(
+            scale=self._q_X_fit_quantizer.scale,
+            zero_point=self._q_X_fit_quantizer.zero_point,
             offset=0,
         )
-        print(output_quant_params)
-        self.output_quant_params = output_quant_params
 
-
-        output_quantizer = UniformQuantizer(params=output_quant_params, no_clipping=True)
+        output_quantizer = UniformQuantizer(params=self.output_quant_params, no_clipping=True)
 
         # Since the matmul and the bias both use the same scale and zero-points, we obtain that
         # y = S*(q_y - 2*Z) when de-quantizing the values. We therefore need to multiply the initial
         # output zero_point by 2
         assert output_quantizer.zero_point is not None
-        output_quantizer.zero_point *= 2
         self.output_quantizers.append(output_quantizer)
 
         # Updating post-processing parameters
@@ -1872,21 +1865,22 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Create the compiler instance
         compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
+        print("Compile SklearnKNeighborsMixin", type(compiler))
 
         return compiler
 
-
     def top_k_indices(self, distance_matrix, k):
-        print("TOP K")
-        return numpy.argsort(distance_matrix, 1)[:,:k] #0 ou 1
-
+        print("Top_k_indices")
+        # Sort the distance in the ascending order
+        # Pick up the k smallest distanes
+        # Sort by index 1
+        return numpy.argsort(distance_matrix, axis=1)[:, :k]
 
     def majority_vote(self, nearest_classes):
         # Get the number of queries (rows) and k (number of nearest points)
-        n_queries, k = nearest_classes.shape
-
+        n_queries, _ = nearest_classes.shape
         # Compute the majority vote for each query
-        majority_votes = np.empty(n_queries, dtype=int)
+        majority_votes = np.array([0] * n_queries, dtype=int)
         for i in range(n_queries):
             # Use bincount to count occurrences of each class and find the most common one
             class_counts = np.bincount(nearest_classes[i])
@@ -1894,38 +1888,30 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return majority_votes
 
-
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
-        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+        assert self._q_X_fit_quantizer is not None, self._is_not_fitted_error_message()
 
-        # Quantizing weights and inputs makes an additional term appear in the inference function
-        print("ici", "q_X.shape", q_X.shape, "self._q_weights.shape", self._q_weights.shape)
+        # <!> np.newaxis, [..., None] ->
+        # ValueError: Indexing with 'None' & 'Ellipsis' is not supported
+        # dot is used for a tensor of one dimension
+        # @ is used for matrices quand c'est une matrice @ -> matmul
 
-        #distances_matrix = q_X @ self._q_weights # TODO: replace with real minkovski distance 
+        distance_matrix = (
+            np.sum(q_X**2, axis=1).reshape(-1, 1)
+            + np.sum(self._q_X_fit**2, axis=1).reshape(1, -1)
+            - 2 * q_X @ self._q_X_fit.T
+        )
 
-        # sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
-        #from sklearn.metrics.pairwise import euclidean_distances
-        # y_pred = euclidean_distances(q_X, self._q_weights.T)
-
-        distances = []
-        for x_i in q_X:
-            distance_xi = []
-            print(f"{x_i.shape=}")
-            for point_i in self._q_weights:
-                print(f"{point_i.shape=}")
-                distance_xi.append(np.sqrt(np.dot(x_i, x_i) - 2 * np.dot(x_i, point_i) + np.dot(point_i, point_i)))
-            distances.append(distance_xi)
-
-        self.distances_matrix =  np.array(distances)
-        return self.distances_matrix
+        return distance_matrix
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
-        distances_matrix = super().predict(X, fhe)
-        print(distances_matrix)
 
-        indices = self.top_k_indices(distances_matrix, self.sklearn_model.n_neighbors)
-        y_pred = self.majority_vote(self.sklearn_model._y[indices])
-        
+        self.distances_matrix = np.array(np.sqrt(super().predict(X, fhe)))
+
+        k_indices = self.top_k_indices(self.distances_matrix, self.sklearn_model.n_neighbors)
+
+        # pylint: disable=protected-access
+        label_k_indices = self.sklearn_model._y[k_indices]
+        y_pred = self.majority_vote(label_k_indices)
+
         return y_pred
-
-
