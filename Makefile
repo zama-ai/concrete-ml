@@ -10,7 +10,7 @@ CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
-POETRY_VERSION:=1.2.2
+POETRY_VERSION:=1.5.1
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
 
 # If one wants to force the installation of a given rc version

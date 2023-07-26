@@ -40,7 +40,7 @@ source "${PYPI_VENV}/bin/activate"
 # Investigate a better way of managing these dependencies 
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2685
 python -m pip install --upgrade pip
-python -m pip install poetry==1.2.1 pytest==7.1.1 pandas==1.3.5 tensorflow==2.10.0 tf2onnx==1.13.0 torchvision==0.14.1
+python -m pip install poetry==1.5.1 pytest==7.1.1 pandas==1.3.5 tensorflow==2.10.0 tf2onnx==1.13.0 torchvision==0.14.1
 
 # Install additional pytest plugins
 python -m pip install pytest-xdist==2.5.0
