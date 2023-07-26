@@ -47,6 +47,7 @@ def get_equivalent_numpy_forward_and_onnx_model(
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
     )
     equivalent_onnx_model = onnx.load_model(str(output_onnx_file_path))
+
     checker.check_model(equivalent_onnx_model)
 
     # Remove the tempfile if we used one

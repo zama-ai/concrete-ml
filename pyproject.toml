@@ -58,6 +58,7 @@ fastapi = "^0.93.0"
 uvicorn = "^0.21.0"
 python-multipart = "^0.0.6"
 tqdm = "^4.64.1"
+transformers = "^4.30.2"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
