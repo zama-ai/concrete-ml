@@ -1897,19 +1897,23 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # @ is used for matrices quand c'est une matrice @ -> matmul
 
         distance_matrix = (
-            np.sum(q_X**2, axis=1).reshape(-1, 1)
+            np.sum(q_X**2).reshape(1)
             + np.sum(self._q_X_fit**2, axis=1).reshape(1, -1)
             - 2 * q_X @ self._q_X_fit.T
         )
-
         return distance_matrix
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
 
-        self.distances_matrix = np.array(np.sqrt(super().predict(X, fhe)))
+        distances = []
+        #TODO: include in _inference
+        for query in X:
+            d = super().predict(query, fhe)[0]
+            distances.append(np.sqrt(d))
+
+        self.distances_matrix = np.array(distances)
 
         k_indices = self.top_k_indices(self.distances_matrix, self.sklearn_model.n_neighbors)
-
         # pylint: disable=protected-access
         label_k_indices = self.sklearn_model._y[k_indices]
         y_pred = self.majority_vote(label_k_indices)
