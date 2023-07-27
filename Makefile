@@ -24,6 +24,12 @@ CP_VERSION_SPEC_FOR_RC="concrete-python==2.0.0"
 # --pyproject-toml-file pyproject.toml \
 # --get-pip-install-spec-for-dependency concrete-python)"
 
+# First install of Skorch leads to a SyntaxError for some unclear reasons
+# Re-installing the same version with pip seems to fix the issue
+# Remove this once the issue is fixed
+# FIXME : https://github.com/zama-ai/concrete-ml-internal/issues/3883
+SKORCH_SPEC="skorch==0.11.0"
+
 .PHONY: setup_env # Set up the environment
 setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
@@ -45,6 +51,9 @@ setup_env:
 
 	echo "Installing $(CP_VERSION_SPEC_FOR_RC)" && \
 	poetry run python -m pip install -U --pre "$(CP_VERSION_SPEC_FOR_RC)" --no-deps
+
+	echo "Re-installing $(SKORCH_SPEC)" && \
+	poetry run python -m pip install "$(SKORCH_SPEC)" --no-deps --force-reinstall
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: check_poetry_version
