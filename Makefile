@@ -542,6 +542,7 @@ changelog: check_version_coherence
 release: check_version_coherence check_apidocs
 	@PROJECT_VER=($$(poetry version)) && \
 	PROJECT_VER="$${PROJECT_VER[1]}" && \
+	./script/release_utils/check_branch_name.sh "$${PROJECT_VER}" && \
 	TAG_NAME="v$${PROJECT_VER}" && \
 	git fetch --tags --force && \
 	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
