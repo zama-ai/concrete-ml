@@ -703,16 +703,24 @@ fast_sanity_check:
 
 .PHONY: check_links # Check links in the documentation
 check_links:
-	@# Because of issues with priviledges and linkcheckmd
+	@# It is important to understand that 'make check_links' should only be used after updating the documentation.
+	@# Since 'make docs' automatically calls 'check_links' at the end, there is no obvious reason to 
+	@# manually call 'make check_links' instead of 'make docs' !
+	
+	@# Check that no links target the main branch, some internal repositories (Concrete ML or Concrete) or our internal GitBook
+	./script/make_utils/check_internal_links.sh
+
+	@# To avoid some issues with priviledges and linkcheckmd
 	find docs/ -name "*.md" -type f | xargs chmod +r
 
-	@# Remark that this target is not in PCC, because it needs the doc to be built
-	@# Mainly for web links and _api_doc (sphinx)
+	@# Run linkcheck on mardown files. It is mainly used for web links and _api_doc (Sphinx)
 	poetry run python -m linkcheckmd docs -local
-
 	poetry run python -m linkcheckmd README.md
 
+	@# Check that relative links in mardown files are targeting existing files 
 	poetry run python ./script/make_utils/local_link_check.py
+
+	@# Check that links to mardown headers in mardown files are targeting existing headers 
 	poetry run python ./script/make_utils/check_headers.py
 
 	@# For weblinks and internal references
@@ -721,7 +729,7 @@ check_links:
 	@#		the server from AWS
 	@#  --ignore-url=https://www.openml.org: lot of time outs
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: because issues are
-	@#		private at this time.
+	@#		private
 	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
 	@# 		them in the docs. But sphinx does not copy such as images to the _build dir since 
 	@#		they are not included by image tags or sphinx image annotations. We ignore links 
@@ -732,54 +740,6 @@ check_links:
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
-		--ignore-url=.gitbook/assets
-
-	@# We don't want links to our internal GitBook
-	./script/doc_utils/check_no_gitbook_links.sh
-
-
-.PHONY: check_links_after_release # Check links in the documentation as if we were users
-check_links_after_release: docs
-	@# The difference between check_links_after_release and check_links is:
-	@#	 - use check_links during dev time: we have --ignore to accept files which are not already
-	@#	   in the public repo
-	@#	 - at release time, use check_links_after_release, to check that the doc or public
-	@#	   repository only use public links
-
-	@# We don't want links to main branch
-	grep -r "tree/main" docs | (! grep "\.md:" > /dev/null)
-
-	@# We don't want links to internal repositories
-	grep -r "concrete-ml-internal" docs | (! grep "\.md:" > /dev/null)
-	grep -r "concrete-numpy-internal" docs | (! grep "\.md:" > /dev/null)
-
-	@# We don't want links to our internal GitBook
-	./script/doc_utils/check_no_gitbook_links.sh
-
-	@# Because of issues with priviledges and linkcheckmd
-	find docs/ -name "*.md" -type f | xargs chmod +r
-
-	@# Remark that this target is not in PCC, because it needs the doc to be built
-	@# Mainly for web links and _api_doc (sphinx)
-	poetry run python -m linkcheckmd docs -local
-	poetry run python -m linkcheckmd README.md
-	poetry run python ./script/make_utils/local_link_check.py
-	poetry run python ./script/make_utils/check_headers.py
-
-	@# For weblinks and internal references
-	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
-	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
-	@#		the server from AWS
-	@#  --ignore-url=https://www.openml.org: lot of time outs
-	@#  --ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
-	@# 		them in the docs. But sphinx does not copy such as images to the _build dir since
-	@#		they are not included by image tags or sphinx image annotations. We ignore links
-	@#		to gitbook images in the HTML checker. But the images are actually checked by the
-	@#		markdown link checker, `local_link_check.sh`.
-	poetry run linkchecker docs --check-extern \
-		--ignore-url=_static/webpack-macros.html \
-		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
-		--ignore-url=https://www.openml.org \
 		--ignore-url=.gitbook/assets
 
 .PHONY: actionlint # Linter for our github actions
