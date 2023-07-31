@@ -12,7 +12,7 @@ from transformers import GPT2LMHeadModel
 from transformers.models.gpt2.configuration_gpt2 import GPT2Config
 from transformers.models.gpt2.modeling_gpt2 import GPT2Attention
 from transformers.pytorch_utils import Conv1D
-from utils import slice_ordered_dict
+from utility_functions import slice_ordered_dict
 
 
 class QGPT2Attention(GPT2Attention):

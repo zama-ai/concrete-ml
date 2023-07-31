@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from concrete.fhe.tracing import Tracer
-from utils import enc_split, max_fhe_relu, simple_slice
+from utility_functions import enc_split, max_fhe_relu, simple_slice
 
 EPSILON = 2**-11
 
