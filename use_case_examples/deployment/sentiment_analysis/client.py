@@ -22,7 +22,7 @@ import grequests
 import numpy
 import requests
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from utils import text_to_tensor
+from utility_functions import text_to_tensor
 
 from concrete.ml.deployment import FHEModelClient
 

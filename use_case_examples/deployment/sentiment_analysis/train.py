@@ -12,7 +12,7 @@ import torch
 from sklearn.metrics import average_precision_score
 from sklearn.model_selection import GridSearchCV, train_test_split
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
-from utils import text_to_tensor
+from utility_functions import text_to_tensor
 
 from concrete.ml.sklearn import XGBClassifier
 
