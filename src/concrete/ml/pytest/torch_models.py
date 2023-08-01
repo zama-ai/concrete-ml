@@ -1230,6 +1230,7 @@ class QuantCustomModel(nn.Module):
         n_bits: int = 5,
         act_quant=Int8ActPerTensorFloat,
         weight_quant=Int8WeightPerTensorFloat,
+        bias_quant=None,
     ):
         """Quantized Torch Model with Brevitas.
 
@@ -1253,6 +1254,7 @@ class QuantCustomModel(nn.Module):
             weight_bit_width=n_bits,
             weight_quant=weight_quant,
             bias=True,
+            bias_quant=bias_quant,
             return_quant_tensor=True,
         )
 
@@ -1263,6 +1265,7 @@ class QuantCustomModel(nn.Module):
             weight_bit_width=n_bits,
             weight_quant=weight_quant,
             bias=True,
+            bias_quant=bias_quant,
             return_quant_tensor=True,
         )
 
@@ -1274,6 +1277,7 @@ class QuantCustomModel(nn.Module):
             weight_bit_width=n_bits,
             weight_quant=weight_quant,
             bias=True,
+            bias_quant=bias_quant,
             return_quant_tensor=True,
         )
 

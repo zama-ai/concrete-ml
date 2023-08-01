@@ -240,7 +240,6 @@ def numpy_constant(**kwargs):
 # pylint: disable=invalid-name
 # 1 is technically an int but is accepted by mypy as a float (and it simplifies our life for
 # compilation) so instead of passing 1.0 by default 1 is passed
-@onnx_func_raw_args("c")
 def numpy_gemm(
     a: numpy.ndarray,
     b: numpy.ndarray,
@@ -1140,7 +1139,6 @@ def numpy_transpose(x: numpy.ndarray, *, perm=None) -> Tuple[numpy.ndarray]:
     return (numpy.transpose(x, axes=perm),)
 
 
-@onnx_func_raw_args("b")
 def numpy_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,

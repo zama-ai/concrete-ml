@@ -6,9 +6,30 @@ from copy import deepcopy
 from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
+from brevitas.quant.scaled_int import (
+    IntQuant,
+    MaxStatsScaling,
+    ParamFromRuntimePercentileScaling,
+    PerTensorPoTScaling8bit,
+    WeightQuantSolver,
+)
+from brevitas.quant.solver.act import ActQuantSolver
 
 from ..common.debugging import assert_true
 from ..common.serialization.dumpers import dump, dumps
+
+
+# pylint: disable-next=too-many-ancestors
+class Int8ActPerTensorPoT(
+    IntQuant, ParamFromRuntimePercentileScaling, PerTensorPoTScaling8bit, ActQuantSolver
+):
+    """Quantization options for power-of-two scaling activations."""
+
+
+# pylint: disable-next=too-many-ancestors
+class Int8WeightPerTensorPoT(IntQuant, MaxStatsScaling, PerTensorPoTScaling8bit, WeightQuantSolver):
+    """Quantization options for power-of-two scaling weights."""
+
 
 STABILITY_CONST = 10**-6
 

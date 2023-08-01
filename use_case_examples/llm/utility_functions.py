@@ -32,7 +32,7 @@ def max_fhe_relu(q_x, axis=-1, keepdims=True):
         if keepdims:
             shape = list(result.shape)
             shape.insert(axis, 1)
-            result = result.reshape(shape)
+            result = result.reshape(tuple(shape))
 
     return result
 

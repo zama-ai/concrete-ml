@@ -1,5 +1,6 @@
 """Tests with brevitas quantization aware training."""
 
+from typing import Optional
 import brevitas.nn as qnn
 import numpy
 import pytest
@@ -11,6 +12,7 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from concrete.ml.pytest.torch_models import QuantCustomModel
 from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
@@ -19,6 +21,12 @@ from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, Tin
 from concrete.ml.sklearn import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
+from concrete.ml.quantization.quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
+from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
+from brevitas.quant.scaled_int import IntBias
+from concrete.ml.quantization.quantized_module import QuantizedModule
+from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
+from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
 
 
 # This test is a known flaky
@@ -405,3 +413,103 @@ def test_brevitas_constant_folding(default_configuration):
             torch_inputset=data,
             configuration=default_configuration,
         )
+
+
+@pytest.mark.parametrize("rounding", [None, 3, 4])
+@pytest.mark.parametrize("power_of_two", [True, False])
+@pytest.mark.parametrize("n_bits", [4,5,6])
+def test_brevitas_power_of_two(default_configuration, rounding: Optional[int], power_of_two: bool, n_bits: int):
+    """Test that a network that does not quantize its inputs raises the right exception.
+
+    The network tested is not a valid QAT network for Concrete ML as it does not
+    quantize its inputs. However, in previous versions of Concrete ML a bug
+    in constant folding prevented the correct error being raised.
+    """
+
+    input_shape = 32
+    output_shape = 2
+    hidden_shape  = 64
+    batch_size = 128
+    data = torch.randn((batch_size, input_shape))
+    rounding_n_bits = 5
+
+    # Simple MLP
+    model = QuantCustomModel(
+        input_shape, output_shape, hidden_shape, n_bits=n_bits, 
+        act_quant=Int8ActPerTensorPoT if power_of_two else Int8ActPerTensorFloat,
+        weight_quant=Int8WeightPerTensorPoT if power_of_two else Int8WeightPerTensorFloat,
+        bias_quant=IntBias if power_of_two else None,
+    )
+    # If rounding threshold is set -> nothing happens
+    # If Quantizer is not setup -> nothing happens
+    quantized_module = compile_brevitas_qat_model(
+        model.to("cpu"),
+        torch_inputset=data,
+        configuration=default_configuration,
+        rounding_threshold_bits=rounding_n_bits,
+    )
+
+    pot_should_be_applied = not rounding and power_of_two
+    # Count the number of patterns that were optimized with roundPBS
+    num_round_pbs_layers = 0
+    for (_, node_op) in quantized_module.quant_layers_dict.values():
+        if isinstance(node_op, QuantizedMixingOp):
+            num_round_pbs_layers += 1 if node_op.rounding_threshold_bits is not None else 0
+            if pot_should_be_applied:
+                assert node_op.rounding_threshold_bits == node_op.lsbs_to_remove
+            else:
+                assert node_op.rounding_threshold_bits != node_op.lsbs_to_remove
+    # Apply the PowerOfTwoScalingRoundPBSAdapter again. The second time
+    # the adapter will ignore already optimized patterns but report them
+    # as ignored.
+    adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)
+    round_pbs_patterns = adapter.process()
+    # The power-of-two optimization will only work
+    # when Relu activations are used and scaling factors are forced to be 2**s
+    if pot_should_be_applied:
+        assert (
+            len(round_pbs_patterns) == 0
+        ), "Expected number of round PBS optimized patterns was not matched"
+        # 3 layers
+        assert (
+            adapter.num_ignored_valid_patterns == 3 - 1
+        ), "Expected number of ignored round PBS optimizable patterns was not matched"
+    else:
+        pass
+
+    # y_pred_clear_round = model.predict(x_test, fhe="disable")
+
+    # # Compile the model to ensure rounding is taken into account
+    # # in compilation
+    # model.compile(
+    #     x_train,
+    #     configuration=default_configuration,
+    # )
+
+    # # Compute the results with simulation, which uses the actual
+    # # lookup tables.
+    # y_pred_sim_round = model.predict(x_test, fhe="simulate")
+
+    # # Ensure rounding was compiled in the circuit
+    # # the number of rounding nodes should be equal
+    # num_rounding_mlir = model.fhe_circuit.mlir.count(".round")
+
+    # assert (
+    #     num_rounding_mlir == num_layers - 1
+    # ), "Power-of-to adapter: Rounding nodes not found in MLIR"
+
+    # # Remove rounding in the network to perform inference without the optimization.
+    # # We expect a network that was optimized with the power-of-two adapter
+    # # to be exactly correct to the non-optimized one
+    # for (_, node_op) in model.quantized_module_.quant_layers_dict.values():
+    #     if isinstance(node_op, QuantizedMixingOp):
+    #         node_op.rounding_threshold_bits = None
+    #         node_op.lsbs_to_remove = None
+
+    # # Predict with the unoptimized network
+    # y_pred_clear_no_round = model.predict(x_test, fhe="disable")
+
+    # # Compare the result with the optimized network and without
+    # # they should be exactly equal
+    # assert numpy.all(y_pred_clear_round == y_pred_clear_no_round)
+    # assert numpy.all(y_pred_sim_round == y_pred_clear_no_round)
