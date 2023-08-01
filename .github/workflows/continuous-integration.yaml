@@ -608,6 +608,15 @@ jobs:
         run: |
           make pytest
 
+      - name: Re-run failed flaky tests (regular)
+        id: rerun-flaky-tests
+        if: steps.pytest-regular.outcome == 'failure' && !cancelled()
+        run: |
+          PYTEST_CACHE=$(pytest --cache-show cache/lastfailed | grep "cachedir:" | sed 's/^.*: //')
+          LAST_FAILED_TESTS_JSON="$PYTEST_CACHE/v/cache/lastfailed"
+
+          poetry run python ./script/actions_utils/get_pytest_latest_failed_flakies.py
+
       # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
