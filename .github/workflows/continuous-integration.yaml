@@ -438,13 +438,14 @@ jobs:
       # or other steps if the associated files were not touched. For most, we also check that the
       # linux MD5 has not changed, which means that no libraries got updated. This is done in order
       # to handle PRs which only upgrades dependencies
-      - name: Get all src, tests, docs and codeblock files that have changed from main in a PR
+      - name: Get all changed files from main in PR
         id: changed-files-in-pr
         if: | 
           env.IS_PR
           && !fromJSON(env.IS_WEEKLY) 
           && !fromJSON(env.IS_RELEASE)
-          && steps.conformance.outcome == 'success' 
+          && steps.install-deps.outcome == 'success'
+          && steps.cs.outcome == 'success' 
           && !cancelled()
         uses: tj-actions/changed-files@v37.5.1
         with:
@@ -467,7 +468,7 @@ jobs:
               - src/**
               - '**.md'
               - '!.*/**'
-              - !docs/_*/**
+              - '!docs/_*/**'
               - deps_licenses/licenses_linux_user.txt.md5
 
       # Run determinism test. The only case where this is not run is for a PR that does not modify
@@ -492,10 +493,10 @@ jobs:
         if: |
           !(
             steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.docs_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.docs_any_changed == 'false' 
             && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
           )
-          steps.install-deps.outcome == 'success' 
+          && steps.install-deps.outcome == 'success' 
           && steps.cs.outcome == 'success' 
           && steps.de.outcome == 'success' 
           && !cancelled()
@@ -591,10 +592,10 @@ jobs:
       - name: PyTest CodeBlocks
         if: |
           (
-            (steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'true')
+            (steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'true') 
             || fromJSON(env.IS_WEEKLY) 
             || fromJSON(env.IS_RELEASE)
-          ) 
+          )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         run: |
