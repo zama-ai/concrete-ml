@@ -189,38 +189,49 @@ SPCC_DEPS := check_python_format pylint_src pylint_tests mypy mypy_test pydocsty
 .PHONY: spcc_internal
 spcc_internal: $(SPCC_DEPS)
 
-# One can reproduce pytest thanks to the --randomly-seed which is given by
-# pytest-randomly
-# Replace --count=1 by a larger number to repeat _all_ tests
+# One can reproduce pytest thanks to the --randomly-seed option from pytest-randomly
 # To repeat a single test, apply something like @pytest.mark.repeat(3) on the test function
-# --randomly-dont-reset-seed is used to make that, if we run the same test several times (with
-# @pytest.mark.repeat(3)), not the same seed is used, even if things are still deterministic of the
-# main seed
-# --capture=tee-sys is to make that, in case of crash, we can search for "Forcing seed to" in stdout
-# to try to reproduce
-# --durations=10 is to show the 10 slowest tests
 # -n Const because most tests include parallel execution using all CPUs, too many 
-# parallel tests would lead to contention. Thus Const is set to something low and much lower than
-# num_cpus
-.PHONY: pytest # Run pytest
+# parallel tests would lead to contention. Thus Const is set to something much lower than num_cpus
+# --durations=10 is to show the 10 slowest tests
+# --capture=tee-sys is to make sure that, in case of crash, we can search for "Forcing seed to" in 
+# stdout in order to be able to reproduce the failed test using that seed
+# --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
+# --cov PATH is the directory PATH to consider for coverage
+# --randomly-dont-reorganize is to prevent Pytest from shuffling the tests' order
+# --cov-report=term-missing:skip-covered is used to print the missing lines for coverage withtout 
+# taking into account skiped tests
+# --count N is to repeate all tests N times (with different seeds). Default is to 1.
+# --randomly-dont-reset-seed is to make sure that, if we run the same test several times (with
+# @pytest.mark.repeat(3)), different seeds are used, even if things are still deterministic using 
+# the main seed
+# --cache-clear is to clear all Pytest's cache at before running the tests. This is done in order to prevent inconsistencies 
+# when running pytest several times in a row (for example, in the CI)
+.PHONY: pytest # Run pytest on all tests
 pytest:
 	poetry run pytest --version
-	poetry run pytest --durations=10 -svv \
+	poetry run pytest tests/ \
+	-svv \
+	-n 4 \
+	--durations=10 \
 	--capture=tee-sys \
 	--global-coverage-infos-json=global-coverage-infos.json \
-	-n 4 \
-	--cov=$(SRC_DIR) --cov-fail-under=100 \
+	--cov=$(SRC_DIR) \
+	--cov-fail-under=100 \
 	--randomly-dont-reorganize \
-	--cov-report=term-missing:skip-covered tests/ \
+	--cov-report=term-missing:skip-covered \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
+	--cache-clear \
 	${PYTEST_OPTIONS}
 
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
 pytest_one:
-	poetry run pytest --durations=10 -svv \
-	--capture=tee-sys \
+	poetry run pytest \
+	-svv \
 	-n $$(./script/make_utils/ncpus.sh) \
+	--durations=10 \
+	--capture=tee-sys \
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
@@ -231,7 +242,8 @@ pytest_one:
 # Don't set --durations=10, because it is not reproducible and we use this target for determinism
 # checks
 pytest_one_single_cpu:
-	poetry run pytest -svv \
+	poetry run pytest \
+	-svv \
 	--capture=tee-sys \
 	--randomly-dont-reorganize \
 	--randomly-dont-reset-seed \
@@ -242,9 +254,11 @@ pytest_one_single_cpu:
 # These options are removed since they look to fail on macOS for no obvious reason
 # (see https://github.com/zama-ai/concrete-ml-internal/issues/1554)
 pytest_macOS_for_GitHub:
-	poetry run pytest --durations=10 -svv \
-	--capture=tee-sys \
+	poetry run pytest \
+	-svv \
 	-n 4 \
+	--durations=10 \
+	--capture=tee-sys \
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
