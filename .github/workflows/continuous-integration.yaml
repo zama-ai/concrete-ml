@@ -75,6 +75,8 @@ env:
 
 jobs:
   matrix-preparation:
+    # We skip the CI in cases of pushing to internal main (because all pushes to main internal are now from the bot)
+    if: ${{ !( github.repository == 'zama-ai/concrete-ml-internal' && github.event_name == 'push' && github.ref == 'refs/heads/main' ) }}
     runs-on: ubuntu-20.04
     timeout-minutes: 5
     outputs:
