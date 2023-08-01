@@ -590,6 +590,12 @@ jobs:
       - name: Fail on unsuccessful Linux build
         shell: bash
         run: |
+          # success always if wasn't launched due to CI not supposed to be launched
+          if ${{ !( github.repository == 'zama-ai/concrete-ml-internal' && github.event_name == 'push' && github.ref == 'refs/heads/main' ) }}
+          then
+            exit 0
+          fi
+
           if [[ ${{ needs.build-linux.result }} != "success" ]]; then
             exit 1
           fi
