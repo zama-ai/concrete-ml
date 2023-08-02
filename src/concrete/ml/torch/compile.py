@@ -3,7 +3,7 @@
 import tempfile
 import warnings
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -55,7 +55,7 @@ def build_quantized_module(
     model: Union[torch.nn.Module, onnx.ModelProto],
     torch_inputset: Dataset,
     import_qat: bool = False,
-    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Optional[int] = None,
 ) -> QuantizedModule:
     """Build a quantized module from a Torch or ONNX model.
@@ -113,7 +113,7 @@ def _compile_torch_or_onnx_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -272,7 +272,7 @@ def compile_onnx_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+    n_bits: Union[int, Dict] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -340,7 +340,7 @@ def compile_brevitas_qat_model(
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    output_onnx_file: Union[Path, str] = None,
+    output_onnx_file: Union[None, Path, str] = None,
     verbose: bool = False,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
@@ -378,7 +378,6 @@ def compile_brevitas_qat_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
-
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
     )
@@ -418,8 +417,11 @@ def compile_brevitas_qat_model(
     # https://github.com/onnx/optimizer/blob/master/onnxoptimizer/pass_registry.h
     # In the export function, the `args` parameter is used instead of the `input_shape` one in
     # order to be able to handle multi-inputs models
-    exporter.onnx_passes.append("eliminate_nop_pad")
-    exporter.onnx_passes.append("fuse_pad_into_conv")
+    exporter.onnx_passes += [
+        "eliminate_nop_pad",
+        "fuse_pad_into_conv",
+        "fuse_matmul_add_bias_into_gemm",
+    ]
     onnx_model = exporter.export(
         torch_model,
         args=dummy_input_for_tracing,

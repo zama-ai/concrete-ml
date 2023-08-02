@@ -54,11 +54,14 @@ class FHEModelServer:
                 versions = json.load(file)
 
         errors = []
-        packages_to_check = {"concrete-python"}
+        packages_to_check = {"concrete-python", "concrete-ml"}
         for package_name, package_version in versions.items():
             if package_name not in packages_to_check:
                 continue
-            current_version = version(package_name)
+            if package_name == "concrete-ml":
+                current_version = CML_VERSION
+            else:
+                current_version = version(package_name)
             if package_version != current_version:  # pragma: no cover
                 errors.append((package_name, package_version, current_version))
         if errors:  # pragma: no cover
@@ -190,13 +193,10 @@ class FHEModelDev:
         # Add versions
         versions_path = Path(self.path_dir).joinpath("versions.json")
         versions = {
-            package_name: version(package_name)
-            for package_name in ["concrete-ml", "concrete-python"]
+            "concrete-python": version("concrete-python"),
+            "concrete-ml": CML_VERSION,
+            "python": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
         }
-        versions[
-            "python"
-        ] = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-
         with open(versions_path, "w", encoding="utf-8") as file:
             json.dump(fp=file, obj=versions)
 
@@ -251,11 +251,14 @@ class FHEModelClient:
                 versions = json.load(file)
 
         errors = []
-        packages_to_check = {"concrete-python"}
+        packages_to_check = {"concrete-python", "concrete-ml"}
         for package_name, package_version in versions.items():
             if package_name not in packages_to_check:
                 continue
-            current_version = version(package_name)
+            if package_name == "concrete-ml":
+                current_version = CML_VERSION
+            else:
+                current_version = version(package_name)
             if package_version != current_version:  # pragma: no cover
                 errors.append((package_name, package_version, current_version))
         if errors:  # pragma: no cover

@@ -26,7 +26,7 @@ def run_hybrid_model_test(
     # Create a hybrid model
     hybrid_model = HybridFHEModel(model, module_names)
     hybrid_model.compile_model(
-        inputs, n_bits=8, rounding_threshold_bits=8, configuration=configuration
+        inputs, p_error=0.01, n_bits=8, rounding_threshold_bits=8, configuration=configuration
     )
 
     # Check we can run the simulate locally
@@ -72,17 +72,13 @@ def run_hybrid_model_test(
 
         module_names = module_names if isinstance(module_names, list) else [module_names]
 
-        # List of files to check
-        files = ["model.pth"] + [
-            f"{module_name}_fhe_circuit/{file_name}"
-            for module_name in module_names
-            for file_name in ["client.zip", "server.zip", "versions.json"]
-        ]
-
-        # Check if the files exist
-        for file in files:
-            file_path = Path(temp_dir) / file
-            assert file_path.exists(), f"File '{file}' does not exist in the temp directory."
+        # Check that files are there
+        assert (temp_dir_path / "model.pth").exists()
+        for module_name in module_names:
+            module_dir_path = temp_dir_path / module_name
+            module_dir_files = set(str(elt.name) for elt in module_dir_path.glob("**/*"))
+            for file_name in ["client.zip", "server.zip", "versions.json"]:
+                assert file_name in module_dir_files
 
 
 @pytest.mark.parametrize(
@@ -96,7 +92,7 @@ def run_hybrid_model_test(
 def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy):
     """Test GPT2 hybrid."""
 
-    # Get GPT2 from Huggingface
+    # Get GPT2 from Hugging Face
     model_name = "gpt2"
     model = GPT2LMHeadModel.from_pretrained(model_name)
     tokenizer = GPT2Tokenizer.from_pretrained(model_name)
@@ -110,7 +106,7 @@ def test_gpt2_hybrid_mlp(list_or_str_private_modules_names, expected_accuracy):
 def test_gpt2_hybrid_mlp_module_not_found():
     """Test GPT2 hybrid."""
 
-    # Get GPT2 from Huggingface
+    # Get GPT2 from Hugging Face
     model_name = "gpt2"
     model = GPT2LMHeadModel.from_pretrained(model_name)
 

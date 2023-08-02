@@ -11,8 +11,8 @@ from ..common.debugging import assert_true
 from ..common.utils import get_onnx_opset_version
 from ..onnx.convert import (
     OPSET_VERSION_FOR_ONNX_EXPORT,
-    get_equivalent_numpy_forward,
-    get_equivalent_numpy_forward_and_onnx_model,
+    get_equivalent_numpy_forward_from_onnx,
+    get_equivalent_numpy_forward_from_torch,
 )
 
 
@@ -42,7 +42,7 @@ class NumpyModule:
                 dummy_input is not None
             ), "dummy_input must be provided if model is a torch.nn.Module"
 
-            self.numpy_forward, self._onnx_model = get_equivalent_numpy_forward_and_onnx_model(
+            self.numpy_forward, self._onnx_model = get_equivalent_numpy_forward_from_torch(
                 model, dummy_input, debug_onnx_output_file_path
             )
 
@@ -55,8 +55,7 @@ class NumpyModule:
                 + f"but it is {onnx_model_opset_version}",
             )
 
-            self._onnx_model = model
-            self.numpy_forward = get_equivalent_numpy_forward(model)
+            self.numpy_forward, self._onnx_model = get_equivalent_numpy_forward_from_onnx(model)
         else:
             raise ValueError(
                 f"model must be a torch.nn.Module or an onnx.ModelProto, got {type(model).__name__}"
