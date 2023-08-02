@@ -1107,6 +1107,7 @@ def test_net_has_no_tlu(
             n_bits=n_bits,
         )
 
+    assert quantized_numpy_module.fhe_circuit is not None
     mlir = quantized_numpy_module.fhe_circuit.mlir
 
     # Check if a TLU is present or not, depending on whether we force a TLU to be present

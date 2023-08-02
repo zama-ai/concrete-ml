@@ -168,3 +168,9 @@ execution_time_of_individual_pytest_files.txt
 # Docs: Advance Examples data
 docs/advanced_examples/data/
 
+
+# Hybrid model artifacts
+use_case_examples/hybrid_model/clients/
+use_case_examples/hybrid_model/compiled_models/
+use_case_examples/hybrid_model/keys/
+use_case_examples/hybrid_model/user_keys/

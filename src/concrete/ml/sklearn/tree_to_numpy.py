@@ -12,7 +12,7 @@ from ..common.utils import (
     get_onnx_opset_version,
     is_regressor_or_partial_regressor,
 )
-from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward
+from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward_from_onnx
 from ..onnx.onnx_model_manipulations import clean_graph_at_node_op_type, remove_node_types
 from ..quantization import QuantizedArray
 from ..quantization.quantizers import UniformQuantizer
@@ -291,6 +291,6 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tree_inference = get_equivalent_numpy_forward(onnx_model)
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model)
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
