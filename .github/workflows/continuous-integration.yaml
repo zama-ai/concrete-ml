@@ -384,7 +384,7 @@ jobs:
           make setup_env
 
       - name: Check commits first line format
-        id: ccfl
+        id: commit-first-line
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
         with:
@@ -398,7 +398,7 @@ jobs:
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
 
       - name: Check commits line length
-        id: ccll
+        id: commit-line-length
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
         with:
@@ -414,11 +414,11 @@ jobs:
         id: commit-conformance
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         env:
-          CCFL_OK: ${{ (fromJSON(env.IS_PR) && steps.ccfl.outcome == 'success') || steps.ccfl.outcome == 'skipped' }}
-          CCLL_OK: ${{ (fromJSON(env.IS_PR) && steps.ccll.outcome == 'success') || steps.ccll.outcome == 'skipped' }}
+          FIRST_LINE_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-first-line.outcome == 'success') || steps.commit-first-line.outcome == 'skipped' }}
+          LINE_LENGTH_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-line-length.outcome == 'success') || steps.commit-line-length.outcome == 'skipped' }}
         run: |
-          if [[ "${CCFL_OK}" != "true" || "${CCLL_OK}" != "true" ]]; then
-            echo "Issues with commits. First line ok: ${CCFL_OK}. Line length ok: ${CCLL_OK}."
+          if [[ "${FIRST_LINE_OK}" != "true" || "${LINE_LENGTH_OK}" != "true" ]]; then
+            echo "Issues with commits. First line ok: ${FIRST_LINE_OK}. Line length ok: ${LINE_LENGTH_OK}."
             exit 1
           fi
 
@@ -427,7 +427,7 @@ jobs:
           make actionlint
 
       - name: Source code conformance
-        id: cs
+        id: make-conformance
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         # pcc launches an internal target with proper flags
         run: |
@@ -445,7 +445,7 @@ jobs:
           && !fromJSON(env.IS_WEEKLY) 
           && !fromJSON(env.IS_RELEASE)
           && steps.install-deps.outcome == 'success'
-          && steps.cs.outcome == 'success' 
+          && steps.make-conformance.outcome == 'success' 
           && !cancelled()
         uses: tj-actions/changed-files@v37.5.1
         with:
@@ -475,21 +475,21 @@ jobs:
       # anything in the source code or the determinism test file. This step is also triggered
       # if any dependency has been updated 
       - name: Determinism
-        id: de
+        id: determinism
         if: |
           !(
             steps.changed-files-in-pr.outcome == 'success' 
             && steps.changed-files-in-pr.outputs.determinism_any_changed == 'false'
           )
           && steps.install-deps.outcome == 'success' 
-          && steps.cs.outcome == 'success' 
+          && steps.make-conformance.outcome == 'success' 
           && !cancelled()
         run: |
           make determinism
 
       # Build the documentation if anything changed in our documentation files or in the source code
       - name: Build docs
-        id: cbd
+        id: build-docs
         if: |
           !(
             steps.changed-files-in-pr.outcome == 'success' 
@@ -497,8 +497,8 @@ jobs:
             && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
           )
           && steps.install-deps.outcome == 'success' 
-          && steps.cs.outcome == 'success' 
-          && steps.de.outcome == 'success' 
+          && steps.make-conformance.outcome == 'success' 
+          && steps.determinism.outcome != 'failure' 
           && !cancelled()
         run: |
           make docs
@@ -514,28 +514,41 @@ jobs:
           --to-ref "${GIT_TAG}" \
           --to-ref-must-have-tag > "${CHANGELOG_FILE}"
 
+      # Make sure all necessary steps passed. For build-docs and determinism steps, we only check for 
+      # non-failures as the 'changed-files-in-pr' step might skip them
       - name: Stop if previous steps failed
         id: conformance
         if: ${{ always() && !cancelled() }}
         env:
-          # Add anything here you want to stop the build, before pytest
-          CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' && steps.de.outcome == 'success' }}
+          CONFORMANCE_STATUS: >-
+            ${{
+              steps.commit-conformance.outcome == 'success' 
+              && steps.make-conformance.outcome == 'success' 
+              && steps.build-docs.outcome != 'failure'
+              && steps.determinism.outcome != 'failure'
+            }}
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
-            echo "Conformance failed, check logs"
+            echo "Conformance failed, got:"
+            echo "${{ steps.commit-conformance.outcome == 'success' }}"
+            echo "${{ steps.make-conformance.outcome == 'success' }}"
+            echo "${{ steps.build-docs.outcome != 'failure' }}"
+            echo "${{ steps.determinism.outcome != 'failure' }}"
+            echo "${CONFORMANCE_STATUS}"
             exit 1
           fi
 
       # Taring the docs allows for much faster upload speed (from ~3min worst case to ~2s best case)
       - name: Tar docs artifacts
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        id: tar-docs
+        if: ${{ steps.conformance.outcome == 'success' && steps.build-docs.outcome == 'success' && !cancelled() }}
         run: |
           cd docs/_build/html
           tar -cvf docs.tar ./*
 
       # Only upload docs once from reference build
       - name: Archive docs artifacts
-        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.tar-docs.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: html-docs
