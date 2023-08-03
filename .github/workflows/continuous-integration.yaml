@@ -652,8 +652,7 @@ jobs:
       - name: Test coverage
         id: coverage
         if: |
-          always() 
-          && fromJSON(env.IS_REF_BUILD) 
+          fromJSON(env.IS_REF_BUILD) 
           && (
             steps.pytest_regular.outcome != 'skipped' 
             || steps.pytest_weekly.outcome != 'skipped'
