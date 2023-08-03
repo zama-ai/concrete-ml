@@ -585,8 +585,10 @@ jobs:
         id: pytest_regular
         if: |
           steps.changed-files-in-pr.outcome == 'success' 
-          && steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
-          && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
+          && (
+            steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+            || steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
+          )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
         run: |
@@ -616,19 +618,26 @@ jobs:
 
       # Run Pytest on all of our tests on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML
-        if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' && !cancelled()
         run: |
           make pytest_codeblocks_pypi_wheel_cml 
       
       # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Notebooks
-        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: | 
+          fromJSON(env.IS_WEEKLY) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_nb
 
       # Run Pytest on all of our tests on a weekly basis or while releasing
       - name: PyTest with PyPI local wheel of Concrete-ML 
-        if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' && !cancelled()
         run: |
           make pytest_pypi_wheel_cml
 
@@ -640,7 +649,14 @@ jobs:
       # Compute coverage only on reference build
       - name: Test coverage
         id: coverage
-        if: ${{ always() && fromJSON(env.IS_REF_BUILD) && (steps.pytest_regular.outcome != 'skipped' || steps.pytest_weekly.outcome != 'skipped') && !cancelled() }}
+        if: |
+          always() 
+          && fromJSON(env.IS_REF_BUILD) 
+          && (
+            steps.pytest_regular.outcome != 'skipped' 
+            || steps.pytest_weekly.outcome != 'skipped'
+          ) 
+          && !cancelled()
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
@@ -656,7 +672,10 @@ jobs:
       # changed while running a PR's CI 
       - name: Check installation with sync_env and python ${{ matrix.python_version }}
         if: |
-          !(steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.src_any_changed == 'false')
+          !(
+            steps.changed-files-in-pr.outcome == 'success' 
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+          )
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
 
@@ -664,7 +683,10 @@ jobs:
       # hanged while running a PR's CI
       - name: Check installation with pip and python ${{ matrix.python_version }}
         if: |
-          !(steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.src_any_changed == 'false')
+          !(
+            steps.changed-files-in-pr.outcome == 'success' 
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+          )
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
 
@@ -672,7 +694,10 @@ jobs:
       # changed while running a PR's CI
       - name: Check installation with wheel and python ${{ matrix.python_version }}
         if: |
-          !(steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.src_any_changed == 'false')
+          !(
+            steps.changed-files-in-pr.outcome == 'success' 
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+          )
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
 
@@ -680,7 +705,10 @@ jobs:
       # changed while running a PR's CI
       - name: Check installation with clone and python ${{ matrix.python_version }}
         if: |
-          !(steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.src_any_changed == 'false')
+          !(
+            steps.changed-files-in-pr.outcome == 'success' 
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+          )
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
