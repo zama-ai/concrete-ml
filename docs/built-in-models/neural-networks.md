@@ -11,7 +11,7 @@ The neural network models are implemented with [skorch](https://skorch.readthedo
 
 Concrete ML models are multi-layer, fully-connected, networks with customizable activation functions and have a number of neurons in each layer. This approach is similar to what is available in scikit-learn when using the `MLPClassifier`/`MLPRegressor` classes. The built-in models train easily with a single call to `.fit()`, which will automatically quantize weights and activations. These models use Quantization Aware Training, allowing good performance for low precision (down to 2-3 bits) weights and activations.
 
-While `NeuralNetClassifier` and `NeuralNetClassifier` provide scikit-learn-like models, their architecture is somewhat restricted to make training easy and robust. If you need more advanced models, you can convert custom neural networks as described in the [FHE-friendly models documentation](../deep-learning/fhe_friendly_models.md).
+While `NeuralNetClassifier` and `NeuralNetClassifier` provide scikit-learn-like models, their architecture is somewhat restricted to make training easy and robust. If you need more advanced models, you can convert custom neural networks as described in the [FHE-friendly models documentation](../deep-learning/fhe_friendly_models.md). Test docs changes.
 
 {% hint style="warning" %}
 Good quantization parameter values are critical to make models [respect FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints). Weights and activations should be quantized to low precision (e.g., 2-4 bits). The sparsity of the network can be tuned [as described below](neural-networks.md#overflow-errors) to avoid accumulator overflow.
