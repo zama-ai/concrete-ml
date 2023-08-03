@@ -446,6 +446,8 @@ def check_is_good_execution_for_cml_vs_circuit():
 
         fhe_mode = "simulate" if simulate else "execute"
 
+        print("test conftest change")
+
         for _ in range(n_allowed_runs):
             # Check if model is QuantizedModule
             if isinstance(model, QuantizedModule):
