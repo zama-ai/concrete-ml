@@ -49,6 +49,7 @@ def test_seed_needing_randomly_seed_arg_1(random_inputs_1, random_inputs_2, rand
     print("Random inputs", random_inputs_1)
     print("Random inputs", random_inputs_2)
     print("Random inputs", random_inputs_3)
+    print("test determinism change")
 
 
 @pytest.mark.parametrize("random_inputs_1", [numpy.random.uniform(0, 2**15, size=20)])
