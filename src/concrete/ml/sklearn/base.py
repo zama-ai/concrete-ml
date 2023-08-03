@@ -933,6 +933,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
 
         X, y = check_X_y_and_assert_multi_output(X, y)
 
+        print("test source changed")
+
         # A helper for users so they don't need to import torch directly
         args_to_convert_to_tensor = ["criterion__weight"]
         for arg_name in args_to_convert_to_tensor:
