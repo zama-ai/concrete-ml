@@ -30,6 +30,10 @@ from concrete.ml.pytest.utils import (
 from concrete.ml.search_parameters import BinarySearch
 from concrete.ml.sklearn import get_sklearn_linear_models
 
+# This test module is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3812
+pytestmark = pytest.mark.flaky
+
 # For built-in models (trees and QNNs) we use the fixture `load_data`
 # For custom models, we define the following variables:
 DATASETS_ARGS = {

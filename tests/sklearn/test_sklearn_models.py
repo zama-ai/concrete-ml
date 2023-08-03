@@ -1063,6 +1063,9 @@ def test_quantization(
     check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score)
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3661
+@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -1342,6 +1345,9 @@ def test_pipeline(
     check_pipeline(model_class, x, y)
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3389
+@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "simulate",
