@@ -190,6 +190,8 @@ def test_compile_and_calib(
         "verbose": 0,
     }
 
+    print("test tests change")
+
     if is_classifier_or_partial_classifier(model_class):
         params["criterion__weight"] = class_weights
 
