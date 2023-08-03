@@ -470,6 +470,8 @@ jobs:
               - '!.*/**'
               - '!docs/_*/**'
               - deps_licenses/licenses_linux_user.txt.md5
+            dependencies:
+              - deps_licenses/licenses_linux_user.txt.md5
 
       # Run determinism test. The only case where this is not run is for a PR that does not modify
       # anything in the source code or the determinism test file. This step is also triggered
@@ -619,7 +621,8 @@ jobs:
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML
         if: |
           (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' && !cancelled()
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_codeblocks_pypi_wheel_cml 
       
@@ -671,10 +674,9 @@ jobs:
       # changed while running a PR's CI 
       - name: Check installation with sync_env and python ${{ matrix.python_version }}
         if: |
-          !(
-            steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-          )
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
 
@@ -682,10 +684,9 @@ jobs:
       # hanged while running a PR's CI
       - name: Check installation with pip and python ${{ matrix.python_version }}
         if: |
-          !(
-            steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-          )
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
 
@@ -693,10 +694,9 @@ jobs:
       # changed while running a PR's CI
       - name: Check installation with wheel and python ${{ matrix.python_version }}
         if: |
-          !(
-            steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-          )
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
 
@@ -704,10 +704,9 @@ jobs:
       # changed while running a PR's CI
       - name: Check installation with clone and python ${{ matrix.python_version }}
         if: |
-          !(
-            steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-          )
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
