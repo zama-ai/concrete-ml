@@ -530,11 +530,10 @@ jobs:
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
             echo "Conformance failed, got:"
-            echo "${{ steps.commit-conformance.outcome == 'success' }}"
-            echo "${{ steps.make-conformance.outcome == 'success' }}"
-            echo "${{ steps.build-docs.outcome != 'failure' }}"
-            echo "${{ steps.determinism.outcome != 'failure' }}"
-            echo "${CONFORMANCE_STATUS}"
+            echo "Commit conformance success step: ${{ steps.commit-conformance.outcome }}"
+            echo "Make conformance step: ${{ steps.make-conformance.outcome }}"
+            echo "Build docs step: ${{ steps.build-docs.outcome }}"
+            echo "Determinism step: ${{ steps.determinism.outcome }}"
             exit 1
           fi
 
