@@ -79,6 +79,9 @@ def run_hybrid_model_test(
             assert file_path.exists(), f"File '{file}' does not exist in the temp directory."
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3880
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "list_or_str_private_modules_names, expected_accuracy",
     [

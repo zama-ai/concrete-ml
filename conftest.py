@@ -63,6 +63,26 @@ def pytest_addoption(parser):
         help="To do longer tests.",
     )
 
+    parser.addoption(
+        "--no-flaky", action="store_true", default=False, help="Don't run known flaky tests."
+    )
+
+
+def pytest_configure(config):
+    """Update pytest configuration."""
+    config.addinivalue_line("markers", "flaky: mark test or module as flaky")
+
+
+def pytest_collection_modifyitems(config, items):
+    """Run pytest custom options."""
+    if config.getoption("--no-flaky"):
+        skip_flaky = pytest.mark.skip(
+            reason="This test is a known flaky and --no-flaky was called."
+        )
+        for item in items:
+            if "flaky" in item.keywords:
+                item.add_marker(skip_flaky)
+
 
 # This is only for doctests where we currently cannot make use of fixtures
 original_compilation_config_init = Configuration.__init__

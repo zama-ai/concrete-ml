@@ -428,6 +428,9 @@ def accuracy_test_rounding(
     # assert mse_high_precision <= mse_low_precision, "Rounding is not working as expected."
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3429
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "activation_function",
     [
@@ -485,6 +488,9 @@ def test_compile_torch_or_onnx_networks(
     )
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3660
+@pytest.mark.flaky
 @pytest.mark.parametrize(
     "activation_function",
     [

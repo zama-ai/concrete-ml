@@ -250,6 +250,21 @@ pytest_macOS_for_GitHub:
 	--randomly-dont-reset-seed \
 	${PYTEST_OPTIONS}
 
+.PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
+pytest_no_flaky:
+	poetry run pytest --version
+	echo "Skip the following known flaky tests (test file: number of skipped configs):"
+	poetry run pytest ./tests --collect-only -m flaky -qq
+	echo "Warning: coverage is disabled"
+	poetry run pytest tests/ \
+	--durations=10 -svv \
+	--capture=tee-sys \
+	-n 4 \
+	--randomly-dont-reorganize \
+	--count=$(COUNT) \
+	--randomly-dont-reset-seed \
+	--no-flaky \
+	${PYTEST_OPTIONS}
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
