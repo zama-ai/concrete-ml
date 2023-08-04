@@ -386,7 +386,7 @@ jobs:
           make setup_env
 
       - name: Check commits first line format
-        id: ccfl
+        id: commit-first-line
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
         with:
@@ -400,7 +400,7 @@ jobs:
           accessToken: ${{ secrets.GITHUB_TOKEN }} # github access token is only required if checkAllCommitMessages is true
 
       - name: Check commits line length
-        id: ccll
+        id: commit-line-length
         if: ${{ fromJSON(env.IS_PR) && steps.install-deps.outcome == 'success' && !cancelled() }}
         uses: gsactions/commit-message-checker@16fa2d5de096ae0d35626443bcd24f1e756cafee
         with:
@@ -416,11 +416,11 @@ jobs:
         id: commit-conformance
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         env:
-          CCFL_OK: ${{ (fromJSON(env.IS_PR) && steps.ccfl.outcome == 'success') || steps.ccfl.outcome == 'skipped' }}
-          CCLL_OK: ${{ (fromJSON(env.IS_PR) && steps.ccll.outcome == 'success') || steps.ccll.outcome == 'skipped' }}
+          FIRST_LINE_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-first-line.outcome == 'success') || steps.commit-first-line.outcome == 'skipped' }}
+          LINE_LENGTH_OK: ${{ (fromJSON(env.IS_PR) && steps.commit-line-length.outcome == 'success') || steps.commit-line-length.outcome == 'skipped' }}
         run: |
-          if [[ "${CCFL_OK}" != "true" || "${CCLL_OK}" != "true" ]]; then
-            echo "Issues with commits. First line ok: ${CCFL_OK}. Line length ok: ${CCLL_OK}."
+          if [[ "${FIRST_LINE_OK}" != "true" || "${LINE_LENGTH_OK}" != "true" ]]; then
+            echo "Issues with commits. First line ok: ${FIRST_LINE_OK}. Line length ok: ${LINE_LENGTH_OK}."
             exit 1
           fi
 
@@ -429,21 +429,90 @@ jobs:
           make actionlint
 
       - name: Source code conformance
-        id: cs
+        id: make-pcc
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         # pcc launches an internal target with proper flags
         run: |
           make pcc
 
+      # Checked for changes between main and the current branch in a PR. More specifically, 
+      # this is used in regular CIs to avoid launching Pytest, checking codeblocks, building docs 
+      # or other steps if the associated files were not touched. For most, we also check that the
+      # linux MD5 has not changed, which means that no libraries got updated. This is done in order
+      # to handle PRs which only upgrades dependencies
+      # Following the 'files_yaml' section, we define what files should trigger a defined acronym 
+      # (src, codeblocks, ...) when some changes are detected in them. For example, if some 
+      # dependencies were changed, 'tests', 'determinism', 'codeblocks' and 'determinism' acronyms
+      # will be affected. We use the license MD5 file for that because it is built on the 
+      # poetry.lock as well as the Concrete Python version, which can be installed manually in the
+      # makefile. 
+      # For codeblocks, 'make pytest_codeblocks' runs the `make_utils/pytest_codeblocks.sh` script,
+      # which executes a find and grep command to find them. In the following section, we manually
+      # re-define what this command does by looking at all markdown files that are neither in hidden
+      # directories nor in docs/_apidocs or similar paths. Additionally, as for others, we check for
+      # changes in the source directory or in installed dependencies.
+      - name: Get all changed files from main in PR
+        id: changed-files-in-pr
+        if: | 
+          env.IS_PR
+          && !fromJSON(env.IS_WEEKLY) 
+          && !fromJSON(env.IS_RELEASE)
+          && steps.install-deps.outcome == 'success'
+          && steps.make-pcc.outcome == 'success' 
+          && !cancelled()
+        uses: tj-actions/changed-files@v37.5.1
+        with:
+          files_yaml: |
+            src:
+              - src/**
+            tests:
+              - tests/**
+              - src/concrete/ml/pytest/**
+            determinism:
+              - tests/seeding/test_seeding.py
+            docs:
+              - docs/**
+            codeblocks:
+              - '**.md'
+              - '!.*/**'
+              - '!docs/_*/**'
+            dependencies:
+              - deps_licenses/licenses_linux_user.txt.md5
+            conftest:
+              - conftest.py
+
+      # Run determinism test. The only case where this is not run is for a PR that does not modify
+      # anything in the source code or the determinism test file. This step is also triggered
+      # if any dependency has been updated or the conftest.py file has changed
       - name: Determinism
-        id: de
-        if: ${{ steps.install-deps.outcome == 'success' && steps.cs.outcome == 'success' && !cancelled() }}
+        id: determinism
+        if: |
+          !(
+            steps.changed-files-in-pr.outcome == 'success' 
+            && steps.changed-files-in-pr.outputs.determinism_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.dependencies_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.conftest_any_changed == 'false'
+          )
+          && steps.install-deps.outcome == 'success' 
+          && steps.make-pcc.outcome == 'success' 
+          && !cancelled()
         run: |
           make determinism
 
+      # Build the documentation if anything changed in our documentation files or in the source code
       - name: Build docs
-        id: cbd
-        if: ${{ steps.install-deps.outcome == 'success' && steps.cs.outcome == 'success' && steps.de.outcome == 'success' && !cancelled() }}
+        id: build-docs
+        if: |
+          !(
+            steps.changed-files-in-pr.outcome == 'success' 
+            && steps.changed-files-in-pr.outputs.docs_any_changed == 'false' 
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+          )
+          && steps.install-deps.outcome == 'success' 
+          && steps.make-pcc.outcome == 'success' 
+          && steps.determinism.outcome != 'failure' 
+          && !cancelled()
         run: |
           make docs
 
@@ -458,28 +527,40 @@ jobs:
           --to-ref "${GIT_TAG}" \
           --to-ref-must-have-tag > "${CHANGELOG_FILE}"
 
+      # Make sure all necessary steps passed. For build-docs and determinism steps, we only check for 
+      # non-failures as the 'changed-files-in-pr' step might skip them
       - name: Stop if previous steps failed
         id: conformance
         if: ${{ always() && !cancelled() }}
         env:
-          # Add anything here you want to stop the build, before pytest
-          CONFORMANCE_STATUS: ${{ steps.commit-conformance.outcome == 'success' && steps.cs.outcome == 'success' && steps.cbd.outcome == 'success' && steps.de.outcome == 'success' }}
+          CONFORMANCE_STATUS: >-
+            ${{
+              steps.commit-conformance.outcome == 'success' 
+              && steps.make-pcc.outcome == 'success' 
+              && steps.build-docs.outcome != 'failure'
+              && steps.determinism.outcome != 'failure'
+            }}
         run: |
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
-            echo "Conformance failed, check logs"
+            echo "Conformance failed, got:"
+            echo "Commit conformance success step: ${{ steps.commit-conformance.outcome }}"
+            echo "Make conformance step: ${{ steps.make-pcc.outcome }}"
+            echo "Build docs step: ${{ steps.build-docs.outcome }}"
+            echo "Determinism step: ${{ steps.determinism.outcome }}"
             exit 1
           fi
 
       # Taring the docs allows for much faster upload speed (from ~3min worst case to ~2s best case)
       - name: Tar docs artifacts
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        id: tar-docs
+        if: ${{ steps.conformance.outcome == 'success' && steps.build-docs.outcome == 'success' && !cancelled() }}
         run: |
           cd docs/_build/html
           tar -cvf docs.tar ./*
 
       # Only upload docs once from reference build
       - name: Archive docs artifacts
-        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: ${{ fromJSON(env.IS_REF_BUILD) && steps.tar-docs.outcome == 'success' && !cancelled() }}
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: html-docs
@@ -502,42 +583,81 @@ jobs:
           rm -rf dist
           poetry build -f wheel
 
-      - name: Upload wheel artifact
+      - name: Upload wheel artifacts
         if: ${{ fromJSON(env.IS_REF_BUILD) && steps.build-wheel.outcome == 'success' }}
         uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
         with:
           name: py3-wheel
           path: dist/*.whl
-
+      
+      # Run Pytest on a subset of our tests if the source code or our tests has changed, and if the 
+      # current workflow does no take place in a weekly or release CI. This step is also triggered
+      # if any dependency has been updated or the conftest.py files has changed
       - name: PyTest Source Code (regular)
         id: pytest_regular
-        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: |
+          steps.changed-files-in-pr.outcome == 'success' 
+          && (
+            steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+            || steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+          )
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest
 
+      # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
         if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
         run: |
           make pytest PYTEST_OPTIONS=--weekly
 
+      # Run Pytest on codeblocks if the source code or any markdown has changed, or if this is
+      # part of the weekly or release CI. This step is also triggered if any dependency has been 
+      # updated 
       - name: PyTest CodeBlocks
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        if: |
+          (
+            !(
+              steps.changed-files-in-pr.outcome == 'success' 
+              && steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'false'
+              && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+              && steps.changed-files-in-pr.outputs.dependencies_any_changed == 'false'
+            ) 
+            || fromJSON(env.IS_WEEKLY) 
+            || fromJSON(env.IS_RELEASE)
+          )
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_codeblocks
 
+      # Run Pytest on all of our tests on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML
-        if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
-          make pytest_codeblocks_pypi_wheel_cml
-
+          make pytest_codeblocks_pypi_wheel_cml 
+      
+      # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Notebooks
-        if: ${{ fromJSON(env.IS_WEEKLY) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: | 
+          fromJSON(env.IS_WEEKLY) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_nb
 
+      # Run Pytest on all of our tests on a weekly basis or while releasing
       - name: PyTest with PyPI local wheel of Concrete-ML 
-        if: ${{ (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) && steps.conformance.outcome == 'success' && !cancelled() }}
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' && !cancelled()
         run: |
           make pytest_pypi_wheel_cml
 
@@ -549,7 +669,13 @@ jobs:
       # Compute coverage only on reference build
       - name: Test coverage
         id: coverage
-        if: ${{ always() && fromJSON(env.IS_REF_BUILD) && (steps.pytest_regular.outcome != 'skipped' || steps.pytest_weekly.outcome != 'skipped') && !cancelled() }}
+        if: |
+          fromJSON(env.IS_REF_BUILD) 
+          && (
+            steps.pytest_regular.outcome != 'skipped' 
+            || steps.pytest_weekly.outcome != 'skipped'
+          ) 
+          && !cancelled()
         run: |
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
@@ -560,20 +686,44 @@ jobs:
         with:
           path: diff-coverage.txt
           recreate: true
-
+      
+      # Check installation with sync_env if the source code or some dependency versions have been 
+      # changed while running a PR's CI 
       - name: Check installation with sync_env and python ${{ matrix.python_version }}
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
 
+      # Check installation with pip if the source code or some dependency versions have been c
+      # hanged while running a PR's CI
       - name: Check installation with pip and python ${{ matrix.python_version }}
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
 
+      # Check installation with wheel if the source code or some dependency versions have been 
+      # changed while running a PR's CI
       - name: Check installation with wheel and python ${{ matrix.python_version }}
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
 
+      # Check installation with git clone if the source code or some dependency versions have been 
+      # changed while running a PR's CI
       - name: Check installation with clone and python ${{ matrix.python_version }}
+        if: |
+            (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+            && steps.conformance.outcome == 'success' 
+            && !cancelled()
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
