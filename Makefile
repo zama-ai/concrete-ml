@@ -250,6 +250,10 @@ pytest_macOS_for_GitHub:
 	--randomly-dont-reset-seed \
 	${PYTEST_OPTIONS}
 
+# --ignore makes pytest ignore complete files (because all tests are flaky). This needs to be done
+# even though the associated module are marked as "flaky" because this does not seem to work in
+# some cases
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3812
 .PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
 pytest_no_flaky:
 	poetry run pytest --version
@@ -264,6 +268,7 @@ pytest_no_flaky:
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
 	--no-flaky \
+	--ignore "tests/parameter_search/test_p_error_binary_search.py" \
 	${PYTEST_OPTIONS}
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
