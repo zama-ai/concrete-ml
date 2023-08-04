@@ -427,7 +427,7 @@ jobs:
           make actionlint
 
       - name: Source code conformance
-        id: make-conformance
+        id: make-pcc
         if: ${{ steps.install-deps.outcome == 'success' && !cancelled() }}
         # pcc launches an internal target with proper flags
         run: |
@@ -438,6 +438,17 @@ jobs:
       # or other steps if the associated files were not touched. For most, we also check that the
       # linux MD5 has not changed, which means that no libraries got updated. This is done in order
       # to handle PRs which only upgrades dependencies
+      # Following the 'files_yaml' section, we define what files should trigger a defined acronym 
+      # (src, codeblocks, ...) when some changes are detected in them. For example, if some 
+      # dependencies were changed, 'tests', 'determinism', 'codeblocks' and 'determinism' acronyms
+      # will be affected. We use the license MD5 file for that because it is built on the 
+      # poetry.lock as well as the Concrete Python version, which can be installed manually in the
+      # makefile. 
+      # For codeblocks, 'make pytest_codeblocks' runs the `make_utils/pytest_codeblocks.sh` script,
+      # which executes a find and grep command to find them. In the following section, we manually
+      # re-define what this command does by looking at all markdown files that are neither in hidden
+      # directories nor in docs/_apidocs or similar paths. Additionally, as for others, we check for
+      # changes in the source directory or in installed dependencies.
       - name: Get all changed files from main in PR
         id: changed-files-in-pr
         if: | 
@@ -445,7 +456,7 @@ jobs:
           && !fromJSON(env.IS_WEEKLY) 
           && !fromJSON(env.IS_RELEASE)
           && steps.install-deps.outcome == 'success'
-          && steps.make-conformance.outcome == 'success' 
+          && steps.make-pcc.outcome == 'success' 
           && !cancelled()
         uses: tj-actions/changed-files@v37.5.1
         with:
@@ -484,7 +495,7 @@ jobs:
             && steps.changed-files-in-pr.outputs.determinism_any_changed == 'false'
           )
           && steps.install-deps.outcome == 'success' 
-          && steps.make-conformance.outcome == 'success' 
+          && steps.make-pcc.outcome == 'success' 
           && !cancelled()
         run: |
           make determinism
@@ -499,7 +510,7 @@ jobs:
             && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
           )
           && steps.install-deps.outcome == 'success' 
-          && steps.make-conformance.outcome == 'success' 
+          && steps.make-pcc.outcome == 'success' 
           && steps.determinism.outcome != 'failure' 
           && !cancelled()
         run: |
@@ -525,7 +536,7 @@ jobs:
           CONFORMANCE_STATUS: >-
             ${{
               steps.commit-conformance.outcome == 'success' 
-              && steps.make-conformance.outcome == 'success' 
+              && steps.make-pcc.outcome == 'success' 
               && steps.build-docs.outcome != 'failure'
               && steps.determinism.outcome != 'failure'
             }}
@@ -533,7 +544,7 @@ jobs:
           if [[ "${CONFORMANCE_STATUS}" != "true" ]]; then
             echo "Conformance failed, got:"
             echo "Commit conformance success step: ${{ steps.commit-conformance.outcome }}"
-            echo "Make conformance step: ${{ steps.make-conformance.outcome }}"
+            echo "Make conformance step: ${{ steps.make-pcc.outcome }}"
             echo "Build docs step: ${{ steps.build-docs.outcome }}"
             echo "Determinism step: ${{ steps.determinism.outcome }}"
             exit 1
