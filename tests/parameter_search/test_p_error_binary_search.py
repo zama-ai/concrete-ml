@@ -31,6 +31,9 @@ from concrete.ml.search_parameters import BinarySearch
 from concrete.ml.sklearn import get_sklearn_linear_models
 
 # This test module is a known flaky
+# Here, we mark all tests from this module as flaky since the issue happens when loading the
+# dataset, as shown in pytest's documentation:
+# https://docs.pytest.org/en/7.1.x/example/markers.html#marking-whole-classes-or-modules
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3812
 pytestmark = pytest.mark.flaky
 
