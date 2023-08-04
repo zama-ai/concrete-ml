@@ -250,16 +250,22 @@ pytest_macOS_for_GitHub:
 	--randomly-dont-reset-seed \
 	${PYTEST_OPTIONS}
 
+# Warning: collecting tests can trigger the parameter_search flaky test
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3812
+.PHONY: check_currentl_flaky_tests # Print the current list of known flaky tests
+check_current_flaky_tests:
+	echo "Skip the following known flaky tests (test file: number of skipped configs):"
+	poetry run pytest ./tests --collect-only -m flaky -qq
+
 # --ignore makes pytest ignore complete files (because all tests are flaky). This needs to be done
-# even though the associated module are marked as "flaky" because this does not seem to work in
-# some cases
+# even though the associated module is marked as "flaky" because collecting the test is enough to
+# trigger the paremeter_search error
+# Remove the --ignore and include 'check_current_flaky_tests' once the flaky is fixed
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3812
 .PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
 pytest_no_flaky:
 	poetry run pytest --version
-	echo "Skip the following known flaky tests (test file: number of skipped configs):"
-	poetry run pytest ./tests --collect-only -m flaky -qq
-	echo "Warning: coverage is disabled"
+	echo "Warning: known flaky tests are skipped and coverage is disabled"
 	poetry run pytest tests/ \
 	--durations=10 -svv \
 	--capture=tee-sys \
