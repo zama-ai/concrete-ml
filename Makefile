@@ -236,6 +236,7 @@ pytest_one:
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
+	--cache-clear \
 	${PYTEST_OPTIONS} \
 	"$${TEST}"
 
@@ -248,6 +249,7 @@ pytest_one_single_cpu:
 	--capture=tee-sys \
 	--randomly-dont-reorganize \
 	--randomly-dont-reset-seed \
+	--cache-clear \
 	${PYTEST_OPTIONS} \
 	"$${TEST}" --randomly-seed=${RANDOMLY_SEED}
 
@@ -263,6 +265,7 @@ pytest_macOS_for_GitHub:
 	--randomly-dont-reorganize \
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
+	--cache-clear \
 	${PYTEST_OPTIONS}
 
 .PHONY: check_current_flaky_tests # Print the current list of known flaky tests
@@ -282,7 +285,33 @@ pytest_no_flaky: check_current_flaky_tests
 	--count=$(COUNT) \
 	--randomly-dont-reset-seed \
 	--no-flaky \
+	--cache-clear \
 	${PYTEST_OPTIONS}
+
+# Checking for latest failed tests works by accessing pytest's cache. It is therefore recommended to
+# call '--cache-clear' when calling the previous pytest run. Also, 
+# 'pytest_check_last_failed_tests_are_flaky' might nor work if executed long after running 
+# 'make pytest' as the cache might have been modified or deleted in the mean time 
+.PHONY: pytest_check_last_failed_tests_are_flaky # Check if last failed tests are known flaky tests or not
+pytest_check_last_failed_tests_are_flaky:
+	poetry run pytest ./tests --last-failed-are-flaky
+
+# Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
+# call '--cache-clear' when calling the previous pytest run. 
+# The '--last-failed' option runs all last failed tests. In case there is none, the 
+# '--last-failed-no-failures none' option indicates pytest no to run anything (instead of running 
+# all tests over again)
+.PHONY: pytest_run_last_failed # Run all failed tests from the previous pytest run
+pytest_run_last_failed:
+	poetry run pytest ./tests --last-failed --last-failed-no-failures none
+
+# Printing latest failed tests works by accessing pytest's cache. It is therefore recommended to
+# call '--cache-clear' when calling the previous pytest run. 
+# The '--cache-show' option prints pytest's complete cache (cacehd tests, random_seed, ...). Last
+# failed tests are found in the 'cache/lastfailed' section, which can be used to filter the output 
+.PHONY: pytest_get_last_failed # Get the list of last failed tests 
+pytest_get_last_failed:
+	pytest ./tests --cache-show cache/lastfailed
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy

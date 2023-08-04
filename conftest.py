@@ -1,8 +1,10 @@
 """PyTest configuration file."""
+import copy
 import json
 import random
 import re
 from pathlib import Path
+from pprint import pprint
 from typing import Any, Callable, Optional, Union
 
 import numpy
@@ -67,6 +69,13 @@ def pytest_addoption(parser):
         "--no-flaky", action="store_true", default=False, help="Don't run known flaky tests."
     )
 
+    parser.addoption(
+        "--last-failed-are-flaky",
+        action="store_true",
+        default=False,
+        help="Check if last failed tests are known flaky tests.",
+    )
+
 
 def pytest_configure(config):
     """Update pytest configuration."""
@@ -82,6 +91,38 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "flaky" in item.keywords:
                 item.add_marker(skip_flaky)
+
+    if config.getoption("--last-failed-are-flaky"):
+        last_failed_tests = copy.deepcopy(config.cache.get("cache/lastfailed", {}))
+        if last_failed_tests:
+            flaky_tests = set()
+            for item in items:
+                if "flaky" in item.keywords:
+                    flaky_tests.add(item.name)
+
+            for last_failed_test in last_failed_tests.keys():
+                last_failed_test_name = last_failed_test.split("::")[1]
+                if last_failed_test_name not in flaky_tests:
+                    last_failed_tests[last_failed_test] = False
+
+            last_failed_tests_are_flaky = all(last_failed_tests.values())
+
+            if last_failed_tests_are_flaky:
+                header_message = "All last failed tests are known flaky tests"
+                report_status = "true"
+
+            else:
+                header_message = "Some of the last failed tests are not known flaky tests"
+                report_status = "false"
+
+        else:
+            header_message = "No tests previously failed"
+            report_status = "false"
+
+        print("\nLast failed are flaky:", report_status)
+        print(header_message + ":")
+        pprint(last_failed_tests)
+        pytest.exit(header_message + ".", returncode=0)
 
 
 # This is only for doctests where we currently cannot make use of fixtures
