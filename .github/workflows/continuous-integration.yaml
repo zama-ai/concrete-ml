@@ -593,8 +593,12 @@ jobs:
       # Run Pytest on a subset of our tests if the source code or our tests has changed, and if the 
       # current workflow does no take place in a weekly or release CI. This step is also triggered
       # if any dependency has been updated or the conftest.py files has changed
+      # Additionally, if this step fails, the job ('build-linux') won't fail (thanks to the 
+      # 'continue-on-error' option) and the following step 'Re-run failed flaky tests (regular)' 
+      # will be triggered in order to check for flaky tests
       - name: PyTest Source Code (regular)
         id: pytest_regular
+        continue-on-error: true
         if: |
           steps.changed-files-in-pr.outcome == 'success' 
           && (
@@ -608,15 +612,54 @@ jobs:
         run: |
           make pytest
 
+      # If regular tests failed, check for flaky tests. If all failed tests are known flaky tests, 
+      # re-run them at most 3 times (on exit status 2, which means that a test failed again in 
+      # pytest). If at least one test is not a known flaky test (exit status 1), the step fails and 
+      # is not re-ran.
       - name: Re-run failed flaky tests (regular)
-        id: rerun-flaky-tests
-        if: steps.pytest-regular.outcome == 'failure' && !cancelled()
-        run: |
-          PYTEST_CACHE=$(pytest --cache-show cache/lastfailed | grep "cachedir:" | sed 's/^.*: //')
-          LAST_FAILED_TESTS_JSON="$PYTEST_CACHE/v/cache/lastfailed"
+        id: re-run-flaky-tests
+        uses: nick-fields/retry@v2.8.3
+        if: steps.check-flaky-tests.outcome == 'failure' && !cancelled()
+        with:
+          max_attempts: 3
+          retry_on_exit_code: 2
+          command: |
+            ./script/actions/re_run_last_failed_flakies.sh
 
-          poetry run python ./script/actions_utils/get_pytest_latest_failed_flakies.py
+      # If the previous step '(Re-run failed flaky tests (regular))' was not skipped, a comment is 
+      # added to the current PR. If all failed tests were known flaky tests, a 'warning' message is 
+      # given and failed tests are all listed. If at least one test was not a known flaky test, a 
+      # simple message indicating that some non-flaky tests failed is given.
+      - name: Warn PR with failed tests
+        id: warn-pr-failed-tests
+        uses: actions/github-script@v6
+        if: steps.check-flaky-tests.outcome != 'skipped' && !cancelled()
+        env:
+          FLAKY_TESTS_PASSED: > 
+            "WARNING: The following known flaky tests initially failed and were ran again a total of "
+            "${{ steps.check-flaky-tests.outputs.total_attempts }} times."
+          FLAKY_TESTS_NOT_PASSED: "Non-flaky tests found in regular tests."
+        with:
+          script: |
+            if ${{ steps.check-flaky-tests.outcome == 'success' }}
+            then
+              FAILED_FLAKY_TESTS=$(make pytest_get_last_failed | grep "cache/lastfailed contains:" -A1000 | sed '1d; $d')
 
+              github.rest.issues.createComment({
+                issue_number: ${{ github.event.pull_request.number }},
+                owner:  ${{ github.repository_owner }},
+                repo:  ${{ github.repository }},
+                body: "${FLAKY_TESTS_PASSED} \n ${FAILED_FLAKY_TESTS}"
+              })
+            else
+              github.rest.issues.createComment({
+                issue_number: ${{ github.event.pull_request.number }},
+                owner:  ${{ github.repository_owner }},
+                repo:  ${{ github.repository }},
+                body: "${FLAKY_TESTS_NOT_PASSED}"
+              })
+            fi
+ 
       # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Source Code (weekly)
         id: pytest_weekly
