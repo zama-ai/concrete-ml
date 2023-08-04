@@ -466,33 +466,31 @@ jobs:
             tests:
               - tests/**
               - src/concrete/ml/pytest/**
-              - conftest.py
-              - deps_licenses/licenses_linux_user.txt.md5
             determinism:
-              - src/**
               - tests/seeding/test_seeding.py
-              - conftest.py
-              - deps_licenses/licenses_linux_user.txt.md5
             docs:
               - docs/**
             codeblocks:
-              - src/**
               - '**.md'
               - '!.*/**'
               - '!docs/_*/**'
-              - deps_licenses/licenses_linux_user.txt.md5
             dependencies:
               - deps_licenses/licenses_linux_user.txt.md5
+            conftest:
+              - conftest.py
 
       # Run determinism test. The only case where this is not run is for a PR that does not modify
       # anything in the source code or the determinism test file. This step is also triggered
-      # if any dependency has been updated 
+      # if any dependency has been updated or the conftest.py file has changed
       - name: Determinism
         id: determinism
         if: |
           !(
             steps.changed-files-in-pr.outcome == 'success' 
             && steps.changed-files-in-pr.outputs.determinism_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.dependencies_any_changed == 'false'
+            && steps.changed-files-in-pr.outputs.conftest_any_changed == 'false'
           )
           && steps.install-deps.outcome == 'success' 
           && steps.make-pcc.outcome == 'success' 
@@ -592,7 +590,7 @@ jobs:
       
       # Run Pytest on a subset of our tests if the source code or our tests has changed, and if the 
       # current workflow does no take place in a weekly or release CI. This step is also triggered
-      # if any dependency has been updated 
+      # if any dependency has been updated or the conftest.py files has changed
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: |
@@ -600,6 +598,8 @@ jobs:
           && (
             steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
             || steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
@@ -619,7 +619,12 @@ jobs:
       - name: PyTest CodeBlocks
         if: |
           (
-            (steps.changed-files-in-pr.outcome == 'success' && steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'true') 
+            !(
+              steps.changed-files-in-pr.outcome == 'success' 
+              && steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'false'
+              && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
+              && steps.changed-files-in-pr.outputs.dependencies_any_changed == 'false'
+            ) 
             || fromJSON(env.IS_WEEKLY) 
             || fromJSON(env.IS_RELEASE)
           )
