@@ -59,6 +59,7 @@ uvicorn = "^0.21.0"
 python-multipart = "^0.0.6"
 tqdm = "^4.64.1"
 transformers = "^4.30.2"
+certifi = "2023.07.22"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
