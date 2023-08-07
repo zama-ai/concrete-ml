@@ -1345,9 +1345,6 @@ def test_pipeline(
     check_pipeline(model_class, x, y)
 
 
-# This test is a known flaky
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3389
-@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "simulate",
@@ -1379,16 +1376,6 @@ def test_predict_correctness(
     verbose=True,
 ):
     """Test correct execution, if there is sufficiently n_bits."""
-
-    # Will be reverted when it works
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3118
-    # FIXME: https://github.com/zama-ai/concrete-numpy-internal/issues/1859
-    if (
-        (n_bits >= N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS)
-        and (model_class in get_sklearn_tree_models())
-        and not simulate
-    ):
-        pytest.skip("Skipping while bug concrete-numpy-internal/issues/1859 is being investigated")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
