@@ -483,8 +483,7 @@ check_refresh_notebooks_list:
 release_docker:
 	EV_FILE="$$(mktemp tmp.docker.XXXX)" && \
 	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
-	PROJECT_VERSION="$$(poetry version)" && \
-	PROJECT_VERSION="$$(echo "$${PROJECT_VERSION}" | cut -d ' ' -f 2)" && \
+	PROJECT_VERSION="$$(poetry version --short)" && \
 	IS_PRERELEASE="$$(poetry run python script/make_utils/version_utils.py \
 	islatest \
 	--new-version "$${PROJECT_VERSION}" \
@@ -552,15 +551,15 @@ check_version_coherence:
 
 .PHONY: changelog # Generate a changelog
 changelog: check_version_coherence
-	PROJECT_VER=($$(poetry version)) && \
-	PROJECT_VER="$${PROJECT_VER[1]}" && \
+	PROJECT_VER="$${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
 .PHONY: release # Create a new release from the private repo
-release: check_version_coherence check_apidocs
-	@PROJECT_VER=($$(poetry version)) && \
-	PROJECT_VER="$${PROJECT_VER[1]}" && \
+release: check_version_coherence apidocs
+	PROJECT_VER="$${poetry version --short}" && \
 	./script/release_utils/check_branch_name.sh "$${PROJECT_VER}" && \
+	git lfs fetch --all \
+	
 	TAG_NAME="v$${PROJECT_VER}" && \
 	git fetch --tags --force && \
 	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
