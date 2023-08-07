@@ -13,7 +13,7 @@ if [[ -n "$CML_VERSION" ]]; then
 
     # Given a version a.b.c, the current release branch name is expected to have 
     # format: release/a.b.x
-    if [[ "$$BRANCH_NAME" != "$EXPECTED_BRANCH_NAME" ]]; then											
+    if [[ "$BRANCH_NAME" != "$EXPECTED_BRANCH_NAME" ]]; then											
         echo "The current branch name does not match the expected release branch name format."
         echo "Expected $EXPECTED_BRANCH_NAME, but got $BRANCH_NAME."
         exit 1
