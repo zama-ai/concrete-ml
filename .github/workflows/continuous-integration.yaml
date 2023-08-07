@@ -615,48 +615,56 @@ jobs:
       # If regular tests failed, check for flaky tests. If all failed tests are known flaky tests, 
       # re-run them at most 3 times (on exit status 2, which means that a test failed again in 
       # pytest). If at least one test is not a known flaky test (exit status 1), the step fails and 
-      # is not re-ran.
+      # is not re-ran. While setting a timeout is mandatory, the value specified here can be changed
+      # in the future if necessary. 
       - name: Re-run failed flaky tests (regular)
         id: re-run-flaky-tests
         uses: nick-fields/retry@v2.8.3
-        if: steps.check-flaky-tests.outcome == 'failure' && !cancelled()
+        if: steps.pytest_regular.outcome == 'failure' && !cancelled()
         with:
           max_attempts: 3
-          retry_on_exit_code: 2
+          timeout_minutes: 10
           command: |
-            ./script/actions/re_run_last_failed_flakies.sh
+            ./script/actions_utils/re_run_last_failed_flaky_tests.sh
 
       # If the previous step '(Re-run failed flaky tests (regular))' was not skipped, a comment is 
       # added to the current PR. If all failed tests were known flaky tests, a 'warning' message is 
       # given and failed tests are all listed. If at least one test was not a known flaky test, a 
       # simple message indicating that some non-flaky tests failed is given.
+      # The 'createComment' command does not seem to properly handle the '${{}}' syntax and thus 
+      # can only be used along 'process.env' variables. There is also an issue with multi-line 
+      # body messages, which is also solved through environment variables.
       - name: Warn PR with failed tests
         id: warn-pr-failed-tests
         uses: actions/github-script@v6
-        if: steps.check-flaky-tests.outcome != 'skipped' && !cancelled()
+        if: steps.re-run-flaky-tests.outcome != 'skipped' && !cancelled()
         env:
-          FLAKY_TESTS_PASSED: > 
-            "WARNING: The following known flaky tests initially failed and were ran again a total of "
-            "${{ steps.check-flaky-tests.outputs.total_attempts }} times."
+          FLAKY_TESTS_PASSED: "WARNING: The following known flaky tests initially failed and were ran again a total of ${{ steps.re-run-flaky-tests.outputs.total_attempts }} times."
           FLAKY_TESTS_NOT_PASSED: "Non-flaky tests found in regular tests."
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_OWNER: ${{ github.repository_owner }}
+          GH_REPO: ${{ github.repository }}
         with:
+          github-token: ${{ env.GH_TOKEN }}
           script: |
-            if ${{ steps.check-flaky-tests.outcome == 'success' }}
+            if ${{ steps.re-run-flaky-tests.outcome == 'success' }}
             then
               FAILED_FLAKY_TESTS=$(make pytest_get_last_failed | grep "cache/lastfailed contains:" -A1000 | sed '1d; $d')
+              FAILED_FLAKY_TESTS="${FLAKY_TESTS_PASSED} \n ${FAILED_FLAKY_TESTS}"
+              echo "FAILED_FLAKY_TESTS=${FAILED_FLAKY_TESTS}" >> "$GITHUB_ENV"
 
               github.rest.issues.createComment({
-                issue_number: ${{ github.event.pull_request.number }},
-                owner:  ${{ github.repository_owner }},
-                repo:  ${{ github.repository }},
-                body: "${FLAKY_TESTS_PASSED} \n ${FAILED_FLAKY_TESTS}"
+                issue_number: process.env.PR_NUMBER,
+                owner: process.env.GH_OWNER,
+                repo: process.env.GH_REPO,
+                body: process.env.FAILED_FLAKY_TESTS
               })
             else
               github.rest.issues.createComment({
-                issue_number: ${{ github.event.pull_request.number }},
-                owner:  ${{ github.repository_owner }},
-                repo:  ${{ github.repository }},
-                body: "${FLAKY_TESTS_NOT_PASSED}"
+                issue_number: process.env.PR_NUMBER,
+                owner: process.env.GH_OWNER,
+                repo: process.env.GH_REPO,
+                body: process.env.FLAKY_TESTS_NOT_PASSED
               })
             fi
  
