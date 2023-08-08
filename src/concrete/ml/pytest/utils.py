@@ -190,34 +190,6 @@ def instantiate_model_generic(model_class, n_bits, **parameters):
     return model
 
 
-def get_torchvision_dataset(
-    param: Dict,
-    train_set: bool,
-):
-    """Get train or testing data-set.
-
-    Args:
-        param (Dict): Set of hyper-parameters to use based on the selected torchvision data-set.
-            It must contain: data-set transformations (torchvision.transforms.Compose), and the
-            data-set_size (Optional[int]).
-        train_set (bool): Use train data-set if True, else testing data-set
-
-    Returns:
-        A torchvision data-sets.
-    """
-
-    transform = param["train_transform"] if train_set else param["test_transform"]
-    dataset = param["dataset"](download=True, root="./data", train=train_set, transform=transform)
-
-    if param.get("dataset_size", None):
-        dataset = torch.utils.data.random_split(
-            dataset,
-            [param["dataset_size"], len(dataset) - param["dataset_size"]],
-        )[0]
-
-    return dataset
-
-
 def data_calibration_processing(data, n_sample: int, targets=None):
     """Reduce size of the given data-set.
 
@@ -251,13 +223,6 @@ def data_calibration_processing(data, n_sample: int, targets=None):
                 break
 
         x, y = numpy.concatenate(all_x), numpy.concatenate(all_y)
-    elif (
-        hasattr(data, "__getitem__") and hasattr(data, "__len__") and hasattr(data, "train")
-    ) or isinstance(data, torch.utils.data.dataset.Subset):
-        assert targets is None, "dataset includes inputs and targets"
-        splitted_dataset = list(zip(*data))
-        x, y = numpy.stack(splitted_dataset[0]), numpy.array(splitted_dataset[1])
-
     elif targets is not None and is_pandas_type(data) and is_pandas_type(targets):
         x = data.to_numpy()
         y = targets.to_numpy()

@@ -11,7 +11,6 @@ from sklearn.datasets import make_classification
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import r2_score, top_k_accuracy_score
 from tensorflow import keras
-from torchvision import datasets, transforms
 
 from concrete.ml.common.check_inputs import check_array_and_assert
 from concrete.ml.common.utils import (
@@ -19,38 +18,19 @@ from concrete.ml.common.utils import (
     is_model_class_in_a_list,
     is_regressor_or_partial_regressor,
 )
-from concrete.ml.pytest.torch_models import QNNFashionMNIST, QuantCustomModel, TorchCustomModel
+from concrete.ml.pytest.torch_models import QuantCustomModel, TorchCustomModel
 from concrete.ml.pytest.utils import (
     data_calibration_processing,
     get_random_extract_of_sklearn_models_and_datasets,
-    get_torchvision_dataset,
     instantiate_model_generic,
     load_torch_model,
 )
 from concrete.ml.search_parameters import BinarySearch
 from concrete.ml.sklearn import get_sklearn_linear_models
 
-# This test module is a known flaky
-# Here, we mark all tests from this module as flaky since the issue happens when loading the
-# dataset, as shown in pytest's documentation:
-# https://docs.pytest.org/en/7.1.x/example/markers.html#marking-whole-classes-or-modules
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3812
-pytestmark = pytest.mark.flaky
-
 # For built-in models (trees and QNNs) we use the fixture `load_data`
 # For custom models, we define the following variables:
 DATASETS_ARGS = {
-    "FashionMNIST": {
-        "dataset": datasets.FashionMNIST,
-        "train_transform": transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(0.2859, 0.3530)]
-        ),
-        "test_transform": transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(0.2859, 0.3530)]
-        ),
-        "dataset_size": 60000,
-        "n_classes": 10,
-    },
     "CustomClassificationDataset": {
         "n_samples": 1000,
         "n_classes": 3,
@@ -63,14 +43,6 @@ DATASETS_ARGS = {
 
 
 MODELS_ARGS = {
-    "FashionMNIST": {
-        "qat": {
-            "model_class": QNNFashionMNIST,
-            "path": Path(__file__).parent / "FashionMNIST_quant_state_dict.pt",
-            "params": {"n_bits": 4},
-        },
-        "dataset": DATASETS_ARGS["FashionMNIST"],
-    },
     "CustomModel": {
         "qat": {
             "model_class": QuantCustomModel,
@@ -134,9 +106,10 @@ def test_update_invalid_attr_method(attr, value, model_name, quant_type, metric,
 @pytest.mark.filterwarnings("ignore::UserWarning")
 @pytest.mark.parametrize("attr, value", [("max_iter", 1)])
 @pytest.mark.parametrize(
-    "model_name, quant_type, metric", [("FashionMNIST", "qat", binary_classification_metric)]
+    "model_name, quant_type, metric",
+    [("CustomModel", "qat", binary_classification_metric)],
 )
-def test_update_valid_attr_method(attr, value, model_name, quant_type, metric):
+def test_update_valid_attr_method(attr, value, model_name, quant_type, metric, load_data):
     """Check that `_update_attr` can successfully update given valid attributes."""
 
     model = load_torch_model(
@@ -145,8 +118,8 @@ def test_update_valid_attr_method(attr, value, model_name, quant_type, metric):
         MODELS_ARGS[model_name][quant_type]["params"],
     )
 
-    dataset = get_torchvision_dataset(DATASETS_ARGS[model_name], train_set=True)
-    x_calib, y = data_calibration_processing(dataset, n_sample=1)
+    x, y = load_data(model, **MODELS_ARGS[model_name]["dataset"])
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=1)
 
     search = BinarySearch(
         estimator=model,
@@ -371,21 +344,31 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
 
 
 @pytest.mark.parametrize("is_qat", [False, True])
-def test_invalid_estimator_for_custom_models(is_qat):
+def test_invalid_estimator_for_custom_models(is_qat, load_data):
     """Check that binary search raises an exception for unsupported models."""
 
+    model_name = "CustomModel"
     model = keras.Sequential(
         [
-            keras.layers.Reshape(target_shape=(28 * 28,), input_shape=(28, 28)),
-            keras.layers.Dense(units=256, activation="relu"),
-            keras.layers.Dense(units=192, activation="relu"),
-            keras.layers.Dense(units=128, activation="relu"),
-            keras.layers.Dense(units=10, activation="softmax"),
+            keras.layers.InputLayer(
+                input_shape=(MODELS_ARGS[model_name]["dataset"]["n_features"],)
+            ),
+            keras.layers.Dense(units=32, activation="relu"),
+            keras.layers.Dense(units=16, activation="relu"),
+            keras.layers.Dense(
+                units=MODELS_ARGS[model_name]["dataset"]["n_classes"], activation="softmax"
+            ),
         ]
     )
 
-    dataset = get_torchvision_dataset(DATASETS_ARGS["FashionMNIST"], train_set=True)
-    x_calib, y = data_calibration_processing(dataset, n_sample=1)
+    model_for_data = load_torch_model(
+        MODELS_ARGS[model_name]["qat"]["model_class"],
+        MODELS_ARGS[model_name]["qat"]["path"],
+        MODELS_ARGS[model_name]["qat"]["params"],
+    )
+
+    x, y = load_data(model_for_data, **MODELS_ARGS[model_name]["dataset"])
+    x_calib, y = data_calibration_processing(data=x, targets=y, n_sample=1)
 
     search = BinarySearch(
         estimator=model,
