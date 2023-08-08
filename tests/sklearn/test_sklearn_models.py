@@ -51,6 +51,7 @@ from torch import nn
 from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
+    USE_OLD_VL,
     get_model_name,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
@@ -1531,7 +1532,9 @@ def test_p_error_global_p_error_simulation(
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
     # Check for differences in predictions
-    if is_linear_model:
+    # Remark that, with the old VL, linear models (or, more generally, circuits without PBS) were
+    # badly simulated. It has been fixed in the new simulation.
+    if is_linear_model and USE_OLD_VL:
 
         # In FHE, high p_error affect the crypto parameters which
         # makes the predictions slightly different
