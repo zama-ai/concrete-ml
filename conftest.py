@@ -144,7 +144,7 @@ def default_configuration():
 
     # Remove parameter_selection_strategy once it is set to multi-parameter in Concrete Python
     # by default
-    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3860
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3860
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
         enable_unsafe_features=True,  # This is for our tests only, never use that in prod
