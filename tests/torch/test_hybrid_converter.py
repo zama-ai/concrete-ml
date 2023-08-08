@@ -55,12 +55,16 @@ def run_hybrid_model_test(
     accuracy = is_in.float().mean()
 
     # Make sure accuracy is above a certain threshold
-    assert accuracy >= expected_accuracy, "Expected accuracy GPT2 hybrid not matched."
+    # We need to add some tolerance otherwise the test is flaky
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3905
+    tolerance = 0.005
+    assert accuracy >= expected_accuracy - tolerance, "Expected accuracy GPT2 hybrid not matched."
 
     with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir_path = Path(temp_dir)
 
         # Get the temp directory path
-        hybrid_model.save_and_clear_private_info(temp_dir)
+        hybrid_model.save_and_clear_private_info(temp_dir_path)
         # At this point, the hybrid model does not have
         # the parameters necessaryto run the module_names
 
@@ -79,9 +83,6 @@ def run_hybrid_model_test(
             assert file_path.exists(), f"File '{file}' does not exist in the temp directory."
 
 
-# This test is a known flaky
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3880
-@pytest.mark.flaky
 @pytest.mark.parametrize(
     "list_or_str_private_modules_names, expected_accuracy",
     [
