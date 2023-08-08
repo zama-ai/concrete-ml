@@ -12,6 +12,7 @@ RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 POETRY_VERSION:=1.2.2
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
+OPEN_PR="true"
 
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
@@ -534,36 +535,46 @@ set_version:
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
 	fi && \
-	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}" && \
-	echo && \
-	echo && \
-	echo "Please do something like:" && \
-	echo "git commit -m \"chore: bump version to $${VERSION}\"" && \
-	echo
+	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}"
 
-.PHONY: set_version_and_push # Generate a new version number, update all files with it accordingly and push them
-set_version_and_push: set_version
-	git push
-
-.PHONY: check_version_coherence # Check that all files containing version have the same value
+# By default, check that all files containing version have the same value. If a 'VERSION' value is 
+# given, check that it matches the version found in the files.
+.PHONY: check_version_coherence # Check version coherence
 check_version_coherence:
-	poetry run python ./script/make_utils/version_utils.py check-version
+	@if [[ "$$VERSION" == "" ]]; then \
+		poetry run python ./script/make_utils/version_utils.py check-version; \
+	else \
+		poetry run python ./script/make_utils/version_utils.py check-version --version "$${VERSION}"; \
+	fi
 
 .PHONY: changelog # Generate a changelog
 changelog: check_version_coherence
 	PROJECT_VER="$${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
+.PHONY: check_is_on_main # Check that the current branch is main
+check_is_on_main:
+	./script/make_utils/check_is_on_main.sh
+
+.PHONY: check_is_on_main_up_to_date # Check that the current branch is main and is up to date
+check_is_on_main_up_to_date:
+	./script/make_utils/check_is_on_main.sh --up_to_date
+
+# Set the version and update the apidocs. The command should be run from main as it will 
+# automatically checkout a branch and push the changes with a proper commit message. By default,
+# a pull-request will also be opened using GitHub's command line interface. To avoid a PR to be
+# opened, please run 'prepare_release OPEN_PR="false"' (with the right version) instead.
+.PHONY: prepare_release # Prepare the release
+prepare_release: check_is_on_main_up_to_date set_version apidocs
+	if [[ "$$OPEN_PR" == "true" ]]; then \
+		./script/release_utils/prepare_release_pr.sh --version "$$VERSION" --open_pr; \
+	else \
+		./script/release_utils/prepare_release_pr.sh --version "$$VERSION"; \
+	fi
+
 .PHONY: release # Create a new release from the private repo
-release: check_version_coherence apidocs
-	PROJECT_VER="$${poetry version --short}" && \
-	./script/release_utils/check_branch_name.sh "$${PROJECT_VER}" && \
-	git lfs fetch --all \
-	
-	TAG_NAME="v$${PROJECT_VER}" && \
-	git fetch --tags --force && \
-	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
-	git push origin "refs/tags/$${TAG_NAME}"
+release: check_is_on_main_up_to_date check_version_coherence check_apidocs
+	./script/release_utils/release.sh
 
 .PHONY: show_scope # Show the accepted types and optional scopes (for git conventional commits)
 show_scope:

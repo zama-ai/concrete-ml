@@ -965,11 +965,8 @@ jobs:
           make setup_env
 
       - name: Set tag in env
-        # 'poetry version' cannot be piped properly so do it in 2 steps
-        # the project version does not have the leading v to be semver compatible
         run: |
-          PROJECT_VERSION=$(poetry version)
-          PROJECT_VERSION=$(echo "$PROJECT_VERSION" | cut -d ' ' -f 2)
+          PROJECT_VERSION=$(poetry version --short)
           GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
 
           if [[ "v${PROJECT_VERSION}" != "${GIT_TAG}" ]]; then
