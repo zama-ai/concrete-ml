@@ -152,9 +152,12 @@ def main(args):
 
     sha1_to_tags = {tag.commit.hexsha: tag for tag in repo.tags}
 
+    # Get last commit to include in the changelog (found from the given sha, marked by
+    # the given tag, ...)
     to_commit = repo.commit(args.to_ref)
     log_msg(f"To commit: {to_commit}")
 
+    # Get the tag associated to the commit
     to_tag = sha1_to_tags.get(to_commit.hexsha, None)
     if to_tag is None:
         raise_exception_or_print_warning(
@@ -162,43 +165,63 @@ def main(args):
             message_body=f"to-ref {args.to_ref} has no tag associated to it",
         )
 
+    # Get the version associated to the tag
     to_version = (
         get_poetry_project_version()
         if to_tag is None
         else version_string_to_version_info(to_tag.name)
     )
-    log_msg(f"Project version {to_version} taken from tag: {to_tag is not None}")
+    log_msg(f"Project version {to_version} taken from tag: {to_tag}")
 
     from_commit = None
     from_commit_is_initial_commit = False
+
+    # If no 'from_ref' reference was given, find the first commit to include in the changelog : the
+    # commit represented by the latest stable release tag (not release candidate)
     if args.from_ref is None:
+
+        # Get all actual release tag names (not release candidate ones) older than the target
+        # version. This is because we want to generate the changelog for all new versions starting 
+        # from the latest non-release candidate.
+        # This may change in the future
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3909
         tags_by_name = {strip_leading_v(tag.name): tag for tag in repo.tags}
-        all_release_version_infos = {
+        versions_before_target_version = {
             VersionInfo.parse(tag_name): tags_by_name[tag_name]
             for tag_name in tags_by_name
             if VersionInfo.isvalid(tag_name)
             and VersionInfo.parse(tag_name)
             and VersionInfo.parse(tag_name).prerelease is None
+            and VersionInfo.parse(tag_name) < to_version
         }
-        log_msg(f"All release versions {all_release_version_infos}")
+        log_msg(
+            f"All release versions {versions_before_target_version} before version {to_version}"
+        )
 
-        versions_before_project_version = [
-            version_info for version_info in all_release_version_infos if version_info < to_version
-        ]
-        if len(versions_before_project_version) > 0:
-            highest_version_before_current_version = max(versions_before_project_version)
-            highest_version_tag = all_release_version_infos[highest_version_before_current_version]
+        # If at least one previous version has been found, get the commit from the latest stable
+        # version
+        if len(versions_before_target_version) > 0:
+            highest_version_before_current_version = max(versions_before_target_version)
+            highest_version_tag = versions_before_target_version[
+                highest_version_before_current_version
+            ]
             from_commit = highest_version_tag.commit
+
+        # Else, get the initial commit reachable from 'to_commit' (from
+        # https://stackoverflow.com/a/48232574)
         else:
-            # No versions before, get the initial commit reachable from to_commit
-            # from https://stackoverflow.com/a/48232574
             last_element_extractor = deque(repo.iter_commits(to_commit), 1)
             from_commit = last_element_extractor.pop()
             from_commit_is_initial_commit = True
+
+    # Else, include all commits up to 'from_ref' reference
     else:
         from_commit = repo.commit(args.from_ref)
 
     log_msg(f"From commit: {from_commit}")
+
+    # Get the oldest common commit between the new version and the previous latest one. If the tree
+    # is clean, 'ancestor_commit' should be the same as 'from_commit'
     ancestor_commits = repo.merge_base(to_commit, from_commit)
     assert len(ancestor_commits) == 1
     ancestor_commit = ancestor_commits[0]
@@ -219,8 +242,9 @@ def main(args):
     # if we add some assert. THerefore, it is disabled
     ancestor_tag = sha1_to_tags.get(ancestor_commit.hexsha, None)  # type: ignore[union-attr]
 
-    # The initial repo commit is allowed to not have a tag when generating changelogs
-    # If the ancestor has no tag and it's not the repo initial commit
+    # The ancestor commit is allowed to not have a tag when generating changelogs only if no
+    # previous version was found (the new version is the first one published in the repository).
+    # Otherwise, an error is raised
     if ancestor_tag is None and not from_commit_is_initial_commit:
         raise_exception_or_print_warning(
             is_error=args.ancestor_must_have_tag,
@@ -240,8 +264,9 @@ def main(args):
         f"(tag: {to_tag} - parsed version {str(to_version)})"
     )
 
+    # Generate the changelog with commits from the previous latest version to the new one
     # Mypy does not seem to be able to see that 'to_commit' has a hexsha attribute, even
-    # if we add some assert. THerefore, it is disabled
+    # if we add some assert. Therefore, it is disabled
     log_dict = generate_changelog(
         repo,
         ancestor_commit.hexsha,
