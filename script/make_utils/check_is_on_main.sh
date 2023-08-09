@@ -30,7 +30,7 @@ if [[ "${BRANCH_NAME}" != "${MAIN_BRANCH}" ]]; then
     exit 1
 elif ${CHECK_UP_TO_DATE}; then
     git update-index --really-refresh
-    if !(git diff-index --quiet HEAD) && [ -z "$(git status --porcelain)" ]; then
+    if ! (git diff-index --quiet HEAD) && [ -z "$(git status --porcelain)" ]; then
         echo "Please pull the latest changes from branch '${MAIN_BRANCH}' and avoid unpushed files."
         exit 1
     fi

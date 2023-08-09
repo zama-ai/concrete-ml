@@ -33,7 +33,7 @@ git update-index --really-refresh
 # If the current working directory is not up to date (changes to be pulled, unpushed files), this 
 # means version and/or apidocs were updated and thus need to be pushed
 # The following assumes that the current branch is main and that the given version is right
-if !(git diff-index --quiet HEAD) && [ -z "$(git status --porcelain)" ]; then
+if ! (git diff-index --quiet HEAD) && [ -z "$(git status --porcelain)" ]; then
 
     BRANCH_NAME="chore/prepare_release_${CML_VERSION}"
     COMMIT_MESSAGE="chore: prepare release ${CML_VERSION}"
@@ -50,7 +50,7 @@ if !(git diff-index --quiet HEAD) && [ -z "$(git status --porcelain)" ]; then
         gh pr create --title "${COMMIT_MESSAGE}" --body "Preparation for release ${CML_VERSION}"
     
     # Else, ask the user to open the PR on GitHub
-    else:
+    else
         echo "Please open a pull-request on github for branch '${BRANCH_NAME}', targeting branch 'main'."
         git checkout main
     fi

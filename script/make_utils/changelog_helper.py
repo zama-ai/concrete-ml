@@ -181,7 +181,7 @@ def main(args):
     if args.from_ref is None:
 
         # Get all actual release tag names (not release candidate ones) older than the target
-        # version. This is because we want to generate the changelog for all new versions starting 
+        # version. This is because we want to generate the changelog for all new versions starting
         # from the latest non-release candidate.
         # This may change in the future
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3909
