@@ -14,8 +14,12 @@ do
             ;;
         
         "--open_pr" )
-            shift
             OPEN_PR="true"
+            ;;
+
+        *)
+            echo "Unknown param : $1"
+            exit 1
             ;;
    esac
    shift

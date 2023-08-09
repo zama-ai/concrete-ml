@@ -11,6 +11,11 @@ do
             shift
             TAG_NAME="$1"
             ;;
+
+        *)
+            echo "Unknown param : $1"
+            exit 1
+            ;;
    esac
    shift
 done
