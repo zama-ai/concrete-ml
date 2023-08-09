@@ -40,8 +40,9 @@ def islatest(args):
     new_version_str = strip_leading_v(args.new_version)
     if VersionInfo.isvalid(new_version_str):
         new_version_info = VersionInfo.parse(new_version_str)
+
+        # If it is not a release candidate
         if new_version_info.prerelease is None:
-            # If it's an actual release
             all_versions_str = (
                 strip_leading_v(version_str) for version_str in args.existing_versions
             )
@@ -61,7 +62,11 @@ def islatest(args):
             result["is_latest"] = new_version_is_latest
             result["is_prerelease"] = False
 
+    else:
+        raise RuntimeError(f"Version {args.version} is not valid.")
+
     print(json.dumps(result))
+
 
 def is_prerelease(args):
     """ "is_prerelease command entry point.
