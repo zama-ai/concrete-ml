@@ -311,7 +311,7 @@ pytest_run_last_failed:
 # failed tests are found in the 'cache/lastfailed' section, which can be used to filter the output 
 .PHONY: pytest_get_last_failed # Get the list of last failed tests 
 pytest_get_last_failed:
-	pytest ./tests --cache-show cache/lastfailed
+	poetry run pytest ./tests --cache-show cache/lastfailed
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy
