@@ -31,6 +31,8 @@ def islatest(args):
     Args:
         args: a Namespace object
 
+    Raises:
+        RuntimeError: If the given version is not valid.
     """
     print(args, file=sys.stderr)
 
@@ -68,12 +70,14 @@ def islatest(args):
     print(json.dumps(result))
 
 
-def is_prerelease(args):
-    """ "is_prerelease command entry point.
+def isprerelease(args):
+    """ "isprerelease command entry point.
 
     Args:
         args: a Namespace object
 
+    Raises:
+        RuntimeError: If the given version is not valid.
     """
     version_str = strip_leading_v(args.version)
     if VersionInfo.isvalid(version_str):
@@ -84,8 +88,9 @@ def is_prerelease(args):
             is_prerelease = True
 
         print(is_prerelease)
-    
+
     raise RuntimeError(f"Version {args.version} is not valid.")
+
 
 def update_variable_in_py_file(file_path: Path, var_name: str, version_str: str):
     """Update the version in a .py file.
@@ -305,8 +310,8 @@ def check_version(args):
             raise RuntimeError(
                 f"Versions does not match. Found version {version} but got {args.version}"
             )
-        else:
-            print("Version found in files is correct.")
+
+        print("Version found in files is correct.")
 
 
 def main(args):
@@ -341,7 +346,7 @@ if __name__ == "__main__":
     parser_islatest.add_argument(
         "--version", type=str, required=True, help="The version to consider"
     )
-    parser_islatest.set_defaults(entry_point=is_prerelease)
+    parser_islatest.set_defaults(entry_point=isprerelease)
 
     parser_set_version = sub_parsers.add_parser("set-version")
     parser_set_version.add_argument("--version", type=str, required=True, help="The version to set")
@@ -376,7 +381,9 @@ if __name__ == "__main__":
             "A space separated list of file/path.{py, toml}:variable to update with the new version"
         ),
     )
-    parser_check_version.add_argument("--version", type=str, required=False, help="The version to check")
+    parser_check_version.add_argument(
+        "--version", type=str, required=False, help="The version to check"
+    )
     parser_check_version.set_defaults(entry_point=check_version)
 
     cli_args = main_parser.parse_args()

@@ -10,7 +10,7 @@ RELEASE_BRANCH_NAME="release/${CML_VERSION_MAJOR_MINOR}.x"
 IS_RC="$(poetry run python ./script/make_utils/version_utils.py isprerelease --version "$CML_VERSION")"
 
 if [[ $(make check_is_on_main_up_to_date) ]]; then
-    if !${IS_RC}; then
+    if ! ${IS_RC}; then
         # Checkout and push release branch to repo
         git checkout -b "${RELEASE_BRANCH_NAME}"
         git lfs fetch --all

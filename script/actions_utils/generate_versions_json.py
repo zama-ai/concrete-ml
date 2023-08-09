@@ -51,7 +51,7 @@ def main(args):
     #  latest: latest version, if current doc != latest, warning banner is displayed
     if "version" not in version_json["menu"]:
         version_json["menu"].append(version)
-    
+
     # Release candidates and actual releases are public
     version_json["all"].append(version)
     if latest:

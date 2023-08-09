@@ -21,7 +21,7 @@ if [ "$TAG_NAME" == "" ]; then
     exit 1
 fi
 
-if [[ $(git tag -l  | grep "${TAG_NAME}") ]]; then
+if git tag -l  | grep -q "${TAG_NAME}"; then
     echo "Tag ${TAG_NAME} already exists locally. Should it be deleted ?"
     select yn in "Yes" "No"; do
         case $yn in
@@ -32,7 +32,7 @@ if [[ $(git tag -l  | grep "${TAG_NAME}") ]]; then
 fi
 
 git fetch --tags --force
-if [[ $(git ls-remote --tags origin | grep "${TAG_NAME}") ]]; then
+if git ls-remote --tags origin | grep -q "${TAG_NAME}"; then
     echo "Tag ${TAG_NAME} already exists remotely. Should it be deleted ?"
     select yn in "Yes" "No"; do
         case $yn in
