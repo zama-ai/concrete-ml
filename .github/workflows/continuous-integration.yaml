@@ -642,7 +642,7 @@ jobs:
         run: |
           make pytest_codeblocks
 
-      # Run Pytest on all of our tests on a weekly basis or while releasing
+      # Run Pytest on all of our codeblocks on a weekly basis or while releasing
       - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML
         if: |
           (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
@@ -651,7 +651,7 @@ jobs:
         run: |
           make pytest_codeblocks_pypi_wheel_cml 
       
-      # Run Pytest on all of our tests on a weekly basis
+      # Run Pytest on all of our notebooks on a weekly basis
       - name: PyTest Notebooks
         if: | 
           fromJSON(env.IS_WEEKLY) 
@@ -660,13 +660,24 @@ jobs:
         run: |
           make pytest_nb
 
-      # Run Pytest on all of our tests on a weekly basis or while releasing
+      # Run Pytest on all of our tests on a weekly basis using PyPI's local wheel
       - name: PyTest with PyPI local wheel of Concrete-ML 
         if: |
-          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' && !cancelled()
+          fromJSON(env.IS_WEEKLY)
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
           make pytest_pypi_wheel_cml
+
+      # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel during the 
+      # release process
+      - name: PyTest with PyPI local wheel of Concrete-ML 
+        if: |
+          fromJSON(env.IS_RELEASE)
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
+        run: |
+          make pytest_pypi_wheel_cml_no_flaky
 
       - name: Fast sanity check
         if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}

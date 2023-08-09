@@ -4,6 +4,7 @@ set -e
 
 USE_PIP_WHEEL='false'
 TEST_CODEBLOCKS='false'
+NO_FLAKY='false'
 
 while [ -n "$1" ]
 do
@@ -16,6 +17,9 @@ do
         
         "--codeblocks" )
             TEST_CODEBLOCKS='true'
+            ;;
+        "--noflaky" )
+            NO_FLAKY='true'
             ;;
    esac
    shift
@@ -63,19 +67,20 @@ else
     python -m pip install concrete-ml
 fi
 
-# Run our codeblocks or regular tests
+# If codeblocks are checked, install the pytest codeblock plugin first
 if ${TEST_CODEBLOCKS}; then
-    # Install additional pytest plugin for codeblock tests 
     python -m pip install pytest-codeblocks==0.14.0
 
     ./script/make_utils/pytest_codeblocks.sh
+
+# Else, if flaky should not be considered, run 'pytest_no_flaky'
+elif ${NO_FLAKY}; then
+    make pytest_no_flaky
+
+# Else, intall the pytest coverage plugin and run 'pytest' 
 else
-    poetry run pytest --version
-    poetry run pytest --durations=10 -svv \
-        --capture=tee-sys \
-        -n 4 \
-        --randomly-dont-reorganize \
-        --randomly-dont-reset-seed 
+    python -m pip install pytest-cov==3.0.0
+    make pytest
 fi
 
 # Delete the virtual env directory
