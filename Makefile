@@ -492,13 +492,6 @@ check_refresh_notebooks_list:
 release_docker:
 	EV_FILE="$$(mktemp tmp.docker.XXXX)" && \
 	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
-	PROJECT_VERSION="$$(poetry version --short)" && \
-	IS_PRERELEASE="$$(poetry run python script/make_utils/version_utils.py \
-	islatest \
-	--new-version "$${PROJECT_VERSION}" \
-	--existing-versions "$${PROJECT_VERSION}" | jq -rc '.is_prerelease')" && \
-	echo "PRERELEASE=$${IS_PRERELEASE}" >> "$${EV_FILE}" && \
-	echo "CP_VERSION='$(CP_VERSION_SPEC_FOR_RC)'" >> "$${EV_FILE}" && \
 	echo "" >> "$${EV_FILE}" && \
 	./docker/build_release_image.sh "$${EV_FILE}" && rm -f "$${EV_FILE}" || rm -f "$${EV_FILE}"
 

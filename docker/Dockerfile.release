@@ -25,9 +25,6 @@ RUN --mount=type=secret,id=build-env \
     python3 -m pip install --no-cache-dir --upgrade pip wheel setuptools && \
     echo "export MPLBACKEND=TkAgg" >> /root/.bashrc && \
     python3 -m pip install --no-cache-dir "$(ls ./*.whl)" && \
-    if [ "${PRERELEASE}" = "true" ]; then \
-    PIP_INDEX_URL="${PIP_INDEX_URL}" PIP_EXTRA_INDEX_URL="${PIP_EXTRA_INDEX_URL}" \
-    python3 -m pip install --no-cache-dir -U --pre "${CN_VERSION}"; fi && \
     python3 -m pip install --no-cache-dir -r release_requirements.txt
 
 WORKDIR /app
