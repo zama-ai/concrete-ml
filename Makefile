@@ -787,6 +787,10 @@ check_unused_images:
 pytest_pypi_wheel_cml:
 	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)"
 
+.PHONY: pytest_pypi_wheel_cml_no_flaky # Run tests (except flaky ones) using PyPI local wheel of Concrete ML
+pytest_pypi_wheel_cml_no_flaky:
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --noflaky
+
 .PHONY: pytest_pip_cml # Run tests using PyPI Concrete ML
 pytest_pip_cml:
 	./script/make_utils/pytest_pypi_cml.sh
