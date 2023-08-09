@@ -22,7 +22,7 @@ do
 done
 
 # Check that a version is provided
-if [ "$CML_VERSION" == ""]; then
+if [ "$CML_VERSION" == "" ]; then
     echo "Please provide a Concrete ML version"
     exit 1
 fi
