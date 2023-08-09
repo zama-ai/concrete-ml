@@ -88,13 +88,14 @@ cfg = Configuration(
     enable_unsafe_features=True,  # Needed to use the insecure key cache location
     use_insecure_key_cache=True,  #  Needed to use the insecure key cache location
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
+    parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
 )
 
 print("Compiling the model.")
-quantized_numpy_module: QuantizedModule
 quantized_numpy_module, compilation_execution_time = measure_execution_time(
     compile_brevitas_qat_model
 )(torch_model, x, configuration=cfg, rounding_threshold_bits=6, p_error=0.01)
+assert isinstance(quantized_numpy_module, QuantizedModule)
 
 # Save the client/server files to disk.
 dev = FHEModelDev(path_dir="./client_server", model=quantized_numpy_module)
