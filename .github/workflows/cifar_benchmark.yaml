@@ -132,6 +132,7 @@ jobs:
           python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
       - name: Upload results
+        if: ${{ github.repository == 'zama-ai/concrete-ml-internal' }}
         id: upload-results
         run: |
           curl \
