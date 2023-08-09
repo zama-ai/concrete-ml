@@ -624,6 +624,7 @@ jobs:
         with:
           max_attempts: 3
           timeout_minutes: 10
+          retry_on_exit_code: 2
           command: |
             ./script/actions_utils/re_run_last_failed_flaky_tests.sh
 
@@ -631,19 +632,28 @@ jobs:
       # message is created. If all failed tests were known flaky tests, a 'warning' message is 
       # created and failed tests are all listed. If at least one test was not a known flaky test, a 
       # simple message indicating that some non-flaky tests failed is created.
+      # Additionally, multi-line strings are not directly supported and thus need to be handled with
+      # special delimiters (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings)
       - name: Create comment for PR (if failed tests)
         id: pr-comment-body
         if: steps.re-run-flaky-tests.outcome != 'skipped' && !cancelled()
         run: |
-          if ${{ steps.re-run-flaky-tests.outcome == 'success' }}; then
+          if ${{ steps.re-run-flaky-tests.outcome == 'failure' }}; then
             FLAKY_TESTS_PASSED="WARNING: The following known flaky tests initially failed"
             FLAKY_TESTS_PASSED="${FLAKY_TESTS_PASSED} and were ran again a total of ${{ steps.re-run-flaky-tests.outputs.total_attempts }} times."
             FAILED_FLAKY_TESTS=$(make pytest_get_last_failed | grep "cache/lastfailed contains:" -A1000 | sed '1d; $d')
-            FAILED_TESTS_MESSAGE_BODY="${FLAKY_TESTS_PASSED} \n ${FAILED_FLAKY_TESTS}"
+
+            {
+              echo "FAILED_TESTS_MESSAGE_BODY<<EOF"
+              echo $FLAKY_TESTS_PASSED
+              echo $FAILED_FLAKY_TESTS
+              echo "EOF"
+            } >> "$GITHUB_ENV"
+
           else
-            FAILED_TESTS_MESSAGE_BODY="Non-flaky tests found in regular tests."
+            NON_FLAKY_TESTS_BODY="Non-flaky tests found in regular tests."
+            echo "FAILED_TESTS_MESSAGE_BODY=${NON_FLAKY_TESTS_BODY}" >> "$GITHUB_ENV"
           fi
-          echo "FAILED_TESTS_MESSAGE_BODY=${FAILED_TESTS_MESSAGE_BODY}" >> "$GITHUB_ENV"
           
       # If the previous step ('pr-comment-body') was not skipped, the comment message is added to 
       # the current PR. 
