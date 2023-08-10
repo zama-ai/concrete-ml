@@ -611,6 +611,7 @@ jobs:
           && !cancelled()
         shell: bash {0}
         run: |
+          set +e
           make pytest
 
           # If regular tests failed, check for flaky tests
