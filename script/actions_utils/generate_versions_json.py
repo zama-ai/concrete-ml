@@ -31,7 +31,6 @@ def main(args):
     """
     version = args.version
     latest = args.latest
-    prerelease = args.prerelease
 
     if not VersionInfo.isvalid(strip_leading_v(version)):
         raise RuntimeError(f"Invalid version: {version}")
@@ -52,10 +51,11 @@ def main(args):
     #  latest: latest version, if current doc != latest, warning banner is displayed
     if "version" not in version_json["menu"]:
         version_json["menu"].append(version)
-    if not prerelease:
-        version_json["all"].append(version)
-        if latest:
-            version_json["latest"] = version
+
+    # Release candidates and actual releases are public
+    version_json["all"].append(version)
+    if latest:
+        version_json["latest"] = version
 
     print(version_json)
     output_json_path = Path(args.output_json).resolve()
@@ -76,12 +76,6 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--versions-json-file", type=str, required=True, help="Path to the versions.json to update."
-    )
-    parser.add_argument(
-        "--prerelease",
-        action="store_true",
-        dest="prerelease",
-        help="set this version as a pre-release documentation.",
     )
     parser.add_argument(
         "--latest",

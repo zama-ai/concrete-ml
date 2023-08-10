@@ -12,6 +12,7 @@ RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
 POETRY_VERSION:=1.2.2
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
+OPEN_PR="true"
 
 # If one wants to force the installation of a given rc version
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
@@ -483,14 +484,6 @@ check_refresh_notebooks_list:
 release_docker:
 	EV_FILE="$$(mktemp tmp.docker.XXXX)" && \
 	poetry run env bash ./script/make_utils/generate_authenticated_pip_urls.sh "$${EV_FILE}" && \
-	PROJECT_VERSION="$$(poetry version)" && \
-	PROJECT_VERSION="$$(echo "$${PROJECT_VERSION}" | cut -d ' ' -f 2)" && \
-	IS_PRERELEASE="$$(poetry run python script/make_utils/version_utils.py \
-	islatest \
-	--new-version "$${PROJECT_VERSION}" \
-	--existing-versions "$${PROJECT_VERSION}" | jq -rc '.is_prerelease')" && \
-	echo "PRERELEASE=$${IS_PRERELEASE}" >> "$${EV_FILE}" && \
-	echo "CP_VERSION='$(CP_VERSION_SPEC_FOR_RC)'" >> "$${EV_FILE}" && \
 	echo "" >> "$${EV_FILE}" && \
 	./docker/build_release_image.sh "$${EV_FILE}" && rm -f "$${EV_FILE}" || rm -f "$${EV_FILE}"
 
@@ -535,36 +528,45 @@ set_version:
 		echo "VERSION env variable is empty. Please set to desired version.";	\
 		exit 1;																	\
 	fi && \
-	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}" && \
-	echo && \
-	echo && \
-	echo "Please do something like:" && \
-	echo "git commit -m \"chore: bump version to $${VERSION}\"" && \
-	echo
+	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}"
 
-.PHONY: set_version_and_push # Generate a new version number, update all files with it accordingly and push them
-set_version_and_push: set_version
-	git push
-
-.PHONY: check_version_coherence # Check that all files containing version have the same value
+# By default, check that all files containing version have the same value. If a 'VERSION' value is 
+# given, check that it matches the version found in the files.
+.PHONY: check_version_coherence # Check version coherence
 check_version_coherence:
-	poetry run python ./script/make_utils/version_utils.py check-version
+	@if [[ "$$VERSION" == "" ]]; then \
+		poetry run python ./script/make_utils/version_utils.py check-version; \
+	else \
+		poetry run python ./script/make_utils/version_utils.py check-version --version "$${VERSION}"; \
+	fi
 
 .PHONY: changelog # Generate a changelog
 changelog: check_version_coherence
-	PROJECT_VER=($$(poetry version)) && \
-	PROJECT_VER="$${PROJECT_VER[1]}" && \
+	PROJECT_VER="$${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
-.PHONY: release # Create a new release from the private repo
-release: check_version_coherence check_apidocs
-	@PROJECT_VER=($$(poetry version)) && \
-	PROJECT_VER="$${PROJECT_VER[1]}" && \
-	./script/release_utils/check_branch_name.sh "$${PROJECT_VER}" && \
-	TAG_NAME="v$${PROJECT_VER}" && \
-	git fetch --tags --force && \
-	git tag -s -a -m "$${TAG_NAME} release" "$${TAG_NAME}" && \
-	git push origin "refs/tags/$${TAG_NAME}"
+# Set the version and update the apidocs. The command should be run from main as it will 
+# automatically checkout a branch and push the changes with a proper commit message. By default,
+# a pull-request will also be opened using GitHub's command line interface. To avoid a PR to be
+# opened, please run 'prepare_release OPEN_PR="false"' (with the right version) instead.
+.PHONY: prepare_release # Prepare the release
+prepare_release:
+	if [[ $(OPEN_PR) == "true" ]]; then \
+		./script/release_utils/prepare_release_pr.sh --version "$$VERSION" --open_pr; \
+	else \
+		./script/release_utils/prepare_release_pr.sh --version "$$VERSION"; \
+	fi
+
+# The 'release' command should be run from main. It will first check that the all version numbers 
+# are coherent and that apidocs were correctly built. In case the upcoming release is not a release 
+# candidate, the command will automatically checkout and push a branch with a proper name. Then, 
+# it will check that the upcoming tag does not exist yet. If it does, the current user will be asked
+# to confirm the tag's removal (local and remote), by considering that the previous release to has 
+# failed. Finally, the new tag is pushed, triggering the release CI (which notably handles running 
+# pytests, publishing the documentation, pushing the release to PyPI, Dockerhub and GitHub).
+.PHONY: release # Create a new release
+release:
+	./script/release_utils/release.sh
 
 .PHONY: show_scope # Show the accepted types and optional scopes (for git conventional commits)
 show_scope:
@@ -775,6 +777,10 @@ check_unused_images:
 .PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml:
 	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)"
+
+.PHONY: pytest_pypi_wheel_cml_no_flaky # Run tests (except flaky ones) using PyPI local wheel of Concrete ML
+pytest_pypi_wheel_cml_no_flaky:
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --noflaky
 
 .PHONY: pytest_pip_cml # Run tests using PyPI Concrete ML
 pytest_pip_cml:

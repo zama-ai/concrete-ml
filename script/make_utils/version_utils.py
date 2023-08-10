@@ -31,6 +31,8 @@ def islatest(args):
     Args:
         args: a Namespace object
 
+    Raises:
+        RuntimeError: If the given version is not valid.
     """
     print(args, file=sys.stderr)
 
@@ -40,8 +42,9 @@ def islatest(args):
     new_version_str = strip_leading_v(args.new_version)
     if VersionInfo.isvalid(new_version_str):
         new_version_info = VersionInfo.parse(new_version_str)
+
+        # If it is not a release candidate
         if new_version_info.prerelease is None:
-            # If it's an actual release
             all_versions_str = (
                 strip_leading_v(version_str) for version_str in args.existing_versions
             )
@@ -61,7 +64,33 @@ def islatest(args):
             result["is_latest"] = new_version_is_latest
             result["is_prerelease"] = False
 
-    print(json.dumps(result))
+        print(json.dumps(result))
+
+    else:
+        raise RuntimeError(f"Version {args.version} is not valid.")
+
+
+def isprerelease(args):
+    """ "isprerelease command entry point.
+
+    Args:
+        args: a Namespace object
+
+    Raises:
+        RuntimeError: If the given version is not valid.
+    """
+    version_str = strip_leading_v(args.version)
+    if VersionInfo.isvalid(version_str):
+        new_version_info = VersionInfo.parse(version_str)
+        if new_version_info.prerelease is None:
+            is_prerelease = False
+        else:
+            is_prerelease = True
+
+        print(is_prerelease)
+
+    else:
+        raise RuntimeError(f"Version {args.version} is not valid.")
 
 
 def update_variable_in_py_file(file_path: Path, var_name: str, version_str: str):
@@ -277,6 +306,14 @@ def check_version(args):
 
     print(f"Found version {version} in all processed locations.")
 
+    if args.version is not None:
+        if args.version != version:
+            raise RuntimeError(
+                f"Versions does not match. Found version {version} but got {args.version}"
+            )
+
+        print("Version found in files is correct.")
+
 
 def main(args):
     """Entry point
@@ -305,6 +342,12 @@ if __name__ == "__main__":
         help="The list of existing versions",
     )
     parser_islatest.set_defaults(entry_point=islatest)
+
+    parser_islatest = sub_parsers.add_parser("isprerelease")
+    parser_islatest.add_argument(
+        "--version", type=str, required=True, help="The version to consider"
+    )
+    parser_islatest.set_defaults(entry_point=isprerelease)
 
     parser_set_version = sub_parsers.add_parser("set-version")
     parser_set_version.add_argument("--version", type=str, required=True, help="The version to set")
@@ -338,6 +381,9 @@ if __name__ == "__main__":
         help=(
             "A space separated list of file/path.{py, toml}:variable to update with the new version"
         ),
+    )
+    parser_check_version.add_argument(
+        "--version", type=str, required=False, help="The version to check"
     )
     parser_check_version.set_defaults(entry_point=check_version)
 
