@@ -70,6 +70,7 @@ env:
     tests/parameter_search/FashionMNIST_quant_state_dict.pt, \
     tests/parameter_search/custom_data_fp32_state_dict.pt, \
     tests/parameter_search/custom_data_quant_state_dict.pt"
+  FAILED_TESTS_ARE_FLAKY: false
  
  
 
@@ -593,12 +594,11 @@ jobs:
       # Run Pytest on a subset of our tests if the source code or our tests has changed, and if the 
       # current workflow does no take place in a weekly or release CI. This step is also triggered
       # if any dependency has been updated or the conftest.py files has changed
-      # Additionally, if this step fails, the job ('build-linux') won't fail (thanks to the 
-      # 'continue-on-error' option) and the following step 'Re-run failed flaky tests (regular)' 
-      # will be triggered in order to check for flaky tests
+      # If regular tests failed, a following script checks for flaky tests. If all failed tests 
+      # are known flaky tests, they are re-run.
+      # The 'bash {0}' is added here in order not to make 'make pytest' exit the step when it fails
       - name: PyTest Source Code (regular)
         id: pytest_regular
-        continue-on-error: true
         if: |
           steps.changed-files-in-pr.outcome == 'success' 
           && (
@@ -609,52 +609,43 @@ jobs:
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
+        shell: bash {0}
         run: |
           make pytest
 
-      # If regular tests failed, check for flaky tests. If all failed tests are known flaky tests, 
-      # re-run them at most 3 times (on exit status 2, which means that a test failed again in 
-      # pytest). If at least one test is not a known flaky test (exit status 1), the step fails and 
-      # is not re-ran. While setting a timeout is mandatory, the value specified here can be changed
-      # in the future if necessary. 
-      - name: Re-run failed flaky tests (regular)
-        id: re-run-flaky-tests
-        uses: nick-fields/retry@v2.8.3
-        if: steps.pytest_regular.outcome == 'failure' && !cancelled()
-        with:
-          max_attempts: 3
-          timeout_minutes: 10
-          retry_on_exit_code: 2
-          command: |
+          # If regular tests failed, check for flaky tests
+          if [ $? -ne 0 ]; then
             ./script/actions_utils/re_run_last_failed_flaky_tests.sh
 
-      # If the previous step ('Re-run failed flaky tests (regular)') was not skipped, a comment 
-      # message is created. If all failed tests were known flaky tests, a 'warning' message is 
-      # created and failed tests are all listed. If at least one test was not a known flaky test, a 
-      # simple message indicating that some non-flaky tests failed is created.
-      # Additionally, multi-line strings are not directly supported and thus need to be handled with
-      # special delimiters (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings)
+            # If the above script returns a 0 exit code, this means all last failed tests were known
+            # flaky tests and passed after re-running them. Else either at least one test was not 
+            # a known flaky test or all known failed flaky tests failed again on retry
+            if [ $? -eq 0 ]; then
+              echo "FAILED_TESTS_ARE_FLAKY=true" >> "$GITHUB_ENV"
+            else
+              exit 1
+            fi
+          fi
+
+      # If regular tests passed but at least one known flaky test had to be re-ran, a warning
+      # comment is published in the PR and failed tests are all listed.
+      # Additionally, multi-line strings are not directly supported by env variables and thus need 
+      # to be handled with special delimiters 
+      # (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings)
       - name: Create comment for PR (if failed tests)
         id: pr-comment-body
-        if: steps.re-run-flaky-tests.outcome != 'skipped' && !cancelled()
+        if: steps.pytest_regular.outcome == 'success' && env.FAILED_TESTS_ARE_FLAKY && !cancelled()
         run: |
-          if ${{ steps.re-run-flaky-tests.outcome == 'success' }}; then
-            FLAKY_TESTS_PASSED="WARNING: The following known flaky tests initially failed"
-            FLAKY_TESTS_PASSED="${FLAKY_TESTS_PASSED} and were ran again a total of ${{ steps.re-run-flaky-tests.outputs.total_attempts }} times."
-            FAILED_FLAKY_TESTS=$(make pytest_get_last_failed | grep "cache/lastfailed contains:" -A1000 | sed '1d; $d')
+          FLAKY_TESTS_PASSED="WARNING: The following known flaky tests initially failed and were ran again once."
+          FAILED_FLAKY_TESTS=$(make pytest_get_last_failed | grep "cache/lastfailed contains:" -A1000 | sed '1d; $d')
 
-            {
-              echo "FAILED_TESTS_MESSAGE_BODY<<EOF"
-              echo $FLAKY_TESTS_PASSED
-              echo $FAILED_FLAKY_TESTS
-              echo "EOF"
-            } >> "$GITHUB_ENV"
+          {
+            echo "FAILED_TESTS_MESSAGE_BODY<<EOF"
+            echo $FLAKY_TESTS_PASSED
+            echo $FAILED_FLAKY_TESTS
+            echo "EOF"
+          } >> "$GITHUB_ENV"
 
-          else
-            NON_FLAKY_TESTS_BODY="Non-flaky tests found in regular tests."
-            echo "FAILED_TESTS_MESSAGE_BODY=${NON_FLAKY_TESTS_BODY}" >> "$GITHUB_ENV"
-          fi
-          
       # If the previous step ('pr-comment-body') was not skipped, the comment message is added to 
       # the current PR. 
       # The 'createComment' command does not seem to properly handle the '${{}}' syntax and thus 
