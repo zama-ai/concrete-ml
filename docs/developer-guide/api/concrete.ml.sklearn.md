@@ -21,7 +21,7 @@ Import sklearn models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/__init__.py#L14"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/__init__.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_models`
 
@@ -36,7 +36,7 @@ the lists of models in Concrete ML
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/__init__.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/__init__.py#L74"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_linear_models`
 
@@ -44,7 +44,7 @@ ______________________________________________________________________
 get_sklearn_linear_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: str = None
+    str_in_class_name: List[str] = None
 )
 ```
 
@@ -54,14 +54,14 @@ Return the list of available linear models in Concrete ML.
 
 - <b>`classifier`</b> (bool):  whether you want classifiers or not
 - <b>`regressor`</b> (bool):  whether you want regressors or not
-- <b>`str_in_class_name`</b> (str):  if not None, only return models with this as a substring in the  class name
+- <b>`str_in_class_name`</b> (List\[str\]):  if not None, only return models with the given string or  list of strings as a substring in their class name
 
 **Returns:**
 the lists of linear models in Concrete ML
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/__init__.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/__init__.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_tree_models`
 
@@ -69,7 +69,7 @@ ______________________________________________________________________
 get_sklearn_tree_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: str = None
+    str_in_class_name: List[str] = None
 )
 ```
 
@@ -79,14 +79,14 @@ Return the list of available tree models in Concrete ML.
 
 - <b>`classifier`</b> (bool):  whether you want classifiers or not
 - <b>`regressor`</b> (bool):  whether you want regressors or not
-- <b>`str_in_class_name`</b> (str):  if not None, only return models with this as a substring in the  class name
+- <b>`str_in_class_name`</b> (List\[str\]):  if not None, only return models with the given string or  list of strings as a substring in their class name
 
 **Returns:**
 the lists of tree models in Concrete ML
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/__init__.py#L104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/__init__.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_sklearn_neural_net_models`
 
@@ -94,7 +94,7 @@ ______________________________________________________________________
 get_sklearn_neural_net_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: str = None
+    str_in_class_name: List[str] = None
 )
 ```
 
@@ -104,7 +104,7 @@ Return the list of available neural net models in Concrete ML.
 
 - <b>`classifier`</b> (bool):  whether you want classifiers or not
 - <b>`regressor`</b> (bool):  whether you want regressors or not
-- <b>`str_in_class_name`</b> (str):  if not None, only return models with this as a substring in the  class name
+- <b>`str_in_class_name`</b> (List\[str\]):  if not None, only return models with the given string or  list of strings as a substring in their class name
 
 **Returns:**
 the lists of neural net models in Concrete ML

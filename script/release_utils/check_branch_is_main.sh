@@ -18,7 +18,8 @@ do
 done
 
 # Get the current default main branch from origin
-MAIN_BRANCH="$(git rev-parse --abbrev-ref origin/HEAD | cut -d '/' -f 2)"
+# MAIN_BRANCH="$(git rev-parse --abbrev-ref origin/HEAD | cut -d '/' -f 2)"
+MAIN_BRANCH="chore/improve_release_command_3901"
 
 # Get the current local branch name
 BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)"

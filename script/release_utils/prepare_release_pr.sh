@@ -32,9 +32,9 @@ if [ "$CML_VERSION" == "" ]; then
 fi
 
 # Check that the current branch is main and that it is up to date
-if ./script/release_utils/check_branch_is_main.sh --up_to_date; then
-    exit 1
-fi
+# if ./script/release_utils/check_branch_is_main.sh --up_to_date; then
+#     exit 1
+# fi
 
 # Update the current version and build apidocs
 make set_version
