@@ -4,7 +4,7 @@ set -e
 
 git fetch 
 
-# Get latest commits from local and remote brances
+# Get latest commits from local and remote branches
 LOCAL=$(git rev-parse @)
 REMOTE=$(git rev-parse "@{u}")
 

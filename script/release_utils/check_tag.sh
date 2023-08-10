@@ -27,7 +27,7 @@ if [ "$TAG_NAME" == "" ]; then
 fi
 
 # Running this script expects the current tag name to be pushed with the current commit. If a tag
-# with the same name is found, this means the previous release atempt failed and therefore all 
+# with the same name is found, this means the previous release attempt failed and therefore all 
 # associated should be removed
 
 # If the tag name is already found locally, it should be removed
