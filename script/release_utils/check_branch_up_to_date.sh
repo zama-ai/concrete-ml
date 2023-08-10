@@ -14,7 +14,6 @@ if [ "$LOCAL" != "$REMOTE" ] || [ -n "$(git status --porcelain)" ]; then
     # Get the current local branch name
     BRANCH_NAME="$(git rev-parse --abbrev-ref HEAD)"
 
-    echo -n "Local branch '$BRANCH_NAME' is not up to date with its remote tracking branch. "
-    echo "Please push or pull the necessary changes."
+    echo "Local branch '$BRANCH_NAME' is not up to date with its remote tracking branch. "
     exit 1
 fi

@@ -2,20 +2,15 @@
 
 set -e
 
-# Check that the current branch is main and that it is up to date
+# If the current branch is main and that it is up to date, the release process can begin
 if ./script/release_utils/check_branch_is_main.sh --up_to_date; then
-    exit 1
-fi
 
-# Check that all version numbers are coherent and that apidocs are properly built
-make check_version_coherence
-make check_apidocs
+    # Check that all version numbers are coherent and that apidocs are properly built
+    make check_version_coherence
+    make check_apidocs
 
-# Get the Concrete ML version to release
-CML_VERSION="$(poetry version --short)"
-
-# Release should start from main, up to date
-if [[ $(make check_is_on_main_up_to_date) ]]; then
+    # Get the Concrete ML version to release
+    CML_VERSION="$(poetry version --short)"
 
     # Check if this is a release candidate
     IS_RC="$(poetry run python ./script/make_utils/version_utils.py isprerelease --version "$CML_VERSION")"

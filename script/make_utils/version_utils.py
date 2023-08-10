@@ -64,10 +64,10 @@ def islatest(args):
             result["is_latest"] = new_version_is_latest
             result["is_prerelease"] = False
 
+        print(json.dumps(result))
+
     else:
         raise RuntimeError(f"Version {args.version} is not valid.")
-
-    print(json.dumps(result))
 
 
 def isprerelease(args):
@@ -89,7 +89,8 @@ def isprerelease(args):
 
         print(is_prerelease)
 
-    raise RuntimeError(f"Version {args.version} is not valid.")
+    else:
+        raise RuntimeError(f"Version {args.version} is not valid.")
 
 
 def update_variable_in_py_file(file_path: Path, var_name: str, version_str: str):

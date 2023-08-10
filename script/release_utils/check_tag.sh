@@ -2,7 +2,7 @@
 
 set -e
 
-TAG_NAME=''
+TAG_NAME=""
 
 while [ -n "$1" ]
 do
@@ -22,7 +22,7 @@ done
 
 # Check that a tag name is provided
 if [ "$TAG_NAME" == "" ]; then
-    echo "Please provide a tag name"
+    echo "Please provide a tag name with option '--tag_name'"
     exit 1
 fi
 
@@ -32,13 +32,17 @@ fi
 
 # If the tag name is already found locally, it should be removed
 if git tag -l  | grep -q "${TAG_NAME}"; then
-    echo "Tag ${TAG_NAME} already exists locally. Should it be deleted ?"
 
     # Ask the user to confirm the tag's local removal
-    select yn in "Yes" "No"; do
+    while true; do
+        read -r -p "Tag ${TAG_NAME} already exists locally. Should it be deleted ?" yn
         case $yn in
-            Yes ) git tag -d "${TAG_NAME}"; break;;
-            No ) exit;;
+            [Yy]* ) 
+                git tag -d "${TAG_NAME}"
+                echo "Local tag $TAG_NAME was removed."
+                break;;
+            [Nn]* ) break;;
+            * ) echo "Invalid answer. Please answer yes (y) or no (n).";;
         esac
     done
 fi
@@ -48,13 +52,17 @@ git fetch --tags --force
 
 # If the tag name is already found remotely, it should be removed
 if git ls-remote --tags origin | grep -q "${TAG_NAME}"; then
-    echo "Tag ${TAG_NAME} already exists remotely. Should it be deleted ?"
 
     # Ask the user to confirm the tag's remote removal
-    select yn in "Yes" "No"; do
+    while true; do
+        read -r -p "Tag ${TAG_NAME} already exists remotely. Should it be deleted ?" yn
         case $yn in
-            Yes ) git push --delete "${TAG_NAME}"; break;;
-            No ) exit;;
+            [Yy]* ) 
+                git push --delete "${TAG_NAME}"
+                echo "Remote tag $TAG_NAME was removed."
+                break;;
+            [Nn]* ) break;;
+            * ) echo "Invalid answer. Please answer yes (y) or no (n).";;
         esac
     done
 fi
