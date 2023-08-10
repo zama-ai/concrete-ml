@@ -43,7 +43,7 @@ make apidocs
 # If the current working directory is not up to date (changes to be pulled, unpushed files), this 
 # means version and/or apidocs were updated and thus need to be pushed
 # The following assumes that the current branch is main and that the given version is right
-if ./script/release_utils/check_branch_up_to_date.sh; then
+if ! ./script/release_utils/check_branch_up_to_date.sh; then
 
     BRANCH_NAME="chore/prepare_release_${CML_VERSION}"
     COMMIT_MESSAGE="chore: prepare release ${CML_VERSION}"

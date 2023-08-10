@@ -559,7 +559,7 @@ changelog: check_version_coherence
 # opened, please run 'prepare_release OPEN_PR="false"' (with the right version) instead.
 .PHONY: prepare_release # Prepare the release
 prepare_release:
-	if [[ "$$OPEN_PR" == "true" ]]; then \
+	if [[ $(OPEN_PR) == "true" ]]; then \
 		./script/release_utils/prepare_release_pr.sh --version "$$VERSION" --open_pr; \
 	else \
 		./script/release_utils/prepare_release_pr.sh --version "$$VERSION"; \

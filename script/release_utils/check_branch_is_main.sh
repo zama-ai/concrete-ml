@@ -31,5 +31,7 @@ if [[ "${BRANCH_NAME}" != "${MAIN_BRANCH}" ]]; then
 # Else, if option '--up_to_date' is set to 'true' and main branch is not up to date or has some 
 # unpushed local files, print a message and exit with status code 1
 elif ${CHECK_UP_TO_DATE}; then
-    ./script/release_utils/check_branch_up_to_date.sh
+    if ! ./script/release_utils/check_branch_up_to_date.sh; then
+        echo "Please push or pull the necessary changes for branch '${BRANCH_NAME}'."
+    fi
 fi
