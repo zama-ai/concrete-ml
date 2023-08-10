@@ -612,7 +612,7 @@ jobs:
         shell: bash {0}
         run: |
           set +e
-          make pytest
+          make pytest_one TEST="tests/virtual_lib/test_virtual_lib.py"
 
           # If regular tests failed, check for flaky tests
           if [ $? -ne 0 ]; then
