@@ -29,8 +29,8 @@ done
 
 
 linux_install_gitleaks () {
-    GITLEAKS_VERSION=8.5.2
-    GITLEAKS_LINUX_X64_SHA256=d83e4721c58638d5a2128ca70341c87fe78b6275483e7dc769a9ca6fe4d25dfd
+    GITLEAKS_VERSION=8.17.0
+    GITLEAKS_LINUX_X64_SHA256=e0e1d641cc55bcf3c0ecc1abcfc6b432e86611a53121d87ce40eacd9467f98c3
 
     GITLEAKS_ARCHIVE_LINK="https://github.com/zricethezav/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
 
