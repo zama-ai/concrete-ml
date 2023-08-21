@@ -842,23 +842,23 @@ typing = ["mypy (>=0.990)"]
 
 [[package]]
 name = "concrete-python"
-version = "2.0.0"
+version = "2.2.0"
 description = "A state-of-the-art homomorphic encryption framework"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "concrete_python-2.0.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:3582daa032fb5e819209aead5510fae6aa19a8cbc0295c727e951ab36d80bbb3"},
-    {file = "concrete_python-2.0.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:8d4e4733afa011ab4d8dbbf7ee95002c57536fab1a790d603026aaa6c92ba9c1"},
-    {file = "concrete_python-2.0.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:dcb23ee89ec9f847b831de1944ed59d053a81f60e1782d5bcb8008f511ca6033"},
-    {file = "concrete_python-2.0.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:0394f904d1da40ac81aa0053ff60f6001305dda63cd3663a2f488ced01cc0470"},
-    {file = "concrete_python-2.0.0-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:1190eb801707d130c1c8dd3f15fecfa9ac621e21312c512e0ebe58323efdf8e3"},
-    {file = "concrete_python-2.0.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:48b422747389d0438ae4953512514be5766b95686d3ee8316beec09d42591399"},
-    {file = "concrete_python-2.0.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:48893d59f01d4062b61974971e47d76434b787020c5d3ee9459eb3b552fa7899"},
-    {file = "concrete_python-2.0.0-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:968d438b77de17ad81c5fae27accf0fd43ebb7611a52559979d433d6455004e6"},
-    {file = "concrete_python-2.0.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:cbb93e7e2f83a00640c7e089abaa8a3076580a9063a5046f301a6b29e4cd8682"},
-    {file = "concrete_python-2.0.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:3f69a9231edd8a9903f09b81b9d0fbc7aa57602a5ae089f8f08d24c2b9da50a6"},
-    {file = "concrete_python-2.0.0-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:3514c3fece9d8fe8bd06ae6ca6b0cb7cbe1e89ecfb51f5dda46b7f26631e8eff"},
-    {file = "concrete_python-2.0.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:f7e859d90459bfe642b98d16cc50557531d8e0e774291a01cca27f40055516b3"},
+    {file = "concrete_python-2.2.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:db9128634dcbbc9c74f6eefd688fabfea2b4144b8e7b30db8d57d232c8d75747"},
+    {file = "concrete_python-2.2.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:5615ff90aa828a073cc2e283cc23e6bd0124b509b29318b070687931e801f714"},
+    {file = "concrete_python-2.2.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:5b97d661a99282abd65e84f709fd0728de9940c5250b9077fec208ef2ad98793"},
+    {file = "concrete_python-2.2.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:126bbd5ad2066a5c052f65def6ca6261e8c42d5892908071164f871fdff4245c"},
+    {file = "concrete_python-2.2.0-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:c0b226e5e7ebf82c6df1e90f37f6281dd60c4d95d6d5029c663bc73d916121c1"},
+    {file = "concrete_python-2.2.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:b11b5a5b0d02cc9cd1b9fe0d8e6f91201d7bf10dc3681c6b6c9e8ac3b874fcd9"},
+    {file = "concrete_python-2.2.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:80ca3281530fd11e54c778c47166fb711f45cc8499be78fab7ffb2ac51aa65c8"},
+    {file = "concrete_python-2.2.0-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:ab982563fcdca457a9c36ccef9af83eff5409bb951a250c07948b44b626063a4"},
+    {file = "concrete_python-2.2.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:9d24194ff858eea7bd503b0fc2c5fa23a20b8b3026e04677882a3add663b1e84"},
+    {file = "concrete_python-2.2.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:9ce9cafde72e4e1e018f8cfaee744943b7c736ca7bba329f49a2ed94ec3c532b"},
+    {file = "concrete_python-2.2.0-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:fcf5c32ad552f8b25b73ecc31f0c23e5ea39187233d50de1971c7e3473523f0c"},
+    {file = "concrete_python-2.2.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:41d552f41977d83f3a39d78ff77644ebad2305f313509a9d4d8faf32c519eae2"},
 ]
 
 [package.dependencies]
@@ -866,6 +866,7 @@ networkx = ">=2.6"
 numpy = ">=1.23"
 scipy = ">=1.10"
 torch = ">=1.13"
+z3-solver = ">=4.12"
 
 [package.extras]
 dev = ["auditwheel (==5.3.0)", "black (==23.1.0)", "delocate (==0.10.4)", "isort (==5.12.0)", "mypy (==1.1.1)", "pybind11 (==2.10.4)", "pydocstyle (==6.3.0)", "pylint (==2.17.1)", "pytest (==7.2.2)", "pytest-cov (==4.0.0)", "pytest-xdist (==3.2.1)", "ruff (==0.0.259)", "wheel (==0.40.0)"]
@@ -7197,6 +7198,21 @@ idna = ">=2.0"
 multidict = ">=4.0"
 
 [[package]]
+name = "z3-solver"
+version = "4.12.2.0"
+description = "an efficient SMT solver library"
+optional = false
+python-versions = "*"
+files = [
+    {file = "z3-solver-4.12.2.0.tar.gz", hash = "sha256:65ab47a0a8ef0bfb80db0670775beb11b32c3c0ae4b35943e44121f4af7ef411"},
+    {file = "z3_solver-4.12.2.0-py2.py3-none-macosx_10_16_x86_64.whl", hash = "sha256:127b7c3fcadd61415320ef1b469c22464d3270d25a63c9eb5ee31a0859910826"},
+    {file = "z3_solver-4.12.2.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:f605de84f87cff04de8339a6d007c80167606a4e6904d6ace8208b066f22f4be"},
+    {file = "z3_solver-4.12.2.0-py2.py3-none-manylinux2014_x86_64.whl", hash = "sha256:03921d3021cb6e5dbeaeb94634132a5fbf5403748aa21774efac4047e633af1e"},
+    {file = "z3_solver-4.12.2.0-py2.py3-none-win32.whl", hash = "sha256:ea1688e64aada67ec720e2f148c5c41fece2870c55a2901dda36f6b4bb9aec7e"},
+    {file = "z3_solver-4.12.2.0-py2.py3-none-win_amd64.whl", hash = "sha256:553af6a989d8943d9a556c4f83ea54b2afc8b4fd58230e97fcc526dc3f97249a"},
+]
+
+[[package]]
 name = "zipp"
 version = "3.16.2"
 description = "Backport of pathlib-compatible object wrapper for zip files"
@@ -7214,4 +7230,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "89ad4d823229f22b507360f854d3dbc0dab75fef07ec521d4f9cbe4e48e99d24"
+content-hash = "dce5d170818e63a238666b5db255c2eff53986bb857fd1fd5ea0c0b5105b2088"
