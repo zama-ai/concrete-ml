@@ -9,7 +9,7 @@ cffi, 1.15.1, MIT License
 charset-normalizer, 3.2.0, MIT License
 click, 8.1.7, BSD License
 coloredlogs, 15.0.1, MIT License
-concrete-python, 2.1.0, BSD-3-Clause
+concrete-python, 2.2.0, BSD-3-Clause
 cryptography, 41.0.2, Apache Software License; BSD License
 dependencies, 2.0.1, BSD License
 dill, 0.3.7, BSD License
@@ -67,3 +67,4 @@ typing_extensions, 4.4.0, Python Software Foundation License
 urllib3, 1.26.16, MIT License
 uvicorn, 0.21.1, BSD License
 xgboost, 1.6.2, Apache Software License
+z3-solver, 4.12.2.0, MIT License
