@@ -1,6 +1,14 @@
 name: Release process
 on:
+  # Releases can be manually triggered if the version has already been updated and the apidocs were
+  # properly built
   workflow_dispatch:
+
+  # Releases are also allowed to be automatically triggered once the release preparation 
+  # pull-request is merged 
+  pull_request:
+    types:
+      - closed
 
 concurrency:
   group: ${{ github.ref }}
@@ -10,9 +18,20 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  # Open the AWS EC2 instance
+  # Open the AWS EC2 instance if the release process has been triggered manually or if the release 
+  # preparation pull-request has been merged
+  # That latter PR is found by checking for closed PR merged into main that contains "Prepare 
+  # release" in their title
   start-runner-linux:
     name: Start EC2 runner
+    if: |
+      github.event_name == 'workflow_dispatch'
+      || (
+        github.event_name == 'pull_request'
+        && github.event.pull_request.merged == true
+        && github.event.pull_request.base.ref == 'main'
+        && contains(github.event.pull_request.title, 'Prepare release')
+      )
     runs-on: ubuntu-20.04
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
