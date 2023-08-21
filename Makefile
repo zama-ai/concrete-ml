@@ -545,29 +545,6 @@ changelog: check_version_coherence
 	PROJECT_VER="$${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
-# Set the version and update the apidocs. The command should be run from main as it will 
-# automatically checkout a branch and push the changes with a proper commit message. By default,
-# a pull-request will also be opened using GitHub's command line interface. To avoid a PR to be
-# opened, please run 'prepare_release OPEN_PR="false"' (with the right version) instead.
-.PHONY: prepare_release # Prepare the release
-prepare_release:
-	if [[ $(OPEN_PR) == "true" ]]; then \
-		./script/release_utils/prepare_release_pr.sh --version "$$VERSION" --open_pr; \
-	else \
-		./script/release_utils/prepare_release_pr.sh --version "$$VERSION"; \
-	fi
-
-# The 'release' command should be run from main. It will first check that the all version numbers 
-# are coherent and that apidocs were correctly built. In case the upcoming release is not a release 
-# candidate, the command will automatically checkout and push a branch with a proper name. Then, 
-# it will check that the upcoming tag does not exist yet. If it does, the current user will be asked
-# to confirm the tag's removal (local and remote), by considering that the previous release to has 
-# failed. Finally, the new tag is pushed, triggering the release CI (which notably handles running 
-# pytests, publishing the documentation, pushing the release to PyPI, Dockerhub and GitHub).
-.PHONY: release # Create a new release
-release:
-	./script/release_utils/release.sh
-
 .PHONY: show_scope # Show the accepted types and optional scopes (for git conventional commits)
 show_scope:
 	@echo "Accepted types and optional scopes:"
