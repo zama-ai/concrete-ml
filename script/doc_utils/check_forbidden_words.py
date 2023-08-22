@@ -48,8 +48,8 @@ def process_file(file_str: str, do_open_problematic_files=False):
     """
     file_path = Path(file_str).resolve()
 
-    # Don't do it on API files
-    if "docs/developer-guide/api" in file_str:
+    # Don't do it on API or advanced example data files
+    if "docs/developer-guide/api" in file_str or "docs/advanced_examples/data" in file_str:
         return True, 0
 
     # Don't do it for conventions.md file that explains what should or not be done
