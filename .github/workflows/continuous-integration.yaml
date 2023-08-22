@@ -609,8 +609,10 @@ jobs:
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
-        shell: bash +e {0}
+        shell: bash
         run: |
+          set +e
+
           make pytest_one TEST="tests/virtual_lib/test_virtual_lib.py"
 
           # If regular tests failed, check for flaky tests
