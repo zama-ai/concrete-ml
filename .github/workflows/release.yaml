@@ -1,0 +1,578 @@
+name: Release process
+on:
+  # Releases can be manually triggered if the version has already been updated and the apidocs were
+  # properly built
+  workflow_dispatch:
+
+  # Releases are also allowed to be automatically triggered once the release preparation 
+  # pull-request (targeting main) is merged. Here, we also make sure that the PR has changes 
+  # in at least one file related to `make set_version` or `make apidocs`
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+    paths:
+      - src/concrete/ml/version.py
+      - 'docs/developer-guide/api/**'
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  # Open the AWS EC2 instance if the release process has been triggered manually or if the release 
+  # preparation pull-request has been merged
+  # That latter PR is found by checking for closed PR merged (into main) that contains "Prepare 
+  # release" in their title coming from a branch that starts with "chore/prepare_release_"
+  start-runner-linux:
+    name: Start EC2 runner
+    if: |
+      github.event_name == 'workflow_dispatch'
+      || (
+        github.event_name == 'pull_request'
+        && github.event.pull_request.merged == true
+        && startsWith(github.head_ref, 'chore/prepare_release_')
+        && contains(github.event.pull_request.title, 'Prepare release')
+      )
+    runs-on: ubuntu-20.04
+    outputs:
+      label: ${{ steps.start-ec2-runner.outputs.label }}
+      ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id || '' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5727f247b64f324ec403ac56ae05e220fd02b65f
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Start EC2 runner python
+        id: start-ec2-runner
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: "c6i.16xlarge"
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+          aws-resource-tags: >
+            [
+              {"Key": "Name", "Value": "cml-package-release-ec2-github-runner"},
+              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
+              {"Key": "Actor", "Value": "${{ github.actor }}"},
+              {"Key": "Action", "Value": "${{ github.action }}"},
+              {"Key": "GitHash", "Value": "${{ github.sha }}"},
+              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
+              {"Key": "RunId", "Value": "${{ github.run_id }}"},
+              {"Key": "Team", "Value": "CML"}
+            ]
+
+  # Check that everything is up to date and run all non-flaky tests on different Python versions 
+  release-checks:
+    needs: [start-runner-linux]
+
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
+    # Run in a clean container
+    container:
+      image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          ./script/make_utils/setup_os_deps.sh
+          make setup_env
+
+      - name: Check version coherence and apidocs
+        run: |
+          make check_version_coherence
+          make check_apidocs
+
+      - name: Get release version and tag name
+        run: |
+          PROJECT_VERSION="$(poetry version --short)"
+          IS_RC="$(poetry run python ./script/make_utils/version_utils.py isprerelease --version "$PROJECT_VERSION")"
+          GIT_TAG="v${PROJECT_VERSION}"
+
+          echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
+          echo "IS_RC=${IS_RC}" >> "$GITHUB_ENV"
+          echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
+
+          # Release branches are only used for non-release candidates and have a special naming 
+          # format (for example, "release/1.1.x" is used for all patch versions related to version 1.1)
+          if [[ "${IS_RC}" == "false" ]]; then
+            PROJECT_VERSION_MAJOR_MINOR=$(echo "${PROJECT_VERSION}" | cut -d '.' -f -2)
+            RELEASE_BRANCH_NAME="release/${PROJECT_VERSION_MAJOR_MINOR}.x"
+
+            echo "RELEASE_BRANCH_NAME=${RELEASE_BRANCH_NAME}" >> "$GITHUB_ENV"
+          fi
+
+      # Make sure that the tag related to the current version does not already exist in the
+      # repository. If so, the version has not probably been updated. In that case, the release 
+      # process is stopped.
+      - name: Check tag does not already exist 
+        run: |
+          ./script/action_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
+
+      # Make sure that the branch related to the current (non-rc) version does not already exist in the
+      # repository. If so, the version has not probably been updated. In that case, the release 
+      # process is stopped.
+      - name: Check dot release branch does not exist
+        if: ${{ !fromJSON(env.IS_RC)}}
+        run: |
+          ./script/action_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
+
+      # Run the CI on different Python versions
+      - name: Run CI with different Python versions
+        uses: ./.github/workflows/continuous-integration.yaml
+        with:
+          event-name: "release"
+
+
+  release-pushes:
+    needs: [start-runner-linux, release-checks]
+
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
+    # Run in a clean container
+    container:
+      image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      # For non-rc releases, create and push the release branch
+      - name: Create and push dot release branch to public repository
+        if: ${{ !fromJSON(env.IS_RC)}}
+        run: |
+          git lfs fetch --all
+          git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
+          git push
+
+      # Push the tag related to the current version
+      - name: Push tag to public repository
+        run: |
+          git fetch --tags --force
+          git tag -s -a -m "${{ env.GIT_TAG }} release" "${{ env.GIT_TAG }}"
+          git push "refs/tags/${{ env.GIT_TAG }}"
+
+  # This action creates docker and pypi images directly on the AWS EC2 instance
+  # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete-ML starts to publish
+  # private nightly releases one day. Currently, release candidates and actual releases are all 
+  # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all 
+  # tags easily
+  release-package:
+    needs: [start-runner-linux, release-pushes]
+    outputs:
+      report: ${{ steps.report.outputs.report || 'Did not run.' }}
+    name: Package and artifacts release
+    runs-on: ${{ needs.start-runner-linux.outputs.label }}
+    env:
+      PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-ml
+      PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-ml
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+    steps:
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      - name: Checkout code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          # We need to freeze docker.io because its update requires user input
+          sudo apt-mark hold docker.io
+          sudo ./script/make_utils/setup_os_deps.sh --linux-install-python
+          make setup_env
+
+      - name: Set tags in env
+        run: |
+          # Check that the tag is part of the main or release/[GIT_TAG] branch
+          poetry run python ./script/actions_utils/check_tag_release_in_branch_main_or_release.py --git-tag "${{ env.GIT_TAG }}"
+
+          # Retrieve the private tag
+          PRIVATE_RELEASE_IMG_GIT_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:${{ env.GIT_TAG }}"
+          echo "PRIVATE_RELEASE_IMG_GIT_TAG=${PRIVATE_RELEASE_IMG_GIT_TAG}" >> "$GITHUB_ENV"
+          RELEASE_IMG_TAGS_TO_PUSH="${PRIVATE_RELEASE_IMG_GIT_TAG}"
+
+          EXISTING_TAGS=$(curl \
+          -X GET \
+          -H "Authorization: Bearer $(echo ${{ secrets.BOT_TOKEN }} | base64)" \
+          https://ghcr.io/v2/zama-ai/concrete-ml/tags/list | jq -rc '.tags | join(" ")')
+
+          # We want the space separated list of versions to be expanded
+          # shellcheck disable=SC2086
+          IS_LATEST_INFO=$(poetry run python script/make_utils/version_utils.py \
+          islatest \
+          --new-version "${{ env.GIT_TAG }}" \
+          --existing-versions $EXISTING_TAGS)
+
+          IS_LATEST=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_latest')
+          echo "IS_LATEST=${IS_LATEST}" >> "$GITHUB_ENV"
+          IS_PRERELEASE=$(echo "${IS_LATEST_INFO}" | jq -rc '.is_prerelease')
+          echo "IS_PRERELEASE=${IS_PRERELEASE}" >> "$GITHUB_ENV"
+
+          # Set the 'latest' tag in the private image
+          if [[ "${IS_LATEST}" == "true" ]]; then
+            RELEASE_IMG_LATEST_TAG="${PRIVATE_RELEASE_IMAGE_BASE}:latest"
+            RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${RELEASE_IMG_LATEST_TAG}"
+          fi
+
+          # Retrieve the public tag
+          PUBLIC_RELEASE_IMG_GIT_TAG="${PUBLIC_RELEASE_IMAGE_BASE}:${{ env.GIT_TAG }}"
+          RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${PUBLIC_RELEASE_IMG_GIT_TAG}"
+
+          # Set the 'latest' tag in the public image
+          if [[ "${IS_LATEST}" == "true" ]]; then
+            PUBLIC_RELEASE_IMG_LATEST_TAG="${PUBLIC_RELEASE_IMAGE_BASE}:latest"
+            RELEASE_IMG_TAGS_TO_PUSH="${RELEASE_IMG_TAGS_TO_PUSH},${PUBLIC_RELEASE_IMG_LATEST_TAG}"
+          fi
+
+          echo "RELEASE_IMG_TAGS_TO_PUSH=${RELEASE_IMG_TAGS_TO_PUSH}" >> "$GITHUB_ENV"
+
+      - name: Create directory for artifacts
+        if: ${{ success() && !cancelled() }}
+        run: |
+          ARTIFACTS_RAW_DIR=/tmp/release_artifacts/raw
+          mkdir -p "${ARTIFACTS_RAW_DIR}"
+          echo "ARTIFACTS_RAW_DIR=${ARTIFACTS_RAW_DIR}" >> "$GITHUB_ENV"
+
+          ARTIFACTS_PACKAGED_DIR=/tmp/release_artifacts/packaged
+          mkdir -p "${ARTIFACTS_PACKAGED_DIR}"
+          echo "ARTIFACTS_PACKAGED_DIR=${ARTIFACTS_PACKAGED_DIR}" >> "$GITHUB_ENV"
+
+      - name: Download Documentation
+        if: ${{ success() && !cancelled() }}
+        id: download-docs
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: html-docs
+          path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
+
+      - name: Untar docs artifacts
+        if: ${{ success() && !cancelled() }}
+        run: |
+          cd ${{ steps.download-docs.outputs.download-path }}
+          tar -xvf docs.tar
+          rm docs.tar
+
+      - name: Download changelog
+        if: ${{ success() && !cancelled() }}
+        id: download-changelog
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: changelog
+          path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
+
+      - name: Download python3 wheel
+        if: ${{ success() && !cancelled() }}
+        id: download-wheel
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        with:
+          name: py3-wheel
+          path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
+
+      - name: Copy wheel to docker build context
+        run: |
+          mkdir -p ./pkg
+          cp "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl ./pkg
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.BOT_USERNAME }}
+          password: ${{ secrets.BOT_TOKEN }}
+
+      # Login to public DockerHub
+      - name: Login to DockerHub
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create secrets file for Docker build
+        if: ${{ success() && !cancelled() }}
+        run: |
+          CN_VERSION_SPEC_FOR_RC="$(poetry run python \
+          ./script/make_utils/pyproject_version_parser_helper.py \
+          --pyproject-toml-file pyproject.toml \
+          --get-pip-install-spec-for-dependency concrete-python)"
+
+          SECRETS_FILE="$(mktemp)"
+          echo "" >> "${SECRETS_FILE}"
+          echo "SECRETS_FILE=${SECRETS_FILE}" >> "$GITHUB_ENV"
+
+      - name: Build Docker Concrete-ML Image
+        if: ${{ success() && !cancelled() }}
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+        with:
+          context: .
+          file: docker/Dockerfile.release
+          load: true
+          push: false
+          tags: "${{ env.RELEASE_IMG_TAGS_TO_PUSH }}"
+          no-cache: true
+          secret-files: |
+            "build-env=${{ env.SECRETS_FILE }}"
+
+      - name: Remove secrets file
+        if: ${{ always() }}
+        run: |
+          rm -rf "${SECRETS_FILE}"
+
+      - name: Release image sanity check
+        if: ${{ success() && !cancelled() }}
+        run: |
+          echo "Running sanity check for ${PRIVATE_RELEASE_IMG_GIT_TAG}"
+          docker run --rm -v "$(pwd)"/docker/release_resources:/data \
+          "${PRIVATE_RELEASE_IMG_GIT_TAG}" /bin/bash -c "python ./sanity_check.py"
+
+      - name: Prepare docs push
+        id: docs-push-infos
+        run: |
+          echo "aws-bucket=${{ secrets.AWS_REPO_DOCUMENTATION_BUCKET_NAME }}" >> $GITHUB_OUTPUT
+          echo "aws-distribution=${{ secrets.AWS_REPO_DOCUMENTATION_DISTRIBUTION_ID }}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5727f247b64f324ec403ac56ae05e220fd02b65f
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update versions.json for docs
+        if: ${{ success() && !cancelled() }}
+        env:
+          RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
+        run: |
+          DOWNLOADED_VERSIONS_JSON_FILE=$(mktemp --suffix=.json)
+          OUTPUT_VERSIONS_JSON_FILE=$(mktemp --suffix=.json)
+          OPTS=""
+          if [[ $IS_LATEST = "true" ]]; then
+              OPTS="${OPTS} --latest "
+          fi
+
+          aws s3api get-object \
+          --bucket ${{ steps.docs-push-infos.outputs.aws-bucket }} \
+          --key concrete-ml/versions.json "${DOWNLOADED_VERSIONS_JSON_FILE}"
+
+          # shellcheck disable=SC2086
+          poetry run python ./script/actions_utils/generate_versions_json.py \
+          --add-version "${{ env.PROJECT_VERSION }}" \
+          --versions-json-file "${DOWNLOADED_VERSIONS_JSON_FILE}" \
+          --output-json "${OUTPUT_VERSIONS_JSON_FILE}" \
+          $OPTS
+
+
+          echo "OUTPUT_VERSIONS_JSON_FILE=${OUTPUT_VERSIONS_JSON_FILE}" >> "$GITHUB_ENV"
+
+          # Copy to docs to keep a version in docs artifacts
+          cp "${OUTPUT_VERSIONS_JSON_FILE}" "${RAW_DOCS_DIR}"/versions.json
+
+      - name: Create ready to upload/packaged artifacts and release body
+        if: ${{ success() && !cancelled() }}
+        env:
+          RAW_DOCS_DIR: ${{ steps.download-docs.outputs.download-path }}
+          RAW_CHANGELOG_DIR: ${{ steps.download-changelog.outputs.download-path }}
+        run: |
+          pushd "${RAW_DOCS_DIR}"
+          zip -r "${ARTIFACTS_PACKAGED_DIR}/html-docs.zip" ./*
+          tar -cvzf "${ARTIFACTS_PACKAGED_DIR}/html-docs.tar.gz" ./*
+          # Remove the versions.json to avoid pushing it to S3 but have it in release artifacts
+          rm versions.json
+          popd
+          cp "${RAW_CHANGELOG_DIR}"/* "${ARTIFACTS_PACKAGED_DIR}"
+          ls -a "${ARTIFACTS_PACKAGED_DIR}"
+
+          RELEASE_BODY_FILE=RELEASE_BODY.md
+          echo "RELEASE_BODY_FILE=${RELEASE_BODY_FILE}" >> "$GITHUB_ENV"
+
+          cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
+          {
+            echo "Docker Image: ${PUBLIC_RELEASE_IMAGE_BASE}:${{ env.GIT_TAG }}";
+            echo "pip: https://pypi.org/project/concrete-ml/${{ env.PROJECT_VERSION }}";
+            echo "Documentation: https://docs.zama.ai/concrete-ml";
+            echo "";
+          } >> "${RELEASE_BODY_FILE}"
+          cat "${RAW_CHANGELOG_DIR}"/* >> "${RELEASE_BODY_FILE}"
+
+      - name: Push release docker image
+        if: ${{ success() && !cancelled() }}
+        run: |
+          docker image push --all-tags "${PRIVATE_RELEASE_IMAGE_BASE}"
+          docker image push --all-tags "${PUBLIC_RELEASE_IMAGE_BASE}"
+
+      - name: Push package to PyPi
+        if: ${{ success() && !cancelled() }}
+        run: |
+          poetry run twine upload \
+          -u __token__ -p ${{ secrets.PYPI_BOT_TOKEN }} \
+          -r pypi "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
+
+      # This step is kept if Concrete ML starts to publish private nightly release one day. For now,
+      # since release candidates and actual releases are public, we don't need to publish anything 
+      # to the private internal repo
+      - name: Push package to Internal PyPi
+        if: false
+        run: |
+          poetry run twine upload \
+          -u "${{ secrets.INTERNAL_PYPI_BOT_USERNAME }}" -p "${{ secrets.INTERNAL_PYPI_BOT_PASSWORD }}" \
+          --repository-url "${{ secrets.INTERNAL_PYPI_URL }}" "${{ env.ARTIFACTS_PACKAGED_DIR }}"/*.whl
+
+      - name: Push release documentation
+        if: ${{ success() && !cancelled() }}
+        env:
+          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
+          SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
+          DEST_DIR: 'concrete-ml/${{ env.PROJECT_VERSION }}'
+        run: |
+          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
+
+      - name: Push release documentation as stable
+        if: ${{ success() && !cancelled() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
+        env:
+          AWS_S3_BUCKET: ${{ steps.docs-push-infos.outputs.aws-bucket }}
+          SOURCE_DIR: ${{ steps.download-docs.outputs.download-path }}
+          DEST_DIR: 'concrete-ml/stable'
+        run: |
+          aws s3 sync "${SOURCE_DIR}" s3://"${AWS_S3_BUCKET}/${DEST_DIR}" --delete --acl public-read
+
+      - name: Invalidate CloudFront Cache for stable
+        if: ${{ success() && !fromJSON(env.IS_PRERELEASE) && fromJSON(env.IS_LATEST) }}
+        env:
+          SOURCE_PATH: "/concrete-ml/stable/*"
+          DISTRIBUTION_ID: ${{ steps.docs-push-infos.outputs.aws-distribution }}
+        run: |
+          aws cloudfront create-invalidation \
+          --distribution-id "${DISTRIBUTION_ID}" \
+          --paths "${SOURCE_PATH}"
+
+      - name: Create GitHub release
+        if: ${{ success() && !cancelled() }}
+        id: create-release
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+        with:
+          body_path: ${{ env.RELEASE_BODY_FILE }}
+          prerelease: ${{ fromJSON(env.IS_PRERELEASE) }}
+          files: |
+            ${{ env.ARTIFACTS_PACKAGED_DIR }}/*
+          tag_name: ${{ env.GIT_TAG }}
+          fail_on_unmatched_files: true
+          token: ${{ secrets.BOT_TOKEN }}
+
+      - name: Push updated versions.json
+        if: ${{ success() }}
+        run: |
+          aws s3 cp "${OUTPUT_VERSIONS_JSON_FILE}" \
+          s3://${{ steps.docs-push-infos.outputs.aws-bucket }}/concrete-ml/versions.json \
+          --acl public-read
+
+          aws cloudfront create-invalidation \
+          --distribution-id ${{ steps.docs-push-infos.outputs.aws-distribution }} \
+          --paths /concrete-ml/versions.json
+
+      - name: Get release link
+        id: get-release-link
+        run: |
+          echo "RELEASE_URL=${{ steps.create-release.outputs.url }}" >> $GITHUB_ENV
+  
+
+  # Close the AWS EC2 instance
+  stop-runner-linux:
+    name: Stop EC2 runner
+    needs: [start-runner-linux, release-package]
+    runs-on: ubuntu-20.04
+    if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@5727f247b64f324ec403ac56ae05e220fd02b65f
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop EC2 runner
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-linux.outputs.label }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id }}
+          mode: stop
+
+
+  # Report the final status on Slack
+  send-report:
+    if: ${{ always() }}
+    timeout-minutes: 2
+    needs:
+      [
+        start-runner-linux,
+        release-checks,
+        release-pushes,
+        release-package,
+        stop-runner-linux,
+      ]
+
+    name: Send Slack notification
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+
+      - name: Prepare whole job status
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS_JSON}" > /tmp/needs_context.json
+          JOB_STATUS=$(python3 ./script/actions_utils/actions_combine_status.py \
+          --needs_context_json /tmp/needs_context.json)
+          echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
+
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@12e36fc18b0689399306c2e0b3e0f2978b7f1ee7
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
+          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status \ 
+            ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
+            - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
+            - release-checks: ${{ needs.release-checks.result || 'Did not run.' }}\n\n\
+            - release-pushes: ${{ needs.release-pushes.result || 'Did not run.' }}\n\n\
+            - release-package: ${{ needs.release-package.result || 'Did not run.' }}\n\n\
+            - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}\n\n\
+            GitHub release link: ${{ env.RELEASE_URL }}."
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
