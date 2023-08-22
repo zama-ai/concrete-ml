@@ -5,10 +5,16 @@ on:
   workflow_dispatch:
 
   # Releases are also allowed to be automatically triggered once the release preparation 
-  # pull-request is merged 
+  # pull-request (targeting main) is merged. Here, we also make sure that the PR has changes 
+  # in at least one file related to `make set_version` or `make apidocs`
   pull_request:
     types:
       - closed
+    branches:
+      - main
+    paths:
+      - src/concrete/ml/version.py
+      - 'docs/developer-guide/api/**'
 
 concurrency:
   group: ${{ github.ref }}
@@ -20,8 +26,8 @@ env:
 jobs:
   # Open the AWS EC2 instance if the release process has been triggered manually or if the release 
   # preparation pull-request has been merged
-  # That latter PR is found by checking for closed PR merged into main that contains "Prepare 
-  # release" in their title
+  # That latter PR is found by checking for closed PR merged (into main) that contains "Prepare 
+  # release" in their title coming from a branch that starts with "chore/prepare_release_"
   start-runner-linux:
     name: Start EC2 runner
     if: |
@@ -29,7 +35,7 @@ jobs:
       || (
         github.event_name == 'pull_request'
         && github.event.pull_request.merged == true
-        && github.event.pull_request.base.ref == 'main'
+        && startsWith(github.head_ref, 'chore/prepare_release_')
         && contains(github.event.pull_request.title, 'Prepare release')
       )
     runs-on: ubuntu-20.04
