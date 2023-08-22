@@ -69,3 +69,8 @@ def test_torch_matmul_fhe_simulation(default_configuration):
 
     max_bit_width = fhe_simulation_circuit.graph.maximum_integer_bit_width()
     assert max_bit_width == 10
+
+
+def test_no_flaky():
+    """Test CI"""
+    raise AssertionError()
