@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Check if the given tag name does not refer to an existing remote tag (from origin). If it 
+# does, a 1 exit code is returned
+
 set -e
 
 TAG_NAME=""

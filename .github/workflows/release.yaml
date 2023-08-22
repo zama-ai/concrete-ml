@@ -130,7 +130,7 @@ jobs:
       # process is stopped.
       - name: Check tag does not already exist 
         run: |
-          ./script/release_utils/check_tag.sh --tag_name "${{ env.GIT_TAG }}"
+          ./script/action_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
       # Make sure that the branch related to the current (non-rc) version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
@@ -138,7 +138,7 @@ jobs:
       - name: Check dot release branch does not exist
         if: ${{ !fromJSON(env.IS_RC)}}
         run: |
-          ./script/release_utils/check_branch.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
+          ./script/action_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
       # Run the CI on different Python versions
       - name: Run CI with different Python versions

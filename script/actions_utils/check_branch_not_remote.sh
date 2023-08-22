@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Check if the given branch name does not refer to an existing remote branch (from origin). If it 
+# does, a 1 exit code is returned
+
 set -e
 
 BRANCH_NAME=""
