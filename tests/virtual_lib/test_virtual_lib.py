@@ -1,5 +1,6 @@
 """Test file for FHE simulation specific tests."""
 import numpy
+import pytest
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
 
@@ -69,3 +70,11 @@ def test_torch_matmul_fhe_simulation(default_configuration):
 
     max_bit_width = fhe_simulation_circuit.graph.maximum_integer_bit_width()
     assert max_bit_width == 10
+
+
+@pytest.mark.flaky
+def test_real_flaky():
+    """Test CI"""
+    radom_variable = numpy.random.randint(0, 2)
+    if radom_variable == 0:
+        raise AssertionError()
