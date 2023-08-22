@@ -30,7 +30,7 @@ fi
 git fetch --all
 
 # If the branch name is already found remotely, exist with status 1
-if [ -n "$(git ls-remote --heads origin ${BRANCH_NAME})" ]; then
+if [ -n "$(git ls-remote --heads origin "${BRANCH_NAME}")" ]; then
     echo "Branch ${BRANCH_NAME} already exists remotely."
     exit 1
 fi
