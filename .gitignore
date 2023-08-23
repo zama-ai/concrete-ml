@@ -51,6 +51,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 global-coverage-infos.json
+pytest_report.json
+failed_tests_report.json
+failed_tests_comment.txt
 
 # Translations
 *.mo

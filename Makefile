@@ -288,18 +288,10 @@ pytest_no_flaky: check_current_flaky_tests
 	--cache-clear \
 	${PYTEST_OPTIONS}
 
-# Checking for latest failed tests works by accessing pytest's cache. It is therefore recommended to
-# call '--cache-clear' when calling the previous pytest run. Also, 
-# 'pytest_check_last_failed_tests_are_flaky' might nor work if executed long after running 
-# 'make pytest' as the cache might have been modified or deleted in the mean time 
-.PHONY: pytest_check_last_failed_tests_are_flaky # Check if last failed tests are known flaky tests or not
-pytest_check_last_failed_tests_are_flaky:
-	poetry run pytest ./tests --last-failed-are-flaky
-
 # Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
 # call '--cache-clear' when calling the previous pytest run. 
 # The '--last-failed' option runs all last failed tests. In case there is none, the 
-# '--last-failed-no-failures none' option indicates pytest no to run anything (instead of running 
+# '--last-failed-no-failures none' option indicates pytest not to run anything (instead of running 
 # all tests over again)
 .PHONY: pytest_run_last_failed # Run all failed tests from the previous pytest run
 pytest_run_last_failed:
@@ -312,6 +304,11 @@ pytest_run_last_failed:
 .PHONY: pytest_get_last_failed # Get the list of last failed tests 
 pytest_get_last_failed:
 	poetry run pytest ./tests --cache-show cache/lastfailed
+
+.PHONY: pytest_and_report # Run pytest and output the report in a JSON file
+pytest_and_report:
+	"$(MAKE)" pytest \
+	PYTEST_OPTIONS="--json-report --json-report-file='pytest_report.json'  --json-report-omit collectors log traceback streams warnings  --json-report-indent=4"
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy

@@ -93,7 +93,6 @@ env:
     tests/parameter_search/FashionMNIST_quant_state_dict.pt, \
     tests/parameter_search/custom_data_fp32_state_dict.pt, \
     tests/parameter_search/custom_data_quant_state_dict.pt"
-  FAILED_TESTS_ARE_FLAKY: "false"
  
  
 
@@ -627,8 +626,9 @@ jobs:
       # current workflow does no take place in a weekly or release CI. This step is also triggered
       # if any dependency has been updated or the conftest.py files has changed
       # If regular tests failed, a following script checks for flaky tests. If all failed tests 
-      # are known flaky tests, they are re-run.
-      # The 'bash {0}' is added here in order not to make 'make pytest' exit the step when it fails
+      # are known flaky tests, they are re-run. Otherwise, the step exits with status 1.
+      # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
+      # if 'make pytest' fails
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: |
@@ -643,62 +643,39 @@ jobs:
           && !cancelled()
         shell: bash +e {0}
         run: |
-          make pytest
+          make pytest_and_report
 
           # If regular tests failed, check for flaky tests
           if [ $? -ne 0 ]; then
-            ./script/actions_utils/re_run_last_failed_flaky_tests.sh
 
-            # If the above script returns a 0 exit code, this means all last failed tests were known
-            # flaky tests and passed after re-running them. Else either at least one test was not 
-            # a known flaky test or all known failed flaky tests failed again on retry
-            if [ $? -eq 0 ]; then
-              echo "FAILED_TESTS_ARE_FLAKY=true" >> "$GITHUB_ENV"
+            # Convert pytest report to formatted report with only information about failed tests
+          	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
+            --pytest-input-report "pytest_report.json" \
+            --failed-tests-report "failed_tests_report.json" \
+            --failed-tests-comment "failed_tests_comment.txt"
+
+            # Check if all failed tests are known flaky tests
+            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
+            echo "FAILED_TESTS_ARE_FLAKY=FAILED_TESTS_ARE_FLAKY" >> "$GITHUB_ENV"
+
+            # If all failed tests are known flaky tests, try to re-run them
+            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
+              make pytest_run_last_failed
+            
+            # Else, return exit status 1 in order to make this step fail
             else
               exit 1
             fi
           fi
 
-      # If regular tests passed but at least one known flaky test had to be re-ran, a warning
-      # comment is published in the PR and failed tests are all listed.
-      # Additionally, multi-line strings are not directly supported by env variables and thus need 
-      # to be handled with special delimiters 
-      # (https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings)
-      - name: Create comment for PR (if failed tests)
-        id: pr-comment-body
-        if: steps.pytest_regular.outcome == 'success' && env.FAILED_TESTS_ARE_FLAKY == 'true' && !cancelled()
-        run: |
-          FLAKY_TESTS_PASSED="WARNING: The following known flaky tests initially failed and were ran again once."
-          FAILED_FLAKY_TESTS=$(make pytest_get_last_failed | grep "cache/lastfailed contains:" -A1000 | sed '1d; $d')
-
-          {
-            echo "FAILED_TESTS_MESSAGE_BODY<<EOF"
-            echo $FLAKY_TESTS_PASSED
-            echo $FAILED_FLAKY_TESTS
-            echo "EOF"
-          } >> "$GITHUB_ENV"
-
-      # If the previous step ('pr-comment-body') was not skipped, the comment message is added to 
-      # the current PR. 
-      # The 'createComment' command does not seem to properly handle the '${{}}' syntax and thus 
-      # is used along variables from 'process.env'.
-      - name: Warn PR with failed tests
-        id: warn-pr-failed-tests
-        uses: actions/github-script@v6
-        if: steps.pr-comment-body.outcome == 'success' && !cancelled()
-        env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GH_OWNER: ${{ github.repository_owner }}
-          GH_REPO: ${{ github.event.repository.name }}
+      # If regular tests passed but at least one known flaky test have been re-run, a warning
+      # comment is published in the PR and all flaky tests that initially failed are listed
+      - name: Warn PR with flaky tests
+        uses: marocchino/sticky-pull-request-comment@f6a2580ed520ae15da6076e7410b088d1c5dddd9
+        if: steps.pytest_regular.outcome == 'success' && env.FAILED_TESTS_ARE_FLAKY && !cancelled()
         with:
-          github-token: ${{ env.GH_TOKEN }}
-          script: |
-            github.rest.issues.createComment({
-              issue_number: process.env.PR_NUMBER,
-              owner: process.env.GH_OWNER,
-              repo: process.env.GH_REPO,
-              body: process.env.FAILED_TESTS_MESSAGE_BODY
-            })
+          path: failed_tests_comment.txt
+          recreate: true
 
       # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Source Code (weekly)
