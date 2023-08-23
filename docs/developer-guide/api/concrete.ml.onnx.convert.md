@@ -39,7 +39,7 @@ Get the numpy equivalent forward of the provided torch Module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L67"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward`
 

@@ -13,7 +13,7 @@ torch compilation function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `convert_torch_tensor_or_numpy_array_to_numpy_array`
 
@@ -35,7 +35,39 @@ Convert a torch tensor or a numpy array to a numpy array.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `build_quantized_module`
+
+```python
+build_quantized_module(
+    model: Union[Module, ModelProto],
+    torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
+    import_qat: bool = False,
+    n_bits=8,
+    rounding_threshold_bits: Optional[int] = None
+) → QuantizedModule
+```
+
+Build a quantized module from a Torch or ONNX model.
+
+Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights / outputs and retrieve the associated quantized module.
+
+**Args:**
+
+- <b>`model`</b> (Union\[torch.nn.Module, onnx.ModelProto\]):  The model to quantize, either in torch or  in ONNX.
+- <b>`torch_inputset`</b> (Dataset):  the calibration input-set, can contain either torch  tensors or numpy.ndarray
+- <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not re-quantize it
+- <b>`n_bits`</b>:  the number of bits for the quantization
+- <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+
+**Returns:**
+
+- <b>`QuantizedModule`</b>:  The resulting QuantizedModule.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/compile.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -66,7 +98,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`import_qat`</b> (bool):  Set to True to import a network that contains quantizers and was  trained using quantization aware training
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
-- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, eg, for debugging or demo
+- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
@@ -79,7 +111,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -110,7 +142,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not re-quantize it.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
-- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, eg, for debugging or demo
+- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
@@ -123,7 +155,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -154,7 +186,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`n_bits`</b> (Optional\[Union\[int, dict\]):  the number of bits for the quantization. By default,  for most models, a value of None should be given, which instructs Concrete ML to use the  bit-widths configured using Brevitas quantization options. For some networks, that  perform a non-linear operation on an input on an output, if None is given, a default  value of 8 bits is used for the input/output quantization. For such models the user can  also specify a dictionary with model_inputs/model_outputs keys to override  the 8-bit default or a single integer for both values.
 - <b>`configuration`</b> (Configuration):  Configuration object to use  during compilation
 - <b>`artifacts`</b> (DebugArtifacts):  Artifacts object to fill  during compilation
-- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, eg, for debugging or demo
+- <b>`show_mlir`</b> (bool):  if set, the MLIR produced by the converter and which is going  to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0

@@ -22,7 +22,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -40,7 +40,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -58,7 +58,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -76,7 +76,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -94,7 +94,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -112,7 +112,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -130,7 +130,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -148,7 +148,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -166,7 +166,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -184,7 +184,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -202,7 +202,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -222,7 +222,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -255,7 +255,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -302,7 +302,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -336,7 +336,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -385,7 +385,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -403,7 +403,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -421,7 +421,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -439,7 +439,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -457,7 +457,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -475,7 +475,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -506,7 +506,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -597,7 +597,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -661,7 +661,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -708,7 +708,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -772,7 +772,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -839,7 +839,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -859,7 +859,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -894,7 +894,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -929,7 +929,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -964,7 +964,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -999,7 +999,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1009,7 +1009,7 @@ ______________________________________________________________________
 
 Or operator ||.
 
-This operation is not really working as a quantized operation. It just works when things got fused, as in eg Act(x) = x || (x + 42))
+This operation is not really working as a quantized operation. It just works when things got fused, as in e.g., Act(x) = x || (x + 42))
 
 ______________________________________________________________________
 
@@ -1019,7 +1019,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1029,7 +1029,7 @@ ______________________________________________________________________
 
 Div operator /.
 
-This operation is not really working as a quantized operation. It just works when things got fused, as in eg Act(x) = 1000 / (x + 42))
+This operation is not really working as a quantized operation. It just works when things got fused, as in e.g., Act(x) = 1000 / (x + 42))
 
 ______________________________________________________________________
 
@@ -1039,7 +1039,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1059,7 +1059,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1079,7 +1079,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1128,7 +1128,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1146,7 +1146,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1235,7 +1235,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1297,7 +1297,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1315,7 +1315,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1354,7 +1354,7 @@ Construct the Brevitas quantization operator.
 - <b>`input_quant_opts`</b> (Optional\[QuantizationOptions\]):  Options for the input quantizer.  Default to None. attrs (dict):
 - <b>`rounding_mode`</b> (str):  Rounding mode (default and only accepted option is "ROUND")
 - <b>`signed`</b> (int):  Whether this op quantizes to signed integers (default 1),
-- <b>`narrow`</b> (int):  Whether this op quantizes to a narrow range of integers  eg \[-2**n_bits-1 .. 2**n_bits-1\] (default 0),
+- <b>`narrow`</b> (int):  Whether this op quantizes to a narrow range of integers  e.g., \[-2**n_bits-1 .. 2**n_bits-1\] (default 0),
 
 ______________________________________________________________________
 
@@ -1364,7 +1364,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1428,7 +1428,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1488,7 +1488,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1506,7 +1506,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1524,7 +1524,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1542,7 +1542,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1560,7 +1560,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1578,7 +1578,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1638,7 +1638,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1698,7 +1698,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1758,7 +1758,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1807,7 +1807,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1845,7 +1845,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 
@@ -1894,7 +1894,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 **Returns:**
 
-- <b>`List[str]`</b>:  the names of the tensors
+- <b>`Set[str]`</b>:  the names of the tensors
 
 ______________________________________________________________________
 

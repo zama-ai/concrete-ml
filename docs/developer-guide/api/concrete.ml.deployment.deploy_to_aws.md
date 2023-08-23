@@ -20,7 +20,7 @@ It spawns a AWS EC2 instance with proper security groups. Then SSHs to it to rsy
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `create_instance`
 
@@ -58,7 +58,7 @@ Create a EC2 instance.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L253"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `deploy_to_aws`
 
@@ -91,7 +91,7 @@ instance_metadata (Dict\[str, Any\])
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L422"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `wait_instance_termination`
 
@@ -108,7 +108,7 @@ Wait for AWS EC2 instance termination.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L427"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L434"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `terminate_instance`
 
@@ -125,7 +125,7 @@ Terminate a AWS EC2 instance.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L438"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L445"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `delete_security_group`
 
@@ -142,7 +142,7 @@ Terminate a AWS EC2 instance.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L456"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `main`
 
@@ -172,7 +172,7 @@ Deploy a model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L32"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `AWSInstance`
 
@@ -180,7 +180,7 @@ AWSInstance.
 
 Context manager for AWS instance that supports ssh and http over one port.
 
-<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L40"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/deploy_to_aws.py#L41"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
