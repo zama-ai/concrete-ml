@@ -57,5 +57,5 @@ jobs:
           commit-message: "chore: update licenses ${{ matrix.os }}"
           branch: "chore/update_licenses_${{ matrix.os }}"
           base: "${{ github.ref_name }}"
-          title: "Prepare release ${{ matrix.os }} on ${{ github.ref_name }}"
+          title: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
           body: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
