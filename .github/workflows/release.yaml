@@ -1,4 +1,4 @@
-name: Release process
+name: Release
 on:
   # Releases can be manually triggered if the version has already been updated and the apidocs were
   # properly built
@@ -46,6 +46,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          ref: "main"
+          token: ${{ secrets.BOT_TOKEN }}
   
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@5727f247b64f324ec403ac56ae05e220fd02b65f
@@ -110,6 +113,9 @@ jobs:
 
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          ref: "main"
+          token: ${{ secrets.BOT_TOKEN }}
 
       # Make sure that the target branch is main
       - name: Stop if branch is not main
@@ -164,7 +170,7 @@ jobs:
       # process is stopped.
       - name: Check tag does not already exist 
         run: |
-          ./script/action_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
+          ./script/actions_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
       # Make sure that the branch related to the current (non-rc) version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
@@ -172,7 +178,7 @@ jobs:
       - name: Check dot release branch does not exist
         if: ${{ !fromJSON(env.IS_RC)}}
         run: |
-          ./script/action_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
+          ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
       # Run the CI on different Python versions
       - name: Run CI with different Python versions
@@ -230,6 +236,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
+          ref: "main"
+          token: ${{ secrets.BOT_TOKEN }}
           fetch-depth: 0
 
       - name: Set tags in env
@@ -586,7 +594,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
-          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status \ 
+          SLACK_MESSAGE: "Creating release for ${{ env.GIT_TAG }} finished with status\ 
             ${{ env.JOB_STATUS || 'failure' }} (${{ env.ACTION_RUN_URL }})\n\
             - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
             - release-checks: ${{ needs.release-checks.result || 'Did not run.' }}\n\n\
