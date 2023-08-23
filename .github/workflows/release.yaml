@@ -42,10 +42,11 @@ jobs:
     outputs:
       label: ${{ steps.start-ec2-runner.outputs.label }}
       ec2-instance-id: ${{ steps.start-ec2-runner.outputs.ec2-instance-id || '' }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
-
+  
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@5727f247b64f324ec403ac56ae05e220fd02b65f
         with:
@@ -88,17 +89,48 @@ jobs:
         shell: bash
 
     steps:
+      # Mask internal URLs if logged
+      - name: Add masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
+      - name: Docker container related setup
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
+          apt -y install sudo
+
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
-      - name: Set up Python 3.8
-        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
-        with:
-          python-version: '3.8'
+      # Make sure that the target branch is main
+      - name: Stop if branch is not main
+        id: check-branch-is-main
+        if: ${{ always() && !cancelled() }}
+        env:
+          BRANCH_IS_MAIN: ${{ github.ref_name == 'main'}} 
+        run: |
+          if [[ "${BRANCH_IS_MAIN}" != "true" ]]; then
+            echo "Release cannot be done: target branch is not main"
+            exit 1
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
       - name: Install dependencies
         run: |
-          ./script/make_utils/setup_os_deps.sh
+          # We need to freeze docker.io because its update requires user input
+          sudo apt update
+          sudo apt-mark hold docker.io
+
+          ./script/make_utils/setup_os_deps.sh  --linux-install-python
           make setup_env
 
       - name: Check version coherence and apidocs
@@ -166,6 +198,7 @@ jobs:
           git lfs fetch --all
           git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
           git push
+          git checkout "${{ github.ref_name }}"
 
       # Push the tag related to the current version
       - name: Push tag to public repository
@@ -190,27 +223,12 @@ jobs:
       PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-ml
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
-    steps:
-      - name: Add masks
-        run: |
-          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
-          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
+    steps:
       - name: Checkout code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           fetch-depth: 0
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          # We need to freeze docker.io because its update requires user input
-          sudo apt-mark hold docker.io
-          sudo ./script/make_utils/setup_os_deps.sh --linux-install-python
-          make setup_env
 
       - name: Set tags in env
         run: |
