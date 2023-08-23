@@ -168,15 +168,15 @@ jobs:
       # Make sure that the tag related to the current version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
       # process is stopped.
-      - name: Check tag does not already exist 
+      - name: Check tag does not remotely exist 
         run: |
           ./script/actions_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
       # Make sure that the branch related to the current (non-rc) version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
       # process is stopped.
-      - name: Check dot release branch does not exist
-        if: ${{ !fromJSON(env.IS_RC)}}
+      - name: Check dot release branch does not remotely exist
+        if:  env.IS_RC == 'false'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
@@ -201,7 +201,7 @@ jobs:
     steps:
       # For non-rc releases, create and push the release branch
       - name: Create and push dot release branch to public repository
-        if: ${{ !fromJSON(env.IS_RC)}}
+        if: env.IS_RC == 'false'
         run: |
           git lfs fetch --all
           git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
