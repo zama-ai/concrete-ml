@@ -8,44 +8,7 @@ Dump functions for serialization.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L11"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `dumps_random_state`
-
-```python
-dumps_random_state(random_state: Optional[RandomState, int]) → str
-```
-
-Dump random state to string.
-
-**Arguments:**
-
-- <b>`random_state`</b> (Union\[RandomState, int, None\]):  a random state
-
-**Returns:**
-
-- <b>`str`</b>:  a serialized version of the random state
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-## <kbd>function</kbd> `dump`
-
-```python
-dump(obj: Any, file: <class 'TextIO'>)
-```
-
-Dump any Concrete ML object that has a dump method.
-
-**Arguments:**
-
-- <b>`obj`</b> (Any):  the object to dump.
-- <b>`file`</b> (TextIO):  a file containing the serialized object.
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L38"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L8"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `dumps`
 
@@ -53,14 +16,29 @@ ______________________________________________________________________
 dumps(obj: Any) → str
 ```
 
-Dump as string any object.
-
-If the object has some `dumps` method then it uses that. Otherwise the object is casted as `str`.
+Dump any object as a string.
 
 **Arguments:**
 
-- <b>`obj`</b> (Any):  any object.
+- <b>`obj`</b> (Any):  Object to dump.
 
 **Returns:**
 
-- <b>`str`</b>:  a string representation of the object.
+- <b>`str`</b>:  A string representation of the object.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/common/serialization/dumpers.py#L21"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `dump`
+
+```python
+dump(obj: Any, file: <class 'TextIO'>)
+```
+
+Dump any Concrete ML object in a file.
+
+**Arguments:**
+
+- <b>`obj`</b> (Any):  The object to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.

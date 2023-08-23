@@ -12,7 +12,7 @@ Quantization utilities for a numpy array/tensor.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fill_from_kwargs`
 
@@ -39,7 +39,7 @@ Fill a parameter set structure from kwargs parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizationOptions`
 
@@ -47,7 +47,7 @@ Options for quantization.
 
 Determines the number of bits for quantization and the method of quantization of the values. Signed quantization allows negative quantized values. Symmetric quantization assumes the float values are distributed symmetrically around x=0 and assigns signed values around 0 to the float values. QAT (quantization aware training) quantization assumes the values are already quantized, taking a discrete set of values, and assigns these values to integers, computing only the scale.
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L102"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -72,7 +72,7 @@ Get a copy of the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_opts`
 
@@ -88,23 +88,23 @@ Copy the options from a different structure.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L170"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]')
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -116,11 +116,11 @@ Dump itself to a dict.
 
 **Returns:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L133"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L162"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -132,11 +132,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `is_equal`
 
@@ -157,27 +157,7 @@ Compare two quantization options sets.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L172"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `load`
-
-```python
-load(file: 'IO[str]') → QuantizationOptions
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`QuantizationOptions`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L152"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -189,35 +169,15 @@ Load itself from a string.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`QuantizationOptions`</b>:  the loaded object
+- <b>`QuantizationOptions`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L185"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `loads`
-
-```python
-loads(metadata: 'str') → QuantizationOptions
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`QuantizationOptions`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `MinMaxQuantizationStats`
 
@@ -225,7 +185,7 @@ Calibration set statistics.
 
 This class stores the statistics for the calibration set or for a calibration data batch. Currently we only store min/max to determine the quantization range. The min/max are computed from the calibration set.
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L256"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L236"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -249,7 +209,7 @@ Get a copy of the calibration set statistics.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_is_uniform_quantized`
 
@@ -271,7 +231,7 @@ Determines whether the values represented by this QuantizedArray show a quantize
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_stats`
 
@@ -287,7 +247,7 @@ Compute the calibration set quantization statistics.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_stats`
 
@@ -303,23 +263,23 @@ Copy the statistics from a different structure.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]')
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L266"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -331,11 +291,11 @@ Dump itself to a dict.
 
 **Returns:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L279"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L285"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -347,31 +307,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L316"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `load`
-
-```python
-load(file: 'IO[str]') → MinMaxQuantizationStats
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`MinMaxQuantizationStats`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L298"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L267"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -383,35 +323,15 @@ Load itself from a string.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`QuantizationOptions`</b>:  the loaded object
+- <b>`QuantizationOptions`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `loads`
-
-```python
-loads(metadata: 'str') → MinMaxQuantizationStats
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`MinMaxQuantizationStats`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `UniformQuantizationParameters`
 
@@ -419,7 +339,7 @@ Quantization parameters for uniform quantization.
 
 This class stores the parameters used for quantizing real values to discrete integer values. The parameters are computed from quantization options and quantization statistics.
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -443,7 +363,7 @@ Get a copy of the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L535"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_parameters`
 
@@ -463,7 +383,7 @@ Compute the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L448"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_params`
 
@@ -479,23 +399,23 @@ Copy the parameters from a different structure.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L440"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]')
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L436"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L402"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -507,11 +427,11 @@ Dump itself to a dict.
 
 **Returns:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -523,31 +443,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L485"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `load`
-
-```python
-load(file: 'IO[str]') → UniformQuantizationParameters
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`UniformQuantizationParameters`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L468"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L415"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -559,35 +459,15 @@ Load itself from a string.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`UniformQuantizationParameters`</b>:  the loaded object
+- <b>`UniformQuantizationParameters`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L498"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `loads`
-
-```python
-loads(metadata: 'str') → UniformQuantizationParameters
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`UniformQuantizationParameters`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L643"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L580"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `UniformQuantizer`
 
@@ -601,7 +481,7 @@ Contains all information necessary for uniform quantization and provides quantiz
 - <b>`stats`</b> (Optional\[MinMaxQuantizationStats\]):  Quantization batch statistics set
 - <b>`params`</b> (Optional\[UniformQuantizationParameters\]):  Quantization parameters set  (scale, zero-point)
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L657"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L594"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -646,7 +526,7 @@ Get a copy of the calibration set statistics.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_is_uniform_quantized`
 
@@ -668,7 +548,7 @@ Determines whether the values represented by this QuantizedArray show a quantize
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L535"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_parameters`
 
@@ -688,7 +568,7 @@ Compute the quantization parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute_quantization_stats`
 
@@ -704,7 +584,7 @@ Compute the calibration set quantization statistics.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L198"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L178"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_opts`
 
@@ -720,7 +600,7 @@ Copy the options from a different structure.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L511"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L448"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_params`
 
@@ -736,7 +616,7 @@ Copy the parameters from a different structure.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `copy_stats`
 
@@ -752,7 +632,7 @@ Copy the statistics from a different structure.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L716"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L770"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequant`
 
@@ -772,23 +652,23 @@ De-quantize values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L765"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L725"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L742"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -800,11 +680,11 @@ Dump itself to a dict.
 
 **Returns:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L756"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L717"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -816,11 +696,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `is_equal`
 
@@ -841,27 +721,7 @@ Compare two quantization options sets.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `load`
-
-```python
-load(file: 'IO[str]') → UniformQuantizer
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`UniformQuantizer`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L775"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -873,35 +733,15 @@ Load itself from a string.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`UniformQuantizer`</b>:  the loaded object
+- <b>`UniformQuantizer`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L805"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `loads`
-
-```python
-loads(metadata: 'str') → UniformQuantizer
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`UniformQuantizer`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L679"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L733"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quant`
 
@@ -921,7 +761,7 @@ Quantize values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L819"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L797"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedArray`
 
@@ -941,7 +781,7 @@ See https://arxiv.org/abs/1712.05877.
 - <b>`params`</b> (Optional\[UniformQuantizationParameters\]):  Quantization parameters set  (scale, zero-point)
 - <b>`kwargs`</b>:  Any member of the options, stats, params sets as a key-value pair. The parameter  sets need to be completely parametrized if their members appear in kwargs.
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L850"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L826"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -959,7 +799,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L986"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L1018"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequant`
 
@@ -975,23 +815,23 @@ De-quantize self.qvalues.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1024"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L974"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump`
 
 ```python
-dump(file: 'IO[str]') → None
+dump(file: 'TextIO') → None
 ```
 
 Dump itself to a file.
 
 **Args:**
 
-- <b>`file`</b> (IO\[str\]):  file of where to dump.
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L999"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L934"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -1003,11 +843,11 @@ Dump itself to a dict.
 
 **Returns:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1015"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L966"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dumps`
 
@@ -1019,31 +859,11 @@ Dump itself to a string.
 
 **Returns:**
 
-- <b>`metadata`</b> (str):  string of serialized object
+- <b>`metadata`</b> (str):  String of the serialized object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1053"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `load`
-
-```python
-load(file: 'IO[str]') → QuantizedArray
-```
-
-Load itself from a file.
-
-**Args:**
-
-- <b>`file`</b> (IO\[str\]):  file of serialized object
-
-**Returns:**
-
-- <b>`QuantizedArray`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1034"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L948"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_dict`
 
@@ -1055,35 +875,15 @@ Load itself from a string.
 
 **Args:**
 
-- <b>`metadata`</b> (Dict):  dict of serialized object
+- <b>`metadata`</b> (Dict):  Dict of serialized objects.
 
 **Returns:**
 
-- <b>`QuantizedArray`</b>:  the loaded object
+- <b>`QuantizedArray`</b>:  The loaded object.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L1066"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `loads`
-
-```python
-loads(metadata: 'str') → QuantizedArray
-```
-
-Load itself from a string.
-
-**Args:**
-
-- <b>`metadata`</b> (str):  serialized object
-
-**Returns:**
-
-- <b>`QuantizedArray`</b>:  the loaded object
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L976"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L1008"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quant`
 
@@ -1099,7 +899,7 @@ Quantize self.values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L963"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L995"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_quantized_values`
 
@@ -1119,7 +919,7 @@ Update qvalues to get their corresponding values using the related quantized par
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantizers.py#L950"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantizers.py#L982"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `update_values`
 
