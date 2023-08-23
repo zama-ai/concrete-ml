@@ -488,6 +488,7 @@ jobs:
               - '**.md'
               - '!.*/**'
               - '!docs/_*/**'
+              - '!docs/SUMMARY.md'
             dependencies:
               - deps_licenses/licenses_linux_user.txt.md5
             conftest:
