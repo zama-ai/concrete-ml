@@ -1,0 +1,61 @@
+# Workflow to update licenses for x86 Linux and MacOS
+# Support ARM MacOS
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3925
+name: Update licenses
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update_licenses:
+    strategy:
+      matrix:
+        # No arm-macos machines on github runners
+        # we would need to use one of our own runners
+        os: [ubuntu-20.04, macos-latest-xl]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Mask internal URLs if logged
+      - name: Add masks
+        id: masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      # Checkout repository
+      - name: Checkout Code
+        uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install poetry==1.2.2
+          make setup_env
+
+      - name: Update licenses
+        run: |
+          make licenses
+      
+      # Open PR with updated licenses
+      - name: Open PR
+        uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
+        with:
+          token: ${{ secrets.BOT_TOKEN }}
+          commit-message: "chore: update licenses ${{ matrix.os }}"
+          branch: "chore/update_licenses_${{ matrix.os }}"
+          base: "${{ github.ref_name }}"
+          title: "Prepare release ${{ matrix.os }} on ${{ github.ref_name }}"
+          body: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
