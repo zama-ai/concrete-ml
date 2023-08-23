@@ -514,14 +514,6 @@ shell_lint:
 	find . -type f -name "*.sh" | grep -v "^\./\." | \
 	xargs shellcheck
 
-.PHONY: set_version_no_commit # Dry run for set_version
-set_version_no_commit:
-	@if [[ "$$VERSION" == "" ]]; then											\
-		echo "VERSION env variable is empty. Please set to desired version.";	\
-		exit 1;																	\
-	fi && \
-	poetry run python ./script/make_utils/version_utils.py set-version --version "$${VERSION}"
-
 .PHONY: set_version # Generate a new version number and update all files with it accordingly
 set_version:
 	@if [[ "$$VERSION" == "" ]]; then											\
