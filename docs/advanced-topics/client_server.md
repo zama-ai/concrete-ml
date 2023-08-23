@@ -31,7 +31,7 @@ The server-side implementation of a Concrete ML model follows the diagram above.
 
 ## Example notebook
 
-For a complete example, see [the client-server notebook](../advanced_examples/ClientServer.ipynb).
+For a complete example, see [the client-server notebook](../advanced_examples/ClientServer.ipynb) or [the use-case examples](../../use_case_examples/deployment/).
 
 ### AWS
 
