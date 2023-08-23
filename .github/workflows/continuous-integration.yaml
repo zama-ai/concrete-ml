@@ -476,6 +476,7 @@ jobs:
           files_yaml: |
             src:
               - src/**
+              - '!src/concrete/ml/version.py'
             tests:
               - tests/**
               - src/concrete/ml/pytest/**
