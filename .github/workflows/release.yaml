@@ -81,6 +81,7 @@ jobs:
 
   # Check that everything is up to date and run all non-flaky tests on different Python versions 
   release-checks:
+    name: Install deps and run checks
     needs: [start-runner-linux]
 
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
@@ -168,27 +169,31 @@ jobs:
       # Make sure that the tag related to the current version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
       # process is stopped.
-      - name: Check tag does not already exist 
+      - name: Check tag does not remotely exist 
         run: |
           ./script/actions_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
       # Make sure that the branch related to the current (non-rc) version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
       # process is stopped.
-      - name: Check dot release branch does not exist
-        if: ${{ !fromJSON(env.IS_RC)}}
+      - name: Check dot release branch does not remotely exist
+        if:  env.IS_RC == 'false'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
-      # Run the CI on different Python versions
-      - name: Run CI with different Python versions
-        uses: ./.github/workflows/continuous-integration.yaml
-        with:
-          event-name: "release"
-
+  # The caller workflow's job (here 'release-tests') do not need to run on the current runner as 
+  # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
+  release-tests:
+    name: Run tests
+    needs: [start-runner-linux, release-checks]
+    uses: ./.github/workflows/continuous-integration.yaml
+    secrets: inherit
+    with:
+      event_name: "release"
 
   release-pushes:
-    needs: [start-runner-linux, release-checks]
+    name: Push new tag and branch
+    needs: [start-runner-linux, release-tests]
 
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     # Run in a clean container
@@ -201,7 +206,7 @@ jobs:
     steps:
       # For non-rc releases, create and push the release branch
       - name: Create and push dot release branch to public repository
-        if: ${{ !fromJSON(env.IS_RC)}}
+        if: env.IS_RC == 'false'
         run: |
           git lfs fetch --all
           git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
@@ -221,10 +226,10 @@ jobs:
   # done through the 'PUBLIC_RELEASE_IMAGE_BASE' image. The private image is also used to list all 
   # tags easily
   release-package:
+    name: Release package and artifacts
     needs: [start-runner-linux, release-pushes]
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
-    name: Package and artifacts release
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
     env:
       PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-ml
