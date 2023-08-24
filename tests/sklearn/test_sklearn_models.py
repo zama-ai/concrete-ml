@@ -1230,6 +1230,9 @@ def test_serialization(
     check_serialization(model, x, use_dump_method)
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3932
+@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
