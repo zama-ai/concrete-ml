@@ -21,6 +21,9 @@ from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3933
+@pytest.mark.flaky
 @pytest.mark.parametrize("qat_bits", [3])
 @pytest.mark.parametrize("signed, narrow", [(True, False), (True, True), (False, False)])
 def test_brevitas_tinymnist_cnn(
