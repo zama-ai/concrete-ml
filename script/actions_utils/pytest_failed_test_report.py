@@ -90,10 +90,12 @@ def write_failed_tests_report(
             # If the test failed, check if it was marked as flaky or not
             if test_report["outcome"] == "failed":
                 test_name = test_report["nodeid"]
+
+                # Disable mypy as it does not seem to see that the following objects are lists
                 if "flaky" in test_report["keywords"]:
-                    failed_tests_report["flaky"].append(test_name)
+                    failed_tests_report["flaky"].append(test_name)  # type: ignore[attr-defined]
                 else:
-                    failed_tests_report["non_flaky"].append(test_name)
+                    failed_tests_report["non_flaky"].append(test_name)  # type: ignore[attr-defined]
 
         # If no non-flaky tests failed, report that all failed tests were known flaky tests
         if not failed_tests_report["non_flaky"]:
