@@ -31,17 +31,32 @@ on:
         required: false
         type: string
         default: "3.8 3.9"
+      manual_call:
+        description: 'To distinguish workflow_call from workflow_dispatch'
+        type: boolean
+        required: false
+        default: true
   
   # Workflow call refers to the release process (it enables the current CI workflow to be called by
   # another workflow from the same repository, in this case the release one)
   # The "release" event is not put by default in order to avoid running the following CI without
   # explicitly indicating it in the caller workflow
+  # Besides, GitHub actions are not able to differentiate 'workflow_dispatch' from 'workflow_call'
+  # based on 'github.event_name' and both are set to 'workflow_dispatch'. Therefore, an optional 
+  # input 'manual_call' with proper default values is added to both as a workaround, following one 
+  # user's suggestion : https://github.com/actions/runner/discussions/1884
+  # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3930
   workflow_call:
     inputs:
       event_name:
         description: "Event that triggers the workflow"
         required: true
         type: string
+      manual_call:
+        description: 'To distinguish workflow_call from workflow_dispatch'
+        type: boolean
+        required: false
+        default: false
   
   schedule:
     # * is a special character in YAML so you have to quote this string
@@ -59,11 +74,11 @@ concurrency:
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
-  IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (github.event.inputs.event_name == 'weekly')) }}
-  IS_RELEASE: ${{ github.event_name == 'workflow_call' && github.event.inputs.event_name == 'release'}}
+  IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (inputs.event_name == 'weekly')) }}
+  IS_RELEASE: ${{ github.event_name == 'workflow_dispatch' && !(inputs.manual_call) && inputs.event_name == 'release' }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
-  IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+  IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.manual_call}}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -115,7 +130,7 @@ jobs:
           elif [[ "${IS_PUSH_TO_RELEASE}" == "true" ]]; then
             BUILD_TYPE="push_to_release"
           elif [[ "${IS_WORKFLOW_DISPATCH}" == "true" ]];then
-            BUILD_TYPE="${{ github.event.inputs.event_name }}"
+            BUILD_TYPE="${{ inputs.event_name }}"
           else
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1
@@ -131,8 +146,8 @@ jobs:
 
           # Manage python versions
           if [[ "${IS_WORKFLOW_DISPATCH}" == "true" ]]; then
-            LINUX_PYTHON_VERSIONS="${{ github.event.inputs.linux_python_versions }}"
-            MACOS_PYTHON_VERSIONS="${{ github.event.inputs.macos_python_versions }}"
+            LINUX_PYTHON_VERSIONS="${{ inputs.linux_python_versions }}"
+            MACOS_PYTHON_VERSIONS="${{ inputs.macos_python_versions }}"
           elif [[ "${BUILD_TYPE}" == "pr" ]]; then
             LINUX_PYTHON_VERSIONS="3.8"
             MACOS_PYTHON_VERSIONS=""
@@ -537,12 +552,12 @@ jobs:
         id: changelog
         if: ${{ fromJSON(env.IS_RELEASE) && steps.install-deps.outcome == 'success' && !cancelled() }}
         run: |
-          GIT_TAG=$(echo "${{ github.ref }}" | sed 's/refs\/tags\///g')
+          PROJECT_VERSION="$(poetry version --short)"
+          GIT_TAG="v${PROJECT_VERSION}"
           CHANGELOG_FILE="CHANGELOG_${GIT_TAG}.md"
           echo "changelog-file=${CHANGELOG_FILE}" >> $GITHUB_OUTPUT
           poetry run python ./script/make_utils/changelog_helper.py \
-          --to-ref "${GIT_TAG}" \
-          --to-ref-must-have-tag > "${CHANGELOG_FILE}"
+          --to-ref "${{ github.sha }}" > "${CHANGELOG_FILE}"
 
       # Make sure all necessary steps passed. For build-docs and determinism steps, we only check for 
       # non-failures as the 'changed-files-in-pr' step might skip them
