@@ -1,2 +1,2 @@
 concrete-ml==1.1.0
-transformers==4.29.2
+transformers==4.30.2
