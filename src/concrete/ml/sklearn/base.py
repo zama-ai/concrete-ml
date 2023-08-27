@@ -1750,6 +1750,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             test_input=test_input,
             extra_config={
                 "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+                # pylint: disable=protected-access
+                # pylint: disable=no-member
                 constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],  # Changed
             },
         ).model
