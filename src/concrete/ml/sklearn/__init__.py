@@ -11,6 +11,7 @@ from .rf import RandomForestClassifier, RandomForestRegressor
 from .svm import LinearSVC, LinearSVR
 from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .xgb import XGBClassifier, XGBRegressor
+from .neighbors import KNeighborsClassifier
 
 
 def get_sklearn_models():
