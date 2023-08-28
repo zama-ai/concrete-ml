@@ -307,7 +307,7 @@ pytest_get_last_failed:
 
 .PHONY: pytest_and_report # Run pytest and output the report in a JSON file
 pytest_and_report:
-	"$(MAKE)" pytest \
+	"$(MAKE)" pytest_one TEST="tests/virtual_lib/test_virtual_lib.py" \
 	PYTEST_OPTIONS="--json-report --json-report-file='pytest_report.json'  --json-report-omit collectors log traceback streams warnings  --json-report-indent=4"
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs

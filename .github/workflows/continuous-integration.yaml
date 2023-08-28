@@ -661,6 +661,7 @@ jobs:
             # If all failed tests are known flaky tests, try to re-run them
             if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
               make pytest_run_last_failed
+              echo "Test have been re-run"
             
             # Else, return exit status 1 in order to make this step fail
             else
