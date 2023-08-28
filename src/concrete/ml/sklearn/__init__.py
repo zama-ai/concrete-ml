@@ -3,7 +3,7 @@ from typing import List
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import is_classifier_or_partial_classifier, is_regressor_or_partial_regressor
-from .base import _ALL_SKLEARN_MODELS, _LINEAR_MODELS, _NEURALNET_MODELS, _TREE_MODELS
+from .base import _ALL_SKLEARN_MODELS, _LINEAR_MODELS, _NEURALNET_MODELS, _TREE_MODELS, _NEIGHBORS_MODELS
 from .glm import GammaRegressor, PoissonRegressor, TweedieRegressor
 from .linear_model import ElasticNet, Lasso, LinearRegression, LogisticRegression, Ridge
 from .qnn import NeuralNetClassifier, NeuralNetRegressor
@@ -32,6 +32,7 @@ def get_sklearn_models():
         "linear": sorted(list(_LINEAR_MODELS), key=lambda m: m.__name__),
         "tree": sorted(list(_TREE_MODELS), key=lambda m: m.__name__),
         "neural_net": sorted(list(_NEURALNET_MODELS), key=lambda m: m.__name__),
+        "neighbors": sorted(list(_NEIGHBORS_MODELS), key=lambda m: m.__name__),
     }
     return ans
 
@@ -123,4 +124,22 @@ def get_sklearn_neural_net_models(
         the lists of neural net models in Concrete ML
     """
     prelist = get_sklearn_models()["neural_net"]
+    return _filter_models(prelist, classifier, regressor, str_in_class_name)
+
+
+def get_sklearn_neighbors_models(
+    classifier: bool = True, regressor: bool = True, str_in_class_name: List[str] = None
+):
+    """Return the list of available neighbor models in Concrete ML.
+
+    Args:
+        classifier (bool): whether you want classifiers or not
+        regressor (bool): whether you want regressors or not
+        str_in_class_name (List[str]): if not None, only return models with the given string or
+            list of strings as a substring in their class name
+
+    Returns:
+        the lists of neighbor models in Concrete ML
+    """
+    prelist = get_sklearn_models()["neighbors"]
     return _filter_models(prelist, classifier, regressor, str_in_class_name)
