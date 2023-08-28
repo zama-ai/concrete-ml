@@ -83,14 +83,15 @@ jobs:
   release-checks:
     name: Install deps and run checks
     needs: [start-runner-linux]
-
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
-    # Run in a clean container
-    container:
-      image: ubuntu:20.04
     defaults:
       run:
         shell: bash
+    outputs:
+      project_version: ${{ steps.get-release-version.outputs.project_version }}
+      is_rc: ${{ steps.get-release-version.outputs.is_rc }}
+      git_tag: ${{ steps.get-release-version.outputs.git_tag }}
+      release_branch_name: ${{ steps.get-release-version.outputs.release_branch_name }}
 
     steps:
       # Mask internal URLs if logged
@@ -148,23 +149,30 @@ jobs:
           make check_apidocs
 
       - name: Get release version and tag name
+        id: get-release-version
         run: |
           PROJECT_VERSION="$(poetry version --short)"
           IS_RC="$(poetry run python ./script/make_utils/version_utils.py isprerelease --version "$PROJECT_VERSION")"
           GIT_TAG="v${PROJECT_VERSION}"
 
+          # Release branches are only used for non-release candidates and have a special naming 
+          # format (for example, "release/1.1.x" is used for all patch versions related to version 1.1)
+          PROJECT_VERSION_MAJOR_MINOR=$(echo "${PROJECT_VERSION}" | cut -d '.' -f -2)
+          RELEASE_BRANCH_NAME="release/${PROJECT_VERSION_MAJOR_MINOR}.x"
+
+          # Store project version, tag version, branch name and if they represent a release candidate 
+          # as environment variables in order to be able to use them in this job's following steps
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "IS_RC=${IS_RC}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
+          echo "RELEASE_BRANCH_NAME=${RELEASE_BRANCH_NAME}" >> "$GITHUB_ENV"
 
-          # Release branches are only used for non-release candidates and have a special naming 
-          # format (for example, "release/1.1.x" is used for all patch versions related to version 1.1)
-          if [[ "${IS_RC}" == "false" ]]; then
-            PROJECT_VERSION_MAJOR_MINOR=$(echo "${PROJECT_VERSION}" | cut -d '.' -f -2)
-            RELEASE_BRANCH_NAME="release/${PROJECT_VERSION_MAJOR_MINOR}.x"
-
-            echo "RELEASE_BRANCH_NAME=${RELEASE_BRANCH_NAME}" >> "$GITHUB_ENV"
-          fi
+          # Store project version, tag version, branch name and if they represent a release 
+          # candidate as job outputs in order to be able to use them in following jobs
+          echo "project_version=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "is_rc=${IS_RC}" >> "$GITHUB_OUTPUT"
+          echo "git_tag=${GIT_TAG}" >> "$GITHUB_OUTPUT"
+          echo "release_branch_name=${RELEASE_BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
       # Make sure that the tag related to the current version does not already exist in the
       # repository. If so, the version has not probably been updated. In that case, the release 
@@ -193,15 +201,15 @@ jobs:
 
   release-pushes:
     name: Push new tag and branch
-    needs: [start-runner-linux, release-tests]
-
+    needs: [start-runner-linux, release-checks, release-tests]
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
-    # Run in a clean container
-    container:
-      image: ubuntu:20.04
     defaults:
       run:
         shell: bash
+    env:
+      IS_RC: ${{ needs.release-checks.outputs.is_rc }}
+      GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
+      RELEASE_BRANCH_NAME: ${{ needs.release-checks.outputs.release_branch_name }}
 
     steps:
       # For non-rc releases, create and push the release branch
@@ -227,15 +235,20 @@ jobs:
   # tags easily
   release-package:
     name: Release package and artifacts
-    needs: [start-runner-linux, release-pushes]
+    needs: [start-runner-linux, release-checks, release-pushes]
     outputs:
       report: ${{ steps.report.outputs.report || 'Did not run.' }}
     runs-on: ${{ needs.start-runner-linux.outputs.label }}
+    defaults:
+      run:
+        shell: bash
     env:
       PRIVATE_RELEASE_IMAGE_BASE: ghcr.io/zama-ai/concrete-ml
       PUBLIC_RELEASE_IMAGE_BASE: zamafhe/concrete-ml
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+      GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
+      PROJECT_VERSION: ${{ needs.release-checks.outputs.project_version }}
 
     steps:
       - name: Checkout code
@@ -564,8 +577,10 @@ jobs:
 
   # Report the final status on Slack
   send-report:
+    name: Send Slack notification
     if: ${{ always() }}
     timeout-minutes: 2
+    runs-on: ubuntu-20.04
     needs:
       [
         start-runner-linux,
@@ -574,9 +589,9 @@ jobs:
         release-package,
         stop-runner-linux,
       ]
+    env:
+      GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
 
-    name: Send Slack notification
-    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
 
