@@ -67,6 +67,7 @@ _regressor_models = [
 ]
 
 _classifier_models = [
+    KNeighborsClassifier,
     DecisionTreeClassifier,
     RandomForestClassifier,
     XGBClassifier,
