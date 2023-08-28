@@ -3,11 +3,11 @@ from typing import Any, Dict
 
 import sklearn.linear_model
 
-from .base import SklearnKNeighborsMixin
+from .base import SklearnKNeighborsClassifierMixin
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
-class KNeighborsClassifier(SklearnKNeighborsMixin):
+class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
     """A k-nearest classifier model with FHE.
 
     Parameters:

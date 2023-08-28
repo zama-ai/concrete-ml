@@ -1698,8 +1698,11 @@ class SklearnLinearClassifierMixin(
         return y_proba
 
 
+
+
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
+
     """A Mixin class for sklearn linear models with FHE.
 
     This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
@@ -1712,6 +1715,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             if getattr(klass, "_is_a_public_cml_model", False):
                 _NEIGHBORS_MODELS.add(cls)  # Changed
                 _ALL_SKLEARN_MODELS.add(cls)
+
 
     def __init__(self, n_bits: Union[int, Dict[str, int]] = 8):
         """Initialize the FHE knn model.
@@ -1769,7 +1773,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Reset for double fit
         self._is_fitted = False
 
-        # LinearRegression handles multi-labels data
+        # KNeighbors handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Fit the scikit-learn model
@@ -1911,6 +1915,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #TODO: include in _inference
         for query in X:
             d = super().predict(query, fhe)[0]
+            assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Non valid values"
             distances.append(np.sqrt(d))
 
         self.distances_matrix = np.array(distances)
@@ -1921,3 +1926,14 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         y_pred = self.majority_vote(label_k_indices)
 
         return y_pred
+
+
+class SklearnKNeighborsClassifierMixin(SklearnKNeighborsMixin, sklearn.base.ClassifierMixin, ABC):
+    """A Mixin class for sklearn linear regressors with FHE.
+
+    This class is used to create a linear regressor class that inherits from
+    sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method
+    for regressors.
+    """
+
+    # sklearn.base.ClassifierMixin --> is_classifier_or_partial_classifier(KNeighborsClassifier) : True 
