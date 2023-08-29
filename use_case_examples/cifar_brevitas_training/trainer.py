@@ -24,6 +24,7 @@ import os
 import random
 import time
 from datetime import datetime
+from typing import List, Tuple
 
 import torch
 import torch.optim as optim
@@ -36,20 +37,57 @@ from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
 
-def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
-    maxk = max(topk)
-    batch_size = target.size(0)
+def accuracy(
+    output: torch.Tensor, target: torch.Tensor, topk: Tuple[int] = (1,)
+) -> List[torch.FloatTensor]:
+    """Computes the accuracy over the k top predictions for the specified values of k.
 
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred))
+    In top-5 accuracy you give yourself credit for having the right answer if the right answer
+    appears in your top five guesses.
+    Taken from https://discuss.pytorch.org/t/top-k-error-calculation/48815/2.
 
-    res = []
-    for k in topk:
-        correct_k = correct[:k].flatten().float().sum(0)
-        res.append(correct_k.mul_(100.0 / batch_size))
-    return res
+    Args:
+        output (torch.Tensor): The prediction of the model (scores, logits, raw y_pred) before
+            normalization or getting classes
+        target (torch.Tensor) : The target data representing the truth.
+        topk (Tuple[int]): Tuple of topk's to compute top 1, top 2 and top 5.
+
+    Returns:
+      list_topk_accs (List[torch.FloatTensor]): The list of topk accuracies [top1st, top2nd, ...]
+        depending on the topk input.
+    """
+    with torch.no_grad():
+        # Get the largest k and batch size
+        max_k = max(topk)
+        batch_size = target.size(0)
+
+        # Get top max_k indices that correspond to the most likely probability scores
+        _, y_pred = output.topk(k=max_k, dim=1)
+
+        # Transpose it to shape [max_k, batch_size]
+        y_pred = y_pred.t()
+
+        # Get the credit for each example if the models predictions is in max_k values
+        target_reshaped = target.view(1, -1).expand_as(y_pred)
+
+        # Compare every topk's model prediction with the ground truth
+        correct = y_pred == target_reshaped
+
+        # Compute topk accuracies
+        list_topk_accs = []
+        for k in topk:
+            # Get topk answers as a float tensor (1.0 and 0.0)
+            # The clone is necessary here in order to avoid miss-representations
+            topk_matched_truth = correct[:k].reshape(-1).clone().float()
+
+            # Get the total of right matches
+            total_correct_topk = topk_matched_truth.sum(dim=0, keepdim=True)
+
+            # Compute and store the topk accuracy for this batch (and k)
+            topk_acc = total_correct_topk / batch_size
+            list_topk_accs.append(topk_acc)
+
+        return list_topk_accs
 
 
 class Trainer(object):
@@ -126,8 +164,10 @@ class Trainer(object):
             self.device = "cuda:" + str(args.gpus[0])
             torch.backends.cudnn.benchmark = True
         else:
-            # MPS option is supported by macOS with Apple Silicon or AMD GPUs
-            self.device = "mps" if torch.backends.mps.is_available() else "cpu"
+            # Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For
+            # now, we observe a decrease in torch's top1 accuracy when using MPS devices
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
+            self.device = "cpu"
 
         self.device = torch.device(self.device)
 
@@ -138,10 +178,11 @@ class Trainer(object):
             model_state_dict = package["state_dict"]
             model.load_state_dict(model_state_dict, strict=args.strict)
 
-        if args.gpus is not None and len(args.gpus) == 1:
-            model = model.to(device=self.device)
         if args.gpus is not None and len(args.gpus) > 1:
             model = nn.DataParallel(model, args.gpus)
+        else:
+            model = model.to(device=self.device)
+
         self.model = model
 
         # Loss functions
@@ -299,11 +340,7 @@ class Trainer(object):
             loss = self.criterion(output, target)
             eval_meters.loss_time.update(time.time() - end)
 
-            pred = output.data.argmax(1, keepdim=True)
-            correct = pred.eq(target.data.view_as(pred)).sum()
-            prec1 = 100.0 * correct.float() / input.size(0)
-
-            _, prec5 = accuracy(output, target, topk=(1, 5))
+            prec1, prec5 = accuracy(output, target, topk=(1, 5))
             eval_meters.losses.update(loss.item(), input.size(0))
             eval_meters.top1.update(prec1.item(), input.size(0))
             eval_meters.top5.update(prec5.item(), input.size(0))

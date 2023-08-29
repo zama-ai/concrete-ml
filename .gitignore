@@ -153,6 +153,7 @@ use_case_examples/titanic/titanic_submission_xgb_clear.csv
 use_case_examples/cifar_deployment/dev/
 use_case_examples/deployment/dev/
 use_case_examples/llm/gpt2*
+use_case_examples/cifar_brevitas_training/.datasets/
 
 # Key cache
 ConcreteNumpyKeyCache

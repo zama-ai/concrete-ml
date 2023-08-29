@@ -8,108 +8,82 @@ from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
+from tqdm import tqdm
 from trainer import accuracy
 
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
-def cml_inference(quantized_numpy_module, x_numpy):
-    predictions = np.zeros(shape=(x_numpy.shape[0], 10))
-    for idx, x in enumerate(x_numpy):
-        x_q = np.expand_dims(x, 0)
-        predictions[idx] = quantized_numpy_module.forward(x_q, fhe="simulate")
-    return predictions
+def evaluate(torch_model, cml_model, device):
 
-
-def evaluate(torch_model, cml_model):
-    # Import the CIFAR data (following bnn_pynq_train.py)
-
+    # Transform pipeline that normalizes the data between -1 and 1
     transform_to_tensor = transforms.Compose(
         [
             transforms.ToTensor(),
             transforms.Lambda(lambda x: 2.0 * x - 1.0),
-        ]  # Normalizes data between -1 and +1s
+        ]
     )
 
-    builder = CIFAR10
+    # Import and load the CIFAR test dataset (following bnn_pynq_train.py)
+    test_set = CIFAR10(root=".datasets/", train=False, download=True, transform=transform_to_tensor)
+    test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=0)
 
-    test_set = builder(root=".datasets/", train=False, download=True, transform=transform_to_tensor)
+    torch_top_1_batches = []
+    torch_top_5_batches = []
 
-    test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=1)
+    concrete_top_1_batches = []
+    concrete_top_5_batches = []
 
-    # MPS option is supported by macOS with Apple Silicon or AMD GPUs
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
-
-    print("Device in use:", device)
-    top1_torch = []
-    top5_torch = []
-
-    top1_cml = []
-    top5_cml = []
-
-    # Model to device
     torch_model = torch_model.to(device)
-    for _, data in enumerate(test_loader):
+
+    for _, data in enumerate(tqdm(test_loader)):
 
         (input, target) = data
 
         input = input.to(device, non_blocking=True)
         target = target.to(device, non_blocking=True)
 
-        # Compute torch output
-        output = torch_model(input)
+        # Compute Torch output
+        torch_output = torch_model(input)
 
+        # Concrete ML inference only handles Numpy inputs
         numpy_input = input.detach().cpu().numpy()
 
-        # Compute Concrete ML output
-        y_cml_simulated = cml_inference(cml_model, numpy_input)
+        # Compute Concrete ML output using simulation
+        concrete_output_simulated = cml_model.forward(numpy_input, fhe="simulate")
 
-        # y_cml_simulated to torch to device
-        y_cml_simulated = torch.tensor(y_cml_simulated).to(device)
+        concrete_output_simulated = torch.tensor(concrete_output_simulated).to(device)
 
-        # Compute torch loss
-        pred = output.data.argmax(1, keepdim=True)
-        correct = pred.eq(target.data.view_as(pred)).sum()
-        prec1 = 100.0 * correct.float() / input.size(0)
+        # Compute Torch top accuracies
+        torch_top_1, torch_top_5 = accuracy(torch_output, target, topk=(1, 5))
 
-        _, prec5 = accuracy(output, target, topk=(1, 5))
+        torch_top_1_batches.append(torch_top_1.item())
+        torch_top_5_batches.append(torch_top_5.item())
 
-        top1_torch.append(prec1.item())
-        top5_torch.append(prec5.item())
+        # Compute Concrete ML top accuracies
+        concrete_top_1, concrete_top_5 = accuracy(concrete_output_simulated, target, topk=(1, 5))
 
-        # Compute Concrete ML loss
-        pred = y_cml_simulated.data.argmax(1, keepdim=True)
-        correct = pred.eq(target.data.view_as(pred)).sum()
-        prec1 = 100.0 * correct.float() / input.size(0)
+        concrete_top_1_batches.append(concrete_top_1.item())
+        concrete_top_5_batches.append(concrete_top_5.item())
 
-        _, prec5 = accuracy(y_cml_simulated, target, topk=(1, 5))
+    print("Torch accuracy top1:", np.mean(torch_top_1_batches))
+    print("Concrete ML accuracy top1:", np.mean(concrete_top_1_batches))
 
-        top1_cml.append(prec1.item())
-        top5_cml.append(prec5.item())
-
-    print("Torch accuracy top1:", np.mean(top1_torch))
-    print("Concrete ML accuracy top1:", np.mean(top1_cml))
-
-    print("Torch accuracy top5:", np.mean(top5_torch))
-    print("Concrete ML accuracy top5:", np.mean(top5_cml))
+    print("Torch accuracy top5:", np.mean(torch_top_5_batches))
+    print("Concrete ML accuracy top5:", np.mean(concrete_top_5_batches))
 
 
-def main(rounding_threshold_bits_list):
+def main(args):
+    rounding_threshold_bits_list = args.rounding_threshold_bits
+
     model = cnv_2w2a(False)
-    # MPS option is supported by macOS with Apple Silicon or AMD GPUs
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
+
+    # Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For now, we
+    # observe a decrease in torch's top1 accuracy when using MPS devices
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    print("Device in use:", device)
 
     # Find relative path to this file
     dir_path = pathlib.Path(__file__).parent.absolute()
@@ -133,7 +107,7 @@ def main(rounding_threshold_bits_list):
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     cfg = Configuration(
         verbose=True,
-        show_optimizer=True,
+        show_optimizer=args.show_optimizer,
         parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
@@ -156,11 +130,23 @@ def main(rounding_threshold_bits_list):
         )
 
         # Evaluate torch and Concrete ML model
-        evaluate(model, quantized_numpy_module)
+        evaluate(model, quantized_numpy_module, device)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rounding_threshold_bits", nargs="+", type=int, default=[None])
-    rounding_threshold_bits_list = parser.parse_args().rounding_threshold_bits
-    main(rounding_threshold_bits_list)
+    parser.add_argument(
+        "--rounding_threshold_bits",
+        nargs="+",
+        type=int,
+        default=[None],
+        help="Number of bits to target with rounding.",
+    )
+    parser.add_argument(
+        "--show_optimizer",
+        action="store_true",
+        help="Display optimizer parameters after compiling the model.",
+    )
+
+    args = parser.parse_args()
+    main(args)
