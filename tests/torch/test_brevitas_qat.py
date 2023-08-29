@@ -1,32 +1,35 @@
 """Tests with brevitas quantization aware training."""
 
 from typing import Optional
+
 import brevitas.nn as qnn
 import numpy
 import pytest
 import torch
 import torch.utils
+from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
+from brevitas.quant.scaled_int import IntBias
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
-from concrete.ml.pytest.torch_models import QuantCustomModel
 from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
 )
-from concrete.ml.pytest.torch_models import NetWithConstantsFoldedBeforeOps, TinyQATCNN
+from concrete.ml.pytest.torch_models import (
+    NetWithConstantsFoldedBeforeOps,
+    QuantCustomModel,
+    TinyQATCNN,
+)
+from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
+from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
+from concrete.ml.quantization.quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 from concrete.ml.sklearn import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
-from concrete.ml.quantization.quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
-from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
-from brevitas.quant.scaled_int import IntBias
-from concrete.ml.quantization.quantized_module import QuantizedModule
-from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
-from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
 
 
 # This test is a known flaky
@@ -417,8 +420,10 @@ def test_brevitas_constant_folding(default_configuration):
 
 @pytest.mark.parametrize("rounding", [None, 3, 4])
 @pytest.mark.parametrize("power_of_two", [True, False])
-@pytest.mark.parametrize("n_bits", [4,5,6])
-def test_brevitas_power_of_two(default_configuration, rounding: Optional[int], power_of_two: bool, n_bits: int):
+@pytest.mark.parametrize("n_bits", [4, 5, 6])
+def test_brevitas_power_of_two(
+    default_configuration, rounding: Optional[int], power_of_two: bool, n_bits: int
+):
     """Test that a network that does not quantize its inputs raises the right exception.
 
     The network tested is not a valid QAT network for Concrete ML as it does not
@@ -428,14 +433,17 @@ def test_brevitas_power_of_two(default_configuration, rounding: Optional[int], p
 
     input_shape = 32
     output_shape = 2
-    hidden_shape  = 64
+    hidden_shape = 64
     batch_size = 128
     data = torch.randn((batch_size, input_shape))
     rounding_n_bits = 5
 
     # Simple MLP
     model = QuantCustomModel(
-        input_shape, output_shape, hidden_shape, n_bits=n_bits, 
+        input_shape,
+        output_shape,
+        hidden_shape,
+        n_bits=n_bits,
         act_quant=Int8ActPerTensorPoT if power_of_two else Int8ActPerTensorFloat,
         weight_quant=Int8WeightPerTensorPoT if power_of_two else Int8WeightPerTensorFloat,
         bias_quant=IntBias if power_of_two else None,

@@ -1241,7 +1241,7 @@ class QuantCustomModel(nn.Module):
             n_bits (int): Bit of quantization
             weight_quant (brevitas.quant): Quantization protocol of weights
             act_quant (brevitas.quant): Quantization protocol of activations.
-
+            bias_quant (brevitas.quant): Quantizer for the linear layer bias
         """
         super().__init__()
 

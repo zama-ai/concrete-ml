@@ -1,6 +1,6 @@
 """Optimization passes for QuantizedModules."""
-from typing import Dict, List, Optional, Tuple, DefaultDict
 from collections import defaultdict
+from typing import DefaultDict, Dict, List, Optional, Tuple
 
 import numpy
 
@@ -92,6 +92,10 @@ class PowerOfTwoScalingRoundPBSAdapter:
         Stores, for each quantized op, a list of quantized ops that produce its
         inputs. Currently only the first input of the operations is considered
         as it is, usually, the encrypted input.
+
+        Returns:
+            result (PredecessorsType): a dictionary containing a hierarchy of op
+                predecessors
         """
 
         # Initialize the list of predecessors with tensors that are graph inputs
@@ -158,7 +162,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
 
         for (_, node_op) in self._qmodule.quant_layers_dict.values():
             # Only work with supported nodes that have a single
-            # encrypted input (e.g. not supporting enc x enc matmul)
+            # encrypted input (not supporting enc x enc matmul)
             if (
                 isinstance(node_op, self.SUPPORTED_ROUND_PBS_OPS)
                 and len(node_op.int_input_names) == 1
@@ -172,18 +176,18 @@ class PowerOfTwoScalingRoundPBSAdapter:
                 # A pattern is a sequence of Gemm/Conv -> Relu -> Quant
                 # but we also need to store the Quant that quantizes
                 # the Gemm/Conv's input
-                nodes_in_path = []
+                nodes_in_path: List[QuantizedOp] = []
                 integer_node_input_quant: Optional[QuantizedOp] = None
 
                 while back_node_output != prev_compatible_node_output:
+                    assert back_node is not None
                     nodes_in_path.append(back_node)
                     assert_true(
                         back_node in predecessors,
                         "Power of Two adapter: Error during graph traversal",
                     )
                     # If multiple ops produced this node, the pattern is not matched
-                    
-                    assert back_node is not None
+
                     if len(predecessors[back_node]) > 1:
                         break
 
@@ -193,6 +197,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
                     if back_node_output == prev_compatible_node_output:
                         # The Gemm/Conv op that produces this integer node is the one
                         # onto which we apply the roundPBS optimization
+                        assert back_node is not None
                         nodes_in_path.append(back_node)
                         list_pred_of_path = predecessors[back_node]
                         if len(list_pred_of_path) == 1:
@@ -204,6 +209,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
                     # the do not override the requested number of rounding bits
                     # but keep statistics for testing purposes
                     path_start_node = nodes_in_path[-1]
+                    assert isinstance(path_start_node, QuantizedMixingOp)
                     if path_start_node.rounding_threshold_bits is not None:
                         self._num_ignored_valid_patterns += 1
                     else:
@@ -221,7 +227,15 @@ class PowerOfTwoScalingRoundPBSAdapter:
         """
 
         def integer_log2(value: float) -> Tuple[int, bool]:
-            """Compute the log2 of the value and tests if its an integer."""
+            """Compute the log2 of the value and tests if its an integer.
+
+            Args:
+                value (float): the value for which to take the log2
+
+            Returns:
+                result: The integer log2 and a bool indicating whether
+                    the input value was an integer power of two
+            """
             log2_value = int(numpy.rint(numpy.log2(value)))
             if numpy.isclose(numpy.power(2.0, log2_value), value, atol=0.01):
                 return log2_value, True
@@ -272,7 +286,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
                 # operation to perform the scaling. Thus the
                 # number of lsbs to round is the negative of the sum of log2
                 # of the scale factors
-                lsbs_to_round = - (log2_input + log2_weights - log2_output)
+                lsbs_to_round = -(log2_input + log2_weights - log2_output)
                 # log2_output - log2_input - log2_weights
                 # TODO: check this part with Andrei
                 # How is it possible to have like that?
