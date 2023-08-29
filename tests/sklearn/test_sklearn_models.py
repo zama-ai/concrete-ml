@@ -1230,9 +1230,6 @@ def test_serialization(
     check_serialization(model, x, use_dump_method)
 
 
-# This test is a known flaky
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3932
-@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize(
     "n_bits",
@@ -1248,8 +1245,15 @@ def test_double_fit(
 ):
     """Test Double fit."""
 
+    # Generate a random state for generating the first dataset
+    random_state = numpy.random.randint(0, 2**15)
+    parameters["random_state"] = random_state
+
     # Generate two different datasets
     x_1, y_1 = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Make sure the second dataset is different by using a distinct random state
+    parameters["random_state"] += 1
     x_2, y_2 = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
