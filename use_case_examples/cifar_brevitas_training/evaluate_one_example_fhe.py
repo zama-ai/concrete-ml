@@ -18,10 +18,10 @@ from concrete.ml.torch.compile import compile_brevitas_qat_model
 CURRENT_DIR = Path(__file__).resolve().parent
 KEYGEN_CACHE_DIR = CURRENT_DIR.joinpath(".keycache")
 
-# MPS option is supported by macOS with Apple Silicon or AMD GPUs
-DEVICE = (
-    "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
-)
+# Add MPS (for macOS with Apple Silicon or AMD GPUs) support when error is fixed. For now, we
+# observe a decrease in torch's top1 accuracy when using MPS devices
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3953
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_SAMPLES = int(os.environ.get("NUM_SAMPLES", 1))
 
 
