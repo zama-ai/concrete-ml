@@ -213,9 +213,11 @@ jobs:
 
     steps:
       # Create gpg-agent.conf file as the following action raises an issue if it cannot be found
+      # Remove this once https://github.com/crazy-max/ghaction-import-gpg/issues/176 is fixed
       - name: Create gpg-agent.conf file
         run: |
-          touch  ~/.gnupg/gpg-agent.conf
+          mkdir ~/.gnupg
+          touch ~/.gnupg/gpg-agent.conf
 
       # Import GPG in order to enable the Zama bot to sign all tags
       - name: Import GPG
