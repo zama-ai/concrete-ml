@@ -212,6 +212,15 @@ jobs:
       RELEASE_BRANCH_NAME: ${{ needs.release-checks.outputs.release_branch_name }}
 
     steps:
+      # Import GPG key in order to enable the Zama bot to sign all tags
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_tag_gpgsign: true
+
       # For non-rc releases, create and push the release branch
       - name: Create and push dot release branch to public repository
         if: env.IS_RC == 'false'
