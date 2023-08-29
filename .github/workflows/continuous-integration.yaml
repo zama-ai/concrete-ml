@@ -625,6 +625,10 @@ jobs:
       # Run Pytest on a subset of our tests if the source code or our tests has changed, and if the 
       # current workflow does no take place in a weekly or release CI. This step is also triggered
       # if any dependency has been updated or the conftest.py files has changed
+      # If regular tests failed, a following script checks for flaky tests. If all failed tests 
+      # are known flaky tests, they are re-run. Otherwise, the step exits with status 1.
+      # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
+      # if 'make pytest' fails
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: |
@@ -637,8 +641,41 @@ jobs:
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
+        shell: bash +e {0}
         run: |
-          make pytest
+          make pytest_and_report
+
+          # If regular tests failed, check for flaky tests
+          if [ $? -ne 0 ]; then
+
+            # Convert pytest report to formatted report with only information about failed tests
+          	poetry run python ./script/actions_utils/pytest_failed_test_report.py \
+            --pytest-input-report "pytest_report.json" \
+            --failed-tests-report "failed_tests_report.json" \
+            --failed-tests-comment "failed_tests_comment.txt"
+
+            # Check if all failed tests are known flaky tests
+            FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
+            echo "FAILED_TESTS_ARE_FLAKY=FAILED_TESTS_ARE_FLAKY" >> "$GITHUB_ENV"
+
+            # If all failed tests are known flaky tests, try to re-run them
+            if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
+              make pytest_run_last_failed
+            
+            # Else, return exit status 1 in order to make this step fail
+            else
+              exit 1
+            fi
+          fi
+
+      # If regular tests passed but at least one known flaky test have been re-run, a warning
+      # comment is published in the PR and all flaky tests that initially failed are listed
+      - name: Warn PR with flaky tests
+        uses: marocchino/sticky-pull-request-comment@f6a2580ed520ae15da6076e7410b088d1c5dddd9
+        if: steps.pytest_regular.outcome == 'success' && env.FAILED_TESTS_ARE_FLAKY && !cancelled()
+        with:
+          path: failed_tests_comment.txt
+          recreate: true
 
       # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Source Code (weekly)
