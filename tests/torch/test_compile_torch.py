@@ -1224,7 +1224,7 @@ def test_compilation_functions_check_model_types(default_configuration):
             configuration=default_configuration,
         )
 
-    torch_model_qat = TinyQATCNN(5, 4, 10, True, False)
+    torch_model_qat = TinyQATCNN(5, 4, 10, True, False, False)
     with pytest.raises(
         AssertionError, match=".*must be imported using compile_brevitas_qat_model.*"
     ):

@@ -23,7 +23,7 @@ PredecessorsType = DefaultDict[Optional[QuantizedOp], List[Tuple[Optional[Quanti
 # we store a list of ops which contain information that allows us to
 # compute the integer scaling factor for the Mixing op.
 # The quantizer op of the input to the the Mixing op is stored in the second member of the tuple
-PatternDict = Dict[QuantizedMixingOp, Tuple[List[QuantizedOp], Optional[QuantizedOp]]]
+PatternDict = Dict[QuantizedMixingOp, Tuple[List[Optional[QuantizedOp]], Optional[QuantizedOp]]]
 
 
 class PowerOfTwoScalingRoundPBSAdapter:
@@ -118,7 +118,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
     def match_path_pattern(
         self,
         predecessors: PredecessorsType,
-        nodes_in_path: List[QuantizedOp],
+        nodes_in_path: List[Optional[QuantizedOp]],
         input_producer_of_path: Optional[QuantizedOp],
     ) -> bool:
         """Determine if a pattern has the structure that makes it viable for roundPBS.
@@ -176,7 +176,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
                 # A pattern is a sequence of Gemm/Conv -> Relu -> Quant
                 # but we also need to store the Quant that quantizes
                 # the Gemm/Conv's input
-                nodes_in_path: List[QuantizedOp] = []
+                nodes_in_path: List[Optional[QuantizedOp]] = []
                 integer_node_input_quant: Optional[QuantizedOp] = None
 
                 while back_node_output != prev_compatible_node_output:
@@ -197,7 +197,6 @@ class PowerOfTwoScalingRoundPBSAdapter:
                     if back_node_output == prev_compatible_node_output:
                         # The Gemm/Conv op that produces this integer node is the one
                         # onto which we apply the roundPBS optimization
-                        assert back_node is not None
                         nodes_in_path.append(back_node)
                         list_pred_of_path = predecessors[back_node]
                         if len(list_pred_of_path) == 1:

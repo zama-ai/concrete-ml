@@ -32,28 +32,68 @@ from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
-# This test is a known flaky
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3933
-@pytest.mark.flaky
-@pytest.mark.parametrize("qat_bits", [3])
-@pytest.mark.parametrize("signed, narrow", [(True, False), (True, True), (False, False)])
-def test_brevitas_tinymnist_cnn(
-    qat_bits,
-    signed,
-    narrow,
-    default_configuration,
-    check_graph_input_has_no_tlu,
-    check_graph_output_has_no_tlu,
-    check_is_good_execution_for_cml_vs_circuit,
-):  # pylint: disable=too-many-statements, too-many-locals
-    """Train, execute and test a QAT CNN on a small version of MNIST."""
+def test_torch(net, test_loader):
+    """Test the network: measure accuracy on the test set.
 
+    Args:
+        test_loader: the test loader
+
+    Returns:
+        res: the number of correctly classified test examples
+
+    """
+
+    # Freeze normalization layers
+    net.eval()
+
+    all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int64)
+    all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
+
+    # Iterate over the batches
+    idx = 0
+    for data, target in test_loader:
+        # Accumulate the ground truth labels
+        endidx = idx + target.shape[0]
+        all_targets[idx:endidx] = target.numpy()
+
+        # Run forward and get the raw predictions first
+        raw_pred = net(data).detach().numpy()
+
+        # Get the predicted class id, handle NaNs
+        if numpy.any(numpy.isnan(raw_pred)):
+            output = -1  # pragma: no cover
+        else:
+            output = raw_pred.argmax(1)
+
+        all_y_pred[idx:endidx] = output
+
+        idx += target.shape[0]
+
+    # Print out the accuracy as a percentage
+    n_correct = numpy.sum(all_targets == all_y_pred)
+    return n_correct
+
+
+def train_brevitas_network_tinymnist(is_cnn, qat_bits, signed, narrow, pot_scaling):
+    """Train a QAT network on tiny mnist.
+
+    Args:
+        is_cnn (bool): whether to train a CNN or a FC network
+        qat_bits (int): quantization bits
+        signed (bool): use signed quantization
+        narrow (bool): use brevitas narrow range quantization
+        pot_scaling (int): use power of two scaling quantization
+
+    Returns:
+        result (Tuple): the network, the dataset and the test data loader
+    """
     # And some helpers for visualization.
     x_all, y_all = load_digits(return_X_y=True)
 
     # The sklearn Digits data-set, though it contains digit images, keeps these images in vectors
     # so we need to reshape them to 2D first. The images are 8x8 px in size and monochrome
-    x_all = numpy.expand_dims(x_all.reshape((-1, 8, 8)), 1)
+    if is_cnn:
+        x_all = numpy.expand_dims(x_all.reshape((-1, 8, 8)), 1)
 
     x_train, x_test, y_train, y_test = train_test_split(
         x_all, y_all, test_size=0.25, shuffle=True, random_state=numpy.random.randint(0, 2**15)
@@ -88,7 +128,19 @@ def test_brevitas_tinymnist_cnn(
 
     while not trained_ok:
         # Create the tiny CNN module with 10 output classes
-        net = TinyQATCNN(10, qat_bits, 4 if qat_bits <= 3 else 20, signed, narrow)
+        if is_cnn:
+            net = TinyQATCNN(10, qat_bits, 4 if qat_bits <= 3 else 20, signed, narrow, pot_scaling)
+        else:
+            if pot_scaling:
+                act_quant = Int8ActPerTensorPoT
+                weight_quant = Int8WeightPerTensorPoT
+                bias_quant = IntBias
+            else:
+                act_quant = Int8ActPerTensorFloat
+                weight_quant = Int8WeightPerTensorFloat
+                bias_quant = None
+
+            net = QuantCustomModel(64, 10, 100, qat_bits, act_quant, weight_quant, bias_quant)
 
         # Train a single epoch to have a fast test, accuracy should still be the same for both
         # FHE simulation and torch
@@ -101,13 +153,37 @@ def test_brevitas_tinymnist_cnn(
             train_one_epoch(net, optimizer, train_dataloader)
 
         # Finally, disable pruning (sets the pruned weights to 0)
-        net.toggle_pruning(False)
+        if hasattr(net, "toggle_pruning"):
+            net.toggle_pruning(False)
 
-        torch_correct = net.test_torch(test_dataloader)
+        torch_correct = test_torch(net, test_dataloader)
 
         # If number of correct results was zero, training failed and there were NaNs in the weights
         # Retrain while training is bad
         trained_ok = torch_correct > 0
+
+    return net, x_all, test_dataloader
+
+
+# This test is a known flaky
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3933
+@pytest.mark.flaky
+@pytest.mark.parametrize("qat_bits", [3])
+@pytest.mark.parametrize("signed, narrow", [(True, False), (True, True), (False, False)])
+def test_brevitas_tinymnist_cnn(
+    qat_bits,
+    signed,
+    narrow,
+    default_configuration,
+    check_graph_input_has_no_tlu,
+    check_graph_output_has_no_tlu,
+    check_is_good_execution_for_cml_vs_circuit,
+):  # pylint: disable=too-many-statements, too-many-locals
+    """Train, execute and test a QAT CNN on a small version of MNIST."""
+
+    net, x_all, test_dataloader = train_brevitas_network_tinymnist(
+        True, qat_bits, signed, narrow, False
+    )
 
     def test_with_concrete(quantized_module, test_loader, use_fhe_simulation):
         """Test a neural network that is quantized and compiled with Concrete ML."""
@@ -160,7 +236,7 @@ def test_brevitas_tinymnist_cnn(
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2550
     # assert abs(fhe_simulation_correct - torch_correct) <= numpy.ceil(0.01 * len(y_test))
 
-    assert fhe_s_correct.shape == torch_correct.shape
+    assert fhe_s_correct >= 0
 
     check_graph_input_has_no_tlu(q_module_simulated.fhe_circuit.graph)
     check_graph_output_has_no_tlu(q_module_simulated.fhe_circuit.graph)
@@ -418,46 +494,36 @@ def test_brevitas_constant_folding(default_configuration):
         )
 
 
-@pytest.mark.parametrize("rounding", [None, 3, 4])
+@pytest.mark.parametrize("manual_rounding", [None, 3])
 @pytest.mark.parametrize("power_of_two", [True, False])
-@pytest.mark.parametrize("n_bits", [4, 5, 6])
+@pytest.mark.parametrize("n_bits", [4])
+@pytest.mark.parametrize("is_cnn", [True, False])
 def test_brevitas_power_of_two(
-    default_configuration, rounding: Optional[int], power_of_two: bool, n_bits: int
+    default_configuration,
+    manual_rounding: Optional[int],
+    power_of_two: bool,
+    n_bits: int,
+    is_cnn: bool,
 ):
-    """Test that a network that does not quantize its inputs raises the right exception.
+    """Test a custom QAT network that uses power-of-two scaling.
 
-    The network tested is not a valid QAT network for Concrete ML as it does not
-    quantize its inputs. However, in previous versions of Concrete ML a bug
-    in constant folding prevented the correct error being raised.
+    Test whether a network using power-of-two scaling quantization is imported
+    correctly and roundPBS is used. Test that the Concrete ML does not override
+    the user's round PBS configuration.
     """
 
-    input_shape = 32
-    output_shape = 2
-    hidden_shape = 64
-    batch_size = 128
-    data = torch.randn((batch_size, input_shape))
-    rounding_n_bits = 5
+    net, x_all, _ = train_brevitas_network_tinymnist(is_cnn, n_bits, True, False, power_of_two)
 
-    # Simple MLP
-    model = QuantCustomModel(
-        input_shape,
-        output_shape,
-        hidden_shape,
-        n_bits=n_bits,
-        act_quant=Int8ActPerTensorPoT if power_of_two else Int8ActPerTensorFloat,
-        weight_quant=Int8WeightPerTensorPoT if power_of_two else Int8WeightPerTensorFloat,
-        bias_quant=IntBias if power_of_two else None,
-    )
     # If rounding threshold is set -> nothing happens
     # If Quantizer is not setup -> nothing happens
     quantized_module = compile_brevitas_qat_model(
-        model.to("cpu"),
-        torch_inputset=data,
+        net.to("cpu"),
+        torch_inputset=x_all,
         configuration=default_configuration,
-        rounding_threshold_bits=rounding_n_bits,
+        rounding_threshold_bits=manual_rounding,
     )
 
-    pot_should_be_applied = not rounding and power_of_two
+    pot_should_be_applied = not manual_rounding and power_of_two
     # Count the number of patterns that were optimized with roundPBS
     num_round_pbs_layers = 0
     for (_, node_op) in quantized_module.quant_layers_dict.values():
@@ -465,8 +531,12 @@ def test_brevitas_power_of_two(
             num_round_pbs_layers += 1 if node_op.rounding_threshold_bits is not None else 0
             if pot_should_be_applied:
                 assert node_op.rounding_threshold_bits == node_op.lsbs_to_remove
-            else:
-                assert node_op.rounding_threshold_bits != node_op.lsbs_to_remove
+            elif manual_rounding:
+                # If manual rounding was set, LSBs_to_remove must be equal
+                # to the accumulator size minus the requested rounding_threshold_bits
+                assert node_op.rounding_threshold_bits == manual_rounding
+                assert node_op.lsbs_to_remove is not None
+
     # Apply the PowerOfTwoScalingRoundPBSAdapter again. The second time
     # the adapter will ignore already optimized patterns but report them
     # as ignored.

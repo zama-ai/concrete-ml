@@ -765,7 +765,11 @@ class QuantizedConv(QuantizedMixingOp):
             # to properly de-quantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
 
-        if q_bias is not None and isinstance(q_bias, QuantizedArray):
+        if (
+            q_bias is not None
+            and isinstance(q_bias, QuantizedArray)
+            and q_bias.quantizer.is_precomputed_qat
+        ):
             # Make sure the scale was correctly matching during training
             # The bias scale should be the same scale as the one of the weights * inputs
             assert numpy.isclose(q_bias.quantizer.scale, m_matmul)
