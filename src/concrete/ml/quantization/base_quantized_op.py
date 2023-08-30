@@ -962,7 +962,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
                 self.lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
 
             # mypy
-            assert self.lsbs_to_remove is not None and self.lsbs_to_remove >= 0
+            assert self.lsbs_to_remove is not None
 
             # Apply rounding if needed
             if self.lsbs_to_remove > 0:
