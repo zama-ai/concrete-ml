@@ -468,13 +468,14 @@ def test_all_gemm_ops(
     # Quantize the inputs and weights
     q_inputs = QuantizedArray(n_bits, inputs)
     q_weights = QuantizedArray(n_bits, weights, is_signed=is_signed)
+    q_bias = QuantizedArray(n_bits, bias)
 
     # 1- Test our QuantizedGemm layer
     q_gemm = QuantizedGemm(
         n_bits,
         OP_DEBUG_NAME + "QuantizedGemm",
         int_input_names={"0"},
-        constant_inputs={"b": q_weights, "c": bias},
+        constant_inputs={"b": q_weights, "c": q_bias},
     )
     q_gemm.produces_graph_output = produces_output
 
@@ -532,7 +533,7 @@ def test_all_gemm_ops(
         n_bits,
         OP_DEBUG_NAME + "QuantizedGemm",
         int_input_names={"0"},
-        constant_inputs={"b": q_weights, "c": bias},
+        constant_inputs={"b": q_weights, "c": q_bias},
         alpha=1,
         beta=0,
     )
@@ -694,13 +695,14 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     # Create quantized data
     q_input = QuantizedArray(n_bits, net_input, is_signed=False)
     q_weights = QuantizedArray(n_bits, weights, is_signed=True)
+    q_bias = QuantizedArray(n_bits, biases)
 
     # Create the operator, specifying weights & biases as constants
     q_op = QuantizedConv(
         n_bits,
         OP_DEBUG_NAME + "QuantizedConv",
         int_input_names={"0"},
-        constant_inputs={1: q_weights, 2: biases},
+        constant_inputs={1: q_weights, 2: q_bias},
         strides=strides,
         pads=pads,
         kernel_shape=(weights.shape[2], weights.shape[3]),

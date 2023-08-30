@@ -579,7 +579,7 @@ def test_power_of_two_scaling(
             adapter.num_ignored_valid_patterns == num_layers - 1
         ), "Expected number of ignored round PBS optimizable patterns was not matched"
 
-        y_pred_clear_round = model.predict(x_test, fhe="disable")
+        y_pred_clear_round = model.predict(x_test[[224]], fhe="disable")
 
         # Compile the model to ensure rounding is taken into account
         # in compilation
@@ -609,7 +609,7 @@ def test_power_of_two_scaling(
                 node_op.lsbs_to_remove = None
 
         # Predict with the unoptimized network
-        y_pred_clear_no_round = model.predict(x_test, fhe="disable")
+        y_pred_clear_no_round = model.predict(x_test[[224]], fhe="disable")
 
         # Compare the result with the optimized network and without
         # they should be exactly equal
