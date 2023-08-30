@@ -733,7 +733,7 @@ jobs:
 
       # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel during the 
       # release process
-      - name: PyTest with PyPI local wheel of Concrete-ML 
+      - name: PyTest with PyPI local wheel of Concrete-ML (no flaky)
         if: |
           fromJSON(env.IS_RELEASE)
           && steps.conformance.outcome == 'success' 
