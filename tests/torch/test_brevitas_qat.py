@@ -26,7 +26,7 @@ from concrete.ml.pytest.torch_models import (
 )
 from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
 from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
-from concrete.ml.quantization.quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
+from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 from concrete.ml.sklearn import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model

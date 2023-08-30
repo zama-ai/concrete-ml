@@ -80,6 +80,7 @@
   - [concrete.ml.quantization.md](developer-guide/api/concrete.ml.quantization.md)
   - [concrete.ml.quantization.post_training.md](developer-guide/api/concrete.ml.quantization.post_training.md)
   - [concrete.ml.quantization.quantized_module.md](developer-guide/api/concrete.ml.quantization.quantized_module.md)
+  - [concrete.ml.quantization.quantized_module_passes.md](developer-guide/api/concrete.ml.quantization.quantized_module_passes.md)
   - [concrete.ml.quantization.quantized_ops.md](developer-guide/api/concrete.ml.quantization.quantized_ops.md)
   - [concrete.ml.quantization.quantizers.md](developer-guide/api/concrete.ml.quantization.quantizers.md)
   - [concrete.ml.search_parameters.md](developer-guide/api/concrete.ml.search_parameters.md)

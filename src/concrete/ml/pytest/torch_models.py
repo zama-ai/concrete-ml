@@ -10,7 +10,7 @@ from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat, IntB
 from torch import nn
 from torch.nn.utils import prune
 
-from concrete.ml.quantization.quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
+from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 
 # pylint: disable=too-many-lines
 

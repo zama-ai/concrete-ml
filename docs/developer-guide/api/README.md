@@ -33,6 +33,7 @@
 - [`concrete.ml.quantization.base_quantized_op`](./concrete.ml.quantization.base_quantized_op.md#module-concretemlquantizationbase_quantized_op): Base Quantized Op class that implements quantization for a float numpy op.
 - [`concrete.ml.quantization.post_training`](./concrete.ml.quantization.post_training.md#module-concretemlquantizationpost_training): Post Training Quantization methods.
 - [`concrete.ml.quantization.quantized_module`](./concrete.ml.quantization.quantized_module.md#module-concretemlquantizationquantized_module): QuantizedModule API.
+- [`concrete.ml.quantization.quantized_module_passes`](./concrete.ml.quantization.quantized_module_passes.md#module-concretemlquantizationquantized_module_passes): Optimization passes for QuantizedModules.
 - [`concrete.ml.quantization.quantized_ops`](./concrete.ml.quantization.quantized_ops.md#module-concretemlquantizationquantized_ops): Quantized versions of the ONNX operators for post training quantization.
 - [`concrete.ml.quantization.quantizers`](./concrete.ml.quantization.quantizers.md#module-concretemlquantizationquantizers): Quantization utilities for a numpy array/tensor.
 - [`concrete.ml.search_parameters`](./concrete.ml.search_parameters.md#module-concretemlsearch_parameters): Modules for `p_error` search.
@@ -106,6 +107,7 @@
 - [`post_training.PostTrainingAffineQuantization`](./concrete.ml.quantization.post_training.md#class-posttrainingaffinequantization): Post-training Affine Quantization.
 - [`post_training.PostTrainingQATImporter`](./concrete.ml.quantization.post_training.md#class-posttrainingqatimporter): Converter of Quantization Aware Training networks.
 - [`quantized_module.QuantizedModule`](./concrete.ml.quantization.quantized_module.md#class-quantizedmodule): Inference for a quantized model.
+- [`quantized_module_passes.PowerOfTwoScalingRoundPBSAdapter`](./concrete.ml.quantization.quantized_module_passes.md#class-poweroftwoscalingroundpbsadapter): Detect neural network patterns that can be optimized with round PBS.
 - [`quantized_ops.ONNXConstantOfShape`](./concrete.ml.quantization.quantized_ops.md#class-onnxconstantofshape): ConstantOfShape operator.
 - [`quantized_ops.ONNXGather`](./concrete.ml.quantization.quantized_ops.md#class-onnxgather): Gather operator.
 - [`quantized_ops.ONNXShape`](./concrete.ml.quantization.quantized_ops.md#class-onnxshape): Shape operator.
@@ -280,6 +282,7 @@
 - [`ops_impl.numpy_celu`](./concrete.ml.onnx.ops_impl.md#function-numpy_celu): Compute celu in numpy according to ONNX spec.
 - [`ops_impl.numpy_concatenate`](./concrete.ml.onnx.ops_impl.md#function-numpy_concatenate): Apply concatenate in numpy according to ONNX spec.
 - [`ops_impl.numpy_constant`](./concrete.ml.onnx.ops_impl.md#function-numpy_constant): Return the constant passed as a kwarg.
+- [`ops_impl.numpy_conv`](./concrete.ml.onnx.ops_impl.md#function-numpy_conv): Compute N-D convolution using Torch.
 - [`ops_impl.numpy_cos`](./concrete.ml.onnx.ops_impl.md#function-numpy_cos): Compute cos in numpy according to ONNX spec.
 - [`ops_impl.numpy_cosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_cosh): Compute cosh in numpy according to ONNX spec.
 - [`ops_impl.numpy_div`](./concrete.ml.onnx.ops_impl.md#function-numpy_div): Compute div in numpy according to ONNX spec.
@@ -289,6 +292,7 @@
 - [`ops_impl.numpy_exp`](./concrete.ml.onnx.ops_impl.md#function-numpy_exp): Compute exponential in numpy according to ONNX spec.
 - [`ops_impl.numpy_flatten`](./concrete.ml.onnx.ops_impl.md#function-numpy_flatten): Flatten a tensor into a 2d array.
 - [`ops_impl.numpy_floor`](./concrete.ml.onnx.ops_impl.md#function-numpy_floor): Compute Floor in numpy according to ONNX spec.
+- [`ops_impl.numpy_gemm`](./concrete.ml.onnx.ops_impl.md#function-numpy_gemm): Compute Gemm in numpy according to ONNX spec.
 - [`ops_impl.numpy_greater`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater): Compute greater in numpy according to ONNX spec.
 - [`ops_impl.numpy_greater_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_float): Compute greater in numpy according to ONNX spec and cast outputs to floats.
 - [`ops_impl.numpy_greater_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal): Compute greater or equal in numpy according to ONNX spec.

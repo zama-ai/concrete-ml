@@ -10,7 +10,7 @@ from torch import nn
 
 from ..common.debugging import assert_true
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
-from ..quantization.quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
+from ..quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 
 
 class SparseQuantNeuralNetwork(nn.Module):

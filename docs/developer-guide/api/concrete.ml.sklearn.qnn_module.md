@@ -12,7 +12,7 @@ Sparse Quantized Neural Network torch module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L14"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SparseQuantNeuralNetwork`
 
@@ -20,7 +20,7 @@ Sparse Quantized Neural Network.
 
 This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bit-width and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L24"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -36,7 +36,8 @@ __init__(
     n_prune_neurons_percentage: float = 0.0,
     activation_function: Type = <class 'torch.nn.modules.activation.ReLU'>,
     quant_narrow: bool = False,
-    quant_signed: bool = True
+    quant_signed: bool = True,
+    power_of_two_scaling: bool = True
 )
 ```
 
@@ -55,6 +56,7 @@ Sparse Quantized Neural Network constructor.
 - <b>`activation_function`</b> (Type):  The activation function to use in the network  (e.g., torch.ReLU, torch.SELU, torch.Sigmoid, ...).
 - <b>`quant_narrow`</b> (bool):  Whether this network should quantize the values using narrow range  (e.g a 2-bits signed quantization uses \[-1, 0, 1\] instead of \[-2, -1, 0, 1\]).
 - <b>`quant_signed`</b> (bool):  Whether this network should quantize the values using signed  integers.
+- <b>`power_of_two_scaling`</b> (bool):  Force quantization scales to be a power of two  to enable inference speed optimizations. Defaults to True
 
 **Raises:**
 
@@ -62,7 +64,7 @@ Sparse Quantized Neural Network constructor.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_pruning`
 
@@ -78,7 +80,7 @@ Enable pruning in the network. Pruning must be made permanent to recover pruned 
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -98,7 +100,7 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `make_pruning_permanent`
 
@@ -110,7 +112,7 @@ Make the learned pruning permanent in the network.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `max_active_neurons`
 
