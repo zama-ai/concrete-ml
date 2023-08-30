@@ -176,6 +176,7 @@ jobs:
           passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
           git_user_signingkey: true
           git_tag_gpgsign: true
+          git_config_global: true
         env:
           GNUPGHOME: ${{ env.GPG_HOMEDIR }}
 
