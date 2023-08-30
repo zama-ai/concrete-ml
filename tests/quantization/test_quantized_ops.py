@@ -671,6 +671,7 @@ def test_identity_op(x, n_bits):
     ],
 )
 @pytest.mark.parametrize("produces_output", [True, False])
+# pylint: disable-next=too-many-locals
 def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_float_arrays_equal):
     """Test the quantized convolution operator."""
 

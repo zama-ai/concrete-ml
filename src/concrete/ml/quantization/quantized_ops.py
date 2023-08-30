@@ -184,7 +184,7 @@ class QuantizedGemm(QuantizedMixingOp):
 
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[Union[numpy.ndarray, QuantizedArray]] = (
+        q_bias: Optional[QuantizedArray] = (
             None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
         )
 
@@ -640,7 +640,7 @@ class QuantizedConv(QuantizedMixingOp):
         )
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[numpy.ndarray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
+        q_bias: Optional[QuantizedArray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
 
         in_channels = q_input.values.shape[1]
         weight_channels = q_weights.values.shape[1]
@@ -764,6 +764,7 @@ class QuantizedConv(QuantizedMixingOp):
         if q_bias is not None and q_bias.quantizer.is_precomputed_qat:
             # Make sure the scale was correctly matching during training
             # The bias scale should be the same scale as the one of the weights * inputs
+            assert q_bias.quantizer.scale is not None
             assert numpy.isclose(q_bias.quantizer.scale, m_matmul)
             numpy_q_out += q_bias.qvalues.reshape((1, -1, 1, 1))
 
