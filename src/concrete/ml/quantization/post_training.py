@@ -428,7 +428,7 @@ class ONNXConverter:
                 attributes.update({"rounding_threshold_bits": self.rounding_threshold_bits})
 
             # All inputs, allow optional constants (they become None)
-            # Note that input of a node can be duplicated, e.g. (%a, %a, %b)
+            # Note that input of a node can be duplicated, e.g., (%a, %a, %b)
             curr_inputs = [
                 (input_name, node_results.get(input_name, None)) for input_name in node.input
             ]

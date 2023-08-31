@@ -36,7 +36,7 @@ class SparseQuantNeuralNetwork(nn.Module):
         activation_function: Type = nn.ReLU,
         quant_narrow: bool = False,
         quant_signed: bool = True,
-        power_of_two_scaling: bool = True,
+        power_of_two_scaling: bool = False,
     ):
         """Sparse Quantized Neural Network constructor.
 
