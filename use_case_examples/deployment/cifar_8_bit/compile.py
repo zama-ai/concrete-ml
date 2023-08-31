@@ -47,26 +47,19 @@ def main():
         [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
     )
 
-    # Pre-processing -> images -> feature maps
+    # Create a representative input-set that will be used used for both computing quantization
+    # parameters and compiling the model
     with torch.no_grad():
         train_features_sub_set = model.clear_module(train_sub_set)
 
-    configuration = Configuration(
-        show_graph=False,
-        show_mlir=False,
-        show_optimizer=False,
-        p_error=None,
-        global_p_error=None,
-    )
-
-    # Compile the model
     compilation_onnx_path = "compilation_model.onnx"
     print("Compiling the model ...")
     start_compile = time.time()
+
+    # Compile the quantized model
     quantized_numpy_module = compile_brevitas_qat_model(
-        torch_model=model.encrypted_module,  # our model
-        torch_inputset=train_features_sub_set,  # a representative input-set to be used for both quantization and compilation
-        configuration=configuration,
+        torch_model=model.encrypted_module,
+        torch_inputset=train_features_sub_set,
         p_error=0.05,
         output_onnx_file=compilation_onnx_path,
         n_bits=8,

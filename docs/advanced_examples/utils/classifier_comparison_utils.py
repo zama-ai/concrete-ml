@@ -15,15 +15,13 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from concrete.fhe.compilation.configuration import Configuration
 from matplotlib.colors import ListedColormap
 from sklearn.datasets import make_circles, make_classification, make_moons
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
-from concrete.ml.sklearn import DecisionTreeClassifier, NeuralNetClassifier
+from concrete.ml.sklearn import DecisionTreeClassifier
 
 ALWAYS_USE_SIM = False
 
@@ -150,7 +148,6 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             concrete_score = accuracy_score(concrete_y_pred, y_test)
 
             is_a_tree_based_model = concrete_model.__class__ in [
-                DecisionTreeClassifier,
                 DecisionTreeClassifier,
             ]
 

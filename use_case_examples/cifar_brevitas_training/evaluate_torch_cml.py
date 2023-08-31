@@ -3,7 +3,7 @@ import pathlib
 
 import numpy as np
 import torch
-from concrete.fhe.compilation.configuration import Configuration
+from concrete.fhe import Configuration, ParameterSelectionStrategy
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from torchvision import transforms
@@ -123,26 +123,27 @@ def main(rounding_threshold_bits_list):
     # Load weights
     model.load_state_dict(checkpoint["state_dict"], strict=False)
 
-    # Get some random data with the right shape
-    x = torch.randn(1, 3, 32, 32)
+    # Create a representative input-set that will be used used for both computing quantization
+    # parameters and compiling the model
+    input_set = torch.randn(1, 3, 32, 32)
 
     # Eval mode
     model.eval()
 
-    # Compile with Concrete ML using the FHE simulation mode
+    # Multi-parameter strategy is used in order to speed-up the FHE executions
     cfg = Configuration(
-        dump_artifacts_on_unexpected_failures=False,
-        enable_unsafe_features=True,  # This is for our tests only, never use that in prod
         verbose=True,
         show_optimizer=True,
+        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
     for rounding_threshold_bits in rounding_threshold_bits_list:
         print(f"Testing network with {rounding_threshold_bits} rounding bits")
 
+        # Compile the quantized model
         quantized_numpy_module = compile_brevitas_qat_model(
-            model,  # our torch model
-            x,  # a representative input-set to be used for both quantization and compilation
+            model,
+            input_set,
             n_bits={"model_inputs": 8, "model_outputs": 8},
             configuration=cfg,
             rounding_threshold_bits=rounding_threshold_bits,
