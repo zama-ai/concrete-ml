@@ -107,13 +107,6 @@ jobs:
       release_branch_name: ${{ steps.get-release-version.outputs.release_branch_name }}
 
     steps:
-      # Mask internal URLs if logged
-      - name: Add masks
-        id: masks
-        run: |
-          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
-          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
-
       # Replace default archive.ubuntu.com from docker image with fr mirror
       # original archive showed performance issues and is farther away
       - name: Docker container related setup and git installation
@@ -144,15 +137,8 @@ jobs:
             exit 1
           fi
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       - name: Install dependencies
         run: |
-          # We need to freeze docker.io because its update requires user input
-          sudo apt update
-          sudo apt-mark hold docker.io
-
           ./script/make_utils/setup_os_deps.sh  --linux-install-python
           make setup_env
 
@@ -318,13 +304,46 @@ jobs:
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
       PROJECT_VERSION: ${{ needs.release-checks.outputs.project_version }}
 
+    # Jobs are separated runners, we therefore need to install dependencies again in order to 
+    # pursue (without using cache or upload/download them as artifacts)
     steps:
-      - name: Checkout code
+      # Mask internal URLs if logged
+      - name: Add masks
+        id: masks
+        run: |
+          echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
+          echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
+
+      # Replace default archive.ubuntu.com from docker image with fr mirror
+      # original archive showed performance issues and is farther away
+      - name: Docker container related setup and git installation
+        id: docker-git-config
+        run: |
+          TZ=Europe/Paris
+          echo "TZ=${TZ}" >> "$GITHUB_ENV"
+          ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && echo ${TZ} > /etc/timezone
+          sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
+          apt update && apt install git git-lfs -y
+          apt -y install sudo
+
+      - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
           fetch-depth: 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Install dependencies
+        run: |
+          # We need to freeze docker.io because its update requires user input
+          sudo apt update
+          sudo apt-mark hold docker.io
+
+          ./script/make_utils/setup_os_deps.sh  --linux-install-python
+          make setup_env
 
       - name: Set tags in env
         run: |
