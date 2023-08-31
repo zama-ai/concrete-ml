@@ -126,7 +126,9 @@ class Trainer(object):
             self.device = "cuda:" + str(args.gpus[0])
             torch.backends.cudnn.benchmark = True
         else:
-            self.device = "cpu"
+            # MPS option is supported by macOS with Apple Silicon or AMD GPUs
+            self.device = "mps" if torch.backends.mps.is_available() else "cpu"
+
         self.device = torch.device(self.device)
 
         # Resume checkpoint, if any

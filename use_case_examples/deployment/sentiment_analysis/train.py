@@ -51,7 +51,14 @@ def train(dev_folder="./dev"):
     # #
     # # Here we will use the transformer model from the amazing [**Huggingface**](https://huggingface.co/) repository.
 
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    # MPS option is supported by macOS with Apple Silicon or AMD GPUs
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
 
     # # Load the tokenizer (converts text to tokens)
     tokenizer = AutoTokenizer.from_pretrained("cardiffnlp/twitter-roberta-base-sentiment-latest")
