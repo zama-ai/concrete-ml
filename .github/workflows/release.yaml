@@ -262,7 +262,7 @@ jobs:
         run: |
           git fetch --tags --force
           git tag -s -a -m "${{ env.GIT_TAG }} release" "${{ env.GIT_TAG }}"
-          git push "refs/tags/${{ env.GIT_TAG }}"
+          git push origin "refs/tags/${{ env.GIT_TAG }}"
 
   # This action creates docker and pypi images directly on the AWS EC2 instance
   # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete-ML starts to publish
