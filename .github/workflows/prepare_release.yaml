@@ -18,7 +18,7 @@ jobs:
       run:
         shell: bash
     env:
-      PROJECT_VERSION: ${{ github.event.inputs.version }}
+      VERSION: ${{ github.event.inputs.version }}
 
     steps:
       # Mask internal URLs if logged
@@ -31,20 +31,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
-          ref: "main"
+          ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
 
       # Make sure that the target branch is main
-      - name: Stop if branch is not main
-        id: check-branch-is-main
-        if: ${{ always() && !cancelled() }}
-        env:
-          BRANCH_IS_MAIN: ${{ github.ref_name == 'main'}} 
-        run: |
-          if [[ "${BRANCH_IS_MAIN}" != "true" ]]; then
-            echo "Release cannot be prepared: target branch is not main"
-            exit 1
-          fi
+      # - name: Stop if branch is not main
+      #   id: check-branch-is-main
+      #   if: ${{ always() && !cancelled() }}
+      #   env:
+      #     BRANCH_IS_MAIN: ${{ github.ref_name == 'main'}} 
+      #   run: |
+      #     if [[ "${BRANCH_IS_MAIN}" != "true" ]]; then
+      #       echo "Release cannot be prepared: target branch is not main"
+      #       exit 1
+      #     fi
 
       - name: Set up Python 3.8
         uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
@@ -64,17 +64,36 @@ jobs:
       - name: Build apidocs
         run: |
           make apidocs
-      
+
+      # Prepare title and branch name for the upcoming pull-request
+      # In case the current version represents a patch release, modify the title and branch name
+      # in order to not trigger the release process once the pull-request is merged, as patch
+      # releases ar expected to be triggered from the existing release branch (and not main)
+      - name: Prepare title and branch name for PR
+        run: |
+          IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version ${{ env.VERSION }})"
+
+          PATCH_STRING=""
+          if [[ "${IS_PATCH}" == "true" ]]; then
+            PATCH_STRING="patch"
+          fi
+
+          BRANCH_NAME="chore/prepare_${PATCH_STRING}release_${{ env.VERSION }}"
+          PR_TITLE="Prepare ${PATCH_STRING} release ${{ env.VERSION }}"
+
+          echo "BRANCH_NAME=${BRANCH_NAME}" >> "$GITHUB_ENV"
+          echo "PR_TITLE=${PR_TITLE}" >> "$GITHUB_ENV"
+
       # Open a PR with the new version and updated apidocs
       - name: Open PR
         uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
         with:
           token: ${{ secrets.BOT_TOKEN }}
-          commit-message: "chore: prepare release ${{ env.PROJECT_VERSION }}"
-          branch: "chore/prepare_release_${{ env.PROJECT_VERSION }}"
+          commit-message: "chore: prepare release ${{ env.VERSION }}"
+          branch: "${{ env.BRANCH_NAME }}"
           base: "${{ github.ref_name }}"
-          title: "Prepare release ${{ env.PROJECT_VERSION }}"
-          body: "Set version ${{ env.PROJECT_VERSION }} and build apidocs"
+          title: "${{ env.PR_TITLE }}"
+          body: "Set version ${{ env.VERSION }} and build apidocs"
 
       - name: Slack Notification
         if: ${{ always() && !success() }}
@@ -84,7 +103,7 @@ jobs:
           SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
-          SLACK_MESSAGE: "Preparing release ${{ env.PROJECT_VERSION }} finished with status \ 
+          SLACK_MESSAGE: "Preparing release ${{ env.VERSION }} finished with status \ 
             ${{ job.status }} (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
