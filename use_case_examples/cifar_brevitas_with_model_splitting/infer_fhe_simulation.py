@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torchvision
 from brevitas import config
-from concrete.fhe import Configuration
+from concrete.fhe import Configuration, ParameterSelectionStrategy
 from model import CNV
 from scipy.special import softmax
 from torch.backends import cudnn
@@ -105,31 +105,31 @@ def main():
     net.load_state_dict(loaded["model_state_dict"])
     net.eval()
 
-    # Torch + FHE simulation
-    # Pre-processing -> images -> feature maps
+    # Create a representative input-set that will be used used for both computing quantization
+    # parameters and compiling the model
     with torch.no_grad():
         train_features_sub_set = net.clear_module(train_sub_set)
 
-    # Use FHE simulation
     optional_kwargs = {}
+
+    # Multi-parameter strategy is used in order to speed-up the FHE executions
     optional_kwargs["configuration"] = Configuration(
         dump_artifacts_on_unexpected_failures=True,
-        enable_unsafe_features=True,  # This is for our tests in FHE simulation only
-        show_graph=False,
-        show_mlir=False,
-        show_optimizer=False,
+        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
-    # Compile the model
     compilation_onnx_path = "compilation_model.onnx"
     print("Compiling the model")
     start_compile = time.time()
+
+    # Compile the quantized model
     quantized_numpy_module = compile_brevitas_qat_model(
-        torch_model=net.encrypted_module,  # our model
-        torch_inputset=train_features_sub_set,  # a representative input-set to be used for compilation
+        torch_model=net.encrypted_module,
+        torch_inputset=train_features_sub_set,
         **optional_kwargs,
         output_onnx_file=compilation_onnx_path,
     )
+
     end_compile = time.time()
     print(f"Compilation finished in {end_compile - start_compile:.2f} seconds")
 

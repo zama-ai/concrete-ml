@@ -17,7 +17,7 @@ def run_hybrid_model_test(
 ):
     """Run the test for any model with its private module names."""
 
-    # Enable multi params/precision
+    # Multi-parameter strategy is used in order to speed-up the FHE executions
     configuration = Configuration(
         single_precision=False,
         parameter_selection_strategy=ParameterSelectionStrategy.MULTI,

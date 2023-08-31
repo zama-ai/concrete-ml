@@ -5,9 +5,7 @@ import shutil
 from pathlib import Path
 
 import numpy
-from concrete.fhe.compilation import configuration
-from concrete.fhe.compilation.compiler import Compiler
-from concrete.fhe.compilation.configuration import Configuration
+from concrete.fhe import Compiler, Configuration
 from sklearn.datasets import make_classification
 from sklearn.metrics import average_precision_score, confusion_matrix
 from sklearn.model_selection import train_test_split
@@ -69,14 +67,19 @@ def ml_check(args, keyring_dir_as_str):
     print(f"False Negative rate: {false_negative}")
     print(f"True Positive rate: {true_positive}")
 
+    # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
+    # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
+    # these parameters are unsafe and should only be used for debugging in development
+    configuration = Configuration(
+        enable_unsafe_features=True,
+        use_insecure_key_cache=is_fast,
+        insecure_key_cache_location=keyring_dir_as_str,
+    )
+
     # We first compile the model with some data, here the training set
     model.compile(
         x_train,
-        configuration=Configuration(
-            enable_unsafe_features=True,  # This is for our tests only, never use that in prod
-            use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
-            insecure_key_cache_location=keyring_dir_as_str,
-        ),
+        configuration=configuration,
     )
 
     nb_samples = 1 if is_fast else 10
@@ -108,15 +111,19 @@ def cn_check(args, keyring_dir_as_str):
         function_to_compile,
         {"x": "encrypted"},
     )
-    config = Configuration(
-        enable_unsafe_features=is_fast,  # This is for our tests only, never use that in prod
-        use_insecure_key_cache=is_fast,  # This is for our tests only, never use that in prod
+
+    # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
+    # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
+    # these parameters are unsafe and should only be used for debugging in development
+    configuration = Configuration(
+        enable_unsafe_features=is_fast,
+        use_insecure_key_cache=is_fast,
         insecure_key_cache_location=keyring_dir_as_str,
     )
 
     print("Compiling...")
 
-    engine = compiler.compile(range(2**n_bits), config)
+    engine = compiler.compile(range(2**n_bits), configuration)
 
     inputs = []
     labels = []
@@ -150,9 +157,6 @@ def main(args):
         keyring_dir.mkdir(parents=True, exist_ok=True)
         keyring_dir_as_str = str(keyring_dir)
         print(f"Using {keyring_dir_as_str} as key cache dir")
-        configuration._INSECURE_KEY_CACHE_LOCATION = (  # pylint: disable=protected-access
-            keyring_dir_as_str
-        )
 
     ml_check(args, keyring_dir_as_str)
     cn_check(args, keyring_dir_as_str)

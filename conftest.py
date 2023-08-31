@@ -92,11 +92,15 @@ def monkeypatched_compilation_configuration_init_for_codeblocks(
     self: Configuration, *args, **kwargs
 ):
     """Monkeypatched compilation configuration init for codeblocks tests."""
+
+    # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
+    # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
+    # these parameters are unsafe and should only be used for debugging in development
     original_compilation_config_init(self, *args, **kwargs)
     self.dump_artifacts_on_unexpected_failures = False
-    self.enable_unsafe_features = True  # This is for our tests only, never use that in prod
+    self.enable_unsafe_features = True
     self.treat_warnings_as_errors = True
-    self.use_insecure_key_cache = True  # This is for our tests only, never use that in prod
+    self.use_insecure_key_cache = True
     self.insecure_key_cache_location = "ConcreteNumpyKeyCache"
 
 
@@ -145,10 +149,13 @@ def default_configuration():
     # Remove parameter_selection_strategy once it is set to multi-parameter in Concrete Python
     # by default
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3860
+    # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
+    # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
+    # these parameters are unsafe and should only be used for debugging in development
     return Configuration(
         dump_artifacts_on_unexpected_failures=False,
-        enable_unsafe_features=True,  # This is for our tests only, never use that in prod
-        use_insecure_key_cache=True,  # This is for our tests only, never use that in prod
+        enable_unsafe_features=True,
+        use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
