@@ -143,42 +143,6 @@ jobs:
           ./script/make_utils/setup_os_deps.sh  --linux-install-python
           make setup_env
 
-      # Create gpg-agent.conf file as the following action raises an issue if it cannot be found
-      # Remove this once https://github.com/crazy-max/ghaction-import-gpg/issues/176 is fixed
-      - name: Create gpg-agent.conf file
-        run: |
-          # Get GPG's home directory
-          GPG_HOMEDIR="$(gpgconf --list-dirs | grep "^homedir:" | sed 's/homedir://')"
-          GPG_AGENT_CONF="${GPG_HOMEDIR}/gpg-agent.conf"
-
-          # Create GPG's home directory
-          mkdir "${GPG_HOMEDIR}"
-          echo "Created ${GPG_HOMEDIR}"
-
-          # Create GPG's agent configuration file 
-          touch "${GPG_AGENT_CONF}"
-          echo "Created ${GPG_AGENT_CONF}"
-
-          # Give permissions in order to avoid GPG unsafe warnings
-          chmod 600 "${GPG_HOMEDIR}"
-
-          # Store GPG's home directory as an environment variable
-          echo "GPG_HOMEDIR=${GPG_HOMEDIR}" >> "$GITHUB_ENV"
-
-      # Import GPG in order to enable the Zama bot to sign all tags
-      # GNUPGHOME environment variable is overridden because the action currently fails to get the 
-      # right home directory when trying to access the gpg-agent.conf file
-      # Remove GNUPGHOME once https://github.com/crazy-max/ghaction-import-gpg/issues/176 is fixed
-      - name: Import GPG
-        uses: crazy-max/ghaction-import-gpg@v5.3.0
-        with:
-          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
-          git_user_signingkey: true
-          git_tag_gpgsign: true
-        env:
-          GNUPGHOME: ${{ env.GPG_HOMEDIR }}
-
       - name: Check version coherence and apidocs
         run: |
           make check_version_coherence
@@ -248,6 +212,42 @@ jobs:
       RELEASE_BRANCH_NAME: ${{ needs.release-checks.outputs.release_branch_name }}
 
     steps:
+      # Create gpg-agent.conf file as the following action raises an issue if it cannot be found
+      # Remove this once https://github.com/crazy-max/ghaction-import-gpg/issues/176 is fixed
+      - name: Create gpg-agent.conf file
+        run: |
+          # Get GPG's home directory
+          GPG_HOMEDIR="$(gpgconf --list-dirs | grep "^homedir:" | sed 's/homedir://')"
+          GPG_AGENT_CONF="${GPG_HOMEDIR}/gpg-agent.conf"
+
+          # Create GPG's home directory
+          mkdir "${GPG_HOMEDIR}"
+          echo "Created ${GPG_HOMEDIR}"
+
+          # Create GPG's agent configuration file 
+          touch "${GPG_AGENT_CONF}"
+          echo "Created ${GPG_AGENT_CONF}"
+
+          # Give permissions in order to avoid GPG unsafe warnings
+          chmod 600 "${GPG_HOMEDIR}"
+
+          # Store GPG's home directory as an environment variable
+          echo "GPG_HOMEDIR=${GPG_HOMEDIR}" >> "$GITHUB_ENV"
+
+      # Import GPG in order to enable the Zama bot to sign all tags
+      # GNUPGHOME environment variable is overridden because the action currently fails to get the 
+      # right home directory when trying to access the gpg-agent.conf file
+      # Remove GNUPGHOME once https://github.com/crazy-max/ghaction-import-gpg/issues/176 is fixed
+      - name: Import GPG
+        uses: crazy-max/ghaction-import-gpg@v5.3.0
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_tag_gpgsign: true
+        env:
+          GNUPGHOME: ${{ env.GPG_HOMEDIR }}
+
       # For non-rc releases, create and push the release branch
       - name: Create and push dot release branch to public repository
         if: env.IS_RC == 'false'
