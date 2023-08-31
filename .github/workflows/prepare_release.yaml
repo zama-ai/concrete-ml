@@ -10,6 +10,11 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  BRANCH_NAME: ${{ github.ref_name }}
+  BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }} 
+  BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }}
+
 jobs:
   prepare-release:
     name: Prepare release ${{ github.event.inputs.version }}
@@ -28,23 +33,23 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
 
+      # Make sure that the target branch is:
+      # - main, for release-candidates or major/minor releases
+      # - a release branch, for patch releases
+      - name: Stop if branch is not main or release
+        if: ${{ always() && !cancelled() }}
+        run: |
+          if [[ "${BRANCH_IS_MAIN}" == "false" && "${BRANCH_IS_RELEASE}" == 'false' ]]; then
+            echo "Release cannot be done: target branch is not main or a release branch"
+            echo "Got branch ${BRANCH_NAME}"
+            exit 1
+          fi
+
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
-
-      # Make sure that the target branch is main
-      - name: Stop if branch is not main
-        id: check-branch-is-main
-        if: ${{ always() && !cancelled() }}
-        env:
-          BRANCH_IS_MAIN: ${{ github.ref_name == 'main'}} 
-        run: |
-          if [[ "${BRANCH_IS_MAIN}" != "true" ]]; then
-            echo "Release cannot be prepared: target branch is not main"
-            exit 1
-          fi
 
       - name: Set up Python 3.8
         uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
@@ -57,6 +62,41 @@ jobs:
           python -m pip install poetry==1.2.2
           make setup_env
 
+      # Make sure that the workflow has been triggered from a release branch if this is a patch 
+      # release or from main otherwise. If not, the release preparation process is stopped
+      # Additionally, for patch releases, if the release branch name does not match the current
+      # release version, the release preparation process is stopped as well
+      - name: Check release preparation is from right branch
+        run: |
+          IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version "$VERSION")"
+
+          if [[ "${IS_PATCH}" == 'true']]; then
+
+            if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
+              echo "Patch release cannot be done: target branch is not a release branch"
+              echo "Got branch ${BRANCH_NAME}"
+              exit 1
+
+            else
+              # Release branches are only used for non-release candidates and have a special naming 
+              # format (for example, "release/1.1.x" is used for all patch versions related to version 1.1)
+              VERSION_MAJOR_MINOR=$(echo "${VERSION}" | cut -d '.' -f -2)
+              EXPECTED_BRANCH_NAME="release/${VERSION_MAJOR_MINOR}.x"
+
+              if [[ "${EXPECTED_BRANCH_NAME}" != "${BRANCH_NAME}" ]]; then
+                echo "Patch release cannot be done: target branch name does not match the current version"
+                echo "Got branch ${BRANCH_NAME} but for version ${VERSION}"
+                echo "Expected "${EXPECTED_BRANCH_NAME}"
+                exit 1
+              fi
+            fi
+
+          elif [[ "${IS_PATCH}" == 'false' && "${BRANCH_IS_MAIN}" == "false" ]]; then
+            echo "Release cannot be done: target branch is not main"
+            echo "Got branch ${BRANCH_NAME}"
+            exit 1
+          fi
+
       - name: Set version
         run: |
           make set_version
@@ -65,36 +105,15 @@ jobs:
         run: |
           make apidocs
 
-      # Prepare title and branch name for the upcoming pull-request
-      # In case the current version represents a patch release, modify the title and branch name
-      # in order to not trigger the release process once the pull-request is merged, as patch
-      # releases ar expected to be triggered from the existing release branch (and not main)
-      - name: Prepare title and branch name for PR
-        run: |
-          IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version ${{ env.VERSION }})"
-
-          BRANCH_PATCH_STRING=""
-          TITLE_PATCH_STRING=""
-          if [[ "${IS_PATCH}" == "true" ]]; then
-            BRANCH_PATCH_STRING="patch_"
-            TITLE_PATCH_STRING="patch "
-          fi
-
-          BRANCH_NAME="chore/prepare_${BRANCH_PATCH_STRING}release_${{ env.VERSION }}"
-          PR_TITLE="Prepare ${TITLE_PATCH_STRING}release ${{ env.VERSION }}"
-
-          echo "BRANCH_NAME=${BRANCH_NAME}" >> "$GITHUB_ENV"
-          echo "PR_TITLE=${PR_TITLE}" >> "$GITHUB_ENV"
-
       # Open a PR with the new version and updated apidocs
       - name: Open PR
         uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
         with:
           token: ${{ secrets.BOT_TOKEN }}
           commit-message: "chore: prepare release ${{ env.VERSION }}"
-          branch: "${{ env.BRANCH_NAME }}"
+          branch: "chore/prepare_release_${{ env.VERSION }}"
           base: "${{ github.ref_name }}"
-          title: "${{ env.PR_TITLE }}"
+          title: "Prepare release ${{ env.VERSION }}"
           body: "Set version ${{ env.VERSION }} and build apidocs"
 
       - name: Slack Notification

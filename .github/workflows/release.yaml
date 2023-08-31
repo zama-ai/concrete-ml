@@ -5,17 +5,15 @@ on:
   workflow_dispatch:
 
   # Releases are also allowed to be automatically triggered once the release preparation 
-  # pull-request (targeting main) is merged, as this suggest a rc or major/minor (non-patch) release 
-  # has been prepared. In this case, we also make sure that the PR has changes in at least one file 
-  # related to `make set_version` or `make apidocs`. Additionally, they can also be automatically 
-  # triggered once a PR is merged into a release branch as this suggests we are taking care of a 
-  # patch release
+  # pull-request is merged in main (major/minor releases or release candidates) or in a release 
+  # branch (patch releases). We also make sure that the PR has changes in at least one file 
+  # related to `make set_version` or `make apidocs`
   pull_request:
     types:
       - closed
     branches:
       - main
-      - 'release/'
+      - 'release/*'
     paths:
       - src/concrete/ml/version.py
       - 'docs/developer-guide/api/**'
@@ -26,6 +24,7 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  BRANCH_NAME: ${{ github.ref_name }}
   BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }} 
   BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }} 
 
@@ -45,10 +44,6 @@ jobs:
         && github.event.pull_request.merged == true
         && startsWith(github.head_ref, 'chore/prepare_release_')
         && contains(github.event.pull_request.title, 'Prepare release')
-      )
-      || (
-        github.event_name == 'pull_request'
-        && "${BRANCH_IS_RELEASE}" == 'true'
       )
     runs-on: ubuntu-20.04
     outputs:
@@ -107,6 +102,18 @@ jobs:
       release_branch_name: ${{ steps.get-release-version.outputs.release_branch_name }}
 
     steps:
+      # Make sure that the target branch is:
+      # - main, for release candidates or major/minor releases
+      # - a release branch, for patch releases
+      - name: Stop if branch is not main or release
+        if: ${{ always() && !cancelled() }}
+        run: |
+          if [[ "${BRANCH_IS_MAIN}" == "false" && "${BRANCH_IS_RELEASE}" == 'false' ]]; then
+            echo "Release cannot be done: target branch is not main or a release branch"
+            echo "Got branch ${BRANCH_NAME}"
+            exit 1
+          fi
+
       # Replace default archive.ubuntu.com from docker image with fr mirror
       # original archive showed performance issues and is farther away
       - name: Docker container related setup and git installation
@@ -124,18 +131,6 @@ jobs:
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
-
-      # Make sure that the target branch is:
-      # - main, for release-candidates or major/minor releases
-      # - a release branch, for patch releases
-      - name: Stop if branch is not main or release
-        id: check-branch-is-main
-        if: ${{ always() && !cancelled() }}
-        run: |
-          if [[ "${BRANCH_IS_MAIN}" == "false" && "${BRANCH_IS_RELEASE}" == 'false' ]]; then
-            echo "Release cannot be done: target branch is not main or a release branch"
-            exit 1
-          fi
 
       - name: Install dependencies
         run: |
@@ -177,12 +172,27 @@ jobs:
           echo "release_branch_name=${RELEASE_BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
       # Make sure that the workflow has been triggered from a release branch if this is a patch 
-      # release. Otherwise, the release process is stopped
-      - name: Check patch release is from release branch
-        if:  env.IS_PATCH == 'true'
+      # release or from main otherwise. If not, the release preparation process is stopped
+      # Additionally, for patch releases, if the release branch name does not match the current
+      # release version, the release preparation process is stopped as well
+      - name: Check release preparation is from right branch
         run: |
-          if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
-            echo "Patch release cannot be done: target branch is not a release branch"
+          if [[ "${{ env.IS_PATCH }}" == 'true']]; then
+
+            if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
+              echo "Patch release cannot be done: target branch is not a release branch"
+              echo "Got branch ${BRANCH_NAME}"
+              exit 1
+
+            elif [[ "${RELEASE_BRANCH_NAME}" != "${BRANCH_NAME}" ]]; then
+              echo "Patch release cannot be done: target branch name does not match the current version"
+              echo "Got branch ${BRANCH_NAME} for version ${PROJECT_VERSION}"
+              exit 1
+            fi
+
+          elif [[ "${{ env.IS_PATCH }}" == 'false' && "${BRANCH_IS_MAIN}" == "false" ]]; then
+            echo "Release cannot be done: target branch is not main"
+            echo "Got branch ${BRANCH_NAME}"
             exit 1
           fi
 
