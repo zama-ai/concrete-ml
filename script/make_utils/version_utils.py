@@ -25,8 +25,8 @@ def strip_leading_v(version_str: str):
     return version_str[1:] if version_str.startswith("v") else version_str
 
 
-def islatest(args):
-    """ "islatest command entry point.
+def is_latest_entry(args):
+    """ "is_latest command entry point.
 
     Args:
         args: a Namespace object
@@ -70,8 +70,8 @@ def islatest(args):
         raise RuntimeError(f"Version {args.version} is not valid.")
 
 
-def isprerelease(args):
-    """ "isprerelease command entry point.
+def is_prerelease_entry(args):
+    """ "is_prerelease command entry point.
 
     Args:
         args: a Namespace object
@@ -88,6 +88,29 @@ def isprerelease(args):
             is_prerelease = True
 
         print(is_prerelease)
+
+    else:
+        raise RuntimeError(f"Version {args.version} is not valid.")
+
+
+def is_patch_release_entry(args):
+    """ "is_patch_release command entry point.
+
+    Args:
+        args: a Namespace object
+
+    Raises:
+        RuntimeError: If the given version is not valid.
+    """
+    version_str = strip_leading_v(args.version)
+    if VersionInfo.isvalid(version_str):
+        new_version_info = VersionInfo.parse(version_str)
+        if new_version_info.patch == 0 or new_version_info.prerelease is not None:
+            is_patch_release = False
+        else:
+            is_patch_release = True
+
+        print(is_patch_release)
 
     else:
         raise RuntimeError(f"Version {args.version} is not valid.")
@@ -330,24 +353,30 @@ if __name__ == "__main__":
 
     sub_parsers = main_parser.add_subparsers(dest="sub-command", required=True)
 
-    parser_islatest = sub_parsers.add_parser("islatest")
-    parser_islatest.add_argument(
+    parser_is_latest = sub_parsers.add_parser("is_latest")
+    parser_is_latest.add_argument(
         "--new-version", type=str, required=True, help="The new version to compare"
     )
-    parser_islatest.add_argument(
+    parser_is_latest.add_argument(
         "--existing-versions",
         type=str,
         nargs="+",
         required=True,
         help="The list of existing versions",
     )
-    parser_islatest.set_defaults(entry_point=islatest)
+    parser_is_latest.set_defaults(entry_point=is_latest_entry)
 
-    parser_islatest = sub_parsers.add_parser("isprerelease")
-    parser_islatest.add_argument(
+    parser_is_prerelease = sub_parsers.add_parser("is_prerelease")
+    parser_is_prerelease.add_argument(
         "--version", type=str, required=True, help="The version to consider"
     )
-    parser_islatest.set_defaults(entry_point=isprerelease)
+    parser_is_prerelease.set_defaults(entry_point=is_prerelease_entry)
+
+    parser_is_patch_release = sub_parsers.add_parser("is_patch_release")
+    parser_is_patch_release.add_argument(
+        "--version", type=str, required=True, help="The version to consider"
+    )
+    parser_is_patch_release.set_defaults(entry_point=is_patch_release_entry)
 
     parser_set_version = sub_parsers.add_parser("set-version")
     parser_set_version.add_argument("--version", type=str, required=True, help="The version to set")
