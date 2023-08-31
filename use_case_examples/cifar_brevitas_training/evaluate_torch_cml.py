@@ -37,7 +37,14 @@ def evaluate(torch_model, cml_model):
 
     test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=1)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # MPS option is supported by macOS with Apple Silicon or AMD GPUs
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
 
     print("Device in use:", device)
     top1_torch = []
@@ -95,7 +102,14 @@ def evaluate(torch_model, cml_model):
 
 def main(rounding_threshold_bits_list):
     model = cnv_2w2a(False)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # MPS option is supported by macOS with Apple Silicon or AMD GPUs
+    device = (
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps"
+        if torch.backends.mps.is_available()
+        else "cpu"
+    )
 
     # Find relative path to this file
     dir_path = pathlib.Path(__file__).parent.absolute()
