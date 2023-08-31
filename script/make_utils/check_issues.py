@@ -50,7 +50,9 @@ def check_file(path, root):
     for index in found_indexes:
         if index not in issues:
             output = subprocess.check_output(
-                shell=True, args=f"gh issue view {index} --json state", cwd=root
+                shell=True,
+                args=f'gh issue view {index} --json state --repo "zama-ai/concrete-ml"',
+                cwd=root,
             ).decode()
             issues[index] = json.loads(output)
             issues[index]["path"] = path
