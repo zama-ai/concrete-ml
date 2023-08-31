@@ -592,7 +592,7 @@ def test_brevitas_power_of_two(
     # # Compare the result with the optimized network and without
     # # they should be equal (allow 3 non-matching value out of 100)
     # TODO: actually verify correctness here, this is just a placeholder
-    #
+    # https://github.com/zama-ai/concrete-ml-internal/issues/3946
     assert y_pred_sim_round.shape == y_pred_clear_round.shape
     assert y_pred_clear_round.shape == y_pred_clear_no_round.shape
 
