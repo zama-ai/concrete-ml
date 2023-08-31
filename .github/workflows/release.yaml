@@ -22,6 +22,8 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  BRANCH_IS_MAIN: ${{ github.ref_name == 'main' }} 
+  BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }} 
 
 jobs:
   # Open the AWS EC2 instance if the release process has been triggered manually or if the release 
@@ -47,7 +49,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
-          ref: "main"
+          ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
   
       - name: Configure AWS credentials
@@ -116,17 +118,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
-          ref: "main"
+          ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
 
-      # Make sure that the target branch is main
+      # Make sure that the target branch is:
+      # - main, for release-candidates or major/minor releases
+      # - a release branch, for patch releases
       - name: Stop if branch is not main
         id: check-branch-is-main
         if: ${{ always() && !cancelled() }}
-        env:
-          BRANCH_IS_MAIN: ${{ github.ref_name == 'main'}} 
         run: |
-          if [[ "${BRANCH_IS_MAIN}" != "true" ]]; then
+          if [[ "${BRANCH_IS_MAIN}" == "false" && "${BRANCH_IS_RELEASE}" == 'false' ]]; then
             echo "Release cannot be done: target branch is not main"
             exit 1
           fi
@@ -181,11 +183,11 @@ jobs:
         run: |
           ./script/actions_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
-      # Make sure that the branch related to the current (non-rc) version does not already exist in the
-      # repository. If so, the version has not probably been updated. In that case, the release 
-      # process is stopped.
+      # Make sure that the branch related to the current (non-rc) version does not already exist in 
+      # the repository if the workflow has been executed from main (not a patched release). If so, 
+      # the version has probably not been updated. In that case, the release process is stopped.
       - name: Check dot release branch does not remotely exist
-        if:  env.IS_RC == 'false'
+        if:  env.IS_RC == 'false' && env.BRANCH_IS_MAIN == 'true'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
@@ -248,22 +250,28 @@ jobs:
         env:
           GNUPGHOME: ${{ env.GPG_HOMEDIR }}
 
-      # For non-rc releases, create and push the release branch
+      # For non-rc releases that starts from main, create the release branch as it suggests that 
+      # this is not a patch release
       - name: Create and push dot release branch to public repository
-        if: env.IS_RC == 'false'
+        if: env.IS_RC == 'false' && env.BRANCH_IS_MAIN == 'true'
         run: |
           git lfs fetch --all
           git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
-          git push
-          git checkout "${{ github.ref_name }}"
 
-      # Push the tag related to the current version
-      - name: Push tag to public repository
+      # Create the tag related to the current version
+      - name: Create tag
         run: |
           git fetch --tags --force
           git tag -s -a -m "${{ env.GIT_TAG }} release" "${{ env.GIT_TAG }}"
-          git push origin "refs/tags/${{ env.GIT_TAG }}"
 
+      # Push changes to ref
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.BOT_TOKEN }}
+          branch: ${{ github.ref }}
+          tags: true
+  
   # This action creates docker and pypi images directly on the AWS EC2 instance
   # The 'PRIVATE_RELEASE_IMAGE_BASE' variable is kept here in case Concrete-ML starts to publish
   # private nightly releases one day. Currently, release candidates and actual releases are all 
@@ -290,7 +298,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c
         with:
-          ref: "main"
+          ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
           fetch-depth: 0
 
