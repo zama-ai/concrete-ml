@@ -5,13 +5,17 @@ on:
   workflow_dispatch:
 
   # Releases are also allowed to be automatically triggered once the release preparation 
-  # pull-request (targeting main) is merged. Here, we also make sure that the PR has changes 
-  # in at least one file related to `make set_version` or `make apidocs`
+  # pull-request (targeting main) is merged, as this suggest a rc or major/minor (non-patch) release 
+  # has been prepared. In this case, we also make sure that the PR has changes in at least one file 
+  # related to `make set_version` or `make apidocs`. Additionally, they can also be automatically 
+  # triggered once a PR is merged into a release branch as this suggests we are taking care of a 
+  # patch release
   pull_request:
     types:
       - closed
     branches:
       - main
+      - 'release/'
     paths:
       - src/concrete/ml/version.py
       - 'docs/developer-guide/api/**'
@@ -26,10 +30,12 @@ env:
   BRANCH_IS_RELEASE: ${{ startsWith(github.ref_name, 'release/') }} 
 
 jobs:
-  # Open the AWS EC2 instance if the release process has been triggered manually or if the release 
-  # preparation pull-request has been merged
-  # That latter PR is found by checking for closed PR merged (into main) that contains "Prepare 
-  # release" in their title coming from a branch that starts with "chore/prepare_release_"
+  # Open the AWS EC2 instance if the release process has been triggered manually, if the release 
+  # preparation pull-request has been merged or if a pull-request has been merged in a release 
+  # branch. In the second case, we also make sure that the PR contains "Prepare release" in their 
+  # title coming from a branch that starts with "chore/prepare_release_". This workflow will not 
+  # be triggered if a pull request preparing a patch release is merged as the PR's title and branch
+  # name are expected to be different
   start-runner-linux:
     name: Start EC2 runner
     if: |
@@ -39,6 +45,10 @@ jobs:
         && github.event.pull_request.merged == true
         && startsWith(github.head_ref, 'chore/prepare_release_')
         && contains(github.event.pull_request.title, 'Prepare release')
+      )
+      || (
+        github.event_name == 'pull_request'
+        && "${BRANCH_IS_RELEASE}" == 'true'
       )
     runs-on: ubuntu-20.04
     outputs:
@@ -92,6 +102,7 @@ jobs:
     outputs:
       project_version: ${{ steps.get-release-version.outputs.project_version }}
       is_rc: ${{ steps.get-release-version.outputs.is_rc }}
+      is_patch: ${{ steps.get-release-version.outputs.is_patch }}
       git_tag: ${{ steps.get-release-version.outputs.git_tag }}
       release_branch_name: ${{ steps.get-release-version.outputs.release_branch_name }}
 
@@ -124,12 +135,12 @@ jobs:
       # Make sure that the target branch is:
       # - main, for release-candidates or major/minor releases
       # - a release branch, for patch releases
-      - name: Stop if branch is not main
+      - name: Stop if branch is not main or release
         id: check-branch-is-main
         if: ${{ always() && !cancelled() }}
         run: |
           if [[ "${BRANCH_IS_MAIN}" == "false" && "${BRANCH_IS_RELEASE}" == 'false' ]]; then
-            echo "Release cannot be done: target branch is not main"
+            echo "Release cannot be done: target branch is not main or a release branch"
             exit 1
           fi
 
@@ -154,7 +165,8 @@ jobs:
         id: get-release-version
         run: |
           PROJECT_VERSION="$(poetry version --short)"
-          IS_RC="$(poetry run python ./script/make_utils/version_utils.py isprerelease --version "$PROJECT_VERSION")"
+          IS_RC="$(poetry run python ./script/make_utils/version_utils.py is_prerelease --version "$PROJECT_VERSION")"
+          IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version "$PROJECT_VERSION")"
           GIT_TAG="v${PROJECT_VERSION}"
 
           # Release branches are only used for non-release candidates and have a special naming 
@@ -166,6 +178,7 @@ jobs:
           # as environment variables in order to be able to use them in this job's following steps
           echo "PROJECT_VERSION=${PROJECT_VERSION}" >> "$GITHUB_ENV"
           echo "IS_RC=${IS_RC}" >> "$GITHUB_ENV"
+          echo "IS_PATCH=${IS_PATCH}" >> "$GITHUB_ENV"
           echo "GIT_TAG=${GIT_TAG}" >> "$GITHUB_ENV"
           echo "RELEASE_BRANCH_NAME=${RELEASE_BRANCH_NAME}" >> "$GITHUB_ENV"
 
@@ -173,21 +186,32 @@ jobs:
           # candidate as job outputs in order to be able to use them in following jobs
           echo "project_version=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
           echo "is_rc=${IS_RC}" >> "$GITHUB_OUTPUT"
+          echo "is_patch=${IS_PATCH}" >> "$GITHUB_OUTPUT"
           echo "git_tag=${GIT_TAG}" >> "$GITHUB_OUTPUT"
           echo "release_branch_name=${RELEASE_BRANCH_NAME}" >> "$GITHUB_OUTPUT"
 
+      # Make sure that the workflow has been triggered from a release branch if this is a patch 
+      # release. Otherwise, the release process is stopped
+      - name: Check patch release is from release branch
+        if:  env.IS_PATCH == 'true'
+        run: |
+          if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
+            echo "Patch release cannot be done: target branch is not a release branch"
+            exit 1
+          fi
+
       # Make sure that the tag related to the current version does not already exist in the
-      # repository. If so, the version has not probably been updated. In that case, the release 
-      # process is stopped.
-      - name: Check tag does not remotely exist 
+      # repository. Otherwise, the version has probably not been updated properly and the release 
+      # process is thus stopped
+      - name: Check tag does not exist remotely
         run: |
           ./script/actions_utils/check_tag_not_remote.sh --tag_name "${{ env.GIT_TAG }}"
 
-      # Make sure that the branch related to the current (non-rc) version does not already exist in 
-      # the repository if the workflow has been executed from main (not a patched release). If so, 
-      # the version has probably not been updated. In that case, the release process is stopped.
-      - name: Check dot release branch does not remotely exist
-        if:  env.IS_RC == 'false' && env.BRANCH_IS_MAIN == 'true'
+      # Make sure that the branch related to the current version does not already exist in 
+      # the repository if this is a non-rc and non-patch release. Otherwise, the version has 
+      # probably not been updated properly and the release process is thus stopped
+      - name: Check dot release branch does not exist remotely
+        if:  env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
@@ -210,6 +234,7 @@ jobs:
         shell: bash
     env:
       IS_RC: ${{ needs.release-checks.outputs.is_rc }}
+      IS_PATCH: ${{ needs.release-checks.outputs.is_patch }}
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
       RELEASE_BRANCH_NAME: ${{ needs.release-checks.outputs.release_branch_name }}
 
@@ -250,10 +275,9 @@ jobs:
         env:
           GNUPGHOME: ${{ env.GPG_HOMEDIR }}
 
-      # For non-rc releases that starts from main, create the release branch as it suggests that 
-      # this is not a patch release
+      # For non-rc and non-patch releases create the new release branch
       - name: Create and push dot release branch to public repository
-        if: env.IS_RC == 'false' && env.BRANCH_IS_MAIN == 'true'
+        if: env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           git lfs fetch --all
           git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
@@ -320,7 +344,7 @@ jobs:
           # We want the space separated list of versions to be expanded
           # shellcheck disable=SC2086
           IS_LATEST_INFO=$(poetry run python script/make_utils/version_utils.py \
-          islatest \
+          is_latest \
           --new-version "${{ env.GIT_TAG }}" \
           --existing-versions $EXISTING_TAGS)
 
