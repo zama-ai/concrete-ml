@@ -77,6 +77,14 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+# This test is flaky for NN classifiers because ONNX re-uses initializer nodes 
+# instead of creating new ones if the values to store are the same.
+# Eg. the constat 1.0 will have a unique initializer node
+# But sometimes the values match exactly and sometimes not:
+# the scale of NN quantizers is somtimes: 1.00001 or 0.99999 -> 2 nodes
+# and sometimes 1.0, and 1.0 -> 1 node in ONNX
+# Thus two different ONNX can be produced. Changing the seed usually fixes this test
+@pytest.mark.flaky
 def test_dump(
     model_class,
     parameters,
