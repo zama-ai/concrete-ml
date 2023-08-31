@@ -1,4 +1,4 @@
-"""Custom Quantiation Aware Training Brevitas quantizers."""
+"""Custom Quantization Aware Training Brevitas quantizers."""
 from brevitas.quant.scaled_int import (
     IntQuant,
     MaxStatsScaling,
@@ -8,6 +8,10 @@ from brevitas.quant.scaled_int import (
 )
 from brevitas.quant.solver.act import ActQuantSolver
 
+# Note these classes are added here in order to isolate them from
+# the other modules, since the API doc generator has
+# an error when parsing them. Putting them in a separate
+# file allows us to ignore them during API doc generation
 
 # pylint: disable-next=too-many-ancestors
 class Int8ActPerTensorPoT(

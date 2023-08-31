@@ -132,13 +132,20 @@ class PowerOfTwoScalingRoundPBSAdapter:
             result (bool): whether the pattern can be optimized
         """
 
+        # Test if the list of operations in this pattern has not the right length
         if len(nodes_in_path) != 3:
             return False
 
+        # If the input of this pattern is produced by a graph input then ignore it
+        # as graph inputs are not always quantized with QAT. QAT networks
+        # will have the input to the first gemm/conv op produced by a BrevitasQuant
+        # op and it will be valid pattern
         if input_producer_of_path is None:
             return False
 
         for test_node in nodes_in_path:
+            # Check the operations in the pattern are chained properly
+            # for example if the Gemm op is preceded by a quantizer op, etc..
             for pattern_first, pattern_second in self.SUPPORTED_ROUND_PBS_OP_PREDECESSOR.items():
                 pred_type = predecessors[test_node][0][0]
                 if isinstance(test_node, pattern_first) and not isinstance(
@@ -236,7 +243,9 @@ class PowerOfTwoScalingRoundPBSAdapter:
                     the input value was an integer power of two
             """
             log2_value = int(numpy.rint(numpy.log2(value)))
-            if numpy.isclose(numpy.power(2.0, log2_value), value, atol=0.01):
+            # Check that the integer power of two is close to the original value
+            # with a small percentage tolerance
+            if numpy.isclose(numpy.power(2.0, log2_value), value, rtol=0.01):
                 return log2_value, True
             return 0, False
 

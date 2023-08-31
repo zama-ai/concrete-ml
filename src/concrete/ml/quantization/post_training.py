@@ -428,6 +428,7 @@ class ONNXConverter:
                 attributes.update({"rounding_threshold_bits": self.rounding_threshold_bits})
 
             # All inputs, allow optional constants (they become None)
+            # Note that input of a node can be duplicated, e.g. (%a, %a, %b)
             curr_inputs = [
                 (input_name, node_results.get(input_name, None)) for input_name in node.input
             ]
@@ -608,6 +609,7 @@ class ONNXConverter:
         )
 
         adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)
+        # Apply the round PBS optimization if possible
         adapter.process()
 
         self._process_input_quantizers(quantized_module, calibration_data)

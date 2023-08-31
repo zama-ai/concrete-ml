@@ -697,7 +697,8 @@ class TinyQATCNN(nn.Module):
             n_active (int): number of active (non-zero weight) neurons to keep
             signed (bool): whether quantized integer values are signed
             narrow (bool): whether the range of quantized integer values is narrow/symmetric
-            power_of_two_scaling (bool): whether to use power-of-two scaling quantizers
+            power_of_two_scaling (bool): whether to use power-of-two scaling quantizers which
+                allows to test the round PBS optimization when the scales are power-of-two
         """
         super().__init__()
 

@@ -77,14 +77,6 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-# This test is flaky for NN classifiers because ONNX re-uses initializer nodes
-# instead of creating new ones if the values to store are the same.
-# Eg. the constat 1.0 will have a unique initializer node
-# But sometimes the values match exactly and sometimes not:
-# the scale of NN quantizers is somtimes: 1.00001 or 0.99999 -> 2 nodes
-# and sometimes 1.0, and 1.0 -> 1 node in ONNX
-# Thus two different ONNX can be produced. Changing the seed usually fixes this test
-@pytest.mark.flaky
 def test_dump(
     model_class,
     parameters,
@@ -113,14 +105,53 @@ def test_dump(
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %/_operators.0/Gemm_output_0
 }""",
-        "NeuralNetClassifier": """graph torch_jit (
+        "NeuralNetClassifier": [
+            """graph torch_jit (
   %inp.1[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 40]
   %features.fc1.bias[FLOAT, 40]
   """
-        + f"%features.fc2.bias[FLOAT, {n_classes}]"
-        + """
+            + f"%features.fc2.bias[FLOAT, {n_classes}]"
+            + """
+  %/features/quant0/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
+  %/features/fc0/weight_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc0/weight_quant/export_handler/Constant_1_output_0[FLOAT, 40x10]
+  %/features/fc0/weight_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
+  %onnx.brevitas::Quant_18[FLOAT, scalar]
+  %onnx.brevitas::Quant_19[FLOAT, 1]
+  %/features/quant1/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc1/weight_quant/export_handler/Constant_output_0[FLOAT, 40x40]
+  %onnx.brevitas::Quant_27[FLOAT, scalar]
+  %onnx.brevitas::Quant_28[FLOAT, 1]
+  %/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, 4x40]
+) {
+  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/fc0/weight_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc0/bias_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%features.fc0.bias, %onnx.brevitas::Quant_19, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %onnx.brevitas::Quant_18)
+  %/features/fc0/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant0/act_quant/export_handler/Quant_output_0, %/features/fc0/weight_quant/export_handler/Quant_output_0, %/features/fc0/bias_quant/export_handler/Quant_output_0)
+  %/features/act0/Relu_output_0 = Relu(%/features/fc0/Gemm_output_0)
+  %/features/quant1/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act0/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc1/bias_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%features.fc1.bias, %onnx.brevitas::Quant_28, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %onnx.brevitas::Quant_27)
+  %/features/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant1/act_quant/export_handler/Quant_output_0, %/features/fc1/weight_quant/export_handler/Quant_output_0, %/features/fc1/bias_quant/export_handler/Quant_output_0)
+  %/features/act1/Relu_output_0 = Relu(%/features/fc1/Gemm_output_0)
+  %/features/quant2/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act1/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc2/bias_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%features.fc2.bias, %onnx.brevitas::Quant_28, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %onnx.brevitas::Quant_27)
+  %36 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %/features/fc2/bias_quant/export_handler/Quant_output_0)
+  return %36
+}""",
+            """graph torch_jit (
+  %inp.1[FLOAT, 1x10]
+) initializers (
+  %features.fc0.bias[FLOAT, 40]
+  %features.fc1.bias[FLOAT, 40]
+  """
+            + f"%features.fc2.bias[FLOAT, {n_classes}]"
+            + """
   %/features/quant0/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
   %/features/quant0/act_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
   %/features/quant0/act_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
@@ -135,8 +166,8 @@ def test_dump(
   %onnx.brevitas::Quant_28[FLOAT, 1]
   %/features/quant2/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
   """
-        + f"%/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, {n_classes}x40]"
-        + """
+            + f"%/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, {n_classes}x40]"
+            + """
   %onnx.brevitas::Quant_36[FLOAT, 1]
 ) {
   %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
@@ -155,7 +186,9 @@ def test_dump(
   %38 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %/features/fc2/bias_quant/export_handler/Quant_output_0)
   return %38
 }""",
-        "NeuralNetRegressor": """graph torch_jit (
+        ],
+        "NeuralNetRegressor": [
+            """graph torch_jit (
   %inp.1[FLOAT, 1x10]
 ) initializers (
   %features.fc0.bias[FLOAT, 10]
@@ -192,6 +225,45 @@ def test_dump(
   %37 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %/features/fc2/bias_quant/export_handler/Quant_output_0)
   return %37
 }""",
+            """graph torch_jit (
+  %inp.1[FLOAT, 1x10]
+) initializers (
+  %features.fc0.bias[FLOAT, 10]
+  %features.fc1.bias[FLOAT, 10]
+  %features.fc2.bias[FLOAT, 1]
+  %/features/quant0/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_1_output_0[FLOAT, scalar]
+  %/features/quant0/act_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
+  %/features/fc0/weight_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc0/weight_quant/export_handler/Constant_1_output_0[FLOAT, 10x10]
+  %/features/fc0/weight_quant/export_handler/Constant_2_output_0[FLOAT, scalar]
+  %onnx.brevitas::Quant_18[FLOAT, scalar]
+  %onnx.brevitas::Quant_19[FLOAT, 1]
+  %/features/quant1/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc1/weight_quant/export_handler/Constant_output_0[FLOAT, 10x10]
+  %onnx.brevitas::Quant_27[FLOAT, scalar]
+  %onnx.brevitas::Quant_28[FLOAT, 1]
+  %/features/quant2/act_quant/export_handler/Constant_output_0[FLOAT, scalar]
+  %/features/fc2/weight_quant/export_handler/Constant_output_0[FLOAT, 1x10]
+  %onnx.brevitas::Quant_36[FLOAT, 1]
+) {
+  %/features/quant0/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%inp.1, %/features/quant0/act_quant/export_handler/Constant_1_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_output_0)
+  %/features/fc0/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc0/weight_quant/export_handler/Constant_1_output_0, %/features/fc0/weight_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc0/bias_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%features.fc0.bias, %onnx.brevitas::Quant_19, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %onnx.brevitas::Quant_18)
+  %/features/fc0/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant0/act_quant/export_handler/Quant_output_0, %/features/fc0/weight_quant/export_handler/Quant_output_0, %/features/fc0/bias_quant/export_handler/Quant_output_0)
+  %/features/act0/Relu_output_0 = Relu(%/features/fc0/Gemm_output_0)
+  %/features/quant1/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act0/Relu_output_0, %/features/quant1/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc1/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc1/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc1/bias_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%features.fc1.bias, %onnx.brevitas::Quant_28, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %onnx.brevitas::Quant_27)
+  %/features/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant1/act_quant/export_handler/Quant_output_0, %/features/fc1/weight_quant/export_handler/Quant_output_0, %/features/fc1/bias_quant/export_handler/Quant_output_0)
+  %/features/act1/Relu_output_0 = Relu(%/features/fc1/Gemm_output_0)
+  %/features/quant2/act_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/act1/Relu_output_0, %/features/quant2/act_quant/export_handler/Constant_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc2/weight_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%/features/fc2/weight_quant/export_handler/Constant_output_0, %/features/fc0/weight_quant/export_handler/Constant_2_output_0, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %/features/fc0/weight_quant/export_handler/Constant_output_0)
+  %/features/fc2/bias_quant/export_handler/Quant_output_0 = Quant[narrow = 0, rounding_mode = 'ROUND', signed = 1](%features.fc2.bias, %onnx.brevitas::Quant_36, %/features/quant0/act_quant/export_handler/Constant_2_output_0, %onnx.brevitas::Quant_27)
+  %38 = Gemm[alpha = 1, beta = 1, transB = 1](%/features/quant2/act_quant/export_handler/Quant_output_0, %/features/fc2/weight_quant/export_handler/Quant_output_0, %/features/fc2/bias_quant/export_handler/Quant_output_0)
+  return %38
+}""",
+        ],
         "LogisticRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
