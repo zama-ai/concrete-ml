@@ -13,6 +13,7 @@ from brevitas.quant.solver.act import ActQuantSolver
 # an error when parsing them. Putting them in a separate
 # file allows us to ignore them during API doc generation
 
+
 # pylint: disable-next=too-many-ancestors
 class Int8ActPerTensorPoT(
     IntQuant, ParamFromRuntimePercentileScaling, PerTensorPoTScaling8bit, ActQuantSolver
