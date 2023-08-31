@@ -77,7 +77,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-# This test is flaky for NN classifiers because ONNX re-uses initializer nodes 
+# This test is flaky for NN classifiers because ONNX re-uses initializer nodes
 # instead of creating new ones if the values to store are the same.
 # Eg. the constat 1.0 will have a unique initializer node
 # But sometimes the values match exactly and sometimes not:
