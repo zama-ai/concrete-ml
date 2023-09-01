@@ -58,12 +58,12 @@ from concrete.ml.common.utils import (
     is_regressor_or_partial_regressor,
 )
 from concrete.ml.pytest.utils import (
-    _classifiers_and_datasets,  # ICI
+    _classifiers_and_datasets,
     instantiate_model_generic,
     sklearn_models_and_datasets,
 )
 from concrete.ml.sklearn import (
-    get_sklearn_linear_models, # ICI
+    get_sklearn_linear_models,
     get_sklearn_neural_net_models,
     get_sklearn_tree_models,
     get_sklearn_neighbors_models,
