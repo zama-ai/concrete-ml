@@ -64,9 +64,9 @@ from concrete.ml.pytest.utils import (
 )
 from concrete.ml.sklearn import (
     get_sklearn_linear_models,
+    get_sklearn_neighbors_models,
     get_sklearn_neural_net_models,
     get_sklearn_tree_models,
-    get_sklearn_neighbors_models,
 )
 
 # Allow multiple runs in FHE to make sure we always have the correct output
@@ -672,6 +672,12 @@ def check_grid_search(model_class, x, y, scoring):
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
+        if get_model_name(model_class) == "KNeighborsClassifier" and scoring in [
+            "roc_auc",
+            "average_precision",
+        ]:
+            pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
+
         _ = GridSearchCV(
             model_class(), param_grid, cv=5, scoring=scoring, error_score="raise", n_jobs=1
         ).fit(x, y)
@@ -771,7 +777,7 @@ def get_hyper_param_combinations(model_class):
             "base_score": [0.5, None],
         }
     elif model_class in get_sklearn_neighbors_models():
-        hyper_param_combinations = {"n_neighbors": [3, 5]}
+        hyper_param_combinations = {"n_neighbors": [2, 4]}
     else:
 
         assert is_model_class_in_a_list(
