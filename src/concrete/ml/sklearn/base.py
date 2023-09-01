@@ -1701,7 +1701,7 @@ class SklearnLinearClassifierMixin(
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
-    """A Mixin class for sklearn linear models with FHE.
+    """A Mixin class for sklearn KNeighbors models with FHE.
 
     This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
     `get_params` and `set_params` methods.
@@ -1711,7 +1711,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for klass in cls.__mro__:
             # pylint: disable-next=protected-access
             if getattr(klass, "_is_a_public_cml_model", False):
-                _NEIGHBORS_MODELS.add(cls)  # Changed
+                _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
 
@@ -1749,8 +1749,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             test_input=test_input,
             extra_config={
                 "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
-                # pylint: disable=protected-access
-                # pylint: disable=no-member
+                # pylint: disable=protected-access, no-member
                 constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],  # Changed
             },
         ).model
@@ -1866,7 +1865,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Create the compiler instance
         compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
-        print("Compile SklearnKNeighborsMixin", type(compiler))
 
         return compiler
 
@@ -1932,12 +1930,11 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
 
 class SklearnKNeighborsClassifierMixin(SklearnKNeighborsMixin, sklearn.base.ClassifierMixin, ABC):
-    """A Mixin class for sklearn linear regressors with FHE.
+    """A Mixin class for sklearn KNeighbors classifiers with FHE.
 
-    This class is used to create a linear regressor class that inherits from
-    sklearn.base.RegressorMixin, which essentially gives access to scikit-learn's `score` method
-    for regressors.
+    This class is used to create a KNeighbors classifier class that inherits from
+    SklearnKNeighborsMixin and sklearn.base.ClassifierMixin. 
+    By inheriting from sklearn.base.ClassifierMixin, it allows this class to be recognized
+    as a classifier."
     """
 
-    # sklearn.base.ClassifierMixin --> is_classifier_or_partial_classifier(KNeighborsClassifier) : True 
-    

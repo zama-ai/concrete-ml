@@ -62,15 +62,16 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = self.input_quantizers
-        #metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["_weight_quantizer"] = self._weight_quantizer
         metadata["_q_X_fit_quantizer"] = self._q_X_fit_quantizer
+        metadata["_q_X_fit"] = self._q_X_fit
+
         metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["post_processing_params"] = self.post_processing_params
         metadata["cml_dumped_class_name"] = type(self).__name__
 
         # Scikit-learn
-
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["n_neighbors"] = self.n_neighbors
         metadata["algorithm"] = self.algorithm
@@ -97,19 +98,17 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj.input_quantizers = metadata["input_quantizers"]
         obj.output_quantizers = metadata["output_quantizers"]
         obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj._q_X_fit_quantizer = metadata["_q_X_fit_quantizer"]
+        obj._q_X_fit = metadata["_q_X_fit"]
+
         obj.onnx_model_ = metadata["onnx_model_"]
 
         obj.post_processing_params = metadata["post_processing_params"]
-
-        # Classifier
-        obj.target_classes_ = metadata["target_classes_"]
-        obj.n_classes_ = metadata["n_classes_"]
 
         # Scikit-Learn
         obj.n_neighbors = metadata["n_neighbors"]
         obj.weights = metadata["weights"]
         obj.algorithm = metadata["algorithm"]
-        obj.leaf_size = metadata["leaf_size"]
         obj.p = metadata["p"]
         obj.metric = metadata["metric"]
         obj.metric_params = metadata["metric_params"]
