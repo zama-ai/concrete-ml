@@ -1867,7 +1867,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def top_k_indices(self, distance_matrix, k):
-        print("Top_k_indices")
         # Sort the distance in the ascending order
         # Pick up the k smallest distanes
         # Sort by index 1
