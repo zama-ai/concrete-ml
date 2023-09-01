@@ -62,17 +62,15 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = self.input_quantizers
-        metadata["_weight_quantizer"] = self._weight_quantizer
+        #metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["_q_X_fit_quantizer"] = self._q_X_fit_quantizer
         metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["post_processing_params"] = self.post_processing_params
         metadata["cml_dumped_class_name"] = type(self).__name__
-        metadata["_q_points"] = self._q_points
 
         # Scikit-learn
 
-        metadata["classes_"] = self.target_classes_
-        metadata["n_classes_"] = self.n_classes_
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["n_neighbors"] = self.n_neighbors
         metadata["algorithm"] = self.algorithm
@@ -82,7 +80,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["metric"] = self.metric
         metadata["metric_params"] = self.metric_params
         metadata["n_jobs"] = self.n_jobs
-        print(self._fit_X)
 
         return metadata
 
