@@ -1732,9 +1732,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The quantizer to use for quantizing the model's weights
         self._weight_quantizer: Optional[UniformQuantizer] = None
 
-        #: The model's quantized weights
-        self._q_weights: Optional[numpy.ndarray] = None
-
         BaseEstimator.__init__(self)
 
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
@@ -1807,7 +1804,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             options=weight_options,
         )
         self._q_X_fit = q_X_fit.qvalues
-        self._q_X_fit_quantizer = q_X_fit.quantizer
+        self._q_X_fit_quantizer = self._weight_quantizer = q_X_fit.quantizer
 
         # mypy
         assert self._q_X_fit_quantizer.scale is not None
@@ -1902,18 +1899,26 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         distance_matrix = (
             np.sum(q_X**2).reshape(1)
-            + np.sum(self._q_X_fit**2, axis=1).reshape(1, -1)
             - 2 * q_X @ self._q_X_fit.T
+            + np.sum(self._q_X_fit**2, axis=1).reshape(1, -1)
         )
+
+        #distance_matrix = np.sum(self._q_X_fit **2 + q_X**2 - 2 * self._q_X_fit * q_X, axis=1)
+
         return distance_matrix
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
 
+        X = check_array_and_assert(X)
+
         distances = []
         #TODO: include in _inference
         for query in X:
-            d = super().predict(query, fhe)[0]
-            assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Non valid values"
+
+            d = super().predict(query[None], fhe)[0]
+            #assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Not valid values"
+            if any(d < 0) or any(np.isnan(d)):
+                print("!!!!!!!!!!!!!!!!!!!!!", d[:5], "y_item shape", query.shape, "distance:", d.shape)
             distances.append(np.sqrt(d))
 
         self.distances_matrix = np.array(distances)
@@ -1935,3 +1940,4 @@ class SklearnKNeighborsClassifierMixin(SklearnKNeighborsMixin, sklearn.base.Clas
     """
 
     # sklearn.base.ClassifierMixin --> is_classifier_or_partial_classifier(KNeighborsClassifier) : True 
+    

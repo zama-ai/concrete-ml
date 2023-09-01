@@ -200,6 +200,7 @@ def check_correctness_with_sklearn(
         "XGBClassifier": 0.7,
         "RandomForestClassifier": 0.8,
         "NeuralNetClassifier": 0.7,
+        "KNeighborsClassifier": 0.9,
     }
 
     model_name = get_model_name(model_class)
