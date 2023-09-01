@@ -1893,12 +1893,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # @ is used for matrices quand c'est une matrice @ -> matmul
 
         distance_matrix = (
-            np.sum(q_X**2).reshape(1)
+            numpy.sum(q_X**2, axis=1, keepdims=True)
             - 2 * q_X @ self._q_X_fit.T
-            + np.sum(self._q_X_fit**2, axis=1).reshape(1, -1)
+            + numpy.expand_dims(numpy.sum(self._q_X_fit**2, axis=1), 0)
         )
-
-        # distance_matrix = np.sum(self._q_X_fit **2 + q_X**2 - 2 * self._q_X_fit * q_X, axis=1)
 
         return distance_matrix
 
