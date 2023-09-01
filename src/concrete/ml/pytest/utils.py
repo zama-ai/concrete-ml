@@ -14,11 +14,11 @@ from ..common.serialization.dumpers import dump, dumps
 from ..common.serialization.loaders import load, loads
 from ..common.utils import get_model_class, get_model_name, is_model_class_in_a_list, is_pandas_type
 from ..sklearn import (
-    KNeighborsClassifier,
     DecisionTreeClassifier,
     DecisionTreeRegressor,
     ElasticNet,
     GammaRegressor,
+    KNeighborsClassifier,
     Lasso,
     LinearRegression,
     LinearSVC,

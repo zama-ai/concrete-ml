@@ -3,15 +3,21 @@ from typing import List
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import is_classifier_or_partial_classifier, is_regressor_or_partial_regressor
-from .base import _ALL_SKLEARN_MODELS, _LINEAR_MODELS, _NEURALNET_MODELS, _TREE_MODELS, _NEIGHBORS_MODELS
+from .base import (
+    _ALL_SKLEARN_MODELS,
+    _LINEAR_MODELS,
+    _NEIGHBORS_MODELS,
+    _NEURALNET_MODELS,
+    _TREE_MODELS,
+)
 from .glm import GammaRegressor, PoissonRegressor, TweedieRegressor
 from .linear_model import ElasticNet, Lasso, LinearRegression, LogisticRegression, Ridge
+from .neighbors import KNeighborsClassifier
 from .qnn import NeuralNetClassifier, NeuralNetRegressor
 from .rf import RandomForestClassifier, RandomForestRegressor
 from .svm import LinearSVC, LinearSVR
 from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .xgb import XGBClassifier, XGBRegressor
-from .neighbors import KNeighborsClassifier
 
 
 def get_sklearn_models():

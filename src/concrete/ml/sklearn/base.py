@@ -521,7 +521,6 @@ class BaseEstimator:
         """
         # Reset for double compile
         self._is_compiled = False
-        print("1. Compile based estimator")
 
         # Check that the model is correctly fitted
         self.check_model_is_fitted()
@@ -1698,8 +1697,6 @@ class SklearnLinearClassifierMixin(
         return y_proba
 
 
-
-
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
@@ -1715,7 +1712,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             if getattr(klass, "_is_a_public_cml_model", False):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
-
 
     def __init__(self, n_bits: Union[int, Dict[str, int]] = 8):
         """Initialize the FHE knn model.
@@ -1752,7 +1748,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             extra_config={
                 "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
                 # pylint: disable=protected-access, no-member
-                constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],  # Changed
+                constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],
             },
         ).model
 
@@ -1903,7 +1899,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             + np.sum(self._q_X_fit**2, axis=1).reshape(1, -1)
         )
 
-        #distance_matrix = np.sum(self._q_X_fit **2 + q_X**2 - 2 * self._q_X_fit * q_X, axis=1)
+        # distance_matrix = np.sum(self._q_X_fit **2 + q_X**2 - 2 * self._q_X_fit * q_X, axis=1)
 
         return distance_matrix
 
@@ -1912,13 +1908,9 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         X = check_array_and_assert(X)
 
         distances = []
-        #TODO: include in _inference
         for query in X:
-
             d = super().predict(query[None], fhe)[0]
-            #assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Not valid values"
-            if any(d < 0) or any(np.isnan(d)):
-                print("!!!!!!!!!!!!!!!!!!!!!", d[:5], "y_item shape", query.shape, "distance:", d.shape)
+            # assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Not valid values"
             distances.append(np.sqrt(d))
 
         self.distances_matrix = np.array(distances)
@@ -1935,8 +1927,7 @@ class SklearnKNeighborsClassifierMixin(SklearnKNeighborsMixin, sklearn.base.Clas
     """A Mixin class for sklearn KNeighbors classifiers with FHE.
 
     This class is used to create a KNeighbors classifier class that inherits from
-    SklearnKNeighborsMixin and sklearn.base.ClassifierMixin. 
+    SklearnKNeighborsMixin and sklearn.base.ClassifierMixin.
     By inheriting from sklearn.base.ClassifierMixin, it allows this class to be recognized
     as a classifier."
     """
-
