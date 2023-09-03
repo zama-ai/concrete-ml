@@ -671,7 +671,7 @@ jobs:
       # If regular tests passed but at least one known flaky test have been re-run, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
       - name: Warn PR with flaky tests
-        uses: marocchino/sticky-pull-request-comment@f6a2580ed520ae15da6076e7410b088d1c5dddd9
+        uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd
         if: steps.pytest_regular.outcome == 'success' && env.FAILED_TESTS_ARE_FLAKY && !cancelled()
         with:
           path: failed_tests_comment.txt
