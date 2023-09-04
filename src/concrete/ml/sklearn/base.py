@@ -608,8 +608,6 @@ class BaseEstimator:
             ValueError,
         )
 
-        # print("monkey")
-
         # Check that the model is properly fitted
         self.check_model_is_fitted()
 

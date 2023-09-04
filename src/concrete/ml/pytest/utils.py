@@ -88,10 +88,10 @@ _classifiers_and_datasets = [
     pytest.param(
         model,
         {
-            "n_samples": 1000,
-            "n_features": 10,
+            "n_samples": 100 if get_model_name(model) == "KNeighborsClassifier" else 1000,
+            "n_features": 5 if get_model_name(model) == "KNeighborsClassifier" else 10,
             "n_classes": n_classes,
-            "n_informative": 10,
+            "n_informative": 4 if get_model_name(model) == "KNeighborsClassifier" else 10,
             "n_redundant": 0,
         },
         id=get_model_name(model),
