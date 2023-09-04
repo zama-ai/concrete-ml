@@ -1,7 +1,6 @@
 Name, Version, License
 PyYAML, 6.0.1, MIT License
 anyio, 3.7.1, MIT License
-attrs, 23.1.0, MIT License
 boto3, 1.28.32, Apache Software License
 botocore, 1.31.32, Apache Software License
 brevitas, 0.8.0, UNKNOWN
@@ -45,7 +44,7 @@ protobuf, 3.20.3, BSD-3-Clause
 psutil, 5.9.5, BSD License
 pycparser, 2.21, BSD License
 pydantic, 1.10.12, MIT License
-pytest, 7.2.0, MIT License
+pytest, 7.4.1, MIT License
 pytest-json-report, 1.5.0, MIT
 pytest-metadata, 3.0.0, MIT License
 python-dateutil, 2.8.2, Apache Software License; BSD License
