@@ -35,7 +35,7 @@ jobs:
 
       # Make sure that the target branch is:
       # - main, for release-candidates or major/minor releases
-      # - a release branch, for patch releases
+      # - a release branch, for dot/patch releases
       - name: Stop if branch is not main or release
         if: ${{ always() && !cancelled() }}
         run: |
@@ -64,7 +64,7 @@ jobs:
 
       # Make sure that the workflow has been triggered from a release branch if this is a patch 
       # release or from main otherwise. If not, the release preparation process is stopped
-      # Additionally, for patch releases, if the release branch name does not match the current
+      # Additionally, for dot/patch releases, if the release branch name does not match the current
       # release version, the release preparation process is stopped as well
       - name: Check release preparation is from right branch
         run: |

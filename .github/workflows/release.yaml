@@ -6,7 +6,7 @@ on:
 
   # Releases are also allowed to be automatically triggered once the release preparation 
   # pull-request is merged in main (major/minor releases or release candidates) or in a release 
-  # branch (patch releases). We also make sure that the PR has changes in at least one file 
+  # branch (dot/patch releases). We also make sure that the PR has changes in at least one file 
   # related to `make set_version` or `make apidocs`
   pull_request:
     types:
@@ -211,7 +211,7 @@ jobs:
       # Make sure that the branch related to the current version does not already exist in 
       # the repository if this is a non-rc and non-patch release. Otherwise, the version has 
       # probably not been updated properly and the release process is thus stopped
-      - name: Check dot release branch does not exist remotely
+      - name: Check release branch does not exist remotely
         if:  env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
@@ -249,7 +249,7 @@ jobs:
           git_tag_gpgsign: true
 
       # For non-rc and non-patch releases create the new release branch
-      - name: Create and push dot release branch to public repository
+      - name: Create and push the release branch to public repository
         if: env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           git lfs fetch --all
