@@ -1,4 +1,5 @@
 Name, Version, License
+GitPython, 3.1.34, BSD License
 PyYAML, 6.0.1, MIT License
 anyio, 3.7.1, MIT License
 boto3, 1.28.32, Apache Software License
@@ -18,6 +19,7 @@ fastapi, 0.93.0, MIT License
 filelock, 3.12.2, The Unlicense (Unlicense)
 flatbuffers, 2.0.7, Apache Software License
 fsspec, 2023.6.0, BSD License
+gitdb, 4.0.10, BSD License
 h11, 0.14.0, MIT License
 huggingface-hub, 0.16.4, Apache Software License
 humanfriendly, 10.0, MIT License
@@ -59,6 +61,7 @@ six, 1.16.0, MIT License
 skl2onnx, 1.12, Apache Software License
 skops, 0.5.0, MIT
 skorch, 0.11.0, new BSD 3-Clause
+smmap, 5.0.0, BSD License
 sniffio, 1.3.0, Apache Software License; MIT License
 starlette, 0.25.0, BSD License
 sympy, 1.12, BSD License
