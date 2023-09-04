@@ -59,9 +59,8 @@ from .tree_to_numpy import tree_to_numpy
 # pylint: disable=wrong-import-position,wrong-import-order
 # Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
-import numpy as np
 from hummingbird.ml import convert as hb_convert  # noqa: E402
-from hummingbird.ml.operator_converters import constants
+from hummingbird.ml.operator_converters import constants  # noqa: E402
 
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
@@ -1699,7 +1698,6 @@ class SklearnLinearClassifierMixin(
 
 # pylint: disable=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
-
     """A Mixin class for sklearn KNeighbors models with FHE.
 
     This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
@@ -1729,6 +1727,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         #: The quantizer to use for quantizing the model's weights
         self._weight_quantizer: Optional[UniformQuantizer] = None
+        self._q_X_fit_quantizer: Optional[UniformQuantizer] = None
+        self._q_X_fit: numpy.ndarray
 
         BaseEstimator.__init__(self)
 
@@ -1767,6 +1767,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # KNeighbors handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)
+
+        self._y = y
 
         # Fit the scikit-learn model
         self._fit_sklearn_model(X, y, **fit_parameters)
@@ -1866,32 +1868,57 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return compiler
 
-    def top_k_indices(self, distance_matrix, k):
-        # Sort the distance in the ascending order
-        # Pick up the k smallest distanes
-        # Sort by index 1
+    @staticmethod
+    def top_k_indices(distance_matrix: numpy.ndarray, k: int) -> numpy.ndarray:
+        """Get the indices of the top-k smallest distances for each point.
+
+        Args:
+            distance_matrix (numpy.ndarray): Represents the pairwise euclidean distance between
+                the query and other points
+            k (int): The top nearest neighbors to consider
+
+        Returns:
+            numpy.ndarray: The k nearest neighbors for the corresponding query, sorted in
+            ascending order.
+        """
+
+        # Sort the distances in an ascending order and select the k smallest distanes
         return numpy.argsort(distance_matrix, axis=1)[:, :k]
 
-    def majority_vote(self, nearest_classes):
+    @staticmethod
+    def majority_vote(nearest_classes: numpy.ndarray):
+        """Determine the most common class among nearest neighborsfor each query.
+
+        Args:
+            nearest_classes (numpy.ndarray): The class labels of the nearest neighbors for a query
+
+        Returns:
+            numpy.ndarray: The majority-voted class label for the corresponding query.
+        """
         # Get the number of queries (rows) and k (number of nearest points)
         n_queries, _ = nearest_classes.shape
         # Compute the majority vote for each query
-        majority_votes = np.array([0] * n_queries, dtype=int)
+        majority_votes = numpy.array([0] * n_queries, dtype=int)
         for i in range(n_queries):
             # Use bincount to count occurrences of each class and find the most common one
-            class_counts = np.bincount(nearest_classes[i])
-            majority_votes[i] = np.argmax(class_counts)
+            class_counts = numpy.bincount(nearest_classes[i])
+            majority_votes[i] = numpy.argmax(class_counts)
 
         return majority_votes
 
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        """Inference function.
+
+        Args:
+            q_X (numpy.ndarray): The quantized input values.
+
+        Returns:
+            numpy.ndarray: The quantized predicted values.
+        """
         assert self._q_X_fit_quantizer is not None, self._is_not_fitted_error_message()
 
-        # <!> np.newaxis, [..., None] ->
-        # ValueError: Indexing with 'None' & 'Ellipsis' is not supported
-        # dot is used for a tensor of one dimension
-        # @ is used for matrices quand c'est une matrice @ -> matmul
-
+        # Pairwise euclidean distance
+        # dist(x, y) = sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
         distance_matrix = (
             numpy.sum(q_X**2, axis=1, keepdims=True)
             - 2 * q_X @ self._q_X_fit.T
@@ -1908,13 +1935,13 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for query in X:
             d = super().predict(query[None], fhe)[0]
             # assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Not valid values"
-            distances.append(np.sqrt(d))
+            distances.append(numpy.sqrt(d))
 
-        self.distances_matrix = np.array(distances)
+        self.distances_matrix = numpy.array(distances)
 
-        k_indices = self.top_k_indices(self.distances_matrix, self.sklearn_model.n_neighbors)
+        k_indices = self.top_k_indices(self.distances_matrix, self.n_neighbors)
         # pylint: disable=protected-access
-        label_k_indices = self.sklearn_model._y[k_indices]
+        label_k_indices = self._y[k_indices]
         y_pred = self.majority_vote(label_k_indices)
 
         return y_pred
