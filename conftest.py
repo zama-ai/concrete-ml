@@ -33,6 +33,7 @@ from concrete.ml.sklearn import (
 from concrete.ml.sklearn.base import (
     BaseTreeEstimatorMixin,
     QuantizedTorchEstimatorMixin,
+    SklearnKNeighborsMixin,
     SklearnLinearModelMixin,
 )
 
@@ -482,7 +483,12 @@ def check_is_good_execution_for_cml_vs_circuit():
             else:
                 assert isinstance(
                     model,
-                    (QuantizedTorchEstimatorMixin, BaseTreeEstimatorMixin, SklearnLinearModelMixin),
+                    (
+                        QuantizedTorchEstimatorMixin,
+                        BaseTreeEstimatorMixin,
+                        SklearnLinearModelMixin,
+                        SklearnKNeighborsMixin,
+                    ),
                 )
 
                 if model._is_a_public_cml_model:  # pylint: disable=protected-access
@@ -492,8 +498,12 @@ def check_is_good_execution_for_cml_vs_circuit():
                     # tests), especially since these results are tested in other tests such as the
                     # `check_subfunctions_in_fhe`
                     if is_classifier_or_partial_classifier(model):
-                        results_cnp_circuit = model.predict_proba(*inputs, fhe=fhe_mode)
-                        results_model = model.predict_proba(*inputs, fhe="disable")
+                        if isinstance(model, SklearnKNeighborsMixin):
+                            results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)
+                            results_model = model.predict(*inputs, fhe="disable")
+                        else:
+                            results_cnp_circuit = model.predict_proba(*inputs, fhe=fhe_mode)
+                            results_model = model.predict_proba(*inputs, fhe="disable")
 
                     else:
                         results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)

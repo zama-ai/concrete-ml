@@ -61,7 +61,11 @@ import torch
 from tqdm import tqdm
 
 from ..common.utils import is_brevitas_model, is_model_class_in_a_list
-from ..sklearn import get_sklearn_neural_net_models, get_sklearn_tree_models, get_sklearn_neighbors_models
+from ..sklearn import (
+    get_sklearn_neighbors_models,
+    get_sklearn_neural_net_models,
+    get_sklearn_tree_models,
+)
 from ..torch.compile import compile_brevitas_qat_model, compile_torch_model
 
 
@@ -126,7 +130,10 @@ def compile_and_simulated_fhe_inference(
         dequantized_output = quantized_module.forward(calibration_data, fhe="simulate")
 
     elif is_model_class_in_a_list(
-        estimator, get_sklearn_neural_net_models() + get_sklearn_tree_models() + get_sklearn_neighbors_models()
+        estimator,
+        get_sklearn_neural_net_models()
+        + get_sklearn_tree_models()
+        + get_sklearn_neighbors_models(),
     ):
         if not estimator.is_fitted:
             estimator.fit(calibration_data, ground_truth)
