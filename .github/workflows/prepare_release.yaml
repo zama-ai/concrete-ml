@@ -70,11 +70,11 @@ jobs:
         run: |
           IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version "$VERSION")"
 
-          if [[ "${IS_PATCH}" == 'true']]; then
+          if [[ "${IS_PATCH}" == "false" ]]; then
 
             if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
               echo "Patch release cannot be done: target branch is not a release branch"
-              echo "Got branch ${BRANCH_NAME}"
+              echo "Got branch '${BRANCH_NAME}'"
               exit 1
 
             else
@@ -85,15 +85,15 @@ jobs:
 
               if [[ "${EXPECTED_BRANCH_NAME}" != "${BRANCH_NAME}" ]]; then
                 echo "Patch release cannot be done: target branch name does not match the current version"
-                echo "Got branch ${BRANCH_NAME} but for version ${VERSION}"
-                echo "Expected "${EXPECTED_BRANCH_NAME}"
+                echo "Got branch '${BRANCH_NAME}' for version '${VERSION}'"
+                echo "Expected branch '${EXPECTED_BRANCH_NAME}'"
                 exit 1
               fi
             fi
 
-          elif [[ "${IS_PATCH}" == 'false' && "${BRANCH_IS_MAIN}" == "false" ]]; then
+          elif [[ "${IS_PATCH}" == "false" && "${BRANCH_IS_MAIN}" == "false" ]]; then
             echo "Release cannot be done: target branch is not main"
-            echo "Got branch ${BRANCH_NAME}"
+            echo "Got branch '${BRANCH_NAME}'"
             exit 1
           fi
 

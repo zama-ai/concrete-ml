@@ -181,22 +181,23 @@ jobs:
       # release version, the release preparation process is stopped as well
       - name: Check release preparation is from right branch
         run: |
-          if [[ "${{ env.IS_PATCH }}" == 'true']]; then
+          if [[ "${{ env.IS_PATCH }}" == "true" ]]; then
 
             if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
               echo "Patch release cannot be done: target branch is not a release branch"
-              echo "Got branch ${BRANCH_NAME}"
+              echo "Got branch '${BRANCH_NAME}'"
               exit 1
 
             elif [[ "${RELEASE_BRANCH_NAME}" != "${BRANCH_NAME}" ]]; then
               echo "Patch release cannot be done: target branch name does not match the current version"
-              echo "Got branch ${BRANCH_NAME} for version ${PROJECT_VERSION}"
+              echo "Got branch '${BRANCH_NAME}' for version '${PROJECT_VERSION}'"
+              echo "Expected branch '${RELEASE_BRANCH_NAME}'"
               exit 1
             fi
 
-          elif [[ "${{ env.IS_PATCH }}" == 'false' && "${BRANCH_IS_MAIN}" == "false" ]]; then
+          elif [[ "${{ env.IS_PATCH }}" == "false" && "${BRANCH_IS_MAIN}" == "false" ]]; then
             echo "Release cannot be done: target branch is not main"
-            echo "Got branch ${BRANCH_NAME}"
+            echo "Got branch '${BRANCH_NAME}'"
             exit 1
           fi
 
