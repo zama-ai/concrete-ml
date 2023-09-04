@@ -114,32 +114,3 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj.metric_params = metadata["metric_params"]
         obj.n_jobs = metadata["n_jobs"]
         return obj
-
-
-class _KNeighborsRegressor:
-    pass
-
-
-class _RadiusNeighborsClassifier:
-    """
-
-    Find the neighbors within a given radius of a point or points.
-
-    Return the indices and distances of each point from the dataset lying in a ball with size radius
-    around the points of the query array.
-
-    Points lying on the boundary are included in the results.
-
-    The result points are not necessarily sorted by distance to their query point.
-
-    """
-
-    pass
-
-
-class _RadiusNeighborsRegressor:
-    pass
-
-
-class _NearestNeighbors:
-    pass
