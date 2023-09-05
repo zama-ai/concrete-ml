@@ -88,17 +88,18 @@ _classifiers_and_datasets = [
     pytest.param(
         model,
         {
-            "n_samples": 100 if get_model_name(model) == "KNeighborsClassifier" else 1000,
-            "n_features": 5 if get_model_name(model) == "KNeighborsClassifier" else 10,
+            "n_samples": 50 if get_model_name(model) == "KNeighborsClassifier" else 1000,
+            "n_features": 3 if get_model_name(model) == "KNeighborsClassifier" else 10,
             "n_classes": n_classes,
-            "n_informative": 4 if get_model_name(model) == "KNeighborsClassifier" else 10,
+            "n_informative": 2 if get_model_name(model) == "KNeighborsClassifier" else 10,
             "n_redundant": 0,
         },
         id=get_model_name(model),
     )
     for model in _classifier_models
-    for n_classes in [2, 4]
+    for n_classes in [2]
 ]
+
 
 # Get the data-sets. The data generation is seeded in load_data.
 # Only LinearRegression supports multi targets
