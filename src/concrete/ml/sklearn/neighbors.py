@@ -65,6 +65,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["_weight_quantizer"] = self._weight_quantizer
         metadata["_q_X_fit_quantizer"] = self._q_X_fit_quantizer
         metadata["_q_X_fit"] = self._q_X_fit
+        metadata["_y"] = self._y
 
         metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
@@ -100,6 +101,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj._weight_quantizer = metadata["_weight_quantizer"]
         obj._q_X_fit_quantizer = metadata["_q_X_fit_quantizer"]
         obj._q_X_fit = metadata["_q_X_fit"]
+        obj._y = metadata["_y"]
 
         obj.onnx_model_ = metadata["onnx_model_"]
 
