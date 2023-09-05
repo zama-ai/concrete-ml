@@ -719,7 +719,8 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
             y_pred_sklearn = sklearn_model.decision_function(x)
 
         # Else, compute the model's predicted probabilities
-        else:
+        # predict_proba not implemented for KNeighborsClassifier for now
+        elif get_model_name(model_class) != "KNeighborsClassifier":
             y_pred_cml = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
 
