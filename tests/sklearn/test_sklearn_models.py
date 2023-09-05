@@ -1533,7 +1533,9 @@ def test_p_error_global_p_error_simulation(
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check if model is linear
-    is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
+    is_linear_model = is_model_class_in_a_list(
+        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+    )
 
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, **error_param)
@@ -1541,9 +1543,14 @@ def test_p_error_global_p_error_simulation(
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
         predict_function = (
-            model.predict_proba if is_classifier_or_partial_classifier(model) else model.predict
+            model.predict_proba
+            if is_classifier_or_partial_classifier(model)
+            # predict_prob not implemented yet for KNeighborsClassifier
+            and get_model_name(model) != "KNeighborsClassifier"
+            else model.predict
         )
         y_expected = predict_function(x, fhe="disable")
+
         for i in range(max_iterations):
             y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
             if not numpy.array_equal(y_pred, y_expected[i : i + 1].ravel()):
