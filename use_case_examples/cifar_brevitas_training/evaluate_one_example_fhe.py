@@ -7,8 +7,7 @@ import torch
 from concrete.fhe.compilation.configuration import Configuration
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.datasets import CIFAR10
+from trainer import get_test_set
 
 from concrete import fhe
 from concrete.ml.deployment.fhe_client_server import FHEModelDev
@@ -65,25 +64,11 @@ checkpoint = torch.load(
 )
 torch_model.load_state_dict(checkpoint["state_dict"], strict=False)
 
-# Get some data that will be used to compile the model to FHE standards
-transform_to_tensor = transforms.Compose(
-    [
-        transforms.ToTensor(),
-        transforms.Lambda(lambda x: 2.0 * x - 1.0),
-    ]  # Normalizes data between -1 and +1
-)
-
-builder = CIFAR10
-
-test_set = builder(
-    root=CURRENT_DIR.joinpath(".datasets/"),
-    train=False,
-    download=True,
-    transform=transform_to_tensor,
-)
-
+# Import and load the CIFAR test dataset
+test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR.joinpath(".datasets/"))
 test_loader = DataLoader(test_set, batch_size=100, shuffle=False)
 
+# Get the first sample
 x, labels = next(iter(test_loader))
 
 # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be able to

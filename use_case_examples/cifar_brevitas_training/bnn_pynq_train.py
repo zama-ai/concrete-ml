@@ -71,7 +71,7 @@ def parse_args(args):
     )
     add_bool_arg(parser, "detect_nan", default=False)
     # Compute resources
-    parser.add_argument("--num_workers", default=4, type=int, help="Number of workers")
+    parser.add_argument("--num_workers", default=0, type=int, help="Number of workers")
     parser.add_argument("--gpus", type=none_or_str, default=None, help="Comma separated GPUs")
     # Optimizer hyper-parameters
     parser.add_argument("--batch_size", default=100, type=int, help="batch size")

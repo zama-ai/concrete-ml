@@ -6,27 +6,17 @@ import torch
 from concrete.fhe import Configuration, ParameterSelectionStrategy
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.datasets import CIFAR10
 from tqdm import tqdm
-from trainer import accuracy
+from trainer import accuracy, get_test_set, get_train_set
 
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
-def evaluate(torch_model, cml_model, device):
-
-    # Transform pipeline that normalizes the data between -1 and 1
-    transform_to_tensor = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Lambda(lambda x: 2.0 * x - 1.0),
-        ]
-    )
+def evaluate(torch_model, cml_model, device, num_workers):
 
     # Import and load the CIFAR test dataset (following bnn_pynq_train.py)
-    test_set = CIFAR10(root=".datasets/", train=False, download=True, transform=transform_to_tensor)
-    test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=0)
+    test_set = get_test_set(dataset="CIFAR10", datadir=".datasets/")
+    test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=num_workers)
 
     torch_top_1_batches = []
     torch_top_5_batches = []
@@ -97,9 +87,15 @@ def main(args):
     # Load weights
     model.load_state_dict(checkpoint["state_dict"], strict=False)
 
-    # Create a representative input-set that will be used used for both computing quantization
-    # parameters and compiling the model
-    input_set = torch.randn(1, 3, 32, 32)
+    # Load the training set
+    train_set = get_train_set(dataset="CIFAR10", datadir=".datasets/")
+
+    # Create a representative input-set from the training set that will be used used for both
+    # computing quantization parameters and compiling the model
+    num_samples = 100
+    input_set = torch.stack(
+        [train_set[index][0] for index in range(min(num_samples, len(train_set)))]
+    )
 
     # Eval mode
     model.eval()
@@ -115,6 +111,7 @@ def main(args):
         print(f"Testing network with {rounding_threshold_bits} rounding bits")
 
         # Compile the quantized model
+        print("Compiling the model")
         quantized_numpy_module = compile_brevitas_qat_model(
             model,
             input_set,
@@ -130,7 +127,7 @@ def main(args):
         )
 
         # Evaluate torch and Concrete ML model
-        evaluate(model, quantized_numpy_module, device)
+        evaluate(model, quantized_numpy_module, device, args.num_workers)
 
 
 if __name__ == "__main__":
@@ -146,6 +143,12 @@ if __name__ == "__main__":
         "--show_optimizer",
         action="store_true",
         help="Display optimizer parameters after compiling the model.",
+    )
+    parser.add_argument(
+        "--num_workers",
+        type=int,
+        default=0,
+        help="Number of workers",
     )
 
     args = parser.parse_args()
