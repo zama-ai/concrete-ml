@@ -24,7 +24,8 @@ import os
 import random
 import time
 from datetime import datetime
-from typing import List, Tuple
+from pathlib import Path
+from typing import List, Tuple, Union
 
 import torch
 import torch.optim as optim
@@ -32,7 +33,7 @@ from logger import EvalEpochMeters, Logger, TrainingEpochMeters
 from models import model_with_cfg
 from torch import nn
 from torch.optim.lr_scheduler import MultiStepLR
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
@@ -90,6 +91,61 @@ def accuracy(
         return list_topk_accs
 
 
+def get_train_set(dataset: str, datadir: Union[str, Path]) -> Dataset:
+    """Retrieve a dataset's training set.
+
+    Args:
+        dataset (str): The dataset's name.
+        datadir (Union[str, Path]): The dataset's directory path to consider.
+
+    Returns:
+        train_set (Dataset): The training set.
+    """
+    if dataset == "CIFAR10":
+
+        # Transform pipeline that normalizes the data between -1 and 1
+        transformations = [
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: 2.0 * x - 1.0),
+        ]
+        transform_train = transforms.Compose(transformations)
+        builder = CIFAR10
+    else:
+        raise Exception(f"Dataset not supported: {dataset}")
+
+    train_set = builder(root=datadir, train=True, download=True, transform=transform_train)
+
+    return train_set
+
+
+def get_test_set(dataset: str, datadir: Union[str, Path]) -> Dataset:
+    """Retrieve a dataset's test set.
+
+    Args:
+        dataset (str): The dataset's name.
+        datadir (Union[str, Path]): The dataset's directory path to consider.
+
+    Returns:
+        train_set (Dataset): The test set.
+    """
+    if dataset == "CIFAR10":
+
+        # Transform pipeline that normalizes the data between -1 and 1
+        transformations = [
+            transforms.ToTensor(),
+            transforms.Lambda(lambda x: 2.0 * x - 1.0),
+        ]
+        transform_test = transforms.Compose(transformations)
+        builder = CIFAR10
+    else:
+        raise Exception(f"Dataset not supported: {dataset}")
+
+    test_set = builder(root=datadir, train=False, download=True, transform=transform_test)
+    return test_set
+
+
 class Trainer(object):
     def __init__(self, args):
 
@@ -121,32 +177,11 @@ class Trainer(object):
         torch.manual_seed(args.random_seed)
         torch.cuda.manual_seed_all(args.random_seed)
 
-        # Data-sets
-        transform_to_tensor = transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Lambda(lambda x: 2.0 * x - 1.0),
-            ]  # Normalizes data between -1 and +1
-        )
-
         dataset = cfg.get("MODEL", "DATASET")
-        self.num_classes = cfg.getint("MODEL", "NUM_CLASSES")
-        if dataset == "CIFAR10":
-            train_transforms_list = [
-                transforms.RandomCrop(32, padding=4),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                transforms.Lambda(lambda x: 2.0 * x - 1.0),  # Scale inputs to -1..1
-            ]
-            transform_train = transforms.Compose(train_transforms_list)
-            builder = CIFAR10
-        else:
-            raise Exception("Dataset not supported: {}".format(args.dataset))
 
-        train_set = builder(root=args.datadir, train=True, download=True, transform=transform_train)
-        test_set = builder(
-            root=args.datadir, train=False, download=True, transform=transform_to_tensor
-        )
+        train_set = get_train_set(dataset, args.datadir)
+        test_set = get_test_set(dataset, args.datadir)
+
         self.train_loader = DataLoader(
             train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers
         )
