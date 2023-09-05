@@ -1992,7 +1992,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             return numpy.concatenate((x.reshape((1, -1)), idx.reshape((1, -1))), axis=0)
 
         _, sorted_args = topk_sorting(distance_matrix[0])
-        sorted_args = sorted_args.astype(numpy.int16)
 
         return sorted_args
 
@@ -2003,14 +2002,14 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         sorted_args_matrix = []
         for query in X:
             arg_sort = super().predict(query[None], fhe)[0]
-            sorted_args_matrix.append(arg_sort)
+            sorted_args_matrix.append(arg_sort.astype(numpy.int64))
 
         self.sorted_args_matrix = numpy.array(sorted_args_matrix)
 
-        k_indices = self.top_k_indices(self.sorted_args_matrix, self.n_neighbors)
+        # k_indices = self.top_k_indices(self.sorted_args_matrix, self.n_neighbors)
         # pylint: disable=protected-access
-        label_k_indices = self._y[k_indices]
-        y_pred = self.majority_vote(label_k_indices)
+        label_k_indices = self._y[self.sorted_args_matrix]
+        y_pred = self.majority_vote(label_k_indices[None])
 
         return y_pred
 
