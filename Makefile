@@ -46,6 +46,7 @@ setup_env:
 
 	echo "Installing $(CP_VERSION_SPEC_FOR_RC)" && \
 	poetry run python -m pip install -U --pre "$(CP_VERSION_SPEC_FOR_RC)" --no-deps
+	"$(MAKE)" fix_omp_issues_for_intel_mac
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: check_poetry_version
@@ -55,6 +56,13 @@ sync_env: check_poetry_version
 		poetry install --remove-untracked; \
 	fi
 	"$(MAKE)" setup_env
+
+.PHONY: fix_omp_issues_for_intel_mac # Fix OMP issues for macOS Intel, https://github.com/zama-ai/concrete-ml-internal/issues/3951
+fix_omp_issues_for_intel_mac:
+	if [[ $$(uname) == "Darwin" ]]; then \
+		./script/make_utils/fix_omp_issues_for_intel_mac.sh; \
+	fi
+
 
 .PHONY: update_env # Same as sync_env, sets the venv state to be synced with the rpo
 update_env: sync_env
