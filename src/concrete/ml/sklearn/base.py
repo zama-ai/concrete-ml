@@ -26,6 +26,8 @@ from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
 
+from concrete import fhe
+
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump, dumps
@@ -1915,29 +1917,97 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         assert self._q_X_fit_quantizer is not None, self._is_not_fitted_error_message()
 
-        # Pairwise euclidean distance
-        # dist(x, y) = sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
-        distance_matrix = (
-            numpy.sum(q_X**2, axis=1, keepdims=True)
-            - 2 * q_X @ self._q_X_fit.T
-            + numpy.expand_dims(numpy.sum(self._q_X_fit**2, axis=1), 0)
-        )
+        def pairwise_euclidean_distance(q_X):
+            # 1. Pairwise euclidean distance
+            # dist(x, y) = sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
+            return (
+                numpy.sum(q_X**2, axis=1, keepdims=True)
+                - 2 * q_X @ self._q_X_fit.T
+                + numpy.expand_dims(numpy.sum(self._q_X_fit**2, axis=1), 0)
+            )
 
-        return distance_matrix
+        distance_matrix = pairwise_euclidean_distance(q_X)
+
+        # sqr not done
+
+        # 2. Sorting
+        def topk_sorting(x):
+            def gather1d(x, indices):
+                """Select x[indices]."""
+                arr = []
+                for i in indices:
+                    arr.append(x[i])
+                enc_arr = fhe.array(arr)
+                return enc_arr
+
+            def scatter1d(x, v, indices):
+                for idx, i in enumerate(indices):
+                    x[i] = v[idx]
+                return x
+
+            def mul_tlu(a, b):
+                # (a - b)^2 - (a + b)^2 = -4ab => ab = ((a + b)^2 - (a - b)^2) / 4
+                return (((a + b) ** 2 - (a - b) ** 2) / 4).astype(numpy.int64)
+
+            idx = numpy.arange(x.size) + fhe.zeros(x.shape)
+            comparisons = numpy.zeros(x.shape)
+            n = x.size
+            k = self.n_neighbors
+
+            ln2n = int(numpy.ceil(numpy.log2(n)))
+            for t in range(ln2n - 1, -1, -1):
+                p = 2**t
+                r = 0
+                d = p
+
+                for bq in range(ln2n - 1, t - 1, -1):  # q = 2^(t-1), 2^(t-2), ..., p
+                    q = 2**bq
+                    range_i = numpy.array(
+                        [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
+                    )
+
+                    if len(range_i) == 0:
+                        continue
+
+                    a = gather1d(x, range_i)  # x[range_i]
+                    a_i = gather1d(idx, range_i)  # idx[range_i]
+                    b = gather1d(x, range_i + d)  # x[range_i + d]
+                    b_i = gather1d(idx, range_i + d)  # idx[range_i + d]
+
+                    diff = a - b
+                    sign = diff < 0
+
+                    max_x = a + numpy.maximum(0, b - a)
+                    x = scatter1d(x, a + b - max_x, range_i)  # x[range_i] = a + b - max_x
+                    x = scatter1d(x, max_x, range_i + d)  # x[range_i + d] = max_x
+
+                    max_idx = a_i + mul_tlu((b_i - a_i), sign)
+                    idx = scatter1d(idx, a_i + b_i - max_idx, range_i)
+                    idx = scatter1d(idx, max_idx, range_i + d)
+
+                    comparisons[range_i + d] = comparisons[range_i + d] + 1
+                    d = q - p
+                    r = p
+
+            return numpy.concatenate((x.reshape((1, -1)), idx.reshape((1, -1))), axis=0)
+
+        _, sorted_args = topk_sorting(distance_matrix[0])
+        sorted_args = sorted_args.astype(numpy.int16)
+
+        return sorted_args
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
 
         X = check_array_and_assert(X)
 
-        distances = []
+        sorted_args_matrix = []
         for query in X:
-            d = super().predict(query[None], fhe)[0]
-            # assert any(d < 0) or any(np.isnan(d)), "!!!!!!!! Not valid values"
-            distances.append(numpy.sqrt(d))
+            arg_sort = super().predict(query[None], fhe)[0]
+            sorted_args_matrix.append(arg_sort)
 
-        self.distances_matrix = numpy.array(distances)
+        self.sorted_args_matrix = numpy.array(sorted_args_matrix)
 
-        k_indices = self.top_k_indices(self.distances_matrix, self.n_neighbors)
+        k_indices = self.top_k_indices(self.sorted_args_matrix, self.n_neighbors)
         # pylint: disable=protected-access
         label_k_indices = self._y[k_indices]
         y_pred = self.majority_vote(label_k_indices)
