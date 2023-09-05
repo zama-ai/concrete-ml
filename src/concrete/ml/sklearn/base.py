@@ -2007,6 +2007,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.sorted_args_matrix = numpy.array(sorted_args_matrix)
 
         # k_indices = self.top_k_indices(self.sorted_args_matrix, self.n_neighbors)
+        
         # pylint: disable=protected-access
         label_k_indices = self._y[self.sorted_args_matrix]
         y_pred = self.majority_vote(label_k_indices[None])
