@@ -96,6 +96,7 @@ configuration = Configuration(
     use_insecure_key_cache=True,
     insecure_key_cache_location=KEYGEN_CACHE_DIR,
     parameter_selection_strategy=fhe.ParameterSelectionStrategy.MULTI,
+    auto_adjust_rounders=True,
 )
 
 print("Compiling the model.")

@@ -146,6 +146,9 @@ def _compile_torch_or_onnx_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
+    if configuration is None:  # pragma: no cover:
+        configuration = Configuration()
+    configuration.auto_adjust_rounders = True
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
@@ -233,6 +236,10 @@ def compile_torch_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
+    if configuration is None:
+        configuration = Configuration()
+    configuration.auto_adjust_rounders = True
+
     assert_true(
         isinstance(torch_model, torch.nn.Module),
         "The compile_torch_model function must be called on a torch.nn.Module",
@@ -306,6 +313,9 @@ def compile_onnx_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
+    if configuration is None:
+        configuration = Configuration()
+    configuration.auto_adjust_rounders = True
 
     onnx_model_opset_version = get_onnx_opset_version(onnx_model)
     assert_true(
@@ -378,6 +388,9 @@ def compile_brevitas_qat_model(
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
     """
+    if configuration is None:
+        configuration = Configuration()
+    configuration.auto_adjust_rounders = True
 
     inputset_as_numpy_tuple = tuple(
         convert_torch_tensor_or_numpy_array_to_numpy_array(val) for val in to_tuple(torch_inputset)
