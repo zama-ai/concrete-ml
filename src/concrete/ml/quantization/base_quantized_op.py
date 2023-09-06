@@ -5,12 +5,12 @@ from inspect import Parameter, _empty, signature
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Tuple, Type, Union, cast
 
 import numpy
+from concrete.fhe.tracing import Tracer
 
 from concrete import fhe
 
 from ..common.debugging import assert_false, assert_true
 from ..common.serialization.dumpers import dump, dumps
-from ..common.utils import compute_bits_precision
 from ..onnx.onnx_utils import ONNX_OPS_TO_NUMPY_IMPL
 from ..onnx.ops_impl import ONNXMixedFunction, RawOpOutput
 from .quantizers import (
@@ -877,6 +877,10 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
             **kwargs: named argument to pass to the parent class.
         """
         self.rounding_threshold_bits = rounding_threshold_bits
+        if self.rounding_threshold_bits is not None:
+            self.rounder = fhe.AutoRounder(target_msbs=self.rounding_threshold_bits)
+        else:
+            self.rounder = None
         super().__init__(*args, **kwargs)
 
     def can_fuse(self) -> bool:
@@ -933,8 +937,8 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         )
 
     def cnp_round(
-        self, x: Union[numpy.ndarray, fhe.tracing.Tracer], calibrate_rounding: bool
-    ) -> numpy.ndarray:
+        self, x: Union[numpy.ndarray, Tracer], calibrate_rounding: bool
+    ) -> Union[numpy.ndarray, Tracer]:
         """Round the input array to the specified number of bits.
 
         Args:
@@ -945,27 +949,6 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         Returns:
             numpy.ndarray: The rounded array.
         """
-
-        # Rounding is applied only if specified by user
-        if self.rounding_threshold_bits is not None:
-            if calibrate_rounding:
-                assert_true(
-                    not isinstance(x, fhe.tracing.Tracer),
-                    "Can't compute lsbs_to_remove at compilation time.",
-                )
-                assert_true(
-                    self.lsbs_to_remove is None,
-                    "Rounding has already been calibrated.",
-                )
-
-                current_n_bits_accumulator = compute_bits_precision(x)
-                self.lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
-
-            # mypy
-            assert self.lsbs_to_remove is not None
-
-            # Apply rounding if needed
-            if self.lsbs_to_remove > 0:
-                x = fhe.round_bit_pattern(x, lsbs_to_remove=self.lsbs_to_remove)
-
+        if self.rounder is not None and not calibrate_rounding:
+            x = fhe.round_bit_pattern(x, lsbs_to_remove=self.rounder)
         return x

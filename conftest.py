@@ -158,6 +158,7 @@ def default_configuration():
         use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
         parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
+        auto_adjust_rounders=True,
     )
 
 

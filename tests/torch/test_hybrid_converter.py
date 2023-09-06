@@ -21,6 +21,7 @@ def run_hybrid_model_test(
     configuration = Configuration(
         single_precision=False,
         parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
+        auto_adjust_rounders=True,
     )
 
     # Create a hybrid model
