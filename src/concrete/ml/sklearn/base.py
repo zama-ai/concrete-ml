@@ -1946,8 +1946,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 return x
 
             def mul_tlu(a, b):
-                # (a - b)^2 - (a + b)^2 = -4ab => ab = ((a + b)^2 - (a - b)^2) / 4
-                return (((a + b) ** 2 - (a - b) ** 2) / 4).astype(numpy.int64)
+                return a * b
 
             idx = numpy.arange(x.size) + fhe.zeros(x.shape)
             comparisons = numpy.zeros(x.shape)
@@ -1965,7 +1964,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     range_i = numpy.array(
                         [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
                     )
-
                     if len(range_i) == 0:
                         continue
 
@@ -1982,16 +1980,19 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     x = scatter1d(x, max_x, range_i + d)  # x[range_i + d] = max_x
 
                     max_idx = a_i + mul_tlu((b_i - a_i), sign)
-                    idx = scatter1d(idx, a_i + b_i - max_idx, range_i)
-                    idx = scatter1d(idx, max_idx, range_i + d)
+                    idx = scatter1d(
+                        idx, a_i + b_i - max_idx, range_i
+                    )  # idx[range_i] = a_i + b_i - max_idx
+                    idx = scatter1d(idx, max_idx, range_i + d)  # idx[range_i + d] = max_idx
 
                     comparisons[range_i + d] = comparisons[range_i + d] + 1
+
                     d = q - p
                     r = p
 
             return numpy.concatenate((x.reshape((1, -1)), idx.reshape((1, -1))), axis=0)
 
-        _, sorted_args = topk_sorting(distance_matrix[0])
+        _, sorted_args = topk_sorting(distance_matrix.flatten())
 
         return sorted_args
 
@@ -2007,7 +2008,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.sorted_args_matrix = numpy.array(sorted_args_matrix)
 
         # k_indices = self.top_k_indices(self.sorted_args_matrix, self.n_neighbors)
-        
+
         # pylint: disable=protected-access
         label_k_indices = self._y[self.sorted_args_matrix]
         y_pred = self.majority_vote(label_k_indices[None])
