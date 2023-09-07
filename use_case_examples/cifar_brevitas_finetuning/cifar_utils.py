@@ -28,12 +28,12 @@ warnings.filterwarnings("ignore", category=UserWarning)
 DATASETS_ARGS = {
     "CIFAR_10": {
         "dataset": datasets.CIFAR10,
-        "mean": [0.247, 0.243, 0.261],
-        "std": [0.4914, 0.4822, 0.4465],
+        "mean": [0.4914, 0.4822, 0.4465],
+        "std": [0.247, 0.243, 0.261],
         "train_transform": transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize((0.247, 0.243, 0.261), (0.4914, 0.4822, 0.4465)),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
                 # We apply data augmentation in order to prevent overfitting
                 transforms.RandomRotation(5, fill=(1,)),
                 transforms.GaussianBlur(kernel_size=(3, 3)),
@@ -43,7 +43,7 @@ DATASETS_ARGS = {
         "test_transform": transforms.Compose(
             [
                 transforms.ToTensor(),
-                transforms.Normalize((0.247, 0.243, 0.261), (0.4914, 0.4822, 0.4465)),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.247, 0.243, 0.261)),
             ]
         ),
     },
