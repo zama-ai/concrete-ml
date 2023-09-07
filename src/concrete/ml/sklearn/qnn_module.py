@@ -191,6 +191,9 @@ class SparseQuantNeuralNetwork(nn.Module):
                     neurons_removed_idx = numpy.where(numpy.sum(numpy.abs(weights), axis=1) < 0.001)
                     idx = numpy.arange(weights.shape[0])
                     keep_idxs = numpy.setdiff1d(idx, neurons_removed_idx)
+
+                    # Remove the pruning hooks on this layer
+                    pruning.remove(layer, "weight")
                 else:
                     keep_idxs = numpy.arange(weights.shape[0])
 
@@ -218,7 +221,15 @@ class SparseQuantNeuralNetwork(nn.Module):
                 # remove synapses in the next layer
                 prev_layer_keep_idxs = keep_idxs
 
+                # Check that pruning mask introduced by torch pruning was removed
+                assert not hasattr(layer, "weight_mask")
+
             layer_idx += 1
+
+        assert_true(
+            len(self.pruned_layers) == 0,
+            "Making pruning permanent did not remove pruning on all layers",
+        )
 
         assert_true(
             layer_idx == self.n_layers,

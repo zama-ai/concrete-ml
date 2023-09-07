@@ -1218,6 +1218,8 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         # Set the new pruning amount
         pruned_model.base_module.n_prune_neurons_percentage = n_prune_neurons_percentage
 
+        assert len(pruned_model.base_module.pruned_layers) == 0
+
         # Enable pruning again, this time with structured pruning
         pruned_model.base_module.enable_pruning()
 

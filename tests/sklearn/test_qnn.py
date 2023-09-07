@@ -358,9 +358,9 @@ def test_structured_pruning(activation_function, model_class, load_data, default
         "module__n_layers": 2,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
-        "module__n_accum_bits": 5,
+        "module__n_accum_bits": 8,
         "module__activation_function": activation_function,
-        "max_epochs": 10,
+        "max_epochs": 2,
         "verbose": 0,
     }
 
@@ -384,8 +384,6 @@ def test_structured_pruning(activation_function, model_class, load_data, default
     ):
         model.prune(x_train, y_train, 1.0)
 
-    pruned_model = model.prune(x_train, y_train, 0.5)
-
     def _get_number_of_neurons(module: SparseQuantNeuralNetwork):
         neurons = {}
         idx = 0
@@ -397,13 +395,15 @@ def test_structured_pruning(activation_function, model_class, load_data, default
         return neurons
 
     neurons_orig = _get_number_of_neurons(model.base_module)
-    neurons_pruned = _get_number_of_neurons(pruned_model.base_module)
 
     # Compile the model
     model.compile(
         x_train,
         configuration=default_configuration,
     )
+
+    pruned_model = model.prune(x_train, y_train, 0.5)
+    neurons_pruned = _get_number_of_neurons(pruned_model.base_module)
 
     # Compile the pruned model, this will also perform ONNX export and calibration
     pruned_model.compile(
