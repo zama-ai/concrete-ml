@@ -474,6 +474,7 @@ def check_subfunctions(fitted_model, model_class, x):
             fitted_model.predict_proba(x)
 
     if get_model_name(fitted_model) == "KNeighborsClassifier":
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         pytest.skip("Skipping subfunctions test for KNN, doesn't work for now")
 
     if is_classifier_or_partial_classifier(model_class):
@@ -573,6 +574,7 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     # Similarly, we test `predict_proba` for classifiers
     if is_classifier_or_partial_classifier(model):
         if get_model_name(model_class) == "KNeighborsClassifier":
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
         model.predict_proba(x)
 
@@ -676,6 +678,7 @@ def check_grid_search(model_class, x, y, scoring):
             "roc_auc",
             "average_precision",
         ]:
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
         _ = GridSearchCV(
@@ -720,6 +723,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
 
         # Else, compute the model's predicted probabilities
         # predict_proba not implemented for KNeighborsClassifier for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         elif get_model_name(model_class) != "KNeighborsClassifier":
             y_pred_cml = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
