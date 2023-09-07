@@ -14,6 +14,7 @@ from concrete.fhe import univariate
 from scipy import special
 from typing_extensions import SupportsIndex
 
+from ..common import utils
 from ..common.debugging import assert_false, assert_true
 from .onnx_impl_utils import (
     compute_onnx_pool_padding,
@@ -1653,7 +1654,10 @@ def numpy_brevitas_quant(
     y = numpy.clip(y, min_int_val, max_int_val)
 
     # Quantize to produce integers representing the float quantized values
-    y = numpy.rint(y)
+    if utils.QUANT_ROUND_LIKE_ROUND_PBS:
+        y = numpy.floor(y + 0.5)
+    else:
+        y = numpy.rint(y)
 
     # Compute quantized floating point values
     y = (y - zero_point) * scale

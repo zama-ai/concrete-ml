@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
 
+from ..common import utils
 from ..common.debugging import assert_true
 from ..common.serialization.dumpers import dump, dumps
 
@@ -745,7 +746,10 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.offset is not None
         assert self.scale is not None
 
-        qvalues = numpy.rint(values / self.scale + self.zero_point)
+        if utils.QUANT_ROUND_LIKE_ROUND_PBS:
+            qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)
+        else:
+            qvalues = numpy.rint(values / self.scale + self.zero_point)
 
         # Clipping can be performed for PTQ and for precomputed (for now only Brevitas) QAT
         # (where quantizer parameters are available in ONNX layers).

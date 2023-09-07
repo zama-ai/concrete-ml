@@ -295,11 +295,9 @@ class PowerOfTwoScalingRoundPBSAdapter:
                 # number of lsbs to round is the negative of the sum of log2
                 # of the scale factors
                 lsbs_to_round = -(log2_input + log2_weights - log2_output)
-                # log2_output - log2_input - log2_weights
-                # TODO: check this part with Andrei
-                # How is it possible to have like that?
-                path_start_node.rounding_threshold_bits = lsbs_to_round
-                path_start_node.lsbs_to_remove = lsbs_to_round
+                if lsbs_to_round > 0:
+                    path_start_node.rounding_threshold_bits = lsbs_to_round
+                    path_start_node.lsbs_to_remove = lsbs_to_round
             else:
                 invalid_paths.append(path_start_node)
 

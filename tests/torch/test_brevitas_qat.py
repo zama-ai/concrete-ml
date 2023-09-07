@@ -15,6 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from torch import nn
 from torch.utils.data import DataLoader, TensorDataset
 
+from concrete.ml.common import utils
 from concrete.ml.common.utils import (
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
@@ -514,6 +515,8 @@ def test_brevitas_power_of_two(
 
     net, x_all, _ = train_brevitas_network_tinymnist(is_cnn, n_bits, True, False, power_of_two)
 
+    utils.QUANT_ROUND_LIKE_ROUND_PBS = True
+
     # If rounding threshold is set -> nothing happens
     # If Quantizer is not setup -> nothing happens
     quantized_module = compile_brevitas_qat_model(
@@ -590,11 +593,7 @@ def test_brevitas_power_of_two(
     )
 
     # # Compare the result with the optimized network and without
-    # # they should be equal (allow 3 non-matching value out of 100)
-    # TODO: actually verify correctness here, this is just a placeholder
-    # https://github.com/zama-ai/concrete-ml-internal/issues/3946
-    assert y_pred_sim_round.shape == y_pred_clear_round.shape
-    assert y_pred_clear_round.shape == y_pred_clear_no_round.shape
+    # # they should be equal
 
-    # assert numpy.sum(y_pred_sim_round != y_pred_clear_round) <= 3
-    # assert numpy.sum(y_pred_clear_round != y_pred_clear_no_round) <= 3
+    assert numpy.sum(y_pred_sim_round != y_pred_clear_round) == 0
+    assert numpy.sum(y_pred_clear_round != y_pred_clear_no_round) == 0

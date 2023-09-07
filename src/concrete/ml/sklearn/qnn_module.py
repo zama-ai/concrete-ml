@@ -9,7 +9,6 @@ from brevitas.quant.scaled_int import Int8ActPerTensorFloat, Int8WeightPerTensor
 from torch import nn
 
 from ..common.debugging import assert_true
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from ..quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 
 
@@ -29,14 +28,15 @@ class SparseQuantNeuralNetwork(nn.Module):
         n_layers: int,
         n_outputs: int,
         n_hidden_neurons_multiplier: int = 4,
-        n_w_bits: int = 3,
-        n_a_bits: int = 3,
-        n_accum_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+        n_w_bits: int = 4,
+        n_a_bits: int = 4,
+        # No pruning by default as roundPBS keeps the PBS precision low
+        n_accum_bits: int = 32,
         n_prune_neurons_percentage: float = 0.0,
         activation_function: Type = nn.ReLU,
         quant_narrow: bool = False,
         quant_signed: bool = True,
-        power_of_two_scaling: bool = False,
+        power_of_two_scaling: bool = True,  # Default to true: use roundPBS to speed up the NNs
     ):
         """Sparse Quantized Neural Network constructor.
 
