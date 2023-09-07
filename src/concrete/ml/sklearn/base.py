@@ -1843,10 +1843,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        # De-quantize the output values
-        y_preds = self.output_quantizers[0].dequant(q_y_preds)
+        # We compute the sorted argmax in FHE, which are integers.
+        # No need to de-quantize the output values
 
-        return y_preds
+        return q_y_preds
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
         # Define the inference function to compile.
@@ -1998,7 +1998,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for query in X:
             # Argsort
             arg_sort = super().predict(query[None], fhe)
-            arg_sort = arg_sort.astype(numpy.int64)
+            arg_sort = arg_sort.astype(numpy.int64)[: self.n_neighbors]
             # Majority vote
             # pylint: disable=protected-access
             label_indices = self._y[arg_sort]
