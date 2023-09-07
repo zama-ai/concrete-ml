@@ -86,6 +86,8 @@ class SparseQuantNeuralNetwork(nn.Module):
         if n_w_bits <= 0 or n_a_bits <= 0:
             raise ValueError("The weight & activation quantization bit-width cannot be less than 1")
 
+        high_input_bitwidth = power_of_two_scaling and activation_function is nn.ReLU
+
         for idx in range(n_layers):
             out_features = (
                 n_outputs if idx == n_layers - 1 else int(input_dim * n_hidden_neurons_multiplier)
@@ -93,7 +95,7 @@ class SparseQuantNeuralNetwork(nn.Module):
 
             quant_name = f"quant{idx}"
             quantizer = qnn.QuantIdentity(
-                bit_width=8 if idx == 0 else n_a_bits,
+                bit_width=8 if high_input_bitwidth else n_a_bits,
                 return_quant_tensor=True,
                 narrow_range=quant_narrow,
                 signed=quant_signed,

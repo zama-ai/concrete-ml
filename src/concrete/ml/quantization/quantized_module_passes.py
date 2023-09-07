@@ -167,6 +167,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
 
         valid_paths: PatternDict = {}
 
+        # pylint: disable-next=too-many-nested-blocks
         for (_, node_op) in self._qmodule.quant_layers_dict.values():
             # Only work with supported nodes that have a single
             # encrypted input (not supporting enc x enc matmul)
@@ -175,39 +176,35 @@ class PowerOfTwoScalingRoundPBSAdapter:
                 and len(node_op.int_input_names) == 1
             ):
                 prev_compatible_node_output = list(node_op.int_input_names)[0]
-                if len(predecessors[node_op]) > 1:
-                    continue
+                if len(predecessors[node_op]) == 1:
+                    back_node, back_node_output = predecessors[node_op][0]
 
-                back_node, back_node_output = predecessors[node_op][0]
+                    # A pattern is a sequence of Gemm/Conv -> Relu -> Quant
+                    # but we also need to store the Quant that quantizes
+                    # the Gemm/Conv's input
+                    nodes_in_path: List[Optional[QuantizedOp]] = []
+                    integer_node_input_quant: Optional[QuantizedOp] = None
 
-                # A pattern is a sequence of Gemm/Conv -> Relu -> Quant
-                # but we also need to store the Quant that quantizes
-                # the Gemm/Conv's input
-                nodes_in_path: List[Optional[QuantizedOp]] = []
-                integer_node_input_quant: Optional[QuantizedOp] = None
-
-                while back_node_output != prev_compatible_node_output:
-                    assert back_node is not None
-                    nodes_in_path.append(back_node)
-                    assert_true(
-                        back_node in predecessors,
-                        "Power of Two adapter: Error during graph traversal",
-                    )
-                    # If multiple ops produced this node, the pattern is not matched
-
-                    if len(predecessors[back_node]) > 1:
-                        break
-
-                    back_node, back_node_output = predecessors[back_node][0]
-
-                    # Reached the previous integer node
-                    if back_node_output == prev_compatible_node_output:
-                        # The Gemm/Conv op that produces this integer node is the one
-                        # onto which we apply the roundPBS optimization
+                    while back_node_output != prev_compatible_node_output:
+                        assert back_node is not None
                         nodes_in_path.append(back_node)
-                        list_pred_of_path = predecessors[back_node]
-                        if len(list_pred_of_path) == 1:
-                            integer_node_input_quant = list_pred_of_path[0][0]
+                        assert_true(
+                            back_node in predecessors,
+                            "Power of Two adapter: Error during graph traversal",
+                        )
+                        # If multiple ops produced this node, the pattern is not matched
+
+                        if len(predecessors[back_node]) == 1:
+                            back_node, back_node_output = predecessors[back_node][0]
+
+                            # Reached the previous integer node
+                            if back_node_output == prev_compatible_node_output:
+                                # The Gemm/Conv op that produces this integer node is the one
+                                # onto which we apply the roundPBS optimization
+                                nodes_in_path.append(back_node)
+                                list_pred_of_path = predecessors[back_node]
+                                if len(list_pred_of_path) == 1:
+                                    integer_node_input_quant = list_pred_of_path[0][0]
 
                 assert isinstance(node_op, QuantizedMixingOp)
                 if self.match_path_pattern(predecessors, nodes_in_path, integer_node_input_quant):
