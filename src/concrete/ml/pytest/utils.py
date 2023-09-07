@@ -173,6 +173,9 @@ def instantiate_model_generic(model_class, n_bits, **parameters):
             extra_kwargs["module__n_a_bits"] = 2
             extra_kwargs["module__n_accum_bits"] = 7
 
+        # Disable power-of-two since it sets the input bitwidth to 8
+        # and thus increases bitwidth too much for a test
+        extra_kwargs["module__power_of_two_scaling"] = False
         extra_kwargs.update(parameters)
         model = model_class(**extra_kwargs)
 

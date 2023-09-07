@@ -188,6 +188,7 @@ def test_compile_and_calib(
         "module__n_a_bits": 2,
         "module__n_accum_bits": 5,
         "module__activation_function": activation_function,
+        "module__power_of_two_scaling": False,
         "max_epochs": 10,
         "verbose": 0,
     }
