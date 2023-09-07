@@ -1711,7 +1711,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: Union[int, Dict[str, int]] = 8):
+    def __init__(self, n_bits: Union[int, Dict[str, int]] = 4):
         """Initialize the FHE knn model.
 
         Args:
