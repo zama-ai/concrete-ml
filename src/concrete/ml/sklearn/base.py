@@ -1895,14 +1895,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         Returns:
             numpy.ndarray: The majority-voted class label for the corresponding query.
         """
-        # Get the number of queries (rows) and k (number of nearest points)
-        n_queries, _ = nearest_classes.shape
-        # Compute the majority vote for each query
-        majority_votes = numpy.array([0] * n_queries, dtype=int)
-        for i in range(n_queries):
-            # Use bincount to count occurrences of each class and find the most common one
-            class_counts = numpy.bincount(nearest_classes[i])
-            majority_votes[i] = numpy.argmax(class_counts)
+        class_counts = numpy.bincount(nearest_classes)
+        majority_votes = numpy.argmax(class_counts)
 
         return majority_votes
 
@@ -2000,20 +1994,18 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         X = check_array_and_assert(X)
 
-        sorted_args_matrix = []
+        y_preds = []
         for query in X:
-            arg_sort = super().predict(query[None], fhe)[0]
-            sorted_args_matrix.append(arg_sort.astype(numpy.int64))
+            # Argsort
+            arg_sort = super().predict(query[None], fhe)
+            arg_sort = arg_sort.astype(numpy.int64)
+            # Majority vote
+            # pylint: disable=protected-access
+            label_indices = self._y[arg_sort]
+            y_pred = self.majority_vote(label_indices)
+            y_preds.append(y_pred)
 
-        self.sorted_args_matrix = numpy.array(sorted_args_matrix)
-
-        # k_indices = self.top_k_indices(self.sorted_args_matrix, self.n_neighbors)
-
-        # pylint: disable=protected-access
-        label_k_indices = self._y[self.sorted_args_matrix]
-        y_pred = self.majority_vote(label_k_indices[None])
-
-        return y_pred
+        return numpy.array(y_preds)
 
 
 class SklearnKNeighborsClassifierMixin(SklearnKNeighborsMixin, sklearn.base.ClassifierMixin, ABC):
