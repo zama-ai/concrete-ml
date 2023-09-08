@@ -299,7 +299,10 @@ def test_failure_bad_data_types(model_classes, container, bad_types, expected_er
 
 @pytest.mark.parametrize("activation_function", [pytest.param(nn.ReLU)])
 @pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
-def test_structured_pruning(activation_function, model_class, load_data, default_configuration):
+@pytest.mark.parametrize("accum_bits", [5, 8])
+def test_structured_pruning(
+    activation_function, model_class, accum_bits, load_data, default_configuration
+):
     """Test whether the sklearn quantized NN wrappers compile to FHE and execute well on encrypted
     inputs"""
     n_features = 10
@@ -358,7 +361,7 @@ def test_structured_pruning(activation_function, model_class, load_data, default
         "module__n_layers": 2,
         "module__n_w_bits": 2,
         "module__n_a_bits": 2,
-        "module__n_accum_bits": 8,
+        "module__n_accum_bits": accum_bits,
         "module__activation_function": activation_function,
         "max_epochs": 2,
         "verbose": 0,
