@@ -33,7 +33,7 @@ from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
 
-def test_torch(net, test_loader):
+def forward_test_torch(net, test_loader):
     """Test the network: measure accuracy on the test set.
 
     Args:
@@ -157,7 +157,7 @@ def train_brevitas_network_tinymnist(is_cnn, qat_bits, signed, narrow, pot_scali
         if hasattr(net, "toggle_pruning"):
             net.toggle_pruning(False)
 
-        torch_correct = test_torch(net, test_dataloader)
+        torch_correct = forward_test_torch(net, test_dataloader)
 
         # If number of correct results was zero, training failed and there were NaNs in the weights
         # Retrain while training is bad

@@ -31,6 +31,7 @@ OPTIONAL_MODULE_PARAMS = [
     "activation_function",
     "quant_narrow",
     "quant_signed",
+    "power_of_two_scaling",
 ]
 
 # skorch's special attribute prefixes, which can be found in:
