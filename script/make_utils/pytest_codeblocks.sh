@@ -46,21 +46,7 @@ poetry run python ./script/make_utils/deactivate_docs_admonitions_for_tests.py \
 
 set -x
 
-if [ $NCPU -ne 1 ]
-then
-    poetry run pytest --codeblocks -svv \
-        --capture=tee-sys \
-        -n "${NCPU}" \
-        --randomly-dont-reorganize \
-        --randomly-dont-reset-seed "${TEST_DIR}" \
-        --durations=10
-else
-    poetry run pytest --codeblocks -svv \
-        --capture=tee-sys \
-        --randomly-dont-reorganize \
-        --randomly-dont-reset-seed "${TEST_DIR}" \
-        --durations=10
-fi
+make pytest TEST="${TEST_DIR}" N_CPU="${NCPU}" PYTEST_OPTIONS="--codeblocks --durations=10"
 
 set +x
 
