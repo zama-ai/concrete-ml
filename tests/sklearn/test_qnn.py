@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
+from concrete.ml.common import utils
 from concrete.ml.common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     is_classifier_or_partial_classifier,
@@ -551,6 +552,8 @@ def test_power_of_two_scaling(
     }
 
     model = model_class(**params)
+
+    utils.QUANT_ROUND_LIKE_ROUND_PBS = True
 
     # Train normally. This also converts the torch NN to a QuantizedModule
     # and thus applies the PowerOfTwoScalingRoundPBSAdapter that
