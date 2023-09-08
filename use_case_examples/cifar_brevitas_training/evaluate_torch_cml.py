@@ -1,5 +1,5 @@
 import argparse
-import pathlib
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -11,11 +11,13 @@ from trainer import accuracy, get_test_set, get_train_set
 
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
+CURRENT_DIR = Path(__file__).resolve().parent
+
 
 def evaluate(torch_model, cml_model, device, num_workers):
 
     # Import and load the CIFAR test dataset (following bnn_pynq_train.py)
-    test_set = get_test_set(dataset="CIFAR10", datadir=".datasets/")
+    test_set = get_test_set(dataset="CIFAR10", datadir=CURRENT_DIR / ".datasets/")
     test_loader = DataLoader(test_set, batch_size=128, shuffle=False, num_workers=num_workers)
 
     torch_top_1_batches = []
@@ -76,7 +78,7 @@ def main(args):
     print("Device in use:", device)
 
     # Find relative path to this file
-    dir_path = pathlib.Path(__file__).parent.absolute()
+    dir_path = Path(__file__).parent.absolute()
 
     # Load checkpoint
     checkpoint = torch.load(
@@ -88,7 +90,7 @@ def main(args):
     model.load_state_dict(checkpoint["state_dict"], strict=False)
 
     # Load the training set
-    train_set = get_train_set(dataset="CIFAR10", datadir=".datasets/")
+    train_set = get_train_set(dataset="CIFAR10", datadir=CURRENT_DIR / ".datasets/")
 
     # Create a representative input-set from the training set that will be used used for both
     # computing quantization parameters and compiling the model
