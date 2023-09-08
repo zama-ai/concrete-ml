@@ -193,7 +193,9 @@ class SparseQuantNeuralNetwork(nn.Module):
                     keep_idxs = numpy.setdiff1d(idx, neurons_removed_idx)
 
                     # Remove the pruning hooks on this layer
-                    pruning.remove(layer, "weight")
+                    if layer in self.pruned_layers:
+                        pruning.remove(layer, "weight")
+                        self.pruned_layers.remove(layer)
                 else:
                     keep_idxs = numpy.arange(weights.shape[0])
 
@@ -283,6 +285,7 @@ class SparseQuantNeuralNetwork(nn.Module):
                 # Use L2-norm structured pruning, using the torch ln_structured
                 # function, with norm=2 and axis=0 (output/neuron axis)
                 pruning.ln_structured(layer, "weight", self.n_prune_neurons_percentage, 2, 0)
+                self.pruned_layers.add(layer)
 
             # Note this is counting only Linear layers
             layer_idx += 1
