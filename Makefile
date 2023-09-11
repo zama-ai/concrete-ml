@@ -197,9 +197,6 @@ spcc_internal: $(SPCC_DEPS)
 # for reproducing tests
 # To repeat a single test, apply something like @pytest.mark.repeat(3) on the test function
 # -svv disables capturing of stdout/stderr and enables verbose output
-# -n N is to set the number of CPUs to use for pytest. We set it to N_CPU=4 by default because most 
-# tests include parallel execution using all CPUs and too many parallel tests would lead to 
-# contention. Thus N is set to something lower than the overall number of CPUs
 # --count N is to repeate all tests N times (with different seeds). Default is to COUNT=1.
 # --randomly-dont-reorganize is to prevent Pytest from shuffling the tests' order
 # --randomly-dont-reset-seed is to make sure that, if we run the same test several times (with
@@ -214,13 +211,19 @@ pytest_internal:
 	poetry run pytest --version
 	poetry run pytest $(TEST) \
 	-svv \
-	-n $(N_CPU) \
 	--count=$(COUNT) \
 	--randomly-dont-reorganize \
 	--randomly-dont-reset-seed \
 	--capture=tee-sys \
 	--cache-clear \
 	${PYTEST_OPTIONS}
+
+# -n N is to set the number of CPUs to use for pytest. We set it to N_CPU=4 by default because most 
+# tests include parallel execution using all CPUs and too many parallel tests would lead to 
+# contention. Thus N is set to something lower than the overall number of CPUs
+.PHONY: pytest_internal_parallel # Run pytest with multiple CPUs
+pytest_internal_parallel:
+	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(N_CPU) ${PYTEST_OPTIONS}"
 
 # --durations=10 is to show the 10 slowest tests
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
@@ -230,8 +233,8 @@ pytest_internal:
 # taking into account skiped tests
 .PHONY: pytest # Run pytest on all tests
 pytest:
-	"$(MAKE)" pytest_internal \
-	PYTEST_OPTIONS="\
+	"$(MAKE)" pytest_internal_parallel \
+	PYTEST_OPTIONS=" \
 	--durations=10 \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	--cov=$(SRC_DIR) \
@@ -244,7 +247,7 @@ pytest:
 # --durations=10 is to show the 10 slowest tests
 .PHONY: pytest_macOS_for_GitHub # Run pytest without coverage options
 pytest_macOS_for_GitHub:
-	"$(MAKE)" pytest_internal PYTEST_OPTIONS="--durations=10 ${PYTEST_OPTIONS}"
+	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--durations=10 ${PYTEST_OPTIONS}"
 
 .PHONY: pytest_and_report # Run pytest and output the report in a JSON file
 pytest_and_report:
@@ -261,7 +264,7 @@ pytest_and_report:
 .PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
 pytest_no_flaky: check_current_flaky_tests
 	echo "Warning: known flaky tests are skipped and coverage is disabled"
-	"$(MAKE)" pytest_internal PYTEST_OPTIONS="--durations=10 --no-flaky ${PYTEST_OPTIONS}"
+	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--durations=10 --no-flaky ${PYTEST_OPTIONS}"
 
 # Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
 # call '--cache-clear' when calling the previous pytest run. 
@@ -284,7 +287,7 @@ pytest_one:
 # --randomly-seed=SEED is to reproduce tests using the given seed
 .PHONY: pytest_one_single_cpu # Run pytest on a single file or directory (TEST) using a specific seed (RANDOMLY_SEED) with a single CPU
 pytest_one_single_cpu:
-	"$(MAKE)" pytest_one N_CPU=1 PYTEST_OPTIONS="--randomly-seed=${RANDOMLY_SEED} ${PYTEST_OPTIONS}" 
+	"$(MAKE)" pytest_one PYTEST_OPTIONS="--randomly-seed=${RANDOMLY_SEED} ${PYTEST_OPTIONS}" 
 
 .PHONY: check_current_flaky_tests # Print the current list of known flaky tests
 check_current_flaky_tests:
