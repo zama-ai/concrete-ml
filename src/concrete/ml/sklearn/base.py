@@ -1711,7 +1711,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: Union[int, Dict[str, int]] = 4):
+    def __init__(self, n_bits: Union[int, Dict[str, int]] = 5):
         """Initialize the FHE knn model.
 
         Args:
@@ -1721,7 +1721,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 corresponding number of quantization bits so that:
                     - op_inputs : number of bits to quantize the input values
                     - op_weights: number of bits to quantize the learned parameters
-                Default to 8.
+                Default to 3.
         """
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 

@@ -4,9 +4,12 @@ from inspect import signature
 
 import numpy
 import pytest
+from concrete.fhe.compilation import Configuration
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete import fhe
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.torch.compile import compile_torch_model
@@ -26,7 +29,7 @@ INPUT_OUTPUT_FEATURE = [5, 10]
         {"global_p_error": 0.038, "p_error": 0.39},
     ],
 )
-def test_config_sklearn(model_class, parameters, kwargs, load_data):
+def test_config_sklearn(model_class, parameters, kwargs, load_data, default_configuration):
     """Testing with p_error and global_p_error configs with sklearn models."""
 
     x, y = load_data(model_class, **parameters)
@@ -38,12 +41,24 @@ def test_config_sklearn(model_class, parameters, kwargs, load_data):
         # Fit the model
         model.fit(x, y)
 
+    if get_model_name(model_class) == "KNeighborsClassifier":
+
+        default_configuration = Configuration(
+            dump_artifacts_on_unexpected_failures=False,
+            enable_unsafe_features=True,
+            use_insecure_key_cache=True,
+            insecure_key_cache_location="ConcreteNumpyKeyCache",
+            parameter_selection_strategy=fhe.ParameterSelectionStrategy.MONO,
+            single_precision=True,
+        )
+
     if kwargs.get("p_error", None) is not None and kwargs.get("global_p_error", None) is not None:
         with pytest.raises(ValueError) as excinfo:
-            model.compile(x, verbose=True, **kwargs)
+            model.compile(x, default_configuration, verbose=True, **kwargs)
         assert "Please only set one of (p_error, global_p_error) values" in str(excinfo.value)
     else:
-        model.compile(x, verbose=True, **kwargs)
+
+        model.compile(x, default_configuration, verbose=True, **kwargs)
 
     # We still need to check that we have the expected probabilities
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2206

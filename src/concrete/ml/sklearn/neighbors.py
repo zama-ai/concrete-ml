@@ -28,8 +28,8 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
 
     def __init__(
         self,
-        n_bits=8,
-        n_neighbors=5,
+        n_bits=3,
+        n_neighbors=3,
         *,
         weights="uniform",
         algorithm="auto",

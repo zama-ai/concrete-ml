@@ -9,9 +9,12 @@ from shutil import copyfile
 
 import numpy
 import pytest
+from concrete.fhe.compilation import Configuration
 from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
+from concrete import fhe
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
 from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
@@ -67,7 +70,7 @@ class OnDiskNetwork:
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
-@pytest.mark.parametrize("n_bits", [3])
+@pytest.mark.parametrize("n_bits", [2])
 def test_client_server_sklearn(
     default_configuration,
     model_class,
@@ -95,10 +98,21 @@ def test_client_server_sklearn(
     # Compile
     extra_params = {"global_p_error": 1 / 100_000}
 
+    if get_model_name(model_class) == "KNeighborsClassifier":
+
+        default_configuration = Configuration(
+            dump_artifacts_on_unexpected_failures=False,
+            enable_unsafe_features=True,
+            use_insecure_key_cache=True,
+            insecure_key_cache_location="ConcreteNumpyKeyCache",
+            parameter_selection_strategy=fhe.ParameterSelectionStrategy.MONO,
+            single_precision=True,
+        )
+
     # Running the simulation using a model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
         client_server_simulation(x_train, x_test, model, default_configuration)
-
+    # With n_bits = 3, KNN is not compilable
     fhe_circuit = model.compile(
         x_train, default_configuration, **extra_params, show_mlir=(n_bits <= 8)
     )

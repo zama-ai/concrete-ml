@@ -276,11 +276,11 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # Check that the new quantizers are different from the first ones. This is because we
         # currently expect all quantizers to be re-computed when re-fitting a model
 
-        # For now, in KNN, we compute the pairwise Euclidean distance between the encrypted 
-        # X and each element in the database. 
-        # Then, we return the indices of the k closest distances to this point. 
-        # The exact precision of computation of the quantization and dequantization parameters 
-        # is not relevant in this case. That's why the assertion test is being ignored 
+        # For now, in KNN, we compute the pairwise Euclidean distance between the encrypted
+        # X and each element in the database.
+        # Then, we return the indices of the k closest distances to this point.
+        # The exact precision of computation of the quantization and dequantization parameters
+        # is not relevant in this case. That's why the assertion test is being ignored
         # for now in the context of the KNN algorithm.
         if get_model_name(model) != "KNeighborsClassifier":
             assert all(
@@ -307,11 +307,11 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # quantizers to be re-computed when re-fitting. Since we used the same dataset as the first
         # fit, we also expect these quantizers to be the same.
 
-        # For now, in KNN, we compute the pairwise Euclidean distance between the encrypted 
-        # X and each element in the database. 
-        # Then, we return the indices of the k closest distances to this point. 
-        # The exact precision of computation of the quantization and dequantization parameters 
-        # is not relevant in this case. That's why the assertion test is being ignored 
+        # For now, in KNN, we compute the pairwise Euclidean distance between the encrypted
+        # X and each element in the database.
+        # Then, we return the indices of the k closest distances to this point.
+        # The exact precision of computation of the quantization and dequantization parameters
+        # is not relevant in this case. That's why the assertion test is being ignored
         # for now in the context of the KNN algorithm.
         if get_model_name(model) != "KNeighborsClassifier":
             assert all(
@@ -1461,10 +1461,16 @@ def test_predict_correctness(
                 print("Compile the model")
 
             with warnings.catch_warnings():
+                from concrete import fhe
+
+                if get_model_name(model) == "KNeighborsClassifier":
+                    default_configuration.parameter_selection_strategy = (
+                        fhe.ParameterSelectionStrategy.MONO
+                    )
                 fhe_circuit = model.compile(
                     x,
                     default_configuration,
-                    show_mlir=verbose and (n_bits <= 8),
+                    show_mlir=False,
                 )
 
                 check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
