@@ -41,7 +41,7 @@ import pytest
 import torch
 from concrete.fhe import ParameterSelectionStrategy
 from sklearn.decomposition import PCA
-from sklearn.exceptions import ConvergenceWarning
+from sklearn.exceptions import ConvergenceWarning, UndefinedMetricWarning
 from sklearn.metrics import make_scorer, matthews_corrcoef, top_k_accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
@@ -681,6 +681,10 @@ def check_grid_search(model_class, x, y, scoring):
             "n_estimators": [5, 10],
             "n_jobs": [1],
         }
+    elif model_class in get_sklearn_neighbors_models():
+        param_grid = {
+            "n_bits": [3],
+        }
     else:
         param_grid = {
             "n_bits": [20],
@@ -689,6 +693,7 @@ def check_grid_search(model_class, x, y, scoring):
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+        warnings.simplefilter("ignore", category=UndefinedMetricWarning)
 
         if get_model_name(model_class) == "KNeighborsClassifier" and scoring in [
             "roc_auc",
