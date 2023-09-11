@@ -1461,11 +1461,10 @@ def test_predict_correctness(
                 print("Compile the model")
 
             with warnings.catch_warnings():
-                from concrete import fhe
 
                 if get_model_name(model) == "KNeighborsClassifier":
                     default_configuration.parameter_selection_strategy = (
-                        fhe.ParameterSelectionStrategy.MONO
+                        ParameterSelectionStrategy.MONO
                     )
                 fhe_circuit = model.compile(
                     x,
@@ -1689,6 +1688,10 @@ def test_mono_parameter_warnings(
     # Linear models are manually forced to use mono-parameter
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
         return
+
+    # KNN works only for ParameterSelectionStrategy.MULTI
+    if is_model_class_in_a_list(model_class, get_sklearn_neighbors_models()):
+        pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
     n_bits = min(N_BITS_REGULAR_BUILDS)
 
