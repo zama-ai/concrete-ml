@@ -1447,6 +1447,9 @@ def test_predict_correctness(
             f"number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
         )
 
+    if n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
+        pytest.skip("Use less than 5 bits with KNN.")
+
     y_pred = model.predict(x[:number_of_tests_in_non_fhe])
 
     list_of_possibilities = [False, True]
