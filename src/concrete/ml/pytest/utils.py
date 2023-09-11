@@ -159,7 +159,7 @@ def get_random_extract_of_sklearn_models_and_datasets():
             unique_model_classes.append(m)
 
     # To avoid to make mistakes and return empty list
-    assert len(sklearn_models_and_datasets) == 30
+    assert len(sklearn_models_and_datasets) == 29
     assert len(unique_model_classes) == 19
 
     return unique_model_classes
