@@ -221,11 +221,11 @@ pytest_internal:
 # -n N is to set the number of CPUs to use for pytest. We set it to N_CPU=4 by default because most 
 # tests include parallel execution using all CPUs and too many parallel tests would lead to 
 # contention. Thus N is set to something lower than the overall number of CPUs
+# --durations=10 is to show the 10 slowest tests
 .PHONY: pytest_internal_parallel # Run pytest with multiple CPUs
 pytest_internal_parallel:
-	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(N_CPU) ${PYTEST_OPTIONS}"
+	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(N_CPU) --durations=10 ${PYTEST_OPTIONS}"
 
-# --durations=10 is to show the 10 slowest tests
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
 # --cov-fail-under=100 is to make the command fail if coverage does not reach a 100%
@@ -235,7 +235,6 @@ pytest_internal_parallel:
 pytest:
 	"$(MAKE)" pytest_internal_parallel \
 	PYTEST_OPTIONS=" \
-	--durations=10 \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	--cov=$(SRC_DIR) \
 	--cov-fail-under=100 \
@@ -244,10 +243,8 @@ pytest:
 
 # Coverage options are not included since they look to fail on macOS
 # (see https://github.com/zama-ai/concrete-ml-internal/issues/1554)
-# --durations=10 is to show the 10 slowest tests
 .PHONY: pytest_macOS_for_GitHub # Run pytest without coverage options
-pytest_macOS_for_GitHub:
-	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--durations=10 ${PYTEST_OPTIONS}"
+pytest_macOS_for_GitHub: pytest_internal_parallel
 
 .PHONY: pytest_and_report # Run pytest and output the report in a JSON file
 pytest_and_report:
@@ -259,12 +256,11 @@ pytest_and_report:
 	--json-report-indent=4 \
 	${PYTEST_OPTIONS}"
 
-# --durations=10 is to show the 10 slowest tests
 # --no-flaky makes pytest skip tests that are makred as flaky
 .PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
 pytest_no_flaky: check_current_flaky_tests
 	echo "Warning: known flaky tests are skipped and coverage is disabled"
-	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--durations=10 --no-flaky ${PYTEST_OPTIONS}"
+	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--no-flaky ${PYTEST_OPTIONS}"
 
 # Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
 # call '--cache-clear' when calling the previous pytest run. 

@@ -46,7 +46,7 @@ poetry run python ./script/make_utils/deactivate_docs_admonitions_for_tests.py \
 
 set -x
 
-make pytest TEST="${TEST_DIR}" N_CPU="${NCPU}" PYTEST_OPTIONS="--codeblocks --durations=10"
+make pytest_internal_parallel TEST="${TEST_DIR}" N_CPU="${NCPU}" PYTEST_OPTIONS="--codeblocks"
 
 set +x
 
