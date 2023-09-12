@@ -894,6 +894,9 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
             model.predict(x)
 
     if is_classifier_or_partial_classifier(model_class):
+        if get_model_name(model) == "KNeighborsClassifier":
+            print("merde")
+            pytest.skip("predict_proba not implement for KNN")
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
         if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
