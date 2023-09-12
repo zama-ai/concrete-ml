@@ -5,7 +5,9 @@ DEV_DOCKERFILE:=docker/Dockerfile.dev
 DEV_CONTAINER_VENV_VOLUME:=concrete-ml-venv
 DEV_CONTAINER_CACHE_VOLUME:=concrete-ml-cache
 DOCKER_VENV_PATH:="$${HOME}"/dev_venv/
-SRC_DIR:=src
+SRC_DIR?=src
+TEST?=tests
+N_CPU?=4
 CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
@@ -198,125 +200,111 @@ SPCC_DEPS := check_python_format pylint_src pylint_tests mypy mypy_test pydocsty
 .PHONY: spcc_internal
 spcc_internal: $(SPCC_DEPS)
 
-# One can reproduce pytest thanks to the --randomly-seed option from pytest-randomly
+# Provide TEST (directory or python file) to run pytest on themthese tests
+# Provide PYTEST_OPTIONS for running pytest with additional options, such as --randomly-seed SEED
+# for reproducing tests
 # To repeat a single test, apply something like @pytest.mark.repeat(3) on the test function
-# -n Const because most tests include parallel execution using all CPUs, too many 
-# parallel tests would lead to contention. Thus Const is set to something much lower than num_cpus
-# --durations=10 is to show the 10 slowest tests
-# --capture=tee-sys is to make sure that, in case of crash, we can search for "Forcing seed to" in 
-# stdout in order to be able to reproduce the failed test using that seed
-# --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
-# --cov PATH is the directory PATH to consider for coverage
+# -svv disables capturing of stdout/stderr and enables verbose output
+# --count N is to repeate all tests N times (with different seeds). Default is to COUNT=1.
 # --randomly-dont-reorganize is to prevent Pytest from shuffling the tests' order
-# --cov-report=term-missing:skip-covered is used to print the missing lines for coverage withtout 
-# taking into account skiped tests
-# --count N is to repeate all tests N times (with different seeds). Default is to 1.
 # --randomly-dont-reset-seed is to make sure that, if we run the same test several times (with
 # @pytest.mark.repeat(3)), different seeds are used, even if things are still deterministic using 
 # the main seed
-# --cache-clear is to clear all Pytest's cache at before running the tests. This is done in order to prevent inconsistencies 
-# when running pytest several times in a row (for example, in the CI)
+# --capture=tee-sys is to make sure that, in case of crash, we can search for "Forcing seed to" in 
+# stdout in order to be able to reproduce the failed test using that seed
+# --cache-clear is to clear all Pytest's cache at before running the tests. This is done in order to 
+# prevent inconsistencies when running pytest several times in a row (for example, in the CI)
+.PHONY: pytest_internal # Run pytest
+pytest_internal:
+	poetry run pytest --version
+	poetry run pytest $(TEST) \
+	-svv \
+	--count=$(COUNT) \
+	--randomly-dont-reorganize \
+	--randomly-dont-reset-seed \
+	--capture=tee-sys \
+	--cache-clear \
+	${PYTEST_OPTIONS}
+
+# -n N is to set the number of CPUs to use for pytest. We set it to N_CPU=4 by default because most 
+# tests include parallel execution using all CPUs and too many parallel tests would lead to 
+# contention. Thus N is set to something lower than the overall number of CPUs
+# --durations=10 is to show the 10 slowest tests
+.PHONY: pytest_internal_parallel # Run pytest with multiple CPUs
+pytest_internal_parallel:
+	"$(MAKE)" pytest_internal PYTEST_OPTIONS="-n $(N_CPU) --durations=10 ${PYTEST_OPTIONS}"
+
+# --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
+# --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
+# --cov-fail-under=100 is to make the command fail if coverage does not reach a 100%
+# --cov-report=term-missing:skip-covered is used to print the missing lines for coverage withtout 
+# taking into account skiped tests
 .PHONY: pytest # Run pytest on all tests
 pytest:
-	poetry run pytest --version
-	poetry run pytest tests/ \
-	-svv \
-	-n 4 \
-	--durations=10 \
-	--capture=tee-sys \
+	"$(MAKE)" pytest_internal_parallel \
+	PYTEST_OPTIONS=" \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	--cov=$(SRC_DIR) \
 	--cov-fail-under=100 \
-	--randomly-dont-reorganize \
 	--cov-report=term-missing:skip-covered \
-	--count=$(COUNT) \
-	--randomly-dont-reset-seed \
-	--cache-clear \
-	${PYTEST_OPTIONS}
+	${PYTEST_OPTIONS}"
 
-.PHONY: pytest_one # Run pytest on a single file or directory (TEST) a certain number of times (COUNT)
-pytest_one:
-	poetry run pytest \
-	-svv \
-	-n $$(./script/make_utils/ncpus.sh) \
-	--durations=10 \
-	--capture=tee-sys \
-	--randomly-dont-reorganize \
-	--count=$(COUNT) \
-	--randomly-dont-reset-seed \
-	--cache-clear \
-	${PYTEST_OPTIONS} \
-	"$${TEST}"
-
-.PHONY: pytest_one_single_cpu # Run pytest on a single file or directory (TEST) with a single CPU with RANDOMLY_SEED seed
-# Don't set --durations=10, because it is not reproducible and we use this target for determinism
-# checks
-pytest_one_single_cpu:
-	poetry run pytest \
-	-svv \
-	--capture=tee-sys \
-	--randomly-dont-reorganize \
-	--randomly-dont-reset-seed \
-	--cache-clear \
-	${PYTEST_OPTIONS} \
-	"$${TEST}" --randomly-seed=${RANDOMLY_SEED}
-
-.PHONY: pytest_macOS_for_GitHub # Run pytest with some coverage options which are removed
-# These options are removed since they look to fail on macOS for no obvious reason
+# Coverage options are not included since they look to fail on macOS
 # (see https://github.com/zama-ai/concrete-ml-internal/issues/1554)
-pytest_macOS_for_GitHub:
-	poetry run pytest \
-	-svv \
-	-n 4 \
-	--durations=10 \
-	--capture=tee-sys \
-	--randomly-dont-reorganize \
-	--count=$(COUNT) \
-	--randomly-dont-reset-seed \
-	--cache-clear \
-	${PYTEST_OPTIONS}
-
-.PHONY: check_current_flaky_tests # Print the current list of known flaky tests
-check_current_flaky_tests:
-	echo "Skip the following known flaky tests (test file: number of skipped configs):"
-	poetry run pytest ./tests --collect-only -m flaky -qq
-
-.PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
-pytest_no_flaky: check_current_flaky_tests
-	poetry run pytest --version
-	echo "Warning: known flaky tests are skipped and coverage is disabled"
-	poetry run pytest tests/ \
-	--durations=10 -svv \
-	--capture=tee-sys \
-	-n 4 \
-	--randomly-dont-reorganize \
-	--count=$(COUNT) \
-	--randomly-dont-reset-seed \
-	--no-flaky \
-	--cache-clear \
-	${PYTEST_OPTIONS}
-
-# Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
-# call '--cache-clear' when calling the previous pytest run. 
-# The '--last-failed' option runs all last failed tests. In case there is none, the 
-# '--last-failed-no-failures none' option indicates pytest not to run anything (instead of running 
-# all tests over again)
-.PHONY: pytest_run_last_failed # Run all failed tests from the previous pytest run
-pytest_run_last_failed:
-	poetry run pytest ./tests --last-failed --last-failed-no-failures none
-
-# Printing latest failed tests works by accessing pytest's cache. It is therefore recommended to
-# call '--cache-clear' when calling the previous pytest run. 
-# The '--cache-show' option prints pytest's complete cache (cacehd tests, random_seed, ...). Last
-# failed tests are found in the 'cache/lastfailed' section, which can be used to filter the output 
-.PHONY: pytest_get_last_failed # Get the list of last failed tests 
-pytest_get_last_failed:
-	poetry run pytest ./tests --cache-show cache/lastfailed
+.PHONY: pytest_macOS_for_GitHub # Run pytest without coverage options
+pytest_macOS_for_GitHub: pytest_internal_parallel
 
 .PHONY: pytest_and_report # Run pytest and output the report in a JSON file
 pytest_and_report:
 	"$(MAKE)" pytest \
-	PYTEST_OPTIONS="--json-report --json-report-file='pytest_report.json'  --json-report-omit collectors log traceback streams warnings  --json-report-indent=4"
+	PYTEST_OPTIONS="\
+	--json-report \
+	--json-report-file='pytest_report.json' \
+	--json-report-omit collectors log traceback streams warnings  \
+	--json-report-indent=4 \
+	${PYTEST_OPTIONS}"
+
+# --no-flaky makes pytest skip tests that are makred as flaky
+.PHONY: pytest_no_flaky # Run pytest but ignore known flaky issues (so no coverage as well)
+pytest_no_flaky: check_current_flaky_tests
+	echo "Warning: known flaky tests are skipped and coverage is disabled"
+	"$(MAKE)" pytest_internal_parallel PYTEST_OPTIONS="--no-flaky ${PYTEST_OPTIONS}"
+
+# Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
+# call '--cache-clear' when calling the previous pytest run. 
+# --last-failed runs all last failed tests
+# --last-failed-no-failures none' indicates pytest not to run anything (instead of running 
+# all tests over again) if no failed tests are found
+.PHONY: pytest_run_last_failed # Run all failed tests from the previous pytest run
+pytest_run_last_failed:
+	poetry run pytest $(TEST) --last-failed --last-failed-no-failures none
+
+.PHONY: pytest_one # Run pytest on a single file or directory (TEST)
+pytest_one:
+	@if [[ "$$TEST" == "" ]]; then \
+		echo "TEST env variable is empty. Please specifcy which tests to run or use 'make pytest' instead.";\
+		exit 1; \
+	fi
+
+	"$(MAKE)" pytest_internal
+
+# --randomly-seed=SEED is to reproduce tests using the given seed
+.PHONY: pytest_one_single_cpu # Run pytest on a single file or directory (TEST) using a specific seed (RANDOMLY_SEED) with a single CPU
+pytest_one_single_cpu:
+	"$(MAKE)" pytest_one PYTEST_OPTIONS="--randomly-seed=${RANDOMLY_SEED} ${PYTEST_OPTIONS}" 
+
+.PHONY: check_current_flaky_tests # Print the current list of known flaky tests
+check_current_flaky_tests:
+	echo "Skip the following known flaky tests (test file: number of skipped configs):"
+	poetry run pytest $(TEST) --collect-only -m flaky -qq
+
+# Printing latest failed tests works by accessing pytest's cache. It is therefore recommended to
+# call '--cache-clear' when calling the previous pytest run. 
+# --cache-show prints pytest's complete cache (cacehd tests, random_seed, ...). Last failed tests 
+# are found in the 'cache/lastfailed' section, which can be used to filter the output 
+.PHONY: pytest_get_last_failed # Get the list of last failed tests 
+pytest_get_last_failed:
+	poetry run pytest $(TEST) --cache-show cache/lastfailed
 
 # Not a huge fan of ignoring missing imports, but some packages do not have typing stubs
 .PHONY: mypy # Run mypy

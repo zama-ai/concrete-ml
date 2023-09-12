@@ -43,7 +43,8 @@ echo "Successful determinism check"
 # Now, check --forcing_random_seed, i.e., check that one can reproduce conditions of a bug in a single file
 # and test without having to relaunch the full pytest, by just picking the right --forcing_random_seed
 
-LIST_FILES=$(grep "tests/seeding/test_seeding.py" "${OUTPUT_DIRECTORY}/one.txt")
+# All lines that start with "tests/seeding/test_seeding.py::" represent a test that passed
+LIST_FILES=$(grep "tests/seeding/test_seeding.py::" "${OUTPUT_DIRECTORY}/one.txt")
 LIST_SEED=()
 while IFS='' read -r line; do LIST_SEED+=("$line"); done < <(grep "forcing_random_seed" "${OUTPUT_DIRECTORY}/one.txt" | sed -e "s@Relaunch the tests with --forcing_random_seed @@" | sed -e "s@ --randomly-dont-reset-seed to reproduce. Remark that adding --randomly-seed=... is needed when the testcase uses randoms in pytest parameters@@" )
 
