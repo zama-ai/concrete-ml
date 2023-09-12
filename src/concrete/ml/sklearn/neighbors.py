@@ -50,6 +50,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         self.metric_params = metric_params
         self.n_jobs = n_jobs
         self.weights = weights
+        self._y = None
 
     def dump_dict(self) -> Dict[str, Any]:
         assert self._weight_quantizer is not None, self._is_not_fitted_error_message()

@@ -19,14 +19,14 @@ import sklearn
 import skorch.net
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
+from concrete.fhe import array as fhe_array
+from concrete.fhe import zeros as fhe_zeros
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
 from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
-
-from concrete import fhe
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -1711,7 +1711,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: Union[int, Dict[str, int]] = 5):
+    def __init__(self, n_bits: Union[int, Dict[str, int]] = 3):
         """Initialize the FHE knn model.
 
         Args:
@@ -1920,40 +1920,73 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 + numpy.expand_dims(numpy.sum(self._q_X_fit**2, axis=1), 0)
             )
 
-        distance_matrix = pairwise_euclidean_distance(q_X)
-
-        # sqr not done
-
-        # 2. Sorting
         def topk_sorting(x):
+            """Argsort in FHE.
+
+            Args:
+                x (numpy.ndarray): The quantized input values.
+
+            Returns:
+                numpy.ndarray: The argsort.
+            """
+
             def gather1d(x, indices):
-                """Select x[indices]."""
+                """Select elements from the input array `x` using the provided `indices`.
+
+                Args:
+                    x (numpy.ndarray): The encrypted input array
+                    indices (numpy.ndarray): The desired indexes
+
+                Returns:
+                    numpy.ndarray: The selected encrypted indexes.
+                """
                 arr = []
                 for i in indices:
                     arr.append(x[i])
-                enc_arr = fhe.array(arr)
+                enc_arr = fhe_array(arr)
                 return enc_arr
 
             def scatter1d(x, v, indices):
+                """Rearrange elements of `x` with values from `v` at the specified `indices`.
+
+                Args:
+                    x (numpy.ndarray): The encrypted input array in which items will be updated
+                    v (numpy.ndarray): The array containing values to be inserted into `x`
+                        at the specified `indices`.
+                    indices (numpy.ndarray): The indices indicating where to insert the elements
+                        from `v` into `x`.
+
+                Returns:
+                    numpy.ndarray: The updated encrypted `x`
+                """
                 for idx, i in enumerate(indices):
                     x[i] = v[idx]
                 return x
 
             def mul_tlu(a, b):
+                """Matrix multiplication.
+
+                Args:
+                    a (numpy.ndarray): An encrypted array
+                    b (numpy.ndarray): An encrypted array
+
+                Returns:
+                    numpy.ndarray: The result of a * b
+                """
                 return a * b
 
-            idx = numpy.arange(x.size) + fhe.zeros(x.shape)
             comparisons = numpy.zeros(x.shape)
-            n = x.size
-            k = self.n_neighbors
+            idx = numpy.arange(x.size) + fhe_zeros(x.shape)
 
+            n, k = x.size, self.n_neighbors
             ln2n = int(numpy.ceil(numpy.log2(n)))
+
             for t in range(ln2n - 1, -1, -1):
                 p = 2**t
                 r = 0
                 d = p
 
-                for bq in range(ln2n - 1, t - 1, -1):  # q = 2^(t-1), 2^(t-2), ..., p
+                for bq in range(ln2n - 1, t - 1, -1):
                     q = 2**bq
                     range_i = numpy.array(
                         [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
@@ -1974,9 +2007,9 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     x = scatter1d(x, max_x, range_i + d)  # x[range_i + d] = max_x
 
                     max_idx = a_i + mul_tlu((b_i - a_i), sign)
-                    idx = scatter1d(
-                        idx, a_i + b_i - max_idx, range_i
-                    )  # idx[range_i] = a_i + b_i - max_idx
+
+                    # idx[range_i] = a_i + b_i - max_idx
+                    idx = scatter1d(idx, a_i + b_i - max_idx, range_i)
                     idx = scatter1d(idx, max_idx, range_i + d)  # idx[range_i + d] = max_idx
 
                     comparisons[range_i + d] = comparisons[range_i + d] + 1
@@ -1984,9 +2017,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     d = q - p
                     r = p
 
-            return numpy.concatenate((x.reshape((1, -1)), idx.reshape((1, -1))), axis=0)
+            return idx
 
-        _, sorted_args = topk_sorting(distance_matrix.flatten())
+        # 1. Pairwise_euclidiean distance
+        distance_matrix = pairwise_euclidean_distance(q_X)
+
+        # sqr not done
+
+        # 2. Sorting args
+        sorted_args = topk_sorting(distance_matrix.flatten())
 
         return sorted_args
 

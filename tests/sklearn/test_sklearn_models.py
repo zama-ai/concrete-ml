@@ -1550,6 +1550,7 @@ def test_p_error_global_p_error_simulation(
     parameters,
     error_param,
     load_data,
+    default_configuration,
     is_weekly_option,
 ):
     """Test p_error and global_p_error simulation.
@@ -1565,6 +1566,10 @@ def test_p_error_global_p_error_simulation(
 
     # Get data-set
     n_bits = min(N_BITS_REGULAR_BUILDS)
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        n_bits = min(n_bits, 5)
+        default_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+        default_configuration.single_precision = True
 
     # Initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
@@ -1575,7 +1580,7 @@ def test_p_error_global_p_error_simulation(
     )
 
     # Compile with a large p_error to be sure the result is random.
-    model.compile(x, **error_param)
+    model.compile(x, default_configuration, **error_param)
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""

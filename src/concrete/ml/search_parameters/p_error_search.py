@@ -58,10 +58,9 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy
 import torch
+from concrete.fhe import ParameterSelectionStrategy
 from concrete.fhe.compilation import Configuration
 from tqdm import tqdm
-
-from concrete import fhe
 
 from ..common.utils import get_model_name, is_brevitas_model, is_model_class_in_a_list
 from ..sklearn import (
@@ -117,9 +116,9 @@ def compile_and_simulated_fhe_inference(
         enable_unsafe_features=True,
         use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
-        parameter_selection_strategy=fhe.ParameterSelectionStrategy.MONO
+        parameter_selection_strategy=ParameterSelectionStrategy.MONO
         if get_model_name(estimator) == "KNeighborsClassifier"
-        else fhe.ParameterSelectionStrategy.MULTI,
+        else ParameterSelectionStrategy.MULTI,
     )
     compile_function: Callable[..., Any]
     dequantized_output: numpy.ndarray
