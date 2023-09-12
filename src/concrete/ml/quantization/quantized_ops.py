@@ -163,6 +163,7 @@ class QuantizedGemm(QuantizedMixingOp):
             f"{self._impl_for_op_named} if weights are provided as the 'b' constant input.",
         )
 
+    # pylint: disable-next=too-many-statements
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
@@ -183,7 +184,7 @@ class QuantizedGemm(QuantizedMixingOp):
 
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[numpy.ndarray] = (
+        q_bias: Optional[QuantizedArray] = (
             None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
         )
 
@@ -263,12 +264,22 @@ class QuantizedGemm(QuantizedMixingOp):
                 # Make mypy happy
                 assert q_bias is not None
                 # Reshape the biases to broadcast them to each neuron
-                out_zp = out_zp + q_bias / (-m_matmul)
+                bias_out = q_bias.values if isinstance(q_bias, QuantizedArray) else q_bias
+                out_zp = out_zp + bias_out / (-m_matmul)
 
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
             # to properly de-quantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
+
+        # Integer biases are only supported for Brevitas QAT which sets is_precomputed_qat to true
+        # These biases are produced by QuantizedBrevitasQuant ops
+        if q_bias is not None and q_bias.quantizer.is_precomputed_qat:
+            # Make sure the scale was correctly matching during training
+            # The bias scale should be the same scale as the one of the weights * inputs
+            assert q_bias.quantizer.scale is not None
+            assert numpy.isclose(q_bias.quantizer.scale, m_matmul)
+            numpy_q_out += q_bias.qvalues
 
         with tag(self.op_instance_name + ".matmul_rounding"):
             # Apply Concrete rounding (if relevant)
@@ -280,9 +291,9 @@ class QuantizedGemm(QuantizedMixingOp):
 
         numpy_q_out = m_matmul * numpy_q_out
 
-        if q_bias is not None:
+        if q_bias is not None and not q_bias.quantizer.is_precomputed_qat:
             # The bias is handled as a float and will be fused
-            numpy_q_out = numpy_q_out + q_bias
+            numpy_q_out = numpy_q_out + q_bias.values
 
         # Return the float values, so that Concrete can fuse any following float operations
         # We also keep track of the scaling factor and zero-point, since these will be
@@ -595,6 +606,7 @@ class QuantizedConv(QuantizedMixingOp):
             " standard",
         )
 
+    # pylint: disable-next=too-many-statements
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
@@ -628,7 +640,7 @@ class QuantizedConv(QuantizedMixingOp):
         )
         q_input: QuantizedArray = prepared_inputs[0]
         q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[numpy.ndarray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
+        q_bias: Optional[QuantizedArray] = None if len(prepared_inputs) == 2 else prepared_inputs[2]
 
         in_channels = q_input.values.shape[1]
         weight_channels = q_weights.values.shape[1]
@@ -742,12 +754,19 @@ class QuantizedConv(QuantizedMixingOp):
             out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
             if q_bias is not None:
                 # Reshape the biases to broadcast them to each channel
-                out_zp = out_zp - q_bias.reshape((1, -1, 1, 1)) / m_matmul
+                out_zp = out_zp - q_bias.values.reshape((1, -1, 1, 1)) / m_matmul
 
             # We identify terms in the above equation to determine what
             # the scale/zero-point of the in-the-clear quantizer should be
             # to properly de-quantize numpy_q_out
             return self.make_output_quant_parameters(numpy_q_out, m_matmul, out_zp)
+
+        if q_bias is not None and q_bias.quantizer.is_precomputed_qat:
+            # Make sure the scale was correctly matching during training
+            # The bias scale should be the same scale as the one of the weights * inputs
+            assert q_bias.quantizer.scale is not None
+            assert numpy.isclose(q_bias.quantizer.scale, m_matmul)
+            numpy_q_out += q_bias.qvalues.reshape((1, -1, 1, 1))
 
         with tag(self.op_instance_name + ".conv_rounding"):
             # Apply Concrete rounding (if relevant)
@@ -759,10 +778,10 @@ class QuantizedConv(QuantizedMixingOp):
         # Rescale from scale=scale_inputs x scale_outputs to output scale
         numpy_q_out = m_matmul * numpy_q_out
 
-        if q_bias is not None:
+        if q_bias is not None and not q_bias.quantizer.is_precomputed_qat:
             # The bias addition is handled in float and will be fused into a TLU
             # Reshape the biases to broadcast them to each channel
-            numpy_q_out = numpy_q_out + q_bias.reshape((1, -1, 1, 1))  # bias_part
+            numpy_q_out = numpy_q_out + q_bias.values.reshape((1, -1, 1, 1))  # bias_part
 
         # And return as a QuantizedArray initialized from the float data, keeping
         # track of the quantization parameters

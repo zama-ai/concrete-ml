@@ -11,11 +11,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from torch import nn
 
+from concrete.ml.common import utils
 from concrete.ml.common.utils import (
     MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     is_classifier_or_partial_classifier,
     is_regressor_or_partial_regressor,
 )
+from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
+from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
 from concrete.ml.sklearn import get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
@@ -186,6 +189,7 @@ def test_compile_and_calib(
         "module__n_a_bits": 2,
         "module__n_accum_bits": 5,
         "module__activation_function": activation_function,
+        "module__power_of_two_scaling": False,
         "max_epochs": 10,
         "verbose": 0,
     }
@@ -488,3 +492,139 @@ def test_serialization_unsupported_parameters(
 
     with pytest.raises(expected_error, match=expected_message):
         model.dumps()
+
+
+@pytest.mark.parametrize(
+    "activation_function",
+    [
+        pytest.param(nn.ReLU),
+        pytest.param(nn.Sigmoid),
+    ],
+)
+@pytest.mark.parametrize("num_layers", [2, 4])
+@pytest.mark.parametrize("model_class", [NeuralNetClassifier])
+@pytest.mark.parametrize("use_power_of_two_scaling", [True, False])
+def test_power_of_two_scaling(
+    activation_function,
+    model_class,
+    num_layers,
+    load_data,
+    use_power_of_two_scaling,
+    default_configuration,
+):
+    """Check that built-in neural networks can use roundPBS optimization."""
+
+    n_features = 10
+
+    # Get the data-set. The data generation is seeded in load_data.
+    x, y = load_data(
+        model_class,
+        n_samples=1000,
+        n_features=n_features,
+        n_redundant=0,
+        n_repeated=0,
+        n_informative=n_features,
+        n_classes=2,
+        class_sep=2,
+    )
+
+    # Perform a classic test-train split (deterministic by fixing the seed)
+    x_train, x_test, y_train, _ = train_test_split(
+        x,
+        y,
+        test_size=0.25,
+        random_state=numpy.random.randint(0, 2**15),
+    )
+
+    # Compute mean/stdev on training set and normalize both train and test sets with them
+    # Optimization algorithms for Neural networks work well on 0-centered inputs
+    normalizer = StandardScaler()
+    x_train = normalizer.fit_transform(x_train)
+    x_test = normalizer.transform(x_test)
+
+    # Configure a minimal neural network and train it quickly
+    params = {
+        "module__n_layers": num_layers,
+        "module__n_w_bits": 4,
+        "module__n_a_bits": 4,
+        "module__n_accum_bits": 32,
+        "module__activation_function": activation_function,
+        "module__power_of_two_scaling": use_power_of_two_scaling,
+        "max_epochs": 2,
+        "verbose": 0,
+    }
+
+    model = model_class(**params)
+
+    utils.QUANT_ROUND_LIKE_ROUND_PBS = True
+
+    # Train normally. This also converts the torch NN to a QuantizedModule
+    # and thus applies the PowerOfTwoScalingRoundPBSAdapter that
+    # detects and applies round PBS optimization
+    model.fit(x_train, y_train)
+
+    # Count the number of patterns that were optimized with roundPBS
+    num_round_pbs_layers = 0
+    for (_, node_op) in model.quantized_module_.quant_layers_dict.values():
+        if isinstance(node_op, QuantizedMixingOp):
+            num_round_pbs_layers += 1 if node_op.rounding_threshold_bits is not None else 0
+            assert node_op.rounding_threshold_bits == node_op.lsbs_to_remove
+
+    # Apply the PowerOfTwoScalingRoundPBSAdapter again. The second time
+    # the adapter will ignore already optimized patterns but report them
+    # as ignored.
+    adapter = PowerOfTwoScalingRoundPBSAdapter(model.quantized_module_)
+    round_pbs_patterns = adapter.process()
+
+    # The power-of-two optimization will only work
+    # when Relu activations are used and scaling factors are forced to be 2**s
+    if activation_function is nn.ReLU and use_power_of_two_scaling:
+        assert (
+            len(round_pbs_patterns) == 0
+        ), "Expected number of round PBS optimized patterns was not matched"
+        assert (
+            adapter.num_ignored_valid_patterns == num_layers - 1
+        ), "Expected number of ignored round PBS optimizable patterns was not matched"
+
+        y_pred_clear_round = model.predict(x_test, fhe="disable")
+
+        # Compile the model to ensure rounding is taken into account
+        # in compilation
+        model.compile(
+            x_train,
+            configuration=default_configuration,
+        )
+
+        # Compute the results with simulation, which uses the actual
+        # lookup tables.
+        y_pred_sim_round = model.predict(x_test, fhe="simulate")
+
+        # Ensure rounding was compiled in the circuit
+        # the number of rounding nodes should be equal
+        num_rounding_mlir = model.fhe_circuit.mlir.count(".round")
+
+        assert (
+            num_rounding_mlir == num_layers - 1
+        ), "Power-of-to adapter: Rounding nodes not found in MLIR"
+
+        # Remove rounding in the network to perform inference without the optimization.
+        # We expect a network that was optimized with the power-of-two adapter
+        # to be exactly correct to the non-optimized one
+        for (_, node_op) in model.quantized_module_.quant_layers_dict.values():
+            if isinstance(node_op, QuantizedMixingOp):
+                node_op.rounding_threshold_bits = None
+                node_op.lsbs_to_remove = None
+
+        # Predict with the unoptimized network
+        y_pred_clear_no_round = model.predict(x_test, fhe="disable")
+
+        # Compare the result with the optimized network with and without
+        # rounding. Tolerate at most 1 error
+        assert numpy.sum(y_pred_clear_round != y_pred_clear_no_round) <= 1
+        assert numpy.sum(y_pred_sim_round != y_pred_clear_no_round) <= 1
+    else:
+        # If the optimization is not expected to work, check that no patterns were
+        # detected
+        assert (
+            adapter.num_ignored_valid_patterns == 0
+        ), "Optimization performed but not expected for round PBS optimizable patterns"

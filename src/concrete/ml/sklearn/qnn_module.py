@@ -5,10 +5,11 @@ import brevitas.nn as qnn
 import numpy
 import torch
 import torch.nn.utils.prune as pruning
+from brevitas.quant.scaled_int import Int8ActPerTensorFloat, Int8WeightPerTensorFloat, IntBias
 from torch import nn
 
 from ..common.debugging import assert_true
-from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
+from ..quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 
 
 class SparseQuantNeuralNetwork(nn.Module):
@@ -27,13 +28,15 @@ class SparseQuantNeuralNetwork(nn.Module):
         n_layers: int,
         n_outputs: int,
         n_hidden_neurons_multiplier: int = 4,
-        n_w_bits: int = 3,
-        n_a_bits: int = 3,
-        n_accum_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+        n_w_bits: int = 4,
+        n_a_bits: int = 4,
+        # No pruning by default as roundPBS keeps the PBS precision low
+        n_accum_bits: int = 32,
         n_prune_neurons_percentage: float = 0.0,
         activation_function: Type = nn.ReLU,
         quant_narrow: bool = False,
         quant_signed: bool = True,
+        power_of_two_scaling: bool = True,  # Default to true: use roundPBS to speed up the NNs
     ):
         """Sparse Quantized Neural Network constructor.
 
@@ -60,6 +63,8 @@ class SparseQuantNeuralNetwork(nn.Module):
                 (e.g a 2-bits signed quantization uses [-1, 0, 1] instead of [-2, -1, 0, 1]).
             quant_signed (bool): Whether this network should quantize the values using signed
                 integers.
+            power_of_two_scaling (bool): Force quantization scales to be a power of two
+                to enable inference speed optimizations. Defaults to True
 
         Raises:
             ValueError: If the parameters have invalid values or the computed accumulator bit-width
@@ -81,6 +86,8 @@ class SparseQuantNeuralNetwork(nn.Module):
         if n_w_bits <= 0 or n_a_bits <= 0:
             raise ValueError("The weight & activation quantization bit-width cannot be less than 1")
 
+        high_input_bitwidth = False  # power_of_two_scaling and activation_function is nn.ReLU
+
         for idx in range(n_layers):
             out_features = (
                 n_outputs if idx == n_layers - 1 else int(input_dim * n_hidden_neurons_multiplier)
@@ -88,10 +95,11 @@ class SparseQuantNeuralNetwork(nn.Module):
 
             quant_name = f"quant{idx}"
             quantizer = qnn.QuantIdentity(
-                bit_width=n_a_bits,
+                bit_width=8 if high_input_bitwidth else n_a_bits,
                 return_quant_tensor=True,
                 narrow_range=quant_narrow,
                 signed=quant_signed,
+                act_quant=Int8ActPerTensorPoT if power_of_two_scaling else Int8ActPerTensorFloat,
             )
 
             layer_name = f"fc{idx}"
@@ -100,10 +108,13 @@ class SparseQuantNeuralNetwork(nn.Module):
                 out_features,
                 True,
                 weight_bit_width=n_w_bits,
-                bias_quant=None,
+                bias_quant=IntBias if power_of_two_scaling else None,
                 weight_narrow_range=quant_narrow,
                 narrow_range=quant_narrow,
                 signed=quant_signed,
+                weight_quant=Int8WeightPerTensorPoT
+                if power_of_two_scaling
+                else Int8WeightPerTensorFloat,
             )
 
             self.features.add_module(quant_name, quantizer)

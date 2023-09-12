@@ -6,9 +6,11 @@ from typing import Union
 import brevitas.nn as qnn
 import numpy
 import torch
-from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat
+from brevitas.quant import Int8ActPerTensorFloat, Int8WeightPerTensorFloat, IntBias
 from torch import nn
 from torch.nn.utils import prune
+
+from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
 
 # pylint: disable=too-many-lines
 
@@ -686,7 +688,7 @@ class TinyQATCNN(nn.Module):
     should help keep the accumulator bit-width low.
     """
 
-    def __init__(self, n_classes, n_bits, n_active, signed, narrow) -> None:
+    def __init__(self, n_classes, n_bits, n_active, signed, narrow, power_of_two_scaling) -> None:
         """Construct the CNN with a configurable number of classes.
 
         Args:
@@ -695,6 +697,8 @@ class TinyQATCNN(nn.Module):
             n_active (int): number of active (non-zero weight) neurons to keep
             signed (bool): whether quantized integer values are signed
             narrow (bool): whether the range of quantized integer values is narrow/symmetric
+            power_of_two_scaling (bool): whether to use power-of-two scaling quantizers which
+                allows to test the round PBS optimization when the scales are power-of-two
         """
         super().__init__()
 
@@ -705,17 +709,56 @@ class TinyQATCNN(nn.Module):
 
         q_args = {"signed": signed, "narrow_range": narrow}
 
-        self.quant1 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
+        if power_of_two_scaling:
+            act_quant = Int8ActPerTensorPoT
+            weight_quant = Int8WeightPerTensorPoT
+            bias_quant = IntBias
+        else:
+            act_quant = Int8ActPerTensorFloat
+            weight_quant = Int8WeightPerTensorFloat
+            bias_quant = None
+
+        self.quant1 = qnn.QuantIdentity(
+            bit_width=a_bits, return_quant_tensor=True, **q_args, act_quant=act_quant
+        )
         self.conv1 = qnn.QuantConv2d(
-            1, 2, 3, stride=1, padding=0, weight_bit_width=w_bits, **q_args
+            1,
+            2,
+            3,
+            stride=1,
+            padding=0,
+            weight_bit_width=w_bits,
+            **q_args,
+            weight_quant=weight_quant,
+            bias_quant=bias_quant,
         )
-        self.quant2 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
+        self.quant2 = qnn.QuantIdentity(
+            bit_width=a_bits, return_quant_tensor=True, **q_args, act_quant=act_quant
+        )
         self.conv2 = qnn.QuantConv2d(
-            2, 3, 3, stride=2, padding=0, weight_bit_width=w_bits, **q_args
+            2,
+            3,
+            3,
+            stride=2,
+            padding=0,
+            weight_bit_width=w_bits,
+            **q_args,
+            weight_quant=weight_quant,
+            bias_quant=bias_quant,
         )
-        self.quant3 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
+        self.quant3 = qnn.QuantIdentity(
+            bit_width=a_bits, return_quant_tensor=True, **q_args, act_quant=act_quant
+        )
         self.conv3 = qnn.QuantConv2d(
-            3, 16, 2, stride=1, padding=0, weight_bit_width=w_bits, **q_args
+            3,
+            16,
+            2,
+            stride=1,
+            padding=0,
+            weight_bit_width=w_bits,
+            **q_args,
+            weight_quant=weight_quant,
+            bias_quant=bias_quant,
         )
 
         self.quant4 = qnn.QuantIdentity(bit_width=a_bits, return_quant_tensor=True, **q_args)
@@ -780,47 +823,6 @@ class TinyQATCNN(nn.Module):
         x = x.view(-1, 16)
         x = self.fc1(x)
         return x
-
-    def test_torch(self, test_loader):
-        """Test the network: measure accuracy on the test set.
-
-        Args:
-            test_loader: the test loader
-
-        Returns:
-            res: the number of correctly classified test examples
-
-        """
-
-        # Freeze normalization layers
-        self.eval()
-
-        all_y_pred = numpy.zeros((len(test_loader)), dtype=numpy.int64)
-        all_targets = numpy.zeros((len(test_loader)), dtype=numpy.int64)
-
-        # Iterate over the batches
-        idx = 0
-        for data, target in test_loader:
-            # Accumulate the ground truth labels
-            endidx = idx + target.shape[0]
-            all_targets[idx:endidx] = target.numpy()
-
-            # Run forward and get the raw predictions first
-            raw_pred = self(data).detach().numpy()
-
-            # Get the predicted class id, handle NaNs
-            if numpy.any(numpy.isnan(raw_pred)):
-                output = -1  # pragma: no cover
-            else:
-                output = raw_pred.argmax(1)
-
-            all_y_pred[idx:endidx] = output
-
-            idx += target.shape[0]
-
-        # Print out the accuracy as a percentage
-        n_correct = numpy.sum(all_targets == all_y_pred)
-        return n_correct
 
 
 class SimpleQAT(nn.Module):
@@ -1230,6 +1232,7 @@ class QuantCustomModel(nn.Module):
         n_bits: int = 5,
         act_quant=Int8ActPerTensorFloat,
         weight_quant=Int8WeightPerTensorFloat,
+        bias_quant=None,
     ):
         """Quantized Torch Model with Brevitas.
 
@@ -1240,7 +1243,7 @@ class QuantCustomModel(nn.Module):
             n_bits (int): Bit of quantization
             weight_quant (brevitas.quant): Quantization protocol of weights
             act_quant (brevitas.quant): Quantization protocol of activations.
-
+            bias_quant (brevitas.quant): Quantizer for the linear layer bias
         """
         super().__init__()
 
@@ -1253,6 +1256,7 @@ class QuantCustomModel(nn.Module):
             weight_bit_width=n_bits,
             weight_quant=weight_quant,
             bias=True,
+            bias_quant=bias_quant,
             return_quant_tensor=True,
         )
 
@@ -1263,6 +1267,7 @@ class QuantCustomModel(nn.Module):
             weight_bit_width=n_bits,
             weight_quant=weight_quant,
             bias=True,
+            bias_quant=bias_quant,
             return_quant_tensor=True,
         )
 
@@ -1274,6 +1279,7 @@ class QuantCustomModel(nn.Module):
             weight_bit_width=n_bits,
             weight_quant=weight_quant,
             bias=True,
+            bias_quant=bias_quant,
             return_quant_tensor=True,
         )
 

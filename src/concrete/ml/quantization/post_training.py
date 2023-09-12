@@ -19,6 +19,7 @@ from .base_quantized_op import (
     QuantizedOp,
 )
 from .quantized_module import QuantizedModule
+from .quantized_module_passes import PowerOfTwoScalingRoundPBSAdapter
 from .quantized_ops import QuantizedBrevitasQuant
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
@@ -427,13 +428,14 @@ class ONNXConverter:
                 attributes.update({"rounding_threshold_bits": self.rounding_threshold_bits})
 
             # All inputs, allow optional constants (they become None)
-            curr_inputs = {
-                input_name: node_results.get(input_name, None) for input_name in node.input
-            }
+            # Note that input of a node can be duplicated, e.g., (%a, %a, %b)
+            curr_inputs = [
+                (input_name, node_results.get(input_name, None)) for input_name in node.input
+            ]
 
             # Constant inputs
             curr_cst_inputs: Dict[int, ONNXOpInputOutputType] = {}
-            for input_idx, (input_name, value) in enumerate(curr_inputs.items()):
+            for input_idx, (input_name, value) in enumerate(curr_inputs):
                 if not (input_name in self.quant_params or input_name in constants):
                     continue
 
@@ -455,10 +457,12 @@ class ONNXConverter:
             has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
 
             variable_input_names = [
-                input_name for input_name in curr_inputs if input_name not in constants
+                input_name for input_name, _ in curr_inputs if input_name not in constants
             ]
             curr_calibration_data = tuple(
-                curr_inputs[input_name] for input_name in variable_input_names
+                input_data
+                for input_name, input_data in curr_inputs
+                if input_name in variable_input_names
             )
 
             # For mypy
@@ -603,6 +607,10 @@ class ONNXConverter:
             quant_layers_dict=self.quant_ops_dict,
             onnx_model=self.numpy_model.onnx_model,
         )
+
+        adapter = PowerOfTwoScalingRoundPBSAdapter(quantized_module)
+        # Apply the round PBS optimization if possible
+        adapter.process()
 
         self._process_input_quantizers(quantized_module, calibration_data)
 

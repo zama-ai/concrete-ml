@@ -14,6 +14,7 @@ from concrete.fhe import univariate
 from scipy import special
 from typing_extensions import SupportsIndex
 
+from ..common import utils
 from ..common.debugging import assert_false, assert_true
 from .onnx_impl_utils import (
     compute_onnx_pool_padding,
@@ -240,7 +241,6 @@ def numpy_constant(**kwargs):
 # pylint: disable=invalid-name
 # 1 is technically an int but is accepted by mypy as a float (and it simplifies our life for
 # compilation) so instead of passing 1.0 by default 1 is passed
-@onnx_func_raw_args("c")
 def numpy_gemm(
     a: numpy.ndarray,
     b: numpy.ndarray,
@@ -1140,7 +1140,6 @@ def numpy_transpose(x: numpy.ndarray, *, perm=None) -> Tuple[numpy.ndarray]:
     return (numpy.transpose(x, axes=perm),)
 
 
-@onnx_func_raw_args("b")
 def numpy_conv(
     x: numpy.ndarray,
     w: numpy.ndarray,
@@ -1655,7 +1654,10 @@ def numpy_brevitas_quant(
     y = numpy.clip(y, min_int_val, max_int_val)
 
     # Quantize to produce integers representing the float quantized values
-    y = numpy.rint(y)
+    if utils.QUANT_ROUND_LIKE_ROUND_PBS:
+        y = numpy.floor(y + 0.5)
+    else:
+        y = numpy.rint(y)
 
     # Compute quantized floating point values
     y = (y - zero_point) * scale

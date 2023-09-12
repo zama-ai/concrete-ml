@@ -42,6 +42,14 @@ MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 # Indicate if the old simulation method should be used when simulating FHE executions
 USE_OLD_VL = True
 
+# Debug option for testing round PBS optimization
+# Setting this option to true will make quantizers "round half up"
+# For example: 0.5 -> 1, 1.5 -> 2 instead of "round half to even"
+# When the option is set to false, Concrete ML uses numpy.rint
+# which has the same behavior as torch.round -> Brevitas nets
+# should be exact compared to their Concrete ML QuantizedModule
+QUANT_ROUND_LIKE_ROUND_PBS = False
+
 
 class FheMode(str, enum.Enum):
     """Enum representing the execution mode.

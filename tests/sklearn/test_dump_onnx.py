@@ -2,6 +2,7 @@
 
 
 import warnings
+from functools import partial
 
 import numpy
 import onnx
@@ -11,6 +12,7 @@ from sklearn.exceptions import ConvergenceWarning
 from concrete.ml.common.utils import is_model_class_in_a_list
 from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
 from concrete.ml.sklearn import get_sklearn_tree_models
+from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
 
@@ -90,6 +92,29 @@ def test_dump(
     # Some models have been done with different n_classes which create different ONNX
     if parameters.get("n_classes", 2) != 2 and model_name in ["LinearSVC", "LogisticRegression"]:
         return
+
+    if model_name == "NeuralNetClassifier":
+        model_class = partial(
+            NeuralNetClassifier,
+            module__n_layers=3,
+            module__power_of_two_scaling=False,
+            max_epochs=1,
+            verbose=0,
+            callbacks="disable",
+        )
+    elif model_name == "NeuralNetRegressor":
+        model_class = partial(
+            NeuralNetRegressor,
+            module__n_layers=3,
+            module__n_w_bits=2,
+            module__n_a_bits=2,
+            module__n_accum_bits=7,  # Stay with 7 bits for test exec time
+            module__n_hidden_neurons_multiplier=1,
+            module__power_of_two_scaling=False,
+            max_epochs=1,
+            verbose=0,
+            callbacks="disable",
+        )
 
     n_classes = parameters.get("n_classes", 2)
 
