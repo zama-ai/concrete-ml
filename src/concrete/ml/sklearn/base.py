@@ -657,7 +657,10 @@ class BaseEstimator:
                 # Execute the inference in FHE or with simulation
                 q_y_pred_i = predict_method(q_X_i)
 
-                q_y_pred_list.append(q_y_pred_i[0])
+                if self.__class__.__name__ == "KNeighborsClassifier":
+                    q_y_pred_list.append(q_y_pred_i)
+                else:
+                    q_y_pred_list.append(q_y_pred_i[0])
 
             q_y_pred = numpy.array(q_y_pred_list)
 
@@ -1846,6 +1849,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # We compute the sorted argmax in FHE, which are integers.
         # No need to de-quantize the output values
 
+        assert q_y_preds.shape[-1] == self.n_neighbors, (
+            f"Shape error: `q_y_preds` must be shape of ({self.n_neighbors},) and got:"
+            f"`{q_y_preds.shape}`"
+        )
         return q_y_preds
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
@@ -2017,7 +2024,14 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     d = q - p
                     r = p
 
-            return idx
+            x = []
+            for i in range((self.n_neighbors)):
+                x.append(idx[i])
+            x = fhe_array(x)
+
+            assert x.shape[0] == self.n_neighbors
+
+            return x
 
         # 1. Pairwise_euclidiean distance
         distance_matrix = pairwise_euclidean_distance(q_X)
@@ -2037,10 +2051,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for query in X:
             # Argsort
             arg_sort = super().predict(query[None], fhe)
-            arg_sort = arg_sort.astype(numpy.int64)[: self.n_neighbors]
+            assert arg_sort.size == self.n_neighbors
             # Majority vote
             # pylint: disable=protected-access
-            label_indices = self._y[arg_sort]
+            label_indices = self._y[arg_sort.flatten()]
             y_pred = self.majority_vote(label_indices)
             y_preds.append(y_pred)
 

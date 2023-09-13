@@ -117,7 +117,9 @@ N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS = 9
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the the (x, y) data-set."""
 
-    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if not is_model_class_in_a_list(
+        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+    ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
 
@@ -130,7 +132,9 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
 def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) data-set."""
 
-    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if not is_model_class_in_a_list(
+        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+    ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds")
 
@@ -895,7 +899,6 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
     if is_classifier_or_partial_classifier(model_class):
         if get_model_name(model) == "KNeighborsClassifier":
-            print("merde")
             pytest.skip("predict_proba not implement for KNN")
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
@@ -1567,17 +1570,17 @@ def test_p_error_global_p_error_simulation(
     # Get data-set
     n_bits = min(N_BITS_REGULAR_BUILDS)
     if get_model_name(model_class) == "KNeighborsClassifier":
-        n_bits = min(n_bits, 5)
+        n_bits = min(n_bits, 2)
         default_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
-        default_configuration.single_precision = True
 
     # Initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check if model is linear
-    is_linear_model = is_model_class_in_a_list(
-        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
-    )
+    is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
+
+    # Check if model is linear
+    is_knn_model = is_model_class_in_a_list(model_class, get_sklearn_neighbors_models())
 
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, default_configuration, **error_param)
@@ -1599,9 +1602,21 @@ def test_p_error_global_p_error_simulation(
                 return True
         return False
 
+    if is_knn_model:
+        # In the case of KNN, a large `p_error` results in indexes larger than expected, which will
+        # trigger an IndexError
+        with pytest.raises(IndexError, match=".* is out of bounds for axis 0 with size .*"):
+            simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
+            fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
+
+        assert simulation_diff_found, (
+            "Due to large p_error, "
+            "simulate predictions should be different from the expected predictions."
+        )
+        return
+
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
-
     # Check for differences in predictions
     # Remark that, with the old VL, linear models (or, more generally, circuits without PBS) were
     # badly simulated. It has been fixed in the new simulation.
