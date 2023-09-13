@@ -1483,7 +1483,7 @@ def test_predict_correctness(
                 fhe_circuit = model.compile(
                     x,
                     default_configuration,
-                    show_mlir=False,
+                    show_mlir=verbose and (n_bits <= 8),
                 )
 
                 check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
