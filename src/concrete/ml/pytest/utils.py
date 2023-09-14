@@ -273,6 +273,8 @@ def load_torch_model(
     """
     model = model_class(**params)
 
+    print("tests")
+
     if state_dict_or_path is not None:
         if isinstance(state_dict_or_path, (str, Path)):
             state_dict = torch.load(state_dict_or_path, map_location=device)
