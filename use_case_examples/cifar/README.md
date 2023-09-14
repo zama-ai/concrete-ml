@@ -3,10 +3,11 @@
 This repository provides resources and documentation on different use-cases for classifying CIFAR-10 and CIFAR-100 images using Fully Homomorphic Encryption (FHE). Each use-case demonstrates different techniques and adaptations to work within the constraints of FHE.
 
 ## Table of Contents
+
 1. [Use-Cases](#use-cases)
-   - [Fine-Tuning CIFAR-10/100](#fine-tuning-cifar-10100)
-   - [Training Ternary VGG on CIFAR10](#training-ternary-vgg-on-cifar10)
-   - [CIFAR-10 with a Split Clear/FHE Model](#cifar-10-with-a-split-clearfhe-model)
+   - [Fine-Tuning VGG11 CIFAR-10/100](#fine-tuning-cifar-10100)
+   - [Training Ternary VGG9 on CIFAR10](#training-ternary-vgg-on-cifar10)
+   - [CIFAR-10 VGG9 with one client-side layer](#cifar-10-with-a-split-clearfhe-model)
 2. [Installation](#installation)
 3. [Further Reading & Resources](#further-reading--resources)
 
@@ -14,9 +15,10 @@ This repository provides resources and documentation on different use-cases for 
 
 ### Fine-Tuning CIFAR-10/100
 
-- **Description**: This use-case explores how to convert a pre-trained CNN (on imagenet) to its FHE equivalent using QAT and Concrete ML. The conversion process involves adapting a VGG11 network and quantizing the network for FHE.
+- **Description**: This use-case explores how to convert a pre-trained CNN (on imagenet) to its FHE equivalent using Quantization Aware Training (QAT) and Concrete ML. The conversion process involves adapting a VGG11 network and quantizing the network for FHE.
 
-- Notebooks:
+Notebooks:
+
 1. [Adapting VGG11 for CIFAR datasets](cifar_brevitas_finetuning/FromImageNetToCifar.ipynb).
 2. [Quantizing the pre-trained network](cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
 3. [Computing the accuracy of the quantized models with FHE simulation](cifar_brevitas_finetuning/CifarInFhe.ipynb).
@@ -27,15 +29,15 @@ This repository provides resources and documentation on different use-cases for 
 ### Training Ternary VGG on CIFAR10
 
 - **Description**: Train a VGG-like neural network from scratch using Brevitas on CIFAR-10 and run it in FHE. This use-case modifies the original VGG model for compatibility with Concrete ML, and explores the performance gains of rounding operations in FHE.
-- **Training & Inference**: Scripts provided to train the network and evaluate its performance. Also includes simulations in Concrete ML and insights into the performance enhancement using rounding.
+- **Training & Inference**: Scripts provided to train the network and evaluate its performance. It also includes simulations in Concrete ML and insights into the performance enhancement using rounding.
 
 [Results & Metrics](cifar_brevitas_training/README.md#Accuracy_/and_/performance)
 
 ### CIFAR-10 with a Split Clear/FHE Model
 
-- **Description**: An approach that splits the model into two parts: one running in clear and the other in FHE. By doing this, higher precision can be achieved in the input layer while still benefiting from FHE in subsequent layers.
-- **Model Design**: Targets 8-bit accumulators for faster FHE inference. Pruning and 2-bit weights are used.
-- **Implementation**: Detailed steps on how to run the model in FHE and the trade-offs involved in choosing the appropriate p_error value.
+- **Description**: This method divides the model into two segments: one that operates in plaintext (clear) and the other in Fully Homomorphic Encryption (FHE). This division allows for greater precision in the input layer while taking advantage of FHE's privacy-preserving capabilities in the subsequent layers.
+- **Model Design**: Aims at using 8-bit accumulators to speed up FHE inference. The design incorporates pruning techniques and employs 2-bit weights to meet this aim.
+- **Implementation**: Provides step-by-step guidance on how to execute the hybrid clear/FHE model, focusing on the details and decisions behind selecting the optimal `p_error` value. Special attention is given to the binary search method to balance accuracy and FHE performance.
 
 [Results & Metrics](cifar_brevitas_with_model_splitting/README.md#results)
 
