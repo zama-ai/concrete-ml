@@ -84,16 +84,6 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  # For reasons explained in the issue, we need to manually list the files that we want to download
-  # from LFS. This could be removed if tests stop to use files stored in LFS
-  # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3600 
-  LFS_TEST_FILES: "\
-    tests/data/mnist_2b_s1_1.zip, \
-    tests/data/mnist_test_batch.zip, \
-    tests/parameter_search/FashionMNIST_quant_state_dict.pt, \
-    tests/parameter_search/custom_data_fp32_state_dict.pt, \
-    tests/parameter_search/custom_data_quant_state_dict.pt"
- 
  
 
 jobs:
@@ -379,7 +369,7 @@ jobs:
       # benchmarks and use cases 
       - name: Pull LFS test files
         run: |
-          git lfs pull --include "${{ env.LFS_TEST_FILES }}" --exclude  ""
+          git lfs pull --include "tests/data" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1
@@ -496,7 +486,9 @@ jobs:
               - src/**
               - '!src/concrete/ml/version.py'
             tests:
-              - tests/**
+              - 'tests/**/test_*.py'
+            tests_utils:
+              - tests/data/**
               - src/concrete/ml/pytest/**
             determinism:
               - tests/seeding/test_seeding.py
@@ -514,20 +506,24 @@ jobs:
             makefile:
               - Makefile
 
-      # Run determinism test. The only case where this is not run is for a PR that does not modify
-      # anything in the source code or the determinism test file. This step is also triggered
-      # if any dependency has been updated or if some changes were found in the conftest.py as well
-      # as the Makefile
+      # Run determinism test if:
+      # - during weekly or release CI, as well as when the CI has been triggered manually (through 
+      # GitHub's Action interface)
+      # - the determinism test file has been changed
+      # - the source code has been changed
+      # - any dependency has been updated
+      # - conftest.py has been changed
+      # - Makefile has been changed
       - name: Determinism
         id: determinism
         if: |
-          !(
-            steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.determinism_any_changed == 'false'
-            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-            && steps.changed-files-in-pr.outputs.dependencies_any_changed == 'false'
-            && steps.changed-files-in-pr.outputs.conftest_any_changed == 'false'
-            && steps.changed-files-in-pr.outputs.makefile_any_changed == 'false'
+          (
+            steps.changed-files-in-pr.outcome == 'skipped' 
+            || steps.changed-files-in-pr.outputs.determinism_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
           )
           && steps.install-deps.outcome == 'success' 
           && steps.make-pcc.outcome == 'success' 
@@ -535,16 +531,20 @@ jobs:
         run: |
           make determinism
 
-      # Build the documentation if anything changed in our documentation files, in the source code
-      # or in the makefile
+      # Build the documentation if :
+      # - during weekly or release CI, as well as when the CI has been triggered manually (through 
+      # GitHub's Action interface)
+      # - any documentation files has been changed
+      # - the source code has been changed
+      # - Makefile has been changed
       - name: Build docs
         id: build-docs
         if: |
-          !(
-            steps.changed-files-in-pr.outcome == 'success' 
-            && steps.changed-files-in-pr.outputs.docs_any_changed == 'false' 
-            && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-            && steps.changed-files-in-pr.outputs.makefile_any_changed == 'false'
+          (
+            steps.changed-files-in-pr.outcome == 'skipped' 
+            || steps.changed-files-in-pr.outputs.docs_any_changed == 'true' 
+            || steps.changed-files-in-pr.outputs.src_any_changed == 'true'
+            || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
           )
           && steps.install-deps.outcome == 'success' 
           && steps.make-pcc.outcome == 'success' 
@@ -631,10 +631,16 @@ jobs:
           name: py3-wheel
           path: dist/*.whl
       
-      # Run Pytest on a subset of our tests if the source code or our tests has changed, and if the 
-      # current workflow does no take place in a weekly or release CI. This step is also triggered
-      # if any dependency has been updated or if some changes were found in the conftest.py as well
-      # as the Makefile
+      # Run Pytest on a subset of our tests if :
+      # - the current workflow does no take place in a weekly or release CI
+      # - if the CI has been triggered manually (through GitHub's Action interface)
+      # - the source code has been changed
+      # - any tests utils (pytest, data) has been changed
+      # - any dependency has been updated 
+      # - conftest.py has been changed
+      # - Makefile has been changed
+      # If only some test files were changed, this step is skipped and each associated tests will be
+      # run individually in a following step (pytest_modified_tests_only)
       # If regular tests failed, a following script checks for flaky tests. If all failed tests 
       # are known flaky tests, they are re-run. Otherwise, the step exits with status 1.
       # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
@@ -642,13 +648,18 @@ jobs:
       - name: PyTest Source Code (regular)
         id: pytest_regular
         if: |
-          steps.changed-files-in-pr.outcome == 'success' 
-          && (
-            steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
-            || steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
-            || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
-            || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
-            || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+          (
+            (
+              steps.changed-files-in-pr.outcome == 'success' 
+              && (
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+                || steps.changed-files-in-pr.outputs.tests_utils_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.conftest_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+              )
+            )
+            || fromJSON(env.IS_WORKFLOW_DISPATCH)
           )
           && steps.conformance.outcome == 'success' 
           && !cancelled()
@@ -687,6 +698,24 @@ jobs:
         with:
           path: failed_tests_comment.txt
           recreate: true
+
+      # If regular pytest step has been skipped but some changes has been detected in test files, 
+      # meaning there was no other changed impacting our testing suite, we only need to run these 
+      # modified tests
+      # Note that if pytest utils or test data are changed, the regular pytest step should have been
+      # triggered instead
+      - name: PyTest on modified tests only
+        id: pytest_modified_tests_only
+        if: |
+          steps.changed-files-in-pr.outcome == 'success'
+          && steps.pytest_regular.outcome == 'skipped'
+          && steps.changed-files-in-pr.outputs.tests_any_changed == 'true'
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
+        run: |
+          for file in ${{ steps.changed-files-in-pr.outputs.tests_all_changed_files }}; do
+              make pytest_one TEST="$file"
+          done
 
       # Run Pytest on all of our tests on a weekly basis
       - name: PyTest Source Code (weekly)
@@ -927,7 +956,7 @@ jobs:
       # benchmarks and use cases 
       - name: Pull LFS test files
         run: |
-          git lfs pull --include "${{ env.LFS_TEST_FILES }}" --exclude  ""
+          git lfs pull --include "tests/data" --exclude  ""
 
       - name: Set up Python ${{ matrix.python_version }}
         uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1

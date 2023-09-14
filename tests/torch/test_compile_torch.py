@@ -788,8 +788,8 @@ def test_pretrained_mnist_qat(
     if not is_weekly_option:
         pytest.skip("Tests too long")
 
-    onnx_file_path = "tests/data/mnist_2b_s1_1.zip"
-    mnist_test_path = "tests/data/mnist_test_batch.zip"
+    onnx_file_path = "tests/data/torch/mnist_2b_s1_1.zip"
+    mnist_test_path = "tests/data/torch/mnist_test_batch.zip"
 
     # Load ONNX model from zip file
     with zipfile.ZipFile(onnx_file_path, "r") as archive_model:
