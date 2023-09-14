@@ -71,6 +71,8 @@ def test_data_processing_invalid_input(input_type, load_data):
 
     x, y = get_data(load_data)
 
+    print("tests")
+
     if input_type.lower() == "tuple":
         x = tuple(x)
         y = tuple(y)
