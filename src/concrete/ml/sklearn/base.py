@@ -701,6 +701,13 @@ class BaseClassifier(BaseEstimator):
 
     @property
     def target_classes_(self) -> Optional[numpy.ndarray]:  # pragma: no cover
+        """Get the model's classes.
+
+        Using this attribute is deprecated.
+
+        Returns:
+            Optional[numpy.ndarray]: The model's classes.
+        """
         warnings.warn(
             "Attribute 'target_classes_' is now deprecated. Please use 'classes_' instead.",
             category=UserWarning,
@@ -710,7 +717,14 @@ class BaseClassifier(BaseEstimator):
         return self.classes_
 
     @property
-    def n_classes_(self) -> Optional[numpy.ndarray]:  # pragma: no cover
+    def n_classes_(self) -> int:  # pragma: no cover
+        """Get the model's number of classes.
+
+        Using this attribute is deprecated.
+
+        Returns:
+            int: The model's number of classes.
+        """
         warnings.warn(
             "Attribute 'n_classes_' is now deprecated. Please use 'len(classes_)' instead.",
             category=UserWarning,
@@ -718,10 +732,6 @@ class BaseClassifier(BaseEstimator):
         )
 
         return len(self.classes_)
-
-    def _set_post_processing_params(self):
-        super()._set_post_processing_params()
-        self.post_processing_params.update({"classes_": self.classes_})
 
     def fit(self, X: Data, y: Target, **fit_parameters):
         X, y = check_X_y_and_assert_multi_output(X, y)
@@ -765,17 +775,16 @@ class BaseClassifier(BaseEstimator):
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         y_preds = super().post_processing(y_preds)
 
-        # Retrieve the number of target classes
-        classes = self.post_processing_params["classes_"]
+        # If the prediction array is 1D, which happens with some models such as XGBCLassifier or
+        # LogisticRegression models, we have a binary classification problem
+        n_classes = y_preds.shape[1] if y_preds.ndim > 1 and y_preds.shape[1] > 1 else 2
 
-        # If the predictions only has one dimension (i.e., binary classification problem), apply the
-        # sigmoid operator
-        if len(classes) == 2:
+        # For binary classification problem, apply the sigmoid operator
+        if n_classes == 2:
             y_preds = numpy_sigmoid(y_preds)[0]
 
-            # If the prediction array is 1D (which happens with some models such as XGBCLassifier
-            # models), transform the output into a 2D array [1-p, p], with p the initial
-            # output probabilities
+            # If the prediction array is 1D, transform the output into a 2D array [1-p, p],
+            # with p the initial output probabilities
             if y_preds.ndim == 1 or y_preds.shape[1] == 1:
                 y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
 

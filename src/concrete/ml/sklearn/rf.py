@@ -85,9 +85,6 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
 
-        # Classifier
-        metadata["classes_"] = self.classes_
-
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
         metadata["bootstrap"] = self.bootstrap
@@ -128,9 +125,6 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
             output_n_bits=obj.n_bits,
         )
         obj.post_processing_params = metadata["post_processing_params"]
-
-        # Classifier
-        obj.classes_ = metadata["classes_"]
 
         # Scikit-Learn
         obj.n_estimators = metadata["n_estimators"]
