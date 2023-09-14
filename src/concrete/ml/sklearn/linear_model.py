@@ -526,8 +526,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["post_processing_params"] = self.post_processing_params
 
         # Classifier
-        metadata["target_classes_"] = self.target_classes_
-        metadata["n_classes_"] = self.n_classes_
+        metadata["classes_"] = self.classes_
 
         # Scikit-Learn
         metadata["penalty"] = self.penalty
@@ -567,8 +566,7 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         obj.post_processing_params = metadata["post_processing_params"]
 
         # Classifier
-        obj.target_classes_ = metadata["target_classes_"]
-        obj.n_classes_ = metadata["n_classes_"]
+        obj.classes_ = metadata["classes_"]
 
         # Scikit-Learn
         obj.penalty = metadata["penalty"]

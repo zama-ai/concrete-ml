@@ -699,31 +699,38 @@ class BaseClassifier(BaseEstimator):
     the predicted values as well as handling a mapping of classes in case they are not ordered.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def target_classes_(self) -> Optional[numpy.ndarray]:  # pragma: no cover
+        warnings.warn(
+            "Attribute 'target_classes_' is now deprecated. Please use 'classes_' instead.",
+            category=UserWarning,
+            stacklevel=2,
+        )
 
-        #: The classifier's different target classes. Is None if the model is not fitted.
-        self.target_classes_: Optional[numpy.ndarray] = None
+        return self.classes_
 
-        #: The classifier's number of different target classes. Is None if the model is not fitted.
-        self.n_classes_: Optional[int] = None
+    @property
+    def n_classes_(self) -> Optional[numpy.ndarray]:  # pragma: no cover
+        warnings.warn(
+            "Attribute 'n_classes_' is now deprecated. Please use 'len(classes_)' instead.",
+            category=UserWarning,
+            stacklevel=2,
+        )
+
+        return len(self.classes_)
 
     def _set_post_processing_params(self):
         super()._set_post_processing_params()
-        self.post_processing_params.update({"n_classes_": self.n_classes_})
+        self.post_processing_params.update({"classes_": self.classes_})
 
     def fit(self, X: Data, y: Target, **fit_parameters):
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Retrieve the different target classes
         classes = numpy.unique(y)
-        self.target_classes_ = classes
-
-        # Compute the number of target classes
-        self.n_classes_ = len(classes)
 
         # Make sure y contains at least two classes
-        assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
+        assert_true(len(classes) > 1, "You must provide at least 2 classes in y.")
 
         # Change to composition in order to avoid diamond inheritance and indirect super() calls
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3249
@@ -753,19 +760,17 @@ class BaseClassifier(BaseEstimator):
         # Retrieve the class with the highest probability
         y_preds = numpy.argmax(y_proba, axis=1)
 
-        assert self.target_classes_ is not None, self._is_not_fitted_error_message()
-
-        return self.target_classes_[y_preds]
+        return self.classes_[y_preds]
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         y_preds = super().post_processing(y_preds)
 
         # Retrieve the number of target classes
-        n_classes_ = self.post_processing_params["n_classes_"]
+        classes = self.post_processing_params["classes_"]
 
         # If the predictions only has one dimension (i.e., binary classification problem), apply the
         # sigmoid operator
-        if n_classes_ == 2:
+        if len(classes) == 2:
             y_preds = numpy_sigmoid(y_preds)[0]
 
             # If the prediction array is 1D (which happens with some models such as XGBCLassifier

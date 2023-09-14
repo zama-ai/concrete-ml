@@ -219,7 +219,7 @@ def test_compile_and_calib(
     if is_classifier_or_partial_classifier(model_class):
         y_pred_clear = model.predict(x_train, fhe="disable")
         # Check that the predicted classes are all contained in the model class list
-        assert set(numpy.unique(y_pred_clear)).issubset(set(model.target_classes_))
+        assert set(numpy.unique(y_pred_clear)).issubset(set(model.classes_))
 
     # Compile the model
     model.compile(
