@@ -41,18 +41,19 @@ DATASETS_ARGS = {
     },
 }
 
+TEST_DATA_DIR = Path(__file__).parents[1] / "data" / "parameter_search"
 
 MODELS_ARGS = {
     "CustomModel": {
         "qat": {
             "model_class": QuantCustomModel,
-            "path": Path(__file__).parent / "custom_data_quant_state_dict.pt",
+            "path": TEST_DATA_DIR / "custom_data_quant_state_dict.pt",
             "params": {"n_bits": 4, "input_shape": 6, "hidden_shape": 100, "output_shape": 3},
         },
         "fp32": {
             "model_class": TorchCustomModel,
             "path": torch.load(
-                (Path(__file__).parent / "custom_data_fp32_state_dict.pt"), map_location="cpu"
+                (TEST_DATA_DIR / "custom_data_fp32_state_dict.pt"), map_location="cpu"
             ),
             "params": {"input_shape": 6, "hidden_shape": 100, "output_shape": 3},
         },
