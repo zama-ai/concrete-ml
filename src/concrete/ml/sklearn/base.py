@@ -709,7 +709,8 @@ class BaseClassifier(BaseEstimator):
             Optional[numpy.ndarray]: The model's classes.
         """
         warnings.warn(
-            "Attribute 'target_classes_' is now deprecated. Please use 'classes_' instead.",
+            "Attribute 'target_classes_' is now deprecated and will be removed in a future "
+            "version. Please use 'classes_' instead.",
             category=UserWarning,
             stacklevel=2,
         )
@@ -725,8 +726,14 @@ class BaseClassifier(BaseEstimator):
         Returns:
             int: The model's number of classes.
         """
+
+        # Tree-based classifiers from scikit-learn provide a `n_classes_` attribute
+        if self.sklearn_model is not None and hasattr(self.sklearn_model, "n_classes_"):
+            return self.sklearn_model.n_classes_
+
         warnings.warn(
-            "Attribute 'n_classes_' is now deprecated. Please use 'len(classes_)' instead.",
+            "Attribute 'n_classes_' is now deprecated and will be removed in a future version. "
+            "Please use 'len(classes_)' instead.",
             category=UserWarning,
             stacklevel=2,
         )

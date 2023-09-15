@@ -590,6 +590,7 @@ class NeuralNetClassifier(
         metadata["history_"] = self.history_
         metadata["initialized_"] = self.initialized_
         metadata["virtual_params_"] = self.virtual_params_
+        metadata["classes_"] = self.classes_
 
         assert hasattr(
             self, "module__n_layers"
@@ -622,6 +623,7 @@ class NeuralNetClassifier(
         # Instantiate the model
         obj = NeuralNetClassifier(
             module__n_layers=metadata["module__n_layers"],
+            classes=metadata["classes_"],
         )
 
         # Concrete-ML
