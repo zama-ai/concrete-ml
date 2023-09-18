@@ -8,7 +8,7 @@ from typing import List
 import torch
 import torchvision
 import torchvision.transforms as transforms
-from concrete.fhe import Circuit, Configuration, ParameterSelectionStrategy
+from concrete.fhe import Circuit, Configuration
 from model import CNV
 
 from concrete.ml.deployment.fhe_client_server import FHEModelDev
@@ -54,10 +54,7 @@ def main():
         train_features_sub_set = model.clear_module(train_sub_set)
 
     # Multi-parameter strategy is used in order to speed-up the FHE executions
-    configuration = Configuration(
-        show_optimizer=True,
-        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
-    )
+    configuration = Configuration(show_optimizer=True)
 
     compilation_onnx_path = "compilation_model.onnx"
     print("Compiling the model ...")

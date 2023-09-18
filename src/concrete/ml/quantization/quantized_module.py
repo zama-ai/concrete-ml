@@ -24,7 +24,6 @@ from ..common.utils import (
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
-    set_multi_parameter_in_configuration,
     to_tuple,
 )
 from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
@@ -638,11 +637,6 @@ class QuantizedModule:
 
         # Find the right way to set parameters for compiler, depending on the way we want to default
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
-
-        # Remove this function once the default strategy is set to multi-parameter in Concrete
-        # Python
-        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3860
-        configuration = set_multi_parameter_in_configuration(configuration)
 
         # Jit compiler is now deprecated and will soon be removed, it is thus forced to False
         # by default

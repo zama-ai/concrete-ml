@@ -38,7 +38,6 @@ from ..common.utils import (
     force_mono_parameter_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
-    set_multi_parameter_in_configuration,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
@@ -1363,27 +1362,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def compile(self, *args, **kwargs) -> Circuit:
-
-        # Factorize this in the base class once Concrete Python fixes the multi-parameter bug
-        # with fully-leveled circuits
-        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
-        # Remove this function once the default strategy is set to multi-parameter in Concrete
-        # Python
-        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3860
-        # If a configuration instance is given as a positional parameter, set the strategy to
-        # multi-parameter
-        if len(args) >= 2:
-            configuration = set_multi_parameter_in_configuration(args[1])
-            args_list = list(args)
-            args_list[1] = configuration
-            args = tuple(args_list)
-
-        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
-        # strategy to multi-parameter
-        else:
-            configuration = kwargs.get("configuration", None)
-            kwargs["configuration"] = set_multi_parameter_in_configuration(configuration)
-
         BaseEstimator.compile(self, *args, **kwargs)
 
         # Check that the graph only has a single output
@@ -1637,26 +1615,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         )
         y_pred += self._q_bias
         return y_pred
-
-    # Remove this function once Concrete Python fixes the multi-parameter bug with fully-leveled
-    # circuits and factorize it in the base class
-    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
-    def compile(self, *args, **kwargs) -> Circuit:
-        # If a configuration instance is given as a positional parameter, set the strategy to
-        # multi-parameter
-        if len(args) >= 2:
-            configuration = force_mono_parameter_in_configuration(args[1])
-            args_list = list(args)
-            args_list[1] = configuration
-            args = tuple(args_list)
-
-        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
-        # strategy to multi-parameter
-        else:
-            configuration = kwargs.get("configuration", None)
-            kwargs["configuration"] = force_mono_parameter_in_configuration(configuration)
-
-        return BaseEstimator.compile(self, *args, **kwargs)
 
 
 class SklearnLinearRegressorMixin(SklearnLinearModelMixin, sklearn.base.RegressorMixin, ABC):

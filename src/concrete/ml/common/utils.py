@@ -2,7 +2,6 @@
 
 import enum
 import string
-import warnings
 from functools import partial
 from types import FunctionType
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
@@ -587,43 +586,9 @@ def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool
     return all(_is_of_dtype(value, supported_dtypes) for value in values)
 
 
-def set_multi_parameter_in_configuration(configuration: Optional[Configuration], **kwargs):
-    """Build a Configuration instance with multi-parameter strategy, unless one is already given.
-
-    If the given Configuration instance is not None and the parameter strategy is set to MONO, a
-    warning is raised in order to make sure the user did it on purpose.
-
-    Args:
-        configuration (Optional[Configuration]): The configuration to consider.
-        **kwargs: Additional parameters to use for instantiating a new Configuration instance, if
-            configuration is None.
-
-    Returns:
-        configuration (Configuration): A configuration with multi-parameter strategy.
-    """
-    assert (
-        "parameter_selection_strategy" not in kwargs
-    ), "Please do not provide a parameter_selection_strategy parameter as it will be set to MULTI."
-    if configuration is None:
-        configuration = Configuration(
-            parameter_selection_strategy=ParameterSelectionStrategy.MULTI, **kwargs
-        )
-
-    elif configuration.parameter_selection_strategy == ParameterSelectionStrategy.MONO:
-        warnings.warn(
-            "Setting the parameter_selection_strategy to mono-parameter is not recommended as it "
-            "can deteriorate performances. If you set it voluntarily, this message can be ignored. "
-            "Else, please set parameter_selection_strategy to ParameterSelectionStrategy.MULTI "
-            "when initializing the Configuration instance.",
-            stacklevel=2,
-        )
-
-    return configuration
-
-
-# Remove this function once Concrete Python fixes the multi-parameter bug with fully-leveled
+# Remove this function once Concrete Python fixes the multi-parameter bug with KNN
 # circuits
-# TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
 def force_mono_parameter_in_configuration(configuration: Optional[Configuration], **kwargs):
     """Force configuration to mono-parameter strategy.
 

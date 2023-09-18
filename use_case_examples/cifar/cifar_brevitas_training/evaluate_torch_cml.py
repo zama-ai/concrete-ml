@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from concrete.fhe import Configuration, ParameterSelectionStrategy
+from concrete.fhe import Configuration
 from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -106,7 +106,6 @@ def main(args):
     cfg = Configuration(
         verbose=True,
         show_optimizer=args.show_optimizer,
-        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
     for rounding_threshold_bits in rounding_threshold_bits_list:
