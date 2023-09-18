@@ -1,8 +1,10 @@
 """Implement sklearn linear model."""
 from typing import Any, Dict
 
+import numpy
 import sklearn.linear_model
 
+from ..common.debugging.custom_assert import assert_true
 from .base import SklearnKNeighborsClassifierMixin
 
 
@@ -28,7 +30,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
 
     def __init__(
         self,
-        n_bits=3,
+        n_bits=2,
         n_neighbors=3,
         *,
         weights="uniform",
@@ -42,6 +44,18 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         # Call SklearnKNeighborsClassifierMixin's __init__ method
         super().__init__(n_bits=n_bits)
 
+        assert_true(
+            algorithm in ["brute", "auto"], f"Algorithm = `{algorithm}` is not supported in FHE."
+        )
+        assert_true(
+            not callable(metric), "The KNeighborsClassifier does not support custom metrics."
+        )
+        assert_true(
+            p == 2 and metric == "minkowski",
+            "Only `L2` norm is supported with `p=2` and `metric = 'minkowski'`",
+        )
+
+        self._y: numpy.ndarray
         self.n_neighbors = n_neighbors
         self.algorithm = algorithm
         self.leaf_size = leaf_size
@@ -50,10 +64,9 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         self.metric_params = metric_params
         self.n_jobs = n_jobs
         self.weights = weights
-        self._y = None
 
     def dump_dict(self) -> Dict[str, Any]:
-        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+        assert self._q_X_fit_quantizer is not None, self._is_not_fitted_error_message()
 
         metadata: Dict[str, Any] = {}
 
@@ -63,7 +76,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = self.input_quantizers
-        metadata["_weight_quantizer"] = self._weight_quantizer
         metadata["_q_X_fit_quantizer"] = self._q_X_fit_quantizer
         metadata["_q_X_fit"] = self._q_X_fit
         metadata["_y"] = self._y
@@ -99,7 +111,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj._is_compiled = metadata["_is_compiled"]
         obj.input_quantizers = metadata["input_quantizers"]
         obj.output_quantizers = metadata["output_quantizers"]
-        obj._weight_quantizer = metadata["_weight_quantizer"]
         obj._q_X_fit_quantizer = metadata["_q_X_fit_quantizer"]
         obj._q_X_fit = metadata["_q_X_fit"]
         obj._y = metadata["_y"]

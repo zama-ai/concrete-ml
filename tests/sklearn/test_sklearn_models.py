@@ -225,6 +225,7 @@ def check_correctness_with_sklearn(
 
 def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
     """Check double fit."""
+
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Sometimes, we miss convergence, which is not a problem for our test
@@ -280,17 +281,10 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # Check that the new quantizers are different from the first ones. This is because we
         # currently expect all quantizers to be re-computed when re-fitting a model
 
-        # For now, in KNN, we compute the pairwise Euclidean distance between the encrypted
-        # X and each element in the database.
-        # Then, we return the indices of the k closest distances to this point.
-        # The exact precision of computation of the quantization and dequantization parameters
-        # is not relevant in this case. That's why the assertion test is being ignored
-        # for now in the context of the KNN algorithm.
-        if get_model_name(model) != "KNeighborsClassifier":
-            assert all(
-                quantizer_1 != quantizer_2
-                for (quantizer_1, quantizer_2) in zip(quantizers_1, quantizers_2)
-            )
+        assert all(
+            quantizer_1 != quantizer_2
+            for (quantizer_1, quantizer_2) in zip(quantizers_1, quantizers_2)
+        )
 
         # Set the same torch seed manually before re-fitting the neural network
         if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
@@ -311,20 +305,13 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # quantizers to be re-computed when re-fitting. Since we used the same dataset as the first
         # fit, we also expect these quantizers to be the same.
 
-        # For now, in KNN, we compute the pairwise Euclidean distance between the encrypted
-        # X and each element in the database.
-        # Then, we return the indices of the k closest distances to this point.
-        # The exact precision of computation of the quantization and dequantization parameters
-        # is not relevant in this case. That's why the assertion test is being ignored
-        # for now in the context of the KNN algorithm.
-        if get_model_name(model) != "KNeighborsClassifier":
-            assert all(
-                quantizer_1 == quantizer_3
-                for (quantizer_1, quantizer_3) in zip(
-                    input_quantizers_1 + output_quantizers_1,
-                    input_quantizers_3 + output_quantizers_3,
-                )
+        assert all(
+            quantizer_1 == quantizer_3
+            for (quantizer_1, quantizer_3) in zip(
+                input_quantizers_1 + output_quantizers_1,
+                input_quantizers_3 + output_quantizers_3,
             )
+        )
 
 
 def check_serialization(model, x, use_dump_method):
@@ -585,7 +572,6 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
-
         model.fit(x, y)
 
     # Make sure `predict` is working when FHE is disabled
@@ -656,8 +642,8 @@ def check_pipeline(model_class, x, y):
         param_grid = {
             "model__n_bits": [2, 3],
         }
-
-    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
+    # Since the data-set is really small for KNN, we have to decrease the number of splits
+    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=2)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -686,9 +672,7 @@ def check_grid_search(model_class, x, y, scoring):
             "n_jobs": [1],
         }
     elif model_class in get_sklearn_neighbors_models():
-        param_grid = {
-            "n_bits": [3],
-        }
+        param_grid = {"n_bits": [2], "n_neighbors": [2]}
     else:
         param_grid = {
             "n_bits": [20],
@@ -707,7 +691,7 @@ def check_grid_search(model_class, x, y, scoring):
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
         _ = GridSearchCV(
-            model_class(), param_grid, cv=5, scoring=scoring, error_score="raise", n_jobs=1
+            model_class(), param_grid, cv=2, scoring=scoring, error_score="raise", n_jobs=1
         ).fit(x, y)
 
 
@@ -807,7 +791,8 @@ def get_hyper_param_combinations(model_class):
             "base_score": [0.5, None],
         }
     elif model_class in get_sklearn_neighbors_models():
-        hyper_param_combinations = {"n_neighbors": [2, 4]}
+        # Use small `n_neighbors` values for KNN, because the data-set is too small for now
+        hyper_param_combinations = {"n_neighbors": [1, 2]}
     else:
 
         assert is_model_class_in_a_list(
@@ -1350,6 +1335,7 @@ def test_input_support(
 ):
     """Test all models with Pandas, List or Torch inputs."""
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
     if verbose:
         print("Run input_support")
 
@@ -1452,7 +1438,8 @@ def test_predict_correctness(
             "Inference in the clear (with "
             f"number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
         )
-
+    # KNN works only for smaller quantization bits
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
     if n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
         pytest.skip("Use less than 5 bits with KNN.")
 
@@ -1475,11 +1462,6 @@ def test_predict_correctness(
                 print("Compile the model")
 
             with warnings.catch_warnings():
-
-                if get_model_name(model) == "KNeighborsClassifier":
-                    default_configuration.parameter_selection_strategy = (
-                        ParameterSelectionStrategy.MONO
-                    )
                 fhe_circuit = model.compile(
                     x,
                     default_configuration,
@@ -1553,7 +1535,6 @@ def test_p_error_global_p_error_simulation(
     parameters,
     error_param,
     load_data,
-    default_configuration,
     is_weekly_option,
 ):
     """Test p_error and global_p_error simulation.
@@ -1567,23 +1548,24 @@ def test_p_error_global_p_error_simulation(
     if "global_p_error" in error_param:
         pytest.skip("global_p_error behave very differently depending on the type of model.")
 
-    # Get data-set
-    n_bits = min(N_BITS_REGULAR_BUILDS)
     if get_model_name(model_class) == "KNeighborsClassifier":
-        n_bits = min(n_bits, 2)
-        default_configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
+        # KNN works only for smaller quantization bits
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = min([2] + N_BITS_REGULAR_BUILDS)
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
 
-    # Initialize and fit the model
+    # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check if model is linear
     is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
 
-    # Check if model is linear
+    # Check if model is a distance metrics model
     is_knn_model = is_model_class_in_a_list(model_class, get_sklearn_neighbors_models())
 
     # Compile with a large p_error to be sure the result is random.
-    model.compile(x, default_configuration, **error_param)
+    model.compile(x, **error_param)
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
@@ -1595,7 +1577,6 @@ def test_p_error_global_p_error_simulation(
             else model.predict
         )
         y_expected = predict_function(x, fhe="disable")
-
         for i in range(max_iterations):
             y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
             if not numpy.array_equal(y_pred, y_expected[i : i + 1].ravel()):
@@ -1617,6 +1598,7 @@ def test_p_error_global_p_error_simulation(
 
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
+
     # Check for differences in predictions
     # Remark that, with the old VL, linear models (or, more generally, circuits without PBS) were
     # badly simulated. It has been fixed in the new simulation.
@@ -1720,9 +1702,10 @@ def test_mono_parameter_warnings(
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
         return
 
-    # KNN works only for ParameterSelectionStrategy.MULTI
+    # KNN is manually forced to use mono-parameter
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
     if is_model_class_in_a_list(model_class, get_sklearn_neighbors_models()):
-        pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
+        return
 
     n_bits = min(N_BITS_REGULAR_BUILDS)
 

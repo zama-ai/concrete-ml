@@ -9,7 +9,6 @@ import onnx
 import pytest
 from sklearn.exceptions import ConvergenceWarning
 
-from concrete import fhe
 from concrete.ml.common.utils import is_model_class_in_a_list
 from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
 from concrete.ml.sklearn import get_sklearn_tree_models
@@ -37,9 +36,9 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
         model.set_params(**model_params)
 
     if get_model_name(model) == "KNeighborsClassifier":
-        model.n_bits = 4
-        default_configuration.parameter_selection_strategy = fhe.ParameterSelectionStrategy.MONO
-        default_configuration.single_precision = True
+        # KNN works only for small quantization bits
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        model.n_bits = 2
 
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
@@ -50,6 +49,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
     with warnings.catch_warnings():
         # Use FHE simulation to not have issues with precision
         model.compile(x, default_configuration)
+
     # Get ONNX model
     onnx_model = model.onnx_model
 
@@ -423,7 +423,7 @@ def test_dump(
   return %variable
 }""",
         "KNeighborsClassifier": """graph torch_jit (
-  %input_0[DOUBLE, symx3]
+  %input_0[DOUBLE, symx2]
 ) {
   %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Unsqueeze_output_0 = Unsqueeze(%input_0, %/_operators.0/Constant_output_0)

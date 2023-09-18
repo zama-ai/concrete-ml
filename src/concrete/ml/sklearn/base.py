@@ -632,7 +632,6 @@ class BaseEstimator:
             for q_X_i in q_X:
                 # Expected encrypt_run_decrypt output shape is (1, n_features) while q_X_i
                 # is of shape (n_features,)
-
                 q_X_i = numpy.expand_dims(q_X_i, 0)
 
                 # For mypy, even though we already check this with self.check_model_is_compiled()
@@ -1697,7 +1696,7 @@ class SklearnLinearClassifierMixin(
         return y_proba
 
 
-# pylint: disable=invalid-name,too-many-instance-attributes
+# pylint: disable-next=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """A Mixin class for sklearn KNeighbors models with FHE.
 
@@ -1712,24 +1711,22 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: Union[int, Dict[str, int]] = 3):
+    def __init__(self, n_bits: int = 3):
         """Initialize the FHE knn model.
 
         Args:
-            n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
-                for n_bits, the value will be used for quantizing inputs and weights. If a dict is
-                passed, then it should contain "op_inputs" and "op_weights" as keys with
-                corresponding number of quantization bits so that:
-                    - op_inputs : number of bits to quantize the input values
-                    - op_weights: number of bits to quantize the learned parameters
-                Default to 3.
+            n_bits (int): Number of bits to quantize the model. IThe value will be used for
+                quantizing inputs and X_fit. Default to 3.
         """
-        self.n_bits: Union[int, Dict[str, int]] = n_bits
-
-        #: The quantizer to use for quantizing the model's weights
-        self._weight_quantizer: Optional[UniformQuantizer] = None
-        self._q_X_fit_quantizer: Optional[UniformQuantizer] = None
+        self.n_bits: int = n_bits
+        # _q_X_fit: In distance metric algorithms, `_q_X_fit` stores the training set to compute
+        # the similarity or distance measures. There is no `weights` attribute because there isn't
+        # a training phase
         self._q_X_fit: numpy.ndarray
+        # _y: Labels of `_q_X_fit`
+        self._y: numpy.ndarray
+        # _q_X_fit_quantizer: The quantizer to use for quantizing the model's training set
+        self._q_X_fit_quantizer: Optional[UniformQuantizer] = None
 
         BaseEstimator.__init__(self)
 
@@ -1748,7 +1745,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             test_input=test_input,
             extra_config={
                 "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
-                # pylint: disable=protected-access, no-member
+                # pylint: disable-next=protected-access, no-member
                 constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],
             },
         ).model
@@ -1765,6 +1762,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
+        self.input_quantizers = []
+        self.output_quantizers = []
 
         # KNeighbors handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)
@@ -1780,31 +1779,23 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Retrieve the ONNX graph
         self._set_onnx_model(X)
 
-        # Convert the n_bits attribute into a proper dictionary
-        n_bits = get_n_bits_dict(self.n_bits)
-
-        input_n_bits = n_bits["op_inputs"]
-        input_options = QuantizationOptions(n_bits=input_n_bits, is_signed=True)
-
         # Quantize the inputs and store the associated quantizer
-        q_inputs = QuantizedArray(n_bits=input_n_bits, values=X, options=input_options)
+        input_options = QuantizationOptions(n_bits=self.n_bits, is_signed=True)
+        q_inputs = QuantizedArray(n_bits=self.n_bits, values=X, options=input_options)
         input_quantizer = q_inputs.quantizer
         self.input_quantizers.append(input_quantizer)
 
-        weights_n_bits = n_bits["op_weights"]
-        weight_options = QuantizationOptions(n_bits=weights_n_bits, is_signed=True)
-
         # Quantize the _X_fit and store the associated quantizer
-        # Weights in KNN algorithms are the train data points
-        # pylint: disable=protected-access
+        # pylint: disable-next=protected-access
         _X_fit = self.sklearn_model._fit_X
+        # We assume that the inputs have the same distribution as the _X_fit
         q_X_fit = QuantizedArray(
-            n_bits=n_bits["op_weights"],
+            n_bits=self.n_bits,
             values=numpy.expand_dims(_X_fit, axis=1) if len(_X_fit.shape) == 1 else _X_fit,
-            options=weight_options,
+            options=input_options,
         )
         self._q_X_fit = q_X_fit.qvalues
-        self._q_X_fit_quantizer = self._weight_quantizer = q_X_fit.quantizer
+        self._q_X_fit_quantizer = q_X_fit.quantizer
 
         # mypy
         assert self._q_X_fit_quantizer.scale is not None
@@ -1821,9 +1812,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         output_quantizer = UniformQuantizer(params=self.output_quant_params, no_clipping=True)
 
-        # Since the matmul and the bias both use the same scale and zero-points, we obtain that
-        # y = S*(q_y - 2*Z) when de-quantizing the values. We therefore need to multiply the initial
-        # output zero_point by 2
         assert output_quantizer.zero_point is not None
         self.output_quantizers.append(output_quantizer)
 
@@ -1843,14 +1831,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
-
         # We compute the sorted argmax in FHE, which are integers.
         # No need to de-quantize the output values
-
-        assert q_y_preds[0].shape[-1] == self.n_neighbors, (
-            f"Shape error: `q_y_preds` must be shape of ({self.n_neighbors},) and got:"
-            f"`{q_y_preds.shape}`"
-        )
         return q_y_preds
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
@@ -1911,6 +1893,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         def topk_sorting(x):
             """Argsort in FHE.
 
+            Time complexity: O(nlog²(k))
+
             Args:
                 x (numpy.ndarray): The quantized input values.
 
@@ -1951,67 +1935,69 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     x[i] = v[idx]
                 return x
 
-            def mul_tlu(a, b):
-                """Matrix multiplication.
-
-                Args:
-                    a (numpy.ndarray): An encrypted array
-                    b (numpy.ndarray): An encrypted array
-
-                Returns:
-                    numpy.ndarray: The result of a * b
-                """
-                return a * b
-
             comparisons = numpy.zeros(x.shape)
             idx = numpy.arange(x.size) + fhe_zeros(x.shape)
 
             n, k = x.size, self.n_neighbors
             ln2n = int(numpy.ceil(numpy.log2(n)))
 
+            # Number of stages
             for t in range(ln2n - 1, -1, -1):
                 p = 2**t
                 r = 0
+                # d: Length of the bitonic sequence
                 d = p
 
                 for bq in range(ln2n - 1, t - 1, -1):
                     q = 2**bq
+                    # Determine the range of indexes to be compared
                     range_i = numpy.array(
                         [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
                     )
                     if len(range_i) == 0:
+                        # Edge case, for k=1
                         continue
 
-                    a = gather1d(x, range_i)  # x[range_i]
-                    a_i = gather1d(idx, range_i)  # idx[range_i]
-                    b = gather1d(x, range_i + d)  # x[range_i + d]
-                    b_i = gather1d(idx, range_i + d)  # idx[range_i + d]
+                    # Select 2 bitonic sequences `a` and `b` of length `d`
+                    # a = x[range_i]: first bitonic sequence
+                    a = gather1d(x, range_i)
+                    a_i = gather1d(idx, range_i)
+                    # b = x[range_i + d]: Second bitonic sequence
+                    # b_i = idx[range_i]: Indexes of a_i elements in the original x
+                    b = gather1d(x, range_i + d)
+                    b_i = gather1d(idx, range_i + d)
 
+                    # Select max(a, b)
                     diff = a - b
-                    sign = diff < 0
-
                     max_x = a + numpy.maximum(0, b - a)
-                    x = scatter1d(x, a + b - max_x, range_i)  # x[range_i] = a + b - max_x
-                    x = scatter1d(x, max_x, range_i + d)  # x[range_i + d] = max_x
 
-                    max_idx = a_i + mul_tlu((b_i - a_i), sign)
+                    # Swap if a > b
+                    # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
+                    x = scatter1d(x, a + b - max_x, range_i)
+                    # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
+                    x = scatter1d(x, max_x, range_i + d)
 
-                    # idx[range_i] = a_i + b_i - max_idx
+                    # Max index selection
+                    sign = diff < 0
+                    max_idx = a_i + (b_i - a_i) * sign
+
+                    # Update indexes array according to the max items
+                    # idx[range_i] = a_i + b_i - max_idx <=> min_idx
                     idx = scatter1d(idx, a_i + b_i - max_idx, range_i)
-                    idx = scatter1d(idx, max_idx, range_i + d)  # idx[range_i + d] = max_idx
+                    # idx[range_i + d] = max_idx
+                    idx = scatter1d(idx, max_idx, range_i + d)
 
+                    # Update
                     comparisons[range_i + d] = comparisons[range_i + d] + 1
-
                     d = q - p
                     r = p
 
+            # Return only the topk indexes
             topk_indexes = []
             for i in range((self.n_neighbors)):
                 topk_indexes.append(idx[i])
 
             topk_indexes = fhe_array(topk_indexes)
-
-            assert topk_indexes.shape[0] == self.n_neighbors
 
             return topk_indexes
 
@@ -2020,9 +2006,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # with fhe.tag(f"distance_matrix"):
         distance_matrix = pairwise_euclidean_distance(q_X)
 
-        # The square root in the Euclidean distance calculation is not applied.
+        # The square root in the Euclidean distance calculation is not applied to speed up FHE
+        # computations.
         # Being a monotonic function, it does not affect the logic of the calculation, notably for
-        # for the argsort
+        # the argsort.
 
         # 2. Sorting args
         # with fhe.tag(f"sorted_args"):
@@ -2030,6 +2017,25 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         sorted_args = topk_sorting(distance_matrix.flatten())
 
         return numpy.expand_dims(sorted_args, axis=0)
+
+    # KNN works only for MONO in the latest concrete Python version
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
+    def compile(self, *args, **kwargs) -> Circuit:
+        # If a configuration instance is given as a positional parameter, set the strategy to
+        # multi-parameter
+        if len(args) >= 2:
+            configuration = force_mono_parameter_in_configuration(args[1])
+            args_list = list(args)
+            args_list[1] = configuration
+            args = tuple(args_list)
+
+        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
+        # strategy to multi-parameter
+        else:
+            configuration = kwargs.get("configuration", None)
+            kwargs["configuration"] = force_mono_parameter_in_configuration(configuration)
+
+        return BaseEstimator.compile(self, *args, **kwargs)
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
 
@@ -2040,7 +2046,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             # Argsort
             arg_sort = super().predict(query[None], fhe)
             # Majority vote
-            # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
             label_indices = self._y[arg_sort.flatten()]
             y_pred = self.majority_vote(label_indices)
             y_preds.append(y_pred)

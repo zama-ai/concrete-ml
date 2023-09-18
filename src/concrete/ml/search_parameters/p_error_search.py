@@ -58,11 +58,9 @@ from typing import Any, Callable, Dict, List, Tuple, Union
 
 import numpy
 import torch
-from concrete.fhe import ParameterSelectionStrategy
-from concrete.fhe.compilation import Configuration
 from tqdm import tqdm
 
-from ..common.utils import get_model_name, is_brevitas_model, is_model_class_in_a_list
+from ..common.utils import is_brevitas_model, is_model_class_in_a_list
 from ..sklearn import (
     get_sklearn_neighbors_models,
     get_sklearn_neural_net_models,
@@ -110,16 +108,6 @@ def compile_and_simulated_fhe_inference(
     """
 
     compile_params: Dict = {}
-
-    default_configuration = Configuration(
-        dump_artifacts_on_unexpected_failures=False,
-        enable_unsafe_features=True,
-        use_insecure_key_cache=True,
-        insecure_key_cache_location="ConcreteNumpyKeyCache",
-        parameter_selection_strategy=ParameterSelectionStrategy.MONO
-        if get_model_name(estimator) == "KNeighborsClassifier"
-        else ParameterSelectionStrategy.MULTI,
-    )
     compile_function: Callable[..., Any]
     dequantized_output: numpy.ndarray
 
@@ -150,11 +138,7 @@ def compile_and_simulated_fhe_inference(
         if not estimator.is_fitted:
             estimator.fit(calibration_data, ground_truth)
 
-        estimator.compile(
-            calibration_data,
-            p_error=p_error,
-            configuration=default_configuration,
-        )
+        estimator.compile(calibration_data, p_error=p_error)
         predict_method = getattr(estimator, predict)
         dequantized_output = predict_method(calibration_data, fhe="simulate")
 

@@ -499,6 +499,8 @@ def check_is_good_execution_for_cml_vs_circuit():
                     # `check_subfunctions_in_fhe`
                     if is_classifier_or_partial_classifier(model):
                         if isinstance(model, SklearnKNeighborsMixin):
+                            # For KNN `predict_proba` is not supported for now
+                            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
                             results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)
                             results_model = model.predict(*inputs, fhe="disable")
                         else:
