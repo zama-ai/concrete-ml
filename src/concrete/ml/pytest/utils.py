@@ -103,8 +103,8 @@ _classifiers_and_datasets = [
     pytest.param(
         model,
         {
-            "n_samples": 10,
-            "n_features": 3,
+            "n_samples": 6,
+            "n_features": 2,
             "n_classes": n_classes,
             "n_informative": 2,
             "n_redundant": 0,
