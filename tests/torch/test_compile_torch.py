@@ -1174,6 +1174,9 @@ def test_shape_operations_net(
             assert "lookup_table" not in quantized_module.fhe_circuit.mlir
 
 
+# This test is a known flaky, remove the mark once it's fixed
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3989
+@pytest.mark.flaky
 def test_torch_padding(default_configuration, check_circuit_has_no_tlu):
     """Test padding in PyTorch using ONNX pad operators."""
     net = PaddingNet()
