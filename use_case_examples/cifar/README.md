@@ -1,6 +1,6 @@
 # CIFAR-10 and CIFAR-100 Classification with FHE
 
-This repository provides resources and documentation on different use-cases for classifying CIFAR-10 and CIFAR-100 images using Fully Homomorphic Encryption (FHE). Each use-case demonstrates different techniques and adaptations to work within the constraints of FHE.
+This repository provides resources and documentation on different use-cases for classifying CIFAR-10 and CIFAR-100 images using Fully Homomorphic Encryption (FHE). Each use-case demonstrates different techniques and adaptations to work within the constraints of FHE.Notably, a fine-tuning from a public pre-trained model, a training from scratch using quantization aware traiing (QAT) and finally a hybrid approach where only a subset of the model is done in FHE.
 
 ## Table of Contents
 
