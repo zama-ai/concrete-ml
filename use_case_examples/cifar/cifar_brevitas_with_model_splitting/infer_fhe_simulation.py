@@ -8,7 +8,6 @@ import numpy as np
 import torch
 import torchvision
 from brevitas import config
-from concrete.fhe import Configuration, ParameterSelectionStrategy
 from model import CNV
 from scipy.special import softmax
 from torch.backends import cudnn
@@ -110,14 +109,6 @@ def main():
     with torch.no_grad():
         train_features_sub_set = net.clear_module(train_sub_set)
 
-    optional_kwargs = {}
-
-    # Multi-parameter strategy is used in order to speed-up the FHE executions
-    optional_kwargs["configuration"] = Configuration(
-        dump_artifacts_on_unexpected_failures=True,
-        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
-    )
-
     compilation_onnx_path = "compilation_model.onnx"
     print("Compiling the model")
     start_compile = time.time()
@@ -126,7 +117,6 @@ def main():
     quantized_numpy_module = compile_brevitas_qat_model(
         torch_model=net.encrypted_module,
         torch_inputset=train_features_sub_set,
-        **optional_kwargs,
         output_onnx_file=compilation_onnx_path,
     )
 

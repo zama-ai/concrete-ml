@@ -6,7 +6,7 @@ from typing import List, Union
 
 import pytest
 import torch
-from concrete.fhe import Configuration, ParameterSelectionStrategy
+from concrete.fhe import Configuration
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 from concrete.ml.torch.hybrid_model import HybridFHEModel
@@ -20,7 +20,6 @@ def run_hybrid_model_test(
     # Multi-parameter strategy is used in order to speed-up the FHE executions
     configuration = Configuration(
         single_precision=False,
-        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
     # Create a hybrid model

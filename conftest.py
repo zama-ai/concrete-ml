@@ -9,7 +9,6 @@ import numpy
 import pytest
 import torch
 from concrete.fhe import Graph as CPGraph
-from concrete.fhe import ParameterSelectionStrategy
 from concrete.fhe.compilation import Circuit, Configuration
 from concrete.fhe.mlir.utils import MAXIMUM_TLU_BIT_WIDTH
 from sklearn.datasets import make_classification, make_regression
@@ -147,9 +146,6 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus):  # pylint: disabl
 def default_configuration():
     """Return the default test compilation configuration."""
 
-    # Remove parameter_selection_strategy once it is set to multi-parameter in Concrete Python
-    # by default
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3860
     # Parameter `enable_unsafe_features` and `use_insecure_key_cache` are needed in order to be
     # able to cache generated keys through `insecure_key_cache_location`. As the name suggests,
     # these parameters are unsafe and should only be used for debugging in development
@@ -158,7 +154,6 @@ def default_configuration():
         enable_unsafe_features=True,
         use_insecure_key_cache=True,
         insecure_key_cache_location="ConcreteNumpyKeyCache",
-        parameter_selection_strategy=ParameterSelectionStrategy.MULTI,
     )
 
 
