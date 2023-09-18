@@ -632,6 +632,7 @@ class BaseEstimator:
             for q_X_i in q_X:
                 # Expected encrypt_run_decrypt output shape is (1, n_features) while q_X_i
                 # is of shape (n_features,)
+
                 q_X_i = numpy.expand_dims(q_X_i, 0)
 
                 # For mypy, even though we already check this with self.check_model_is_compiled()
@@ -657,10 +658,7 @@ class BaseEstimator:
                 # Execute the inference in FHE or with simulation
                 q_y_pred_i = predict_method(q_X_i)
 
-                if self.__class__.__name__ == "KNeighborsClassifier":
-                    q_y_pred_list.append(q_y_pred_i)
-                else:
-                    q_y_pred_list.append(q_y_pred_i[0])
+                q_y_pred_list.append(q_y_pred_i[0])
 
             q_y_pred = numpy.array(q_y_pred_list)
 
@@ -1849,7 +1847,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # We compute the sorted argmax in FHE, which are integers.
         # No need to de-quantize the output values
 
-        assert q_y_preds.shape[-1] == self.n_neighbors, (
+        assert q_y_preds[0].shape[-1] == self.n_neighbors, (
             f"Shape error: `q_y_preds` must be shape of ({self.n_neighbors},) and got:"
             f"`{q_y_preds.shape}`"
         )
@@ -1874,23 +1872,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
 
         return compiler
-
-    @staticmethod
-    def top_k_indices(distance_matrix: numpy.ndarray, k: int) -> numpy.ndarray:
-        """Get the indices of the top-k smallest distances for each point.
-
-        Args:
-            distance_matrix (numpy.ndarray): Represents the pairwise euclidean distance between
-                the query and other points
-            k (int): The top nearest neighbors to consider
-
-        Returns:
-            numpy.ndarray: The k nearest neighbors for the corresponding query, sorted in
-            ascending order.
-        """
-
-        # Sort the distances in an ascending order and select the k smallest distanes
-        return numpy.argsort(distance_matrix, axis=1)[:, :k]
 
     @staticmethod
     def majority_vote(nearest_classes: numpy.ndarray):
@@ -2024,24 +2005,31 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     d = q - p
                     r = p
 
-            x = []
+            topk_indexes = []
             for i in range((self.n_neighbors)):
-                x.append(idx[i])
-            x = fhe_array(x)
+                topk_indexes.append(idx[i])
 
-            assert x.shape[0] == self.n_neighbors
+            topk_indexes = fhe_array(topk_indexes)
 
-            return x
+            assert topk_indexes.shape[0] == self.n_neighbors
+
+            return topk_indexes
 
         # 1. Pairwise_euclidiean distance
+        # from concrete import fhe
+        # with fhe.tag(f"distance_matrix"):
         distance_matrix = pairwise_euclidean_distance(q_X)
 
-        # sqr not done
+        # The square root in the Euclidean distance calculation is not applied.
+        # Being a monotonic function, it does not affect the logic of the calculation, notably for
+        # for the argsort
 
         # 2. Sorting args
+        # with fhe.tag(f"sorted_args"):
+
         sorted_args = topk_sorting(distance_matrix.flatten())
 
-        return sorted_args
+        return numpy.expand_dims(sorted_args, axis=0)
 
     def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
 
@@ -2051,7 +2039,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for query in X:
             # Argsort
             arg_sort = super().predict(query[None], fhe)
-            assert arg_sort.size == self.n_neighbors
             # Majority vote
             # pylint: disable=protected-access
             label_indices = self._y[arg_sort.flatten()]
