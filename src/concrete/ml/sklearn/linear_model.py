@@ -525,10 +525,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         metadata["_q_bias"] = self._q_bias
         metadata["post_processing_params"] = self.post_processing_params
 
-        # Classifier
-        metadata["target_classes_"] = self.target_classes_
-        metadata["n_classes_"] = self.n_classes_
-
         # Scikit-Learn
         metadata["penalty"] = self.penalty
         metadata["dual"] = self.dual
@@ -565,10 +561,6 @@ class LogisticRegression(SklearnLinearClassifierMixin):
         obj._q_weights = metadata["_q_weights"]
         obj._q_bias = metadata["_q_bias"]
         obj.post_processing_params = metadata["post_processing_params"]
-
-        # Classifier
-        obj.target_classes_ = metadata["target_classes_"]
-        obj.n_classes_ = metadata["n_classes_"]
 
         # Scikit-Learn
         obj.penalty = metadata["penalty"]

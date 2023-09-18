@@ -126,10 +126,6 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
 
-        # Classifier
-        metadata["target_classes_"] = self.target_classes_
-        metadata["n_classes_"] = self.n_classes_
-
         # XGBoost
         metadata["max_depth"] = self.max_depth
         metadata["learning_rate"] = self.learning_rate
@@ -183,10 +179,6 @@ class XGBClassifier(BaseTreeClassifierMixin):
             output_n_bits=obj.n_bits,
         )
         obj.post_processing_params = metadata["post_processing_params"]
-
-        # Classifier
-        obj.target_classes_ = metadata["target_classes_"]
-        obj.n_classes_ = metadata["n_classes_"]
 
         # XGBoost
         obj.max_depth = metadata["max_depth"]

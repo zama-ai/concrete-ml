@@ -547,10 +547,6 @@ class NeuralNetClassifier(
         metadata["quantized_module_"] = self.quantized_module_
         metadata["post_processing_params"] = self.post_processing_params
 
-        # Classifier
-        metadata["target_classes_"] = self.target_classes_
-        metadata["n_classes_"] = self.n_classes_
-
         # skorch attributes that cannot be serialized
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3550
         # Disable mypy as running isinstance with a Callable type unexpectedly raises an issue:
@@ -594,6 +590,7 @@ class NeuralNetClassifier(
         metadata["history_"] = self.history_
         metadata["initialized_"] = self.initialized_
         metadata["virtual_params_"] = self.virtual_params_
+        metadata["classes_"] = self.classes_
 
         assert hasattr(
             self, "module__n_layers"
@@ -626,6 +623,7 @@ class NeuralNetClassifier(
         # Instantiate the model
         obj = NeuralNetClassifier(
             module__n_layers=metadata["module__n_layers"],
+            classes=metadata["classes_"],
         )
 
         # Concrete-ML
@@ -636,10 +634,6 @@ class NeuralNetClassifier(
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.quantized_module_ = metadata["quantized_module_"]
         obj.post_processing_params = metadata["post_processing_params"]
-
-        # Classifier
-        obj.target_classes_ = metadata["target_classes_"]
-        obj.n_classes_ = metadata["n_classes_"]
 
         # skorch
         obj.lr = metadata["lr"]

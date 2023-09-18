@@ -699,31 +699,55 @@ class BaseClassifier(BaseEstimator):
     the predicted values as well as handling a mapping of classes in case they are not ordered.
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def target_classes_(self) -> Optional[numpy.ndarray]:  # pragma: no cover
+        """Get the model's classes.
 
-        #: The classifier's different target classes. Is None if the model is not fitted.
-        self.target_classes_: Optional[numpy.ndarray] = None
+        Using this attribute is deprecated.
 
-        #: The classifier's number of different target classes. Is None if the model is not fitted.
-        self.n_classes_: Optional[int] = None
+        Returns:
+            Optional[numpy.ndarray]: The model's classes.
+        """
+        warnings.warn(
+            "Attribute 'target_classes_' is now deprecated and will be removed in a future "
+            "version. Please use 'classes_' instead.",
+            category=UserWarning,
+            stacklevel=2,
+        )
 
-    def _set_post_processing_params(self):
-        super()._set_post_processing_params()
-        self.post_processing_params.update({"n_classes_": self.n_classes_})
+        return self.classes_
+
+    @property
+    def n_classes_(self) -> int:  # pragma: no cover
+        """Get the model's number of classes.
+
+        Using this attribute is deprecated.
+
+        Returns:
+            int: The model's number of classes.
+        """
+
+        # Tree-based classifiers from scikit-learn provide a `n_classes_` attribute
+        if self.sklearn_model is not None and hasattr(self.sklearn_model, "n_classes_"):
+            return self.sklearn_model.n_classes_
+
+        warnings.warn(
+            "Attribute 'n_classes_' is now deprecated and will be removed in a future version. "
+            "Please use 'len(classes_)' instead.",
+            category=UserWarning,
+            stacklevel=2,
+        )
+
+        return len(self.classes_)
 
     def fit(self, X: Data, y: Target, **fit_parameters):
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         # Retrieve the different target classes
         classes = numpy.unique(y)
-        self.target_classes_ = classes
-
-        # Compute the number of target classes
-        self.n_classes_ = len(classes)
 
         # Make sure y contains at least two classes
-        assert_true(self.n_classes_ > 1, "You must provide at least 2 classes in y.")
+        assert_true(len(classes) > 1, "You must provide at least 2 classes in y.")
 
         # Change to composition in order to avoid diamond inheritance and indirect super() calls
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3249
@@ -753,24 +777,21 @@ class BaseClassifier(BaseEstimator):
         # Retrieve the class with the highest probability
         y_preds = numpy.argmax(y_proba, axis=1)
 
-        assert self.target_classes_ is not None, self._is_not_fitted_error_message()
-
-        return self.target_classes_[y_preds]
+        return self.classes_[y_preds]
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         y_preds = super().post_processing(y_preds)
 
-        # Retrieve the number of target classes
-        n_classes_ = self.post_processing_params["n_classes_"]
+        # If the prediction array is 1D, which happens with some models such as XGBCLassifier or
+        # LogisticRegression models, we have a binary classification problem
+        n_classes = y_preds.shape[1] if y_preds.ndim > 1 and y_preds.shape[1] > 1 else 2
 
-        # If the predictions only has one dimension (i.e., binary classification problem), apply the
-        # sigmoid operator
-        if n_classes_ == 2:
+        # For binary classification problem, apply the sigmoid operator
+        if n_classes == 2:
             y_preds = numpy_sigmoid(y_preds)[0]
 
-            # If the prediction array is 1D (which happens with some models such as XGBCLassifier
-            # models), transform the output into a 2D array [1-p, p], with p the initial
-            # output probabilities
+            # If the prediction array is 1D, transform the output into a 2D array [1-p, p],
+            # with p the initial output probabilities
             if y_preds.ndim == 1 or y_preds.shape[1] == 1:
                 y_preds = numpy.concatenate((1 - y_preds, y_preds), axis=1)
 
