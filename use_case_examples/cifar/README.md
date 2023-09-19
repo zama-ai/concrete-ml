@@ -1,6 +1,6 @@
 # CIFAR-10 and CIFAR-100 Classification with FHE
 
-This repository provides resources and documentation on different use-cases for classifying CIFAR-10 and CIFAR-100 images using Fully Homomorphic Encryption (FHE). Each use-case demonstrates different techniques and adaptations to work within the constraints of FHE.Notably, a fine-tuning from a public pre-trained model, a training from scratch using quantization aware traiing (QAT) and finally a hybrid approach where only a subset of the model is done in FHE.
+This repository provides resources and documentation on different use-cases for classifying CIFAR-10 and CIFAR-100 images using Fully Homomorphic Encryption (FHE). Each use-case demonstrates different techniques and adaptations to work within the constraints of FHE.Notably, a fine-tuning from a public pre-trained model, a training from scratch using quantization aware training (QAT) and finally a hybrid approach where only a subset of the model is done in FHE.
 
 ## Table of Contents
 
@@ -8,8 +8,8 @@ This repository provides resources and documentation on different use-cases for 
    - [Fine-Tuning VGG11 CIFAR-10/100](#fine-tuning-cifar-10100)
    - [Training Ternary VGG9 on CIFAR10](#training-ternary-vgg-on-cifar10)
    - [CIFAR-10 VGG9 with one client-side layer](#cifar-10-with-a-split-clearfhe-model)
-2. [Installation](#installation)
-3. [Further Reading & Resources](#further-reading--resources)
+1. [Installation](#installation)
+1. [Further Reading & Resources](#further-reading--resources)
 
 ## Use cases
 
@@ -20,9 +20,9 @@ This repository provides resources and documentation on different use-cases for 
 Notebooks:
 
 1. [Adapting VGG11 for CIFAR datasets](cifar_brevitas_finetuning/FromImageNetToCifar.ipynb).
-2. [Quantizing the pre-trained network](cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
-3. [Computing the accuracy of the quantized models with FHE simulation](cifar_brevitas_finetuning/CifarInFhe.ipynb).
-4. [Enhancing inference time in FHE using smaller accumulators](cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb).
+1. [Quantizing the pre-trained network](cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb).
+1. [Computing the accuracy of the quantized models with FHE simulation](cifar_brevitas_finetuning/CifarInFhe.ipynb).
+1. [Enhancing inference time in FHE using smaller accumulators](cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb).
 
 [Results & Metrics](cifar_brevitas_finetuning/README.md#results)
 
