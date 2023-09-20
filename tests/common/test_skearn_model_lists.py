@@ -1,5 +1,12 @@
 """Tests lists of models in Concrete ML."""
-from concrete.ml.sklearn import get_sklearn_models
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS, UNIQUE_MODELS_AND_DATASETS
+from concrete.ml.sklearn import (
+    get_sklearn_all_models,
+    get_sklearn_linear_models,
+    get_sklearn_neighbors_models,
+    get_sklearn_neural_net_models,
+    get_sklearn_tree_models,
+)
 from concrete.ml.sklearn.glm import GammaRegressor, PoissonRegressor, TweedieRegressor
 from concrete.ml.sklearn.linear_model import (
     ElasticNet,
@@ -18,41 +25,39 @@ from concrete.ml.sklearn.xgb import XGBClassifier, XGBRegressor
 
 def test_get_sklearn_models():
     """List all available models in Concrete ML."""
-    dic = get_sklearn_models()
-
-    cml_list = dic["all"]
-    linear_list = dic["linear"]
-    tree_list = dic["tree"]
-    neuralnet_list = dic["neural_net"]
-    neighbors_list = dic["neighbors"]
+    all_models = get_sklearn_all_models()
+    linear_models = get_sklearn_linear_models()
+    tree_models = get_sklearn_tree_models()
+    neural_network_models = get_sklearn_neural_net_models()
+    neighbor_models = get_sklearn_neighbors_models()
 
     print("All models: ")
-    for m in cml_list:
+    for m in all_models:
         print(f"     {m}")
 
     print("Linear models: ")
-    for m in linear_list:
+    for m in linear_models:
         print(f"     {m}")
 
     print("Tree models: ")
-    for m in tree_list:
+    for m in tree_models:
         print(f"     {m}")
 
     print("Neural net models: ")
-    for m in neuralnet_list:
+    for m in neural_network_models:
         print(f"     {m}")
 
     print("Neighbors models: ")
-    for m in neighbors_list:
+    for m in neighbor_models:
         print(f"     {m}")
 
     # Check values
-    expected_neuralnet_list = [NeuralNetClassifier, NeuralNetRegressor]
+    expected_neural_network_models = [NeuralNetClassifier, NeuralNetRegressor]
     assert (
-        neuralnet_list == expected_neuralnet_list
-    ), "Please change the expected number of models if you add new models"
+        neural_network_models == expected_neural_network_models
+    ), "Please change the expected number of models if new models have been added"
 
-    expected_tree_list = [
+    expected_tree_models = [
         DecisionTreeClassifier,
         DecisionTreeRegressor,
         RandomForestClassifier,
@@ -61,10 +66,10 @@ def test_get_sklearn_models():
         XGBRegressor,
     ]
     assert (
-        tree_list == expected_tree_list
-    ), "Please change the expected number of models if you add new models"
+        tree_models == expected_tree_models
+    ), "Please change the expected number of models if new models have been added"
 
-    expected_linear_list = [
+    expected_linear_models = [
         ElasticNet,
         GammaRegressor,
         Lasso,
@@ -77,17 +82,24 @@ def test_get_sklearn_models():
         TweedieRegressor,
     ]
 
-    expected_neighbors_list = [KNeighborsClassifier]
+    expected_neighbor_models = [KNeighborsClassifier]
 
     assert (
-        linear_list == expected_linear_list
-    ), "Please change the expected number of models if you add new models"
+        linear_models == expected_linear_models
+    ), "Please change the expected number of models if new models have been added"
 
     # Check number
-    assert cml_list == sorted(
-        expected_linear_list
-        + expected_neuralnet_list
-        + expected_tree_list
-        + expected_neighbors_list,
+    assert all_models == sorted(
+        expected_linear_models
+        + expected_tree_models
+        + expected_neural_network_models
+        + expected_neighbor_models,
         key=lambda m: m.__name__,
-    ), "Please change the expected number of models if you add new models"
+    ), "Please change the expected number of models if new models have been added"
+
+
+def test_models_and_datasets():
+    """Check that the tested model's configuration lists remain fixed."""
+
+    assert len(MODELS_AND_DATASETS) == 29
+    assert len(UNIQUE_MODELS_AND_DATASETS) == 19

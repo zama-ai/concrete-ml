@@ -10,7 +10,7 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import is_model_class_in_a_list
-from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS, get_model_name
 from concrete.ml.sklearn import get_sklearn_tree_models
 from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 
@@ -84,7 +84,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
             assert str_model in str_expected
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 def test_dump(
     model_class,
     parameters,

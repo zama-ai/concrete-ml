@@ -20,8 +20,8 @@ from concrete.ml.common.utils import (
 )
 from concrete.ml.pytest.torch_models import QuantCustomModel, TorchCustomModel
 from concrete.ml.pytest.utils import (
+    UNIQUE_MODELS_AND_DATASETS,
     data_calibration_processing,
-    get_random_extract_of_sklearn_models_and_datasets,
     instantiate_model_generic,
     load_torch_model,
 )
@@ -135,9 +135,7 @@ def test_update_valid_attr_method(attr, value, model_name, quant_type, metric, l
     assert getattr(search, attr) == value
 
 
-@pytest.mark.parametrize(
-    "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
-)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 def test_non_convergence_for_built_in_models(model_class, parameters, load_data, is_weekly_option):
     """Check that binary search raises a user warning when convergence is not achieved.
 
@@ -293,9 +291,7 @@ def test_binary_search_for_custom_models(model_name, quant_type, threshold):
 
 
 @pytest.mark.parametrize("threshold", [0.02])
-@pytest.mark.parametrize(
-    "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
-)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 @pytest.mark.parametrize("predict", ["predict", "predict_proba"])
 def test_binary_search_for_built_in_models(model_class, parameters, threshold, predict, load_data):
     """Check if the returned `p_error` is valid for built-in models."""
@@ -388,9 +384,7 @@ def test_invalid_estimator_for_custom_models(is_qat, load_data):
         search.run(x=x_calib, ground_truth=y, strategy=all, max_iter=1, n_simulation=1)
 
 
-@pytest.mark.parametrize(
-    "model_class, parameters", get_random_extract_of_sklearn_models_and_datasets()
-)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 def test_invalid_estimator_for_built_in_models(model_class, parameters, load_data):
     """Check that binary search raises an exception for unsupported models."""
 

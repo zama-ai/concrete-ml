@@ -8,7 +8,7 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.tree import plot_tree
 
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS
 
 
 def test_seed_1():
@@ -79,7 +79,7 @@ def test_seed_needing_randomly_seed_arg_3(random_inputs_1, random_inputs_2, rand
     print("Random inputs", random_inputs_3)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 def test_seed_sklearn(model_class, parameters, load_data, default_configuration):
     """Test seeding of sklearn models"""
 

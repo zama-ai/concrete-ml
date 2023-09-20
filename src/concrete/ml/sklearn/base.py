@@ -27,6 +27,7 @@ from concrete.fhe.compilation.compiler import Compiler
 from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
+from sklearn.utils.validation import check_is_fitted
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -165,6 +166,9 @@ class BaseEstimator:
 
         # If the attribute ends with a single underscore and can be found in the underlying
         # scikit-learn model (once fitted), retrieve its value
+        # Enable non-training attributes as well once Concrete ML models initialize their
+        # underlying scikit-learn models during initialization
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
         if (
             attr.endswith("_")
             and not attr.endswith("__")
@@ -499,7 +503,7 @@ class BaseEstimator:
         Args:
             X (Data): A representative set of input values used for building cryptographic
                 parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
-                usually the training data-set or s sub-set of it.
+                usually the training data-set or a sub-set of it.
             configuration (Optional[Configuration]): Options to use for compilation. Default
                 to None.
             artifacts (Optional[DebugArtifacts]): Artifacts information about the compilation
@@ -702,6 +706,8 @@ class BaseClassifier(BaseEstimator):
     the predicted values as well as handling a mapping of classes in case they are not ordered.
     """
 
+    # Remove in our next release major release
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3994
     @property
     def target_classes_(self) -> Optional[numpy.ndarray]:  # pragma: no cover
         """Get the model's classes.
@@ -720,6 +726,8 @@ class BaseClassifier(BaseEstimator):
 
         return self.classes_
 
+    # Remove in our next release major release
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3994
     @property
     def n_classes_(self) -> int:  # pragma: no cover
         """Get the model's number of classes.
@@ -1464,6 +1472,54 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
+    @classmethod
+    def from_sklearn_model(
+        cls,
+        sklearn_model: sklearn.base.BaseEstimator,
+        X: Data,
+        n_bits: Union[int, Dict[str, int]] = 8,
+    ):
+        """Build a FHE-compliant model using a fitted scikit-learn model.
+
+        Args:
+            sklearn_model (sklearn.base.BaseEstimator): The fitted scikit-learn model to convert.
+            X (Data): A representative set of input values used for computing quantization
+                parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
+                usually the training data-set or a sub-set of it.
+            n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+                for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+                passed, then it should contain "op_inputs" and "op_weights" as keys with
+                corresponding number of quantization bits so that:
+                - op_inputs : number of bits to quantize the input values
+                - op_weights: number of bits to quantize the learned parameters
+                Default to 8.
+
+        Returns:
+            The FHE-compliant fitted model.
+        """
+
+        # Check that sklearn_model is a proper fitted scikit-learn model
+        check_is_fitted(sklearn_model)
+
+        # Extract scikit-learn's initialization parameters
+        init_params = sklearn_model.get_params()
+
+        # Instantiate the Concrete ML model and update initialization parameters
+        # This update is necessary as we currently store scikit-learn attributes in Concrete ML
+        # classes during initialization (for example: link or power attributes in GLMs)
+        # Without it, these attributes will have default values instead of the ones used by the
+        # scikit-learn models
+        # This should be fixed once Concrete ML models initialize their underlying scikit-learn
+        # models during initialization
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
+        model = cls(n_bits=n_bits, **init_params)
+
+        # Update the underlying scikit-learn model with the given fitted one
+        model.sklearn_model = sklearn_model
+
+        # Compute the quantization parameters
+        return model._quantize_model(X)
+
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
         """Retrieve the model's ONNX graph using Hummingbird conversion.
 
@@ -1501,6 +1557,20 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Fit the scikit-learn model
         self._fit_sklearn_model(X, y, **fit_parameters)
 
+        # Compute the quantization parameters
+        return self._quantize_model(X)
+
+    def _quantize_model(self, X):
+        """Compute quantization parameters.
+
+        Args:
+            X (Data): A representative set of input values used for computing quantization
+                parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
+                usually the training data-set or a sub-set of it.
+
+        Returns:
+            The FHE-compliant fitted model.
+        """
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 

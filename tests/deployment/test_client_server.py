@@ -14,11 +14,7 @@ from torch import nn
 
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import (
-    get_model_name,
-    instantiate_model_generic,
-    sklearn_models_and_datasets,
-)
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS, get_model_name, instantiate_model_generic
 from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.torch.compile import compile_torch_model
 
@@ -70,7 +66,7 @@ class OnDiskNetwork:
         self.dev_dir.cleanup()
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("n_bits", [2])
 def test_client_server_sklearn(
     default_configuration,
