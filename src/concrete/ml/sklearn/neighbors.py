@@ -61,7 +61,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         self.weights = weights
 
     def dump_dict(self) -> Dict[str, Any]:
-        assert self._q_X_fit_quantizer is not None, self._is_not_fitted_error_message()
+        assert self._q_fit_X_quantizer is not None, self._is_not_fitted_error_message()
 
         metadata: Dict[str, Any] = {}
 
@@ -71,8 +71,8 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
         metadata["input_quantizers"] = self.input_quantizers
-        metadata["_q_X_fit_quantizer"] = self._q_X_fit_quantizer
-        metadata["_q_X_fit"] = self._q_X_fit
+        metadata["_q_fit_X_quantizer"] = self._q_fit_X_quantizer
+        metadata["_q_fit_X"] = self._q_fit_X
         metadata["_y"] = self._y
 
         metadata["output_quantizers"] = self.output_quantizers
@@ -106,8 +106,8 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj._is_compiled = metadata["_is_compiled"]
         obj.input_quantizers = metadata["input_quantizers"]
         obj.output_quantizers = metadata["output_quantizers"]
-        obj._q_X_fit_quantizer = metadata["_q_X_fit_quantizer"]
-        obj._q_X_fit = metadata["_q_X_fit"]
+        obj._q_fit_X_quantizer = metadata["_q_fit_X_quantizer"]
+        obj._q_fit_X = metadata["_q_fit_X"]
         obj._y = metadata["_y"]
 
         obj.onnx_model_ = metadata["onnx_model_"]

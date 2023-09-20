@@ -1569,7 +1569,8 @@ def test_p_error_global_p_error_simulation(
         predict_function = (
             model.predict_proba
             if is_classifier_or_partial_classifier(model)
-            # predict_prob not implemented yet for KNeighborsClassifier
+            # `predict_prob` not implemented yet for KNeighborsClassifier
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             and get_model_name(model) != "KNeighborsClassifier"
             else model.predict
         )
