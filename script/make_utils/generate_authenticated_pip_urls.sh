@@ -20,6 +20,10 @@ SECRET_EXTRA_INDEX_URL="${SECRET_EXTRA_INDEX_URL//\'/}"
 # echo "pip extra-index-url: ${SECRET_EXTRA_INDEX_URL}"
 
 if [[ "${SECRET_EXTRA_INDEX_URL}" != "" ]]; then
+    # Sometimes, for no obvious reason, keyring is not installed, so let's reinstall it for more
+    # reliance
+    poetry run python -m pip install keyring
+
     CRED_JSON="$(python script/make_utils/pip_auth_util.py \
     --get-credentials-for "${SECRET_EXTRA_INDEX_URL}" \
     --check-netrc-first \
