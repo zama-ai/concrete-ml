@@ -642,7 +642,7 @@ def check_pipeline(model_class, x, y):
         param_grid = {
             "model__n_bits": [2, 3],
         }
-    # Since the data-set is really small for KNN, we have to decrease the number of splits
+    # We need a small number of splits, especially for the KNN model, which has a small data-set
     grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=2)
 
     # Sometimes, we miss convergence, which is not a problem for our test
@@ -1561,9 +1561,6 @@ def test_p_error_global_p_error_simulation(
     # Check if model is linear
     is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
 
-    # Check if model is a distance metrics model
-    is_knn_model = is_model_class_in_a_list(model_class, get_sklearn_neighbors_models())
-
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, **error_param)
 
@@ -1582,19 +1579,6 @@ def test_p_error_global_p_error_simulation(
             if not numpy.array_equal(y_pred, y_expected[i : i + 1].ravel()):
                 return True
         return False
-
-    if is_knn_model:
-        # In the case of KNN, a large `p_error` results in indexes larger than expected, which will
-        # trigger an IndexError
-        with pytest.raises(IndexError, match=".* is out of bounds for axis 0 with size .*"):
-            simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
-            fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
-
-        assert simulation_diff_found, (
-            "Due to large p_error, "
-            "simulate predictions should be different from the expected predictions."
-        )
-        return
 
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")

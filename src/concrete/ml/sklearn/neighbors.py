@@ -13,13 +13,8 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
     """A k-nearest classifier model with FHE.
 
     Parameters:
-        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
-            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
-            passed, then it should contain "op_inputs" and "op_weights" as keys with
-            corresponding number of quantization bits so that:
-            - op_inputs : number of bits to quantize the input values
-            - op_weights: number of bits to quantize the learned parameters
-            Default to 8.
+        n_bits (int): Number of bits to quantize the model. The value will be used for quantizing
+            inputs and X_fit. Default to 3.
 
     For more details on KNeighborsClassifier please refer to the scikit-learn documentation:
     https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
@@ -85,7 +80,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["post_processing_params"] = self.post_processing_params
         metadata["cml_dumped_class_name"] = type(self).__name__
 
-        # Scikit-learn
+        # scikit-learn
         metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["n_neighbors"] = self.n_neighbors
         metadata["algorithm"] = self.algorithm
