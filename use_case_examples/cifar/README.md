@@ -45,6 +45,8 @@ Notebooks:
 
 All use-cases can be quickly set up with:
 
+<!--pytest-codeblocks:skip-->
+
 ```bash
 pip install -r requirements.txt
 ```
