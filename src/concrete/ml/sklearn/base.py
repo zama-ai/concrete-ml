@@ -1768,7 +1768,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # KNeighbors handles multi-labels data
         X, y = check_X_y_and_assert_multi_output(X, y)
 
-        self._y = y
+        self._y = numpy.array(y)
 
         # Fit the scikit-learn model
         self._fit_sklearn_model(X, y, **fit_parameters)
@@ -1890,7 +1890,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 + numpy.expand_dims(numpy.sum(self._q_X_fit**2, axis=1), 0)
             )
 
-        def topk_sorting(x):
+        def topk_sorting(x, labels):
             """Argsort in FHE.
 
             Time complexity: O(nlog²(k))
@@ -1936,7 +1936,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 return x
 
             comparisons = numpy.zeros(x.shape)
-            idx = numpy.arange(x.size) + fhe_zeros(x.shape)
+            labels = labels + fhe_zeros(labels.shape)
 
             n, k = x.size, self.n_neighbors
             ln2n = int(numpy.ceil(numpy.log2(n)))
@@ -1960,12 +1960,16 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
                     # Select 2 bitonic sequences `a` and `b` of length `d`
                     # a = x[range_i]: first bitonic sequence
+                    # a_i = idx[range_i]: Indexes of a_i elements in the original x
                     a = gather1d(x, range_i)
-                    a_i = gather1d(idx, range_i)
+                    # a_i = gather1d(idx, range_i)
                     # b = x[range_i + d]: Second bitonic sequence
-                    # b_i = idx[range_i]: Indexes of a_i elements in the original x
+                    # b_i = idx[range_i + d]: Indexes of b_i elements in the original x
                     b = gather1d(x, range_i + d)
-                    b_i = gather1d(idx, range_i + d)
+                    # b_i = gather1d(idx, range_i + d)
+
+                    labels_a = gather1d(labels, range_i)  #
+                    labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
 
                     # Select max(a, b)
                     diff = a - b
@@ -1978,14 +1982,12 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     x = scatter1d(x, max_x, range_i + d)
 
                     # Max index selection
-                    sign = diff < 0
-                    max_idx = a_i + (b_i - a_i) * sign
+                    sign = diff <= 0
 
-                    # Update indexes array according to the max items
-                    # idx[range_i] = a_i + b_i - max_idx <=> min_idx
-                    idx = scatter1d(idx, a_i + b_i - max_idx, range_i)
-                    # idx[range_i + d] = max_idx
-                    idx = scatter1d(idx, max_idx, range_i + d)
+                    # Update labels array according to the max items
+                    max_labels = labels_a + (labels_b - labels_a) * sign
+                    labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
+                    labels = scatter1d(labels, max_labels, range_i + d)
 
                     # Update
                     comparisons[range_i + d] = comparisons[range_i + d] + 1
@@ -1993,13 +1995,11 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     r = p
 
             # Return only the topk indexes
-            topk_indexes = []
+            topk_labels = []
             for i in range((self.n_neighbors)):
-                topk_indexes.append(idx[i])
+                topk_labels.append(labels[i])
 
-            topk_indexes = fhe_array(topk_indexes)
-
-            return topk_indexes
+            return fhe_array(topk_labels)
 
         # 1. Pairwise_euclidiean distance
         # from concrete import fhe
@@ -2014,9 +2014,10 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # 2. Sorting args
         # with fhe.tag(f"sorted_args"):
 
-        sorted_args = topk_sorting(distance_matrix.flatten())
+        # pylint: disable-next=protected-access
+        topk_labels = topk_sorting(distance_matrix.flatten(), self._y)
 
-        return numpy.expand_dims(sorted_args, axis=0)
+        return numpy.expand_dims(topk_labels, axis=0)
 
     # KNN works only for MONO in the latest concrete Python version
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
@@ -2044,11 +2045,9 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         y_preds = []
         for query in X:
             # Argsort
-            arg_sort = super().predict(query[None], fhe)
+            topk_labels = super().predict(query[None], fhe)
             # Majority vote
-            # pylint: disable-next=protected-access
-            label_indices = self._y[arg_sort.flatten()]
-            y_pred = self.majority_vote(label_indices)
+            y_pred = self.majority_vote(topk_labels.flatten())
             y_preds.append(y_pred)
 
         return numpy.array(y_preds)
