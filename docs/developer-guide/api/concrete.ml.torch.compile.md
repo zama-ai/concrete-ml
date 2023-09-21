@@ -44,7 +44,7 @@ build_quantized_module(
     model: Union[Module, ModelProto],
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
     import_qat: bool = False,
-    n_bits=8,
+    n_bits: Union[int, Dict[str, int]] = 8,
     rounding_threshold_bits: Optional[int] = None
 ) → QuantizedModule
 ```
@@ -123,7 +123,7 @@ compile_onnx_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=8,
+    n_bits: Union[int, Dict] = 8,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
@@ -170,7 +170,7 @@ compile_brevitas_qat_model(
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    output_onnx_file: Union[Path, str] = None,
+    output_onnx_file: Union[NoneType, Path, str] = None,
     verbose: bool = False
 ) → QuantizedModule
 ```

@@ -54,7 +54,7 @@ The figure above right shows the Concrete ML neural network, trained with Quanti
 
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
-- `n_accum_bits`: maximum accumulator bit-width that is desired. By default, this is unbounded, which, for weight and activation bitwidth settings, [may make the trained networks fail in compilation](#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md) (i.e., setting some weights to zero)
+- `n_accum_bits`: maximum accumulator bit-width that is desired. By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md) (i.e., setting some weights to zero)
 - `power_of_two_scaling`: forces quantization scales to be powers-of-two, which, when coupled with the ReLU activation, benefits from strong FHE inference time optimization
 
 ### Training parameters (from skorch)

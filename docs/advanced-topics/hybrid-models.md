@@ -13,7 +13,7 @@ or on differential methods. As a general rule, the difficulty
 to steal a machine learning model is proportional to the size of the model, in terms of numbers of parameters and model depth.
 {% endhint %}
 
-The hybrid model deployment API provides an easy way to integrate the [standard deployment procedure](client_server.md) into neural network style models that are compiled with [`compile_brevitas_qat_model`](../developer-guide/api/concrete.ml.torch.compile.md#kbdfunctionkbd-compilebrevitasqatmodel) or [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#kbdfunctionkbd-compiletorchmodel).
+The hybrid model deployment API provides an easy way to integrate the [standard deployment procedure](client_server.md) into neural network style models that are compiled with [`compile_brevitas_qat_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_brevitas_qat_model) or [`compile_torch_model`](../developer-guide/api/concrete.ml.torch.compile.md#function-compile_torch_model).
 
 ## Compilation
 
@@ -71,12 +71,12 @@ hybrid_model.save_and_clear_private_info(model_dir, via_mlir=True)
 
 ## Server Side Deployment
 
-The [`save_and_clear_private_info`](<>) function serializes the FHE circuits
+The [`save_and_clear_private_info`](../developer-guide/api/concrete.ml.torch.hybrid_model.md#method-save_and_clear_private_info) function serializes the FHE circuits
 corresponding to the various parts of the model that were chosen to be moved
 server-side. Furthermore it saves all necessary information required
-to serve these sub-models with FHE, using the [`FHEModelDev`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#kbdclasskbd-fhemodeldev) class.
+to serve these sub-models with FHE, using the [`FHEModelDev`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev) class.
 
-The [`FHEModelServer`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#kbdclasskbd-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
+The [`FHEModelServer`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
 
 <!--pytest-codeblocks:skip-->
 
@@ -91,7 +91,7 @@ For more information about serving FHE models, see the [client/server section](c
 ## Client Side
 
 A client application that deploys a model with hybrid deployment can be developed
-in a very similar manner to on-premise deployment: the model is loaded normally with Pytorch, but an extra step is required to specify the remote endpoint and the model parts that are to be executed remotely.
+in a very similar manner to on-premise deployment: the model is loaded normally with PyTorch, but an extra step is required to specify the remote endpoint and the model parts that are to be executed remotely.
 
 <!--pytest-codeblocks:skip-->
 

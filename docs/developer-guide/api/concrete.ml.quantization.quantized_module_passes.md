@@ -54,7 +54,7 @@ Stores, for each quantized op, a list of quantized ops that produce its inputs. 
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L151"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `detect_patterns`
 
@@ -122,7 +122,7 @@ Nothing will be done if rounding is already specified.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L218"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module_passes.py#L222"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `process_patterns`
 

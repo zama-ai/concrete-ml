@@ -13,16 +13,36 @@ ONNX conversion related code.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L17"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `get_equivalent_numpy_forward_and_onnx_model`
+## <kbd>function</kbd> `fuse_matmul_bias_to_gemm`
 
 ```python
-get_equivalent_numpy_forward_and_onnx_model(
+fuse_matmul_bias_to_gemm(onnx_model: ModelProto)
+```
+
+Fuse sequence of matmul -> add into a gemm node.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  A onnx model to optimize using Mat-Mult + Add -> Gemm
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  the optimized onnx model
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/convert.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_equivalent_numpy_forward_from_torch`
+
+```python
+get_equivalent_numpy_forward_from_torch(
     torch_module: Module,
     dummy_input: Union[Tensor, Tuple[Tensor, ]],
-    output_onnx_file: Optional[Path, str] = None
-) → Tuple[Callable[, Tuple[ndarray, ]], GraphProto]
+    output_onnx_file: Union[NoneType, Path, str] = None
+) → Tuple[Callable[, Tuple[ndarray, ]], ModelProto]
 ```
 
 Get the numpy equivalent forward of the provided torch Module.
@@ -39,15 +59,15 @@ Get the numpy equivalent forward of the provided torch Module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `get_equivalent_numpy_forward`
+## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx`
 
 ```python
-get_equivalent_numpy_forward(
+get_equivalent_numpy_forward_from_onnx(
     onnx_model: ModelProto,
     check_model: bool = True
-) → Callable[, Tuple[ndarray, ]]
+) → Tuple[Callable[, Tuple[ndarray, ]], ModelProto]
 ```
 
 Get the numpy equivalent forward of the provided ONNX model.

@@ -32,7 +32,7 @@ General interface to transform a torch.nn.Module to numpy module.
 __init__(
     model: Union[Module, ModelProto],
     dummy_input: Optional[Tensor, Tuple[Tensor, ]] = None,
-    debug_onnx_output_file_path: Optional[Path, str] = None
+    debug_onnx_output_file_path: Optional[str, Path] = None
 )
 ```
 
@@ -50,7 +50,7 @@ Get the ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/numpy_module.py#L79"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/numpy_module.py#L78"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 

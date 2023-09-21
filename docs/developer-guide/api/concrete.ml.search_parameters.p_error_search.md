@@ -43,7 +43,7 @@ If we don't reach the convergence, a user warning is raised.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L68"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L72"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_and_simulated_fhe_inference`
 
@@ -91,13 +91,13 @@ Supported models are:
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `BinarySearch`
 
 Class for `p_error` hyper-parameter search for classification and regression tasks.
 
-<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L164"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -147,7 +147,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L280"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `eval_match`
 
@@ -174,7 +174,7 @@ Eval the matches.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L243"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L250"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `reset_history`
 
@@ -186,7 +186,7 @@ Clean history.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/search_parameters/p_error_search.py#L389"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 

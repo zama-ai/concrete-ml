@@ -14,6 +14,7 @@
 - [Linear Models](built-in-models/linear.md)
 - [Tree-based Models](built-in-models/tree.md)
 - [Neural Networks](built-in-models/neural-networks.md)
+- [Nearest Neighbors](built-in-models/nearest-neighbors.md)
 - [Pandas](built-in-models/pandas.md)
 - [Built-in Model Examples](built-in-models/ml_examples.md)
 
@@ -26,15 +27,19 @@
 - [Debugging Models](deep-learning/fhe_assistant.md)
 - [Optimizing Inference](deep-learning/optimizing_inference.md)
 
+## Deployment
+
+- [Prediction with FHE](advanced-topics/prediction_with_fhe.md)
+- [Hybrid models](advanced-topics/hybrid-models.md)
+- [Production Deployment](advanced-topics/client_server.md)
+- [Serialization](advanced-topics/serialization.md)
+
 ## Advanced topics
 
 - [Quantization](advanced-topics/quantization.md)
 - [Pruning](advanced-topics/pruning.md)
 - [Compilation](advanced-topics/compilation.md)
-- [Prediction with FHE](advanced-topics/prediction_with_fhe.md)
-- [Production Deployment](advanced-topics/client_server.md)
 - [Advanced Features](advanced-topics/advanced_features.md)
-- [Serialization](advanced-topics/serialization.md)
 
 ## Developer Guide
 
@@ -89,6 +94,7 @@
   - [concrete.ml.sklearn.glm.md](developer-guide/api/concrete.ml.sklearn.glm.md)
   - [concrete.ml.sklearn.linear_model.md](developer-guide/api/concrete.ml.sklearn.linear_model.md)
   - [concrete.ml.sklearn.md](developer-guide/api/concrete.ml.sklearn.md)
+  - [concrete.ml.sklearn.neighbors.md](developer-guide/api/concrete.ml.sklearn.neighbors.md)
   - [concrete.ml.sklearn.qnn.md](developer-guide/api/concrete.ml.sklearn.qnn.md)
   - [concrete.ml.sklearn.qnn_module.md](developer-guide/api/concrete.ml.sklearn.qnn_module.md)
   - [concrete.ml.sklearn.rf.md](developer-guide/api/concrete.ml.sklearn.rf.md)
