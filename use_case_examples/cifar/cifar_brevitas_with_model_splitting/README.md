@@ -53,7 +53,7 @@ Once we had this `p_error` validated we re-run the FHE inference using this new 
 - Time to keygen: 30 seconds
 - Time to infer: 1738 seconds
 
-We see a 20x improvement with a simple change in the `p_error` parameter, for more details on how to handle `p_error` please refer to the [documentation](../../docs/advanced-topics/advanced_features.md#approximate-computations).
+We see a 20x improvement with a simple change in the `p_error` parameter, for more details on how to handle `p_error` please refer to the [documentation](../../../docs/advanced-topics/advanced_features.md#approximate-computations).
 
 ## Results
 

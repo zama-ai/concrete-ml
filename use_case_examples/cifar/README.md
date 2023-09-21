@@ -24,14 +24,14 @@ Notebooks:
 1. [Computing the accuracy of the quantized models with FHE simulation](cifar_brevitas_finetuning/CifarInFhe.ipynb).
 1. [Enhancing inference time in FHE using smaller accumulators](cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb).
 
-[Results & Metrics](cifar_brevitas_finetuning/README.md#results)
+[Results & Metrics](./cifar_brevitas_finetuning/README.md#results)
 
 ### Training Ternary VGG on CIFAR10
 
 - **Description**: Train a VGG-like neural network from scratch using Brevitas on CIFAR-10 and run it in FHE. This use-case modifies the original VGG model for compatibility with Concrete ML, and explores the performance gains of rounding operations in FHE.
 - **Training & Inference**: Scripts provided to train the network and evaluate its performance. It also includes simulations in Concrete ML and insights into the performance enhancement using rounding.
 
-[Results & Metrics](cifar_brevitas_training/README.md#Accuracy_/and_/performance)
+[Results & Metrics](./cifar_brevitas_training/README.md#accuracy-and-performance)
 
 ### CIFAR-10 with a Split Clear/FHE Model
 
@@ -39,7 +39,7 @@ Notebooks:
 - **Model Design**: Aims at using 8-bit accumulators to speed up FHE inference. The design incorporates pruning techniques and employs 2-bit weights to meet this aim.
 - **Implementation**: Provides step-by-step guidance on how to execute the hybrid clear/FHE model, focusing on the details and decisions behind selecting the optimal `p_error` value. Special attention is given to the binary search method to balance accuracy and FHE performance.
 
-[Results & Metrics](cifar_brevitas_with_model_splitting/README.md#results)
+[Results & Metrics](./cifar_brevitas_with_model_splitting/README.md#results)
 
 ## Installation
 

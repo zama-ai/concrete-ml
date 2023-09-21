@@ -1,7 +1,7 @@
 # Deployment
 
 In this folder we show how to deploy a Concrete ML model that classifies images from CIFAR-10, either through Docker or Amazon Web Services.
-We use the model showcased in [cifar split model](../../cifar_brevitas_with_model_splitting/README.md).
+We use the model showcased in [cifar split model](../../cifar/cifar_brevitas_with_model_splitting/README.md).
 
 ## Get started
 

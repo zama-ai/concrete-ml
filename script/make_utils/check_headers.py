@@ -83,6 +83,8 @@ def contains_header(ast, header) -> bool:
                 .replace(".", "")
                 .replace("!", "")
                 .replace("?", "")
+                .replace("/", "")
+                .replace("&", "")
                 .lower()
             )
 
