@@ -49,7 +49,7 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_nn_finetuning.png">nn.png</a></td>
-         <td><a href="../../use_case_examples/cifar_brevitas_finetuning">use_case_examples/cifar_brevitas_finetuning</a></td>
+         <td><a href="../../use_case_examples/cifar/cifar_brevitas_finetuning">use_case_examples/cifar/cifar_brevitas_finetuning</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -61,7 +61,7 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_nn_splitting.png">client-server-1.png</a></td>
-         <td><a href="../../use_case_examples/cifar_brevitas_with_model_splitting">use_case_examples/cifar_brevitas_with_model_splitting</a></td>
+         <td><a href="../../use_case_examples/cifar/cifar_brevitas_with_model_splitting">use_case_examples/cifar/cifar_brevitas_with_model_splitting</a></td>
          <!--- end -->
       </tr>
       <tr>
