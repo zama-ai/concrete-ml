@@ -50,10 +50,10 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   # --- refresh_notebooks_list.py: refresh list of notebook paths currently available [START] ---
   # --- do not edit, auto generated part by `make refresh_notebooks_list` ---
-  Cifar10: "use_case_examples/cifar_brevitas_with_model_splitting/Cifar10.ipynb" 
-  CifarInFhe: "use_case_examples/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
-  CifarInFheWithSmallerAccumulators: "use_case_examples/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb" 
-  CifarQuantizationAwareTraining: "use_case_examples/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb" 
+  Cifar10: "use_case_examples/cifar/cifar_brevitas_with_model_splitting/Cifar10.ipynb" 
+  CifarInFhe: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFhe.ipynb" 
+  CifarInFheWithSmallerAccumulators: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb" 
+  CifarQuantizationAwareTraining: "use_case_examples/cifar/cifar_brevitas_finetuning/CifarQuantizationAwareTraining.ipynb" 
   ClassifierComparison: "docs/advanced_examples/ClassifierComparison.ipynb" 
   ClientServer: "docs/advanced_examples/ClientServer.ipynb" 
   ConvolutionalNeuralNetwork: "docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb" 
@@ -62,7 +62,7 @@ env:
   DecisionTreeRegressor: "docs/advanced_examples/DecisionTreeRegressor.ipynb" 
   Deployment: "docs/advanced_examples/Deployment.ipynb" 
   ExperimentPrivacyTreePaper: "docs/advanced_examples/ExperimentPrivacyTreePaper.ipynb" 
-  FromImageNetToCifar: "use_case_examples/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 
+  FromImageNetToCifar: "use_case_examples/cifar/cifar_brevitas_finetuning/FromImageNetToCifar.ipynb" 
   FullyConnectedNeuralNetwork: "docs/advanced_examples/FullyConnectedNeuralNetwork.ipynb" 
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
@@ -72,7 +72,7 @@ env:
   LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 
   MnistInFHE: "use_case_examples/mnist/MnistInFHE.ipynb" 
-  PerrorImpactOnFMNIST: "use_case_examples/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
+  PerrorImpactOnFMNIST: "use_case_examples/cifar/cifar_brevitas_finetuning/PerrorImpactOnFMNIST.ipynb" 
   PoissonRegression: "docs/advanced_examples/PoissonRegression.ipynb" 
   QGPT2Evaluate: "use_case_examples/llm/QGPT2Evaluate.ipynb" 
   QuantFrameworkExample: "use_case_examples/llm/QuantFrameworkExample.ipynb" 
