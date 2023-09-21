@@ -20,8 +20,16 @@ The hybrid model deployment API provides an easy way to integrate the [standard 
 To use hybrid model deployment, the first step is to define what part of the PyTorch neural network model must be executed in FHE. The model part must be a `nn.Module` and is identified by its key in the original model's `.named_modules()`.
 
 ```python
+import numpy as np
+import os
+import torch
+
+from pathlib import Path
 from torch import nn
-from concrete.ml.torch.hybrid_model import HybridFHEModel
+
+from concrete.ml.torch.hybrid_model import HybridFHEModel, tuple_to_underscore_str
+from concrete.ml.deployment import FHEModelServer
+
 
 class FCSmall(nn.Module):
     """Torch model for the tests."""
@@ -35,8 +43,9 @@ class FCSmall(nn.Module):
 
 model = FCSmall(10)
 model_name = "FCSmall"
-submodule_name = "seq_0"
+submodule_name = "seq.0"
 
+inputs = torch.Tensor(np.random.uniform(size=(10, 10)))
 # Prints ['', 'seq', 'seq.0', 'seq.1', 'seq.2']
 print([k for (k, _) in model.named_modules()])
 
@@ -47,15 +56,20 @@ hybrid_model.compile_model(
     n_bits=8,
 )
 
-models_dir = Path(__file__).parent / "compiled_models"
+
+models_dir = Path(os.path.abspath('')) / "compiled_models"
 models_dir.mkdir(exist_ok=True)
 model_dir = models_dir / model_name
+
+```
+
+<!--pytest-codeblocks:skip-->
+
+```python
 hybrid_model.save_and_clear_private_info(model_dir, via_mlir=True)
 ```
 
 ## Server Side Deployment
-
-<!--pytest-codeblocks:cont-->
 
 The [`save_and_clear_private_info`](<>) function serializes the FHE circuits
 corresponding to the various parts of the model that were chosen to be moved
@@ -64,10 +78,12 @@ to serve these sub-models with FHE, using the [`FHEModelDev`](../developer-guide
 
 The [`FHEModelServer`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#kbdclasskbd-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
 
+<!--pytest-codeblocks:skip-->
+
 ```
-from concrete.ml.deployment import FHEModelServer
-MODULES = { model_name: { submodule_name: {"path":  model_dir / "seq_0" }}}
-return FHEModelServer(str(MODULES[model_name][submodule_name]["path"]))
+input_shape_subdir = tuple_to_underscore_str( (1,) + inputs.shape[1:] )
+MODULES = { model_name: { submodule_name: {"path":  model_dir / submodule_name / input_shape_subdir }}}
+server =  FHEModelServer(str(MODULES[model_name][submodule_name]["path"]))
 ```
 
 For more information about serving FHE models, see the [client/server section](client_server.md#serving).
@@ -77,7 +93,7 @@ For more information about serving FHE models, see the [client/server section](c
 A client application that deploys a model with hybrid deployment can be developed
 in a very similar manner to on-premise deployment: the model is loaded normally with Pytorch, but an extra step is required to specify the remote endpoint and the model parts that are to be executed remotely.
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 # Modify model to use remote FHE server instead of local weights
@@ -93,7 +109,7 @@ hybrid_model = HybridFHEModel(
 Next, the client application must obtain the parameters necessary to encrypt and
 quantize data, as detailed in the [client/server documentation](client_server.md#production-deployment).
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```
 path_to_clients = Path(__file__).parent / "clients"
@@ -103,7 +119,7 @@ hybrid_model.init_client(path_to_clients=path_to_clients)
 When the client application is ready to make inference requests to the server, it must
 set the operation mode of the `HybridFHEModel` instance to `HybridFHEMode.REMOTE`:
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```
 for module in hybrid_model.remote_modules.values():
@@ -112,7 +128,7 @@ for module in hybrid_model.remote_modules.values():
 
 When performing inference with the `HybridFHEModel` instance, `hybrid_model`, only the regular `forward` method is called, as if the model was fully deployed locally:
 
-<!--pytest-codeblocks:cont-->
+<!--pytest-codeblocks:skip-->
 
 ```python
 hybrid_model.forward(torch.randn((dim, )))
