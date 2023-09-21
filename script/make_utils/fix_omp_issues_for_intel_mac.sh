@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 
 # Fix OMP issues for macOS Intel, https://github.com/zama-ai/concrete-ml-internal/issues/3951
+# This should be avoided for macOS with arm64 architecture
 
 set -ex
 
 UNAME=$(uname)
+MACHINE=$(uname -m)
 
-if [ "$UNAME" == "Darwin" ]
+if [ "$UNAME" == "Darwin" ] && [ "$MACHINE" != "arm64" ]
 then
 
     # We need to source the venv here, since it's not done in the CI
