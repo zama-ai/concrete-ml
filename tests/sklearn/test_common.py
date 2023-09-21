@@ -10,6 +10,7 @@ from concrete.ml.common.utils import get_model_class
 from concrete.ml.pytest.utils import sklearn_models_and_datasets
 from concrete.ml.sklearn import (
     get_sklearn_linear_models,
+    get_sklearn_neighbors_models,
     get_sklearn_neural_net_models,
     get_sklearn_tree_models,
 )
@@ -19,7 +20,10 @@ def test_sklearn_args():
     """Check that all arguments from the underlying sklearn model are exposed."""
     test_counter = 0
     for model_class in (
-        get_sklearn_linear_models() + get_sklearn_neural_net_models() + get_sklearn_tree_models()
+        get_sklearn_linear_models()
+        + get_sklearn_neural_net_models()
+        + get_sklearn_tree_models()
+        + get_sklearn_neighbors_models()
     ):
         model_class = get_model_class(model_class)
 
@@ -32,7 +36,7 @@ def test_sklearn_args():
         )
         test_counter += 1
 
-    assert test_counter == 18
+    assert test_counter == 19
 
 
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)

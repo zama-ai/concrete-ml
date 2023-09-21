@@ -87,6 +87,9 @@ TRUSTED_SKOPS = (
         "skorch.dataset.Dataset",
         "skorch.dataset.ValidSplit",
         "inspect._empty",
+        "sklearn.neighbors._classification.KNeighborsClassifier",
+        "sklearn.metrics._dist_metrics.EuclideanDistance",
+        "sklearn.neighbors._kd_tree.KDTree",
     ]
 )
 

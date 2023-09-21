@@ -18,6 +18,7 @@ from ..sklearn import (
     DecisionTreeRegressor,
     ElasticNet,
     GammaRegressor,
+    KNeighborsClassifier,
     Lasso,
     LinearRegression,
     LinearSVC,
@@ -66,6 +67,7 @@ _regressor_models = [
 ]
 
 _classifier_models = [
+    KNeighborsClassifier,
     DecisionTreeClassifier,
     RandomForestClassifier,
     XGBClassifier,
@@ -95,8 +97,24 @@ _classifiers_and_datasets = [
         id=get_model_name(model),
     )
     for model in _classifier_models
+    if get_model_name(model) != "KNeighborsClassifier"
     for n_classes in [2, 4]
+] + [
+    pytest.param(
+        model,
+        {
+            "n_samples": 6,
+            "n_features": 2,
+            "n_classes": n_classes,
+            "n_informative": 2,
+            "n_redundant": 0,
+        },
+        id=get_model_name(model),
+    )
+    for model in [KNeighborsClassifier]
+    for n_classes in [2]
 ]
+
 
 # Get the data-sets. The data generation is seeded in load_data.
 # Only LinearRegression supports multi targets
@@ -141,8 +159,8 @@ def get_random_extract_of_sklearn_models_and_datasets():
             unique_model_classes.append(m)
 
     # To avoid to make mistakes and return empty list
-    assert len(sklearn_models_and_datasets) == 28
-    assert len(unique_model_classes) == 18
+    assert len(sklearn_models_and_datasets) == 29
+    assert len(unique_model_classes) == 19
 
     return unique_model_classes
 

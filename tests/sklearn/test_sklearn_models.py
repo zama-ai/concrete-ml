@@ -41,7 +41,7 @@ import pytest
 import torch
 from concrete.fhe import ParameterSelectionStrategy
 from sklearn.decomposition import PCA
-from sklearn.exceptions import ConvergenceWarning
+from sklearn.exceptions import ConvergenceWarning, UndefinedMetricWarning
 from sklearn.metrics import make_scorer, matthews_corrcoef, top_k_accuracy_score
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
@@ -64,6 +64,7 @@ from concrete.ml.pytest.utils import (
 )
 from concrete.ml.sklearn import (
     get_sklearn_linear_models,
+    get_sklearn_neighbors_models,
     get_sklearn_neural_net_models,
     get_sklearn_tree_models,
 )
@@ -116,7 +117,9 @@ N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS = 9
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the the (x, y) data-set."""
 
-    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if not is_model_class_in_a_list(
+        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+    ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
 
@@ -129,7 +132,9 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
 def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) data-set."""
 
-    if not is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if not is_model_class_in_a_list(
+        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+    ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds")
 
@@ -199,6 +204,7 @@ def check_correctness_with_sklearn(
         "XGBClassifier": 0.7,
         "RandomForestClassifier": 0.8,
         "NeuralNetClassifier": 0.7,
+        "KNeighborsClassifier": 0.9,
     }
 
     model_name = get_model_name(model_class)
@@ -219,6 +225,7 @@ def check_correctness_with_sklearn(
 
 def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
     """Check double fit."""
+
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Sometimes, we miss convergence, which is not a problem for our test
@@ -273,6 +280,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
 
         # Check that the new quantizers are different from the first ones. This is because we
         # currently expect all quantizers to be re-computed when re-fitting a model
+
         assert all(
             quantizer_1 != quantizer_2
             for (quantizer_1, quantizer_2) in zip(quantizers_1, quantizers_2)
@@ -296,6 +304,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # Check that the new quantizers are identical from the first ones. Again, we expect the
         # quantizers to be re-computed when re-fitting. Since we used the same dataset as the first
         # fit, we also expect these quantizers to be the same.
+
         assert all(
             quantizer_1 == quantizer_3
             for (quantizer_1, quantizer_3) in zip(
@@ -471,6 +480,10 @@ def check_subfunctions(fitted_model, model_class, x):
         ):
             fitted_model.predict_proba(x)
 
+    if get_model_name(fitted_model) == "KNeighborsClassifier":
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+        pytest.skip("Skipping subfunctions test for KNN, doesn't work for now")
+
     if is_classifier_or_partial_classifier(model_class):
 
         fitted_model.predict_proba(x)
@@ -566,6 +579,9 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
 
     # Similarly, we test `predict_proba` for classifiers
     if is_classifier_or_partial_classifier(model):
+        if get_model_name(model_class) == "KNeighborsClassifier":
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+            pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
         model.predict_proba(x)
 
     # If n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
@@ -626,8 +642,8 @@ def check_pipeline(model_class, x, y):
         param_grid = {
             "model__n_bits": [2, 3],
         }
-
-    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=3)
+    # We need a small number of splits, especially for the KNN model, which has a small data-set
+    grid_search = GridSearchCV(pipe_cv, param_grid, error_score="raise", cv=2)
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -655,6 +671,8 @@ def check_grid_search(model_class, x, y, scoring):
             "n_estimators": [5, 10],
             "n_jobs": [1],
         }
+    elif model_class in get_sklearn_neighbors_models():
+        param_grid = {"n_bits": [2], "n_neighbors": [2]}
     else:
         param_grid = {
             "n_bits": [20],
@@ -663,9 +681,17 @@ def check_grid_search(model_class, x, y, scoring):
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
+        warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+
+        if get_model_name(model_class) == "KNeighborsClassifier" and scoring in [
+            "roc_auc",
+            "average_precision",
+        ]:
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+            pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
         _ = GridSearchCV(
-            model_class(), param_grid, cv=5, scoring=scoring, error_score="raise", n_jobs=1
+            model_class(), param_grid, cv=2, scoring=scoring, error_score="raise", n_jobs=1
         ).fit(x, y)
 
 
@@ -705,7 +731,9 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
             y_pred_sklearn = sklearn_model.decision_function(x)
 
         # Else, compute the model's predicted probabilities
-        else:
+        # predict_proba not implemented for KNeighborsClassifier for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+        elif get_model_name(model_class) != "KNeighborsClassifier":
             y_pred_cml = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
 
@@ -762,6 +790,9 @@ def get_hyper_param_combinations(model_class):
             "importance_type": ["weight", "gain"],
             "base_score": [0.5, None],
         }
+    elif model_class in get_sklearn_neighbors_models():
+        # Use small `n_neighbors` values for KNN, because the data-set is too small for now
+        hyper_param_combinations = {"n_neighbors": [1, 2]}
     else:
 
         assert is_model_class_in_a_list(
@@ -852,6 +883,8 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
             model.predict(x)
 
     if is_classifier_or_partial_classifier(model_class):
+        if get_model_name(model) == "KNeighborsClassifier":
+            pytest.skip("predict_proba not implement for KNN")
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
         if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
@@ -1405,6 +1438,10 @@ def test_predict_correctness(
             "Inference in the clear (with "
             f"number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
         )
+    # KNN works only for smaller quantization bits
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+    if n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
+        pytest.skip("Use less than 5 bits with KNN.")
 
     y_pred = model.predict(x[:number_of_tests_in_non_fhe])
 
@@ -1511,10 +1548,14 @@ def test_p_error_global_p_error_simulation(
     if "global_p_error" in error_param:
         pytest.skip("global_p_error behave very differently depending on the type of model.")
 
-    # Get data-set
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN works only for smaller quantization bits
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = min([2] + N_BITS_REGULAR_BUILDS)
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
 
-    # Initialize and fit the model
+    # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check if model is linear
@@ -1526,7 +1567,12 @@ def test_p_error_global_p_error_simulation(
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
         predict_function = (
-            model.predict_proba if is_classifier_or_partial_classifier(model) else model.predict
+            model.predict_proba
+            if is_classifier_or_partial_classifier(model)
+            # `predict_prob` not implemented yet for KNeighborsClassifier
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+            and get_model_name(model) != "KNeighborsClassifier"
+            else model.predict
         )
         y_expected = predict_function(x, fhe="disable")
         for i in range(max_iterations):
@@ -1639,6 +1685,11 @@ def test_mono_parameter_warnings(
     # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3862
     # Linear models are manually forced to use mono-parameter
     if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        return
+
+    # KNN is manually forced to use mono-parameter
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
+    if is_model_class_in_a_list(model_class, get_sklearn_neighbors_models()):
         return
 
     n_bits = min(N_BITS_REGULAR_BUILDS)

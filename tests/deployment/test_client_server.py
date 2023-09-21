@@ -14,11 +14,15 @@ from torch import nn
 
 from concrete.ml.deployment.fhe_client_server import FHEModelClient, FHEModelDev, FHEModelServer
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import instantiate_model_generic, sklearn_models_and_datasets
+from concrete.ml.pytest.utils import (
+    get_model_name,
+    instantiate_model_generic,
+    sklearn_models_and_datasets,
+)
 from concrete.ml.quantization.quantized_module import QuantizedModule
 from concrete.ml.torch.compile import compile_torch_model
 
-# pylint: disable=too-many-statements
+# pylint: disable=too-many-statements,too-many-locals
 
 
 class OnDiskNetwork:
@@ -102,6 +106,14 @@ def test_client_server_sklearn(
     fhe_circuit = model.compile(
         x_train, default_configuration, **extra_params, show_mlir=(n_bits <= 8)
     )
+
+    if get_model_name(model) == "KNeighborsClassifier":
+        # Fit the model
+        with warnings.catch_warnings():
+            # Sometimes, we miss convergence, which is not a problem for our test
+            warnings.simplefilter("ignore", category=ConvergenceWarning)
+            model.fit(x, y)
+
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
 
@@ -257,6 +269,11 @@ def client_server_simulation(x_train, x_test, model, default_configuration):
     numpy.testing.assert_array_equal(
         y_pred_on_client_dequantized, y_pred_model_server_ds_dequantized
     )
+
+    # Make sure the clear predictions are the same for the server
+    if get_model_name(model) == "KNeighborsClassifier":
+        y_pred_model_clear = model.predict(x_test, fhe="disable")
+        numpy.testing.assert_array_equal(y_pred_model_clear, y_pred_model_server_ds_dequantized)
 
     # Clean up
     network.cleanup()

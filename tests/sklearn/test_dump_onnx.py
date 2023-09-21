@@ -35,6 +35,11 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
 
         model.set_params(**model_params)
 
+    if get_model_name(model) == "KNeighborsClassifier":
+        # KNN works only for small quantization bits
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        model.n_bits = 2
+
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
@@ -56,6 +61,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
         "RandomForestClassifier",
         "RandomForestRegressor",
         "XGBClassifier",
+        "KNeighborsClassifier",
     ]:
         while len(onnx_model.graph.initializer) > 0:
             del onnx_model.graph.initializer[0]
@@ -415,6 +421,43 @@ def test_dump(
 ) {
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
+}""",
+        "KNeighborsClassifier": """graph torch_jit (
+  %input_0[DOUBLE, symx2]
+) {
+  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Unsqueeze_output_0 = Unsqueeze(%input_0, %/_operators.0/Constant_output_0)
+  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Sub_output_0 = Sub(%/_operators.0/Unsqueeze_output_0, %onnx::Sub_46)
+  %/_operators.0/Constant_2_output_0 = Constant[value = <Scalar Tensor []>]()
+  %/_operators.0/Pow_output_0 = Pow(%/_operators.0/Sub_output_0, %/_operators.0/Constant_2_output_0)
+  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0, noop_with_empty_axes = 0](%/_operators.0/Pow_output_0, %/_operators.0/Constant_3_output_0)
+  %/_operators.0/Pow_1_output_0 = Pow(%/_operators.0/ReduceSum_output_0, %/_operators.0/Constant_1_output_0)
+  %/_operators.0/Constant_4_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/TopK_output_0, %/_operators.0/TopK_output_1 = TopK[axis = 1, largest = 0, sorted = 1](%/_operators.0/Pow_1_output_0, %/_operators.0/Constant_4_output_0)
+  %/_operators.0/Constant_5_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/TopK_output_1, %/_operators.0/Constant_5_output_0)
+  %/_operators.0/Gather_output_0 = Gather[axis = 0](%_operators.0.train_labels, %/_operators.0/Reshape_output_0)
+  %/_operators.0/Shape_output_0 = Shape(%/_operators.0/TopK_output_1)
+  %/_operators.0/ConstantOfShape_output_0 = ConstantOfShape[value = <Tensor>](%/_operators.0/Shape_output_0)
+  %/_operators.0/Constant_6_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/Gather_output_0, %/_operators.0/Constant_6_output_0)
+  %/_operators.0/Constant_7_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/ScatterElements_output_0 = ScatterElements[axis = 1](%/_operators.0/Constant_7_output_0, %/_operators.0/Reshape_1_output_0, %/_operators.0/ConstantOfShape_output_0)
+  %/_operators.0/Constant_8_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Add_output_0 = Add(%/_operators.0/Constant_8_output_0, %/_operators.0/ScatterElements_output_0)
+  %onnx::ReduceSum_36 = Constant[value = <Tensor>]()
+  %/_operators.0/ReduceSum_1_output_0 = ReduceSum[keepdims = 1](%/_operators.0/Add_output_0, %onnx::ReduceSum_36)
+  %/_operators.0/Constant_9_output_0 = Constant[value = <Scalar Tensor []>]()
+  %/_operators.0/Equal_output_0 = Equal(%/_operators.0/ReduceSum_1_output_0, %/_operators.0/Constant_9_output_0)
+  %/_operators.0/Constant_10_output_0 = Constant[value = <Tensor>]()
+  %/_operators.0/Where_output_0 = Where(%/_operators.0/Equal_output_0, %/_operators.0/Constant_10_output_0, %/_operators.0/ReduceSum_1_output_0)
+  %/_operators.0/Constant_11_output_0 = Constant[value = <Scalar Tensor []>]()
+  %/_operators.0/Pow_2_output_0 = Pow(%/_operators.0/Where_output_0, %/_operators.0/Constant_11_output_0)
+  %onnx::ArgMax_44 = Mul(%/_operators.0/Pow_2_output_0, %/_operators.0/Add_output_0)
+  %variable = ArgMax[axis = 1, keepdims = 0, select_last_index = 0](%onnx::ArgMax_44)
+  return %variable, %onnx::ArgMax_44
 }""",
     }
 

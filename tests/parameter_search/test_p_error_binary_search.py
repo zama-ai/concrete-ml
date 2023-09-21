@@ -313,7 +313,13 @@ def test_binary_search_for_built_in_models(model_class, parameters, threshold, p
     # Skorch but since Scikit-Learn does not, we don't as well. This issue could be fixed by making
     # neural networks not inherit from Skorch.
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
-    if predict == "predict_proba" and get_model_name(model_class) == "NeuralNetRegressor":
+    # Skipping predict_proba for KNN, doesn't work for now.
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+
+    if predict == "predict_proba" and get_model_name(model_class) in [
+        "NeuralNetRegressor",
+        "KNeighborsClassifier",
+    ]:
         return
 
     metric = r2_score if is_regressor_or_partial_regressor(model) else binary_classification_metric

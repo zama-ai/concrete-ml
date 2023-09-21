@@ -19,6 +19,8 @@ import sklearn
 import skorch.net
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
+from concrete.fhe import array as fhe_array
+from concrete.fhe import zeros as fhe_zeros
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -60,11 +62,13 @@ from .tree_to_numpy import tree_to_numpy
 # Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
+from hummingbird.ml.operator_converters import constants  # noqa: E402
 
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
 _TREE_MODELS: Set[Type] = set()
 _NEURALNET_MODELS: Set[Type] = set()
+_NEIGHBORS_MODELS: Set[Type] = set()
 
 # Define the supported types for both the input data and the target values. Since the Pandas
 # library is currently only a dev dependencies, we cannot import it. We therefore need to use type
@@ -1711,3 +1715,382 @@ class SklearnLinearClassifierMixin(
         y_logits = self.decision_function(X, fhe=fhe)
         y_proba = self.post_processing(y_logits)
         return y_proba
+
+
+# pylint: disable-next=invalid-name,too-many-instance-attributes
+class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
+    """A Mixin class for sklearn KNeighbors models with FHE.
+
+    This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's
+    `get_params` and `set_params` methods.
+    """
+
+    def __init_subclass__(cls):
+        for klass in cls.__mro__:
+            # pylint: disable-next=protected-access
+            if getattr(klass, "_is_a_public_cml_model", False):
+                _NEIGHBORS_MODELS.add(cls)
+                _ALL_SKLEARN_MODELS.add(cls)
+
+    def __init__(self, n_bits: int = 3):
+        """Initialize the FHE knn model.
+
+        Args:
+            n_bits (int): Number of bits to quantize the model. IThe value will be used for
+                quantizing inputs and X_fit. Default to 3.
+        """
+        self.n_bits: int = n_bits
+        # _q_fit_X: In distance metric algorithms, `_q_fit_X` stores the training set to compute
+        # the similarity or distance measures. There is no `weights` attribute because there isn't
+        # a training phase
+        self._q_fit_X: numpy.ndarray
+        # _y: Labels of `_q_fit_X`
+        self._y: numpy.ndarray
+        # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
+        self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
+
+        BaseEstimator.__init__(self)
+
+    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+            test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        self.onnx_model_ = hb_convert(
+            self.sklearn_model,
+            backend="onnx",
+            test_input=test_input,
+            extra_config={
+                "onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT,
+                # pylint: disable-next=protected-access, no-member
+                constants.BATCH_SIZE: self.sklearn_model._fit_X.shape[0],
+            },
+        ).model
+
+        self._clean_graph()
+
+    def _clean_graph(self) -> None:
+        """Clean the ONNX graph from undesired nodes."""
+        assert self.onnx_model_ is not None, self._is_not_fitted_error_message()
+
+        # Remove cast operators as they are not needed
+        remove_node_types(onnx_model=self.onnx_model_, op_types_to_remove=["Cast"])
+
+    def fit(self, X: Data, y: Target, **fit_parameters):
+        # Reset for double fit
+        self._is_fitted = False
+        self.input_quantizers = []
+        self.output_quantizers = []
+
+        # KNeighbors handles multi-labels data
+        X, y = check_X_y_and_assert_multi_output(X, y)
+
+        # Fit the scikit-learn model
+        self._fit_sklearn_model(X, y, **fit_parameters)
+
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        # Retrieve the ONNX graph
+        self._set_onnx_model(X)
+
+        # Quantize the inputs and store the associated quantizer
+        input_options = QuantizationOptions(n_bits=self.n_bits, is_signed=True)
+        q_inputs = QuantizedArray(n_bits=self.n_bits, values=X, options=input_options)
+        input_quantizer = q_inputs.quantizer
+        self.input_quantizers.append(input_quantizer)
+
+        # Quantize the _fit_X and store the associated quantizer
+        # pylint: disable-next=protected-access
+        _fit_X = self.sklearn_model._fit_X
+        # We assume that the inputs have the same distribution as the _fit_X
+        q_fit_X = QuantizedArray(
+            n_bits=self.n_bits,
+            values=numpy.expand_dims(_fit_X, axis=1) if len(_fit_X.shape) == 1 else _fit_X,
+            options=input_options,
+        )
+        self._q_fit_X = q_fit_X.qvalues
+        self._q_fit_X_quantizer = q_fit_X.quantizer
+
+        # mypy
+        assert self._q_fit_X_quantizer.scale is not None
+
+        self._y = numpy.array(y)
+
+        # We assume that the query has the same distribution as the data in _X_fit.
+        # therefore, they use the same scaling and zero point.
+        # https://arxiv.org/abs/1712.05877
+
+        self.output_quant_params = UniformQuantizationParameters(
+            scale=self._q_fit_X_quantizer.scale,
+            zero_point=self._q_fit_X_quantizer.zero_point,
+            offset=0,
+        )
+
+        output_quantizer = UniformQuantizer(params=self.output_quant_params, no_clipping=True)
+
+        assert output_quantizer.zero_point is not None
+        self.output_quantizers.append(output_quantizer)
+
+        # Updating post-processing parameters
+        self._set_post_processing_params()
+
+        self._is_fitted = True
+
+        return self
+
+    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+        q_X = self.input_quantizers[0].quant(X)
+
+        assert q_X.dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        return q_X
+
+    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+        self.check_model_is_fitted()
+        # We compute the sorted argmax in FHE, which are integers.
+        # No need to de-quantize the output values
+        return q_y_preds
+
+    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+        # Define the inference function to compile.
+        # This function can neither be a class method nor a static one because self we want to avoid
+        # having self as a parameter while still being able to access some of its attribute
+        def inference_to_compile(q_X: numpy.ndarray) -> numpy.ndarray:
+            """Compile the circuit in FHE using only the inputs as parameters.
+
+            Args:
+                q_X (numpy.ndarray): The quantized input data
+
+            Returns:
+                numpy.ndarray: The circuit is outputs.
+            """
+            return self._inference(q_X)
+
+        # Create the compiler instance
+        compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
+
+        return compiler
+
+    @staticmethod
+    def majority_vote(nearest_classes: numpy.ndarray):
+        """Determine the most common class among nearest neighborsfor each query.
+
+        Args:
+            nearest_classes (numpy.ndarray): The class labels of the nearest neighbors for a query
+
+        Returns:
+            numpy.ndarray: The majority-voted class label for the corresponding query.
+        """
+        class_counts = numpy.bincount(nearest_classes)
+        majority_votes = numpy.argmax(class_counts)
+
+        return majority_votes
+
+    def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
+        """Inference function.
+
+        Args:
+            q_X (numpy.ndarray): The quantized input values.
+
+        Returns:
+            numpy.ndarray: The quantized predicted values.
+        """
+        assert self._q_fit_X_quantizer is not None, self._is_not_fitted_error_message()
+
+        def pairwise_euclidean_distance(q_X):
+            # 1. Pairwise euclidean distance
+            # dist(x, y) = sqrt(dot(x, x) - 2 * dot(x, y) + dot(y, y))
+            return (
+                numpy.sum(q_X**2, axis=1, keepdims=True)
+                - 2 * q_X @ self._q_fit_X.T
+                + numpy.expand_dims(numpy.sum(self._q_fit_X**2, axis=1), 0)
+            )
+
+        def topk_sorting(x, labels):
+            """Argsort in FHE.
+
+            Time complexity: O(nlog²(k))
+
+            Args:
+                x (numpy.ndarray): The quantized input values
+                labels (numpy.ndarray): The labels of the training data-set
+
+            Returns:
+                numpy.ndarray: The argsort.
+            """
+
+            def gather1d(x, indices):
+                """Select elements from the input array `x` using the provided `indices`.
+
+                Args:
+                    x (numpy.ndarray): The encrypted input array
+                    indices (numpy.ndarray): The desired indexes
+
+                Returns:
+                    numpy.ndarray: The selected encrypted indexes.
+                """
+                arr = []
+                for i in indices:
+                    arr.append(x[i])
+                enc_arr = fhe_array(arr)
+                return enc_arr
+
+            def scatter1d(x, v, indices):
+                """Rearrange elements of `x` with values from `v` at the specified `indices`.
+
+                Args:
+                    x (numpy.ndarray): The encrypted input array in which items will be updated
+                    v (numpy.ndarray): The array containing values to be inserted into `x`
+                        at the specified `indices`.
+                    indices (numpy.ndarray): The indices indicating where to insert the elements
+                        from `v` into `x`.
+
+                Returns:
+                    numpy.ndarray: The updated encrypted `x`
+                """
+                for idx, i in enumerate(indices):
+                    x[i] = v[idx]
+                return x
+
+            comparisons = numpy.zeros(x.shape)
+            labels = labels + fhe_zeros(labels.shape)
+
+            n, k = x.size, self.n_neighbors
+            ln2n = int(numpy.ceil(numpy.log2(n)))
+
+            # Number of stages
+            for t in range(ln2n - 1, -1, -1):
+                p = 2**t
+                r = 0
+                # d: Length of the bitonic sequence
+                d = p
+
+                for bq in range(ln2n - 1, t - 1, -1):
+                    q = 2**bq
+                    # Determine the range of indexes to be compared
+                    range_i = numpy.array(
+                        [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
+                    )
+                    if len(range_i) == 0:
+                        # Edge case, for k=1
+                        continue
+
+                    # Select 2 bitonic sequences `a` and `b` of length `d`
+                    # a = x[range_i]: first bitonic sequence
+                    # a_i = idx[range_i]: Indexes of a_i elements in the original x
+                    a = gather1d(x, range_i)
+                    # a_i = gather1d(idx, range_i)
+                    # b = x[range_i + d]: Second bitonic sequence
+                    # b_i = idx[range_i + d]: Indexes of b_i elements in the original x
+                    b = gather1d(x, range_i + d)
+                    # b_i = gather1d(idx, range_i + d)
+
+                    labels_a = gather1d(labels, range_i)  #
+                    labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
+
+                    # Select max(a, b)
+                    diff = a - b
+                    max_x = a + numpy.maximum(0, b - a)
+
+                    # Swap if a > b
+                    # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
+                    x = scatter1d(x, a + b - max_x, range_i)
+                    # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
+                    x = scatter1d(x, max_x, range_i + d)
+
+                    # Max index selection
+                    is_a_greater_than_b = diff <= 0
+
+                    # Update labels array according to the max items
+                    max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
+                    labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
+                    labels = scatter1d(labels, max_labels, range_i + d)
+
+                    # Update
+                    comparisons[range_i + d] = comparisons[range_i + d] + 1
+                    d = q - p
+                    r = p
+
+            # Return only the topk indexes
+            topk_labels = []
+            for i in range((self.n_neighbors)):
+                topk_labels.append(labels[i])
+
+            return fhe_array(topk_labels)
+
+        # 1. Pairwise_euclidiean distance
+        distance_matrix = pairwise_euclidean_distance(q_X)
+
+        # The square root in the Euclidean distance calculation is not applied to speed up FHE
+        # computations.
+        # Being a monotonic function, it does not affect the logic of the calculation, notably for
+        # the argsort.
+
+        topk_labels = topk_sorting(distance_matrix.flatten(), self._y)
+
+        return numpy.expand_dims(topk_labels, axis=0)
+
+    # KNN works only for MONO in the latest concrete Python version
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
+    def compile(self, *args, **kwargs) -> Circuit:
+        # If a configuration instance is given as a positional parameter, set the strategy to
+        # multi-parameter
+        if len(args) >= 2:
+            configuration = force_mono_parameter_in_configuration(args[1])
+            args_list = list(args)
+            args_list[1] = configuration
+            args = tuple(args_list)
+
+        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
+        # strategy to multi-parameter
+        else:
+            configuration = kwargs.get("configuration", None)
+            kwargs["configuration"] = force_mono_parameter_in_configuration(configuration)
+
+        return BaseEstimator.compile(self, *args, **kwargs)
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        """Perform the majority.
+
+        For KNN, the de-quantization step is not required. Because _inference returns the label of
+        the k-nearest neighbors.
+
+        Args:
+            y_preds (numpy.ndarray): The topk nearest labels
+
+        Returns:
+            numpy.ndarray: The majority vote.
+        """
+        y_preds_processed = []
+        for y in y_preds:
+            vote = self.majority_vote(y.flatten())
+            y_preds_processed.append(vote)
+
+        return numpy.array(y_preds_processed)
+
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+
+        X = check_array_and_assert(X)
+
+        topk_labels = []
+        for query in X:
+            topk_labels.append(super().predict(query[None], fhe))
+
+        y_preds = self.post_processing(numpy.array(topk_labels))
+
+        return numpy.array(y_preds)
+
+
+class SklearnKNeighborsClassifierMixin(SklearnKNeighborsMixin, sklearn.base.ClassifierMixin, ABC):
+    """A Mixin class for sklearn KNeighbors classifiers with FHE.
+
+    This class is used to create a KNeighbors classifier class that inherits from
+    SklearnKNeighborsMixin and sklearn.base.ClassifierMixin.
+    By inheriting from sklearn.base.ClassifierMixin, it allows this class to be recognized
+    as a classifier."
+    """

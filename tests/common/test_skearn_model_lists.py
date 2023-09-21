@@ -8,6 +8,7 @@ from concrete.ml.sklearn.linear_model import (
     LogisticRegression,
     Ridge,
 )
+from concrete.ml.sklearn.neighbors import KNeighborsClassifier
 from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 from concrete.ml.sklearn.rf import RandomForestClassifier, RandomForestRegressor
 from concrete.ml.sklearn.svm import LinearSVC, LinearSVR
@@ -18,10 +19,12 @@ from concrete.ml.sklearn.xgb import XGBClassifier, XGBRegressor
 def test_get_sklearn_models():
     """List all available models in Concrete ML."""
     dic = get_sklearn_models()
+
     cml_list = dic["all"]
     linear_list = dic["linear"]
     tree_list = dic["tree"]
     neuralnet_list = dic["neural_net"]
+    neighbors_list = dic["neighbors"]
 
     print("All models: ")
     for m in cml_list:
@@ -37,6 +40,10 @@ def test_get_sklearn_models():
 
     print("Neural net models: ")
     for m in neuralnet_list:
+        print(f"     {m}")
+
+    print("Neighbors models: ")
+    for m in neighbors_list:
         print(f"     {m}")
 
     # Check values
@@ -69,12 +76,18 @@ def test_get_sklearn_models():
         Ridge,
         TweedieRegressor,
     ]
+
+    expected_neighbors_list = [KNeighborsClassifier]
+
     assert (
         linear_list == expected_linear_list
     ), "Please change the expected number of models if you add new models"
 
     # Check number
     assert cml_list == sorted(
-        expected_linear_list + expected_neuralnet_list + expected_tree_list,
+        expected_linear_list
+        + expected_neuralnet_list
+        + expected_tree_list
+        + expected_neighbors_list,
         key=lambda m: m.__name__,
     ), "Please change the expected number of models if you add new models"
