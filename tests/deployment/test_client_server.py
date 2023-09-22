@@ -70,6 +70,9 @@ class OnDiskNetwork:
         self.dev_dir.cleanup()
 
 
+# Remove this flaky flag once the KNN issue is fixed
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4009
+@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
 @pytest.mark.parametrize("n_bits", [3])
 def test_client_server_sklearn(
