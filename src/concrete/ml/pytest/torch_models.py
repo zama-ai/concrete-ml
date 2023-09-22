@@ -1387,3 +1387,25 @@ class ConcatFancyIndexing(nn.Module):
         x = torch.relu(self.fc2(x))
         x = self.fc4(self.quant_3(x))
         return x
+
+
+class PartialQATModel(torch.nn.Module):
+    """A model with a QAT Module."""
+
+    def __init__(self, input_shape: int, output_shape: int, n_bits: int):
+        super().__init__()
+        self.sub_module = QuantCustomModel(
+            input_shape=input_shape, output_shape=output_shape, n_bits=n_bits
+        )
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.tensor): The input of the model.
+
+        Returns:
+            torch.tensor: Output of the network.
+        """
+
+        return self.sub_module(x)

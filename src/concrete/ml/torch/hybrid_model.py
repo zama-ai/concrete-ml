@@ -12,13 +12,19 @@ from typing import Dict, List, Optional, Tuple, Union
 import numpy
 import requests
 import torch
+from brevitas.quant_tensor import QuantTensor
 from concrete.fhe import Configuration
 from torch import nn
 from transformers import Conv1D
 
 from ..common.utils import MAX_BITWIDTH_BACKWARD_COMPATIBLE
 from ..deployment.fhe_client_server import FHEModelClient, FHEModelDev
-from .compile import QuantizedModule, compile_torch_model
+from .compile import (
+    QuantizedModule,
+    compile_brevitas_qat_model,
+    compile_torch_model,
+    has_any_qnn_layers,
+)
 
 
 class HybridFHEMode(enum.Enum):
@@ -192,7 +198,7 @@ class RemoteModule(nn.Module):
             # towards client lazy loading with caching as done on the server.
             self.clients[shape] = (uid, client)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> Union[torch.Tensor, QuantTensor]:
         """Forward pass of the remote module.
 
         To change the behavior of this forward function one must change the fhe_local_mode
@@ -233,13 +239,13 @@ class RemoteModule(nn.Module):
             y = self.private_module.forward(
                 x.detach(),
             )
-            assert isinstance(y, torch.Tensor)
+            assert isinstance(y, (QuantTensor, torch.Tensor))
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
             self.calibration_data.append(x.detach())
             y = self.private_module(x)
-            assert isinstance(y, torch.Tensor)
+            assert isinstance(y, (QuantTensor, torch.Tensor))
         # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3869
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
@@ -409,7 +415,7 @@ class HybridFHEModel:
         for module_name, module in model.named_modules():
             if module_name == name:
                 return module
-        raise ValueError(f"No module found for name {name}")
+        raise ValueError(f"No module found for name {name} in {list(model.named_modules())}")
 
     def init_client(
         self, path_to_clients: Optional[Path] = None, path_to_keys: Optional[Path] = None
@@ -431,7 +437,7 @@ class HybridFHEModel:
     def compile_model(
         self,
         x: torch.Tensor,
-        n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
+        n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
         rounding_threshold_bits: Optional[int] = None,
         p_error: Optional[float] = None,
         configuration: Optional[Configuration] = None,
@@ -463,14 +469,24 @@ class HybridFHEModel:
 
             calibration_data_tensor = torch.cat(remote_module.calibration_data, dim=0)
 
-            self.private_q_modules[name] = compile_torch_model(
-                self.private_modules[name],
-                calibration_data_tensor,
-                n_bits=n_bits,
-                rounding_threshold_bits=rounding_threshold_bits,
-                configuration=configuration,
-                p_error=p_error,
-            )
+            if has_any_qnn_layers(self.private_modules[name]):
+                self.private_q_modules[name] = compile_brevitas_qat_model(
+                    self.private_modules[name],
+                    calibration_data_tensor,
+                    n_bits=n_bits,
+                    rounding_threshold_bits=rounding_threshold_bits,
+                    configuration=configuration,
+                    p_error=p_error,
+                )
+            else:
+                self.private_q_modules[name] = compile_torch_model(
+                    self.private_modules[name],
+                    calibration_data_tensor,
+                    n_bits=n_bits,
+                    rounding_threshold_bits=rounding_threshold_bits,
+                    configuration=configuration,
+                    p_error=p_error,
+                )
 
             self.remote_modules[name].private_q_module = self.private_q_modules[name]
 
