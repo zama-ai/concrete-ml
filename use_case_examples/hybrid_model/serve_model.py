@@ -39,13 +39,13 @@ if __name__ == "__main__":
         "--path-to-models",
         dest="path_to_models",
         type=Path,
-        default=FILE_FOLDER / Path("user_keys"),
+        default=FILE_FOLDER / Path("compiled_models"),
     )
     parser.add_argument(
         "--path-to-keys",
         dest="path_to_keys",
         type=Path,
-        default=FILE_FOLDER / Path("compiled_models"),
+        default=FILE_FOLDER / Path("user_keys"),
     )
     args = parser.parse_args()
     app = FastAPI(debug=False)
@@ -61,6 +61,8 @@ if __name__ == "__main__":
     # We build the following mapping:
     # model_name -> module_name -> input_shape -> some information
     for model_path in MODELS_PATH.iterdir():  # Model
+        if not model_path.is_dir():
+            continue
         model_name = model_path.name
         MODULES[model_name] = defaultdict(dict)
         for module_path in model_path.iterdir():  # Module
