@@ -35,6 +35,10 @@ $$Z_p = \mathtt{round} \left(- \frac{\alpha}{S} \right)$$
 
 When using quantized values in a matrix multiplication or convolution, the equations for computing the result become more complex. The IntelLabs Distiller documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) of the maths used to quantize values and how to keep computations consistent.
 
+### Quantization special cases
+
+Machine learning acceleration solutions are often based on integer computation of activations. To make quantization computations hardware-friendly, a popular approach is to ensure that scales are powers-of-two, which allows the replacement of the division in the equations above with a shift-right operation. TFHE also has a fast primitive for right bit-shift that enables acceleration in the special case of power-of-two scales.
+
 ### Configuring model quantization parameters
 
 Built-in models provide a simple interface for configuring quantization parameters, most notably the number of bits used for inputs, model weights, intermediary values, and output values.

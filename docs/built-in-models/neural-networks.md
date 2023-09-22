@@ -18,7 +18,7 @@ Good quantization parameter values are critical to make models [respect FHE cons
 {% endhint %}
 
 {% hint style="warning" %}
-Using `nn.ReLU` as the activation function benefits from an optimization where quantization uses powers-of-two scales. This results in much faster inference times in FHE, thanks to a TFHE primitive that performs fast division by powers of two.
+Using `nn.ReLU` as the activation function benefits from an optimization where [quantization uses powers-of-two scales](../advanced-topics/quantization.md#quantization-special-cases). This results in much faster inference times in FHE, thanks to a TFHE primitive that performs fast division by powers of two.
 {% endhint %}
 
 ## Example usage
@@ -55,7 +55,7 @@ The figure above right shows the Concrete ML neural network, trained with Quanti
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
 - `n_accum_bits`: maximum accumulator bit-width that is desired. By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md) (i.e., setting some weights to zero)
-- `power_of_two_scaling`: forces quantization scales to be powers-of-two, which, when coupled with the ReLU activation, benefits from strong FHE inference time optimization
+- `power_of_two_scaling` (default True): forces quantization scales to be powers-of-two, which, when coupled with the ReLU activation, benefits from strong FHE inference time optimization. See this [section](../advanced-topics/quantization.md#quantization-special-cases) in the quantization documentation for more details.
 
 ### Training parameters (from skorch)
 

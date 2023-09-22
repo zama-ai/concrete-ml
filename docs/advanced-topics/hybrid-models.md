@@ -4,7 +4,7 @@ FHE enables cloud applications to process private user data without running the 
 
 However, not all applications can be easily converted to FHE computation and the computation cost of FHE may make a full conversion exceed latency requirements.
 
-Hybrid models are a compromise between on-premise or on-device deployment and full cloud deployment. Hybrid deployment means parts of the model are executed on the client side and parts are executed in FHE on the server side. Concrete ML supports hybrid deployment of neural network models such as MLP, CNN and Large Language-Models.
+Hybrid models provide a balance between on-device deployment and cloud-based deployment. This approach entails executing parts of the model directly on the client side, while other parts are securely processed with FHE on the server side. Concrete ML facilitates the hybrid deployment of various neural network models, including MLP (multilayer perceptron), CNN (convolutional neural network), and Large Language Models.
 
 {% hint style="warning" %}
 If model IP protection is important, care must be taken in choosing the parts of a model to be executed on the cloud. Some
@@ -73,8 +73,7 @@ hybrid_model.save_and_clear_private_info(model_dir, via_mlir=True)
 
 The [`save_and_clear_private_info`](../developer-guide/api/concrete.ml.torch.hybrid_model.md#method-save_and_clear_private_info) function serializes the FHE circuits
 corresponding to the various parts of the model that were chosen to be moved
-server-side. Furthermore it saves all necessary information required
-to serve these sub-models with FHE, using the [`FHEModelDev`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev) class.
+server-side. It also saves the client-side model, removing the weights of the layers that are transferred server-side. Furthermore it saves all necessary information required to serve these sub-models with FHE, using the [`FHEModelDev`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodeldev) class.
 
 The [`FHEModelServer`](../developer-guide/api/concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver) class should be used to create a server application that creates end-points to serve these sub-models:
 
