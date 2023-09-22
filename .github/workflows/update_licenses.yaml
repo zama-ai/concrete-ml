@@ -49,8 +49,10 @@ jobs:
         run: |
           make licenses
       
-      # Open PR with updated licenses
+      # If the target branch is main or a release branch, a pull request is opened for everyone to 
+      # review
       - name: Open PR
+        if: ${{ github.ref_name == 'main' || startsWith(github.ref_name , 'release/') }} 
         uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
         with:
           token: ${{ secrets.BOT_TOKEN }}
@@ -59,3 +61,11 @@ jobs:
           base: "${{ github.ref_name }}"
           title: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
           body: "Update licenses for ${{ matrix.os }} on ${{ github.ref_name }}"
+
+      # If the target branch is another branch, the current branch is automatically merged into it
+      - name: Push changes into the current branch
+        if: ${{ github.ref_name != 'main' && !(startsWith(github.ref_name , 'release/')) }}
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "chore: refresh ${{ github.event.inputs.notebook }} notebook"
+          add_options: '-u'
