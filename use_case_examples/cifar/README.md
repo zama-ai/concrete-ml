@@ -9,7 +9,7 @@ This repository provides resources and documentation on different use-cases for 
    - [Training Ternary VGG9 on CIFAR10](#training-ternary-vgg-on-cifar10)
    - [CIFAR-10 VGG9 with one client-side layer](#cifar-10-with-a-split-model)
 1. [Installation](#installation)
-2. [Further Reading & Resources](#further-reading)
+1. [Further Reading & Resources](#further-reading)
 
 ## Use cases
 
