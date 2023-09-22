@@ -43,8 +43,7 @@ if __name__ == "__main__":
     )
     path_to_clients = Path(__file__).parent / "clients"
     hybrid_model.init_client(path_to_clients=path_to_clients)
-    for module in hybrid_model.remote_modules.values():
-        module.fhe_local_mode = HybridFHEMode.REMOTE
+    hybrid_model.set_fhe_mode(HybridFHEMode.REMOTE)
 
     # Run example
     while True:
