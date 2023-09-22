@@ -65,18 +65,6 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <!--- end -->
       </tr>
       <tr>
-         <td><strong>Handwritten digit classification</strong></td>
-         <td>
-            <p></p>
-            <p>Train a neural network model to classify encrypted digit images from the MNIST data-set</p>
-         </td>
-         <td></td>
-         <!--- start -->
-         <td><a href="../.gitbook/assets/demo_mnist.png">mnist.png</a></td>
-         <td><a href="../../use_case_examples/mnist">use_case_examples/mnist</a></td>
-         <!--- end -->
-      </tr>
-      <tr>
          <td><strong>Encrypted Image filtering</strong></td>
          <td>
             <p></p>

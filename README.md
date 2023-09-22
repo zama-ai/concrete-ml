@@ -126,8 +126,6 @@ Various tutorials are proposed for the [built-in models](docs/built-in-models/ml
 - [Health diagnosis](use_case_examples/disease_prediction/): based on a patient's symptoms, history and other health factors, gives
   a diagnosis using FHE to preserve the privacy of the patient.
 
-- [MNIST](use_case_examples/mnist): a Python script and notebook showing quantization-aware training following FHE constraints. A fully-connected neural network is implemented with [Brevitas](https://github.com/Xilinx/brevitas) and is converted to FHE with Concrete ML.
-
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): a notebook, which gives a solution to the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 
 - [Sentiment analysis with transformers](use_case_examples/sentiment_analysis_with_transformer): a gradio demo which predicts if a tweet / short message is positive, negative or neutral, with FHE of course! The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on Hugging Face. This [blog post](https://huggingface.co/blog/sentiment-analysis-fhe) explains how this demo works!

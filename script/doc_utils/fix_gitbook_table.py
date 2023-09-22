@@ -70,7 +70,7 @@ def process_file(file_str: str):
     with open(file_path_output, "w", encoding="utf-8") as fout:
         print(processed_content, file=fout)
 
-    assert how_many == 9
+    assert how_many == 8
 
     return True
 

@@ -91,6 +91,4 @@ For examples of such a _"mixed integer"_ network design, please see the Quantiza
 - [QuantizationAwareTraining.ipynb](../../docs/advanced_examples/QuantizationAwareTraining.ipynb)
 - [ConvolutionalNeuralNetwork.ipynb](../../docs/advanced_examples/ConvolutionalNeuralNetwork.ipynb)
 
-or go to the [MNIST use-case example](../../use_case_examples/mnist/MnistInFHE.ipynb).
-
 You can also refer to the [`SparseQuantNeuralNetImpl`](./api/concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork) class, which is the basis of the built-in `NeuralNetworkClassifier`.
