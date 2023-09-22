@@ -32,6 +32,22 @@ Tensor = Union[torch.Tensor, numpy.ndarray]
 Dataset = Union[Tensor, Tuple[Tensor, ...]]
 
 
+def has_any_qnn_layers(torch_model: torch.nn.Module) -> bool:
+    """Check if a torch model has QNN layers.
+
+    This is useful to check if a model is a QAT model.
+
+    Args:
+        torch_model (torch.nn.Module): a torch model
+
+    Returns:
+        bool: whether this torch model contains any QNN layer.
+    """
+    return any(
+        isinstance(layer, (QNNMixingLayer, QNNUnivariateLayer)) for layer in torch_model.modules()
+    )
+
+
 def convert_torch_tensor_or_numpy_array_to_numpy_array(
     torch_tensor_or_numpy_array: Tensor,
 ) -> numpy.ndarray:
@@ -245,12 +261,8 @@ def compile_torch_model(
         "The compile_torch_model function must be called on a torch.nn.Module",
     )
 
-    has_any_qnn_layers = any(
-        isinstance(layer, (QNNMixingLayer, QNNUnivariateLayer)) for layer in torch_model.modules()
-    )
-
     assert_false(
-        has_any_qnn_layers,
+        has_any_qnn_layers(torch_model),
         "The compile_torch_model was called on a torch.nn.Module that contains "
         "Brevitas quantized layers. These models must be imported "
         "using compile_brevitas_qat_model instead.",
@@ -408,16 +420,7 @@ def compile_brevitas_qat_model(
     use_tempfile: bool = output_onnx_file is None
 
     assert_true(
-        isinstance(torch_model, torch.nn.Module),
-        "The compile_brevitas_qat_model function must be called on a torch.nn.Module",
-    )
-
-    has_any_qnn_layers = any(
-        isinstance(layer, (QNNMixingLayer, QNNUnivariateLayer)) for layer in torch_model.modules()
-    )
-
-    assert_true(
-        has_any_qnn_layers,
+        has_any_qnn_layers(torch_model),
         "The compile_brevitas_qat_model was called on a torch.nn.Module that contains "
         "no Brevitas quantized layers, consider using compile_torch_model instead",
     )
