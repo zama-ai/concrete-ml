@@ -10,7 +10,26 @@ from concrete.fhe import Configuration
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
 from concrete.ml.pytest.torch_models import PartialQATModel
-from concrete.ml.torch.hybrid_model import HybridFHEModel
+from concrete.ml.torch.hybrid_model import (
+    HybridFHEModel,
+    tuple_to_underscore_str,
+    underscore_str_to_tuple,
+)
+
+
+@pytest.mark.parametrize(
+    "tup",
+    [
+        tuple(),
+        (1,),
+        (1, 2),
+        (1, (2, 3)),
+        ((1, 2), (3, 4, 5)),
+    ],
+)
+def test_tuple_serialization(tup):
+    """Test that tuple serialization is correctly handled."""
+    assert tup == underscore_str_to_tuple(tuple_to_underscore_str(tup))
 
 
 def run_hybrid_llm_test(
