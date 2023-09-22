@@ -528,3 +528,13 @@ class HybridFHEModel:
     def publish_to_hub(self):
         """Allow the user to push the model and FHE required files to HF Hub."""
         # TODO: implement HuggingFace model hub integration
+
+    def set_fhe_mode(self, hybrid_fhe_mode: Union[str, HybridFHEMode]):
+        """Set Hybrid FHE mode for all remote modules.
+
+        Args:
+            hybrid_fhe_mode (Union[str, HybridFHEMode]): Hybrid FHE mode to set to all
+                remote modules.
+        """
+        for module in self.remote_modules.values():
+            module.fhe_local_mode = HybridFHEMode(hybrid_fhe_mode)

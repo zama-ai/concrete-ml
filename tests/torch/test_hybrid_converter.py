@@ -66,6 +66,7 @@ def run_hybrid_model_test(
 
         # Get the temp directory path
         hybrid_model.save_and_clear_private_info(temp_dir_path)
+        hybrid_model.set_fhe_mode("remote")
         # At this point, the hybrid model does not have
         # the parameters necessaryto run the module_names
 
