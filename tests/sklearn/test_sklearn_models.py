@@ -1465,7 +1465,7 @@ def test_predict_correctness(
         )
     # KNN works only for smaller quantization bits
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-    if n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
+    if not simulate and n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
         pytest.skip("Use less than 5 bits with KNN.")
 
     y_pred = model.predict(x[:number_of_tests_in_non_fhe])

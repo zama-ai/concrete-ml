@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
 import brevitas.nn as qnn
+import concrete.fhe as cnp
 import numpy
 import onnx
 import sklearn
@@ -37,7 +38,6 @@ from ..common.utils import (
     USE_OLD_VL,
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
-    force_mono_parameter_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
 )
@@ -1999,56 +1999,59 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 # d: Length of the bitonic sequence
                 d = p
 
-                for bq in range(ln2n - 1, t - 1, -1):
-                    q = 2**bq
-                    # Determine the range of indexes to be compared
-                    range_i = numpy.array(
-                        [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
-                    )
-                    if len(range_i) == 0:
-                        # Edge case, for k=1
-                        continue
+                with cnp.tag(f"top_k_t_{t}"):
+                    for bq in range(ln2n - 1, t - 1, -1):
+                        q = 2**bq
+                        # Determine the range of indexes to be compared
+                        range_i = numpy.array(
+                            [i for i in range(0, n - d) if i & p == r and comparisons[i] < k]
+                        )
+                        if len(range_i) == 0:
+                            # Edge case, for k=1
+                            continue
 
-                    # Select 2 bitonic sequences `a` and `b` of length `d`
-                    # a = x[range_i]: first bitonic sequence
-                    # a_i = idx[range_i]: Indexes of a_i elements in the original x
-                    a = gather1d(x, range_i)
-                    # a_i = gather1d(idx, range_i)
-                    # b = x[range_i + d]: Second bitonic sequence
-                    # b_i = idx[range_i + d]: Indexes of b_i elements in the original x
-                    b = gather1d(x, range_i + d)
-                    # b_i = gather1d(idx, range_i + d)
+                        # Select 2 bitonic sequences `a` and `b` of length `d`
+                        # a = x[range_i]: first bitonic sequence
+                        # a_i = idx[range_i]: Indexes of a_i elements in the original x
+                        a = gather1d(x, range_i)
+                        # a_i = gather1d(idx, range_i)
+                        # b = x[range_i + d]: Second bitonic sequence
+                        # b_i = idx[range_i + d]: Indexes of b_i elements in the original x
+                        b = gather1d(x, range_i + d)
+                        # b_i = gather1d(idx, range_i + d)
 
-                    labels_a = gather1d(labels, range_i)  #
-                    labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
+                        labels_a = gather1d(labels, range_i)  #
+                        labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
 
-                    # Select max(a, b)
-                    diff = a - b
-                    max_x = a + numpy.maximum(0, b - a)
+                        with cnp.tag("max"):
+                            # Select max(a, b)
+                            diff = a - b
+                            max_x = a + numpy.maximum(0, b - a)
 
-                    # Swap if a > b
-                    # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
-                    x = scatter1d(x, a + b - max_x, range_i)
-                    # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
-                    x = scatter1d(x, max_x, range_i + d)
+                        # Swap if a > b
+                        # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
+                        x = scatter1d(x, a + b - max_x, range_i)
+                        # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
+                        x = scatter1d(x, max_x, range_i + d)
 
-                    # Max index selection
-                    is_a_greater_than_b = diff <= 0
+                        with cnp.tag("sign"):
+                            # Max index selection
+                            is_a_greater_than_b = diff <= 0
 
-                    # Update labels array according to the max items
-                    max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
-                    labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
-                    labels = scatter1d(labels, max_labels, range_i + d)
+                        # Update labels array according to the max items
+                        with cnp.tag("label_swap"):
+                            max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
 
-                    # Update
-                    comparisons[range_i + d] = comparisons[range_i + d] + 1
-                    d = q - p
-                    r = p
+                        with cnp.tag("label_set"):
+                            labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
+                            labels = scatter1d(labels, max_labels, range_i + d)
 
-            # Return only the topk indexes
-            topk_labels = fhe_array(labels[:k])
+                        # Update
+                        comparisons[range_i + d] = comparisons[range_i + d] + 1
+                        d = q - p
+                        r = p
 
-            return topk_labels
+            return labels[0 : self.n_neighbors]
 
         # 1. Pairwise_euclidiean distance
         distance_matrix = pairwise_euclidean_distance(q_X)
@@ -2062,23 +2065,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return numpy.expand_dims(topk_labels, axis=0)
 
-    # KNN works only for MONO in the latest concrete Python version
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
     def compile(self, *args, **kwargs) -> Circuit:
-        # If a configuration instance is given as a positional parameter, set the strategy to
-        # multi-parameter
-        if len(args) >= 2:
-            configuration = force_mono_parameter_in_configuration(args[1])
-            args_list = list(args)
-            args_list[1] = configuration
-            args = tuple(args_list)
-
-        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
-        # strategy to multi-parameter
-        else:
-            configuration = kwargs.get("configuration", None)
-            kwargs["configuration"] = force_mono_parameter_in_configuration(configuration)
-
         return BaseEstimator.compile(self, *args, **kwargs)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
