@@ -63,7 +63,6 @@ from concrete.ml.pytest.utils import (
     get_sklearn_all_models_and_datasets,
     get_sklearn_linear_models_and_datasets,
     get_sklearn_neighbors_models_and_datasets,
-    get_sklearn_neural_net_models_and_datasets,
     get_sklearn_tree_models_and_datasets,
     instantiate_model_generic,
 )
