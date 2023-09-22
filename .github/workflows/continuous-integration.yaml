@@ -699,8 +699,9 @@ jobs:
         uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd
         if: steps.pytest_regular.outcome == 'success' && env.FAILED_TESTS_ARE_FLAKY && !cancelled()
         with:
-          path: failed_tests_comment.txt
+          header: flaky-test
           recreate: true
+          path: failed_tests_comment.txt
 
       # If regular pytest step has been skipped but some changes has been detected in test files, 
       # meaning there was no other changed impacting our testing suite, we only need to run these 
@@ -808,8 +809,9 @@ jobs:
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
         continue-on-error: true
         with:
-          path: diff-coverage.txt
+          header: coverage
           recreate: true
+          path: diff-coverage.txt
       
       # Check installation with sync_env
       - name: Check installation with sync_env and python ${{ matrix.python_version }}
