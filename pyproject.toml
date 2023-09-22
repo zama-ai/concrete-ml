@@ -54,7 +54,7 @@ protobuf = "3.20.3"
 
 # Deployment
 boto3 = "^1.23.5"
-fastapi = "^0.103.1"
+fastapi = "^0.102.0"
 uvicorn = "^0.21.0"
 tqdm = "^4.64.1"
 transformers = "^4.30.2"
