@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
@@ -127,7 +127,7 @@ jobs:
           apt -y install sudo
 
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
@@ -314,7 +314,7 @@ jobs:
           apt -y install sudo
 
       - name: Checkout Code
-        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.BOT_TOKEN }}
@@ -667,7 +667,7 @@ jobs:
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
 
     steps:
-      - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
 
       - name: Prepare whole job status
         if: ${{ always() }}
