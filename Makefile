@@ -799,7 +799,7 @@ clean_pycache:
 clean_sklearn_cache:
 	rm -rf ~/scikit_learn_data
 
-.PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, eg use_case_examples/mnist)
+.PHONY: run_one_use_case_example # Run one use-case example (USE_CASE, eg use_case_examples/hybrid_model)
 run_one_use_case_example:
 	./script/make_utils/run_use_case_examples.sh
 
