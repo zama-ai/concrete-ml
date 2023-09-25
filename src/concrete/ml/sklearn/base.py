@@ -1975,11 +1975,9 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     r = p
 
             # Return only the topk indexes
-            topk_labels = []
-            for i in range((self.n_neighbors)):
-                topk_labels.append(labels[i])
+            topk_labels = fhe_array(labels[:k])
 
-            return fhe_array(topk_labels)
+            return topk_labels
 
         # 1. Pairwise_euclidiean distance
         distance_matrix = pairwise_euclidean_distance(q_X)
