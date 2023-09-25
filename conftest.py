@@ -27,7 +27,7 @@ from concrete.ml.sklearn import (
     GammaRegressor,
     PoissonRegressor,
     TweedieRegressor,
-    get_sklearn_neural_net_models,
+    _get_sklearn_neural_net_models,
 )
 from concrete.ml.sklearn.base import (
     BaseTreeEstimatorMixin,
@@ -402,7 +402,7 @@ def load_data():
             )
 
             # Cast inputs to float32 as skorch QNNs don't handle float64 values
-            if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+            if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
                 generated_classifier[0] = generated_classifier[0].astype(numpy.float32)
 
             return tuple(generated_classifier)
@@ -420,7 +420,7 @@ def load_data():
 
             # If the model is a neural network and if the data-set only contains a single target
             # (e.g., of shape (n,)), reshape the target array (e.g., to shape (n,1))
-            if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+            if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
                 if len(generated_regression[1].shape) == 1:
                     generated_regression[1] = generated_regression[1].reshape(-1, 1)
 

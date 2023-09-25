@@ -24,7 +24,7 @@ from .tree import DecisionTreeClassifier, DecisionTreeRegressor
 from .xgb import XGBClassifier, XGBRegressor
 
 
-def get_sklearn_models() -> Dict[str, List]:
+def _get_sklearn_models() -> Dict[str, List]:
     """Return the list of available scikit-learn models in Concrete ML.
 
     Returns:
@@ -51,8 +51,8 @@ def _filter_models(
     models,
     classifier: bool = True,
     regressor: bool = True,
-    include: Optional[Union[str, List[str]]] = None,
-    exclude: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ):
     """Return a list of models filtered by the given conditions, sorted by name.
 
@@ -60,9 +60,9 @@ def _filter_models(
         models: The list of models to consider.
         classifier (bool): If classifiers should be considered. Default to True.
         regressor (bool): If regressors should be considered. Default to True.
-        include (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        select (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        exclude (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
@@ -79,25 +79,25 @@ def _filter_models(
     if regressor:
         selected_models += [model for model in models if is_regressor_or_partial_regressor(model)]
 
-    if include is not None:
-        if isinstance(include, str):
-            include = [include]
+    if select is not None:
+        if isinstance(select, str):
+            select = [select]
 
-        # Filter the selected models: only include the ones which name matches the given string
+        # Filter the selected models: only select the ones which name matches the given string
         # (or at least one of the given strings if it is a list)
         selected_models = [
-            model for name in include for model in selected_models if name in get_model_name(model)
+            model for name in select for model in selected_models if name in get_model_name(model)
         ]
 
-    if exclude is not None:
-        if isinstance(exclude, str):
-            exclude = [exclude]
+    if ignore is not None:
+        if isinstance(ignore, str):
+            ignore = [ignore]
 
         # Filter the selected models: remove the ones which name matches the given string (or at
         # least one of the given strings if it is a list)
         selected_models = [
             model
-            for name in exclude
+            for name in ignore
             for model in selected_models
             if name not in get_model_name(model)
         ]
@@ -106,11 +106,11 @@ def _filter_models(
     return sorted(selected_models, key=lambda m: m.__name__)
 
 
-def get_sklearn_linear_models(
+def _get_sklearn_linear_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: Optional[Union[str, List[str]]] = None,
-    str_not_in_class_name: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ):
     """Return a list of available linear models in Concrete ML.
 
@@ -119,30 +119,30 @@ def get_sklearn_linear_models(
     Args:
         classifier (bool): If classifiers should be considered. Default to True.
         regressor (bool): If regressors should be considered. Default to True.
-        str_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models which
+        select (Optional[Union[str, List[str]]]): If not None, only return models which
             names (or a part of it) match the given string or list of strings. Default to None.
-        str_not_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models
             which names (or a part of it) do not match the given string or list of strings. Default
             to None.
 
     Returns:
         The filtered list of linear models available in Concrete ML, sorted by name.
     """
-    linear_models = get_sklearn_models()["linear"]
+    linear_models = _get_sklearn_models()["linear"]
     return _filter_models(
         linear_models,
         classifier=classifier,
         regressor=regressor,
-        include=str_in_class_name,
-        exclude=str_not_in_class_name,
+        select=select,
+        ignore=ignore,
     )
 
 
-def get_sklearn_tree_models(
+def _get_sklearn_tree_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: Optional[Union[str, List[str]]] = None,
-    str_not_in_class_name: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ):
     """Return the list of available tree-based models in Concrete ML.
 
@@ -151,25 +151,23 @@ def get_sklearn_tree_models(
     Args:
         classifier (bool): If classifiers should be considered. Default to True.
         regressor (bool): If regressors should be considered. Default to True.
-        str_in_class_name (Union[str, List[str]]): If not None, only return models which names (or
+        select (Union[str, List[str]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        str_not_in_class_name (Union[str, List[str]]): If not None, only return models which names
+        ignore (Union[str, List[str]]): If not None, only return models which names
             (or a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
         The filtered list of tree-based models available in Concrete ML, sorted by name.
     """
-    tree_models = get_sklearn_models()["tree"]
-    return _filter_models(
-        tree_models, classifier, regressor, include=str_in_class_name, exclude=str_not_in_class_name
-    )
+    tree_models = _get_sklearn_models()["tree"]
+    return _filter_models(tree_models, classifier, regressor, select=select, ignore=ignore)
 
 
-def get_sklearn_neural_net_models(
+def _get_sklearn_neural_net_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: Optional[Union[str, List[str]]] = None,
-    str_not_in_class_name: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ):
     """Return the list of available neural network models in Concrete ML.
 
@@ -178,30 +176,30 @@ def get_sklearn_neural_net_models(
     Args:
         classifier (bool): If classifiers should be considered. Default to True.
         regressor (bool): If regressors should be considered. Default to True.
-        str_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models which
+        select (Optional[Union[str, List[str]]]): If not None, only return models which
             names (or a part of it) match the given string or list of strings. Default to None.
-        str_not_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models
             which names (or a part of it) do not match the given string or list of strings. Default
             to None.
 
     Returns:
         The filtered list of neural network models available in Concrete ML, sorted by name.
     """
-    neural_network_models = get_sklearn_models()["neural_net"]
+    neural_network_models = _get_sklearn_models()["neural_net"]
     return _filter_models(
         neural_network_models,
         classifier=classifier,
         regressor=regressor,
-        include=str_in_class_name,
-        exclude=str_not_in_class_name,
+        select=select,
+        ignore=ignore,
     )
 
 
-def get_sklearn_neighbors_models(
+def _get_sklearn_neighbors_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: Optional[Union[str, List[str]]] = None,
-    str_not_in_class_name: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ):
     """Return the list of available neighbor models in Concrete ML.
 
@@ -210,30 +208,30 @@ def get_sklearn_neighbors_models(
     Args:
         classifier (bool): If classifiers should be considered. Default to True.
         regressor (bool): If regressors should be considered. Default to True.
-        str_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models which
+        select (Optional[Union[str, List[str]]]): If not None, only return models which
             names (or a part of it) match the given string or list of strings. Default to None.
-        str_not_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models
             which names (or a part of it) do not match the given string or list of strings. Default
             to None.
 
     Returns:
         The filtered list of neighbor models available in Concrete ML, sorted by name.
     """
-    neighbor_models = get_sklearn_models()["neighbors"]
+    neighbor_models = _get_sklearn_models()["neighbors"]
     return _filter_models(
         neighbor_models,
         classifier=classifier,
         regressor=regressor,
-        include=str_in_class_name,
-        exclude=str_not_in_class_name,
+        select=select,
+        ignore=ignore,
     )
 
 
-def get_sklearn_all_models(
+def _get_sklearn_all_models(
     classifier: bool = True,
     regressor: bool = True,
-    str_in_class_name: Optional[Union[str, List[str]]] = None,
-    str_not_in_class_name: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ):
     """Return the list of all available models in Concrete ML.
 
@@ -242,20 +240,20 @@ def get_sklearn_all_models(
     Args:
         classifier (bool): If classifiers should be considered.
         regressor (bool): If regressors should be considered.
-        str_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models which
+        select (Optional[Union[str, List[str]]]): If not None, only return models which
             names (or a part of it) match the given string or list of strings. Default to None.
-        str_not_in_class_name (Optional[Union[str, List[str]]]): If not None, only return models
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models
             which names (or a part of it) do not match the given string or list of strings. Default
             to None.
 
     Returns:
         The filtered list of all models available in Concrete ML, sorted by name.
     """
-    all_models = get_sklearn_models()["all"]
+    all_models = _get_sklearn_models()["all"]
     return _filter_models(
         all_models,
         classifier=classifier,
         regressor=regressor,
-        include=str_in_class_name,
-        exclude=str_not_in_class_name,
+        select=select,
+        ignore=ignore,
     )

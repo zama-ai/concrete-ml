@@ -18,7 +18,7 @@ from ...quantization.quantizers import (
     UniformQuantizationParameters,
     UniformQuantizer,
 )
-from ...sklearn import get_sklearn_all_models
+from ...sklearn import _get_sklearn_all_models
 from . import SUPPORTED_TORCH_ACTIVATIONS, USE_SKOPS
 
 # If USE_SKOPS is False or Skops can't be imported, default to pickle
@@ -49,7 +49,7 @@ _TRUSTED_TORCH_ACTIVATIONS = [
 ]
 
 _TRUSTED_CONCRETE_MODELS = [
-    _get_fully_qualified_name(model_class) for model_class in get_sklearn_all_models()
+    _get_fully_qualified_name(model_class) for model_class in _get_sklearn_all_models()
 ]
 
 # Define all the trusted types that Skops should consider
@@ -184,7 +184,7 @@ def object_hook(d: Any) -> Any:
         # `dump_dict` and `load_dict` method) if not already done
         if not SERIALIZABLE_CLASSES:
             serializable_classes = (
-                get_sklearn_all_models()
+                _get_sklearn_all_models()
                 + list(ALL_QUANTIZED_OPS)
                 + [
                     QuantizedArray,

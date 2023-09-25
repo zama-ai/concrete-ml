@@ -5,11 +5,18 @@ import numpy
 import pandas
 import pytest
 
-from concrete.ml.common.utils import is_model_class_in_a_list
-from concrete.ml.sklearn import get_sklearn_all_models, get_sklearn_neural_net_models
+from concrete.ml.sklearn import (
+    _get_sklearn_linear_models,
+    _get_sklearn_neighbors_models,
+    _get_sklearn_tree_models,
+)
 
 
-@pytest.mark.parametrize("model_class", get_sklearn_all_models())
+# A type error will be raised for NeuralNetworks, which is tested in test_failure_bad_data_types
+@pytest.mark.parametrize(
+    "model_class",
+    _get_sklearn_linear_models() + _get_sklearn_tree_models() + _get_sklearn_neighbors_models(),
+)
 @pytest.mark.parametrize(
     "bad_value, expected_error",
     [
@@ -20,11 +27,6 @@ from concrete.ml.sklearn import get_sklearn_all_models, get_sklearn_neural_net_m
 )
 def test_failure_bad_param(model_class, bad_value, expected_error):
     """Check our checks see if ever the Pandas data-set is not correct."""
-
-    # For NeuralNetworks, a type error will be raised, which is tested
-    # in test_failure_bad_data_types
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        return
 
     dic = {
         "Col One": [1, 2, bad_value, 3],

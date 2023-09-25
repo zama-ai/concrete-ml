@@ -67,10 +67,10 @@ from concrete.ml.pytest.utils import (
     instantiate_model_generic,
 )
 from concrete.ml.sklearn import (
-    get_sklearn_linear_models,
-    get_sklearn_neighbors_models,
-    get_sklearn_neural_net_models,
-    get_sklearn_tree_models,
+    _get_sklearn_linear_models,
+    _get_sklearn_neighbors_models,
+    _get_sklearn_neural_net_models,
+    _get_sklearn_tree_models,
 )
 
 # Allow multiple runs in FHE to make sure we always have the correct output
@@ -122,7 +122,7 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the the (x, y) data-set."""
 
     if not is_model_class_in_a_list(
-        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+        model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
     ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
@@ -137,7 +137,7 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) data-set."""
 
     if not is_model_class_in_a_list(
-        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+        model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
     ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds")
@@ -244,7 +244,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
         # Set the torch seed manually before fitting a neural network
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
 
             # Generate a seed for PyTorch
             main_seed = numpy.random.randint(0, 2**63)
@@ -259,7 +259,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         output_quantizers_1 = copy.copy(model.output_quantizers)
 
         # Set the same torch seed manually before re-fitting the neural network
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
             torch.manual_seed(main_seed)
 
         # Re-fit on the second dataset
@@ -279,9 +279,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # classes range
         if is_model_class_in_a_list(
             model_class,
-            get_sklearn_tree_models(
-                classifier=True, str_in_class_name=["RandomForest", "DecisionTree"]
-            ),
+            _get_sklearn_tree_models(classifier=True, select=["RandomForest", "DecisionTree"]),
         ):
             quantizers_1 = input_quantizers_1
             quantizers_2 = input_quantizers_2
@@ -298,7 +296,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         )
 
         # Set the same torch seed manually before re-fitting the neural network
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
             torch.manual_seed(main_seed)
 
         # Re-fit on the first dataset again
@@ -495,7 +493,7 @@ def check_subfunctions(fitted_model, model_class, x):
         fitted_model.predict_proba(x)
 
         # Only linear classifiers have a decision function method
-        if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
             fitted_model.decision_function(x)
 
 
@@ -629,7 +627,7 @@ def check_pipeline(model_class, x, y):
     )
 
     # Do a grid search to find the best hyper-parameters
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         param_grid = {
             "model__module__n_w_bits": [2, 3],
             "model__module__n_a_bits": [2, 3],
@@ -651,24 +649,24 @@ def check_pipeline(model_class, x, y):
 
 def check_grid_search(model_class, x, y, scoring):
     """Check grid search."""
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         param_grid = {
             "module__n_layers": [2, 3],
             "module__n_hidden_neurons_multiplier": [1],
             "module__activation_function": (nn.ReLU6,),
         }
-    elif model_class in get_sklearn_tree_models(str_in_class_name="DecisionTree"):
+    elif model_class in _get_sklearn_tree_models(select="DecisionTree"):
         param_grid = {
             "n_bits": [20],
         }
-    elif model_class in get_sklearn_tree_models():
+    elif model_class in _get_sklearn_tree_models():
         param_grid = {
             "n_bits": [20],
             "max_depth": [2],
             "n_estimators": [5, 10],
             "n_jobs": [1],
         }
-    elif model_class in get_sklearn_neighbors_models():
+    elif model_class in _get_sklearn_neighbors_models():
         param_grid = {"n_bits": [2], "n_neighbors": [2]}
     else:
         param_grid = {
@@ -738,7 +736,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
 def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
     """Check some properties of circuit, depending on the model class"""
 
-    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
         # Check that no TLUs are found within the MLIR
         check_circuit_has_no_tlu(fhe_circuit)
 
@@ -747,11 +745,11 @@ def get_hyper_param_combinations(model_class):
     """Return the hyper_param_combinations, depending on the model class"""
     hyper_param_combinations: Dict[str, List[Any]]
 
-    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
         hyper_param_combinations = {"fit_intercept": [False, True]}
-    elif model_class in get_sklearn_tree_models(str_in_class_name="DecisionTree"):
+    elif model_class in _get_sklearn_tree_models(select="DecisionTree"):
         hyper_param_combinations = {}
-    elif model_class in get_sklearn_tree_models(str_in_class_name="RandomForest"):
+    elif model_class in _get_sklearn_tree_models(select="RandomForest"):
         hyper_param_combinations = {
             "max_depth": [3, 4, 5, 10],
             "min_samples_split": [2, 3, 4, 5],
@@ -760,7 +758,7 @@ def get_hyper_param_combinations(model_class):
             "max_features": ["sqrt", "log2"],
             "max_leaf_nodes": [None, 5, 10, 20],
         }
-    elif model_class in get_sklearn_tree_models(str_in_class_name="XGB"):
+    elif model_class in _get_sklearn_tree_models(select="XGB"):
         hyper_param_combinations = {
             "max_depth": [3, 4, 5, 10],
             "learning_rate": [1, 0.5, 0.1],
@@ -779,13 +777,13 @@ def get_hyper_param_combinations(model_class):
             "importance_type": ["weight", "gain"],
             "base_score": [0.5, None],
         }
-    elif model_class in get_sklearn_neighbors_models():
+    elif model_class in _get_sklearn_neighbors_models():
         # Use small `n_neighbors` values for KNN, because the data-set is too small for now
         hyper_param_combinations = {"n_neighbors": [1, 2]}
     else:
 
         assert is_model_class_in_a_list(
-            model_class, get_sklearn_neural_net_models()
+            model_class, _get_sklearn_neural_net_models()
         ), "models are supposed to be tree-based or linear or QNN's"
 
         hyper_param_combinations = {}
@@ -867,7 +865,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
     # Predicting in clear using an untrained model should not be possible for linear and
     # tree-based models
-    if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if not is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         with pytest.raises(AttributeError, match=".* model is not fitted.*"):
             model.predict(x)
 
@@ -876,7 +874,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
             pytest.skip("predict_proba not implement for KNN")
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
-        if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if not is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.predict_proba(x)
 
@@ -887,7 +885,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
         # Computing the decision function using an untrained classifier should not be possible.
         # Note that the `decision_function` method is only available for linear models
-        if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.decision_function(x)
 
@@ -903,7 +901,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
     # Predicting probabilities in FHE using a trained QNN classifier that is not compiled should
     # not be possible
     if is_classifier_or_partial_classifier(model_class) and is_model_class_in_a_list(
-        model_class, get_sklearn_neural_net_models()
+        model_class, _get_sklearn_neural_net_models()
     ):
         with pytest.raises(AttributeError, match=".* model is not compiled.*"):
             model.predict_proba(x, fhe="execute")
@@ -1316,7 +1314,7 @@ def test_double_fit(
 # Offsets are not supported by XGBoost models
 @pytest.mark.parametrize(
     "model_class, parameters",
-    get_sklearn_all_models_and_datasets(exclude="XGB", unique_models=True),
+    get_sklearn_all_models_and_datasets(ignore="XGB", unique_models=True),
 )
 @pytest.mark.parametrize(
     "n_bits",
@@ -1390,7 +1388,7 @@ def test_subfunctions(
 # and needs further investigations
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_all_models_and_datasets(exclude="RandomForest")
+    "model_class, parameters", get_sklearn_all_models_and_datasets(ignore="RandomForest")
 )
 @pytest.mark.parametrize(
     "n_bits",
@@ -1586,7 +1584,7 @@ def test_p_error_global_p_error_simulation(
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check if model is linear
-    is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
+    is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
 
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, **error_param)
@@ -1677,7 +1675,7 @@ def test_exposition_of_sklearn_attributes(
 
 
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_tree_models_and_datasets(include="DecisionTree")
+    "model_class, parameters", get_sklearn_tree_models_and_datasets(select="DecisionTree")
 )
 def test_exposition_structural_methods_decision_trees(
     model_class,

@@ -34,9 +34,9 @@ from concrete.ml.pytest.utils import check_serialization, values_are_equal
 from concrete.ml.quantization import QuantizedModule
 from concrete.ml.sklearn import (
     LinearRegression,
-    get_sklearn_all_models,
-    get_sklearn_linear_models,
-    get_sklearn_tree_models,
+    _get_sklearn_all_models,
+    _get_sklearn_linear_models,
+    _get_sklearn_tree_models,
 )
 
 
@@ -112,7 +112,7 @@ def test_serialize_random_state(random_state, random_state_type):
 
 @pytest.mark.parametrize(
     "concrete_model_class",
-    get_sklearn_linear_models() + get_sklearn_tree_models(),
+    _get_sklearn_linear_models() + _get_sklearn_tree_models(),
 )
 def test_serialize_sklearn_model(concrete_model_class, load_data):
     """Test serialization of sklearn_model objects."""
@@ -217,7 +217,7 @@ def test_serialize_numpy_array(dtype):
 # Test the most important types
 @pytest.mark.parametrize(
     "value",
-    SUPPORTED_TORCH_ACTIVATIONS + get_sklearn_all_models() + [QuantizedModule],
+    SUPPORTED_TORCH_ACTIVATIONS + _get_sklearn_all_models() + [QuantizedModule],
 )
 def test_serialize_type(value):
     """Test serialization of type objects (trusted by Skops)."""

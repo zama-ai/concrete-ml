@@ -28,7 +28,7 @@ from concrete.ml.pytest.torch_models import (
 from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
 from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
 from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8WeightPerTensorPoT
-from concrete.ml.sklearn import get_sklearn_neural_net_models
+from concrete.ml.sklearn import _get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
@@ -260,7 +260,7 @@ def test_brevitas_tinymnist_cnn(
 )
 @pytest.mark.parametrize("n_outputs", [5])
 @pytest.mark.parametrize("input_dim", [100])
-@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+@pytest.mark.parametrize("model_class", _get_sklearn_neural_net_models())
 @pytest.mark.parametrize("signed, narrow", [(True, False), (False, False), (True, True)])
 @pytest.mark.skip(reason="Torch dtype setting interferes with parallel test launch, and flaky test")
 def test_brevitas_intermediary_values(

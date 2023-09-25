@@ -26,17 +26,17 @@ from ..sklearn import (
     NeuralNetClassifier,
     NeuralNetRegressor,
     TweedieRegressor,
-    get_sklearn_linear_models,
-    get_sklearn_neighbors_models,
-    get_sklearn_neural_net_models,
-    get_sklearn_tree_models,
+    _get_sklearn_linear_models,
+    _get_sklearn_neighbors_models,
+    _get_sklearn_neural_net_models,
+    _get_sklearn_tree_models,
 )
 
 
-def get_pytest_param_regressor(model):
+def _get_pytest_param_regressor(model):
     """Get the pytest parameters to use for testing the regression model.
 
-    The pytest parameters includes the model itself, the parameters to use for generating the
+    The pytest parameters selects the model itself, the parameters to use for generating the
     regression data-set and the test identifier (the model's name).
 
     Args:
@@ -60,10 +60,10 @@ def get_pytest_param_regressor(model):
     )
 
 
-def get_pytest_param_classifier(model, n_classes: int):
+def _get_pytest_param_classifier(model, n_classes: int):
     """Get the pytest parameters to use for testing the classification model.
 
-    The pytest parameters includes the model itself, the parameters to use for generating the
+    The pytest parameters selects the model itself, the parameters to use for generating the
     classification data-set and the test identifier (the model's name).
 
     Args:
@@ -114,7 +114,7 @@ def _get_sklearn_models_and_datasets(model_classes: List, unique_models: bool = 
 
     for model_class in model_classes:
         if is_regressor_or_partial_regressor(model_class):
-            models_and_datasets.append(get_pytest_param_regressor(model_class))
+            models_and_datasets.append(_get_pytest_param_regressor(model_class))
 
         elif is_classifier_or_partial_classifier(model_class):
 
@@ -130,7 +130,7 @@ def _get_sklearn_models_and_datasets(model_classes: List, unique_models: bool = 
 
             for n_classes in n_classes_to_test:
                 models_and_datasets.append(
-                    get_pytest_param_classifier(model_class, n_classes=n_classes)
+                    _get_pytest_param_classifier(model_class, n_classes=n_classes)
                 )
 
         else:
@@ -145,8 +145,8 @@ def get_sklearn_linear_models_and_datasets(
     regressor: bool = True,
     classifier: bool = True,
     unique_models: bool = False,
-    include: Optional[Union[str, List[str]]] = None,
-    exclude: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ) -> List:
     """Get the pytest parameters to use for testing linear models.
 
@@ -154,9 +154,9 @@ def get_sklearn_linear_models_and_datasets(
         regressor (bool): If regressors should be selected.
         classifier (bool): If classifiers should be selected.
         unique_models (bool): If each models should be represented only once.
-        include (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        select (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        exclude (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
@@ -164,11 +164,11 @@ def get_sklearn_linear_models_and_datasets(
     """
 
     # Get all linear model classes currently available in Concrete ML
-    linear_classes = get_sklearn_linear_models(
+    linear_classes = _get_sklearn_linear_models(
         regressor=regressor,
         classifier=classifier,
-        str_in_class_name=include,
-        str_not_in_class_name=exclude,
+        select=select,
+        ignore=ignore,
     )
 
     # If the TweedieRegressor has been selected and is allowed to be represented more than once,
@@ -188,8 +188,8 @@ def get_sklearn_tree_models_and_datasets(
     regressor: bool = True,
     classifier: bool = True,
     unique_models: bool = False,
-    include: Optional[Union[str, List[str]]] = None,
-    exclude: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ) -> List:
     """Get the pytest parameters to use for testing tree-based models.
 
@@ -197,20 +197,20 @@ def get_sklearn_tree_models_and_datasets(
         regressor (bool): If regressors should be selected.
         classifier (bool): If classifiers should be selected.
         unique_models (bool): If each models should be represented only once.
-        include (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        select (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        exclude (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
         List: The pytest parameters to use for testing tree-based models.
     """
     # Get all tree-based model classes currently available in Concrete ML
-    tree_classes = get_sklearn_tree_models(
+    tree_classes = _get_sklearn_tree_models(
         regressor=regressor,
         classifier=classifier,
-        str_in_class_name=include,
-        str_not_in_class_name=exclude,
+        select=select,
+        ignore=ignore,
     )
 
     return _get_sklearn_models_and_datasets(tree_classes, unique_models=unique_models)
@@ -220,8 +220,8 @@ def get_sklearn_neural_net_models_and_datasets(
     regressor: bool = True,
     classifier: bool = True,
     unique_models: bool = False,
-    include: Optional[Union[str, List[str]]] = None,
-    exclude: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ) -> List:
     """Get the pytest parameters to use for testing neural network models.
 
@@ -229,9 +229,9 @@ def get_sklearn_neural_net_models_and_datasets(
         regressor (bool): If regressors should be selected.
         classifier (bool): If classifiers should be selected.
         unique_models (bool): If each models should be represented only once.
-        include (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        select (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        exclude (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
@@ -239,11 +239,11 @@ def get_sklearn_neural_net_models_and_datasets(
     """
 
     # Get all neural-network model classes currently available in Concrete ML
-    selected_neural_net_classes = get_sklearn_neural_net_models(
+    selected_neural_net_classes = _get_sklearn_neural_net_models(
         regressor=regressor,
         classifier=classifier,
-        str_in_class_name=include,
-        str_not_in_class_name=exclude,
+        select=select,
+        ignore=ignore,
     )
 
     neural_net_classes = []
@@ -284,8 +284,8 @@ def get_sklearn_neighbors_models_and_datasets(
     regressor: bool = True,
     classifier: bool = True,
     unique_models: bool = False,
-    include: Optional[Union[str, List[str]]] = None,
-    exclude: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ) -> List:
     """Get the pytest parameters to use for testing neighbor models.
 
@@ -293,20 +293,20 @@ def get_sklearn_neighbors_models_and_datasets(
         regressor (bool): If regressors should be selected.
         classifier (bool): If classifiers should be selected.
         unique_models (bool): If each models should be represented only once.
-        include (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        select (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        exclude (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
         List: The pytest parameters to use for testing neighbor models.
     """
     # Get all neighbor model classes currently available in Concrete ML
-    neighbor_classes = get_sklearn_neighbors_models(
+    neighbor_classes = _get_sklearn_neighbors_models(
         regressor=regressor,
         classifier=classifier,
-        str_in_class_name=include,
-        str_not_in_class_name=exclude,
+        select=select,
+        ignore=ignore,
     )
 
     return _get_sklearn_models_and_datasets(neighbor_classes, unique_models=unique_models)
@@ -316,8 +316,8 @@ def get_sklearn_all_models_and_datasets(
     regressor: bool = True,
     classifier: bool = True,
     unique_models: bool = False,
-    include: Optional[Union[str, List[str]]] = None,
-    exclude: Optional[Union[str, List[str]]] = None,
+    select: Optional[Union[str, List[str]]] = None,
+    ignore: Optional[Union[str, List[str]]] = None,
 ) -> List:
     """Get the pytest parameters to use for testing all models available in Concrete ML.
 
@@ -325,9 +325,9 @@ def get_sklearn_all_models_and_datasets(
         regressor (bool): If regressors should be selected.
         classifier (bool): If classifiers should be selected.
         unique_models (bool): If each models should be represented only once.
-        include (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        select (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) match the given string or list of strings. Default to None.
-        exclude (Optional[Union[str, List[str]]]): If not None, only return models which names (or
+        ignore (Optional[Union[str, List[str]]]): If not None, only return models which names (or
             a part of it) do not match the given string or list of strings. Default to None.
 
     Returns:
@@ -338,29 +338,29 @@ def get_sklearn_all_models_and_datasets(
             regressor=regressor,
             classifier=classifier,
             unique_models=unique_models,
-            include=include,
-            exclude=exclude,
+            select=select,
+            ignore=ignore,
         )
         + get_sklearn_tree_models_and_datasets(
             regressor=regressor,
             classifier=classifier,
             unique_models=unique_models,
-            include=include,
-            exclude=exclude,
+            select=select,
+            ignore=ignore,
         )
         + get_sklearn_neural_net_models_and_datasets(
             regressor=regressor,
             classifier=classifier,
             unique_models=unique_models,
-            include=include,
-            exclude=exclude,
+            select=select,
+            ignore=ignore,
         )
         + get_sklearn_neighbors_models_and_datasets(
             regressor=regressor,
             classifier=classifier,
             unique_models=unique_models,
-            include=include,
-            exclude=exclude,
+            select=select,
+            ignore=ignore,
         )
     )
 
@@ -389,7 +389,7 @@ def instantiate_model_generic(model_class, n_bits, **parameters):
         model (object): The model instance.
     """
     # If the model is a QNN, set the model using appropriate bit-widths
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         extra_kwargs = {}
         if n_bits > 8:
             extra_kwargs["module__n_w_bits"] = 3

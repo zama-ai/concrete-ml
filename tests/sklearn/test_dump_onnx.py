@@ -11,7 +11,7 @@ from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import is_model_class_in_a_list
 from concrete.ml.pytest.utils import UNIQUE_MODELS_AND_DATASETS, get_model_name
-from concrete.ml.sklearn import get_sklearn_tree_models
+from concrete.ml.sklearn import _get_sklearn_tree_models
 from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
@@ -72,9 +72,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
 
     # Test equality when it does not depend on seeds
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
-    if not is_model_class_in_a_list(
-        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
-    ):
+    if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
         # The expected graph is usually a string and we therefore directly test if it is equal to
         # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
         # this graph can slightly changed depending on some input's values. We then expected the

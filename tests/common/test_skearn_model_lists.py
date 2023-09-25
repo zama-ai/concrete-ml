@@ -1,11 +1,11 @@
 """Tests lists of models in Concrete ML."""
 from concrete.ml.pytest.utils import MODELS_AND_DATASETS, UNIQUE_MODELS_AND_DATASETS
 from concrete.ml.sklearn import (
-    get_sklearn_all_models,
-    get_sklearn_linear_models,
-    get_sklearn_neighbors_models,
-    get_sklearn_neural_net_models,
-    get_sklearn_tree_models,
+    _get_sklearn_all_models,
+    _get_sklearn_linear_models,
+    _get_sklearn_neighbors_models,
+    _get_sklearn_neural_net_models,
+    _get_sklearn_tree_models,
 )
 from concrete.ml.sklearn.glm import GammaRegressor, PoissonRegressor, TweedieRegressor
 from concrete.ml.sklearn.linear_model import (
@@ -25,11 +25,11 @@ from concrete.ml.sklearn.xgb import XGBClassifier, XGBRegressor
 
 def test_get_sklearn_models():
     """List all available models in Concrete ML."""
-    all_models = get_sklearn_all_models()
-    linear_models = get_sklearn_linear_models()
-    tree_models = get_sklearn_tree_models()
-    neural_network_models = get_sklearn_neural_net_models()
-    neighbor_models = get_sklearn_neighbors_models()
+    all_models = _get_sklearn_all_models()
+    linear_models = _get_sklearn_linear_models()
+    tree_models = _get_sklearn_tree_models()
+    neural_network_models = _get_sklearn_neural_net_models()
+    neighbor_models = _get_sklearn_neighbors_models()
 
     print("All models: ")
     for m in all_models:
