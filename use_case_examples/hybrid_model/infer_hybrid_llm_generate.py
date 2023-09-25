@@ -39,7 +39,7 @@ if __name__ == "__main__":
         module_names,
         server_remote_address="http://0.0.0.0:8000",
         model_name=f"{model_name}",
-        verbose=True,
+        verbose=False,
     )
     path_to_clients = Path(__file__).parent / "clients"
     hybrid_model.init_client(path_to_clients=path_to_clients)
