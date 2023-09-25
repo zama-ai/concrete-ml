@@ -16,7 +16,7 @@ Custom decoder for serialization.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/decoder.py#L100"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/decoder.py#L103"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `object_hook`
 
@@ -42,13 +42,13 @@ If the input's type is non-native, then we expect it to have the following forma
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/common/serialization/decoder.py#L221"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/decoder.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ConcreteDecoder`
 
 Custom json decoder to handle non-native types found in serialized Concrete ML objects.
 
-<a href="../../../src/concrete/ml/common/serialization/decoder.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/common/serialization/decoder.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 

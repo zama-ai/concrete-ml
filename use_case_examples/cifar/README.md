@@ -5,15 +5,15 @@ This repository provides resources and documentation on different use-cases for 
 ## Table of Contents
 
 1. [Use-Cases](#use-cases)
-   - [Fine-Tuning VGG11 CIFAR-10/100](#fine-tuning-cifar-10100)
+   - [Fine-Tuning VGG11 CIFAR-10/100](#fine-tuning-cifar)
    - [Training Ternary VGG9 on CIFAR10](#training-ternary-vgg-on-cifar10)
-   - [CIFAR-10 VGG9 with one client-side layer](#cifar-10-with-a-split-clearfhe-model)
+   - [CIFAR-10 VGG9 with one client-side layer](#cifar-10-with-a-split-model)
 1. [Installation](#installation)
-1. [Further Reading & Resources](#further-reading--resources)
+1. [Further Reading & Resources](#further-reading)
 
 ## Use cases
 
-### Fine-Tuning CIFAR-10/100
+### Fine-Tuning CIFAR
 
 - **Description**: This use-case explores how to convert a pre-trained CNN (on imagenet) to its FHE equivalent using Quantization Aware Training (QAT) and Concrete ML. The conversion process involves adapting a VGG11 network and quantizing the network for FHE.
 
@@ -33,7 +33,7 @@ Notebooks:
 
 [Results & Metrics](./cifar_brevitas_training/README.md#accuracy-and-performance)
 
-### CIFAR-10 with a Split Clear/FHE Model
+### CIFAR-10 with a Split Model
 
 - **Description**: This method divides the model into two segments: one that operates in plaintext (clear) and the other in Fully Homomorphic Encryption (FHE). This division allows for greater precision in the input layer while taking advantage of FHE's privacy-preserving capabilities in the subsequent layers.
 - **Model Design**: Aims at using 8-bit accumulators to speed up FHE inference. The design incorporates pruning techniques and employs 2-bit weights to meet this aim.
@@ -51,7 +51,7 @@ All use-cases can be quickly set up with:
 pip install -r requirements.txt
 ```
 
-## Further Reading & Resources
+## Further Reading
 
 - [Concrete ML Documentation](https://docs.zama.ai/concrete-ml/)
 - [Brevitas Github Repository](https://github.com/Xilinx/brevitas)

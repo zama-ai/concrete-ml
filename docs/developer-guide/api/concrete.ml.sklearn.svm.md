@@ -178,6 +178,18 @@ Indicate if the model is fitted.
 
 ______________________________________________________________________
 
+#### <kbd>property</kbd> n_classes\_
+
+Get the model's number of classes.
+
+Using this attribute is deprecated.
+
+**Returns:**
+
+- <b>`int`</b>:  The model's number of classes.
+
+______________________________________________________________________
+
 #### <kbd>property</kbd> onnx_model
 
 Get the ONNX model.
@@ -187,6 +199,18 @@ Is None if the model is not fitted.
 **Returns:**
 
 - <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> target_classes\_
+
+Get the model's classes.
+
+Using this attribute is deprecated.
+
+**Returns:**
+
+- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
 
 ______________________________________________________________________
 
@@ -200,7 +224,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/svm.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/svm.py#L211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 

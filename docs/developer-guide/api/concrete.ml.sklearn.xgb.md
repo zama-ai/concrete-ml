@@ -90,6 +90,18 @@ Indicate if the model is fitted.
 
 ______________________________________________________________________
 
+#### <kbd>property</kbd> n_classes\_
+
+Get the model's number of classes.
+
+Using this attribute is deprecated.
+
+**Returns:**
+
+- <b>`int`</b>:  The model's number of classes.
+
+______________________________________________________________________
+
 #### <kbd>property</kbd> onnx_model
 
 Get the ONNX model.
@@ -99,6 +111,18 @@ Is None if the model is not fitted.
 **Returns:**
 
 - <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> target_classes\_
+
+Get the model's classes.
+
+Using this attribute is deprecated.
+
+**Returns:**
+
+- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
 
 ______________________________________________________________________
 
@@ -112,7 +136,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
@@ -122,7 +146,7 @@ load_dict(metadata: Dict)
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L228"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `XGBRegressor`
 
@@ -130,7 +154,7 @@ Implements the XGBoost regressor.
 
 See https://xgboost.readthedocs.io/en/stable/python/python_api.html#module-xgboost.sklearn for more information about the parameters used.
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -216,7 +240,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L342"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -226,7 +250,7 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L327"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L319"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -236,7 +260,7 @@ fit(X, y, *args, **kwargs) → Any
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/xgb.py#L390"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/xgb.py#L382"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 

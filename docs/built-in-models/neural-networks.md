@@ -17,16 +17,13 @@ While `NeuralNetClassifier` and `NeuralNetClassifier` provide scikit-learn-like 
 Good quantization parameter values are critical to make models [respect FHE constraints](../getting-started/concepts.md#model-accuracy-considerations-under-fhe-constraints). Weights and activations should be quantized to low precision (e.g., 2-4 bits). The sparsity of the network can be tuned [as described below](neural-networks.md#overflow-errors) to avoid accumulator overflow.
 {% endhint %}
 
+{% hint style="warning" %}
+Using `nn.ReLU` as the activation function benefits from an optimization where [quantization uses powers-of-two scales](../advanced-topics/quantization.md#quantization-special-cases). This results in much faster inference times in FHE, thanks to a TFHE primitive that performs fast division by powers of two.
+{% endhint %}
+
 ## Example usage
 
 To create an instance of a Fully Connected Neural Network (FCNN), you need to instantiate one of the `NeuralNetClassifier` and `NeuralNetRegressor` classes and configure a number of parameters that are passed to their constructor. Note that some parameters need to be prefixed by `module__`, while others don't. The parameters related to the model (i.e., the underlying `nn.Module`), must have the prefix. The parameters related to training options do not require the prefix.
-
-<!-- 
-FIXME: Restore the test for this codeblock in the next RC
-see: https://github.com/zama-ai/concrete-ml-internal/issues/2807
- -->
-
-<!-- pytest-codeblocks:skip -->
 
 ```python
 from concrete.ml.sklearn import NeuralNetClassifier
@@ -36,11 +33,6 @@ n_inputs = 10
 n_outputs = 2
 params = {
     "module__n_layers": 2,
-    "module__n_w_bits": 2,
-    "module__n_a_bits": 2,
-    "module__n_accum_bits": 8,
-    "module__n_hidden_neurons_multiplier": 1,
-    "module__activation_function": nn.ReLU,
     "max_epochs": 10,
 }
 
@@ -56,13 +48,14 @@ The figure above right shows the Concrete ML neural network, trained with Quanti
 ### Architecture parameters
 
 - `module__n_layers`: number of layers in the FCNN, must be at least 1. Note that this is the total number of layers. For a single, hidden layer NN model, set `module__n_layers=2`
-- `module__activation_function`: can be one of the Torch activations (e.g., nn.ReLU, see the full list [here](../deep-learning/torch_support.md#activations))
+- `module__activation_function`: can be one of the Torch activations (e.g., nn.ReLU, see the full list [here](../deep-learning/torch_support.md#activations)). Neural networks with `nn.ReLU` activation benefit from specific optimizations that make them around 10x faster than networks with other activation functions.
 
 ### Quantization parameters
 
 - `n_w_bits` (default 3): number of bits for weights
 - `n_a_bits` (default 3): number of bits for activations and inputs
-- `n_accum_bits` (default 8): maximum accumulator bit-width that is desired. The implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md) (i.e., setting some weights to zero)
+- `n_accum_bits`: maximum accumulator bit-width that is desired. By default, this is unbounded, which, for weight and activation bit-width settings, [may make the trained networks fail in compilation](#overflow-errors). When used, the implementation will attempt to keep accumulators under this bit-width through [pruning](../advanced-topics/pruning.md) (i.e., setting some weights to zero)
+- `power_of_two_scaling` (default True): forces quantization scales to be powers-of-two, which, when coupled with the ReLU activation, benefits from strong FHE inference time optimization. See this [section](../advanced-topics/quantization.md#quantization-special-cases) in the quantization documentation for more details.
 
 ### Training parameters (from skorch)
 
@@ -89,4 +82,6 @@ You can give weights to each class to use in training. Note that this must be su
 
 ### Overflow errors
 
-The `n_hidden_neurons_multiplier` parameter influences training accuracy as it controls the number of non-zero neurons that are allowed in each layer. Increasing `n_hidden_neurons_multiplier` improves accuracy, but should take into account precision limitations to avoid an overflow in the accumulator. The default value is a good compromise that avoids an overflow in most cases, but you may want to change the value of this parameter to reduce the breadth of the network if you have overflow errors. A value of 1 should be completely safe with respect to overflow.
+The `n_accum_bits` parameter influences training accuracy as it controls the number of non-zero neurons that are allowed in each layer. Increasing `n_accum_bits` improves accuracy, but should take into account precision limitations to avoid an overflow in the accumulator. The default value is a good compromise that avoids an overflow in most cases, but you may want to change the value of this parameter to reduce the breadth of the network if you have overflow errors.
+
+Furthermore, the number of neurons on intermediate layers is controlled through the `n_hidden_neurons_multiplier` parameter - a value of 1 will make intermediate layers have the same number of neurons as the number of dimensions of the input data.

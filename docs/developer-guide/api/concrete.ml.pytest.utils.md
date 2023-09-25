@@ -12,7 +12,7 @@ Common functions or lists for test files, which can't be put in fixtures.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_random_extract_of_sklearn_models_and_datasets`
 
@@ -29,7 +29,7 @@ the sublist
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `instantiate_model_generic`
 
@@ -52,7 +52,7 @@ Instantiate any Concrete ML model type.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `data_calibration_processing`
 
@@ -78,7 +78,7 @@ Reduce size of the given data-set.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L254"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_torch_model`
 
@@ -106,7 +106,7 @@ Load an object saved with torch.save() from a file or dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `values_are_equal`
 
@@ -129,7 +129,7 @@ This method takes into account objects of type None, numpy.ndarray, numpy.floati
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_serialization`
 

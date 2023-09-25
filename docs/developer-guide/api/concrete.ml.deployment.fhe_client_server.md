@@ -50,7 +50,7 @@ Load the circuit.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L80"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -74,13 +74,13 @@ Run the model on the server over encrypted data.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L108"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FHEModelDev`
 
 Dev API to save the model and then load and run the FHE circuit.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -97,7 +97,7 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L153"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -140,7 +140,7 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L328"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L331"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize_decrypt`
 
@@ -160,7 +160,7 @@ Deserialize and decrypt the values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `deserialize_decrypt_dequantize`
 
@@ -182,7 +182,7 @@ Deserialize, decrypt and de-quantize the values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L296"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `generate_private_and_evaluation_keys`
 
@@ -198,7 +198,7 @@ Generate the private and evaluation keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_serialized_evaluation_keys`
 
@@ -230,7 +230,7 @@ Load the quantizers along with the FHE specs.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_encrypt_serialize`
 

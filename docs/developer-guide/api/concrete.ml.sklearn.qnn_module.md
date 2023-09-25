@@ -6,13 +6,9 @@
 
 Sparse Quantized Neural Network torch module.
 
-## **Global Variables**
-
-- **MAX_BITWIDTH_BACKWARD_COMPATIBLE**
-
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L15"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SparseQuantNeuralNetwork`
 
@@ -20,7 +16,7 @@ Sparse Quantized Neural Network.
 
 This class implements an MLP that is compatible with FHE constraints. The weights and activations are quantized to low bit-width and pruning is used to ensure accumulators do not surpass an user-provided accumulator bit-width. The number of classes and number of layers are specified by the user, as well as the breadth of the network
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -30,9 +26,9 @@ __init__(
     n_layers: int,
     n_outputs: int,
     n_hidden_neurons_multiplier: int = 4,
-    n_w_bits: int = 3,
-    n_a_bits: int = 3,
-    n_accum_bits: int = 8,
+    n_w_bits: int = 4,
+    n_a_bits: int = 4,
+    n_accum_bits: int = 32,
     n_prune_neurons_percentage: float = 0.0,
     activation_function: Type = <class 'torch.nn.modules.activation.ReLU'>,
     quant_narrow: bool = False,
@@ -64,7 +60,7 @@ Sparse Quantized Neural Network constructor.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L237"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `enable_pruning`
 
@@ -80,7 +76,7 @@ Enable pruning in the network. Pruning must be made permanent to recover pruned 
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L293"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `forward`
 
@@ -100,7 +96,7 @@ Forward pass.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L167"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `make_pruning_permanent`
 
@@ -112,7 +108,7 @@ Make the learned pruning permanent in the network.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/qnn_module.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `max_active_neurons`
 
