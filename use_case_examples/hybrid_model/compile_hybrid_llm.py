@@ -47,14 +47,14 @@ if __name__ == "__main__":
     arg_parser.add_argument(
         "--module-names",
         dest="module_names",
-        default=["transformer.h.0.attn.c_proj"],
+        default=["transformer.h.0.attn.c_attn"],
         type=module_names_parser,
         help="""The module(s) name(s) to compile to FHE.
 Examples for GPT-2 model:
 "transformer.h.0.mlp" for a full MLP
 "transformer.h.0.mlp, "transformer.h.1.mlp" for two full MLPs
 "transformer.h.0.mlp.c_proj" for only one projection in MLP
-"transformer.h.0.attn.c_proj" for only one projection in attention
+"transformer.h.0.attn.c_attn" for the Q, K, V projections in the attention
 
 These names might vary according to your model.
 """,
