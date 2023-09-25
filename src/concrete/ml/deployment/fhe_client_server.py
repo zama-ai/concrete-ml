@@ -25,6 +25,59 @@ except ImportError:  # pragma: no cover
     from importlib_metadata import version
 
 
+def check_concrete_versions(zip_path: Path):
+    """Check that current versions match the ones used in development.
+
+    This function loads the version JSON file found in client.zip or server.zip files and then
+    checks that current package versions (Concrete Python, Concrete ML) as well as the Python
+    current version all match the ones that are currently installed.
+
+    Args:
+        zip_path (Path): The path to the client or server zip file that contains the version.json
+            file to check.
+
+    Raises:
+        ValueError: If at least one version mismatch is found.
+    """
+
+    with zipfile.ZipFile(zip_path) as zip_file:
+        with zip_file.open("versions.json", mode="r") as file:
+            versions = json.load(file)
+
+    # Check for package coherence
+    packages_to_check = {"concrete-python", "concrete-ml"}
+
+    errors = []
+    for package_name, package_version in versions.items():
+        if package_name not in packages_to_check:
+            continue
+
+        if package_name == "concrete-ml":
+            current_version = CML_VERSION
+
+        else:
+            current_version = version(package_name)
+
+        if package_version != current_version:  # pragma: no cover
+            errors.append((package_name, package_version, current_version))
+
+    # Raise an error if at least one package version did not match the one currently installed
+    if errors:  # pragma: no cover
+        raise ValueError(
+            "Version mismatch for packages: \n"
+            + "\n".join(f"{error[0]}: {error[1]} != {error[2]}" for error in errors)
+        )
+
+    # Raise an error if the Python version do not match the one currently installed
+    if not versions["python"].startswith(
+        f"{sys.version_info.major}.{sys.version_info.minor}"
+    ):  # pragma: no cover
+        raise ValueError(
+            "Not the same Python version between the compiler and the server."
+            f"{versions['python']} != {sys.version_info.major}.{sys.version_info.minor}"
+        )
+
+
 class FHEModelServer:
     """Server API to load and run the FHE circuit."""
 
@@ -43,40 +96,10 @@ class FHEModelServer:
         self.load()
 
     def load(self):
-        """Load the circuit.
+        """Load the circuit."""
+        server_zip_path = Path(self.path_dir).joinpath("server.zip")
 
-        Raises:
-            ValueError: if mismatch in versions between serialized file and runtime
-        """
-        # Load versions for checking
-        with zipfile.ZipFile(Path(self.path_dir).joinpath("server.zip")) as client_zip:
-            with client_zip.open("versions.json", mode="r") as file:
-                versions = json.load(file)
-
-        errors = []
-        packages_to_check = {"concrete-python", "concrete-ml"}
-        for package_name, package_version in versions.items():
-            if package_name not in packages_to_check:
-                continue
-            if package_name == "concrete-ml":
-                current_version = CML_VERSION
-            else:
-                current_version = version(package_name)
-            if package_version != current_version:  # pragma: no cover
-                errors.append((package_name, package_version, current_version))
-        if errors:  # pragma: no cover
-            raise ValueError(
-                "Version mismatch for packages: \n"
-                + "\n".join(f"{error[0]}: {error[1]} != {error[2]}" for error in errors)
-            )
-
-        if not versions["python"].startswith(
-            f"{sys.version_info.major}.{sys.version_info.minor}"
-        ):  # pragma: no cover
-            raise ValueError(
-                "Not the same Python version between the compiler and the server."
-                f"{versions['python']} != {sys.version_info.major}.{sys.version_info.minor}"
-            )
+        check_concrete_versions(server_zip_path)
 
         self.server = fhe.Server.load(Path(self.path_dir).joinpath("server.zip"))
 
@@ -148,6 +171,7 @@ class FHEModelDev:
         json_path = Path(self.path_dir).joinpath("serialized_processing.json")
         with open(json_path, "w", encoding="utf-8") as file:
             dump(serialized_processing, file)
+
         return json_path
 
     def save(self, via_mlir: bool = False):
@@ -233,39 +257,18 @@ class FHEModelClient:
         self.load()
 
     def load(self):  # pylint: disable=no-value-for-parameter
-        """Load the quantizers along with the FHE specs.
+        """Load the quantizers along with the FHE specs."""
+        client_zip_path = Path(self.path_dir).joinpath("client.zip")
 
-        Raises:
-            ValueError: if mismatch in versions between serialized file and runtime
-        """
-        self.client = fhe.Client.load(Path(self.path_dir).joinpath("client.zip"), self.key_dir)
+        self.client = fhe.Client.load(client_zip_path, self.key_dir)
 
         # Load the quantizers
-        with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
+        with zipfile.ZipFile(client_zip_path) as client_zip:
             with client_zip.open("serialized_processing.json", mode="r") as file:
                 serialized_processing = load(file)
 
-        # Load versions for checking
-        with zipfile.ZipFile(Path(self.path_dir).joinpath("client.zip")) as client_zip:
-            with client_zip.open("versions.json", mode="r") as file:
-                versions = json.load(file)
-
-        errors = []
-        packages_to_check = {"concrete-python", "concrete-ml"}
-        for package_name, package_version in versions.items():
-            if package_name not in packages_to_check:
-                continue
-            if package_name == "concrete-ml":
-                current_version = CML_VERSION
-            else:
-                current_version = version(package_name)
-            if package_version != current_version:  # pragma: no cover
-                errors.append((package_name, package_version, current_version))
-        if errors:  # pragma: no cover
-            raise ValueError(
-                "Version mismatch for packages: \n"
-                + "\n".join(f"{error[0]}: {error[1]} != {error[2]}" for error in errors)
-            )
+        # Load and check versions
+        check_concrete_versions(client_zip_path)
 
         # Make sure the version in serialized_model is the same as CML_VERSION
         assert_true(
