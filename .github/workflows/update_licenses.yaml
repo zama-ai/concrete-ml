@@ -20,6 +20,10 @@ jobs:
     defaults:
       run:
         shell: bash
+    env:
+      PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
+      PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
+
     steps:
       # Mask internal URLs if logged
       - name: Add masks
