@@ -1,6 +1,7 @@
 """Base classes for all estimators."""
 from __future__ import annotations
 
+import copy
 import tempfile
 
 # Disable pylint as some names like X and q_X are used, following scikit-Learn's standard. The file
@@ -1515,7 +1516,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         model = cls(n_bits=n_bits, **init_params)
 
         # Update the underlying scikit-learn model with the given fitted one
-        model.sklearn_model = sklearn_model
+        model.sklearn_model = copy.deepcopy(sklearn_model)
 
         # Compute the quantization parameters
         return model._quantize_model(X)
