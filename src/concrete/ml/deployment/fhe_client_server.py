@@ -160,7 +160,6 @@ class FHEModelDev:
             "model_post_processing_params": self.model.post_processing_params,
             "input_quantizers": self.model.input_quantizers,
             "output_quantizers": self.model.output_quantizers,
-            "cml_version": CML_VERSION,
         }
 
         # Export the `is_fitted` attribute for built-in models
@@ -269,14 +268,6 @@ class FHEModelClient:
 
         # Load and check versions
         check_concrete_versions(client_zip_path)
-
-        # Make sure the version in serialized_model is the same as CML_VERSION
-        assert_true(
-            serialized_processing["cml_version"] == CML_VERSION,
-            f"The version of Concrete ML library ({CML_VERSION}) is different "
-            f"from the one used to save the model ({serialized_processing['cml_version']}). "
-            "Please update to the proper Concrete ML version.",
-        )
 
         # Initialize the model
         self.model = serialized_processing["model_type"]()
