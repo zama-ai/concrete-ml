@@ -3,3 +3,4 @@
 46d53ae370263367fc49a56638f361495a0ad5d0:tests/deployment/test_deployment.py:generic-api-key:59
 2d3b4ca188efb338c03d8d2c921ef39ffc5537e3:tests/deployment/test_deployment.py:generic-api-key:59
 198d3fef188aaf3e3a582b9f7943f7ac6e9b5186:tests/deployment/test_deployment.py:generic-api-key:59
+5abc7e86bb192e1f9f829bb2f22173c9d663e1d1:use_case_examples/credit_scoring/CreditScoringWithGraphics.ipynb:easypost-test-api-token:1414
