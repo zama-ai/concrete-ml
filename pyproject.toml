@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "concrete-ml"
-version = "1.2.0-rc0"
+version = "1.2.0-rc1"
 description = "Concrete ML is an open-source set of tools which aims to simplify the use of fully homomorphic encryption (FHE) for data scientists."
 license = "BSD-3-Clause-Clear"
 authors = [
@@ -35,7 +35,7 @@ readme = "README.md"
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2665
 python = ">=3.8.1,<3.11"
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3379
-concrete-python = "2.2.0"
+concrete-python = "2.4.0rc1"
 setuptools = "65.6.3"
 skops = {version = "0.5.0"}
 xgboost = "1.6.2"
