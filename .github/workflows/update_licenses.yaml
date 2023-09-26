@@ -53,6 +53,11 @@ jobs:
         run: |
           make licenses
       
+      # Pull the latest changes if there are some
+      - name: Pull latest changes
+        run: |
+          git pull -X theirs
+
       # If the target branch is main or a release branch, a pull request is opened for everyone to 
       # review
       - name: Open PR
