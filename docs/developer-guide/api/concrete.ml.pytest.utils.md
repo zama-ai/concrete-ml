@@ -8,28 +8,162 @@ Common functions or lists for test files, which can't be put in fixtures.
 
 ## **Global Variables**
 
-- **sklearn_models_and_datasets**
+- **MODELS_AND_DATASETS**
+- **UNIQUE_MODELS_AND_DATASETS**
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L141"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L144"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `get_random_extract_of_sklearn_models_and_datasets`
+## <kbd>function</kbd> `get_sklearn_linear_models_and_datasets`
 
 ```python
-get_random_extract_of_sklearn_models_and_datasets()
+get_sklearn_linear_models_and_datasets(
+    regressor: bool = True,
+    classifier: bool = True,
+    unique_models: bool = False,
+    select: Optional[str, List[str]] = None,
+    ignore: Optional[str, List[str]] = None
+) → List
 ```
 
-Return a random sublist of sklearn_models_and_datasets.
+Get the pytest parameters to use for testing linear models.
 
-The sublist contains exactly one model of each kind.
+**Args:**
+
+- <b>`regressor`</b> (bool):  If regressors should be selected.
+- <b>`classifier`</b> (bool):  If classifiers should be selected.
+- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
+- <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
 
 **Returns:**
-the sublist
+
+- <b>`List`</b>:  The pytest parameters to use for testing linear models.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L187"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_sklearn_tree_models_and_datasets`
+
+```python
+get_sklearn_tree_models_and_datasets(
+    regressor: bool = True,
+    classifier: bool = True,
+    unique_models: bool = False,
+    select: Optional[str, List[str]] = None,
+    ignore: Optional[str, List[str]] = None
+) → List
+```
+
+Get the pytest parameters to use for testing tree-based models.
+
+**Args:**
+
+- <b>`regressor`</b> (bool):  If regressors should be selected.
+- <b>`classifier`</b> (bool):  If classifiers should be selected.
+- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
+- <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
+
+**Returns:**
+
+- <b>`List`</b>:  The pytest parameters to use for testing tree-based models.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_sklearn_neural_net_models_and_datasets`
+
+```python
+get_sklearn_neural_net_models_and_datasets(
+    regressor: bool = True,
+    classifier: bool = True,
+    unique_models: bool = False,
+    select: Optional[str, List[str]] = None,
+    ignore: Optional[str, List[str]] = None
+) → List
+```
+
+Get the pytest parameters to use for testing neural network models.
+
+**Args:**
+
+- <b>`regressor`</b> (bool):  If regressors should be selected.
+- <b>`classifier`</b> (bool):  If classifiers should be selected.
+- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
+- <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
+
+**Returns:**
+
+- <b>`List`</b>:  The pytest parameters to use for testing neural network models.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L283"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_sklearn_neighbors_models_and_datasets`
+
+```python
+get_sklearn_neighbors_models_and_datasets(
+    regressor: bool = True,
+    classifier: bool = True,
+    unique_models: bool = False,
+    select: Optional[str, List[str]] = None,
+    ignore: Optional[str, List[str]] = None
+) → List
+```
+
+Get the pytest parameters to use for testing neighbor models.
+
+**Args:**
+
+- <b>`regressor`</b> (bool):  If regressors should be selected.
+- <b>`classifier`</b> (bool):  If classifiers should be selected.
+- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
+- <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
+
+**Returns:**
+
+- <b>`List`</b>:  The pytest parameters to use for testing neighbor models.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L315"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_sklearn_all_models_and_datasets`
+
+```python
+get_sklearn_all_models_and_datasets(
+    regressor: bool = True,
+    classifier: bool = True,
+    unique_models: bool = False,
+    select: Optional[str, List[str]] = None,
+    ignore: Optional[str, List[str]] = None
+) → List
+```
+
+Get the pytest parameters to use for testing all models available in Concrete ML.
+
+**Args:**
+
+- <b>`regressor`</b> (bool):  If regressors should be selected.
+- <b>`classifier`</b> (bool):  If classifiers should be selected.
+- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
+- <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
+
+**Returns:**
+
+- <b>`List`</b>:  The pytest parameters to use for testing all models available in Concrete ML.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L377"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `instantiate_model_generic`
 
@@ -52,7 +186,7 @@ Instantiate any Concrete ML model type.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L423"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `data_calibration_processing`
 
@@ -78,7 +212,7 @@ Reduce size of the given data-set.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L275"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `load_torch_model`
 
@@ -106,7 +240,7 @@ Load an object saved with torch.save() from a file or dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L305"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L514"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `values_are_equal`
 
@@ -129,7 +263,7 @@ This method takes into account objects of type None, numpy.ndarray, numpy.floati
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/pytest/utils.py#L349"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/pytest/utils.py#L558"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `check_serialization`
 

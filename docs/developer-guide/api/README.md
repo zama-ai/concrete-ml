@@ -88,6 +88,7 @@
 - [`torch_models.NetWithConstantsFoldedBeforeOps`](./concrete.ml.pytest.torch_models.md#class-netwithconstantsfoldedbeforeops): Torch QAT model that does not quantize the inputs.
 - [`torch_models.NetWithLoops`](./concrete.ml.pytest.torch_models.md#class-netwithloops): Torch model, where we reuse some elements in a loop.
 - [`torch_models.PaddingNet`](./concrete.ml.pytest.torch_models.md#class-paddingnet): Torch QAT model that applies various padding patterns.
+- [`torch_models.PartialQATModel`](./concrete.ml.pytest.torch_models.md#class-partialqatmodel): A model with a QAT Module.
 - [`torch_models.QATTestModule`](./concrete.ml.pytest.torch_models.md#class-qattestmodule): Torch model that implements a simple non-uniform quantizer.
 - [`torch_models.QuantCustomModel`](./concrete.ml.pytest.torch_models.md#class-quantcustommodel): A small quantized network with Brevitas, trained on make_classification.
 - [`torch_models.ShapeOperationsNet`](./concrete.ml.pytest.torch_models.md#class-shapeoperationsnet): Torch QAT model that reshapes the input.
@@ -203,6 +204,8 @@
 - [`xgb.XGBRegressor`](./concrete.ml.sklearn.xgb.md#class-xgbregressor): Implements the XGBoost regressor.
 - [`hybrid_model.HybridFHEMode`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemode): Simple enum for different modes of execution of HybridModel.
 - [`hybrid_model.HybridFHEModel`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodel): Convert a model to a hybrid model.
+- [`hybrid_model.HybridFHEModelServer`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodelserver): Hybrid FHE Model Server.
+- [`hybrid_model.LoggerStub`](./concrete.ml.torch.hybrid_model.md#class-loggerstub): Placeholder type for a typical logger like the one from loguru.
 - [`hybrid_model.RemoteModule`](./concrete.ml.torch.hybrid_model.md#class-remotemodule): A wrapper class for the modules to be done remotely with FHE.
 - [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
 
@@ -240,7 +243,6 @@
 - [`utils.is_regressor_or_partial_regressor`](./concrete.ml.common.utils.md#function-is_regressor_or_partial_regressor): Indicate if the model class represents a regressor.
 - [`utils.manage_parameters_for_pbs_errors`](./concrete.ml.common.utils.md#function-manage_parameters_for_pbs_errors): Return (p_error, global_p_error) that we want to give to Concrete.
 - [`utils.replace_invalid_arg_name_chars`](./concrete.ml.common.utils.md#function-replace_invalid_arg_name_chars): Sanitize arg_name, replacing invalid chars by \_.
-- [`utils.set_multi_parameter_in_configuration`](./concrete.ml.common.utils.md#function-set_multi_parameter_in_configuration): Build a Configuration instance with multi-parameter strategy, unless one is already given.
 - [`utils.to_tuple`](./concrete.ml.common.utils.md#function-to_tuple): Make the input a tuple if it is not already the case.
 - [`deploy_to_aws.create_instance`](./concrete.ml.deployment.deploy_to_aws.md#function-create_instance): Create a EC2 instance.
 - [`deploy_to_aws.delete_security_group`](./concrete.ml.deployment.deploy_to_aws.md#function-delete_security_group): Terminate a AWS EC2 instance.
@@ -252,6 +254,7 @@
 - [`deploy_to_docker.delete_image`](./concrete.ml.deployment.deploy_to_docker.md#function-delete_image): Delete a Docker image.
 - [`deploy_to_docker.main`](./concrete.ml.deployment.deploy_to_docker.md#function-main): Deploy function.
 - [`deploy_to_docker.stop_container`](./concrete.ml.deployment.deploy_to_docker.md#function-stop_container): Kill all containers that use a given image.
+- [`fhe_client_server.check_concrete_versions`](./concrete.ml.deployment.fhe_client_server.md#function-check_concrete_versions): Check that current versions match the ones used in development.
 - [`utils.filter_logs`](./concrete.ml.deployment.utils.md#function-filter_logs): Filter logs based on previous logs.
 - [`utils.is_connection_available`](./concrete.ml.deployment.utils.md#function-is_connection_available): Check if ssh connection is available.
 - [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connection to be available.
@@ -342,18 +345,17 @@
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
 - [`utils.check_serialization`](./concrete.ml.pytest.utils.md#function-check_serialization): Check that the given object can properly be serialized.
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given data-set.
-- [`utils.get_random_extract_of_sklearn_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_random_extract_of_sklearn_models_and_datasets): Return a random sublist of sklearn_models_and_datasets.
+- [`utils.get_sklearn_all_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_all_models_and_datasets): Get the pytest parameters to use for testing all models available in Concrete ML.
+- [`utils.get_sklearn_linear_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_linear_models_and_datasets): Get the pytest parameters to use for testing linear models.
+- [`utils.get_sklearn_neighbors_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_neighbors_models_and_datasets): Get the pytest parameters to use for testing neighbor models.
+- [`utils.get_sklearn_neural_net_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_neural_net_models_and_datasets): Get the pytest parameters to use for testing neural network models.
+- [`utils.get_sklearn_tree_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_tree_models_and_datasets): Get the pytest parameters to use for testing tree-based models.
 - [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete ML model type.
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
 - [`utils.values_are_equal`](./concrete.ml.pytest.utils.md#function-values_are_equal): Indicate if two values are equal.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`p_error_search.compile_and_simulated_fhe_inference`](./concrete.ml.search_parameters.p_error_search.md#function-compile_and_simulated_fhe_inference): Get the quantized module of a given model in FHE, simulated or not.
-- [`sklearn.get_sklearn_linear_models`](./concrete.ml.sklearn.md#function-get_sklearn_linear_models): Return the list of available linear models in Concrete ML.
-- [`sklearn.get_sklearn_models`](./concrete.ml.sklearn.md#function-get_sklearn_models): Return the list of available models in Concrete ML.
-- [`sklearn.get_sklearn_neighbors_models`](./concrete.ml.sklearn.md#function-get_sklearn_neighbors_models): Return the list of available neighbor models in Concrete ML.
-- [`sklearn.get_sklearn_neural_net_models`](./concrete.ml.sklearn.md#function-get_sklearn_neural_net_models): Return the list of available neural net models in Concrete ML.
-- [`sklearn.get_sklearn_tree_models`](./concrete.ml.sklearn.md#function-get_sklearn_tree_models): Return the list of available tree models in Concrete ML.
 - [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
 - [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
 - [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.
@@ -366,5 +368,7 @@
 - [`compile.compile_onnx_model`](./concrete.ml.torch.compile.md#function-compile_onnx_model): Compile a torch module into an FHE equivalent.
 - [`compile.compile_torch_model`](./concrete.ml.torch.compile.md#function-compile_torch_model): Compile a torch module into an FHE equivalent.
 - [`compile.convert_torch_tensor_or_numpy_array_to_numpy_array`](./concrete.ml.torch.compile.md#function-convert_torch_tensor_or_numpy_array_to_numpy_array): Convert a torch tensor or a numpy array to a numpy array.
+- [`compile.has_any_qnn_layers`](./concrete.ml.torch.compile.md#function-has_any_qnn_layers): Check if a torch model has QNN layers.
 - [`hybrid_model.convert_conv1d_to_linear`](./concrete.ml.torch.hybrid_model.md#function-convert_conv1d_to_linear): Convert all Conv1D layers in a module or a Conv1D layer itself to nn.Linear.
 - [`hybrid_model.tuple_to_underscore_str`](./concrete.ml.torch.hybrid_model.md#function-tuple_to_underscore_str): Convert a tuple to a string representation.
+- [`hybrid_model.underscore_str_to_tuple`](./concrete.ml.torch.hybrid_model.md#function-underscore_str_to_tuple): Convert a a string representation of a tuple to a tuple.
