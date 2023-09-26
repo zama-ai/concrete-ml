@@ -7,24 +7,14 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import get_model_class
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
-from concrete.ml.sklearn import (
-    get_sklearn_linear_models,
-    get_sklearn_neighbors_models,
-    get_sklearn_neural_net_models,
-    get_sklearn_tree_models,
-)
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS
+from concrete.ml.sklearn import _get_sklearn_all_models
 
 
 def test_sklearn_args():
     """Check that all arguments from the underlying sklearn model are exposed."""
     test_counter = 0
-    for model_class in (
-        get_sklearn_linear_models()
-        + get_sklearn_neural_net_models()
-        + get_sklearn_tree_models()
-        + get_sklearn_neighbors_models()
-    ):
+    for model_class in _get_sklearn_all_models():
         model_class = get_model_class(model_class)
 
         # For Neural Network models, we manually fix the module parameter to
@@ -39,7 +29,7 @@ def test_sklearn_args():
     assert test_counter == 19
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 def test_seed_sklearn(model_class, parameters, load_data):
     """Tests the random_state parameter."""
     x, y = load_data(model_class, **parameters)

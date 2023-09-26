@@ -51,21 +51,26 @@ from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
     USE_OLD_VL,
+    get_model_class,
     get_model_name,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
     is_regressor_or_partial_regressor,
 )
 from concrete.ml.pytest.utils import (
-    _classifiers_and_datasets,
+    MODELS_AND_DATASETS,
+    UNIQUE_MODELS_AND_DATASETS,
+    get_sklearn_all_models_and_datasets,
+    get_sklearn_linear_models_and_datasets,
+    get_sklearn_neighbors_models_and_datasets,
+    get_sklearn_tree_models_and_datasets,
     instantiate_model_generic,
-    sklearn_models_and_datasets,
 )
 from concrete.ml.sklearn import (
-    get_sklearn_linear_models,
-    get_sklearn_neighbors_models,
-    get_sklearn_neural_net_models,
-    get_sklearn_tree_models,
+    _get_sklearn_linear_models,
+    _get_sklearn_neighbors_models,
+    _get_sklearn_neural_net_models,
+    _get_sklearn_tree_models,
 )
 
 # Allow multiple runs in FHE to make sure we always have the correct output
@@ -117,7 +122,7 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the the (x, y) data-set."""
 
     if not is_model_class_in_a_list(
-        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+        model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
     ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
@@ -132,7 +137,7 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the fitted model, and the (x, y) data-set."""
 
     if not is_model_class_in_a_list(
-        model_class, get_sklearn_linear_models() + get_sklearn_neighbors_models()
+        model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
     ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
             pytest.skip("Skipping some tests in non-weekly builds")
@@ -239,7 +244,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
 
         # Set the torch seed manually before fitting a neural network
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
 
             # Generate a seed for PyTorch
             main_seed = numpy.random.randint(0, 2**63)
@@ -254,7 +259,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         output_quantizers_1 = copy.copy(model.output_quantizers)
 
         # Set the same torch seed manually before re-fitting the neural network
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
             torch.manual_seed(main_seed)
 
         # Re-fit on the second dataset
@@ -274,9 +279,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         # classes range
         if is_model_class_in_a_list(
             model_class,
-            get_sklearn_tree_models(
-                classifier=True, str_in_class_name=["RandomForest", "DecisionTree"]
-            ),
+            _get_sklearn_tree_models(classifier=True, select=["RandomForest", "DecisionTree"]),
         ):
             quantizers_1 = input_quantizers_1
             quantizers_2 = input_quantizers_2
@@ -293,7 +296,7 @@ def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
         )
 
         # Set the same torch seed manually before re-fitting the neural network
-        if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
             torch.manual_seed(main_seed)
 
         # Re-fit on the first dataset again
@@ -445,11 +448,6 @@ def check_offset(model_class, n_bits, x, y):
     """Check offset."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    # Offsets are not supported by XGBoost
-    if is_model_class_in_a_list(model_class, get_sklearn_tree_models(str_in_class_name="XGB")):
-        # No pytest.skip, since it is not a bug but something which is inherent to XGB
-        return
-
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=ConvergenceWarning)
@@ -495,7 +493,7 @@ def check_subfunctions(fitted_model, model_class, x):
         fitted_model.predict_proba(x)
 
         # Only linear classifiers have a decision function method
-        if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
             fitted_model.decision_function(x)
 
 
@@ -607,15 +605,6 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
 
 def check_pipeline(model_class, x, y):
     """Check pipeline support."""
-
-    # Pipeline test sometimes fails with RandomForest models. This bug may come from Hummingbird
-    # and needs further investigations
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
-    if is_model_class_in_a_list(
-        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
-    ):
-        pytest.skip("Skipping pipeline test for RF, doesn't work for now")
-
     hyper_param_combinations = get_hyper_param_combinations(model_class)
 
     # Prepare the list of all hyper parameters
@@ -638,7 +627,7 @@ def check_pipeline(model_class, x, y):
     )
 
     # Do a grid search to find the best hyper-parameters
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         param_grid = {
             "model__module__n_w_bits": [2, 3],
             "model__module__n_a_bits": [2, 3],
@@ -660,24 +649,24 @@ def check_pipeline(model_class, x, y):
 
 def check_grid_search(model_class, x, y, scoring):
     """Check grid search."""
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         param_grid = {
             "module__n_layers": [2, 3],
             "module__n_hidden_neurons_multiplier": [1],
             "module__activation_function": (nn.ReLU6,),
         }
-    elif model_class in get_sklearn_tree_models(str_in_class_name="DecisionTree"):
+    elif model_class in _get_sklearn_tree_models(select="DecisionTree"):
         param_grid = {
             "n_bits": [20],
         }
-    elif model_class in get_sklearn_tree_models():
+    elif model_class in _get_sklearn_tree_models():
         param_grid = {
             "n_bits": [20],
             "max_depth": [2],
             "n_estimators": [5, 10],
             "n_jobs": [1],
         }
-    elif model_class in get_sklearn_neighbors_models():
+    elif model_class in _get_sklearn_neighbors_models():
         param_grid = {"n_bits": [2], "n_neighbors": [2]}
     else:
         param_grid = {
@@ -705,14 +694,6 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
     """Check equivalence between the two models returned by fit_benchmark: the Concrete ML model and
     the scikit-learn model."""
     model = instantiate_model_generic(model_class, n_bits=n_bits)
-
-    # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
-    # in structure but trained from scratch. Furthermore, the `n_bits` setting
-    # of the QNN instantiation in `instantiate_model_generic` takes `n_bits` as
-    # a target accumulator and sets 3-b w&a for these tests. Thus it's
-    # impossible to reach R-2 of 0.99 when comparing the two NN models returned by `fit_benchmark`
-    if is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
-        pytest.skip("Skipping sklearn-equivalence test for NN, doesn't work for now")
 
     # Sometimes, we miss convergence, which is not a problem for our test
     with warnings.catch_warnings():
@@ -755,7 +736,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
 def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
     """Check some properties of circuit, depending on the model class"""
 
-    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
         # Check that no TLUs are found within the MLIR
         check_circuit_has_no_tlu(fhe_circuit)
 
@@ -764,11 +745,11 @@ def get_hyper_param_combinations(model_class):
     """Return the hyper_param_combinations, depending on the model class"""
     hyper_param_combinations: Dict[str, List[Any]]
 
-    if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+    if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
         hyper_param_combinations = {"fit_intercept": [False, True]}
-    elif model_class in get_sklearn_tree_models(str_in_class_name="DecisionTree"):
+    elif model_class in _get_sklearn_tree_models(select="DecisionTree"):
         hyper_param_combinations = {}
-    elif model_class in get_sklearn_tree_models(str_in_class_name="RandomForest"):
+    elif model_class in _get_sklearn_tree_models(select="RandomForest"):
         hyper_param_combinations = {
             "max_depth": [3, 4, 5, 10],
             "min_samples_split": [2, 3, 4, 5],
@@ -777,7 +758,7 @@ def get_hyper_param_combinations(model_class):
             "max_features": ["sqrt", "log2"],
             "max_leaf_nodes": [None, 5, 10, 20],
         }
-    elif model_class in get_sklearn_tree_models(str_in_class_name="XGB"):
+    elif model_class in _get_sklearn_tree_models(select="XGB"):
         hyper_param_combinations = {
             "max_depth": [3, 4, 5, 10],
             "learning_rate": [1, 0.5, 0.1],
@@ -796,13 +777,13 @@ def get_hyper_param_combinations(model_class):
             "importance_type": ["weight", "gain"],
             "base_score": [0.5, None],
         }
-    elif model_class in get_sklearn_neighbors_models():
+    elif model_class in _get_sklearn_neighbors_models():
         # Use small `n_neighbors` values for KNN, because the data-set is too small for now
         hyper_param_combinations = {"n_neighbors": [1, 2]}
     else:
 
         assert is_model_class_in_a_list(
-            model_class, get_sklearn_neural_net_models()
+            model_class, _get_sklearn_neural_net_models()
         ), "models are supposed to be tree-based or linear or QNN's"
 
         hyper_param_combinations = {}
@@ -884,7 +865,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
     # Predicting in clear using an untrained model should not be possible for linear and
     # tree-based models
-    if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+    if not is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
         with pytest.raises(AttributeError, match=".* model is not fitted.*"):
             model.predict(x)
 
@@ -893,7 +874,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
             pytest.skip("predict_proba not implement for KNN")
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
-        if not is_model_class_in_a_list(model_class, get_sklearn_neural_net_models()):
+        if not is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.predict_proba(x)
 
@@ -904,7 +885,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
 
         # Computing the decision function using an untrained classifier should not be possible.
         # Note that the `decision_function` method is only available for linear models
-        if is_model_class_in_a_list(model_class, get_sklearn_linear_models()):
+        if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
             with pytest.raises(AttributeError, match=".* model is not fitted.*"):
                 model.decision_function(x)
 
@@ -920,7 +901,7 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
     # Predicting probabilities in FHE using a trained QNN classifier that is not compiled should
     # not be possible
     if is_classifier_or_partial_classifier(model_class) and is_model_class_in_a_list(
-        model_class, get_sklearn_neural_net_models()
+        model_class, _get_sklearn_neural_net_models()
     ):
         with pytest.raises(AttributeError, match=".* model is not compiled.*"):
             model.predict_proba(x, fhe="execute")
@@ -1062,7 +1043,49 @@ def check_exposition_structural_methods_decision_trees(model, x, y):
     )
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y):
+    """Check that linear models and QNNs support loading from pre-trained scikit-learn models."""
+
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    # Fit the model and retrieve both the Concrete ML and the scikit-learn models
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        concrete_model, sklearn_model = model.fit_benchmark(x, y)
+
+    # This step is needed in order to handle partial classes
+    model_class = get_model_class(model_class)
+
+    # Load a Concrete ML model from the fitted scikit-learn one
+    loaded_concrete_model = model_class.from_sklearn_model(sklearn_model, X=x, n_bits=n_bits)
+
+    # Compile both the initial Concrete ML model and the loaded one
+    concrete_model.compile(x)
+    loaded_concrete_model.compile(x)
+
+    # Compute and compare the predictions from both models
+    y_pred_simulate = concrete_model.predict(x, fhe="simulate")
+    y_pred_simulate_loaded = loaded_concrete_model.predict(x, fhe="simulate")
+
+    assert numpy.isclose(y_pred_simulate, y_pred_simulate_loaded).all(), (
+        "Simulated predictions from the initial model do not match the ones made from the "
+        "loaded one."
+    )
+
+
+# Neural network models are skipped for this test
+# The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
+# in structure but trained from scratch. Furthermore, the `n_bits` setting
+# of the QNN instantiation in `instantiate_model_generic` takes `n_bits` as
+# a target accumulator and sets 3-b w&a for these tests. Thus it's
+# impossible to reach R-2 of 0.99 when comparing the two NN models returned by `fit_benchmark`
+@pytest.mark.parametrize(
+    "model_class, parameters",
+    get_sklearn_linear_models_and_datasets()
+    + get_sklearn_tree_models_and_datasets()
+    + get_sklearn_neighbors_models_and_datasets(),
+)
 @pytest.mark.parametrize(
     "n_bits",
     [
@@ -1093,7 +1116,7 @@ def test_quantization(
 # This test is a known flaky
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3661
 @pytest.mark.flaky
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "n_bits",
     [
@@ -1130,7 +1153,7 @@ def test_correctness_with_sklearn(
     )
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
@@ -1164,7 +1187,7 @@ def test_hyper_parameters(
     )
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("n_bits", [3])
 # The complete list of built-in scoring functions can be found in scikit-learn's documentation:
 # https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter
@@ -1229,7 +1252,7 @@ def test_grid_search(
     check_grid_search(model_class, x, y, scoring)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize("use_dump_method", [True, False])
 def test_serialization(
     model_class,
@@ -1256,7 +1279,7 @@ def test_serialization(
     check_serialization(model, x, use_dump_method)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
@@ -1288,7 +1311,11 @@ def test_double_fit(
     check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+# Offsets are not supported by XGBoost models
+@pytest.mark.parametrize(
+    "model_class, parameters",
+    get_sklearn_all_models_and_datasets(ignore="XGB", unique_models=True),
+)
 @pytest.mark.parametrize(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
@@ -1310,7 +1337,7 @@ def test_offset(
     check_offset(model_class, n_bits, x, y)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
@@ -1335,7 +1362,7 @@ def test_input_support(
     check_input_support(model_class, n_bits, default_configuration, x, y, input_type)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
@@ -1357,7 +1384,12 @@ def test_subfunctions(
     check_subfunctions(model, model_class, x)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+# Pipeline test sometimes fails with RandomForest models. This bug may come from Hummingbird
+# and needs further investigations
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
+@pytest.mark.parametrize(
+    "model_class, parameters", get_sklearn_all_models_and_datasets(ignore="RandomForest")
+)
 @pytest.mark.parametrize(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
@@ -1379,7 +1411,7 @@ def test_pipeline(
     check_pipeline(model_class, x, y)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "simulate",
     [
@@ -1498,7 +1530,7 @@ def test_predict_correctness(
             assert numpy.array_equal(y_pred_fhe, y_pred)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 def test_fitted_compiled_error_raises(
     model_class,
     parameters,
@@ -1517,7 +1549,7 @@ def test_fitted_compiled_error_raises(
     check_fitted_compiled_error_raises(model_class, n_bits, x, y)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "error_param",
     [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
@@ -1552,7 +1584,7 @@ def test_p_error_global_p_error_simulation(
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check if model is linear
-    is_linear_model = is_model_class_in_a_list(model_class, get_sklearn_linear_models())
+    is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
 
     # Compile with a large p_error to be sure the result is random.
     model.compile(x, **error_param)
@@ -1597,7 +1629,10 @@ def test_p_error_global_p_error_simulation(
         )
 
 
-@pytest.mark.parametrize("model_class, parameters", _classifiers_and_datasets)
+# This test is only relevant for classifier models
+@pytest.mark.parametrize(
+    "model_class, parameters", get_sklearn_all_models_and_datasets(regressor=False, classifier=True)
+)
 def test_class_mapping(
     model_class,
     parameters,
@@ -1618,7 +1653,7 @@ def test_class_mapping(
     check_class_mapping(model, x, y)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 def test_exposition_of_sklearn_attributes(
     model_class,
     parameters,
@@ -1639,7 +1674,9 @@ def test_exposition_of_sklearn_attributes(
     check_exposition_of_sklearn_attributes(model, x, y)
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize(
+    "model_class, parameters", get_sklearn_tree_models_and_datasets(select="DecisionTree")
+)
 def test_exposition_structural_methods_decision_trees(
     model_class,
     parameters,
@@ -1648,9 +1685,6 @@ def test_exposition_structural_methods_decision_trees(
     verbose=True,
 ):
     """Test the exposition of specific structural methods found in decision tree models."""
-    if get_model_name(model_class) not in ["DecisionTreeClassifier", "DecisionTreeRegressor"]:
-        return
-
     n_bits = min(N_BITS_REGULAR_BUILDS)
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
@@ -1661,3 +1695,24 @@ def test_exposition_structural_methods_decision_trees(
         print("Run check_exposition_structural_methods_decision_trees")
 
     check_exposition_structural_methods_decision_trees(model, x, y)
+
+
+# Importing fitted models only works with linear models
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_linear_models_and_datasets())
+def test_load_fitted_sklearn_linear_models(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test that linear models support loading from fitted scikit-learn models."""
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    if verbose:
+        print("Run check_load_pre_trained_sklearn_models")
+
+    check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y)

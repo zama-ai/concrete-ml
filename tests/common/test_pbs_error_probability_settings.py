@@ -8,13 +8,13 @@ from sklearn.exceptions import ConvergenceWarning
 from torch import nn
 
 from concrete.ml.pytest.torch_models import FCSmall
-from concrete.ml.pytest.utils import sklearn_models_and_datasets
+from concrete.ml.pytest.utils import MODELS_AND_DATASETS
 from concrete.ml.torch.compile import compile_torch_model
 
 INPUT_OUTPUT_FEATURE = [5, 10]
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "kwargs",
     [

@@ -19,12 +19,11 @@ from concrete.ml.common.utils import (
 )
 from concrete.ml.quantization.base_quantized_op import QuantizedMixingOp
 from concrete.ml.quantization.post_training import PowerOfTwoScalingRoundPBSAdapter
-from concrete.ml.sklearn import get_sklearn_neural_net_models
-from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
+from concrete.ml.sklearn import _get_sklearn_neural_net_models
 from concrete.ml.sklearn.qnn_module import SparseQuantNeuralNetwork
 
 
-@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+@pytest.mark.parametrize("model_class", _get_sklearn_neural_net_models())
 def test_parameter_validation(model_class, load_data):
     """Test that the sklearn quantized NN wrappers validate their parameters"""
 
@@ -121,7 +120,7 @@ def test_parameter_validation(model_class, load_data):
         pytest.param(nn.CELU),
     ],
 )
-@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+@pytest.mark.parametrize("model_class", _get_sklearn_neural_net_models())
 def test_compile_and_calib(
     activation_function,
     model_class,
@@ -237,37 +236,37 @@ def test_compile_and_calib(
     "model_classes, bad_types, expected_error",
     [
         pytest.param(
-            [NeuralNetClassifier],
+            _get_sklearn_neural_net_models(regressor=False, classifier=True),
             ("float32", "uint8"),
             "Neural Network classifier target dtype .* int64 .*",
             id="NeuralNetClassifier-target-uint8",
         ),
         pytest.param(
-            [NeuralNetRegressor],
+            _get_sklearn_neural_net_models(regressor=True, classifier=False),
             ("float64", "complex64"),
             "Neural Network regressor target dtype .* float32 .*",
             id="NeuralNetRegressor-target-complex64",
         ),
         pytest.param(
-            get_sklearn_neural_net_models(),
+            _get_sklearn_neural_net_models(),
             ("complex64", "int64"),
             "Neural Network .* input dtype .* float32 .*",
             id="NeuralNets-input-complex64",
         ),
         pytest.param(
-            get_sklearn_neural_net_models(),
+            _get_sklearn_neural_net_models(),
             ("int64", "int64"),
             "Neural Network .* input dtype .* float32 .*",
             id="NeuralNets-input-int64",
         ),
         pytest.param(
-            get_sklearn_neural_net_models(),
+            _get_sklearn_neural_net_models(),
             ("str", "int64"),
             "Neural Network .* input dtype .* float32 .*",
             id="NeuralNets-input-str",
         ),
         pytest.param(
-            get_sklearn_neural_net_models(),
+            _get_sklearn_neural_net_models(),
             ("float32", "str"),
             "Neural Network .* target dtype .* (float32|int64) .*",
             id="NeuralNets-target-str",
@@ -302,7 +301,7 @@ def test_failure_bad_data_types(model_classes, container, bad_types, expected_er
 
 
 @pytest.mark.parametrize("activation_function", [pytest.param(nn.ReLU)])
-@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+@pytest.mark.parametrize("model_class", _get_sklearn_neural_net_models())
 @pytest.mark.parametrize("accum_bits", [5, 8])
 def test_structured_pruning(
     activation_function, model_class, accum_bits, load_data, default_configuration
@@ -429,7 +428,7 @@ def test_structured_pruning(
     assert neurons_pruned[0] < neurons_orig[0]
 
 
-@pytest.mark.parametrize("model_class", get_sklearn_neural_net_models())
+@pytest.mark.parametrize("model_class", _get_sklearn_neural_net_models())
 @pytest.mark.parametrize(
     "unsupported_parameter, expected_error, expected_message",
     [
@@ -502,7 +501,9 @@ def test_serialization_unsupported_parameters(
     ],
 )
 @pytest.mark.parametrize("num_layers", [2, 4])
-@pytest.mark.parametrize("model_class", [NeuralNetClassifier])
+@pytest.mark.parametrize(
+    "model_class", _get_sklearn_neural_net_models(regressor=False, classifier=True)
+)
 @pytest.mark.parametrize("use_power_of_two_scaling", [True, False])
 def test_power_of_two_scaling(
     activation_function,

@@ -10,8 +10,8 @@ import pytest
 from sklearn.exceptions import ConvergenceWarning
 
 from concrete.ml.common.utils import is_model_class_in_a_list
-from concrete.ml.pytest.utils import get_model_name, sklearn_models_and_datasets
-from concrete.ml.sklearn import get_sklearn_tree_models
+from concrete.ml.pytest.utils import UNIQUE_MODELS_AND_DATASETS, get_model_name
+from concrete.ml.sklearn import _get_sklearn_tree_models
 from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 
 # Remark that the dump tests for torch module is directly done in test_compile_torch.py
@@ -71,9 +71,8 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
     print(str_model)
 
     # Test equality when it does not depend on seeds
-    if not is_model_class_in_a_list(
-        model_class, get_sklearn_tree_models(str_in_class_name="RandomForest")
-    ):
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
+    if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
         # The expected graph is usually a string and we therefore directly test if it is equal to
         # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
         # this graph can slightly changed depending on some input's values. We then expected the
@@ -84,7 +83,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
             assert str_model in str_expected
 
 
-@pytest.mark.parametrize("model_class, parameters", sklearn_models_and_datasets)
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
 def test_dump(
     model_class,
     parameters,
@@ -216,16 +215,12 @@ def test_dump(
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
-  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
-  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
   %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
-  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
-  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
   %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
   return %transposed_output
@@ -292,16 +287,12 @@ def test_dump(
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
-  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
-  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
   %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
-  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
-  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
   %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
   return %transposed_output
@@ -338,20 +329,15 @@ def test_dump(
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
-  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/Less_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
-  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
   %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
-  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
-  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
   %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
   %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
-  %/_operators.0/Constant_4_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
   return %/_operators.0/Reshape_4_output_0
 }""",
@@ -377,30 +363,29 @@ def test_dump(
         "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
-  %_operators.0.base_prediction[INT64, 1]
   %_operators.0.weight_1[INT64, 140x10]
   %_operators.0.bias_1[INT64, 140x1]
   %_operators.0.weight_2[INT64, 20x8x7]
   %_operators.0.bias_2[INT64, 160x1]
   %_operators.0.weight_3[INT64, 20x1x8]
   %axes_squeeze[INT64, 1]
+  %/_operators.0/Constant_output_0[INT64, 3]
+  %/_operators.0/Constant_1_output_0[INT64, 2]
+  %/_operators.0/Constant_2_output_0[INT64, 3]
+  %/_operators.0/Constant_3_output_0[INT64, 3]
+  %/_operators.0/Constant_4_output_0[INT64, 3]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
-  %/_operators.0/Constant_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/Less_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
-  %/_operators.0/Constant_1_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
   %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
-  %/_operators.0/Constant_2_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
-  %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
   %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
   %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
-  %/_operators.0/Constant_4_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
   return %/_operators.0/Reshape_4_output_0
 }""",
