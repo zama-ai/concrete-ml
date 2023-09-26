@@ -5,6 +5,7 @@ set -e
 USE_PIP_WHEEL='false'
 TEST_CODEBLOCKS='false'
 NO_FLAKY='false'
+VERSION=''
 
 while [ -n "$1" ]
 do
@@ -18,9 +19,15 @@ do
         "--codeblocks" )
             TEST_CODEBLOCKS='true'
             ;;
+
         "--noflaky" )
             NO_FLAKY='true'
             ;;
+
+        "--version" )
+            shift
+            VERSION="$1"
+            ;;   
    esac
    shift
 done
@@ -64,7 +71,11 @@ if ${USE_PIP_WHEEL}; then
     python -m pip install "${PYPI_WHEEL}"
     python -m pip install "${CONCRETE_NUMPY}"
 else
-    python -m pip install concrete-ml
+    if [ -z "${VERSION}" ]; then
+        python -m pip install concrete-ml
+    else
+        python -m pip install concrete-ml=="${VERSION}"
+    fi
 fi
 
 # If codeblocks are checked, install the pytest codeblock plugin first

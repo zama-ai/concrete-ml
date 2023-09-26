@@ -535,9 +535,9 @@ pytest_codeblocks:
 pytest_codeblocks_pypi_wheel_cml:
 	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --codeblocks
 
-.PHONY: pytest_codeblocks_pip_cml # Test code blocks using PyPI Concrete ML
-pytest_codeblocks_pip_cml:
-	./script/make_utils/pytest_pypi_cml.sh --codeblocks
+.PHONY: pytest_codeblocks_pypi_cml # Test code blocks using PyPI Concrete ML
+pytest_codeblocks_pypi_cml:
+	./script/make_utils/pytest_pypi_cml.sh --codeblocks --version "$${VERSION}"
 
 .PHONY: pytest_codeblocks_one # Test code blocks using pytest in one file (TEST)
 pytest_codeblocks_one:
@@ -790,6 +790,10 @@ pytest_pypi_wheel_cml_no_flaky:
 .PHONY: pytest_pip_cml # Run tests using PyPI Concrete ML
 pytest_pip_cml:
 	./script/make_utils/pytest_pypi_cml.sh
+
+.PHONY: pytest_pip_cml_no_flaky # Run tests (except flaky ones) using PyPI Concrete ML
+pytest_pip_cml_no_flaky:
+	./script/make_utils/pytest_pypi_cml.sh --noflaky --version "$${VERSION}"
 
 .PHONY: clean_pycache # Clean __pycache__ directories
 clean_pycache:

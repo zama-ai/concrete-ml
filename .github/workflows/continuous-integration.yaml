@@ -6,6 +6,9 @@ on:
     branches:
       - main
       - 'release/*'
+  
+  release:
+    types: [published]
 
   # Workflow dispatch and schedule refer to the weekly build
   workflow_dispatch:
@@ -75,10 +78,15 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
   IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (inputs.event_name == 'weekly')) }}
+  # The 'IS_PUBLISHED_RELEASE' variable indicates that the workflow has been triggered by the 
+  # releasing process itself, before publishing it
   IS_RELEASE: ${{ github.event_name == 'workflow_dispatch' && !(inputs.manual_call) && inputs.event_name == 'release' }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
   IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.manual_call}}
+  # The 'IS_PUBLISHED_RELEASE' variable indicates that the workflow has been triggered by a 
+  # release's successful publishing
+  IS_PUBLISHED_RELEASE: ${{ github.event_name == 'release'}}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -121,6 +129,8 @@ jobs:
             BUILD_TYPE="push_to_release"
           elif [[ "${IS_WORKFLOW_DISPATCH}" == "true" ]];then
             BUILD_TYPE="${{ inputs.event_name }}"
+          elif [[ "${IS_PUBLISHED_RELEASE}" == "true" ]];then
+            BUILD_TYPE="published_release"
           else
             echo "Unknown BUILD_TYPE! Aborting"
             exit 1
@@ -144,7 +154,7 @@ jobs:
           elif [[ "${BUILD_TYPE}" == "weekly" ]]; then
             LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS="3.9"
-          elif [[ "${BUILD_TYPE}" == "release" ]]; then
+          elif [[ "${BUILD_TYPE}" == "release" ]] || [[ "${BUILD_TYPE}" == "published_release" ]]; then
             LINUX_PYTHON_VERSIONS="3.8 3.9 3.10"
             MACOS_PYTHON_VERSIONS=""
           elif [[ "${BUILD_TYPE}" == "push_to_main" ]]; then
@@ -352,9 +362,10 @@ jobs:
           sed -i 's|^deb http://archive|deb http://fr.archive|g' /etc/apt/sources.list
           apt update && apt install git git-lfs -y
 
-      # By default, `git clone` downloads all LFS files, which we want to avoid in regular CI
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs other than
+      # weekly ones (which also test notebooks)
       - name: Disable LFS download by default
-        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) }}
+        if: ${{ !fromJSON(env.IS_WEEKLY) }}
         run: |
           git lfs install --skip-smudge
 
@@ -473,9 +484,6 @@ jobs:
         id: changed-files-in-pr
         if: | 
           env.IS_PR
-          && !fromJSON(env.IS_WEEKLY) 
-          && !fromJSON(env.IS_RELEASE)
-          && !fromJSON(env.IS_WORKFLOW_DISPATCH)
           && steps.install-deps.outcome == 'success'
           && steps.make-pcc.outcome == 'success' 
           && !cancelled()
@@ -728,47 +736,8 @@ jobs:
         run: |
           make pytest PYTEST_OPTIONS=--weekly
 
-      # Run Pytest on codeblocks if the source code or any markdown has changed, or if this is
-      # part of the weekly or release CI. This step is also triggered if any dependency has been 
-      # updated or if some changes were found in the Makefile
-      - name: PyTest CodeBlocks
-        if: |
-          (
-            !(
-              steps.changed-files-in-pr.outcome == 'success' 
-              && steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'false'
-              && steps.changed-files-in-pr.outputs.src_any_changed == 'false'
-              && steps.changed-files-in-pr.outputs.dependencies_any_changed == 'false'
-              && steps.changed-files-in-pr.outputs.makefile_any_changed == 'false'
-            ) 
-            || fromJSON(env.IS_WEEKLY) 
-            || fromJSON(env.IS_RELEASE)
-          )
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
-        run: |
-          make pytest_codeblocks
-
-      # Run Pytest on all of our codeblocks on a weekly basis or while releasing
-      - name: PyTest CodeBlocks with PyPI local wheel of Concrete-ML
-        if: |
-          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
-        run: |
-          make pytest_codeblocks_pypi_wheel_cml 
-      
-      # Run Pytest on all of our notebooks on a weekly basis
-      - name: PyTest Notebooks
-        if: | 
-          fromJSON(env.IS_WEEKLY) 
-          && steps.conformance.outcome == 'success' 
-          && !cancelled()
-        run: |
-          make pytest_nb
-
       # Run Pytest on all of our tests on a weekly basis using PyPI's local wheel
-      - name: PyTest with PyPI local wheel of Concrete-ML 
+      - name: PyTest with PyPI local wheel of Concrete ML (weekly)
         if: |
           fromJSON(env.IS_WEEKLY)
           && steps.conformance.outcome == 'success' 
@@ -778,7 +747,7 @@ jobs:
 
       # Run Pytest on all of our tests (except flaky ones) using PyPI's local wheel during the 
       # release process
-      - name: PyTest with PyPI local wheel of Concrete-ML (no flaky)
+      - name: PyTest (no flaky) with PyPI local wheel of Concrete ML (release)
         if: |
           fromJSON(env.IS_RELEASE)
           && steps.conformance.outcome == 'success' 
@@ -786,13 +755,20 @@ jobs:
         run: |
           make pytest_pypi_wheel_cml_no_flaky
 
-      - name: Fast sanity check
-        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+      # Run Pytest on all of our tests (except flaky ones) using Concrete ML's latest version 
+      # available on PyPI after publishing a release
+      - name: PyTest (no flaky) with PyPI (published release)
+        if: |
+          fromJSON(env.IS_PUBLISHED_RELEASE)
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
         run: |
-          make fast_sanity_check
+          PROJECT_VERSION="$(poetry version --short)"
+
+          make pytest_pip_cml_no_flaky VERSION="$PROJECT_VERSION"
 
       # Compute coverage only on reference build
-      - name: Test coverage
+      - name: Test coverage (regular, weekly)
         id: coverage
         if: |
           fromJSON(env.IS_REF_BUILD) 
@@ -812,9 +788,69 @@ jobs:
           header: coverage
           recreate: true
           path: diff-coverage.txt
+
+      # Run Pytest on codeblocks if:
+      # - the current workflow does no take place in a weekly or release CI
+      # - the source code has been changed
+      # - any markdown file has been changed
+      # - any dependency has been updated
+      # - Makefile has been changed
+      - name: PyTest CodeBlocks (regular)
+        if: |
+          (
+            (
+              steps.changed-files-in-pr.outcome == 'success' 
+              && (
+                steps.changed-files-in-pr.outputs.src_any_changed == 'true' 
+                || steps.changed-files-in-pr.outputs.codeblocks_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.dependencies_any_changed == 'true'
+                || steps.changed-files-in-pr.outputs.makefile_any_changed == 'true'
+              )
+            )
+            || fromJSON(env.IS_WORKFLOW_DISPATCH)
+          )
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
+        run: |
+          make pytest_codeblocks
+
+      # Run Pytest on all codeblocks on a weekly basis or while releasing
+      - name: PyTest CodeBlocks with PyPI local wheel of Concrete ML (weekly, release)
+        if: |
+          (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
+        run: |
+          make pytest_codeblocks_pypi_wheel_cml 
+
+      # Run Pytest on all codeblocks using Concrete ML's latest version available on PyPI after 
+      # publishing a release
+      - name: PyTest CodeBlocks with PyPI (published release)
+        if: |
+          fromJSON(env.IS_PUBLISHED_RELEASE) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
+        run: |
+          PROJECT_VERSION="$(poetry version --short)"
+
+          make pytest_codeblocks_pypi_cml VERSION="$PROJECT_VERSION"
+
+      # Run Pytest on all notebooks on a weekly basis
+      - name: PyTest Notebooks (weekly)
+        if: | 
+          fromJSON(env.IS_WEEKLY) 
+          && steps.conformance.outcome == 'success' 
+          && !cancelled()
+        run: |
+          make pytest_nb
+
+      - name: Fast sanity check
+        if: ${{ steps.conformance.outcome == 'success' && !cancelled() }}
+        run: |
+          make fast_sanity_check
       
       # Check installation with sync_env
-      - name: Check installation with sync_env and python ${{ matrix.python_version }}
+      - name: Check installation with sync_env and python ${{ matrix.python_version }} (weekly, release)
         if: |
             (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
             && steps.conformance.outcome == 'success' 
@@ -823,7 +859,7 @@ jobs:
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --sync_env
 
       # Check installation with pip
-      - name: Check installation with pip and python ${{ matrix.python_version }}
+      - name: Check installation with pip and python ${{ matrix.python_version }} (weekly, release)
         if: |
             (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
             && steps.conformance.outcome == 'success' 
@@ -832,7 +868,7 @@ jobs:
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --pip
 
       # Check installation with wheel
-      - name: Check installation with wheel and python ${{ matrix.python_version }}
+      - name: Check installation with wheel and python ${{ matrix.python_version }} (weekly, release)
         if: |
             (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
             && steps.conformance.outcome == 'success' 
@@ -841,7 +877,7 @@ jobs:
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --wheel
 
       # Check installation with git clone
-      - name: Check installation with clone and python ${{ matrix.python_version }}
+      - name: Check installation with clone and python ${{ matrix.python_version }} (weekly, release)
         if: |
             (fromJSON(env.IS_WEEKLY) || fromJSON(env.IS_RELEASE)) 
             && steps.conformance.outcome == 'success' 
@@ -947,9 +983,8 @@ jobs:
           echo "::add-mask::${{ secrets.INTERNAL_PYPI_URL_FOR_MASK }}"
           echo "::add-mask::${{ secrets.INTERNAL_REPO_URL_FOR_MASK }}"
     
-      # By default, `git clone` downloads all LFS files, which we want to avoid in regular CI
+      # By default, `git clone` downloads all LFS files, which we want to avoid in CIs
       - name: Disable LFS download by default
-        if: ${{ !fromJSON(env.IS_WEEKLY) && !fromJSON(env.IS_RELEASE) }}
         run: |
           git lfs install --skip-smudge
  
