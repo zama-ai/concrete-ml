@@ -76,7 +76,7 @@ pydocstyle = "^6.1.1"
 python-semantic-release = "^7.27.0"
 semver = "^2.13.0"
 tomlkit = "^0.7.0"
-pytest-xdist = "^2.5.0"
+pytest-xdist = "^3.3.1"
 pytest-randomly = "^3.11.0"
 nbmake = "^1.3.0"
 pygments-style-tomorrow = "^1.0.0"
@@ -135,6 +135,7 @@ filterwarnings = [
     "ignore:Implicitly cleaning up:ResourceWarning",
     "ignore:non-integer arguments to randrange\\(\\) have been deprecated since Python 3\\.10 and will be removed in a subsequent version:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
+    "ignore:The --rsyncdir command line argument and rsyncdirs config variable are deprecated.:DeprecationWarning",
 ]
 
 [tool.semantic_release]
