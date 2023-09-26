@@ -225,6 +225,13 @@ def check_correctness_with_sklearn(
 def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
     """Check double fit."""
 
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4014
+        pytest.skip(
+            "Given that KNN is not accurate and the test data-set is small"
+            "the y_pred1 and y_pred2 can be equal."
+        )
+
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
     # Sometimes, we miss convergence, which is not a problem for our test
