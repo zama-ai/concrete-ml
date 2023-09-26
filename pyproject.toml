@@ -135,6 +135,7 @@ filterwarnings = [
     "ignore:Implicitly cleaning up:ResourceWarning",
     "ignore:non-integer arguments to randrange\\(\\) have been deprecated since Python 3\\.10 and will be removed in a subsequent version:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
+    "ignore:The --rsyncdir command line argument and rsyncdirs config variable are deprecated.:DeprecationWarning",
 ]
 
 [tool.semantic_release]
