@@ -27,14 +27,12 @@ from concrete.ml.sklearn import DecisionTreeClassifier
 ALWAYS_USE_SIM = False
 
 # pylint: disable=too-many-locals,too-many-statements,too-many-branches,invalid-name
-def make_classifier_comparison(title, classifiers, decision_level, verbose=False, save_plot=False):
+def make_classifier_comparison(
+    title, classifiers, decision_level, verbose=False, show_score=False, save_plot=False
+):
 
-    if get_model_name(classifiers[0][0]) == "KNeighborsClassifier":
-        n_samples = 20
-        h = 0.4  # Step size in the mesh
-    else:
-        n_samples = 200
-        h = 0.04  # Step size in the mesh
+    h = 0.04  # Step size in the mesh
+    n_samples = 25 if get_model_name(classifiers[0][0]) == "KNeighborsClassifier" else 200
 
     X, y = make_classification(
         n_samples=n_samples,
@@ -50,7 +48,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
     linearly_separable = (X, y)
 
     datasets = [
-        make_moons(n_samples=n_samples, noise=0.3, random_state=0),
+        make_moons(n_samples=n_samples, noise=0.2, random_state=0),
         make_circles(n_samples=n_samples, noise=0.2, factor=0.5, random_state=1),
         linearly_separable,
     ]
@@ -76,8 +74,6 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
         x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
         y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
         xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
-
-        print(xx.shape, yy.shape, h)
 
         # pylint: disable-next=no-member
         cm = plt.cm.RdBu
@@ -130,7 +126,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             if get_model_name(classifier) == "KNeighborsClassifier":
                 n_compile_samples = 20
             else:
-                n_compile_samples = -1
+                n_compile_samples = X_train.shape[0]
 
             if verbose:
                 print(f"Inputset has: {n_compile_samples} samples used for the compilationg.\n")
@@ -162,7 +158,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             if verbose:
                 print(
-                    f"Execution time for FHE: {(time.time() - time_begin) / len(X_test):.4f} "
+                    f"FHE Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
                     "seconds per sample\n"
                 )
 
@@ -189,22 +185,19 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             # For that, a color is assigned to each point in the mesh, which is obtained as a
             # cartesian product of [x_min, x_max] with [y_min, y_max].
             if hasattr(sklearn_model, "decision_function"):
-
                 sklearn_Z = sklearn_model.decision_function(np.c_[xx.ravel(), yy.ravel()])
                 concrete_Z = concrete_model.decision_function(
                     np.c_[xx.ravel(), yy.ravel()],
                     fhe="simulate",
                 )
-
-            # Add issue
+            # `predict_proba` not implemented yet for Concrete KNN
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             elif get_model_name(classifier) == "KNeighborsClassifier":
-
                 sklearn_Z = sklearn_model.predict(np.c_[xx.ravel(), yy.ravel()].astype(np.float32))
                 concrete_Z = concrete_model.predict(
                     np.c_[xx.ravel(), yy.ravel()],
                     fhe="simulate",
                 )
-
             else:
                 sklearn_Z = sklearn_model.predict_proba(
                     np.c_[xx.ravel(), yy.ravel()].astype(np.float32)
@@ -256,14 +249,14 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
                 if i == 0:
                     ax.set_title(model_name + f" ({framework})", fontsize=font_size_text)
-
-                ax.text(
-                    xx.max() - 0.3,
-                    yy.min() + 0.3,
-                    f"{score*100:0.1f}%",
-                    size=font_size_text,
-                    horizontalalignment="right",
-                )
+                if show_score:
+                    ax.text(
+                        xx.max() - 0.3,
+                        yy.min() + 0.3,
+                        f"{score*100:0.1f}%",
+                        size=font_size_text,
+                        horizontalalignment="right",
+                    )
 
                 if bitwidth and framework == "Concrete ML":
                     ax.text(
@@ -279,6 +272,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
     plt.tight_layout()
     plt.show()
+
 
 def display_plot(path, figsize=(20, 20)):
     """
