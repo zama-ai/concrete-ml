@@ -1982,7 +1982,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # 1. Pairwise_euclidiean distance
         distance_matrix = pairwise_euclidean_distance(q_X)
 
-        # The square root in the Euclidean distance calculation is not applied to speed up FHE
+        # The square root in the Euclidean distance calculation is not applied to speed up Fgggg
         # computations.
         # Being a monotonic function, it does not affect the logic of the calculation, notably for
         # the argsort.
@@ -2034,7 +2034,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         X = check_array_and_assert(X)
 
         topk_labels = []
-        for query in X:
+        from tqdm import tqdm
+        for query in tqdm(X):
             topk_labels.append(super().predict(query[None], fhe))
 
         y_preds = self.post_processing(numpy.array(topk_labels))
