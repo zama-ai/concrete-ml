@@ -78,8 +78,8 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   IS_PR: ${{ github.event_name == 'pull_request' }}
   IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (inputs.event_name == 'weekly')) }}
-  # The 'IS_PUBLISHED_RELEASE' variable indicates that the workflow has been triggered by the 
-  # releasing process itself, before publishing it
+  # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
+  # process itself, before publishing it
   IS_RELEASE: ${{ github.event_name == 'workflow_dispatch' && !(inputs.manual_call) && inputs.event_name == 'release' }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
@@ -765,7 +765,7 @@ jobs:
         run: |
           PROJECT_VERSION="$(poetry version --short)"
 
-          make pytest_pip_cml_no_flaky VERSION="$PROJECT_VERSION"
+          make pytest_pypi_cml_no_flaky VERSION="$PROJECT_VERSION"
 
       # Compute coverage only on reference build
       - name: Test coverage (regular, weekly)

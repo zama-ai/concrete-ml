@@ -787,12 +787,12 @@ pytest_pypi_wheel_cml:
 pytest_pypi_wheel_cml_no_flaky:
 	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --noflaky
 
-.PHONY: pytest_pip_cml # Run tests using PyPI Concrete ML
-pytest_pip_cml:
+.PHONY: pytest_pypi_cml # Run tests using PyPI Concrete ML
+pytest_pypi_cml:
 	./script/make_utils/pytest_pypi_cml.sh
 
-.PHONY: pytest_pip_cml_no_flaky # Run tests (except flaky ones) using PyPI Concrete ML
-pytest_pip_cml_no_flaky:
+.PHONY: pytest_pypi_cml_no_flaky # Run tests (except flaky ones) using PyPI Concrete ML
+pytest_pypi_cml_no_flaky:
 	./script/make_utils/pytest_pypi_cml.sh --noflaky --version "$${VERSION}"
 
 .PHONY: clean_pycache # Clean __pycache__ directories
