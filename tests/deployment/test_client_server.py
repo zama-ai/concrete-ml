@@ -22,7 +22,7 @@ from concrete.ml.torch.compile import compile_torch_model
 
 
 class OnDiskNetwork:
-    """Simulate a network on disk."""
+    """A network interaction on disk."""
 
     def __init__(self):
         # Create 3 temporary folder for server, client and dev with tempfile
@@ -76,7 +76,7 @@ def test_client_server_sklearn(
     load_data,
     check_is_good_execution_for_cml_vs_circuit,
 ):
-    """Tests the encrypt decrypt api."""
+    """Test the client-server interface for built-in models."""
 
     if get_model_name(model_class) == "KNeighborsClassifier":
         # Skipping KNN for this test
@@ -97,127 +97,150 @@ def test_client_server_sklearn(
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x_train, y_train)
 
-    # Compile
-    extra_params = {"global_p_error": 1 / 100_000}
+    key_dir = default_configuration.insecure_key_cache_location
 
     # Running the simulation using a model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
-        client_server_simulation(x_train, x_test, model, default_configuration)
+        check_client_server_execution(x_train, x_test, model, key_dir)
 
-    fhe_circuit = model.compile(x_train, default_configuration, **extra_params, show_mlir=False)
+    # Compile the model
+    fhe_circuit = model.compile(x_train, configuration=default_configuration)
+
+    # Check that client and server files are properly generated
+    check_client_server_files(model)
 
     max_bit_width = fhe_circuit.graph.maximum_integer_bit_width()
     print(f"Max width {max_bit_width}")
 
-    # Compare the FHE predictions with the clear ones.
-    # Note that:
-    # - With a global_p_error of 1/100_000 we only allow one run.
-    # - The simulated predictions are not considered in this test.
+    # Compare the FHE predictions with the clear ones. Simulated predictions are not considered in
+    # this test.
     check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
-    client_server_simulation(x_train, x_test, model, default_configuration)
+    check_client_server_execution(x_train, x_test, model, key_dir)
 
 
 def test_client_server_custom_model(
     default_configuration, check_is_good_execution_for_cml_vs_circuit
 ):
-    """Tests the client server custom model."""
+    """Test the client-server interface for a custom model (through a quantized module)."""
 
     # Generate random data
     x_train, x_test = numpy.random.rand(100, 2), numpy.random.rand(1, 2)
+
+    key_dir = default_configuration.insecure_key_cache_location
 
     # Running the simulation using a QuantizedModule that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* quantized module is not compiled.*"):
         # Instantiate an empty QuantizedModule object
         quantized_module = QuantizedModule()
 
-        client_server_simulation(x_train, x_test, quantized_module, default_configuration)
+        check_client_server_execution(x_train, x_test, quantized_module, key_dir)
 
     torch_model = FCSmall(2, nn.ReLU)
-    n_bits = 2
 
-    # Get the quantized module from the model
+    # Get the quantized module from the model and compile it
     quantized_numpy_module = compile_torch_model(
         torch_model,
         x_train,
         configuration=default_configuration,
-        n_bits=n_bits,
-        global_p_error=1 / 100_000,
+        n_bits=2,
     )
 
+    # Check that client and server files are properly generated
+    check_client_server_files(quantized_numpy_module)
+
     # Check that the FHE execution is correct.
-    # With a global_p_error of 1/100_000 we only allow one run.
     check_is_good_execution_for_cml_vs_circuit(
         x_test, quantized_numpy_module, simulate=False, n_allowed_runs=1
     )
 
-    client_server_simulation(x_train, x_test, quantized_numpy_module, default_configuration)
+    check_client_server_execution(x_train, x_test, quantized_numpy_module, key_dir)
 
 
-def client_server_simulation(x_train, x_test, model, default_configuration):
-    """Simulate the client server interaction."""
-    # Model has been trained and compiled on the server.
-    # Now we use the fhe api to go into production.
+def check_client_server_files(model):
+    """Test the client server interface API generates the expected file.
 
-    # Set up the fake network
-    network = OnDiskNetwork()
-
-    # Instantiate the dev client and server FHEModel client server API
-    fhemodel_dev = FHEModelDev(path_dir=network.dev_dir.name, model=model)
-    fhemodel_dev.save()
-
-    # Check that the processing json file is in the client.zip file
-    with zipfile.ZipFile(Path(network.dev_dir.name) / "client.zip") as client_zip:
-        with client_zip.open("serialized_processing.json", "r") as file:
-            assert isinstance(json.load(file), dict)
-
-    # Send necessary files to server and client
-    network.dev_send_clientspecs_and_modelspecs_to_client()
-    network.dev_send_model_to_server()
-
-    # Make sure the save fails now that the folder is populated
-    err_msg = (
-        f"path_dir: {network.dev_dir.name} is not empty."
-        "Please delete it before saving a new model."
-    )
-    with pytest.raises(Exception, match=err_msg):
-        fhemodel_dev.save()
-
-    fhemodel_client = FHEModelClient(
-        path_dir=network.client_dir.name,
-        key_dir=default_configuration.insecure_key_cache_location,
-    )
-    fhemodel_client.load()
-
-    # Grab the model and save it again
-    # No user is expected to load a FHEModelDev instance from a FHEModelClient's model. This is
-    # only made a testing for making sure the model has the expected attributes
-    client_model = fhemodel_client.model
-    client_model.fhe_circuit = model.fhe_circuit
-
-    # pylint: disable-next=protected-access
-    client_model._is_compiled = True
-
-    network.cleanup()
-
+    This test expects that the given model has been trained and compiled in development.
+    """
     # Create a new network
     network = OnDiskNetwork()
 
     # And try to save it again
-    fhemodel_dev_ = FHEModelDev(path_dir=network.dev_dir.name, model=client_model)
-    fhemodel_dev_.save()
+    fhemodel_dev = FHEModelDev(path_dir=network.dev_dir.name, model=model)
+    fhemodel_dev.save()
+
+    # Check that re-saving the dev model fails
+    with pytest.raises(
+        Exception,
+        match=(
+            f"path_dir: {network.dev_dir.name} is not empty."
+            "Please delete it before saving a new model."
+        ),
+    ):
+        fhemodel_dev.save()
+
+    client_zip_path = Path(network.dev_dir.name) / "client.zip"
+    server_zip_path = Path(network.dev_dir.name) / "server.zip"
+
+    # Check that client and server zip files has been generated
+    assert (
+        client_zip_path.is_file()
+    ), f"Client files were not properly generated. Expected {client_zip_path} to be a file."
+    assert (
+        server_zip_path.is_file()
+    ), f"Server files were not properly generated. Expected {server_zip_path} to be a file."
+
+    processing_file_name = "serialized_processing.json"
+    versions_file_name = "versions.json"
+
+    # Check that the client.zip file has the processing and versions json files
+    with zipfile.ZipFile(client_zip_path) as client_zip:
+        with client_zip.open(processing_file_name, "r") as file:
+            assert isinstance(
+                json.load(file), dict
+            ), f"{client_zip_path} does not contain a '{processing_file_name}' file."
+
+        with client_zip.open(versions_file_name, "r") as file:
+            assert isinstance(
+                json.load(file), dict
+            ), f"{client_zip_path} does not contain a '{versions_file_name}' file."
+
+    # Check that the server.zip file has the versions json file
+    with zipfile.ZipFile(server_zip_path) as server_zip:
+        with server_zip.open("versions.json", "r") as file:
+            assert isinstance(
+                json.load(file), dict
+            ), f"{server_zip_path} does not contain a '{versions_file_name}' file."
+
+    # Clean up
+    network.cleanup()
+
+
+def check_client_server_execution(x_train, x_test, model, key_dir):
+    """Test the client server interface API.
+
+    This test expects that the given model has been trained and compiled in development. It
+    basically replicates a production-like interaction and checks that results are on matching the
+    development model.
+    """
+    # Create a new network
+    network = OnDiskNetwork()
+
+    # And try to save it again
+    fhemodel_dev = FHEModelDev(path_dir=network.dev_dir.name, model=model)
+    fhemodel_dev.save()
 
     # Send necessary files to server and client
     network.dev_send_clientspecs_and_modelspecs_to_client()
     network.dev_send_model_to_server()
 
     # And try to load it again
-    fhemodel_client_ = FHEModelClient(
+    fhemodel_client = FHEModelClient(
         path_dir=network.client_dir.name,
-        key_dir=default_configuration.insecure_key_cache_location,
+        key_dir=key_dir,
     )
-    fhemodel_client_.load()
+    fhemodel_client.load()
 
     # Now we can also load the server part
     fhemodel_server = FHEModelServer(path_dir=network.server_dir.name)
@@ -227,34 +250,25 @@ def client_server_simulation(x_train, x_test, model, default_configuration):
     qx_ref_model = model.quantize_input(x_train)
     qx_client = fhemodel_client.model.quantize_input(x_train)
     qx_dev = fhemodel_dev.model.quantize_input(x_train)
+
     numpy.testing.assert_array_equal(qx_ref_model, qx_client)
     numpy.testing.assert_array_equal(qx_ref_model, qx_dev)
 
-    # Create evaluation keys for the server
+    # Client side : Generate all keys and serialize the evaluation keys for the server
     fhemodel_client.generate_private_and_evaluation_keys()
-
-    # Get the server evaluation key
     serialized_evaluation_keys = fhemodel_client.get_serialized_evaluation_keys()
 
-    # Encrypt new data
+    # Client side : Encrypt the data
     serialized_qx_new_encrypted = fhemodel_client.quantize_encrypt_serialize(x_test)
 
-    # Here data can be saved, sent over the network, etc.
-
-    # Now back to the server
-
-    # Run the model over encrypted data
+    # Server side: Run the model over encrypted data
     serialized_result = fhemodel_server.run(serialized_qx_new_encrypted, serialized_evaluation_keys)
 
-    # Back to the client
-
-    # Decrypt, de-quantize and post-processed the result
+    # Client side : Decrypt, de-quantize and post-processed the result
     y_pred_on_client_quantized = fhemodel_client.deserialize_decrypt(serialized_result)
     y_pred_on_client_dequantized = fhemodel_client.deserialize_decrypt_dequantize(serialized_result)
 
-    # Get the y_pred_model_server_clear
-
-    # Predict based on the model we are testing
+    # Dev side: Predict using the model used in development
     qtest = model.quantize_input(x_test)
     y_pred_model_dev_quantized = model.fhe_circuit.encrypt_run_decrypt(qtest)
     y_pred_model_dev_dequantized = model.dequantize_output(y_pred_model_dev_quantized)
