@@ -20,10 +20,6 @@ Generic tests test:
   - calls to predict_proba
   - calls to decision_function
 
-Are currently missing
-  - check of predict_proba
-  - check of decision_function
-
 More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
@@ -462,8 +458,8 @@ def check_offset(model_class, n_bits, x, y):
         model.fit(x, y)
 
 
-def check_subfunctions(fitted_model, model_class, x):
-    """Check subfunctions."""
+def check_inference_methods(fitted_model, model_class, x):
+    """Check that all inference methods provided are properly working."""
 
     fitted_model.predict(x[:1])
 
@@ -484,9 +480,17 @@ def check_subfunctions(fitted_model, model_class, x):
         ):
             fitted_model.predict_proba(x)
 
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
     if get_model_name(fitted_model) == "KNeighborsClassifier":
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-        pytest.skip("Skipping subfunctions test for KNN, doesn't work for now")
+        with pytest.raises(
+            NotImplementedError,
+            match=(
+                "The `predict_proba` method is not implemented for KNeighborsClassifier. "
+                "Please call `predict` instead."
+            ),
+        ):
+            fitted_model.predict_proba(x)
 
     if is_classifier_or_partial_classifier(model_class):
 
@@ -497,52 +501,67 @@ def check_subfunctions(fitted_model, model_class, x):
             fitted_model.decision_function(x)
 
 
-def check_subfunctions_in_fhe(model, fhe_circuit, x):
-    """Check subfunctions in FHE: calls and correctness."""
+def check_separated_inference(model, fhe_circuit, x, check_array_equal):
+    """Run inference methods in separated steps and check their correctness."""
 
     # Generate the keys
     fhe_circuit.keygen()
 
-    y_pred_fhe = []
+    # Quantize an input (float)
+    q_x = model.quantize_input(x)
 
-    for _ in range(N_ALLOWED_FHE_RUN):
-        for f_input in x:
-            # Quantize an input (float)
-            q_input = model.quantize_input(f_input.reshape(1, -1))
+    # Encrypt the input
+    q_x_encrypted = fhe_circuit.encrypt(q_x)
 
-            # Encrypt the input
-            q_input_enc = fhe_circuit.encrypt(q_input)
+    # Execute the linear product in FHE
+    q_y_pred_encrypted = fhe_circuit.run(q_x_encrypted)
 
-            # Execute the linear product in FHE
-            q_y_enc = fhe_circuit.run(q_input_enc)
+    # Decrypt the result (integer)
+    q_y_pred = fhe_circuit.decrypt(q_y_pred_encrypted)
 
-            # Decrypt the result (integer)
-            q_y = fhe_circuit.decrypt(q_y_enc)
+    # De-quantize the result
+    y_pred = model.dequantize_output(q_y_pred)
 
-            # De-quantize the result
-            y = model.dequantize_output(q_y)
+    if is_model_class_in_a_list(
+        model, _get_sklearn_linear_models(classifier=True, regressor=False)
+    ):
+        y_scores = model.decision_function(x, fhe="simulate")
 
-            # Apply either the sigmoid if it is a binary classification task,
-            # which is the case in this example, or a softmax function in order
-            # to get the probabilities (in the clear)
-            y_proba = model.post_processing(y)
+        # For linear classifiers, the circuit's de-quantized outputs should be the same as the ones
+        # from the `decision_function` built-in method
+        check_array_equal(y_pred, y_scores)
 
-            # Apply the argmax to get the class predictions (in the clear)
-            if is_classifier_or_partial_classifier(model):
-                y_class = numpy.argmax(y_proba, axis=-1)
-                y_pred_fhe += list(y_class)
-            else:
-                y_pred_fhe += list(y_proba)
+    # Apply post-processing step (in the clear)
+    # This includes (non-exhaustive):
+    # - sigmoid or softmax function for classifiers
+    # - final sum for tree-based models
+    # - link function for GLMs
+    y_pred = model.post_processing(y_pred)
 
-        # Compare with the FHE simulation mode
-        y_pred_expected_in_simulation = model.predict(x, fhe="simulate")
-        if numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_simulation).all():
-            break
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model) != "KNeighborsClassifier"
+    ):
+        y_proba = model.predict_proba(x, fhe="simulate")
+    else:
+        y_proba = model.predict(x, fhe="simulate")
 
-    assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_simulation).all(), (
-        "computations are not the same between individual functions (in FHE) "
-        "and predict function (in FHE simulation mode)"
-    )
+    # The circuit's de-quantized outputs followed by `post_processing` should be the same as the
+    # ones from the `predict_proba` built-in method for classifiers, and from the `predict`
+    # built-in method for regressors
+    check_array_equal(y_pred, y_proba)
+
+    if is_classifier_or_partial_classifier(model):
+        y_pred = numpy.argmax(y_pred, axis=-1)
+
+        # Compare the results with predictions found using 'predict' with FHE simulation
+        y_pred_class = model.predict(x, fhe="simulate")
+
+        # For classifiers, the circuit's de-quantized outputs followed by `post_processing` as well
+        # as an argmax should be the same as the ones from the `predict` built-in method
+        check_array_equal(y_pred, y_pred_class)
 
 
 def check_input_support(model_class, n_bits, default_configuration, x, y, input_type):
@@ -583,9 +602,11 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
 
     # Similarly, we test `predict_proba` for classifiers
     if is_classifier_or_partial_classifier(model):
+        # KNeighborsClassifier does not provide a predict_proba method for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         if get_model_name(model_class) == "KNeighborsClassifier":
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
+
         model.predict_proba(x)
 
     # If n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
@@ -678,11 +699,12 @@ def check_grid_search(model_class, x, y, scoring):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
 
+        # KNeighborsClassifier does not provide a predict_proba method for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         if get_model_name(model_class) == "KNeighborsClassifier" and scoring in [
             "roc_auc",
             "average_precision",
         ]:
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
         _ = GridSearchCV(
@@ -718,7 +740,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
             y_pred_sklearn = sklearn_model.decision_function(x)
 
         # Else, compute the model's predicted probabilities
-        # predict_proba not implemented for KNeighborsClassifier for now
+        # KNeighborsClassifier does not provide a predict_proba method for now
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         elif get_model_name(model_class) != "KNeighborsClassifier":
             y_pred_cml = model.predict_proba(x)
@@ -731,14 +753,6 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
 
     # Check that predictions, probabilities or confidence scores are similar using the R2 score
     check_r2_score(y_pred_sklearn, y_pred_cml)
-
-
-def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
-    """Check some properties of circuit, depending on the model class"""
-
-    if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
-        # Check that no TLUs are found within the MLIR
-        check_circuit_has_no_tlu(fhe_circuit)
 
 
 def get_hyper_param_combinations(model_class):
@@ -1367,7 +1381,7 @@ def test_input_support(
     "n_bits",
     N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
 )
-def test_subfunctions(
+def test_inference_methods(
     model_class,
     parameters,
     n_bits,
@@ -1375,13 +1389,13 @@ def test_subfunctions(
     is_weekly_option,
     verbose=True,
 ):
-    """Test subfunctions."""
+    """Test inference methods."""
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
-        print("Run check_subfunctions")
+        print("Run check_inference_methods")
 
-    check_subfunctions(model, model_class, x)
+    check_inference_methods(model, model_class, x)
 
 
 # Pipeline test sometimes fails with RandomForest models. This bug may come from Hummingbird
@@ -1444,7 +1458,6 @@ def test_predict_correctness(
     load_data,
     default_configuration,
     check_is_good_execution_for_cml_vs_circuit,
-    check_circuit_has_no_tlu,
     is_weekly_option,
     verbose=True,
 ):
@@ -1466,22 +1479,75 @@ def test_predict_correctness(
     if verbose:
         print("Compile the model")
 
-    with warnings.catch_warnings():
-        fhe_circuit = model.compile(x, default_configuration)
-
-        check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
+    model.compile(x, default_configuration)
 
     if verbose:
         print(f"Check prediction correctness for {fhe_samples} samples.")
 
-    # Check prediction correctness
+    # Check prediction correctness between quantized clear and FHE simulation or execution
     check_is_good_execution_for_cml_vs_circuit(x[:fhe_samples], model=model, simulate=simulate)
 
-    if not simulate:
-        if verbose:
-            print("Testing subfunctions in FHE")
 
-        check_subfunctions_in_fhe(model, fhe_circuit, x[:fhe_samples])
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+# Test separated inference steps with new simulation once Concrete Python provides the feature
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4025
+@pytest.mark.parametrize(
+    "simulate",
+    [
+        pytest.param(False, id="fhe"),
+    ],
+)
+# N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
+# limit to find crypto parameters for linear models
+# make sure we only compile below that bit-width.
+# Additionally, prevent computations in FHE with too many bits
+@pytest.mark.parametrize(
+    "n_bits",
+    [
+        n_bits
+        for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n_bits
+        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
+    ],
+)
+# pylint: disable=too-many-branches
+def test_separated_inference(
+    model_class,
+    parameters,
+    simulate,
+    n_bits,
+    load_data,
+    default_configuration,
+    is_weekly_option,
+    check_array_equal,
+    verbose=True,
+):
+    """Test prediction correctness between clear quantized and FHE simulation or execution."""
+
+    # KNN currently only works for small quantization bit numbers
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+    if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
+        pytest.skip("KNeighborsClassifier models can only run with 4 bits at most.")
+
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Run the test with more samples during weekly CIs or when using FHE simulation
+    if is_weekly_option or simulate:
+        fhe_samples = 5
+    else:
+        fhe_samples = 1
+
+    if verbose:
+        print("Compile the model")
+
+    fhe_circuit = model.compile(x, default_configuration)
+
+    if verbose:
+        print("Run check_separated_inference")
+
+    # Check that separated inference steps (encrypt, run, decrypt, post_processing, ...) are
+    # equivalent to built-in methods (predict, predict_proba, ...)
+    check_separated_inference(model, fhe_circuit, x[:fhe_samples], check_array_equal)
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
@@ -1545,11 +1611,11 @@ def test_p_error_global_p_error_simulation(
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
+        # KNeighborsClassifier does not provide a predict_proba method for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         predict_function = (
             model.predict_proba
             if is_classifier_or_partial_classifier(model)
-            # `predict_prob` not implemented yet for KNeighborsClassifier
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             and get_model_name(model) != "KNeighborsClassifier"
             else model.predict
         )
@@ -1670,3 +1736,32 @@ def test_load_fitted_sklearn_linear_models(
         print("Run check_load_pre_trained_sklearn_models")
 
     check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y)
+
+
+# Only circuits from linear models do not have any TLUs
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_linear_models_and_datasets())
+def test_linear_models_have_no_tlu(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    check_circuit_has_no_tlu,
+    default_configuration,
+    verbose=True,
+):
+    """Test that circuits from linear models have no TLUs."""
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    if verbose:
+        print("Compile the model")
+
+    fhe_circuit = model.compile(x, default_configuration)
+
+    if verbose:
+        print("Run check_circuit_has_no_tlu")
+
+    # Check that no TLUs are found within the MLIR
+    check_circuit_has_no_tlu(fhe_circuit)
