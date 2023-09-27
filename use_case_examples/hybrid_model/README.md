@@ -19,6 +19,8 @@ This use case can easily be used with a different model than GPT2 with any other
 
 For example, you can use [Phi 1.5](https://huggingface.co/microsoft/phi-1_5) on Hugging Face and protect the weights that are used to compute Query, Keys, Values as follows:
 
+<!--pytest-codeblocks:skip-->
+
 ```bash
 python compile_hybrid_llm.py --model-name microsoft/phi-1_5 --module-names layers.1.mixer.Wqkv
 ```
