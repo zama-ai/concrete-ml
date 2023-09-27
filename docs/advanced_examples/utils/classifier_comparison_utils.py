@@ -10,8 +10,8 @@
 import warnings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
-
 import time
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,30 +21,35 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+from concrete.ml.common.utils import get_model_name
 from concrete.ml.sklearn import DecisionTreeClassifier
 
 ALWAYS_USE_SIM = False
 
-# pylint: disable=too-many-locals,too-many-statements,too-many-branches
-def make_classifier_comparison(title, classifiers, decision_level, verbose=False):
+# pylint: disable=too-many-locals,too-many-statements,too-many-branches,invalid-name
+def make_classifier_comparison(
+    title, classifiers, decision_level, verbose=False, show_score=False, save_plot=False
+):
 
     h = 0.04  # Step size in the mesh
+    n_samples = 25 if get_model_name(classifiers[0][0]) == "KNeighborsClassifier" else 200
 
     X, y = make_classification(
-        n_samples=200,
+        n_samples=n_samples,
         n_features=2,
         n_redundant=0,
         n_informative=2,
         random_state=1,
         n_clusters_per_class=1,
     )
+    # pylint: disable-next=no-member
     rng = np.random.RandomState(2)
     X += 2 * rng.uniform(size=X.shape)
     linearly_separable = (X, y)
 
     datasets = [
-        make_moons(n_samples=200, noise=0.3, random_state=0),
-        make_circles(n_samples=200, noise=0.2, factor=0.5, random_state=1),
+        make_moons(n_samples=n_samples, noise=0.2, random_state=0),
+        make_circles(n_samples=n_samples, noise=0.2, factor=0.5, random_state=1),
         linearly_separable,
     ]
 
@@ -53,6 +58,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
     fig, axs = plt.subplots(len(datasets), 2 * len(classifiers) + 1, figsize=(32, 16))
     fig.suptitle(title, fontsize=20)
     fig.patch.set_facecolor("white")
+    plt.subplots_adjust(top=0.9)
 
     # Iterate over data-sets
     for i, dataset in enumerate(datasets):
@@ -69,6 +75,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
         y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
         xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
+        # pylint: disable-next=no-member
         cm = plt.cm.RdBu
         cm_bright = ListedColormap(["#FF0000", "#0000FF"])
         ax = axs[i, 0]
@@ -116,7 +123,19 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             sklearn_y_pred = sklearn_model.predict(X_test)
 
             # Compile the Concrete ML model
-            circuit = concrete_model.compile(X_train)
+            if get_model_name(classifier) == "KNeighborsClassifier":
+                n_compile_samples = 20
+            else:
+                n_compile_samples = X_train.shape[0]
+
+            if verbose:
+                print(f"Inputset has: {n_compile_samples} samples used for the compilationg.\n")
+
+            time_begin = time.time()
+            circuit = concrete_model.compile(X_train[:n_compile_samples])
+
+            if verbose:
+                print(f"Compilation time: {(time.time() - time_begin):.4f} seconds\n")
 
             # If the prediction are done in FHE, generate the key
             if not ALWAYS_USE_SIM:
@@ -139,7 +158,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             if verbose:
                 print(
-                    f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    f"FHE Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
                     "seconds per sample\n"
                 )
 
@@ -168,6 +187,14 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             if hasattr(sklearn_model, "decision_function"):
                 sklearn_Z = sklearn_model.decision_function(np.c_[xx.ravel(), yy.ravel()])
                 concrete_Z = concrete_model.decision_function(
+                    np.c_[xx.ravel(), yy.ravel()],
+                    fhe="simulate",
+                )
+            # `predict_proba` not implemented yet for Concrete KNN
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+            elif get_model_name(classifier) == "KNeighborsClassifier":
+                sklearn_Z = sklearn_model.predict(np.c_[xx.ravel(), yy.ravel()].astype(np.float32))
+                concrete_Z = concrete_model.predict(
                     np.c_[xx.ravel(), yy.ravel()],
                     fhe="simulate",
                 )
@@ -222,14 +249,14 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
                 if i == 0:
                     ax.set_title(model_name + f" ({framework})", fontsize=font_size_text)
-
-                ax.text(
-                    xx.max() - 0.3,
-                    yy.min() + 0.3,
-                    f"{score*100:0.1f}%",
-                    size=font_size_text,
-                    horizontalalignment="right",
-                )
+                if show_score:
+                    ax.text(
+                        xx.max() - 0.3,
+                        yy.min() + 0.3,
+                        f"{score*100:0.1f}%",
+                        size=font_size_text,
+                        horizontalalignment="right",
+                    )
 
                 if bitwidth and framework == "Concrete ML":
                     ax.text(
@@ -240,5 +267,35 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                         horizontalalignment="right",
                     )
 
+    if save_plot:
+        plt.savefig(f"./{title}.png")
+
     plt.tight_layout()
     plt.show()
+
+
+def display_plot(path, figsize=(20, 20)):
+    """
+    Display an image plot from the given file path.
+
+    Parameters:
+        path (str): The file path to the image (PNG format).
+        figsize (tuple): A tuple specifying the width and height of the plot. Default is (20, 20).
+
+    Raises:
+        FileNotFoundError: If the specified image file does not exist, this exception is raised.
+    """
+    img_path = Path(path)
+    # Check if the PNG file exists
+    if img_path.exists():
+        img = plt.imread(img_path)
+        plt.figure(figsize=figsize)
+        plt.imshow(img)
+        plt.axis("off")
+        plt.show()
+    else:
+        # Raise a custom exception if the image doesn't exist
+        raise FileNotFoundError(
+            "The desired plot is not available."
+            "To generate the plot, please run script `utils/knn_comparisons.py`."
+        )
