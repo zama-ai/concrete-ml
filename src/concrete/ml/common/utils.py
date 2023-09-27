@@ -9,8 +9,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy
 import onnx
 import torch
-from concrete.fhe import ParameterSelectionStrategy
-from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
 
