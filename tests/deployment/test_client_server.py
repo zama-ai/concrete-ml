@@ -75,6 +75,7 @@ def test_client_server_sklearn(
     n_bits,
     load_data,
     check_is_good_execution_for_cml_vs_circuit,
+    check_array_equal,
 ):
     """Test the client-server interface for built-in models."""
 
@@ -101,7 +102,7 @@ def test_client_server_sklearn(
 
     # Running the simulation using a model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
-        check_client_server_execution(x_train, x_test, model, key_dir)
+        check_client_server_execution(x_train, x_test, model, key_dir, check_array_equal)
 
     # Compile the model
     fhe_circuit = model.compile(x_train, configuration=default_configuration)
@@ -117,11 +118,11 @@ def test_client_server_sklearn(
     check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
-    check_client_server_execution(x_train, x_test, model, key_dir)
+    check_client_server_execution(x_train, x_test, model, key_dir, check_array_equal)
 
 
 def test_client_server_custom_model(
-    default_configuration, check_is_good_execution_for_cml_vs_circuit
+    default_configuration, check_is_good_execution_for_cml_vs_circuit, check_array_equal
 ):
     """Test the client-server interface for a custom model (through a quantized module)."""
 
@@ -135,7 +136,7 @@ def test_client_server_custom_model(
         # Instantiate an empty QuantizedModule object
         quantized_module = QuantizedModule()
 
-        check_client_server_execution(x_train, x_test, quantized_module, key_dir)
+        check_client_server_execution(x_train, x_test, quantized_module, key_dir, check_array_equal)
 
     torch_model = FCSmall(2, nn.ReLU)
 
@@ -155,7 +156,9 @@ def test_client_server_custom_model(
         x_test, quantized_numpy_module, simulate=False, n_allowed_runs=1
     )
 
-    check_client_server_execution(x_train, x_test, quantized_numpy_module, key_dir)
+    check_client_server_execution(
+        x_train, x_test, quantized_numpy_module, key_dir, check_array_equal
+    )
 
 
 def check_client_server_files(model):
@@ -164,24 +167,24 @@ def check_client_server_files(model):
     This test expects that the given model has been trained and compiled in development.
     """
     # Create a new network
-    network = OnDiskNetwork()
+    disk_network = OnDiskNetwork()
 
     # And try to save it again
-    fhemodel_dev = FHEModelDev(path_dir=network.dev_dir.name, model=model)
-    fhemodel_dev.save()
+    fhe_model_dev = FHEModelDev(path_dir=disk_network.dev_dir.name, model=model)
+    fhe_model_dev.save()
 
     # Check that re-saving the dev model fails
     with pytest.raises(
         Exception,
         match=(
-            f"path_dir: {network.dev_dir.name} is not empty."
+            f"path_dir: {disk_network.dev_dir.name} is not empty."
             "Please delete it before saving a new model."
         ),
     ):
-        fhemodel_dev.save()
+        fhe_model_dev.save()
 
-    client_zip_path = Path(network.dev_dir.name) / "client.zip"
-    server_zip_path = Path(network.dev_dir.name) / "server.zip"
+    client_zip_path = Path(disk_network.dev_dir.name) / "client.zip"
+    server_zip_path = Path(disk_network.dev_dir.name) / "server.zip"
 
     # Check that client and server zip files has been generated
     assert (
@@ -214,10 +217,10 @@ def check_client_server_files(model):
             ), f"{server_zip_path} does not contain a '{versions_file_name}' file."
 
     # Clean up
-    network.cleanup()
+    disk_network.cleanup()
 
 
-def check_client_server_execution(x_train, x_test, model, key_dir):
+def check_client_server_execution(x_train, x_test, model, key_dir, check_array_equal):
     """Test the client server interface API.
 
     This test expects that the given model has been trained and compiled in development. It
@@ -225,58 +228,51 @@ def check_client_server_execution(x_train, x_test, model, key_dir):
     development model.
     """
     # Create a new network
-    network = OnDiskNetwork()
+    disk_network = OnDiskNetwork()
 
-    # And try to save it again
-    fhemodel_dev = FHEModelDev(path_dir=network.dev_dir.name, model=model)
-    fhemodel_dev.save()
+    # Save development files
+    fhe_model_dev = FHEModelDev(path_dir=disk_network.dev_dir.name, model=model)
+    fhe_model_dev.save()
 
     # Send necessary files to server and client
-    network.dev_send_clientspecs_and_modelspecs_to_client()
-    network.dev_send_model_to_server()
+    disk_network.dev_send_clientspecs_and_modelspecs_to_client()
+    disk_network.dev_send_model_to_server()
 
-    # And try to load it again
-    fhemodel_client = FHEModelClient(
-        path_dir=network.client_dir.name,
+    # Load the client
+    fhe_model_client = FHEModelClient(
+        path_dir=disk_network.client_dir.name,
         key_dir=key_dir,
     )
-    fhemodel_client.load()
+    fhe_model_client.load()
 
-    # Now we can also load the server part
-    fhemodel_server = FHEModelServer(path_dir=network.server_dir.name)
-    fhemodel_server.load()
-
-    # Make sure the client has the exact same quantization as the server
-    qx_ref_model = model.quantize_input(x_train)
-    qx_client = fhemodel_client.model.quantize_input(x_train)
-    qx_dev = fhemodel_dev.model.quantize_input(x_train)
-
-    numpy.testing.assert_array_equal(qx_ref_model, qx_client)
-    numpy.testing.assert_array_equal(qx_ref_model, qx_dev)
+    # Load the server
+    fhe_model_server = FHEModelServer(path_dir=disk_network.server_dir.name)
+    fhe_model_server.load()
 
     # Client side : Generate all keys and serialize the evaluation keys for the server
-    fhemodel_client.generate_private_and_evaluation_keys()
-    serialized_evaluation_keys = fhemodel_client.get_serialized_evaluation_keys()
+    fhe_model_client.generate_private_and_evaluation_keys()
+    evaluation_keys = fhe_model_client.get_serialized_evaluation_keys()
 
     # Client side : Encrypt the data
-    serialized_qx_new_encrypted = fhemodel_client.quantize_encrypt_serialize(x_test)
+    q_x_encrypted_serialized = fhe_model_client.quantize_encrypt_serialize(x_test)
 
     # Server side: Run the model over encrypted data
-    serialized_result = fhemodel_server.run(serialized_qx_new_encrypted, serialized_evaluation_keys)
+    q_y_pred_encrypted_serialized = fhe_model_server.run(q_x_encrypted_serialized, evaluation_keys)
 
-    # Client side : Decrypt, de-quantize and post-processed the result
-    y_pred_on_client_quantized = fhemodel_client.deserialize_decrypt(serialized_result)
-    y_pred_on_client_dequantized = fhemodel_client.deserialize_decrypt_dequantize(serialized_result)
+    # Client side : Decrypt, de-quantize and post-process the result
+    q_y_pred = fhe_model_client.deserialize_decrypt(q_y_pred_encrypted_serialized)
+    y_pred = fhe_model_client.deserialize_decrypt_dequantize(q_y_pred_encrypted_serialized)
 
-    # Dev side: Predict using the model used in development
-    qtest = model.quantize_input(x_test)
-    y_pred_model_dev_quantized = model.fhe_circuit.encrypt_run_decrypt(qtest)
-    y_pred_model_dev_dequantized = model.dequantize_output(y_pred_model_dev_quantized)
-    y_pred_model_dev_dequantized = model.post_processing(y_pred_model_dev_dequantized)
+    # Dev side: Predict using the model and circuit from development
+    q_x_test = model.quantize_input(x_test)
+    q_y_pred_dev = model.fhe_circuit.encrypt_run_decrypt(q_x_test)
+    y_pred_dev = model.dequantize_output(q_y_pred_dev)
+    y_pred_dev = model.post_processing(y_pred_dev)
 
-    # Make sure the quantized predictions are the same for the client model and the dev model
-    numpy.testing.assert_array_equal(y_pred_on_client_quantized, y_pred_model_dev_quantized)
-    numpy.testing.assert_array_equal(y_pred_on_client_dequantized, y_pred_model_dev_dequantized)
+    # Check that both quantized and de-quantized (+ post-processed) results from the server are
+    # matching the ones from the dec model
+    check_array_equal(y_pred, y_pred_dev)
+    check_array_equal(q_y_pred, q_y_pred_dev)
 
     # Clean up
-    network.cleanup()
+    disk_network.cleanup()

@@ -454,7 +454,7 @@ def test_all_gemm_ops(
     n_neurons: int,
     generator: Callable,
     check_r2_score: Callable,
-    check_array_equality: Callable,
+    check_array_equal: Callable,
 ):
     """Test for gemm style ops."""
 
@@ -547,7 +547,7 @@ def test_all_gemm_ops(
     check_r2_score(expected_gemm_outputs, actual_gemm_output)
 
     # Without a bias, MatMul and Gemm should give the same output
-    check_array_equality(actual_mm_output, actual_gemm_output)
+    check_array_equal(actual_mm_output, actual_gemm_output)
 
     # Test the serialization of QuantizedGemm with (alpha, beta) = (1, 0)
     check_serialization(

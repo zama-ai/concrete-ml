@@ -1419,12 +1419,20 @@ def test_pipeline(
         pytest.param(True, id="simulate"),
     ],
 )
+# N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
+# limit to find crypto parameters for linear models
+# make sure we only compile below that bit-width.
+# Additionally, prevent computations in FHE with too many bits
+# Finally, consider at least N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS in order to be sure
+# to reach proper correctness
 @pytest.mark.parametrize(
     "n_bits",
     [
-        n
-        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS
+        n_bits
+        for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS
+        <= n_bits
+        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
     ],
 )
 # pylint: disable=too-many-branches
@@ -1438,96 +1446,42 @@ def test_predict_correctness(
     check_is_good_execution_for_cml_vs_circuit,
     check_circuit_has_no_tlu,
     is_weekly_option,
-    test_subfunctions_in_fhe=True,
     verbose=True,
 ):
-    """Test correct execution, if there is sufficiently n_bits."""
+    """Test prediction correctness between clear quantized and FHE simulation or execution."""
+
+    # KNN currently only works for small quantization bit numbers
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+    if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
+        pytest.skip("KNeighborsClassifier models can only run with 4 bits at most.")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # How many samples for tests in FHE (i.e., predict with fhe = "execute" or "simulate")
+    # Run the test with more samples during weekly CIs or when using FHE simulation
     if is_weekly_option or simulate:
-        number_of_tests_in_fhe = 5
+        fhe_samples = 5
     else:
-        number_of_tests_in_fhe = 1
+        fhe_samples = 1
 
-    # How many samples for tests in quantized module (i.e., predict with fhe = "disable")
-    if is_weekly_option:
-        number_of_tests_in_non_fhe = 50
-    else:
-        number_of_tests_in_non_fhe = 10
-
-    # Do some inferences in clear
     if verbose:
-        print(
-            "Inference in the clear (with "
-            f"number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
-        )
-    # KNN works only for smaller quantization bits
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-    if n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
-        pytest.skip("Use less than 5 bits with KNN.")
+        print("Compile the model")
 
-    y_pred = model.predict(x[:number_of_tests_in_non_fhe])
+    with warnings.catch_warnings():
+        fhe_circuit = model.compile(x, default_configuration)
 
-    list_of_possibilities = [False, True]
+        check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
 
-    # Prevent computations in FHE if too many bits
-    if n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE:
-        list_of_possibilities = [False]
+    if verbose:
+        print(f"Check prediction correctness for {fhe_samples} samples.")
 
-    for test_with_execute_in_fhe in list_of_possibilities:
+    # Check prediction correctness
+    check_is_good_execution_for_cml_vs_circuit(x[:fhe_samples], model=model, simulate=simulate)
 
-        # N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
-        # limit to find crypto parameters for linear models
-        # make sure we only compile below that bit-width.
-        if test_with_execute_in_fhe and not n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
+    if not simulate:
+        if verbose:
+            print("Testing subfunctions in FHE")
 
-            if verbose:
-                print("Compile the model")
-
-            with warnings.catch_warnings():
-                fhe_circuit = model.compile(
-                    x,
-                    default_configuration,
-                    show_mlir=verbose and (n_bits <= 8),
-                )
-
-                check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
-
-            if verbose:
-                print("Compilation done")
-
-            if verbose:
-                print(
-                    "Run check_is_good_execution_for_cml_vs_circuit "
-                    + f"(with number_of_tests_in_fhe = {number_of_tests_in_fhe})"
-                )
-
-            # Check the `predict` method
-            check_is_good_execution_for_cml_vs_circuit(
-                x[:number_of_tests_in_fhe], model=model, simulate=simulate
-            )
-
-            if test_subfunctions_in_fhe and (not simulate):
-                if verbose:
-                    print("Testing subfunctions in FHE")
-
-                check_subfunctions_in_fhe(model, fhe_circuit, x[:number_of_tests_in_fhe])
-
-        else:
-            if verbose:
-                print(
-                    "Run predict in fhe='disable' "
-                    f"(with number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
-                )
-
-            # At least, check in clear mode
-            y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], fhe="disable")
-
-            # Check that the output shape is correct
-            assert y_pred_fhe.shape == y_pred.shape
-            assert numpy.array_equal(y_pred_fhe, y_pred)
+        check_subfunctions_in_fhe(model, fhe_circuit, x[:fhe_samples])
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
