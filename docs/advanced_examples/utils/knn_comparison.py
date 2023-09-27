@@ -11,7 +11,7 @@ from concrete.ml.sklearn import KNeighborsClassifier
 if __name__ == "__main__":
     knn_classifiers = [
         (partial(KNeighborsClassifier, n_bits=2, n_neighbors=3), "3nn"),
-        #(partial(KNeighborsClassifier, n_bits=4, n_neighbors=5), "5nn"),
+        (partial(KNeighborsClassifier, n_bits=4, n_neighbors=5), "5nn"),
     ]
 
     # pylint: disable-next=unexpected-keyword-arg
