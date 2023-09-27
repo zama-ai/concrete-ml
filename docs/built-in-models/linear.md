@@ -90,11 +90,7 @@ An alternative to the example above is to train a scikit-learn model in a separa
 <!--pytest-codeblocks:cont-->
 
 ```
-<<<<<<< HEAD
 from sklearn.linear_model import LogisticRegression as SKlearnLogisticRegression
-=======
-from sklearn import LogisticRegression as SKlearnLogisticRegression
->>>>>>> f837e90f... chore: add doc on load pretrained sklearn
 
 # Instantiate the model:
 model = SKlearnLogisticRegression()
@@ -102,7 +98,6 @@ model = SKlearnLogisticRegression()
 # Fit the model:
 model.fit(X_train, y_train)
 
-<<<<<<< HEAD
 cml_model = LogisticRegression.from_sklearn_model(model, X_train, n_bits=8)
 
 # Compile the model:
@@ -112,7 +107,4 @@ cml_model.compile(X_train)
 y_pred_fhe = cml_model.predict(X_test, fhe="execute")
 
 
-=======
-cml_model = LogisticRegression(model, X_train, n_bits=8)
->>>>>>> f837e90f... chore: add doc on load pretrained sklearn
 ```
