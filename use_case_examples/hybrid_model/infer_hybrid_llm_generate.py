@@ -10,10 +10,13 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
 from concrete.ml.torch.hybrid_model import HybridFHEMode, HybridFHEModel
 
 if __name__ == "__main__":
-    # Use configuration dumped by compilation
+    # Load configuration dumped by compilation
     with open("configuration.json", "r") as file:
         configuration = json.load(file)
+
     module_names = configuration["module_names"]
+    model_name = configuration["model_name"]
+    model_name_no_special_char = configuration["model_name_no_special_char"]
 
     device = "cpu"
     if torch.cuda.is_available():
@@ -22,10 +25,7 @@ if __name__ == "__main__":
         device = "mps"
     print(f"Using device: {device}")
 
-    # Get GPT2 from Hugging Face
-    model_name = "gpt2"
-    # Avoid having / in the string
-    model_name_no_special_char = model_name.replace("/", "_")
+    # Get model from Hugging Face using model_name from configuration
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
@@ -38,7 +38,7 @@ if __name__ == "__main__":
         model,
         module_names,
         server_remote_address="http://0.0.0.0:8000",
-        model_name=f"{model_name}",
+        model_name=model_name_no_special_char,
         verbose=False,
     )
     path_to_clients = Path(__file__).parent / "clients"
