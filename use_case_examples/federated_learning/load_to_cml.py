@@ -17,7 +17,7 @@ if __name__ == "__main__":
     with path_to_model.open("rb") as file:
         sklearn_model = pickle.load(file)
 
-    # Compile model without data since the server doesn't have acces to it
+    # Compile model without data since the server doesn't have access to it
     # Indeed in this scenario the users have the data but the server doesn't.
     # We then have to compile the model using random input sampled with the same
     # low and high bounds as the real data, in this context [0, 255].
