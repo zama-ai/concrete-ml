@@ -744,7 +744,7 @@ check_links:
 	@# 	--ignore-url=_static/webpack-macros.html: useless file which contains wrong links
 	@#  --ignore-url=https://www.conventionalcommits.org/en/v1.0.0/: because issues to connect to
 	@#		the server from AWS
-	@#  --ignore-url=https://www.openml.org: lot of time outs
+	@#  --ignore-url=https://www.openml.org: this website returns a lots of timeouts
 	@#  --ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues: because issues are
 	@#		private
 	@#	--ignore-url=.gitbook/assets : some gitbook functionalities use links to images to include
@@ -752,11 +752,13 @@ check_links:
 	@#		they are not included by image tags or sphinx image annotations. We ignore links 
 	@#		to gitbook images in the HTML checker. But the images are actually checked by the 
 	@#		markdown link checker, `local_link_check.sh`.
+	@#  --ignore-url=https://arxiv.org: this website returns a lots of timeouts
 	poetry run linkchecker docs --check-extern \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \
 		--ignore-url=https://github.com/zama-ai/concrete-ml-internal/issues \
+		--ignore-url=https://arxiv.org \
 		--ignore-url=.gitbook/assets
 
 .PHONY: actionlint # Linter for our github actions
