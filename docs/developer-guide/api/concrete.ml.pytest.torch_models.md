@@ -1326,3 +1326,39 @@ Forward pass.
 **Returns:**
 
 - <b>`torch.tensor`</b>:  Output of the network.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `PartialQATModel`
+
+A model with a QAT Module.
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1395"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(input_shape: int, output_shape: int, n_bits: int)
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/torch_models.py#L1401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `forward`
+
+```python
+forward(x)
+```
+
+Forward pass.
+
+**Args:**
+
+- <b>`x`</b> (torch.tensor):  The input of the model.
+
+**Returns:**
+
+- <b>`torch.tensor`</b>:  Output of the network.

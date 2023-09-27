@@ -15,6 +15,28 @@ ______________________________________________________________________
 
 <a href="../../../src/concrete/ml/torch/compile.py#L35"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>function</kbd> `has_any_qnn_layers`
+
+```python
+has_any_qnn_layers(torch_model: Module) → bool
+```
+
+Check if a torch model has QNN layers.
+
+This is useful to check if a model is a QAT model.
+
+**Args:**
+
+- <b>`torch_model`</b> (torch.nn.Module):  a torch model
+
+**Returns:**
+
+- <b>`bool`</b>:  whether this torch model contains any QNN layer.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/torch/compile.py#L51"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>function</kbd> `convert_torch_tensor_or_numpy_array_to_numpy_array`
 
 ```python
@@ -35,7 +57,7 @@ Convert a torch tensor or a numpy array to a numpy array.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L54"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L70"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `build_quantized_module`
 
@@ -67,7 +89,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -79,11 +101,12 @@ compile_torch_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits=8,
+    n_bits: Union[int, Dict[str, int]] = 8,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None
 ) → QuantizedModule
 ```
 
@@ -104,6 +127,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
+- <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
 
 **Returns:**
 
@@ -111,7 +135,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L268"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -123,11 +147,12 @@ compile_onnx_model(
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
-    n_bits: Union[int, Dict] = 8,
+    n_bits: Union[int, Dict[str, int]] = 8,
     rounding_threshold_bits: Optional[int] = None,
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None
 ) → QuantizedModule
 ```
 
@@ -148,6 +173,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`p_error`</b> (Optional\[float\]):  probability of error of a single PBS
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
+- <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
 
 **Returns:**
 
@@ -155,7 +181,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -163,7 +189,7 @@ ______________________________________________________________________
 compile_brevitas_qat_model(
     torch_model: Module,
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
-    n_bits: Optional[int, dict] = None,
+    n_bits: Optional[int, Dict[str, int]] = None,
     configuration: Optional[Configuration] = None,
     artifacts: Optional[DebugArtifacts] = None,
     show_mlir: bool = False,
@@ -171,7 +197,8 @@ compile_brevitas_qat_model(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     output_onnx_file: Union[NoneType, Path, str] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    inputs_encryption_status: Optional[Sequence[str]] = None
 ) → QuantizedModule
 ```
 
@@ -192,6 +219,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated
 - <b>`verbose`</b> (bool):  whether to show compilation information
+- <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
 
 **Returns:**
 
