@@ -154,7 +154,7 @@ def make_classifier_comparison(
 
             # Compute the predictions in FHE using the Concrete ML model
             time_begin = time.time()
-            concrete_y_pred = concrete_model.predict(X_test, fhe="execute")
+            concrete_y_pred = concrete_model.predict(X_test, fhe="simulate")
 
             if verbose:
                 print(
@@ -272,30 +272,3 @@ def make_classifier_comparison(
 
     plt.tight_layout()
     plt.show()
-
-
-def display_plot(path, figsize=(20, 20)):
-    """
-    Display an image plot from the given file path.
-
-    Parameters:
-        path (str): The file path to the image (PNG format).
-        figsize (tuple): A tuple specifying the width and height of the plot. Default is (20, 20).
-
-    Raises:
-        FileNotFoundError: If the specified image file does not exist, this exception is raised.
-    """
-    img_path = Path(path)
-    # Check if the PNG file exists
-    if img_path.exists():
-        img = plt.imread(img_path)
-        plt.figure(figsize=figsize)
-        plt.imshow(img)
-        plt.axis("off")
-        plt.show()
-    else:
-        # Raise a custom exception if the image doesn't exist
-        raise FileNotFoundError(
-            "The desired plot is not available."
-            "To generate the plot, please run script `utils/knn_comparisons.py`."
-        )
