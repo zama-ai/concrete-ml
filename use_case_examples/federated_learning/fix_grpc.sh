@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 # on m1 mac there is a known issue with grpc install
 
 # https://stackoverflow.com/questions/72620996/apple-m1-symbol-not-found-cfrelease-while-running-python-app/74306400#74306400
