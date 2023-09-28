@@ -116,7 +116,7 @@ Executing these steps separately is equivalent to calling `predict_proba` on the
 # Predict probability for a single example
 y_proba_fhe = model.predict_proba(X_test[[0]], fhe="execute")
 
-# Quantize a original float input
+# Quantize an original float input
 q_input = model.quantize_input(X_test[[0]])
 
 # Encrypt the input
