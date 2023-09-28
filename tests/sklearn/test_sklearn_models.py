@@ -19,8 +19,6 @@ Generic tests test:
   - pipeline
   - calls to predict_proba
   - calls to decision_function
-
-More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
 import copy
@@ -687,7 +685,12 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     model.predict(x, fhe="simulate")
 
     # Similarly, we test `predict_proba` for classifiers
-    if is_classifier_or_partial_classifier(model):
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model_class) != "KNeighborsClassifier"
+    ):
         model.predict_proba(x, fhe="simulate")
 
 

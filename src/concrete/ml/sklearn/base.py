@@ -260,15 +260,6 @@ class BaseEstimator:
         assert isinstance(self.fhe_circuit_, Circuit) or self.fhe_circuit_ is None
         return self.fhe_circuit_
 
-    @fhe_circuit.setter
-    def fhe_circuit(self, value: Circuit) -> None:
-        """Set the FHE circuit.
-
-        Args:
-            value (Circuit): The FHE circuit to set.
-        """
-        self.fhe_circuit_ = value
-
     def _sklearn_model_is_not_fitted_error_message(self) -> str:
         return (
             f"The underlying model (class: {self.sklearn_model_class}) is not fitted and thus "
@@ -556,7 +547,7 @@ class BaseEstimator:
 
         # Jit compiler is now deprecated and will soon be removed, it is thus forced to False
         # by default
-        self.fhe_circuit = module_to_compile.compile(
+        self.fhe_circuit_ = module_to_compile.compile(
             inputset,
             configuration=configuration,
             artifacts=artifacts,
@@ -570,6 +561,9 @@ class BaseEstimator:
             jit=False,
         )
 
+        # For mypy
+        assert isinstance(self.fhe_circuit, Circuit)
+
         # CRT simulation is not supported yet
         # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3841
         if not USE_OLD_VL:
@@ -577,7 +571,6 @@ class BaseEstimator:
 
         self._is_compiled = True
 
-        assert isinstance(self.fhe_circuit, Circuit)
         return self.fhe_circuit
 
     @abstractmethod
@@ -882,10 +875,6 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     @property
     def fhe_circuit(self) -> Circuit:
         return self.quantized_module_.fhe_circuit
-
-    @fhe_circuit.setter
-    def fhe_circuit(self, value: Circuit) -> None:
-        self.quantized_module_.fhe_circuit = value
 
     def get_params(self, deep: bool = True) -> dict:
         """Get parameters for this estimator.
