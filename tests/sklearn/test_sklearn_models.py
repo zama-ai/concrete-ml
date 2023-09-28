@@ -504,8 +504,8 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
     y_pred_simulated = model.predict(x, fhe="simulate")
 
     assert y_pred_clear.shape == y_pred_simulated.shape, (
-        "Method 'predict' from Concrete ML outputs different shapes when executed"
-        f"in the clear and with simulation"
+        "Method 'predict' from Concrete ML outputs different shapes when executed in the clear and "
+        "with simulation."
     )
     check_float_array_equal(y_pred_clear, y_pred_simulated)
 
@@ -547,7 +547,7 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
 
         assert y_proba_clear.shape == y_proba_simulated.shape, (
             "Method 'predict_proba' from Concrete ML outputs different shapes when executed"
-            f"in the clear and with simulation"
+            "in the clear and with simulation."
         )
         check_float_array_equal(y_proba_clear, y_proba_simulated)
 
@@ -559,7 +559,7 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
 
             assert y_scores_clear.shape == y_scores_simulated.shape, (
                 "Method 'decision_function' from Concrete ML outputs different shapes when executed"
-                f"in the clear and with simulation"
+                "in the clear and with simulation."
             )
             check_float_array_equal(y_scores_clear, y_scores_simulated)
 
