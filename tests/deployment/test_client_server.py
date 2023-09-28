@@ -76,6 +76,7 @@ def test_client_server_sklearn(
     load_data,
     check_is_good_execution_for_cml_vs_circuit,
     check_array_equal,
+    check_float_array_equal,
 ):
     """Test the client-server interface for built-in models."""
 
@@ -102,7 +103,9 @@ def test_client_server_sklearn(
 
     # Running the simulation using a model that is not compiled should not be possible
     with pytest.raises(AttributeError, match=".* model is not compiled.*"):
-        check_client_server_execution(x_train, x_test, model, key_dir, check_array_equal)
+        check_client_server_execution(
+            x_test, model, key_dir, check_array_equal, check_float_array_equal
+        )
 
     # Compile the model
     fhe_circuit = model.compile(x_train, configuration=default_configuration)
@@ -118,11 +121,16 @@ def test_client_server_sklearn(
     check_is_good_execution_for_cml_vs_circuit(x_test, model, simulate=False, n_allowed_runs=1)
 
     # Check client/server FHE predictions vs the FHE predictions of the dev model
-    check_client_server_execution(x_train, x_test, model, key_dir, check_array_equal)
+    check_client_server_execution(
+        x_test, model, key_dir, check_array_equal, check_float_array_equal
+    )
 
 
 def test_client_server_custom_model(
-    default_configuration, check_is_good_execution_for_cml_vs_circuit, check_array_equal
+    default_configuration,
+    check_is_good_execution_for_cml_vs_circuit,
+    check_array_equal,
+    check_float_array_equal,
 ):
     """Test the client-server interface for a custom model (through a quantized module)."""
 
@@ -136,7 +144,9 @@ def test_client_server_custom_model(
         # Instantiate an empty QuantizedModule object
         quantized_module = QuantizedModule()
 
-        check_client_server_execution(x_train, x_test, quantized_module, key_dir, check_array_equal)
+        check_client_server_execution(
+            x_test, quantized_module, key_dir, check_array_equal, check_float_array_equal
+        )
 
     torch_model = FCSmall(2, nn.ReLU)
 
@@ -157,7 +167,7 @@ def test_client_server_custom_model(
     )
 
     check_client_server_execution(
-        x_train, x_test, quantized_numpy_module, key_dir, check_array_equal
+        x_test, quantized_numpy_module, key_dir, check_array_equal, check_float_array_equal
     )
 
 
@@ -220,7 +230,9 @@ def check_client_server_files(model):
     disk_network.cleanup()
 
 
-def check_client_server_execution(x_train, x_test, model, key_dir, check_array_equal):
+def check_client_server_execution(
+    x_test, model, key_dir, check_array_equal, check_float_array_equal
+):
     """Test the client server interface API.
 
     This test expects that the given model has been trained and compiled in development. It
@@ -271,7 +283,7 @@ def check_client_server_execution(x_train, x_test, model, key_dir, check_array_e
 
     # Check that both quantized and de-quantized (+ post-processed) results from the server are
     # matching the ones from the dec model
-    check_array_equal(y_pred, y_pred_dev)
+    check_float_array_equal(y_pred, y_pred_dev)
     check_array_equal(q_y_pred, q_y_pred_dev)
 
     # Clean up

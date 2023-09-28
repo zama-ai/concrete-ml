@@ -315,13 +315,13 @@ def check_array_equal():
 
 
 @pytest.fixture
-def check_float_arrays_equal():
+def check_float_array_equal():
     """Fixture to check if two float arrays are equal with epsilon precision tolerance."""
 
-    def check_float_arrays_equal_impl(a, b):
+    def check_float_array_equal_impl(a, b):
         assert numpy.all(numpy.isclose(a, b, rtol=0, atol=0.001))
 
-    return check_float_arrays_equal_impl
+    return check_float_array_equal_impl
 
 
 @pytest.fixture
@@ -491,15 +491,13 @@ def check_is_good_execution_for_cml_vs_circuit():
                     # as much post-processing steps in the clear (that could lead to more flaky
                     # tests), especially since these results are tested in other tests such as the
                     # `check_subfunctions_in_fhe`
-                    if is_classifier_or_partial_classifier(model):
-                        if isinstance(model, SklearnKNeighborsMixin):
-                            # For KNN `predict_proba` is not supported for now
-                            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-                            results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)
-                            results_model = model.predict(*inputs, fhe="disable")
-                        else:
-                            results_cnp_circuit = model.predict_proba(*inputs, fhe=fhe_mode)
-                            results_model = model.predict_proba(*inputs, fhe="disable")
+                    # For KNN `predict_proba` is not supported for now
+                    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+                    if is_classifier_or_partial_classifier(model) and not isinstance(
+                        model, SklearnKNeighborsMixin
+                    ):
+                        results_cnp_circuit = model.predict_proba(*inputs, fhe=fhe_mode)
+                        results_model = model.predict_proba(*inputs, fhe="disable")
 
                     else:
                         results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)

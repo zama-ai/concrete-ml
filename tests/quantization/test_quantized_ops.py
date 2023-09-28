@@ -325,7 +325,7 @@ def test_all_arith_ops(
     n_dims: int,
     generator: Callable,
     check_r2_score: Callable,
-    check_float_arrays_equal: Callable,
+    check_float_array_equal: Callable,
 ):
     """Test all quantized arithmetic ops"""
 
@@ -407,11 +407,11 @@ def test_all_arith_ops(
 
     # Check that we get the same fp32 results in V+V (if supported), V+C and C+V modes
     if supports_enc_with_enc:
-        check_float_arrays_equal(raw_output_vv, raw_output_vc)
-    check_float_arrays_equal(raw_output_cv, raw_output_vc)
+        check_float_array_equal(raw_output_vv, raw_output_vc)
+    check_float_array_equal(raw_output_cv, raw_output_vc)
 
     # Check that V+C and C+V is symmetric (int+float mode)
-    check_float_arrays_equal(quantized_output_cv, quantized_output_vc)
+    check_float_array_equal(quantized_output_cv, quantized_output_vc)
 
     # As V+C and C+V work on float values they will not be exactly equal to
     # the V+V case which works in quantized, we only check R2 for a high bit-width in this case
@@ -672,7 +672,7 @@ def test_identity_op(x, n_bits):
 )
 @pytest.mark.parametrize("produces_output", [True, False])
 # pylint: disable-next=too-many-locals
-def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_float_arrays_equal):
+def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_float_array_equal):
     """Test the quantized convolution operator."""
 
     # Retrieve arguments
@@ -733,7 +733,7 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
         strides,
         groups=group,
     ).numpy()
-    check_float_arrays_equal(torch_res, expected_result)
+    check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result
     result = q_op(q_input).dequant()
@@ -810,7 +810,7 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     ],
 )
 @pytest.mark.parametrize("is_signed", [True, False])
-def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_float_arrays_equal):
+def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_float_array_equal):
     """Test the quantized average pool operator."""
 
     # Retrieve arguments
@@ -842,7 +842,7 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
     # Compute the torch average pool
     bceil_mode = bool(ceil_mode)
     torch_res = torch.nn.functional.avg_pool2d(tx_pad, kernel_shape, strides, 0, bceil_mode).numpy()
-    check_float_arrays_equal(torch_res, expected_result)
+    check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result
     result = q_op(q_input).dequant()
@@ -929,7 +929,7 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
     ],
 )
 @pytest.mark.parametrize("is_signed", [True, False])
-def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_float_arrays_equal):
+def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_float_array_equal):
     """Test the quantized max pool operator."""
 
     # Retrieve arguments
@@ -974,7 +974,7 @@ def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_flo
     print("Expected")
     print(expected_result)
 
-    check_float_arrays_equal(torch_res, expected_result)
+    check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result
     result = q_op(q_input).dequant()
