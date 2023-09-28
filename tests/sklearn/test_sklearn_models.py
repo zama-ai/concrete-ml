@@ -175,10 +175,12 @@ def check_correctness_with_sklearn(
     y_pred = model.predict(x)
 
     y_pred_sklearn = sklearn_model.predict(x)
-    y_pred_cml = model.predict(x, fhe=fhe)
+    y_pred_fhe = model.predict(x, fhe=fhe)
 
     # Check that the output shapes are correct
-    assert y_pred.shape == y_pred_cml.shape, "Outputs have different shapes"
+    assert (
+        y_pred.shape == y_pred_fhe.shape
+    ), f"Method 'predict' from Concrete ML outputs different shapes when executed in the clear and in FHE (fhe={fhe})"
 
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2604
     # Generic tests look to show issues in accuracy / R2 score, even for high n_bits
@@ -213,14 +215,14 @@ def check_correctness_with_sklearn(
 
     # If the model is a classifier, check that accuracies are similar
     if is_classifier_or_partial_classifier(model):
-        check_accuracy(y_pred_sklearn, y_pred_cml, threshold=threshold_accuracy)
+        check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
 
     # If the model is a regressor, check that R2 scores are similar
+    elif is_regressor_or_partial_regressor(model):
+        check_r2_score(y_pred_sklearn, y_pred_fhe, acceptance_score=acceptance_r2score)
+
     else:
-        assert is_regressor_or_partial_regressor(
-            model
-        ), "not a regressor, not a classifier, really?"
-        check_r2_score(y_pred_sklearn, y_pred_cml, acceptance_score=acceptance_r2score)
+        raise AssertionError(f"Model {model_name} is neither a classifier nor a regressor.")
 
 
 def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
@@ -553,14 +555,19 @@ def check_separated_inference(model, fhe_circuit, x, check_array_equal):
     # built-in method for regressors
     check_array_equal(y_pred, y_proba)
 
-    if is_classifier_or_partial_classifier(model):
+    # KNeighborsClassifier does not apply a final argmax for computing prediction
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model) != "KNeighborsClassifier"
+    ):
         y_pred = numpy.argmax(y_pred, axis=-1)
 
         # Compare the results with predictions found using 'predict' with FHE simulation
         y_pred_class = model.predict(x, fhe="simulate")
 
-        # For classifiers, the circuit's de-quantized outputs followed by `post_processing` as well
-        # as an argmax should be the same as the ones from the `predict` built-in method
+        # For classifiers (other than KNeighborsClassifier), the circuit's de-quantized outputs
+        # followed by `post_processing` as well as an argmax should be the same as the ones from
+        # the `predict` built-in method
         check_array_equal(y_pred, y_pred_class)
 
 
@@ -601,12 +608,12 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     model.predict(x)
 
     # Similarly, we test `predict_proba` for classifiers
-    if is_classifier_or_partial_classifier(model):
-        # KNeighborsClassifier does not provide a predict_proba method for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-        if get_model_name(model_class) == "KNeighborsClassifier":
-            pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
-
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model_class) != "KNeighborsClassifier"
+    ):
         model.predict_proba(x)
 
     # If n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
@@ -725,7 +732,12 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
         model, sklearn_model = model.fit_benchmark(x, y)
 
     # If the model is a classifier
-    if is_classifier_or_partial_classifier(model):
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model_class) != "KNeighborsClassifier"
+    ):
 
         # Check that accuracies are similar
         y_pred_cml = model.predict(x)
@@ -740,9 +752,7 @@ def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r
             y_pred_sklearn = sklearn_model.decision_function(x)
 
         # Else, compute the model's predicted probabilities
-        # KNeighborsClassifier does not provide a predict_proba method for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-        elif get_model_name(model_class) != "KNeighborsClassifier":
+        else:
             y_pred_cml = model.predict_proba(x)
             y_pred_sklearn = sklearn_model.predict_proba(x)
 
