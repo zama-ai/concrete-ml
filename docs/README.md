@@ -54,9 +54,10 @@ Executing these steps separately is equivalent to calling `predict_proba` on the
 <!--pytest-codeblocks:cont-->
 
 ```python
+# Predict probability for a single example
 y_proba_fhe = model.predict_proba(X_test[[0]], fhe="execute")
 
-# Quantize an input (float)
+# Quantize a original float input
 q_input = model.quantize_input(X_test[[0]])
 
 # Encrypt the input
@@ -68,11 +69,11 @@ q_y_enc = model.fhe_circuit.run(q_input_enc)
 # Decrypt the result (integer)
 q_y = model.fhe_circuit.decrypt(q_y_enc)
 
-# De-quantize the result
+# De-quantize and post-process the result
 y0 = model.post_processing(model.dequantize_output(q_y))
 
-print("Probability with `predict_proba`: ", y0)
-print("Probability with encrypt/run/decrypt calls: ", y_proba_fhe)
+print("Probability with `predict_proba`: ", y_proba_fhe)
+print("Probability with encrypt/run/decrypt calls: ", y0)
 ```
 
 This example shows the typical flow of a Concrete ML model:
