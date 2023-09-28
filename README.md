@@ -107,6 +107,34 @@ print(f"Similarity: {int((y_pred_fhe == y_pred_clear).mean()*100)}%")
     # Similarity: 100%
 ```
 
+It is also possible to call encryption, model prediction, and decryption functions separately as follows.
+Executing these steps separately is equivalent to calling `predict_proba` on the model instance.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+# Predict probability for a single example
+y_proba_fhe = model.predict_proba(X_test[[0]], fhe="execute")
+
+# Quantize a original float input
+q_input = model.quantize_input(X_test[[0]])
+
+# Encrypt the input
+q_input_enc = model.fhe_circuit.encrypt(q_input)
+
+# Execute the linear product in FHE
+q_y_enc = model.fhe_circuit.run(q_input_enc)
+
+# Decrypt the result (integer)
+q_y = model.fhe_circuit.decrypt(q_y_enc)
+
+# De-quantize and post-process the result
+y0 = model.post_processing(model.dequantize_output(q_y))
+
+print("Probability with `predict_proba`: ", y_proba_fhe)
+print("Probability with encrypt/run/decrypt calls: ", y0)
+```
+
 This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md). Concrete ML built-in models
 have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in
 models.
