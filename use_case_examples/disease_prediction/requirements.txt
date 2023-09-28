@@ -1,3 +1,4 @@
 concrete-ml
 jupyter
 pandas
+matplotlib

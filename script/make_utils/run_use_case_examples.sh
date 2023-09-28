@@ -1,129 +1,113 @@
 #!/usr/bin/env bash
 set -e
 
-DIR=$(dirname "$0")
+current_dir=$(pwd)
+use_case_dir_name="use_case_examples"
+use_case_dir="${current_dir}/${use_case_dir_name}"
 
-# shellcheck disable=SC1090,SC1091
-source "${DIR}/detect_docker.sh"
-
-if isDocker; then
-    echo "Can not run in docker -> this script needs to install new virtualenvs"
-    exit 1
-fi
-
-
-CML_DIR=$(pwd)
-USE_CASE_REL_DIR="use_case_examples"
-USE_CASE_DIR="${CML_DIR}/${USE_CASE_REL_DIR}"
-
-if [ ! -d "$USE_CASE_DIR" ]; then
-    echo "This script must be run in the Concrete ML source root where the '$USE_CASE_REL_DIR' directory is present"
-    exit 1
-fi
-
-echo "Refreshing notebooks with PIP installed Concrete ML"
-
-# shellcheck disable=SC2143
-if [[ $(git ls-files --others --exclude-standard | grep ${USE_CASE_REL_DIR}) ]]; then
-    echo "This script must be run in a clean clone of the Concrete ML repo"
-    echo "This directory has untracked files in ${USE_CASE_REL_DIR}"
-    echo "You can LIST all untracked files using: "
-    echo
-    # shellcheck disable=SC2028
-    echo "   git ls-files --others --exclude-standard | grep ${USE_CASE_REL_DIR}"
-    echo
-    echo "You can REMOVE all untracked files using: "
-    echo
-    # shellcheck disable=SC2028
-    echo "   git ls-files --others --exclude-standard | grep ${USE_CASE_REL_DIR} | xargs -0 -d '\n' --no-run-if-empty rm"
-    echo
-    exit 1
-fi
-
-if [[ -z "${USE_CASE}" ]]; then
-  # shellcheck disable=SC2207
-  LIST_OF_USE_CASES=($(find "$USE_CASE_DIR/" -mindepth 1 -maxdepth 2 -type d | grep -v checkpoints))
-else
-  LIST_OF_USE_CASES=("${USE_CASE}")
-  if [ ! -d "${USE_CASE}" ]; then 
-    echo "The use case specified to be executed, ${USE_CASE}, does not exist"
-    exit 1
-  fi
-fi
-
-if [ ! "$(docker images -q zamafhe/concrete-ml:latest 2> /dev/null)" ]; then
-    # BUILD THE DOCKER IMAGE
-    echo "Building docker image"
-    poetry build && mkdir -p pkg && cp dist/* pkg/ && make release_docker
-    docker tag concrete-ml-release:latest zamafhe/concrete-ml:latest
-fi
-
-# shellcheck disable=SC2068
-for EXAMPLE in ${LIST_OF_USE_CASES[@]}
-do
-    EXAMPLE_NAME=$(basename "${EXAMPLE}")
-
-    if [ -f "${EXAMPLE}/Makefile" ]; then
-        echo "*** Processing example ${EXAMPLE_NAME}"
-    else
-        continue
+check_directory_exists() {
+    if [ ! -d "$1" ]; then
+        echo "Error: '$use_case_dir_name' directory must be present in the Concrete ML source root."
+        exit 1
     fi
+}
 
-    # Setup a new venv
-    VENV_PATH="/tmp/virtualenv_${EXAMPLE_NAME}"
-    if [ -d "$VENV_PATH" ]; then
-        echo " - VirtualEnv already exists, deleting the old one"
-        rm -rf "$VENV_PATH"
+check_clean_git_status() {
+    if git ls-files --others --exclude-standard | grep -q "$1"; then
+        echo "Error: This script must be run in a clean clone of the Concrete ML repo."
+        echo "Untracked files detected in $1."
+        echo "List untracked files with: git ls-files --others --exclude-standard | grep $1"
+        echo "Remove untracked files with: git clean -fdx $1"
+        exit 1
     fi
-    virtualenv -q "$VENV_PATH"
-    echo " - VirtualEnv created at $VENV_PATH"
-    # shellcheck disable=SC1090,SC1091
-    source "${VENV_PATH}/bin/activate"
-    # Install Concrete ML
-    set +e
-    cd "$CML_DIR"
-    pip install -e . &> "/tmp/log_cml_pip_${EXAMPLE_NAME}"
-    hresult=$?
-    if [ $hresult -ne 0 ]; then
-        echo "Could not install Concrete ML in the virtualenv, see /tmp/log_cml_pip_${EXAMPLE_NAME}"
-        rm -rf "$VENV_PATH"
-        continue
-    fi
-    set -e
-    echo " - Concrete ML installed in $VENV_PATH"
+}
 
-    # Install example requirements
-    cd "$EXAMPLE"
+setup_virtualenv() {
+    local venv_path="/tmp/virtualenv_$1"
+    echo "Setting up virtual environment for $1..."
+    rm -rf "$venv_path"  # Ensure a clean environment
+    python3 -m venv "$venv_path"
+    source "${venv_path}/bin/activate"
+    echo "Virtual environment created at $venv_path."
+}
+
+install_concrete_ml() {
+    pip install -U pip setuptools wheel
+    pip install -e . || return 1
+    echo "Concrete ML installed."
+}
+
+install_requirements() {
     if [ -f "requirements.txt" ]; then
-        set +e
-        pip install -r requirements.txt &> "/tmp/log_reqs_${EXAMPLE_NAME}"
-        hresult=$?
-        set -e
-        if [ $hresult -ne 0 ]; then
-            echo "Could not install Concrete ML in the virtualenv, see /tmp/log_reqs_${EXAMPLE_NAME}"
-            rm -rf "$VENV_PATH"
-            continue
-        fi     
-        echo " - Requirements installed in $VENV_PATH"
+        pip install -r requirements.txt || return 1
+        echo "Requirements installed."
     fi
-    
+}
+
+run_example() {
+    local example_dir=$1
+    local example_name=$(basename "$example_dir")
+
+    if [ ! -f "${example_dir}/Makefile" ]; then
+        return
+    fi
+
+    echo "*** Processing example $example_name ***"
+    setup_virtualenv "$example_name"
+    cd "$current_dir" || return
+    install_concrete_ml || return
+    cd "$example_dir" || return
+    install_requirements || return
+
     set +e
-    # Strip colors from the error output before piping to the log files
-    # Swap stderr and stdout, all output of jupyter execution is in stderr
-    # The information about time spent running the notebook is in stdout
-    # The following will pipe the stderr to the regex so that it 
-    # ends up in the log file.
-    # The timing shows in the terminal
-    USE_CASE_DIR=$USE_CASE_DIR make 3>&2 2>&1 1>&3- | perl -pe 's/\e([^\[\]]|\[.*?[a-zA-Z]|\].*?\a)//g' > "/tmp/log_${EXAMPLE_NAME}"
-
-    # Neet to check the result of execution of the make command (ignore the results 
-    # of the other commands in the pipe)
-    hresult="${PIPESTATUS[0]}"
-    if [ "$hresult" -ne 0 ]; then
-        echo "Error while running example ${EXAMPLE_NAME} see /tmp/log_${EXAMPLE_NAME}"
+    USE_CASE_DIR=$use_case_dir make 3>&2 2>&1 1>&3- | tee /dev/tty | perl -pe 's/\e[^\[\]]*\[.*?[a-zA-Z]|\].*?\a//g'
+    local result="${PIPESTATUS[0]}"
+    set -e
+    if [ "$result" -ne 0 ]; then
+        echo "Error while running example $example_name."
+        failed_examples+=("$example_name")
+    else
+        success_examples+=("$example_name")
     fi
-    set -e             
+    deactivate
+    rm -rf "/tmp/virtualenv_$example_name"
+}
 
-    # Remove the virtualenv
-    rm -rf "$VENV_PATH"
-done
+print_summary() {
+    echo
+    echo "Summary:"
+    echo "Successes: ${#success_examples[@]}"
+    for example in "${success_examples[@]}"; do
+        echo "  - $example"
+    done
+    echo "Failures: ${#failed_examples[@]}"
+    for example in "${failed_examples[@]}"; do
+        echo "  - $example"
+    done
+}
+
+main() {
+    check_directory_exists "$use_case_dir"
+    check_clean_git_status "$use_case_dir_name"
+
+    declare -a success_examples
+    declare -a failed_examples
+
+    if [[ -z "${USE_CASE}" ]]; then
+        LIST_OF_USE_CASES=($(find "$use_case_dir/" -mindepth 1 -maxdepth 2 -type d | grep -v checkpoints | sort))
+    else
+        LIST_OF_USE_CASES=("${use_case_dir}/${USE_CASE}")
+    fi
+
+    for use_case in "${LIST_OF_USE_CASES[@]}"; do
+        run_example "$use_case"
+    done
+
+    print_summary
+
+    if [ ${#failed_examples[@]} -ne 0 ]; then
+        exit 1
+    fi
+}
+
+main "$@"

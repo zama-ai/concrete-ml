@@ -1,0 +1,126 @@
+name: Run Use Case Examples
+on:
+  push:
+  # workflow_dispatch: 
+  # schedule:
+  #   - cron: '0 0 * * MON'  # Scheduled trigger every Monday at midnight
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+jobs:
+  start-runner-linux:
+    name: Start EC2 runner
+    runs-on: ubuntu-20.04
+    outputs:
+      label-38: ${{ steps.start-ec2-runner-38.outputs.label }}
+      ec2-instance-id-38: ${{ steps.start-ec2-runner-38.outputs.ec2-instance-id || '' }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Start EC2 runner python 38
+        id: start-ec2-runner-38
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        with:
+          mode: start
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
+          ec2-instance-type: "m6i.metal"
+          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
+          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
+
+  run-use-case-examples:
+    needs: [start-runner-linux]
+    runs-on: ${{ needs.start-runner-linux.outputs.label-38 }}
+    container:
+      image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set up Environment
+        run: |
+          # Setup commands if any, for example, installing dependencies, etc.
+          apt-get update && apt-get install -y python3-venv make && apt install git git-lfs -y
+
+      - name: Run Use Case Examples Script
+        run: |
+          chmod +x ./script/make_utils/run_use_case_examples.sh
+          ./script/make_utils/run_use_case_examples.sh
+
+  stop-runner-linux:
+    name: Stop EC2 runner
+    needs: [run-use-case-examples, start-runner-linux]
+    runs-on: ubuntu-20.04
+    if: ${{ always() && (needs.start-runner-linux.result != 'skipped') }}
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@8c3f20df09ac63af7b3ae3d7c91f105f857d8497
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop EC2 runner python 38
+        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        if: ${{ always() && needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+        with:
+          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
+          label: ${{ needs.start-runner-linux.outputs.label-38 }}
+          ec2-instance-id: ${{ needs.start-runner-linux.outputs.ec2-instance-id-38 }}
+          mode: stop
+
+  send-report:
+    if: ${{ always() }}
+    needs:
+      [
+        start-runner-linux,
+        run-use-case-examples,
+        stop-runner-linux,
+      ]
+    name: Send Slack notification
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2 # Update to the latest stable version
+
+      - name: Prepare whole job status
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          echo "${NEEDS_JSON}" > /tmp/needs_context.json
+          JOB_STATUS=$(python3 ./script/actions_utils/actions_combine_status.py \
+          --needs_context_json /tmp/needs_context.json)
+          echo "JOB_STATUS=${JOB_STATUS}" >> "$GITHUB_ENV"
+
+      - name: Slack Notification
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: rtCamp/action-slack-notify@b24d75fe0e728a4bf9fc42ee217caa686d141ee8
+        env:
+          SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
+          SLACK_COLOR: ${{ env.JOB_STATUS || 'failure' }}
+          SLACK_MESSAGE: "Full run of use case examples finished with status ${{ env.JOB_STATUS || 'failure' }} \
+            (${{ env.ACTION_RUN_URL }})\n\
+            - start-runner-linux: ${{ needs.start-runner-linux.result || 'Did not run.'}}\n\n\
+            - run-use-case-examples: ${{ needs.run-use-case-examples.result || 'Did not run.' }}\n\n\
+            - stop-runner-linux: ${{ needs.stop-runner-linux.result || 'Did not run.'}}"
+          SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
