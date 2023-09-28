@@ -2093,7 +2093,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         topk_labels = []
         for query in X:
-            topk_labels.append(BaseEstimator.predict(self, query[None], fhe))
+            topk_labels.append(BaseEstimator.predict(self, query[None], fhe=fhe))
 
         y_preds = self.post_processing(numpy.array(topk_labels))
 
