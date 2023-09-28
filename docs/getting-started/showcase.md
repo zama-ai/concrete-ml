@@ -49,8 +49,8 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          </td>
          <td></td>
          <!--- start -->
-         <td><a href="../.gitbook/assets/demo_mnist.png">titanic.png</a></td>
-         <td><a href="../../use_case_examples/titanic">use_case_examples/titanic</a></td>
+         <td><a href="../.gitbook/assets/demo_mnist.png">mnist.png</a></td>
+         <td><a href="../../use_case_examples/federated_learning">use_case_examples/federated_learning</a></td>
          <!--- end -->
       </tr>
       <tr>
