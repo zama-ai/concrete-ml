@@ -9,8 +9,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy
 import onnx
 import torch
-from concrete.fhe import ParameterSelectionStrategy
-from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
 
@@ -584,35 +582,3 @@ def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool
         supported_dtypes[dtype] = supported_dtype
 
     return all(_is_of_dtype(value, supported_dtypes) for value in values)
-
-
-# Remove this function once Concrete Python fixes the multi-parameter bug with KNN
-# circuits
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3978
-def force_mono_parameter_in_configuration(configuration: Optional[Configuration], **kwargs):
-    """Force configuration to mono-parameter strategy.
-
-    If the given Configuration instance is None, build a new instance with mono-parameter and the
-    additional keyword arguments.
-
-    Args:
-        configuration (Optional[Configuration]): The configuration to consider.
-        **kwargs: Additional parameters to use for instantiating a new Configuration instance, if
-            configuration is None.
-
-    Returns:
-        configuration (Configuration): A configuration with mono-parameter strategy.
-    """
-    assert (
-        "parameter_selection_strategy" not in kwargs
-    ), "Please do not provide a parameter_selection_strategy parameter as it will be set to MONO."
-
-    if configuration is None:
-        configuration = Configuration(
-            parameter_selection_strategy=ParameterSelectionStrategy.MONO, **kwargs
-        )
-
-    else:
-        configuration.parameter_selection_strategy = ParameterSelectionStrategy.MONO
-
-    return configuration
