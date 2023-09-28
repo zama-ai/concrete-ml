@@ -43,7 +43,13 @@ def module_names_parser(string: str) -> List[str]:
 
 
 if __name__ == "__main__":
-    arg_parser = argparse.ArgumentParser()
+    arg_parser = argparse.ArgumentParser(description="Showcase for the hybrid model converter.")
+    arg_parser.add_argument(
+        "--model-name",
+        default="gpt2",
+        type=str,
+        help="The name of the model to compile. Default is 'gpt2'.",
+    )
     arg_parser.add_argument(
         "--module-names",
         dest="module_names",
@@ -59,14 +65,16 @@ Examples for GPT-2 model:
 These names might vary according to your model.
 """,
     )
-    module_names = arg_parser.parse_args().module_names
+
+    args = arg_parser.parse_args()
+    module_names = args.module_names
+    model_name = args.model_name
 
     # Compilation should be done on CPU
     device = "cpu"
     print(f"Using device: {device}")
 
     # Get GPT2 from Hugging Face
-    model_name = "gpt2"
     model_name_no_special_char = model_name.replace("/", "_")
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     model = AutoModelForCausalLM.from_pretrained(
