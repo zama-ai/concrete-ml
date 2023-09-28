@@ -118,11 +118,9 @@ def main(args):
             input_set,
             n_bits={"model_inputs": 8, "model_outputs": 8},
             configuration=cfg,
-            rounding_threshold_bits=(
-                {"n_bits": rounding_threshold_bits, "method": "EXACT"}
-                if rounding_threshold_bits is not None
-                else None
-            ),
+            rounding_threshold_bits={"n_bits": rounding_threshold_bits, "method": "APPROXIMATE"}
+            if rounding_threshold_bits is not None
+            else None,
         )
 
         # Print max bit-width in the circuit
@@ -141,7 +139,7 @@ if __name__ == "__main__":
         "--rounding_threshold_bits",
         nargs="+",
         type=int,
-        default=[None],
+        default=[6],
         help="Number of bits to target with rounding.",
     )
     parser.add_argument(

@@ -255,7 +255,7 @@ def plot_baseline(param: Dict, data: DataLoader, device: str) -> None:
     checkpoint = torch.load(f"{param['dir']}/{param['pre_trained_path']}", map_location=device)
     fp32_vgg = Fp32VGG11(param["output_size"])
     fp32_vgg.load_state_dict(checkpoint)
-    baseline = torch_inference(fp32_vgg, data, param, device)
+    baseline = torch_inference(fp32_vgg, data, device)
 
     plt.plot(
         range(len(param["accuracy_test"])),
@@ -458,6 +458,8 @@ def fhe_compatibility(model: Callable, data: DataLoader) -> Callable:
         torch_inputset=data,
         show_mlir=False,
         output_onnx_file="test.onnx",
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4391
+        rounding_threshold_bits=6,
     )
 
     return qmodel

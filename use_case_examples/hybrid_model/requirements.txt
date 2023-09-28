@@ -1,4 +1,6 @@
-datasets==2.14.4
+concrete-ml
+accelerate
+datasets
 apache_beam==2.49.0 
 mwparserfromhell==0.6.4
 loguru==0.7.0
