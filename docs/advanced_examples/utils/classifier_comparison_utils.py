@@ -154,7 +154,7 @@ def make_classifier_comparison(
 
             # Compute the predictions in FHE using the Concrete ML model
             time_begin = time.time()
-            concrete_y_pred = concrete_model.predict(X_test, fhe="simulate")
+            concrete_y_pred = concrete_model.predict(X_test, fhe="execute")
 
             if verbose:
                 print(
