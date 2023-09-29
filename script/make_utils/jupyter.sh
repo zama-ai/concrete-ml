@@ -57,6 +57,11 @@ elif [ "$WHAT_TO_DO" == "run_all_notebooks" ]
 then
     echo "Refreshing notebooks"
 
+    SUCCESSFUL_NOTEBOOKS="./successful_notebooks.txt"
+    FAILED_NOTEBOOKS="./failed_notebooks.txt"
+    echo "" > "${SUCCESSFUL_NOTEBOOKS}"
+    echo "" > "${FAILED_NOTEBOOKS}"
+
     # shellcheck disable=SC2207
     LIST_OF_NOTEBOOKS=($(find ./docs/ -type f -name "*.ipynb" | grep -v ".nbconvert" | grep -v "_build" | grep -v "ipynb_checkpoints"))
 
@@ -75,7 +80,11 @@ then
         echo "Refreshing ${NOTEBOOK}"
 
         START=$(date +%s)
-        jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"
+        if jupyter nbconvert --to notebook --inplace --execute "${NOTEBOOK}"; then
+            echo "${NOTEBOOK}" >> "${SUCCESSFUL_NOTEBOOKS}"
+        else
+            echo "${NOTEBOOK}" >> "${FAILED_NOTEBOOKS}"
+        fi
         END=$(date +%s)
         TIME_EXEC=$((END-START))
         print_time_execution "${NOTEBOOK}" ${TIME_EXEC}

@@ -89,6 +89,15 @@ jobs:
         run: |
           make jupyter_execute
 
+      - name: Prepare PR Body
+        run: |
+          SUCCESSFUL_NOTEBOOKS=$(cat ./successful_notebooks.txt)
+          FAILED_NOTEBOOKS=$(cat ./failed_notebooks.txt)
+          PR_BODY="Automatic PR with notebook refresh for ${{ github.ref_name }}.\n"
+          PR_BODY+="## Successful Notebooks\n$SUCCESSFUL_NOTEBOOKS\n"
+          PR_BODY+="## Failed Notebooks\n$FAILED_NOTEBOOKS"
+          echo "PR_BODY=${PR_BODY}" >> "$GITHUB_ENV"
+
       - name: Open PR
         uses: peter-evans/create-pull-request@284f54f989303d2699d373481a0cfa13ad5a6666
         with:
@@ -97,10 +106,9 @@ jobs:
           branch: "refresh-notebooks-for-${{ github.ref_name }}"
           base: "${{ github.ref_name }}"
           title: "Refresh notebooks for ${{ github.ref_name }}"
-          body: "Automatic PR with notebooks refresh for ${{ github.ref_name }}."
+          body: ${{ env.PR_BODY }}
           add-paths: |
             docs/**/*.ipynb
-
 
   stop-runner-linux:
     name: Stop EC2 runner
