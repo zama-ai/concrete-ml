@@ -1,5 +1,6 @@
 """Showcase for the hybrid model converter."""
 import json
+import os
 import time
 from pathlib import Path
 
@@ -8,6 +9,12 @@ from torch.backends import mps
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
 
 from concrete.ml.torch.hybrid_model import HybridFHEMode, HybridFHEModel
+
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+import tensorflow
+
+tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
 if __name__ == "__main__":
     # Load configuration dumped by compilation
