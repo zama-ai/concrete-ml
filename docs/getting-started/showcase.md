@@ -41,6 +41,19 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <!--- end -->
       </tr>
       <tr>
+         <td><strong>Federated Learning and Private Inference</strong></td>
+         <td>
+            <p></p>
+            <p>Use federated learning to train a Logistic Regression while preserving training data confidentiality. 
+            Import the model into Concrete ML and perform encrypted prediction</p>
+         </td>
+         <td></td>
+         <!--- start -->
+         <td><a href="../.gitbook/assets/demo_mnist.png">mnist.png</a></td>
+         <td><a href="../../use_case_examples/federated_learning">use_case_examples/federated_learning</a></td>
+         <!--- end -->
+      </tr>
+      <tr>
          <td><strong>Neural Network Fine-tuning</strong> </td>
          <td>
             <p></p>
