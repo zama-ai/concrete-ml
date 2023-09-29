@@ -139,6 +139,19 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     return model, x
 
 
+def get_n_bits_non_correctness(model_class):
+    """Get the number of bits to use for non correctness related tests."""
+
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = 2
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    return n_bits
+
+
 def check_correctness_with_sklearn(
     model_class,
     x,
@@ -488,16 +501,6 @@ def check_offset(model_class, n_bits, x, y):
 def check_inference_methods(model, model_class, x, check_float_array_equal):
     """Check that all inference methods provided are coherent between clear and FHE executions."""
 
-    # Check outputs from the 'predict' method (for all models)
-    y_pred_clear = model.predict(x)
-    y_pred_simulated = model.predict(x, fhe="simulate")
-
-    assert y_pred_clear.shape == y_pred_simulated.shape, (
-        "Method 'predict' from Concrete ML outputs different shapes when executed in the clear and "
-        "with simulation."
-    )
-    check_float_array_equal(y_pred_clear, y_pred_simulated)
-
     # skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
     # not. We decided to follow Scikit-Learn's API as we build most of our tools on this library.
     # However, our models are still directly inheriting from skorch's classes, which makes this
@@ -527,18 +530,12 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
         ):
             model.predict_proba(x)
 
+    # Only check 'predict_proba' and not 'predict' as some issues were found with the argmax not
+    # being consistent because of precision errors with epsilon magnitude. This argmax should be
+    # done in the clear the same way for both anyway. Ultimately, we would want to only compare the
+    # circuit's quantized outputs against the ones computed in the clear but built-in models do not
+    # currently provide the necessary API for that
     elif is_classifier_or_partial_classifier(model_class):
-
-        # Check outputs from the 'predict_proba' method (for all classifiers,
-        # except KNeighborsClassifier)
-        y_proba_clear = model.predict_proba(x)
-        y_proba_simulated = model.predict_proba(x, fhe="simulate")
-
-        assert y_proba_clear.shape == y_proba_simulated.shape, (
-            "Method 'predict_proba' from Concrete ML outputs different shapes when executed"
-            "in the clear and with simulation."
-        )
-        check_float_array_equal(y_proba_clear, y_proba_simulated)
 
         if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
 
@@ -551,6 +548,29 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
                 "in the clear and with simulation."
             )
             check_float_array_equal(y_scores_clear, y_scores_simulated)
+
+        else:
+            # Check outputs from the 'predict_proba' method (for all non-linear classifiers,
+            # except KNeighborsClassifier)
+            y_proba_clear = model.predict_proba(x)
+            y_proba_simulated = model.predict_proba(x, fhe="simulate")
+
+            assert y_proba_clear.shape == y_proba_simulated.shape, (
+                "Method 'predict_proba' from Concrete ML outputs different shapes when executed"
+                "in the clear and with simulation."
+            )
+            check_float_array_equal(y_proba_clear, y_proba_simulated)
+
+    else:
+        # Check outputs from the 'predict' method (for all regressors and KNeighborsClassifier)
+        y_pred_clear = model.predict(x)
+        y_pred_simulated = model.predict(x, fhe="simulate")
+
+        assert y_pred_clear.shape == y_pred_simulated.shape, (
+            "Method 'predict' from Concrete ML outputs different shapes when executed in the clear "
+            "and with simulation."
+        )
+        check_float_array_equal(y_pred_clear, y_pred_simulated)
 
 
 def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
@@ -1251,14 +1271,7 @@ def test_serialization(
     verbose=True,
 ):
     """Test Serialization."""
-    # This test only checks the serialization's functionalities, so there is no need to test it
-    # over several n_bits
-    if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = 2
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1341,13 +1354,7 @@ def test_input_support(
     verbose=True,
 ):
     """Test all models with Pandas, List or Torch inputs."""
-
-    if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = 2
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1357,7 +1364,7 @@ def test_input_support(
     check_input_support(model_class, n_bits, default_configuration, x, y, input_type)
 
 
-@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 def test_inference_methods(
     model_class,
     parameters,
@@ -1368,12 +1375,7 @@ def test_inference_methods(
     verbose=True,
 ):
     """Test inference methods."""
-    if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = 2
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1543,12 +1545,7 @@ def test_fitted_compiled_error_raises(
     verbose=True,
 ):
     """Test Fit and Compile error raises."""
-    if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = 2
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1578,12 +1575,7 @@ def test_p_error_global_p_error_simulation(
     The test checks that models compiled with a large p_error value predicts very different results
     with simulation or in FHE compared to the expected clear quantized ones.
     """
-    if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = 2
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
