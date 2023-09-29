@@ -75,19 +75,10 @@ N_ALLOWED_FHE_RUN = 5
 # sufficiently number of bits for precision
 N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS = 26
 
-# We check correctness with check_is_good_execution_for_cml_vs_circuit or predict in
-# fhe="disable" only if n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS. This is
-# because we need sufficiently number of bits for precision
-N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS = 6
-
 # We never do checks with check_is_good_execution_for_cml_vs_circuit if
 # n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE. This is because computations are very
 # slow
 N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE = 17
-
-assert (
-    N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS <= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE
-)
 
 # If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
 # returned by fit_benchmark (the Concrete ML model and the scikit-learn model) are equivalent
@@ -99,9 +90,9 @@ N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS = 11
 
 # n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
-# FHE which are not too long (relation with N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS and
-# N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE). 26 is in relation with
-# N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with check_correctness_with_sklearn
+# FHE which are not too long (relation with N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE).
+# 26 is in relation with N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with
+# check_correctness_with_sklearn
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 
@@ -119,7 +110,7 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
         model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
     ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
-            pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
+            pytest.skip("Skipping some tests in non-weekly builds")
 
     # Get the data-set. The data generation is seeded in load_data.
     x, y = load_data(model_class, **parameters)
@@ -674,11 +665,6 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     ):
         model.predict_proba(x)
 
-    # If n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
-    # as there won't be any crypto parameters
-    if n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
-        return
-
     model.compile(x, default_configuration)
 
     # Make sure `predict` is working when FHE is disabled
@@ -903,9 +889,13 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
         with pytest.raises(AttributeError, match=".* model is not fitted.*"):
             model.predict(x)
 
-    if is_classifier_or_partial_classifier(model_class):
-        if get_model_name(model) == "KNeighborsClassifier":
-            pytest.skip("predict_proba not implement for KNN")
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model_class)
+        and get_model_name(model) != "KNeighborsClassifier"
+    ):
+
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
         if not is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
@@ -1263,7 +1253,12 @@ def test_serialization(
     """Test Serialization."""
     # This test only checks the serialization's functionalities, so there is no need to test it
     # over several n_bits
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = 2
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1335,15 +1330,10 @@ def test_offset(
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
-@pytest.mark.parametrize(
-    "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
-)
 @pytest.mark.parametrize("input_type", ["numpy", "torch", "pandas", "list"])
 def test_input_support(
     model_class,
     parameters,
-    n_bits,
     load_data,
     input_type,
     default_configuration,
@@ -1351,6 +1341,14 @@ def test_input_support(
     verbose=True,
 ):
     """Test all models with Pandas, List or Torch inputs."""
+
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = 2
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
+
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
@@ -1370,7 +1368,12 @@ def test_inference_methods(
     verbose=True,
 ):
     """Test inference methods."""
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = 2
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1421,15 +1424,12 @@ def test_pipeline(
 # limit to find crypto parameters for linear models
 # make sure we only compile below that bit-width.
 # Additionally, prevent computations in FHE with too many bits
-# Finally, consider at least N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS in order to be sure
-# to reach proper correctness
 @pytest.mark.parametrize(
     "n_bits",
     [
         n_bits
         for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS
-        <= n_bits
+        if n_bits
         < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
     ],
 )
@@ -1447,10 +1447,10 @@ def test_predict_correctness(
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
 
-    # KNN currently only works for small quantization bit numbers
+    # KNN can only be compiled with small quantization bit numbers for now
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
     if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
-        pytest.skip("KNeighborsClassifier models can only run with 4 bits at most.")
+        pytest.skip("KNeighborsClassifier models can only run with 5 bits at most.")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1508,10 +1508,10 @@ def test_separated_inference(
 ):
     """Test prediction correctness between clear quantized and FHE simulation or execution."""
 
-    # KNN currently only works for small quantization bit numbers
+    # KNN can only be compiled with small quantization bit numbers for now
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
     if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
-        pytest.skip("KNeighborsClassifier models can only run with 4 bits at most.")
+        pytest.skip("KNeighborsClassifier models can only run with 5 bits at most.")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1543,7 +1543,12 @@ def test_fitted_compiled_error_raises(
     verbose=True,
 ):
     """Test Fit and Compile error raises."""
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = 2
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1554,6 +1559,8 @@ def test_fitted_compiled_error_raises(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+# Enable support for global_p_error testing if possible
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
 @pytest.mark.parametrize(
     "error_param",
     [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
@@ -1568,19 +1575,13 @@ def test_p_error_global_p_error_simulation(
 ):
     """Test p_error and global_p_error simulation.
 
-    Description:
-        A model is compiled with a large p_error. The test then checks the predictions for
-        simulated and fully homomorphic encryption (FHE) inference, and asserts
-        that the predictions for both are different from the expected predictions.
+    The test checks that models compiled with a large p_error value predicts very different results
+    with simulation or in FHE compared to the expected clear quantized ones.
     """
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
-    if "global_p_error" in error_param:
-        pytest.skip("global_p_error behave very differently depending on the type of model.")
-
     if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN works only for smaller quantization bits
+        # KNN can only be compiled with small quantization bit numbers for now
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = min([2] + N_BITS_REGULAR_BUILDS)
+        n_bits = 2
     else:
         n_bits = min(N_BITS_REGULAR_BUILDS)
 
@@ -1595,6 +1596,7 @@ def test_p_error_global_p_error_simulation(
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
+
         # KNeighborsClassifier does not provide a predict_proba method for now
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         predict_function = (
@@ -1603,6 +1605,7 @@ def test_p_error_global_p_error_simulation(
             and get_model_name(model) != "KNeighborsClassifier"
             else model.predict
         )
+
         y_expected = predict_function(x, fhe="disable")
         for i in range(max_iterations):
             y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
