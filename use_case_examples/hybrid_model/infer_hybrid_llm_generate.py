@@ -12,9 +12,9 @@ from concrete.ml.torch.hybrid_model import HybridFHEMode, HybridFHEModel
 
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-import tensorflow as tf
+import tensorflow
 
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
+tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
 if __name__ == "__main__":
     # Load configuration dumped by compilation
