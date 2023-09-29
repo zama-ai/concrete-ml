@@ -1,6 +1,7 @@
 name: Refresh Notebooks
 on:
-  workflow_dispatch:
+  push:
+  # workflow_dispatch:
 
 concurrency:
   group: ${{ github.ref }}
