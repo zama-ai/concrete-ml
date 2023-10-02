@@ -92,11 +92,11 @@ jobs:
 
       - name: Prepare PR Body
         run: |
-          SUCCESSFUL_NOTEBOOKS=$(cat ./successful_notebooks.txt)
-          FAILED_NOTEBOOKS=$(cat ./failed_notebooks.txt)
-          PR_BODY="Automatic PR with notebook refresh for ${{ github.ref_name }}.\n"
-          PR_BODY+="## Successful Notebooks\n$SUCCESSFUL_NOTEBOOKS\n"
-          PR_BODY+="## Failed Notebooks\n$FAILED_NOTEBOOKS"
+          SUCCESSFUL_NOTEBOOKS=$(cat ./successful_notebooks.txt | tr '\n' ' ' | sed 's/ /\\n- /g')
+          FAILED_NOTEBOOKS=$(cat ./failed_notebooks.txt | tr '\n' ' ' | sed 's/ /\\n- /g')
+          PR_BODY="Automatic PR with notebook refresh for ${{ github.ref_name }}.\\n"
+          PR_BODY+="## Successful Notebooks\\n- $SUCCESSFUL_NOTEBOOKS\\n"
+          PR_BODY+="## Failed Notebooks\\n- $FAILED_NOTEBOOKS"
           echo "PR_BODY=${PR_BODY}" >> "$GITHUB_ENV"
 
       - name: Open PR
