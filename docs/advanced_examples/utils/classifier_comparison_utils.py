@@ -32,7 +32,7 @@ def make_classifier_comparison(
 ):
 
     h = 0.04  # Step size in the mesh
-    n_samples = 25 if get_model_name(classifiers[0][0]) == "KNeighborsClassifier" else 200
+    n_samples = 20 if get_model_name(classifiers[0][0]) == "KNeighborsClassifier" else 200
 
     X, y = make_classification(
         n_samples=n_samples,
@@ -124,7 +124,7 @@ def make_classifier_comparison(
 
             # Compile the Concrete ML model
             if get_model_name(classifier) == "KNeighborsClassifier":
-                n_compile_samples = 20
+                n_compile_samples = min(X_train.shape[0], 20)
             else:
                 n_compile_samples = X_train.shape[0]
 
