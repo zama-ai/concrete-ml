@@ -1759,7 +1759,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: int = 3, rounding_threshold_bits: int = 4):
+    def __init__(self, n_bits: int = 3):
         """Initialize the FHE knn model.
 
         Args:
@@ -1775,10 +1775,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._y: numpy.ndarray
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
-        # Number of bits to keep
-        self.rounding_threshold_bits = rounding_threshold_bits
-        self.rounder = cnp.AutoRounder(target_msbs=self.rounding_threshold_bits)
-
         BaseEstimator.__init__(self)
 
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
@@ -1905,29 +1901,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         compiler = Compiler(inference_to_compile, {"q_X": "encrypted"})
 
         return compiler
-
-    # def compile(self, *args, **kwargs) -> Circuit:
-    #     def force_auto_adjust_rounder_in_configuration(configuration):
-    #         if configuration is None:
-    #             configuration = Configuration(auto_adjust_rounders=True, **kwargs)
-    #         else:
-    #             configuration.auto_adjust_rounders = True
-    #         return configuration
-
-    #     # If a configuration instance is given as a positional parameter, set auto_adjust_rounder
-    #     if len(args) >= 2:
-    #         configuration = force_auto_adjust_rounder_in_configuration(args[1])
-    #         args_list = list(args)
-    #         args_list[1] = configuration
-    #         args = tuple(args_list)
-
-    #     # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
-    #     # auto_adjust_rounder
-    #     else:
-    #         configuration = kwargs.get("configuration", None)
-    #         kwargs["configuration"] = force_auto_adjust_rounder_in_configuration(configuration)
-
-    #     return BaseEstimator.compile(self, *args, **kwargs)
 
     @staticmethod
     def majority_vote(nearest_classes: numpy.ndarray):
@@ -2080,11 +2053,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # 1. Pairwise_euclidiean distance
         with cnp.tag("Original distance"):
             distance_matrix = pairwise_euclidean_distance(q_X)
-
-        # Reduce the bit-width precion to get smaller accumulators
-        with cnp.tag("clipped distance"):
-            #distance_matrix = cnp.round_bit_pattern(distance_matrix, lsbs_to_remove=self.rounder)
-            distance_matrix = numpy.array([numpy.minimum(x, 2**self.rounding_threshold_bits) for x in distance_matrix[0]])
 
         # The square root in the Euclidean distance calculation is not applied to speed up FHE
         # computations.

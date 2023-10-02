@@ -24,15 +24,24 @@ from sklearn.preprocessing import StandardScaler
 from concrete.ml.common.utils import get_model_name
 from concrete.ml.sklearn import DecisionTreeClassifier
 
-ALWAYS_USE_SIM = False
 
 # pylint: disable=too-many-locals,too-many-statements,too-many-branches,invalid-name
 def make_classifier_comparison(
-    title, classifiers, decision_level, verbose=False, show_score=False, save_plot=False
+    title, classifiers, decision_level, verbose=False, fhe="execute", save_plot=False
 ):
 
-    h = 0.04  # Step size in the mesh
-    n_samples = 20 if get_model_name(classifiers[0][0]) == "KNeighborsClassifier" else 200
+    h = 0.05  # Step size in the mesh
+    if get_model_name(classifiers[0][0]) == "KNeighborsClassifier":
+        n_samples = 20
+        use_simulation = True
+        n_compile_samples = 15
+    else: 
+        n_samples = 200
+        use_simulation = False
+        n_compile_samples = -1
+
+    if verbose:
+        print(f"Data-set size: {n_samples} samples.\n")
 
     X, y = make_classification(
         n_samples=n_samples,
@@ -123,14 +132,6 @@ def make_classifier_comparison(
             sklearn_y_pred = sklearn_model.predict(X_test)
 
             # Compile the Concrete ML model
-            if get_model_name(classifier) == "KNeighborsClassifier":
-                n_compile_samples = min(X_train.shape[0], 20)
-            else:
-                n_compile_samples = X_train.shape[0]
-
-            if verbose:
-                print(f"Inputset has: {n_compile_samples} samples used for the compilationg.\n")
-
             time_begin = time.time()
             circuit = concrete_model.compile(X_train[:n_compile_samples])
 
@@ -138,7 +139,7 @@ def make_classifier_comparison(
                 print(f"Compilation time: {(time.time() - time_begin):.4f} seconds\n")
 
             # If the prediction are done in FHE, generate the key
-            if not ALWAYS_USE_SIM:
+            if not use_simulation:
 
                 if verbose:
                     print(
@@ -154,11 +155,11 @@ def make_classifier_comparison(
 
             # Compute the predictions in FHE using the Concrete ML model
             time_begin = time.time()
-            concrete_y_pred = concrete_model.predict(X_test, fhe="execute")
+            concrete_y_pred = concrete_model.predict(X_test, fhe=fhe)
 
             if verbose:
                 print(
-                    f"FHE Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    f"Execution time in `{fhe}` mode: {(time.time() - time_begin) / len(X_test):.4f} "
                     "seconds per sample\n"
                 )
 
@@ -172,7 +173,7 @@ def make_classifier_comparison(
 
             # Compile the Concrete ML model with FHE simulation mode to evaluate the domain grid
             circuit = concrete_model.compile(
-                X_train,
+                X_train[:n_compile_samples],
             )
 
             # If the model is not a tree-based model, retrieve the maximum integer bit-width
@@ -249,7 +250,7 @@ def make_classifier_comparison(
 
                 if i == 0:
                     ax.set_title(model_name + f" ({framework})", fontsize=font_size_text)
-                if show_score:
+                if fhe == "execute":
                     ax.text(
                         xx.max() - 0.3,
                         yy.min() + 0.3,
