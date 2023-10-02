@@ -15,7 +15,7 @@ WHAT_TO_DO="open"
 
 # Create a list of notebooks with long execution times in order not to consider them when refreshing
 # all notebooks at the same time.
-LONG_EXECUTION_TIMES_NOTEBOOKS=()
+LONG_EXECUTION_TIMES_NOTEBOOKS=("ClassifierComparison.ipynb")
 
 while [ -n "$1" ]
 do
