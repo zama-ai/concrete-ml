@@ -19,7 +19,7 @@ on:
       - 'docs/developer-guide/api/**'
 
 concurrency:
-  group: ${{ github.ref }}
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
   cancel-in-progress: false
 
 env:

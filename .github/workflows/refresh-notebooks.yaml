@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
+  cancel-in-progress: false
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

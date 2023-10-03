@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.ref }}
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
   cancel-in-progress: false
 
 jobs:
