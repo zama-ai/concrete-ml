@@ -70,7 +70,7 @@ jobs:
         run: |
           IS_PATCH="$(poetry run python ./script/make_utils/version_utils.py is_patch_release --version "$VERSION")"
 
-          if [[ "${IS_PATCH}" == "false" ]]; then
+          if [[ "${IS_PATCH}" == "true" ]]; then
 
             if [[ "${BRANCH_IS_RELEASE}" == "false" ]]; then
               echo "Patch release cannot be done: target branch is not a release branch"
