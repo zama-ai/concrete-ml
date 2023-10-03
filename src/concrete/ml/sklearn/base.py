@@ -2051,7 +2051,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # the argsort.
 
         topk_labels = topk_sorting(distance_matrix.flatten(), self._y)
-
         return numpy.expand_dims(topk_labels, axis=0)
 
     def compile(self, *args, **kwargs) -> Circuit:
@@ -2069,6 +2068,9 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         Returns:
             numpy.ndarray: The majority vote.
         """
+
+        self.topk = y_preds.squeeze()
+
         y_preds_processed = []
         for y in y_preds:
             vote = self.majority_vote(y.flatten())
