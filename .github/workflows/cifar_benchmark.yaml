@@ -120,7 +120,7 @@ jobs:
         if: github.event.inputs.benchmark == 'cifar-10-8b'
         run: |
           source .venv/bin/activate
-          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_brevitas_with_model_splitting/infer_fhe.py
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_with_model_splitting/infer_fhe.py
           python3 ./benchmarks/convert_cifar.py --model-name "8-bit-split-v0"
 
       # CIFAR-10-16b benchmark
@@ -128,7 +128,7 @@ jobs:
         if: github.event.inputs.benchmark == 'cifar-10-16b'
         run: |
           source .venv/bin/activate
-          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar_brevitas_training/evaluate_one_example_fhe.py
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
           python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
       - name: Upload results
