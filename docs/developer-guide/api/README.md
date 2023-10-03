@@ -229,7 +229,6 @@
 - [`utils.check_dtype_and_cast`](./concrete.ml.common.utils.md#function-check_dtype_and_cast): Convert any allowed type into an array and cast it if required.
 - [`utils.check_there_is_no_p_error_options_in_configuration`](./concrete.ml.common.utils.md#function-check_there_is_no_p_error_options_in_configuration): Check the user did not set p_error or global_p_error in configuration.
 - [`utils.compute_bits_precision`](./concrete.ml.common.utils.md#function-compute_bits_precision): Compute the number of bits required to represent x.
-- [`utils.force_mono_parameter_in_configuration`](./concrete.ml.common.utils.md#function-force_mono_parameter_in_configuration): Force configuration to mono-parameter strategy.
 - [`utils.generate_proxy_function`](./concrete.ml.common.utils.md#function-generate_proxy_function): Generate a proxy function for a function accepting only \*args type arguments.
 - [`utils.get_model_class`](./concrete.ml.common.utils.md#function-get_model_class): Return the class of the model (instantiated or not), which can be a partial() instance.
 - [`utils.get_model_name`](./concrete.ml.common.utils.md#function-get_model_name): Return the name of the model, which can be a partial() instance.
