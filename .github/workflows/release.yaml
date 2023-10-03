@@ -245,6 +245,7 @@ jobs:
       IS_PATCH: ${{ needs.release-checks.outputs.is_patch }}
       GIT_TAG: ${{ needs.release-checks.outputs.git_tag }}
       RELEASE_BRANCH_NAME: ${{ needs.release-checks.outputs.release_branch_name }}
+      TARGET_BRANCH_NAME: ${{ github.ref }}
 
     steps:
       - name: Import GPG
@@ -255,12 +256,14 @@ jobs:
           git_user_signingkey: true
           git_tag_gpgsign: true
 
-      # For non-rc and non-patch releases create the new release branch
-      - name: Create and push the release branch to public repository
+      # For non-rc and non-patch releases, create the new release branch
+      - name: Create the release branch
         if: env.IS_RC == 'false' && env.IS_PATCH == 'false'
         run: |
           git lfs fetch --all
           git checkout -b "${{ env.RELEASE_BRANCH_NAME }}"
+
+          echo "TARGET_BRANCH_NAME=${{ env.RELEASE_BRANCH_NAME }}" >> "$GITHUB_ENV"
 
       # Create the tag related to the current version
       - name: Create tag
@@ -273,7 +276,7 @@ jobs:
         uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.BOT_TOKEN }}
-          branch: ${{ github.ref }}
+          branch: ${{ env.TARGET_BRANCH_NAME }}
           tags: true
   
   # This action creates docker and pypi images directly on the AWS EC2 instance
