@@ -18,9 +18,16 @@ on:
       - src/concrete/ml/version.py
       - 'docs/developer-guide/api/**'
 
+# We need to make sure that the concurrency group is not identical to the continuous-integration.yaml
+# one, else the release workflow will be canceled when calling that latter for tests. More 
+# specifically, we should avoid using the usual "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
+# group as the 'github.workflow' reference is shared between caller and called workflows, making
+# both workflows have the same concurrency group. Note that the problem happens because 
+# the continuous-integration.yaml workflow currently cancels all workflows from the same group that
+# are not triggered by a push targeting main, which is the case in the release process
 concurrency:
-  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
-  cancel-in-progress: false
+  group: "Release"
+  cancel-in-progress: true
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -216,7 +223,7 @@ jobs:
         run: |
           ./script/actions_utils/check_branch_not_remote.sh --branch_name "${{ env.RELEASE_BRANCH_NAME }}"
 
-  # The caller workflow's job (here 'release-tests') do not need to run on the current runner as 
+  # The caller workflow's job (here 'release-tests') does not need to run on the current runner as 
   # the reusable workflow (here 'continuous-integration.yaml') uses its own runner
   release-tests:
     name: Run tests
