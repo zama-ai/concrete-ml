@@ -33,7 +33,9 @@ fi
 git fetch --tags --force
 
 # If the tag name is already found remotely, exist with status 1
-if git ls-remote --tags origin | grep -q "${TAG_NAME}"; then
+# We make sure to grep the tag name as the end of a line in order to not detect rc-tags with regular 
+# tags (for example, to avoid that 'grep "1.2.0"' matches "1.2.0-rc0")
+if git ls-remote --tags origin | grep -q "${TAG_NAME}$"; then
     echo "Tag ${TAG_NAME} already exists remotely."
     exit 1
 fi
