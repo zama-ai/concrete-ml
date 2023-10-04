@@ -16,6 +16,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
     Parameters:
         n_bits (int): Number of bits to quantize the model. The value will be used for quantizing
             inputs and X_fit. Default to 3.
+        rounding_threshold_bits (int): Number of bits to keep, Default to 6.
 
     For more details on KNeighborsClassifier please refer to the scikit-learn documentation:
     https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
@@ -28,6 +29,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         self,
         n_bits=2,
         n_neighbors=3,
+        rounding_threshold_bits=8,
         *,
         weights="uniform",
         algorithm="auto",
@@ -38,7 +40,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         n_jobs=None,
     ):
         # Call SklearnKNeighborsClassifierMixin's __init__ method
-        super().__init__(n_bits=n_bits)
+        super().__init__(n_bits=n_bits, rounding_threshold_bits=rounding_threshold_bits)
 
         assert_true(
             algorithm in ["brute", "auto"], f"Algorithm = `{algorithm}` is not supported in FHE."
@@ -60,6 +62,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         self.metric_params = metric_params
         self.n_jobs = n_jobs
         self.weights = weights
+        self.rounding_threshold_bits = rounding_threshold_bits
 
     def dump_dict(self) -> Dict[str, Any]:
         assert self._q_fit_X_quantizer is not None, self._is_not_fitted_error_message()
@@ -68,6 +71,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
 
         # Concrete ML
         metadata["n_bits"] = self.n_bits
+        metadata["rounding_threshold_bits"] = self.n_bits
         metadata["sklearn_model"] = self.sklearn_model
         metadata["_is_fitted"] = self._is_fitted
         metadata["_is_compiled"] = self._is_compiled
@@ -102,6 +106,7 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
 
         # Concrete-ML
         obj.n_bits = metadata["n_bits"]
+        obj.n_bits = metadata["rounding_threshold_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
