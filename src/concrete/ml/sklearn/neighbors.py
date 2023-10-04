@@ -1,11 +1,12 @@
 """Implement sklearn linear model."""
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy
 import sklearn.linear_model
 
 from ..common.debugging.custom_assert import assert_true
-from .base import SklearnKNeighborsClassifierMixin
+from ..common.utils import FheMode
+from .base import Data, SklearnKNeighborsClassifierMixin
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
@@ -123,3 +124,26 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj.metric_params = metadata["metric_params"]
         obj.n_jobs = metadata["n_jobs"]
         return obj
+
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    def predict_proba(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        """Predict class probabilities.
+
+        Args:
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete ML Python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
+
+        Raises:
+            NotImplementedError: The method is not implemented for now.
+        """
+
+        raise NotImplementedError(
+            "The `predict_proba` method is not implemented for KNeighborsClassifier. Please "
+            "call `predict` instead."
+        )

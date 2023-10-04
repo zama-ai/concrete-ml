@@ -22,7 +22,7 @@ from concrete.ml.quantization.quantizers import (
     [pytest.param(True, True), pytest.param(True, False), pytest.param(False, False)],
 )
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
-def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_array_equality):
+def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_array_equal):
     """Test the quant and de-quant function."""
 
     quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
@@ -72,7 +72,7 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
     assert not numpy.array_equal(new_values, new_values_updated)
 
     # Check that the __call__ returns also the qvalues.
-    check_array_equality(quant_array(), new_qvalues)
+    check_array_equal(quant_array(), new_qvalues)
 
 
 @pytest.mark.parametrize(

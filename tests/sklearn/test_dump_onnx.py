@@ -36,7 +36,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
         model.set_params(**model_params)
 
     if get_model_name(model) == "KNeighborsClassifier":
-        # KNN works only for small quantization bits
+        # KNN can only be compiled with small quantization bit numbers for now
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
         model.n_bits = 2
 

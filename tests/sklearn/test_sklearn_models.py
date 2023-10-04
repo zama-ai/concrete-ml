@@ -19,12 +19,6 @@ Generic tests test:
   - pipeline
   - calls to predict_proba
   - calls to decision_function
-
-Are currently missing
-  - check of predict_proba
-  - check of decision_function
-
-More information in https://github.com/zama-ai/concrete-ml-internal/issues/2682
 """
 
 import copy
@@ -81,19 +75,10 @@ N_ALLOWED_FHE_RUN = 5
 # sufficiently number of bits for precision
 N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS = 26
 
-# We check correctness with check_is_good_execution_for_cml_vs_circuit or predict in
-# fhe="disable" only if n_bits >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS. This is
-# because we need sufficiently number of bits for precision
-N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS = 6
-
 # We never do checks with check_is_good_execution_for_cml_vs_circuit if
 # n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE. This is because computations are very
 # slow
 N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE = 17
-
-assert (
-    N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS <= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE
-)
 
 # If n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS, we check that the two models
 # returned by fit_benchmark (the Concrete ML model and the scikit-learn model) are equivalent
@@ -105,9 +90,9 @@ N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS = 16
 N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS = 11
 
 # n_bits that we test, either in regular builds or just in weekly builds. 6 is to do tests in
-# FHE which are not too long (relation with N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS and
-# N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE). 26 is in relation with
-# N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with check_correctness_with_sklearn
+# FHE which are not too long (relation with N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE).
+# 26 is in relation with N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS, to do tests with
+# check_correctness_with_sklearn
 N_BITS_REGULAR_BUILDS = [6, 26]
 N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 
@@ -125,7 +110,7 @@ def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
         model_class, _get_sklearn_linear_models() + _get_sklearn_neighbors_models()
     ):
         if n_bits in N_BITS_WEEKLY_ONLY_BUILDS and not is_weekly_option:
-            pytest.skip("Skipping some tests in non-weekly builds, except for linear models")
+            pytest.skip("Skipping some tests in non-weekly builds")
 
     # Get the data-set. The data generation is seeded in load_data.
     x, y = load_data(model_class, **parameters)
@@ -154,6 +139,19 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     return model, x
 
 
+def get_n_bits_non_correctness(model_class):
+    """Get the number of bits to use for non correctness related tests."""
+
+    if get_model_name(model_class) == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        n_bits = 2
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    return n_bits
+
+
 def check_correctness_with_sklearn(
     model_class,
     x,
@@ -176,19 +174,11 @@ def check_correctness_with_sklearn(
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model, sklearn_model = model.fit_benchmark(x, y)
 
-    y_pred = model.predict(x)
-
-    y_pred_sklearn = sklearn_model.predict(x)
-    y_pred_cml = model.predict(x, fhe=fhe)
-
-    # Check that the output shapes are correct
-    assert y_pred.shape == y_pred_cml.shape, "Outputs have different shapes"
-
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2604
     # Generic tests look to show issues in accuracy / R2 score, even for high n_bits
 
-    # For regressions
-    acceptance_r2score_dic = {
+    # For R2 score measures
+    acceptance_r2scores = {
         "TweedieRegressor": 0.9,
         "GammaRegressor": 0.9,
         "LinearRegression": 0.9,
@@ -198,33 +188,79 @@ def check_correctness_with_sklearn(
         "Ridge": 0.9,
         "ElasticNet": 0.9,
         "XGBRegressor": -0.2,
-        "NeuralNetRegressor": -10,
     }
 
-    # For classifiers
-    threshold_accuracy_dic = {
+    # For accuracy measures
+    threshold_accuracies = {
         "LogisticRegression": 0.9,
         "LinearSVC": 0.9,
         "XGBClassifier": 0.7,
         "RandomForestClassifier": 0.8,
-        "NeuralNetClassifier": 0.7,
         "KNeighborsClassifier": 0.9,
     }
 
     model_name = get_model_name(model_class)
-    acceptance_r2score = acceptance_r2score_dic.get(model_name, 0.9)
-    threshold_accuracy = threshold_accuracy_dic.get(model_name, 0.9)
+    acceptance_r2score = acceptance_r2scores.get(model_name, 0.9)
+    threshold_accuracy = threshold_accuracies.get(model_name, 0.9)
+
+    # If the model is a classifier
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model_class) != "KNeighborsClassifier"
+    ):
+        if is_model_class_in_a_list(model, _get_sklearn_linear_models()):
+
+            # Check outputs from the 'decision_function' method (for linear classifiers)
+            y_scores_sklearn = sklearn_model.decision_function(x)
+            y_scores_fhe = model.decision_function(x, fhe=fhe)
+
+            # Currently, for single target data sets, Concrete models' outputs have shape (n, 1)
+            # while scikit-learn models' outputs have shape (n, )
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4029
+            # assert y_scores_sklearn.shape == y_scores_fhe.shape, (
+            #     "Method 'decision_function' outputs different shapes between scikit-learn and "
+            #     f"Concrete ML in FHE (fhe={fhe})"
+            # )
+            check_r2_score(y_scores_sklearn, y_scores_fhe, acceptance_score=acceptance_r2score)
+
+        # LinearSVC models from scikit-learn do not provide a 'predict_proba' method
+        if get_model_name(model_class) != "LinearSVC":
+
+            # Check outputs from the 'predict_proba' method (for all classifiers,
+            # except KNeighborsClassifier)
+            y_proba_sklearn = sklearn_model.predict_proba(x)
+            y_proba_fhe = model.predict_proba(x, fhe=fhe)
+
+            assert y_proba_sklearn.shape == y_proba_fhe.shape, (
+                "Method 'decision_function' outputs different shapes between scikit-learn and "
+                f"Concrete ML in FHE (fhe={fhe})"
+            )
+            check_r2_score(y_proba_sklearn, y_proba_fhe, acceptance_score=acceptance_r2score)
+
+    # Check outputs from the 'predict_proba' method (for all models)
+    y_pred_sklearn = sklearn_model.predict(x)
+    y_pred_fhe = model.predict(x, fhe=fhe)
+
+    # Currently, for single target data sets, Concrete models' outputs have shape (n, 1) while
+    # scikit-learn models' outputs have shape (n, )
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4029
+    # assert y_pred_sklearn.shape == y_pred_fhe.shape, (
+    #     "Method 'predict' outputs different shapes between scikit-learn and "
+    #     f"Concrete ML in FHE (fhe={fhe})"
+    # )
 
     # If the model is a classifier, check that accuracies are similar
     if is_classifier_or_partial_classifier(model):
-        check_accuracy(y_pred_sklearn, y_pred_cml, threshold=threshold_accuracy)
+        check_accuracy(y_pred_sklearn, y_pred_fhe, threshold=threshold_accuracy)
 
     # If the model is a regressor, check that R2 scores are similar
+    elif is_regressor_or_partial_regressor(model):
+        check_r2_score(y_pred_sklearn, y_pred_fhe, acceptance_score=acceptance_r2score)
+
     else:
-        assert is_regressor_or_partial_regressor(
-            model
-        ), "not a regressor, not a classifier, really?"
-        check_r2_score(y_pred_sklearn, y_pred_cml, acceptance_score=acceptance_r2score)
+        raise AssertionError(f"Model {model_name} is neither a classifier nor a regressor.")
 
 
 def check_double_fit(model_class, n_bits, x_1, x_2, y_1, y_2):
@@ -462,10 +498,8 @@ def check_offset(model_class, n_bits, x, y):
         model.fit(x, y)
 
 
-def check_subfunctions(fitted_model, model_class, x):
-    """Check subfunctions."""
-
-    fitted_model.predict(x[:1])
+def check_inference_methods(model, model_class, x, check_float_array_equal):
+    """Check that all inference methods provided are coherent between clear and FHE executions."""
 
     # skorch provides a predict_proba method for neural network regressors while Scikit-Learn does
     # not. We decided to follow Scikit-Learn's API as we build most of our tools on this library.
@@ -474,7 +508,7 @@ def check_subfunctions(fitted_model, model_class, x):
     # confusion, a NotImplementedError is raised. This issue could be fixed by making these classes
     # not inherit from skorch.
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3373
-    if get_model_name(fitted_model) == "NeuralNetRegressor":
+    if get_model_name(model) == "NeuralNetRegressor":
         with pytest.raises(
             NotImplementedError,
             match=(
@@ -482,67 +516,128 @@ def check_subfunctions(fitted_model, model_class, x):
                 "Please call `predict` instead."
             ),
         ):
-            fitted_model.predict_proba(x)
+            model.predict_proba(x)
 
-    if get_model_name(fitted_model) == "KNeighborsClassifier":
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-        pytest.skip("Skipping subfunctions test for KNN, doesn't work for now")
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    elif get_model_name(model) == "KNeighborsClassifier":
+        with pytest.raises(
+            NotImplementedError,
+            match=(
+                "The `predict_proba` method is not implemented for KNeighborsClassifier. "
+                "Please call `predict` instead."
+            ),
+        ):
+            model.predict_proba(x)
 
-    if is_classifier_or_partial_classifier(model_class):
+    # Only check 'predict_proba' and not 'predict' as some issues were found with the argmax not
+    # being consistent because of precision errors with epsilon magnitude. This argmax should be
+    # done in the clear the same way for both anyway. Ultimately, we would want to only compare the
+    # circuit's quantized outputs against the ones computed in the clear but built-in models do not
+    # currently provide the necessary API for that
+    elif is_classifier_or_partial_classifier(model_class):
 
-        fitted_model.predict_proba(x)
-
-        # Only linear classifiers have a decision function method
         if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
-            fitted_model.decision_function(x)
+
+            # Check outputs from the 'decision_function' method (for all linear classifiers)
+            y_scores_clear = model.decision_function(x)
+            y_scores_simulated = model.decision_function(x, fhe="simulate")
+
+            assert y_scores_clear.shape == y_scores_simulated.shape, (
+                "Method 'decision_function' from Concrete ML outputs different shapes when executed"
+                "in the clear and with simulation."
+            )
+            check_float_array_equal(y_scores_clear, y_scores_simulated)
+
+        else:
+            # Check outputs from the 'predict_proba' method (for all non-linear classifiers,
+            # except KNeighborsClassifier)
+            y_proba_clear = model.predict_proba(x)
+            y_proba_simulated = model.predict_proba(x, fhe="simulate")
+
+            assert y_proba_clear.shape == y_proba_simulated.shape, (
+                "Method 'predict_proba' from Concrete ML outputs different shapes when executed"
+                "in the clear and with simulation."
+            )
+            check_float_array_equal(y_proba_clear, y_proba_simulated)
+
+    else:
+        # Check outputs from the 'predict' method (for all regressors and KNeighborsClassifier)
+        y_pred_clear = model.predict(x)
+        y_pred_simulated = model.predict(x, fhe="simulate")
+
+        assert y_pred_clear.shape == y_pred_simulated.shape, (
+            "Method 'predict' from Concrete ML outputs different shapes when executed in the clear "
+            "and with simulation."
+        )
+        check_float_array_equal(y_pred_clear, y_pred_simulated)
 
 
-def check_subfunctions_in_fhe(model, fhe_circuit, x):
-    """Check subfunctions in FHE: calls and correctness."""
+def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
+    """Run inference methods in separated steps and check their correctness."""
 
     # Generate the keys
     fhe_circuit.keygen()
 
-    y_pred_fhe = []
+    # Quantize an input (float)
+    q_x = model.quantize_input(x)
 
-    for _ in range(N_ALLOWED_FHE_RUN):
-        for f_input in x:
-            # Quantize an input (float)
-            q_input = model.quantize_input(f_input.reshape(1, -1))
+    # Encrypt the input
+    q_x_encrypted = fhe_circuit.encrypt(q_x)
 
-            # Encrypt the input
-            q_input_enc = fhe_circuit.encrypt(q_input)
+    # Execute the linear product in FHE
+    q_y_pred_encrypted = fhe_circuit.run(q_x_encrypted)
 
-            # Execute the linear product in FHE
-            q_y_enc = fhe_circuit.run(q_input_enc)
+    # Decrypt the result (integer)
+    q_y_pred = fhe_circuit.decrypt(q_y_pred_encrypted)
 
-            # Decrypt the result (integer)
-            q_y = fhe_circuit.decrypt(q_y_enc)
+    # De-quantize the result
+    y_pred = model.dequantize_output(q_y_pred)
 
-            # De-quantize the result
-            y = model.dequantize_output(q_y)
+    if is_model_class_in_a_list(
+        model, _get_sklearn_linear_models(classifier=True, regressor=False)
+    ):
+        y_scores = model.decision_function(x, fhe="simulate")
 
-            # Apply either the sigmoid if it is a binary classification task,
-            # which is the case in this example, or a softmax function in order
-            # to get the probabilities (in the clear)
-            y_proba = model.post_processing(y)
+        # For linear classifiers, the circuit's de-quantized outputs should be the same as the ones
+        # from the `decision_function` built-in method
+        check_float_array_equal(y_pred, y_scores)
 
-            # Apply the argmax to get the class predictions (in the clear)
-            if is_classifier_or_partial_classifier(model):
-                y_class = numpy.argmax(y_proba, axis=-1)
-                y_pred_fhe += list(y_class)
-            else:
-                y_pred_fhe += list(y_proba)
+    # Apply post-processing step (in the clear)
+    # This includes (non-exhaustive):
+    # - sigmoid or softmax function for classifiers
+    # - final sum for tree-based models
+    # - link function for GLMs
+    y_pred = model.post_processing(y_pred)
 
-        # Compare with the FHE simulation mode
-        y_pred_expected_in_simulation = model.predict(x, fhe="simulate")
-        if numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_simulation).all():
-            break
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model) != "KNeighborsClassifier"
+    ):
+        y_proba = model.predict_proba(x, fhe="simulate")
+    else:
+        y_proba = model.predict(x, fhe="simulate")
 
-    assert numpy.isclose(numpy.array(y_pred_fhe), y_pred_expected_in_simulation).all(), (
-        "computations are not the same between individual functions (in FHE) "
-        "and predict function (in FHE simulation mode)"
-    )
+    # The circuit's de-quantized outputs followed by `post_processing` should be the same as the
+    # ones from the `predict_proba` built-in method for classifiers, and from the `predict`
+    # built-in method for regressors
+    check_float_array_equal(y_pred, y_proba)
+
+    # KNeighborsClassifier does not apply a final argmax for computing prediction
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model) != "KNeighborsClassifier"
+    ):
+        y_pred = numpy.argmax(y_pred, axis=-1)
+
+        y_pred_class = model.predict(x, fhe="simulate")
+
+        # For classifiers (other than KNeighborsClassifier), the circuit's de-quantized outputs
+        # followed by `post_processing` as well as an argmax should be the same as the ones from
+        # the `predict` built-in method
+        check_float_array_equal(y_pred, y_pred_class)
 
 
 def check_input_support(model_class, n_bits, default_configuration, x, y, input_type):
@@ -582,16 +677,13 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     model.predict(x)
 
     # Similarly, we test `predict_proba` for classifiers
-    if is_classifier_or_partial_classifier(model):
-        if get_model_name(model_class) == "KNeighborsClassifier":
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-            pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model_class) != "KNeighborsClassifier"
+    ):
         model.predict_proba(x)
-
-    # If n_bits is above N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, do not compile the model
-    # as there won't be any crypto parameters
-    if n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
-        return
 
     model.compile(x, default_configuration)
 
@@ -599,7 +691,12 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     model.predict(x, fhe="simulate")
 
     # Similarly, we test `predict_proba` for classifiers
-    if is_classifier_or_partial_classifier(model):
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model)
+        and get_model_name(model_class) != "KNeighborsClassifier"
+    ):
         model.predict_proba(x, fhe="simulate")
 
 
@@ -678,67 +775,17 @@ def check_grid_search(model_class, x, y, scoring):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
 
+        # KNeighborsClassifier does not provide a predict_proba method for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         if get_model_name(model_class) == "KNeighborsClassifier" and scoring in [
             "roc_auc",
             "average_precision",
         ]:
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
         _ = GridSearchCV(
             model_class(), param_grid, cv=2, scoring=scoring, error_score="raise", n_jobs=1
         ).fit(x, y)
-
-
-def check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score):
-    """Check equivalence between the two models returned by fit_benchmark: the Concrete ML model and
-    the scikit-learn model."""
-    model = instantiate_model_generic(model_class, n_bits=n_bits)
-
-    # Sometimes, we miss convergence, which is not a problem for our test
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-        # Random state should be taken from the method parameter
-        model, sklearn_model = model.fit_benchmark(x, y)
-
-    # If the model is a classifier
-    if is_classifier_or_partial_classifier(model):
-
-        # Check that accuracies are similar
-        y_pred_cml = model.predict(x)
-        y_pred_sklearn = sklearn_model.predict(x)
-        check_accuracy(y_pred_sklearn, y_pred_cml)
-
-        # If the model is a LinearSVC model, compute its predicted confidence score
-        # This is done separately as scikit-learn doesn't provide a predict_proba method for
-        # LinearSVC models
-        if get_model_name(model_class) == "LinearSVC":
-            y_pred_cml = model.decision_function(x)
-            y_pred_sklearn = sklearn_model.decision_function(x)
-
-        # Else, compute the model's predicted probabilities
-        # predict_proba not implemented for KNeighborsClassifier for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
-        elif get_model_name(model_class) != "KNeighborsClassifier":
-            y_pred_cml = model.predict_proba(x)
-            y_pred_sklearn = sklearn_model.predict_proba(x)
-
-    # If the model is a regressor, compute its predictions
-    else:
-        y_pred_cml = model.predict(x)
-        y_pred_sklearn = sklearn_model.predict(x)
-
-    # Check that predictions, probabilities or confidence scores are similar using the R2 score
-    check_r2_score(y_pred_sklearn, y_pred_cml)
-
-
-def check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu):
-    """Check some properties of circuit, depending on the model class"""
-
-    if is_model_class_in_a_list(model_class, _get_sklearn_linear_models()):
-        # Check that no TLUs are found within the MLIR
-        check_circuit_has_no_tlu(fhe_circuit)
 
 
 def get_hyper_param_combinations(model_class):
@@ -799,7 +846,6 @@ def check_hyper_parameters(
     n_bits,
     x,
     y,
-    test_correctness_in_clear,
     check_r2_score,
     check_accuracy,
 ):
@@ -815,11 +861,6 @@ def check_hyper_parameters(
 
         model = instantiate_model_generic(model_class, n_bits=n_bits, **hyper_parameters)
 
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2450
-        # does not work for now, issue in HummingBird
-        if get_model_name(model_class) == "RandomForestClassifier" and n_bits == 2:
-            continue
-
         # Also fit with these hyper parameters to check it works fine
         with warnings.catch_warnings():
             # Sometimes, we miss convergence, which is not a problem for our test
@@ -828,18 +869,17 @@ def check_hyper_parameters(
             # Here, we really need to fit, to take into account hyper parameters
             model.fit(x, y)
 
-        # Check correctness with sklearn (if we have sufficiently bits of precision)
-        if test_correctness_in_clear and n_bits >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS:
-            check_correctness_with_sklearn(
-                model_class,
-                x,
-                y,
-                n_bits,
-                check_r2_score,
-                check_accuracy,
-                fhe="disable",
-                hyper_parameters=hyper_parameters,
-            )
+        # Check correctness with sklearn
+        check_correctness_with_sklearn(
+            model_class,
+            x,
+            y,
+            n_bits,
+            check_r2_score,
+            check_accuracy,
+            fhe="disable",
+            hyper_parameters=hyper_parameters,
+        )
 
 
 def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
@@ -869,9 +909,13 @@ def check_fitted_compiled_error_raises(model_class, n_bits, x, y):
         with pytest.raises(AttributeError, match=".* model is not fitted.*"):
             model.predict(x)
 
-    if is_classifier_or_partial_classifier(model_class):
-        if get_model_name(model) == "KNeighborsClassifier":
-            pytest.skip("predict_proba not implement for KNN")
+    # KNeighborsClassifier does not provide a predict_proba method for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
+    if (
+        is_classifier_or_partial_classifier(model_class)
+        and get_model_name(model) != "KNeighborsClassifier"
+    ):
+
         # Predicting probabilities using an untrained linear or tree-based classifier should not
         # be possible
         if not is_model_class_in_a_list(model_class, _get_sklearn_neural_net_models()):
@@ -1086,49 +1130,9 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y):
     + get_sklearn_tree_models_and_datasets()
     + get_sklearn_neighbors_models_and_datasets(),
 )
-@pytest.mark.parametrize(
-    "n_bits",
-    [
-        n
-        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n >= N_BITS_THRESHOLD_FOR_SKLEARN_EQUIVALENCE_TESTS
-    ],
-)
-def test_quantization(
-    model_class,
-    parameters,
-    n_bits,
-    load_data,
-    check_r2_score,
-    check_accuracy,
-    is_weekly_option,
-    verbose=True,
-):
-    """Test quantization."""
-    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
-
-    if verbose:
-        print("Run check_sklearn_equivalence")
-
-    check_sklearn_equivalence(model_class, n_bits, x, y, check_accuracy, check_r2_score)
-
-
-# This test is a known flaky
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3661
-@pytest.mark.flaky
-@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
-@pytest.mark.parametrize(
-    "n_bits",
-    [
-        n
-        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n >= N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS
-    ],
-)
 def test_correctness_with_sklearn(
     model_class,
     parameters,
-    n_bits,
     load_data,
     check_r2_score,
     check_accuracy,
@@ -1136,9 +1140,11 @@ def test_correctness_with_sklearn(
     verbose=True,
 ):
     """Test that Concrete ML and scikit-learn models are 'equivalent'."""
+
+    n_bits = N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS
+
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # Check correctness with sklearn (if we have sufficiently bits of precision)
     if verbose:
         print("Run check_correctness_with_sklearn with fhe='disable'")
 
@@ -1153,15 +1159,16 @@ def test_correctness_with_sklearn(
     )
 
 
-@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+# Neural network hyper-parameters are not tested
 @pytest.mark.parametrize(
-    "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
+    "model_class, parameters",
+    get_sklearn_linear_models_and_datasets()
+    + get_sklearn_tree_models_and_datasets()
+    + get_sklearn_neighbors_models_and_datasets(),
 )
 def test_hyper_parameters(
     model_class,
     parameters,
-    n_bits,
     load_data,
     check_r2_score,
     check_accuracy,
@@ -1169,19 +1176,19 @@ def test_hyper_parameters(
     verbose=True,
 ):
     """Testing hyper parameters."""
+
+    n_bits = N_BITS_THRESHOLD_FOR_SKLEARN_CORRECTNESS_TESTS
+
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
         print("Run check_hyper_parameters")
-
-    test_correctness_in_clear = True
 
     check_hyper_parameters(
         model_class,
         n_bits,
         x,
         y,
-        test_correctness_in_clear,
         check_r2_score,
         check_accuracy,
     )
@@ -1264,9 +1271,7 @@ def test_serialization(
     verbose=True,
 ):
     """Test Serialization."""
-    # This test only checks the serialization's functionalities, so there is no need to test it
-    # over several n_bits
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1338,15 +1343,10 @@ def test_offset(
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
-@pytest.mark.parametrize(
-    "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
-)
 @pytest.mark.parametrize("input_type", ["numpy", "torch", "pandas", "list"])
 def test_input_support(
     model_class,
     parameters,
-    n_bits,
     load_data,
     input_type,
     default_configuration,
@@ -1354,6 +1354,8 @@ def test_input_support(
     verbose=True,
 ):
     """Test all models with Pandas, List or Torch inputs."""
+    n_bits = get_n_bits_non_correctness(model_class)
+
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     if verbose:
@@ -1362,26 +1364,27 @@ def test_input_support(
     check_input_support(model_class, n_bits, default_configuration, x, y, input_type)
 
 
-@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
-@pytest.mark.parametrize(
-    "n_bits",
-    N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS,
-)
-def test_subfunctions(
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+def test_inference_methods(
     model_class,
     parameters,
-    n_bits,
     load_data,
     is_weekly_option,
+    check_float_array_equal,
+    default_configuration,
     verbose=True,
 ):
-    """Test subfunctions."""
+    """Test inference methods."""
+    n_bits = get_n_bits_non_correctness(model_class)
+
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    if verbose:
-        print("Run check_subfunctions")
+    model.compile(x, default_configuration)
 
-    check_subfunctions(model, model_class, x)
+    if verbose:
+        print("Run check_inference_methods")
+
+    check_inference_methods(model, model_class, x, check_float_array_equal)
 
 
 # Pipeline test sometimes fails with RandomForest models. This bug may come from Hummingbird
@@ -1419,12 +1422,17 @@ def test_pipeline(
         pytest.param(True, id="simulate"),
     ],
 )
+# N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
+# limit to find crypto parameters for linear models
+# make sure we only compile below that bit-width.
+# Additionally, prevent computations in FHE with too many bits
 @pytest.mark.parametrize(
     "n_bits",
     [
-        n
-        for n in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
-        if n >= N_BITS_THRESHOLD_FOR_PREDICT_CORRECTNESS_TESTS
+        n_bits
+        for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n_bits
+        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
     ],
 )
 # pylint: disable=too-many-branches
@@ -1436,98 +1444,96 @@ def test_predict_correctness(
     load_data,
     default_configuration,
     check_is_good_execution_for_cml_vs_circuit,
-    check_circuit_has_no_tlu,
     is_weekly_option,
-    test_subfunctions_in_fhe=True,
     verbose=True,
 ):
-    """Test correct execution, if there is sufficiently n_bits."""
+    """Test prediction correctness between clear quantized and FHE simulation or execution."""
+
+    # KNN can only be compiled with small quantization bit numbers for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+    if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
+        pytest.skip("KNeighborsClassifier models can only run with 5 bits at most.")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    # How many samples for tests in FHE (i.e., predict with fhe = "execute" or "simulate")
+    # Run the test with more samples during weekly CIs or when using FHE simulation
     if is_weekly_option or simulate:
-        number_of_tests_in_fhe = 5
+        fhe_samples = 5
     else:
-        number_of_tests_in_fhe = 1
+        fhe_samples = 1
 
-    # How many samples for tests in quantized module (i.e., predict with fhe = "disable")
-    if is_weekly_option:
-        number_of_tests_in_non_fhe = 50
-    else:
-        number_of_tests_in_non_fhe = 10
-
-    # Do some inferences in clear
     if verbose:
-        print(
-            "Inference in the clear (with "
-            f"number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
-        )
-    # KNN works only for smaller quantization bits
+        print("Compile the model")
+
+    model.compile(x, default_configuration)
+
+    if verbose:
+        print(f"Check prediction correctness for {fhe_samples} samples.")
+
+    # Check prediction correctness between quantized clear and FHE simulation or execution
+    check_is_good_execution_for_cml_vs_circuit(x[:fhe_samples], model=model, simulate=simulate)
+
+
+@pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+# Test separated inference steps with new simulation once Concrete Python provides the feature
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4025
+@pytest.mark.parametrize(
+    "simulate",
+    [
+        pytest.param(False, id="fhe"),
+    ],
+)
+# N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
+# limit to find crypto parameters for linear models
+# make sure we only compile below that bit-width.
+# Additionally, prevent computations in FHE with too many bits
+@pytest.mark.parametrize(
+    "n_bits",
+    [
+        n_bits
+        for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
+        if n_bits
+        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
+    ],
+)
+# pylint: disable=too-many-branches
+def test_separated_inference(
+    model_class,
+    parameters,
+    simulate,
+    n_bits,
+    load_data,
+    default_configuration,
+    is_weekly_option,
+    check_float_array_equal,
+    verbose=True,
+):
+    """Test prediction correctness between clear quantized and FHE simulation or execution."""
+
+    # KNN can only be compiled with small quantization bit numbers for now
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-    if n_bits > 5 and get_model_name(model) == "KNeighborsClassifier":
-        pytest.skip("Use less than 5 bits with KNN.")
+    if n_bits > 5 and get_model_name(model_class) == "KNeighborsClassifier":
+        pytest.skip("KNeighborsClassifier models can only run with 5 bits at most.")
 
-    y_pred = model.predict(x[:number_of_tests_in_non_fhe])
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    list_of_possibilities = [False, True]
+    # Run the test with more samples during weekly CIs or when using FHE simulation
+    if is_weekly_option or simulate:
+        fhe_samples = 5
+    else:
+        fhe_samples = 1
 
-    # Prevent computations in FHE if too many bits
-    if n_bits >= N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE:
-        list_of_possibilities = [False]
+    if verbose:
+        print("Compile the model")
 
-    for test_with_execute_in_fhe in list_of_possibilities:
+    fhe_circuit = model.compile(x, default_configuration)
 
-        # N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS bits is currently the
-        # limit to find crypto parameters for linear models
-        # make sure we only compile below that bit-width.
-        if test_with_execute_in_fhe and not n_bits >= N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS:
+    if verbose:
+        print("Run check_separated_inference")
 
-            if verbose:
-                print("Compile the model")
-
-            with warnings.catch_warnings():
-                fhe_circuit = model.compile(
-                    x,
-                    default_configuration,
-                    show_mlir=verbose and (n_bits <= 8),
-                )
-
-                check_properties_of_circuit(model_class, fhe_circuit, check_circuit_has_no_tlu)
-
-            if verbose:
-                print("Compilation done")
-
-            if verbose:
-                print(
-                    "Run check_is_good_execution_for_cml_vs_circuit "
-                    + f"(with number_of_tests_in_fhe = {number_of_tests_in_fhe})"
-                )
-
-            # Check the `predict` method
-            check_is_good_execution_for_cml_vs_circuit(
-                x[:number_of_tests_in_fhe], model=model, simulate=simulate
-            )
-
-            if test_subfunctions_in_fhe and (not simulate):
-                if verbose:
-                    print("Testing subfunctions in FHE")
-
-                check_subfunctions_in_fhe(model, fhe_circuit, x[:number_of_tests_in_fhe])
-
-        else:
-            if verbose:
-                print(
-                    "Run predict in fhe='disable' "
-                    f"(with number_of_tests_in_non_fhe = {number_of_tests_in_non_fhe})"
-                )
-
-            # At least, check in clear mode
-            y_pred_fhe = model.predict(x[:number_of_tests_in_non_fhe], fhe="disable")
-
-            # Check that the output shape is correct
-            assert y_pred_fhe.shape == y_pred.shape
-            assert numpy.array_equal(y_pred_fhe, y_pred)
+    # Check that separated inference steps (encrypt, run, decrypt, post_processing, ...) are
+    # equivalent to built-in methods (predict, predict_proba, ...)
+    check_separated_inference(model, fhe_circuit, x[:fhe_samples], check_float_array_equal)
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
@@ -1539,7 +1545,7 @@ def test_fitted_compiled_error_raises(
     verbose=True,
 ):
     """Test Fit and Compile error raises."""
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
@@ -1550,6 +1556,8 @@ def test_fitted_compiled_error_raises(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
+# Enable support for global_p_error testing if possible
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
 @pytest.mark.parametrize(
     "error_param",
     [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
@@ -1564,21 +1572,10 @@ def test_p_error_global_p_error_simulation(
 ):
     """Test p_error and global_p_error simulation.
 
-    Description:
-        A model is compiled with a large p_error. The test then checks the predictions for
-        simulated and fully homomorphic encryption (FHE) inference, and asserts
-        that the predictions for both are different from the expected predictions.
+    The test checks that models compiled with a large p_error value predicts very different results
+    with simulation or in FHE compared to the expected clear quantized ones.
     """
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
-    if "global_p_error" in error_param:
-        pytest.skip("global_p_error behave very differently depending on the type of model.")
-
-    if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN works only for smaller quantization bits
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        n_bits = min([2] + N_BITS_REGULAR_BUILDS)
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
@@ -1591,14 +1588,16 @@ def test_p_error_global_p_error_simulation(
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
+
+        # KNeighborsClassifier does not provide a predict_proba method for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
         predict_function = (
             model.predict_proba
             if is_classifier_or_partial_classifier(model)
-            # `predict_prob` not implemented yet for KNeighborsClassifier
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3962
             and get_model_name(model) != "KNeighborsClassifier"
             else model.predict
         )
+
         y_expected = predict_function(x, fhe="disable")
         for i in range(max_iterations):
             y_pred = predict_function(x[i : i + 1], fhe=fhe).ravel()
@@ -1716,3 +1715,32 @@ def test_load_fitted_sklearn_linear_models(
         print("Run check_load_pre_trained_sklearn_models")
 
     check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y)
+
+
+# Only circuits from linear models do not have any TLUs
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_linear_models_and_datasets())
+def test_linear_models_have_no_tlu(
+    model_class,
+    parameters,
+    load_data,
+    is_weekly_option,
+    check_circuit_has_no_tlu,
+    default_configuration,
+    verbose=True,
+):
+    """Test that circuits from linear models have no TLUs."""
+
+    n_bits = min(N_BITS_REGULAR_BUILDS)
+
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    if verbose:
+        print("Compile the model")
+
+    fhe_circuit = model.compile(x, default_configuration)
+
+    if verbose:
+        print("Run check_circuit_has_no_tlu")
+
+    # Check that no TLUs are found within the MLIR
+    check_circuit_has_no_tlu(fhe_circuit)
