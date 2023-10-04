@@ -37,7 +37,7 @@ MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 # Use new VL with .simulate() by default once CP's multi-parameter/precision bug is fixed
 # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3856
 # Indicate if the old simulation method should be used when simulating FHE executions
-USE_OLD_VL = True
+USE_OLD_VL = False
 
 # Debug option for testing round PBS optimization
 # Setting this option to true will make quantizers "round half up"
