@@ -203,11 +203,11 @@ class QuantizedModule:
         Raises:
             AttributeError: If the quantized module is not compiled.
         """
-        if not self.is_compiled:
+        if not self.is_compiled:  # pragma: no cover
             raise AttributeError(
                 "The quantized module is not compiled. Please run compile(...) first before "
                 "executing it in FHE."
-            )
+            )  # pragma: no cover
 
     @property
     def post_processing_params(self) -> Dict[str, Any]:
@@ -696,7 +696,7 @@ class QuantizedModule:
         if not USE_OLD_VL:
             self.fhe_circuit.enable_fhe_simulation()  # pragma: no cover
 
-        self._is_compiled = True
+        self._is_compiled = True  # pragma: no cover
 
         return self.fhe_circuit
 

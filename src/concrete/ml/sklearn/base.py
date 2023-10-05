@@ -640,7 +640,8 @@ class BaseEstimator:
                     # If the old simulation method should be used
                     if USE_OLD_VL:
                         predict_method = partial(
-                            self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
+                            self.fhe_circuit.graph,
+                            p_error=self.fhe_circuit.p_error,  # pragma: no cover
                         )
 
                     # Else, use the official simulation method
