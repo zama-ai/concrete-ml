@@ -98,7 +98,7 @@ Experiments were conducted on an m6i.metal machine offering 128 CPU cores and 51
 | VGG FHE (simulation\*) | 6 bits   | 86.0     |
 | VGG FHE                | 6 bits   | 86.0\*\* |
 
-We ran the FHE inference over 10 examples and achieved 100% similar predictions between the simulation and FHE. The overall accuracy for the entire data-set is expected to match the simulation. The original model with a maximum of 13 bits of precision ran in around 9 hours on the specified hardware. Using the rounding approach, the final model ran in **31 minutes**, providing a speedup factor of 18x while preserving accuracy. This significant performance improvement demonstrates the benefits of the rounding operator in the FHE setting.
+We ran the FHE inference over 10 examples and achieved 100% similar predictions between the simulation and FHE. The overall accuracy for the entire data-set is expected to match the simulation. The original model (no rounding) with a maximum of 13 bits of precision runs in around 9 hours on the specified hardware. Using the rounding approach, the final model ran in **4 minutes**. This significant performance improvement demonstrates the benefits of the rounding operator in the FHE setting.
 
 \* Simulation is used to evaluate the accuracy in the clear for faster debugging.
 \*\* We ran the FHE inference over 10 examples and got 100% similar predictions between the simulation and FHE. The overall accuracy for the entire data-set is expected to match the simulation.
