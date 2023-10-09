@@ -14,33 +14,11 @@ ______________________________________________________________________
 
 <a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L28"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>function</kbd> `check_concrete_versions`
-
-```python
-check_concrete_versions(zip_path: Path)
-```
-
-Check that current versions match the ones used in development.
-
-This function loads the version JSON file found in client.zip or server.zip files and then checks that current package versions (Concrete Python, Concrete ML) as well as the Python current version all match the ones that are currently installed.
-
-**Args:**
-
-- <b>`zip_path`</b> (Path):  The path to the client or server zip file that contains the version.json  file to check.
-
-**Raises:**
-
-- <b>`ValueError`</b>:  If at least one version mismatch is found.
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L81"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
 ## <kbd>class</kbd> `FHEModelServer`
 
 Server API to load and run the FHE circuit.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L86"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L33"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -56,7 +34,7 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L45"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -66,9 +44,13 @@ load()
 
 Load the circuit.
 
+**Raises:**
+
+- <b>`ValueError`</b>:  if mismatch in versions between serialized file and runtime
+
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L106"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L77"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `run`
 
@@ -92,13 +74,13 @@ Run the model on the server over encrypted data.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L134"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FHEModelDev`
 
 Dev API to save the model and then load and run the FHE circuit.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -115,7 +97,7 @@ Initialize the FHE API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L176"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L147"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save`
 
@@ -135,13 +117,13 @@ Export all needed artifacts for the client and server.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L235"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L209"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FHEModelClient`
 
 Client API to encrypt and decrypt FHE data.
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -232,7 +214,7 @@ Get the serialized evaluation keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L258"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/deployment/fhe_client_server.py#L232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load`
 
@@ -241,6 +223,10 @@ load()
 ```
 
 Load the quantizers along with the FHE specs.
+
+**Raises:**
+
+- <b>`ValueError`</b>:  if mismatch in versions between serialized file and runtime
 
 ______________________________________________________________________
 

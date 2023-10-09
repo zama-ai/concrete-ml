@@ -10,11 +10,11 @@ Since FHE is currently limited to 16-bit integers, it is necessary to quantize m
 
 Quantization implemented in Concrete ML is applied in two ways:
 
-1. Built-in models apply quantization internally and the user only needs to configure some quantization parameters. This approach requires little work by the user but may not be a one-size-fits-all solution for all types of models. The final quantized model is FHE-friendly and ready to predict over encrypted data. In this setting, Post-Training Quantization (PTQ) is used for linear models, data quantization is used for tree-based models and, finally, Quantization Aware Training (QAT) is included in the built-in neural network models.
+1. Built-in models apply quantization internally and the user only needs to configure some quantization parameters. This approach requires little work by the user but may not be a one-size-fits-all solution for all types of models. The final quantized model is FHE-friendly and ready to predict over encrypted data. In this setting, Post-Training Quantization (PTQ) is for linear models, data quantization is used for tree-based models and, finally, Quantization Aware Training (QAT) is included in the built-in neural network models.
 1. For custom neural networks with more complex topology, obtaining FHE-compatible models with good accuracy requires QAT. Concrete ML offers the possibility for the user to perform quantization before compiling to FHE. This can be achieved through a third-party library that offers QAT tools, such as [Brevitas](https://github.com/Xilinx/brevitas) for PyTorch. In this approach, the user is responsible for implementing a full-integer model, respecting FHE constraints. Please refer to the [advanced QAT tutorial](../deep-learning/fhe_friendly_models.md) for tips on designing FHE neural networks.
 
 {% hint style="info" %}
-While Concrete ML quantizes machine learning models, the data that the client has is often in floating point. Concrete ML models provide APIs to quantize inputs and de-quantize outputs.
+While Concrete ML quantizes machine learning models, the data the client has is often in floating point. Concrete ML models provide APIs to quantize inputs and de-quantize outputs.
 
 Note that the floating point input is quantized in the clear, meaning it is converted to integers before being encrypted. The model's outputs are also integers and decrypted before de-quantization.
 {% endhint %}
@@ -34,10 +34,6 @@ The other important parameter from this quantization schema is the `zero point` 
 $$Z_p = \mathtt{round} \left(- \frac{\alpha}{S} \right)$$
 
 When using quantized values in a matrix multiplication or convolution, the equations for computing the result become more complex. The IntelLabs Distiller documentation provides a more [detailed explanation](https://intellabs.github.io/distiller/algo_quantization.html) of the maths used to quantize values and how to keep computations consistent.
-
-### Quantization special cases
-
-Machine learning acceleration solutions are often based on integer computation of activations. To make quantization computations hardware-friendly, a popular approach is to ensure that scales are powers-of-two, which allows the replacement of the division in the equations above with a shift-right operation. TFHE also has a fast primitive for right bit-shift that enables acceleration in the special case of power-of-two scales.
 
 ### Configuring model quantization parameters
 

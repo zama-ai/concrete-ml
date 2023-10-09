@@ -41,19 +41,6 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <!--- end -->
       </tr>
       <tr>
-         <td><strong>Federated Learning and Private Inference</strong></td>
-         <td>
-            <p></p>
-            <p>Use federated learning to train a Logistic Regression while preserving training data confidentiality. 
-            Import the model into Concrete ML and perform encrypted prediction</p>
-         </td>
-         <td></td>
-         <!--- start -->
-         <td><a href="../.gitbook/assets/demo_mnist.png">mnist.png</a></td>
-         <td><a href="../../use_case_examples/federated_learning">use_case_examples/federated_learning</a></td>
-         <!--- end -->
-      </tr>
-      <tr>
          <td><strong>Neural Network Fine-tuning</strong> </td>
          <td>
             <p></p>
@@ -62,7 +49,7 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_nn_finetuning.png">nn.png</a></td>
-         <td><a href="../../use_case_examples/cifar/cifar_brevitas_finetuning">use_case_examples/cifar/cifar_brevitas_finetuning</a></td>
+         <td><a href="../../use_case_examples/cifar_brevitas_finetuning">use_case_examples/cifar_brevitas_finetuning</a></td>
          <!--- end -->
       </tr>
       <tr>
@@ -74,7 +61,19 @@ Simpler tutorials that discuss only model usage and compilation are also availab
          <td></td>
          <!--- start -->
          <td><a href="../.gitbook/assets/demo_nn_splitting.png">client-server-1.png</a></td>
-         <td><a href="../../use_case_examples/cifar/cifar_brevitas_with_model_splitting">use_case_examples/cifar/cifar_brevitas_with_model_splitting</a></td>
+         <td><a href="../../use_case_examples/cifar_brevitas_with_model_splitting">use_case_examples/cifar_brevitas_with_model_splitting</a></td>
+         <!--- end -->
+      </tr>
+      <tr>
+         <td><strong>Handwritten digit classification</strong></td>
+         <td>
+            <p></p>
+            <p>Train a neural network model to classify encrypted digit images from the MNIST data-set</p>
+         </td>
+         <td></td>
+         <!--- start -->
+         <td><a href="../.gitbook/assets/demo_mnist.png">mnist.png</a></td>
+         <td><a href="../../use_case_examples/mnist">use_case_examples/mnist</a></td>
          <!--- end -->
       </tr>
       <tr>

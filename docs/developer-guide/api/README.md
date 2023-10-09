@@ -33,7 +33,6 @@
 - [`concrete.ml.quantization.base_quantized_op`](./concrete.ml.quantization.base_quantized_op.md#module-concretemlquantizationbase_quantized_op): Base Quantized Op class that implements quantization for a float numpy op.
 - [`concrete.ml.quantization.post_training`](./concrete.ml.quantization.post_training.md#module-concretemlquantizationpost_training): Post Training Quantization methods.
 - [`concrete.ml.quantization.quantized_module`](./concrete.ml.quantization.quantized_module.md#module-concretemlquantizationquantized_module): QuantizedModule API.
-- [`concrete.ml.quantization.quantized_module_passes`](./concrete.ml.quantization.quantized_module_passes.md#module-concretemlquantizationquantized_module_passes): Optimization passes for QuantizedModules.
 - [`concrete.ml.quantization.quantized_ops`](./concrete.ml.quantization.quantized_ops.md#module-concretemlquantizationquantized_ops): Quantized versions of the ONNX operators for post training quantization.
 - [`concrete.ml.quantization.quantizers`](./concrete.ml.quantization.quantizers.md#module-concretemlquantizationquantizers): Quantization utilities for a numpy array/tensor.
 - [`concrete.ml.search_parameters`](./concrete.ml.search_parameters.md#module-concretemlsearch_parameters): Modules for `p_error` search.
@@ -42,7 +41,6 @@
 - [`concrete.ml.sklearn.base`](./concrete.ml.sklearn.base.md#module-concretemlsklearnbase): Base classes for all estimators.
 - [`concrete.ml.sklearn.glm`](./concrete.ml.sklearn.glm.md#module-concretemlsklearnglm): Implement sklearn's Generalized Linear Models (GLM).
 - [`concrete.ml.sklearn.linear_model`](./concrete.ml.sklearn.linear_model.md#module-concretemlsklearnlinear_model): Implement sklearn linear model.
-- [`concrete.ml.sklearn.neighbors`](./concrete.ml.sklearn.neighbors.md#module-concretemlsklearnneighbors): Implement sklearn linear model.
 - [`concrete.ml.sklearn.qnn`](./concrete.ml.sklearn.qnn.md#module-concretemlsklearnqnn): Scikit-learn interface for fully-connected quantized neural networks.
 - [`concrete.ml.sklearn.qnn_module`](./concrete.ml.sklearn.qnn_module.md#module-concretemlsklearnqnn_module): Sparse Quantized Neural Network torch module.
 - [`concrete.ml.sklearn.rf`](./concrete.ml.sklearn.rf.md#module-concretemlsklearnrf): Implement RandomForest models.
@@ -52,7 +50,6 @@
 - [`concrete.ml.sklearn.xgb`](./concrete.ml.sklearn.xgb.md#module-concretemlsklearnxgb): Implements XGBoost models.
 - [`concrete.ml.torch`](./concrete.ml.torch.md#module-concretemltorch): Modules for torch to numpy conversion.
 - [`concrete.ml.torch.compile`](./concrete.ml.torch.compile.md#module-concretemltorchcompile): torch compilation function.
-- [`concrete.ml.torch.hybrid_model`](./concrete.ml.torch.hybrid_model.md#module-concretemltorchhybrid_model): Implement the conversion of a torch model to a hybrid fhe/torch inference.
 - [`concrete.ml.torch.numpy_module`](./concrete.ml.torch.numpy_module.md#module-concretemltorchnumpy_module): A torch to numpy module.
 - [`concrete.ml.version`](./concrete.ml.version.md#module-concretemlversion): File to manage the version of the package.
 
@@ -88,8 +85,8 @@
 - [`torch_models.NetWithConstantsFoldedBeforeOps`](./concrete.ml.pytest.torch_models.md#class-netwithconstantsfoldedbeforeops): Torch QAT model that does not quantize the inputs.
 - [`torch_models.NetWithLoops`](./concrete.ml.pytest.torch_models.md#class-netwithloops): Torch model, where we reuse some elements in a loop.
 - [`torch_models.PaddingNet`](./concrete.ml.pytest.torch_models.md#class-paddingnet): Torch QAT model that applies various padding patterns.
-- [`torch_models.PartialQATModel`](./concrete.ml.pytest.torch_models.md#class-partialqatmodel): A model with a QAT Module.
 - [`torch_models.QATTestModule`](./concrete.ml.pytest.torch_models.md#class-qattestmodule): Torch model that implements a simple non-uniform quantizer.
+- [`torch_models.QNNFashionMNIST`](./concrete.ml.pytest.torch_models.md#class-qnnfashionmnist): A small quantized network with Brevitas for FashionMNIST classification.
 - [`torch_models.QuantCustomModel`](./concrete.ml.pytest.torch_models.md#class-quantcustommodel): A small quantized network with Brevitas, trained on make_classification.
 - [`torch_models.ShapeOperationsNet`](./concrete.ml.pytest.torch_models.md#class-shapeoperationsnet): Torch QAT model that reshapes the input.
 - [`torch_models.SimpleNet`](./concrete.ml.pytest.torch_models.md#class-simplenet): Fake torch model used to generate some onnx.
@@ -109,7 +106,6 @@
 - [`post_training.PostTrainingAffineQuantization`](./concrete.ml.quantization.post_training.md#class-posttrainingaffinequantization): Post-training Affine Quantization.
 - [`post_training.PostTrainingQATImporter`](./concrete.ml.quantization.post_training.md#class-posttrainingqatimporter): Converter of Quantization Aware Training networks.
 - [`quantized_module.QuantizedModule`](./concrete.ml.quantization.quantized_module.md#class-quantizedmodule): Inference for a quantized model.
-- [`quantized_module_passes.PowerOfTwoScalingRoundPBSAdapter`](./concrete.ml.quantization.quantized_module_passes.md#class-poweroftwoscalingroundpbsadapter): Detect neural network patterns that can be optimized with round PBS.
 - [`quantized_ops.ONNXConstantOfShape`](./concrete.ml.quantization.quantized_ops.md#class-onnxconstantofshape): ConstantOfShape operator.
 - [`quantized_ops.ONNXGather`](./concrete.ml.quantization.quantized_ops.md#class-onnxgather): Gather operator.
 - [`quantized_ops.ONNXShape`](./concrete.ml.quantization.quantized_ops.md#class-onnxshape): Shape operator.
@@ -177,8 +173,6 @@
 - [`base.BaseTreeEstimatorMixin`](./concrete.ml.sklearn.base.md#class-basetreeestimatormixin): Mixin class for tree-based estimators.
 - [`base.BaseTreeRegressorMixin`](./concrete.ml.sklearn.base.md#class-basetreeregressormixin): Mixin class for tree-based regressors.
 - [`base.QuantizedTorchEstimatorMixin`](./concrete.ml.sklearn.base.md#class-quantizedtorchestimatormixin): Mixin that provides quantization for a torch module and follows the Estimator API.
-- [`base.SklearnKNeighborsClassifierMixin`](./concrete.ml.sklearn.base.md#class-sklearnkneighborsclassifiermixin): A Mixin class for sklearn KNeighbors classifiers with FHE.
-- [`base.SklearnKNeighborsMixin`](./concrete.ml.sklearn.base.md#class-sklearnkneighborsmixin): A Mixin class for sklearn KNeighbors models with FHE.
 - [`base.SklearnLinearClassifierMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearclassifiermixin): A Mixin class for sklearn linear classifiers with FHE.
 - [`base.SklearnLinearModelMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearmodelmixin): A Mixin class for sklearn linear models with FHE.
 - [`base.SklearnLinearRegressorMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearregressormixin): A Mixin class for sklearn linear regressors with FHE.
@@ -190,7 +184,6 @@
 - [`linear_model.LinearRegression`](./concrete.ml.sklearn.linear_model.md#class-linearregression): A linear regression model with FHE.
 - [`linear_model.LogisticRegression`](./concrete.ml.sklearn.linear_model.md#class-logisticregression): A logistic regression model with FHE.
 - [`linear_model.Ridge`](./concrete.ml.sklearn.linear_model.md#class-ridge): A Ridge regression model with FHE.
-- [`neighbors.KNeighborsClassifier`](./concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier): A k-nearest classifier model with FHE.
 - [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): A Fully-Connected Neural Network classifier with FHE.
 - [`qnn.NeuralNetRegressor`](./concrete.ml.sklearn.qnn.md#class-neuralnetregressor): A Fully-Connected Neural Network regressor with FHE.
 - [`qnn_module.SparseQuantNeuralNetwork`](./concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork): Sparse Quantized Neural Network.
@@ -202,11 +195,6 @@
 - [`tree.DecisionTreeRegressor`](./concrete.ml.sklearn.tree.md#class-decisiontreeregressor): Implements the sklearn DecisionTreeClassifier.
 - [`xgb.XGBClassifier`](./concrete.ml.sklearn.xgb.md#class-xgbclassifier): Implements the XGBoost classifier.
 - [`xgb.XGBRegressor`](./concrete.ml.sklearn.xgb.md#class-xgbregressor): Implements the XGBoost regressor.
-- [`hybrid_model.HybridFHEMode`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemode): Simple enum for different modes of execution of HybridModel.
-- [`hybrid_model.HybridFHEModel`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodel): Convert a model to a hybrid model.
-- [`hybrid_model.HybridFHEModelServer`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodelserver): Hybrid FHE Model Server.
-- [`hybrid_model.LoggerStub`](./concrete.ml.torch.hybrid_model.md#class-loggerstub): Placeholder type for a typical logger like the one from loguru.
-- [`hybrid_model.RemoteModule`](./concrete.ml.torch.hybrid_model.md#class-remotemodule): A wrapper class for the modules to be done remotely with FHE.
 - [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
 
 ## Functions
@@ -253,13 +241,11 @@
 - [`deploy_to_docker.delete_image`](./concrete.ml.deployment.deploy_to_docker.md#function-delete_image): Delete a Docker image.
 - [`deploy_to_docker.main`](./concrete.ml.deployment.deploy_to_docker.md#function-main): Deploy function.
 - [`deploy_to_docker.stop_container`](./concrete.ml.deployment.deploy_to_docker.md#function-stop_container): Kill all containers that use a given image.
-- [`fhe_client_server.check_concrete_versions`](./concrete.ml.deployment.fhe_client_server.md#function-check_concrete_versions): Check that current versions match the ones used in development.
 - [`utils.filter_logs`](./concrete.ml.deployment.utils.md#function-filter_logs): Filter logs based on previous logs.
 - [`utils.is_connection_available`](./concrete.ml.deployment.utils.md#function-is_connection_available): Check if ssh connection is available.
 - [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connection to be available.
-- [`convert.fuse_matmul_bias_to_gemm`](./concrete.ml.onnx.convert.md#function-fuse_matmul_bias_to_gemm): Fuse sequence of matmul -> add into a gemm node.
-- [`convert.get_equivalent_numpy_forward_from_onnx`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_onnx): Get the numpy equivalent forward of the provided ONNX model.
-- [`convert.get_equivalent_numpy_forward_from_torch`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_torch): Get the numpy equivalent forward of the provided torch Module.
+- [`convert.get_equivalent_numpy_forward`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward): Get the numpy equivalent forward of the provided ONNX model.
+- [`convert.get_equivalent_numpy_forward_and_onnx_model`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_and_onnx_model): Get the numpy equivalent forward of the provided torch Module.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
 - [`onnx_impl_utils.compute_onnx_pool_padding`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_onnx_pool_padding): Compute any additional padding needed to compute pooling layers.
 - [`onnx_impl_utils.numpy_onnx_pad`](./concrete.ml.onnx.onnx_impl_utils.md#function-numpy_onnx_pad): Pad a tensor according to ONNX spec, using an optional custom pad value.
@@ -290,7 +276,6 @@
 - [`ops_impl.numpy_celu`](./concrete.ml.onnx.ops_impl.md#function-numpy_celu): Compute celu in numpy according to ONNX spec.
 - [`ops_impl.numpy_concatenate`](./concrete.ml.onnx.ops_impl.md#function-numpy_concatenate): Apply concatenate in numpy according to ONNX spec.
 - [`ops_impl.numpy_constant`](./concrete.ml.onnx.ops_impl.md#function-numpy_constant): Return the constant passed as a kwarg.
-- [`ops_impl.numpy_conv`](./concrete.ml.onnx.ops_impl.md#function-numpy_conv): Compute N-D convolution using Torch.
 - [`ops_impl.numpy_cos`](./concrete.ml.onnx.ops_impl.md#function-numpy_cos): Compute cos in numpy according to ONNX spec.
 - [`ops_impl.numpy_cosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_cosh): Compute cosh in numpy according to ONNX spec.
 - [`ops_impl.numpy_div`](./concrete.ml.onnx.ops_impl.md#function-numpy_div): Compute div in numpy according to ONNX spec.
@@ -300,7 +285,6 @@
 - [`ops_impl.numpy_exp`](./concrete.ml.onnx.ops_impl.md#function-numpy_exp): Compute exponential in numpy according to ONNX spec.
 - [`ops_impl.numpy_flatten`](./concrete.ml.onnx.ops_impl.md#function-numpy_flatten): Flatten a tensor into a 2d array.
 - [`ops_impl.numpy_floor`](./concrete.ml.onnx.ops_impl.md#function-numpy_floor): Compute Floor in numpy according to ONNX spec.
-- [`ops_impl.numpy_gemm`](./concrete.ml.onnx.ops_impl.md#function-numpy_gemm): Compute Gemm in numpy according to ONNX spec.
 - [`ops_impl.numpy_greater`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater): Compute greater in numpy according to ONNX spec.
 - [`ops_impl.numpy_greater_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_float): Compute greater in numpy according to ONNX spec and cast outputs to floats.
 - [`ops_impl.numpy_greater_or_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_greater_or_equal): Compute greater or equal in numpy according to ONNX spec.
@@ -344,17 +328,18 @@
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
 - [`utils.check_serialization`](./concrete.ml.pytest.utils.md#function-check_serialization): Check that the given object can properly be serialized.
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given data-set.
-- [`utils.get_sklearn_all_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_all_models_and_datasets): Get the pytest parameters to use for testing all models available in Concrete ML.
-- [`utils.get_sklearn_linear_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_linear_models_and_datasets): Get the pytest parameters to use for testing linear models.
-- [`utils.get_sklearn_neighbors_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_neighbors_models_and_datasets): Get the pytest parameters to use for testing neighbor models.
-- [`utils.get_sklearn_neural_net_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_neural_net_models_and_datasets): Get the pytest parameters to use for testing neural network models.
-- [`utils.get_sklearn_tree_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_tree_models_and_datasets): Get the pytest parameters to use for testing tree-based models.
+- [`utils.get_random_extract_of_sklearn_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_random_extract_of_sklearn_models_and_datasets): Return a random sublist of sklearn_models_and_datasets.
+- [`utils.get_torchvision_dataset`](./concrete.ml.pytest.utils.md#function-get_torchvision_dataset): Get train or testing data-set.
 - [`utils.instantiate_model_generic`](./concrete.ml.pytest.utils.md#function-instantiate_model_generic): Instantiate any Concrete ML model type.
 - [`utils.load_torch_model`](./concrete.ml.pytest.utils.md#function-load_torch_model): Load an object saved with torch.save() from a file or dict.
 - [`utils.values_are_equal`](./concrete.ml.pytest.utils.md#function-values_are_equal): Indicate if two values are equal.
 - [`post_training.get_n_bits_dict`](./concrete.ml.quantization.post_training.md#function-get_n_bits_dict): Convert the n_bits parameter into a proper dictionary.
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`p_error_search.compile_and_simulated_fhe_inference`](./concrete.ml.search_parameters.p_error_search.md#function-compile_and_simulated_fhe_inference): Get the quantized module of a given model in FHE, simulated or not.
+- [`sklearn.get_sklearn_linear_models`](./concrete.ml.sklearn.md#function-get_sklearn_linear_models): Return the list of available linear models in Concrete ML.
+- [`sklearn.get_sklearn_models`](./concrete.ml.sklearn.md#function-get_sklearn_models): Return the list of available models in Concrete ML.
+- [`sklearn.get_sklearn_neural_net_models`](./concrete.ml.sklearn.md#function-get_sklearn_neural_net_models): Return the list of available neural net models in Concrete ML.
+- [`sklearn.get_sklearn_tree_models`](./concrete.ml.sklearn.md#function-get_sklearn_tree_models): Return the list of available tree models in Concrete ML.
 - [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
 - [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
 - [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.
@@ -367,7 +352,3 @@
 - [`compile.compile_onnx_model`](./concrete.ml.torch.compile.md#function-compile_onnx_model): Compile a torch module into an FHE equivalent.
 - [`compile.compile_torch_model`](./concrete.ml.torch.compile.md#function-compile_torch_model): Compile a torch module into an FHE equivalent.
 - [`compile.convert_torch_tensor_or_numpy_array_to_numpy_array`](./concrete.ml.torch.compile.md#function-convert_torch_tensor_or_numpy_array_to_numpy_array): Convert a torch tensor or a numpy array to a numpy array.
-- [`compile.has_any_qnn_layers`](./concrete.ml.torch.compile.md#function-has_any_qnn_layers): Check if a torch model has QNN layers.
-- [`hybrid_model.convert_conv1d_to_linear`](./concrete.ml.torch.hybrid_model.md#function-convert_conv1d_to_linear): Convert all Conv1D layers in a module or a Conv1D layer itself to nn.Linear.
-- [`hybrid_model.tuple_to_underscore_str`](./concrete.ml.torch.hybrid_model.md#function-tuple_to_underscore_str): Convert a tuple to a string representation.
-- [`hybrid_model.underscore_str_to_tuple`](./concrete.ml.torch.hybrid_model.md#function-underscore_str_to_tuple): Convert a a string representation of a tuple to a tuple.
