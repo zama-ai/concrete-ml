@@ -479,9 +479,11 @@ finalize_nb:
 # A warning in a package unrelated to the project made pytest fail with notebooks
 # Run notebook tests without warnings as sources are already tested with warnings treated as errors
 # We need to disable xdist with -n0 to make sure to not have IPython port race conditions
+# The deployment notebook is currently skipped until the AMI is fixed
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4064
 .PHONY: pytest_nb # Launch notebook tests
 pytest_nb:
-	NOTEBOOKS=$$(find docs -name "*.ipynb" | grep -v _build | grep -v .ipynb_checkpoints || true) && \
+	NOTEBOOKS=$$(find docs -name "*.ipynb" ! -name "*Deployment*" | grep -v _build | grep -v .ipynb_checkpoints || true) && \
 	if [[ "$${NOTEBOOKS}" != "" ]]; then \
 		echo "$${NOTEBOOKS}" | xargs poetry run pytest -svv \
 		--capture=tee-sys \
