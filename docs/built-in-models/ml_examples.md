@@ -2,7 +2,7 @@
 
 These examples illustrate the basic usage of built-in Concrete ML models. For more examples showing how to train high-accuracy models on more complex data-sets, see the [Demos and Tutorials](../getting-started/showcase.md) section.
 
-## FHE constraints considerations
+## FHE constraints
 
 In Concrete ML, built-in linear models are exact equivalents to their scikit-learn counterparts. As they do not apply any non-linearity during inference, these models are very fast (~1ms FHE inference time) and can use high-precision integers (between 20-25 bits).
 

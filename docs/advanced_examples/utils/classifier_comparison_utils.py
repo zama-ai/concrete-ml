@@ -10,43 +10,42 @@
 import warnings
 
 warnings.simplefilter(action="ignore", category=FutureWarning)
-
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-from concrete.fhe.compilation.configuration import Configuration
 from matplotlib.colors import ListedColormap
 from sklearn.datasets import make_circles, make_classification, make_moons
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPClassifier
 from sklearn.preprocessing import StandardScaler
 
-from concrete.ml.sklearn import DecisionTreeClassifier, NeuralNetClassifier
+from concrete.ml.sklearn import DecisionTreeClassifier
 
 ALWAYS_USE_SIM = False
 
-# pylint: disable=too-many-locals,too-many-statements,too-many-branches
-def make_classifier_comparison(title, classifiers, decision_level, verbose=False):
+# pylint: disable=too-many-locals,too-many-statements,too-many-branches,invalid-name
+def make_classifier_comparison(title, classifiers, decision_level, verbose=False, save_plot=False):
 
     h = 0.04  # Step size in the mesh
+    n_samples = 200
 
     X, y = make_classification(
-        n_samples=200,
+        n_samples=n_samples,
         n_features=2,
         n_redundant=0,
         n_informative=2,
         random_state=1,
         n_clusters_per_class=1,
     )
+    # pylint: disable-next=no-member
     rng = np.random.RandomState(2)
     X += 2 * rng.uniform(size=X.shape)
     linearly_separable = (X, y)
 
     datasets = [
-        make_moons(n_samples=200, noise=0.3, random_state=0),
-        make_circles(n_samples=200, noise=0.2, factor=0.5, random_state=1),
+        make_moons(n_samples=n_samples, noise=0.2, random_state=0),
+        make_circles(n_samples=n_samples, noise=0.2, factor=0.5, random_state=1),
         linearly_separable,
     ]
 
@@ -55,6 +54,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
     fig, axs = plt.subplots(len(datasets), 2 * len(classifiers) + 1, figsize=(32, 16))
     fig.suptitle(title, fontsize=20)
     fig.patch.set_facecolor("white")
+    plt.subplots_adjust(top=0.9)
 
     # Iterate over data-sets
     for i, dataset in enumerate(datasets):
@@ -71,6 +71,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
         y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
         xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
 
+        # pylint: disable-next=no-member
         cm = plt.cm.RdBu
         cm_bright = ListedColormap(["#FF0000", "#0000FF"])
         ax = axs[i, 0]
@@ -118,7 +119,11 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             sklearn_y_pred = sklearn_model.predict(X_test)
 
             # Compile the Concrete ML model
+            time_begin = time.time()
             circuit = concrete_model.compile(X_train)
+
+            if verbose:
+                print(f"Compilation time: {(time.time() - time_begin):.4f} seconds\n")
 
             # If the prediction are done in FHE, generate the key
             if not ALWAYS_USE_SIM:
@@ -141,7 +146,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             if verbose:
                 print(
-                    f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    f"FHE Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
                     "seconds per sample\n"
                 )
 
@@ -150,7 +155,6 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             concrete_score = accuracy_score(concrete_y_pred, y_test)
 
             is_a_tree_based_model = concrete_model.__class__ in [
-                DecisionTreeClassifier,
                 DecisionTreeClassifier,
             ]
 
@@ -242,6 +246,9 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                         size=font_size_text,
                         horizontalalignment="right",
                     )
+
+    if save_plot:
+        plt.savefig(f"./{title}.png")
 
     plt.tight_layout()
     plt.show()

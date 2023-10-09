@@ -22,6 +22,7 @@
     built-in-models/linear.md
     built-in-models/tree.md
     built-in-models/neural-networks.md
+    built-in-models/nearest-neighbors.md
     built-in-models/pandas.md
     built-in-models/ml_examples.md
 
@@ -49,6 +50,7 @@
     advanced-topics/client_server.md
     advanced-topics/advanced_features.md
     advanced-topics/serialization.md
+    advanced-topics/hybrid-models.md
 
 .. toctree::
     :maxdepth: 0

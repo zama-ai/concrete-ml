@@ -1,15 +1,14 @@
 # Prediction with FHE
 
-Concrete ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE, and decryption in a single step. There is the option to execute the individual steps separately, however, for more control. The APIs to accomplish this are different for:
+Concrete ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE, and decryption in a single step. For more control, these individual steps can be executed separately. The APIs used to accomplish this are different for:
 
 - [Built-in models](#built-in-models)
 - [Custom models](#custom-models)
 
 ## Built-in models
 
-The following example shows how to create a synthetic data-set and how to use it
-to train a LogisticRegression model from Concrete ML.
-Next, the dedicated functions for encryption, inference and decryption are discussed.
+The following example shows how to create a synthetic data-set and how to use it to train a LogisticRegression model from Concrete ML.
+Next, we will discuss the dedicated functions for encryption, inference, and decryption.
 
 ```python
 from sklearn.datasets import make_classification

@@ -8,7 +8,7 @@ ONNX ops implementation in Python + NumPy.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L30"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L31"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `cast_to_float`
 
@@ -28,7 +28,7 @@ Cast values to floating points.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L98"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L99"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `onnx_func_raw_args`
 
@@ -49,7 +49,7 @@ Decorate a numpy onnx function to flag the raw/non quantized inputs.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_where_body`
 
@@ -73,7 +73,7 @@ This function is not mapped to any ONNX operator (as opposed to numpy_where). It
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L149"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_where`
 
@@ -95,7 +95,7 @@ Compute the equivalent of numpy.where.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L169"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_add`
 
@@ -118,7 +118,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Add-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L219"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L220"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_constant`
 
@@ -137,6 +137,42 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Constant-13
 **Returns:**
 
 - <b>`Any`</b>:  The stored constant.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L244"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_gemm`
+
+```python
+numpy_gemm(
+    a: ndarray,
+    b: ndarray,
+    c: Optional[ndarray] = None,
+    alpha: float = 1,
+    beta: float = 1,
+    transA: int = 0,
+    transB: int = 0
+) → Tuple[ndarray]
+```
+
+Compute Gemm in numpy according to ONNX spec.
+
+See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Gemm-13
+
+**Args:**
+
+- <b>`a`</b> (numpy.ndarray):  Input tensor A. The shape of A should be (M, K) if transA is 0, or (K, M)  if transA is non-zero.
+- <b>`b`</b> (numpy.ndarray):  Input tensor B. The shape of B should be (K, N) if transB is 0, or (N, K)  if transB is non-zero.
+- <b>`c`</b> (Optional\[numpy.ndarray\]):  Optional input tensor C. If not specified, the  computation is done as if C is a scalar 0. The shape of C should be unidirectional  broadcastable to (M, N).  Defaults to None.
+- <b>`alpha`</b> (float):  Scalar multiplier for the product of input tensors A * B.  Defaults to 1.
+- <b>`beta`</b> (float):  Scalar multiplier for input tensor C.  Defaults to 1.
+- <b>`transA`</b> (int):  Whether A should be transposed. The type is kept as int as it is the  type used by ONNX and it can easily be interpreted by Python as a boolean.  Defaults to 0.
+- <b>`transB`</b> (int):  Whether B should be transposed. The type is kept as int as it is the  type used by ONNX and it can easily be interpreted by Python as a boolean.  Defaults to 0.
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  The tuple containing the result tensor
 
 ______________________________________________________________________
 
@@ -1142,7 +1178,48 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Transpose-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `numpy_conv`
+
+```python
+numpy_conv(
+    x: ndarray,
+    w: ndarray,
+    b: Optional[ndarray] = None,
+    dilations: Tuple[int, ],
+    group: int = 1,
+    kernel_shape: Tuple[int, ],
+    pads: Tuple[int, ],
+    strides: Tuple[int, ]
+) → Tuple[ndarray]
+```
+
+Compute N-D convolution using Torch.
+
+Currently supports 2d convolution with torch semantics. This function is also ONNX compatible.
+
+See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Conv
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  input data (many dtypes are supported). Shape is N x C x H x W for 2d
+- <b>`w`</b> (numpy.ndarray):  weights tensor. Shape is (O x I x Kh x Kw) for 2d
+- <b>`b`</b> (Optional\[numpy.ndarray\]):  bias tensor, Shape is (O,). Default to None.
+- <b>`dilations`</b> (Tuple\[int, ...\]):  dilation of the kernel, default 1 on all dimensions.
+- <b>`group`</b> (int):  number of convolution groups, can be 1 or a multiple of both (C,) and (O,), so  that I = C / group. Default to 1.
+- <b>`kernel_shape`</b> (Tuple\[int, ...\]):  shape of the kernel. Should have 2 elements for 2d conv
+- <b>`pads`</b> (Tuple\[int, ...\]):  padding in ONNX format (begin, end) on each axis
+- <b>`strides`</b> (Tuple\[int, ...\]):  stride of the convolution on each axis
+
+**Returns:**
+
+- <b>`res`</b> (numpy.ndarray):  a tensor of size (N x OutChannels x OutHeight x OutWidth).
+- <b>`See https`</b>: //pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_avgpool`
 
@@ -1181,7 +1258,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1272"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_maxpool`
 
@@ -1222,7 +1299,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#MaxPool
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1376"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1375"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cast`
 
@@ -1247,7 +1324,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1400"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_batchnorm`
 
@@ -1289,7 +1366,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#BatchNormalization-
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1472"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1471"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_flatten`
 
@@ -1312,7 +1389,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Flatten-13.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1490"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1489"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or`
 
@@ -1335,7 +1412,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1508"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1507"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or_float`
 
@@ -1358,7 +1435,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1526"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1525"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_round`
 
@@ -1380,7 +1457,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Round-11 Remark tha
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1543"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1542"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_pow`
 
@@ -1403,7 +1480,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Pow-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1666"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1668"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_floor`
 
@@ -1425,7 +1502,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Floor-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1680"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1682"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_max`
 
@@ -1450,7 +1527,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1697"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1699"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_min`
 
@@ -1475,7 +1552,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1714"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1716"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sign`
 
@@ -1497,7 +1574,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1728"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1730"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_neg`
 
@@ -1519,7 +1596,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1742"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1744"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_concatenate`
 
@@ -1542,7 +1619,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#concat-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `RawOpOutput`
 
@@ -1550,7 +1627,7 @@ Type construct that marks an ndarray as a raw output of a quantized op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L42"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L43"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ONNXMixedFunction`
 
@@ -1558,7 +1635,7 @@ A mixed quantized-raw valued onnx function.
 
 ONNX functions will take inputs which can be either quantized or float. Some functions only take quantized inputs, but some functions take both types. For mixed functions we need to tag the parameters that do not need quantization. Thus quantized ops can know which inputs are not QuantizedArray and we avoid unnecessary wrapping of float values as QuantizedArrays.
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L53"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 

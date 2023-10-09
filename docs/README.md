@@ -48,6 +48,34 @@ print(f"Similarity: {(y_pred_fhe == y_pred_clear).mean():.1%}")
     # Similarity: 100.0%
 ```
 
+It is also possible to call encryption, model prediction, and decryption functions separately as follows.
+Executing these steps separately is equivalent to calling `predict_proba` on the model instance.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+# Predict probability for a single example
+y_proba_fhe = model.predict_proba(X_test[[0]], fhe="execute")
+
+# Quantize an original float input
+q_input = model.quantize_input(X_test[[0]])
+
+# Encrypt the input
+q_input_enc = model.fhe_circuit.encrypt(q_input)
+
+# Execute the linear product in FHE 
+q_y_enc = model.fhe_circuit.run(q_input_enc)
+
+# Decrypt the result (integer)
+q_y = model.fhe_circuit.decrypt(q_y_enc)
+
+# De-quantize and post-process the result
+y0 = model.post_processing(model.dequantize_output(q_y))
+
+print("Probability with `predict_proba`: ", y_proba_fhe)
+print("Probability with encrypt/run/decrypt calls: ", y0)
+```
+
 This example shows the typical flow of a Concrete ML model:
 
 - The model is trained on unencrypted (plaintext) data using scikit-learn. As FHE operates over integers, Concrete ML quantizes the model to use only integers during inference.
