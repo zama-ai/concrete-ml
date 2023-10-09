@@ -13,7 +13,7 @@ do
         "--wheel" )
             USE_PIP_WHEEL='true'
             shift
-            CONCRETE_NUMPY="$1"
+            CONCRETE_PYTHON="$1"
             ;;
         
         "--codeblocks" )
@@ -69,7 +69,7 @@ if ${USE_PIP_WHEEL}; then
     # Concrete-Numpy RC version
     PYPI_WHEEL=$(find dist -type f -name "*.whl")
     python -m pip install "${PYPI_WHEEL}"
-    python -m pip install "${CONCRETE_NUMPY}"
+    python -m pip install "${CONCRETE_PYTHON}"
 else
     if [ -z "${VERSION}" ]; then
         python -m pip install concrete-ml
