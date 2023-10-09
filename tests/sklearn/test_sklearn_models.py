@@ -582,14 +582,24 @@ def check_separated_inference(model, fhe_circuit, x, check_float_array_equal):
     # Quantize an input (float)
     q_x = model.quantize_input(x)
 
-    # Encrypt the input
-    q_x_encrypted = fhe_circuit.encrypt(q_x)
+    q_y_pred_list = []
+    for q_x_i in q_x:
+        # Expected input shape for 'encrypt' method is (1, n_features) while q_x_i
+        # is of shape (n_features,)
+        q_x_i = numpy.expand_dims(q_x_i, 0)
 
-    # Execute the linear product in FHE
-    q_y_pred_encrypted = fhe_circuit.run(q_x_encrypted)
+        # Encrypt the input
+        q_x_encrypted_i = fhe_circuit.encrypt(q_x_i)
 
-    # Decrypt the result (integer)
-    q_y_pred = fhe_circuit.decrypt(q_y_pred_encrypted)
+        # Execute the linear product in FHE
+        q_y_pred_encrypted_i = fhe_circuit.run(q_x_encrypted_i)
+
+        # Decrypt the result (integer)
+        q_y_pred_i = fhe_circuit.decrypt(q_y_pred_encrypted_i)
+
+        q_y_pred_list.append(q_y_pred_i[0])
+
+    q_y_pred = numpy.array(q_y_pred_list)
 
     # De-quantize the result
     y_pred = model.dequantize_output(q_y_pred)
