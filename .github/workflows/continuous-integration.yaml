@@ -92,7 +92,6 @@ env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  FAILED_TESTS_ARE_FLAKY: "false"
 
 jobs:
   matrix-preparation:
@@ -707,6 +706,8 @@ jobs:
         run: |
           make pytest_and_report
 
+          FAILED_TESTS_ARE_FLAKY="false"
+
           # If regular tests failed, check for flaky tests
           if [ $? -ne 0 ]; then
 
@@ -718,7 +719,6 @@ jobs:
 
             # Check if all failed tests are known flaky tests
             FAILED_TESTS_ARE_FLAKY=$(jq .all_failed_tests_are_flaky "failed_tests_report.json")
-            echo "FAILED_TESTS_ARE_FLAKY=FAILED_TESTS_ARE_FLAKY" >> "$GITHUB_ENV"
 
             # If all failed tests are known flaky tests, try to re-run them
             if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
@@ -729,6 +729,8 @@ jobs:
               exit 1
             fi
           fi
+
+          echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
 
       # If regular tests passed but at least one known flaky test have been re-run, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
