@@ -561,15 +561,10 @@ class BaseEstimator:
             jit=False,
         )
 
+        self._is_compiled = True
+
         # For mypy
         assert isinstance(self.fhe_circuit, Circuit)
-
-        # CRT simulation is not supported yet
-        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3841
-        if not USE_OLD_VL:
-            self.fhe_circuit.enable_fhe_simulation()  # pragma: no cover
-
-        self._is_compiled = True
 
         return self.fhe_circuit
 
