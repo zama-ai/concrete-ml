@@ -16,13 +16,13 @@ POETRY_VERSION:=1.2.2
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
 OPEN_PR="true"
 
-# If one wants to force the installation of a given rc version
+# Force the installation of a Concrete Python version, which is very useful with nightly versions
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CP_VERSION_SPEC_FOR_RC="concrete-python==2.4.0"
+CONCRETE_PYTHON_VERSION="concrete-python==2.4.0"
 
-# If one wants to use the last RC version
-# CP_VERSION_SPEC_FOR_RC="$$(poetry run python \
+# Force the installation of Concrete Python's latest version, release-candidates included
+# CONCRETE_PYTHON_VERSION="$$(poetry run python \
 # ./script/make_utils/pyproject_version_parser_helper.py \
 # --pyproject-toml-file pyproject.toml \
 # --get-pip-install-spec-for-dependency concrete-python)"
@@ -46,8 +46,8 @@ setup_env:
 		poetry install; \
 	fi
 
-	echo "Installing $(CP_VERSION_SPEC_FOR_RC)" && \
-	poetry run python -m pip install -U --pre "$(CP_VERSION_SPEC_FOR_RC)" --no-deps
+	echo "Installing $(CONCRETE_PYTHON_VERSION)" && \
+	poetry run python -m pip install -U --pre "$(CONCRETE_PYTHON_VERSION)" --no-deps
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 
 .PHONY: sync_env # Synchronise the environment
@@ -537,7 +537,7 @@ pytest_codeblocks:
 
 .PHONY: pytest_codeblocks_pypi_wheel_cml # Test code blocks using the PyPI local wheel of Concrete ML
 pytest_codeblocks_pypi_wheel_cml:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --codeblocks
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CONCRETE_PYTHON_VERSION)" --codeblocks
 
 .PHONY: pytest_codeblocks_pypi_cml # Test code blocks using PyPI Concrete ML
 pytest_codeblocks_pypi_cml:
@@ -587,17 +587,17 @@ show_type:show_scope
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:
-	./script/make_utils/licenses.sh --cp_version "$(CP_VERSION_SPEC_FOR_RC)"
+	./script/make_utils/licenses.sh --cp_version "$(CONCRETE_PYTHON_VERSION)"
 
 .PHONY: force_licenses # Generate the list of licenses of dependencies (force the regeneration)
 force_licenses:
-	./script/make_utils/licenses.sh --cp_version "$(CP_VERSION_SPEC_FOR_RC)" --force_update
+	./script/make_utils/licenses.sh --cp_version "$(CONCRETE_PYTHON_VERSION)" --force_update
 
 .PHONY: check_licenses # Check if the licenses of dependencies have changed
 check_licenses:
 	@TMP_OUT="$$(mktemp)" && \
 	if ! poetry run env bash ./script/make_utils/licenses.sh --check \
-		--cp_version "$(CP_VERSION_SPEC_FOR_RC)" > "$${TMP_OUT}"; then \
+		--cp_version "$(CONCRETE_PYTHON_VERSION)" > "$${TMP_OUT}"; then \
 		cat "$${TMP_OUT}"; \
 		rm -f "$${TMP_OUT}"; \
 		echo "Error while checking licenses, see log above."; \
@@ -787,11 +787,11 @@ check_unused_images:
 
 .PHONY: pytest_pypi_wheel_cml # Run tests using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)"
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CONCRETE_PYTHON_VERSION)"
 
 .PHONY: pytest_pypi_wheel_cml_no_flaky # Run tests (except flaky ones) using PyPI local wheel of Concrete ML
 pytest_pypi_wheel_cml_no_flaky:
-	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CP_VERSION_SPEC_FOR_RC)" --noflaky
+	./script/make_utils/pytest_pypi_cml.sh --wheel "$(CONCRETE_PYTHON_VERSION)" --noflaky
 
 .PHONY: pytest_pypi_cml # Run tests using PyPI Concrete ML
 pytest_pypi_cml:
