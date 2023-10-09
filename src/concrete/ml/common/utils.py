@@ -9,6 +9,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 import numpy
 import onnx
 import torch
+from concrete.fhe import Configuration
 from concrete.fhe.dtypes import Integer
 from sklearn.base import is_classifier, is_regressor
 
@@ -33,6 +34,8 @@ SUPPORTED_INT_TYPES = {
 SUPPORTED_TYPES = {**SUPPORTED_FLOAT_TYPES, **SUPPORTED_INT_TYPES}
 
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
+# Default number of bits to keep, when using the rounding feature
+DEFAULT_ROUNDING_THRESHOLD_BITS = 5
 
 # Use new VL with .simulate() by default once CP's multi-parameter/precision bug is fixed
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3856
@@ -582,3 +585,20 @@ def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool
         supported_dtypes[dtype] = supported_dtype
 
     return all(_is_of_dtype(value, supported_dtypes) for value in values)
+
+
+def force_auto_adjust_rounder_in_configuration(configuration, **kwargs):
+    """Force auto_adujet_rounder to True in configuration to use rounding feature.
+
+    Args:
+        configuration: Options to use for compilation
+        **kwargs: Additional keyword arguments
+
+    Returns:
+        configuration: The configuration with `auto_adjust_rounder` set to True
+    """
+    if configuration is None:
+        configuration = Configuration(auto_adjust_rounders=True, **kwargs)
+    else:
+        configuration.auto_adjust_rounders = True
+    return configuration

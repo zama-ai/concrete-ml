@@ -33,9 +33,11 @@ from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_m
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
+    DEFAULT_ROUNDING_THRESHOLD_BITS,
     USE_OLD_VL,
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
+    force_auto_adjust_rounder_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
 )
@@ -63,6 +65,8 @@ warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 from hummingbird.ml.operator_converters import constants  # noqa: E402
 
+# Default number of bits to keep
+DEFAULT_ROUNDING_THRESHOLD_BITS = 6
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
 _TREE_MODELS: Set[Type] = set()
@@ -335,9 +339,6 @@ class BaseEstimator:
 
         # Remove the n_bits parameters as this attribute is added by Concrete ML
         params.pop("n_bits", None)
-
-        # Remove the rounding_threshold_bits parameters as this attribute is added by Concrete ML
-        params.pop("rounding_threshold_bits", None)
 
         return params
 
@@ -1751,13 +1752,12 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _NEIGHBORS_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: int = 3, rounding_threshold_bits: int = 8):
+    def __init__(self, n_bits: int = 3):
         """Initialize the FHE knn model.
 
         Args:
             n_bits (int): Number of bits to quantize the model. The value will be used for
                 quantizing inputs and X_fit. Default to 3.
-            rounding_threshold_bits (int): Number of bits to keep, Default to 8.
         """
         self.n_bits: int = n_bits
         # _q_fit_X: In distance metric algorithms, `_q_fit_X` stores the training set to compute
@@ -1768,11 +1768,8 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._y: numpy.ndarray
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
-        # Topk labels
-        self._topk_labels: numpy.ndarray
-        # Number of bits to keep
-        self.rounding_threshold_bits = rounding_threshold_bits
-        self.rounder = cnp.AutoRounder(target_msbs=rounding_threshold_bits)
+        # _rounder: The auto-rounder object to use when rounding values
+        self._rounder = cnp.AutoRounder(target_msbs=DEFAULT_ROUNDING_THRESHOLD_BITS)
 
         BaseEstimator.__init__(self)
 
@@ -1986,17 +1983,20 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             labels = labels + cnp.zeros(labels.shape)
 
             n, k = x.size, self.n_neighbors
+            # Determine the number of stages for a sequence of length n
             ln2n = int(numpy.ceil(numpy.log2(n)))
 
-            # Number of stages
+            # Stage loop
             for t in range(ln2n - 1, -1, -1):
+                # p: Determines the range of indexes to be compared in each pass.
                 p = 2**t
+                # r: Offset that adjusts the range of indexes to be compared and sorted in each pass
                 r = 0
-                # d: Length of the bitonic sequence
+                # d: Comparison distance in each pass
                 d = p
-
-                with cnp.tag(f"top_k_t_{t}"):
-                    for bq in range(ln2n - 1, t - 1, -1):
+                # Number of passes for each stage
+                for bq in range(ln2n - 1, t - 1, -1):
+                    with cnp.tag(f"Stage_{t}_pass_{bq}"):
                         q = 2**bq
                         # Determine the range of indexes to be compared
                         range_i = numpy.array(
@@ -2019,32 +2019,36 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                         labels_a = gather1d(labels, range_i)  #
                         labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
 
-                        with cnp.tag("max"):
+                        with cnp.tag("diff"):
                             # Select max(a, b)
                             diff = b - a
-                            max_x = a + numpy.maximum(0, diff)
-
-                        # Swap if a > b
-                        # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
-                        x = scatter1d(x, a + b - max_x, range_i)
-                        # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
-                        x = scatter1d(x, max_x, range_i + d)
 
                         with cnp.tag("Rounded_sign"):
-                            diff = cnp.round_bit_pattern(diff, lsbs_to_remove=self.rounder)
-                            is_a_greater_than_b = diff >= 0
+                            diff = cnp.round_bit_pattern(diff, lsbs_to_remove=self._rounder)
 
-                        # Update labels array according to the max items
-                        with cnp.tag("label_swap"):
+                        with cnp.tag("max_value"):
+                            max_x = a + numpy.maximum(0, diff)
+
+                        with cnp.tag("swap_max_value"):
+                            # Swap if a > b
+                            # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
+                            x = scatter1d(x, a + b - max_x, range_i)
+                            # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
+                            x = scatter1d(x, max_x, range_i + d)
+
+                        # Update labels array according to the max value
+                        with cnp.tag("max_label"):
+                            is_a_greater_than_b = diff > 0
                             max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
 
-                        with cnp.tag("label_set"):
+                        with cnp.tag("swap_max_label"):
                             labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
                             labels = scatter1d(labels, max_labels, range_i + d)
 
                         # Update
-                        with cnp.tag("update_indices"):
+                        with cnp.tag("update"):
                             comparisons[range_i + d] = comparisons[range_i + d] + 1
+                            # Reduce the comparison distance by half
                             d = q - p
                             r = p
 
@@ -2056,7 +2060,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Reduce the bit-width precion to get smaller accumulators
         with cnp.tag("Rounded distance"):
-            distance_matrix = cnp.round_bit_pattern(distance_matrix, lsbs_to_remove=self.rounder)
+            distance_matrix = cnp.round_bit_pattern(distance_matrix, lsbs_to_remove=self._rounder)
 
         # The square root in the Euclidean distance calculation is not applied to speed up FHE
         # computations.
@@ -2067,13 +2071,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return numpy.expand_dims(topk_labels, axis=0)
 
     def compile(self, *args, **kwargs) -> Circuit:
-        def force_auto_adjust_rounder_in_configuration(configuration):
-            if configuration is None:
-                configuration = Configuration(auto_adjust_rounders=True, **kwargs)
-            else:
-                configuration.auto_adjust_rounders = True
-            return configuration
+        """Compile the model.
 
+        Args:
+            *args: Additional positional arguments
+            **kwargs: Additional keyword arguments
+
+        Returns:
+            Circuit: The compiled Circuit.
+        """
         # If a configuration instance is given as a positional parameter, set auto_adjust_rounder
         if len(args) >= 2:
             configuration = force_auto_adjust_rounder_in_configuration(args[1])
@@ -2086,6 +2092,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         else:
             configuration = kwargs.get("configuration", None)
             kwargs["configuration"] = force_auto_adjust_rounder_in_configuration(configuration)
+
         return BaseEstimator.compile(self, *args, **kwargs)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
@@ -2095,22 +2102,28 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         the k-nearest neighbors.
 
         Args:
-            y_preds (numpy.ndarray): The topk nearest labels
+            y_preds (numpy.ndarray): The topk nearest labels for each point.
 
         Returns:
-            numpy.ndarray: The majority vote.
+            numpy.ndarray: The majority vote for each point.
         """
+        return numpy.array([self.majority_vote(y.flatten()) for y in y_preds])
 
-        self._topk_labels = y_preds.squeeze()
+    def get_topk_labels(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        """Return the K-nearest labels of each point.
 
-        y_preds_processed = []
-        for y in y_preds:
-            vote = self.majority_vote(y.flatten())
-            y_preds_processed.append(vote)
+        Args:
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete ML Python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
 
-        return numpy.array(y_preds_processed)
-
-    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        Returns:
+            numpy.ndarray: The K-Nearest labels for each point.
+        """
 
         X = check_array_and_assert(X)
 
@@ -2118,7 +2131,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for query in X:
             topk_labels.append(BaseEstimator.predict(self, query[None], fhe=fhe))
 
-        y_preds = self.post_processing(numpy.array(topk_labels))
+        return numpy.array(topk_labels).squeeze()
+
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+
+        X = check_array_and_assert(X)
+
+        topk_labels = self.get_topk_labels(X, fhe)
+
+        y_preds = self.post_processing(topk_labels)
 
         return y_preds
 
