@@ -548,6 +548,7 @@ jobs:
           cp ./script/actions_utils/RELEASE_TEMPLATE.md "${RELEASE_BODY_FILE}"
           {
             echo "Docker Image: ${PUBLIC_RELEASE_IMAGE_BASE}:${{ env.GIT_TAG }}";
+            echo "Docker Hub: https://hub.docker.com/r/zamafhe/concrete-ml/tags";
             echo "pip: https://pypi.org/project/concrete-ml/${{ env.PROJECT_VERSION }}";
             echo "Documentation: https://docs.zama.ai/concrete-ml";
             echo "";
