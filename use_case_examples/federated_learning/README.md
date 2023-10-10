@@ -6,7 +6,7 @@ This example is inspired from the [flower blog post on LogisticRegression traini
 
 ## Setup
 
-To run this example you will need to have `concrete-ml` installed as well as the extra requirements from `requirements.txt`, using `python -m pip install -r requirements.txt`.
+To run this example you will need to install the requirements from `requirements.txt`, using `python -m pip install -r requirements.txt`.
 If you are using macOS with arm then you might need to launch the `./fix_grpc.sh` script for fix the `grpcio` package installation.
 
 ## Train the model
