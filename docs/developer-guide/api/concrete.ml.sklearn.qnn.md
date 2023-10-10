@@ -287,7 +287,7 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> n_classes\_
 
-Get the model's number of classes.
+Get the number of classes in the model.
 
 Using this attribute is deprecated.
 
@@ -321,13 +321,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> target_classes\_
 
-Get the model's classes.
+Get the classes of the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
+- <b>`Optional[numpy.ndarray]`</b>:  The classes of the model.
 
 ______________________________________________________________________
 

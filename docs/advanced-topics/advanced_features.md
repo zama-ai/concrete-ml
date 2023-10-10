@@ -16,7 +16,7 @@ In Concrete ML, there are three different ways to define the error probability:
 
 - setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#an-error-probability-for-an-individual-tlu))
 - setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-error-probability-for-the-entire-model))
-- not setting `p_error` nor `global_p_error`, and using default parameters (see [here](advanced_features.md#using-default-error-probability))
+- not setting `p_error` nor `global_p_error`, and using the default parameters (see [here](advanced_features.md#using-default-error-probability))
 
 {% hint style="warning" %}
 `p_error` and `global_p_error` are somehow two concurrent parameters, in the sense they both have an impact on the choice of cryptographic parameters. It is forbidden in Concrete ML to set both `p_error` and `global_p_error` simultaneously.
@@ -26,7 +26,7 @@ In Concrete ML, there are three different ways to define the error probability:
 
 The first way to set error probabilities in Concrete ML is at the local level, by directly setting the probability of error of each individual TLU. This probability is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being successful. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear.
 
-For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../getting-started/showcase.md)).
+For simplicity, it is best to use the [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, the default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
 Here is a visualization of the effect of the `p_error` on a neural network model with a `p_error = 0.1` compared to execution in the clear (i.e., no error):
 
@@ -40,7 +40,7 @@ Varying `p_error` in the one hidden-layer neural network above produces the foll
 |  0.01   | 0.41                |
 |   0.1   | 0.37                |
 
-The speedup depends on model complexity, but, in an iterative approach, it is possible to search for a good value of `p_error` to obtain a speedup while maintaining good accuracy. Concrete ML provides a tool to find a good value for `p_error` based on [binary search](advanced_features.md#searching-for-the-best-error-probability).
+The speedup depends on model complexity, but, in an iterative approach, it is possible to search for a suitable value of `p_error` to obtain a speedup while maintaining a desired level accuracy. Concrete ML provides a tool to find a suitable value for `p_error` based on [binary search](advanced_features.md#searching-for-the-best-error-probability).
 
 Users have the possibility to change this `p_error` by passing an argument to the `compile` function of any of the models. Here is an example:
 
@@ -80,13 +80,13 @@ clf.compile(X_train, global_p_error=0.1)
 
 In the above example, XGBoostClassifier in FHE has a 1/10 probability to have a shifted output value compared to the expected value. The shift is relative to the expected value, so even if the result is different, it should be **around** the expected value.
 
-### Using default error probability
+### Using the default error probability
 
 If neither `p_error` or `global_p_error` are set, Concrete ML employs `p_error = 2^-40` by default.
 
 ### Searching for the best error probability
 
-Currently finding a good `p_error` value _a-priori_ is not possible, as it is difficult to determine the impact of the TLU error on the output of a neural network. Concrete ML provides a tool to find a good `p_error` value that improves inference speed while maintaining accuracy. The method is based on binary search and evaluates the latency/accuracy trade-off iteratively.
+Currently finding a suitable `p_error` value _a-priori_ is not possible, as it is difficult to determine the impact of the TLU error on the output of a neural network. Concrete ML provides a tool to find a suitable `p_error` value that improves inference speed while maintaining accuracy. The method is based on binary search and evaluates the latency/accuracy trade-off iteratively.
 
 ```python
 from time import time
@@ -148,7 +148,7 @@ print(f"Accuracy = {accuracy_score(y_pred, y_train): .2%}")
 
 With this optimal `p_error`, accuracy is maintained while execution time is improved by a factor of 1.51.
 
-Please note that the default setting for the search interval is restricted to a range of 0.0 to 0.9. Increasing the upper bound beyond this range may result in longer execution times, especially when `p_error≈1`.
+Please note that the default setting for the search interval is restricted to be within the range of 0.0 to 0.9. Increasing the upper bound beyond this range may result in longer execution times, especially when `p_error≈1`.
 
 ## Rounded activations and quantizers
 
@@ -187,7 +187,7 @@ In practice, the process looks like this:
 1. Update P = P - 1
 1. repeat steps 2 and 3 until the accuracy loss is above a certain, acceptable threshold.
 
-An example of such implementation is available in [evaluate_torch_cml.py](../../use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py) and [CifarInFheWithSmallerAccumulators.ipynb](../../use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb)
+An example of such an implementation is available in [evaluate_torch_cml.py](../../use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py) and [CifarInFheWithSmallerAccumulators.ipynb](../../use_case_examples/cifar/cifar_brevitas_finetuning/CifarInFheWithSmallerAccumulators.ipynb)
 
 ## Seeing compilation information
 

@@ -15,7 +15,7 @@ Concrete ML provides several of the most popular linear models for `regression` 
 |              [Ridge](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-ridge)              |                    [Ridge](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html#sklearn.linear_model.Ridge)                     |
 |         [ElasticNet](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-elasticnet)         |             [ElasticNet](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet)             |
 
-Using these models in FHE is extremely similar to what can be done with scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists who have used this framework to get started with Concrete ML.
+Using these models in FHE is extremely similar to using scikit-learn's [API](https://scikit-learn.org/stable/modules/classes.html#module-sklearn.linear_model), making it easy for data scientists who have used this framework to get started with Concrete ML.
 
 Models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
@@ -23,13 +23,13 @@ It is possible to convert an already trained scikit-learn linear model to a Conc
 
 ## Quantization parameters
 
-The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. When non-linear mapping is applied by the model, such as _exp_ or _sigmoid_, Concrete ML applies it on the client-side, on clear-text values that are the decrypted output of the linear part of the model. Thus, Linear Models do not use table lookups, and can, therefore, use high precision integers for weight and inputs.
+The `n_bits` parameter controls the bit-width of the inputs and weights of the linear models. When a non-linear mapping is applied by the model, such as _exp_ or _sigmoid_, Concrete ML applies it on the client-side, on clear-text values that are the decrypted output of the linear part of the model. Thus, Linear Models do not use table lookups, and can, therefore, use high precision integers for weight and inputs.
 
 The `n_bits` parameter can be set to `8` or more bits for models with up to `300` input dimensions. When the input has more dimensions, `n_bits` must be reduced to `6-7`. All performance metrics are preserved down to `n_bits=6`, compared to the non-quantized float models from scikit-learn.
 
 ## Example
 
-The following snippet gives an example about training a LogisticRegression model on a simple data-set followed by inference on encrypted data with FHE. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
+The following snippet gives an example of training a LogisticRegression model on a simple data-set followed by inference on encrypted data with FHE. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ```python
 import numpy

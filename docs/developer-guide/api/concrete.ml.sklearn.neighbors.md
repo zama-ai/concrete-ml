@@ -16,7 +16,7 @@ A k-nearest classifier model with FHE.
 
 **Parameters:**
 
-- <b>`n_bits`</b> (int):  Number of bits to quantize the model. The value will be used for quantizing  inputs and X_fit. Default to 3.
+- <b>`n_bits`</b> (int):  Number of bits to quantize the model. The value will be used for quantizing inputs and X_fit. Default to 3.
 
 For more details on KNeighborsClassifier please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 
@@ -44,7 +44,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 

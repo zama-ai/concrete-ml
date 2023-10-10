@@ -82,6 +82,6 @@ You can give weights to each class to use in training. Note that this must be su
 
 ### Overflow errors
 
-The `n_accum_bits` parameter influences training accuracy as it controls the number of non-zero neurons that are allowed in each layer. Increasing `n_accum_bits` improves accuracy, but should take into account precision limitations to avoid an overflow in the accumulator. The default value is a good compromise that avoids an overflow in most cases, but you may want to change the value of this parameter to reduce the breadth of the network if you have overflow errors.
+The `n_accum_bits` parameter influences training accuracy as it controls the number of non-zero neurons that are allowed in each layer. Increasing `n_accum_bits` improves accuracy, but should take into account precision limitations to avoid an overflow in the accumulator. The default value is a compromise that avoids an overflow in most cases, but you may want to change the value of this parameter to reduce the breadth of the network if you have overflow errors.
 
 Furthermore, the number of neurons on intermediate layers is controlled through the `n_hidden_neurons_multiplier` parameter - a value of 1 will make intermediate layers have the same number of neurons as the number of dimensions of the input data.

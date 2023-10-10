@@ -24,7 +24,7 @@ This class does not inherit from sklearn.base.BaseEstimator as it creates some c
 
 **Attributes:**
 
-- <b>`_is_a_public_cml_model`</b> (bool):  Private attribute indicating if the class is a public model  (as opposed to base or mixin classes).
+- <b>`_is_a_public_cml_model`</b> (bool):  Private attribute indicating if the class is a public model (as opposed to base or mixin classes).
 
 <a href="../../../src/concrete/ml/sklearn/base.py#L113"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
@@ -44,7 +44,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -136,7 +136,7 @@ Compile the model.
 
 **Args:**
 
-- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
 - <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the compilation  process to store for debugging. Default to None.
 - <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.  Default to False.
@@ -235,7 +235,7 @@ This method trains a scikit-learn estimator, computes its ONNX graph and defines
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
 **Returns:**
@@ -261,7 +261,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -352,7 +352,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -408,7 +408,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -438,13 +438,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> n_classes\_
 
-Get the model's number of classes.
+Get the number of classes in the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`int`</b>:  The model's number of classes.
+- <b>`int`</b>:  The number of classes in the model.
 
 ______________________________________________________________________
 
@@ -462,13 +462,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> target_classes\_
 
-Get the model's classes.
+Get the classes of the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
+- <b>`Optional[numpy.ndarray]`</b>:  The classes of the model.
 
 ______________________________________________________________________
 
@@ -524,7 +524,7 @@ Compile the model.
 
 **Args:**
 
-- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
 - <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the compilation  process to store for debugging. Default to None.
 - <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.  Default to False.
@@ -636,7 +636,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -726,7 +726,7 @@ Predict class probabilities.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -963,7 +963,7 @@ Values of dtype float64 are not supported and will be casted to float32.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data,  as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to skorch's fit method.
 
 **Returns:**
@@ -993,7 +993,7 @@ Values of dtype float64 are not supported and will be casted to float32.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. However, skorch  does not handle such a parameter and setting it will have no effect. Defaults  to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to skorch's fit method.
 
@@ -1080,7 +1080,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -1103,7 +1103,7 @@ This can be used when the number of neurons on the hidden layers is too high. Fo
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data,  as a Numpy array, Torch tensor, Pandas DataFrame Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame Pandas Series or List.
 - <b>`n_prune_neurons_percentage`</b> (float):  The percentage of neurons to remove. A value of  0 (resp. 1.0) means no (resp. all) neurons will be removed.
 - <b>`fit_params`</b>:  Additional parameters to pass to the underlying nn.Module's forward method.
 
@@ -1154,7 +1154,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -1322,7 +1322,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -1434,7 +1434,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -1602,7 +1602,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -1716,7 +1716,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -1746,13 +1746,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> n_classes\_
 
-Get the model's number of classes.
+Get the number of classes in the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`int`</b>:  The model's number of classes.
+- <b>`int`</b>:  The number of classes in the model.
 
 ______________________________________________________________________
 
@@ -1770,13 +1770,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> target_classes\_
 
-Get the model's classes.
+Get the classes of the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
+- <b>`Optional[numpy.ndarray]`</b>:  The classes of the model.
 
 ______________________________________________________________________
 
@@ -1908,7 +1908,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -1998,7 +1998,7 @@ Predict class probabilities.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -2038,7 +2038,7 @@ Initialize the FHE linear model.
 
 - <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
   \- op_inputs : number of bits to quantize the input values
-  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
+  \- op_weights: number of bits to quantize the learned parameters. Default to 8.
 
 ______________________________________________________________________
 
@@ -2046,7 +2046,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -2138,7 +2138,7 @@ Compile the model.
 
 **Args:**
 
-- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
 - <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the compilation  process to store for debugging. Default to None.
 - <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.  Default to False.
@@ -2238,7 +2238,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -2264,7 +2264,7 @@ Build a FHE-compliant model using a fitted scikit-learn model.
 **Args:**
 
 - <b>`sklearn_model`</b> (sklearn.base.BaseEstimator):  The fitted scikit-learn model to convert.
-- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
   \- op_inputs : number of bits to quantize the input values
   \- op_weights: number of bits to quantize the learned parameters  Default to 8.
@@ -2356,7 +2356,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -2404,7 +2404,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -2496,7 +2496,7 @@ Compile the model.
 
 **Args:**
 
-- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
 - <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the compilation  process to store for debugging. Default to None.
 - <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.  Default to False.
@@ -2596,7 +2596,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -2622,7 +2622,7 @@ Build a FHE-compliant model using a fitted scikit-learn model.
 **Args:**
 
 - <b>`sklearn_model`</b> (sklearn.base.BaseEstimator):  The fitted scikit-learn model to convert.
-- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
   \- op_inputs : number of bits to quantize the input values
   \- op_weights: number of bits to quantize the learned parameters  Default to 8.
@@ -2714,7 +2714,7 @@ Predict values for X, in FHE or in the clear.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -2764,7 +2764,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -2794,13 +2794,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> n_classes\_
 
-Get the model's number of classes.
+Get the number of classes in the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`int`</b>:  The model's number of classes.
+- <b>`int`</b>:  The number of classes in the model.
 
 ______________________________________________________________________
 
@@ -2818,13 +2818,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> target_classes\_
 
-Get the model's classes.
+Get the classes of the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
+- <b>`Optional[numpy.ndarray]`</b>:  The classes of the model.
 
 ______________________________________________________________________
 
@@ -2880,7 +2880,7 @@ Compile the model.
 
 **Args:**
 
-- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. usually the training data-set or a sub-set of it.
 - <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
 - <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the compilation  process to store for debugging. Default to None.
 - <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.  Default to False.
@@ -2910,7 +2910,7 @@ Predict confidence scores.
 **Args:**
 
 - <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference, FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
 
 **Returns:**
 
@@ -3004,7 +3004,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -3030,7 +3030,7 @@ Build a FHE-compliant model using a fitted scikit-learn model.
 **Args:**
 
 - <b>`sklearn_model`</b> (sklearn.base.BaseEstimator):  The fitted scikit-learn model to convert.
-- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is usually the training data-set or a sub-set of it.
 - <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
   \- op_inputs : number of bits to quantize the input values
   \- op_weights: number of bits to quantize the learned parameters  Default to 8.
@@ -3148,7 +3148,7 @@ Initialize the FHE knn model.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  Number of bits to quantize the model. IThe value will be used for  quantizing inputs and X_fit. Default to 3.
+- <b>`n_bits`</b> (int):  Number of bits to quantize the model. IThe value will be used for quantizing inputs and X_fit. Default to 3.
 
 ______________________________________________________________________
 
@@ -3156,7 +3156,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -3324,7 +3324,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -3383,7 +3383,7 @@ ______________________________________________________________________
 majority_vote(nearest_classes: 'ndarray')
 ```
 
-Determine the most common class among nearest neighborsfor each query.
+Determine the most common class among nearest neighbors for each query.
 
 **Args:**
 
@@ -3460,7 +3460,7 @@ Initialize the FHE knn model.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  Number of bits to quantize the model. IThe value will be used for  quantizing inputs and X_fit. Default to 3.
+- <b>`n_bits`</b> (int):  Number of bits to quantize the model. IThe value will be used for quantizing inputs and X_fit. Default to 3.
 
 ______________________________________________________________________
 
@@ -3468,7 +3468,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -3636,7 +3636,7 @@ Fit both the Concrete ML and its equivalent float estimators.
 **Args:**
 
 - <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
-- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas Series or List.
 - <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
 - <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
 
@@ -3695,7 +3695,7 @@ ______________________________________________________________________
 majority_vote(nearest_classes: 'ndarray')
 ```
 
-Determine the most common class among nearest neighborsfor each query.
+Determine the most common class among nearest neighbors for each query.
 
 **Args:**
 

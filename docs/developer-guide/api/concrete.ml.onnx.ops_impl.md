@@ -164,7 +164,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Gemm-13
 
 - <b>`a`</b> (numpy.ndarray):  Input tensor A. The shape of A should be (M, K) if transA is 0, or (K, M)  if transA is non-zero.
 - <b>`b`</b> (numpy.ndarray):  Input tensor B. The shape of B should be (K, N) if transB is 0, or (N, K)  if transB is non-zero.
-- <b>`c`</b> (Optional\[numpy.ndarray\]):  Optional input tensor C. If not specified, the  computation is done as if C is a scalar 0. The shape of C should be unidirectional  broadcastable to (M, N).  Defaults to None.
+- <b>`c`</b> (Optional\[numpy.ndarray\]):  Optional input tensor C. If not specified, the  computation is carried out as if C is a scalar 0. The shape of C should be unidirectional broadcastable to (M, N).  Defaults to None.
 - <b>`alpha`</b> (float):  Scalar multiplier for the product of input tensors A * B.  Defaults to 1.
 - <b>`beta`</b> (float):  Scalar multiplier for input tensor C.  Defaults to 1.
 - <b>`transA`</b> (int):  Whether A should be transposed. The type is kept as int as it is the  type used by ONNX and it can easily be interpreted by Python as a boolean.  Defaults to 0.
@@ -1195,7 +1195,7 @@ numpy_conv(
 ) → Tuple[ndarray]
 ```
 
-Compute N-D convolution using Torch.
+Compute an N-D convolution using Torch.
 
 Currently supports 2d convolution with torch semantics. This function is also ONNX compatible.
 
@@ -1205,16 +1205,16 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Conv
 
 - <b>`x`</b> (numpy.ndarray):  input data (many dtypes are supported). Shape is N x C x H x W for 2d
 - <b>`w`</b> (numpy.ndarray):  weights tensor. Shape is (O x I x Kh x Kw) for 2d
-- <b>`b`</b> (Optional\[numpy.ndarray\]):  bias tensor, Shape is (O,). Default to None.
-- <b>`dilations`</b> (Tuple\[int, ...\]):  dilation of the kernel, default 1 on all dimensions.
-- <b>`group`</b> (int):  number of convolution groups, can be 1 or a multiple of both (C,) and (O,), so  that I = C / group. Default to 1.
+- <b>`b`</b> (Optional\[numpy.ndarray\]):  bias tensor, Shape is (O,). Default to None
+- <b>`dilations`</b> (Tuple\[int, ...\]):  dilation of the kernel, default 1 on all dimensions
+- <b>`group`</b> (int):  number of convolution groups, can be 1 or a multiple of both (C,) and (O,), so  that I = C / group. Default to 1
 - <b>`kernel_shape`</b> (Tuple\[int, ...\]):  shape of the kernel. Should have 2 elements for 2d conv
 - <b>`pads`</b> (Tuple\[int, ...\]):  padding in ONNX format (begin, end) on each axis
 - <b>`strides`</b> (Tuple\[int, ...\]):  stride of the convolution on each axis
 
 **Returns:**
 
-- <b>`res`</b> (numpy.ndarray):  a tensor of size (N x OutChannels x OutHeight x OutWidth).
+- <b>`res`</b> (numpy.ndarray):  a tensor of size (N x OutChannels x OutHeight x OutWidth)
 - <b>`See https`</b>: //pytorch.org/docs/stable/generated/torch.nn.Conv2d.html
 
 ______________________________________________________________________

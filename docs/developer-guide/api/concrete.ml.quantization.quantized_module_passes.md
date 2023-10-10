@@ -28,7 +28,7 @@ ______________________________________________________________________
 
 Get the number of optimizable patterns that were ignored.
 
-Patterns could be ignored since a number of rounding bits was set manually through the compilation function.
+Patterns can be ignored since a number of rounding bits are set manually through the compilation function.
 
 **Returns:**
 
@@ -46,7 +46,7 @@ compute_op_predecessors() → DefaultDict[Union[QuantizedOp, NoneType], List[Tup
 
 Compute the predecessors for each QuantizedOp in a QuantizedModule.
 
-Stores, for each quantized op, a list of quantized ops that produce its inputs. Currently only the first input of the operations is considered as it is, usually, the encrypted input.
+Stores, for each quantized op, a list of quantized ops that produce its inputs. Currently only the first input of the operations is considered as this is usually the encrypted input.
 
 **Returns:**
 
@@ -88,7 +88,7 @@ match_path_pattern(
 ) → bool
 ```
 
-Determine if a pattern has the structure that makes it viable for roundPBS.
+Determine if a pattern has a structure that makes it viable for roundPBS.
 
 **Args:**
 
@@ -118,7 +118,7 @@ Nothing will be done if rounding is already specified.
 
 **Returns:**
 
-- <b>`result`</b> (PatternDict):  a dictionary containing for each Conv/Gemm node for which  round PBS can be applied based on power-of-two scaling factors
+- <b>`result`</b> (PatternDict):  a dictionary containing for each Conv/Gemm node for which round PBS can be applied based on power-of-two scaling factors
 
 ______________________________________________________________________
 

@@ -275,7 +275,7 @@ ______________________________________________________________________
 save_and_clear_private_info(path: Path, via_mlir=False)
 ```
 
-Save the PyTorch model to the provided path and also saves the corresponding FHE circuit.
+Save the PyTorch model and the corresponding FHE circuit to the provided path.
 
 **Args:**
 
@@ -456,7 +456,7 @@ Get circuit based on model name, module name and input shape.
 
 **Returns:**
 
-- <b>`FHEModelServer`</b>:  a fhe model server of the given module of the given model  for the given shape
+- <b>`FHEModelServer`</b>:  an fhe model server of the given module, and given model, for the given shape
 
 ______________________________________________________________________
 
@@ -482,7 +482,7 @@ Get client.
 
 **Raises:**
 
-- <b>`ValueError`</b>:  if client couldn't be found
+- <b>`ValueError`</b>:  if the client couldn't be found
 
 ______________________________________________________________________
 

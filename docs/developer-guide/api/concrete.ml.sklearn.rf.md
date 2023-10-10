@@ -52,7 +52,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 
@@ -82,13 +82,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> n_classes\_
 
-Get the model's number of classes.
+Get the number of classes in the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`int`</b>:  The model's number of classes.
+- <b>`int`</b>:  The number of classes in the model.
 
 ______________________________________________________________________
 
@@ -106,13 +106,13 @@ ______________________________________________________________________
 
 #### <kbd>property</kbd> target_classes\_
 
-Get the model's classes.
+Get the classes of the model.
 
 Using this attribute is deprecated.
 
 **Returns:**
 
-- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
+- <b>`Optional[numpy.ndarray]`</b>:  The classes of the model.
 
 ______________________________________________________________________
 
@@ -189,7 +189,7 @@ ______________________________________________________________________
 
 Get the FHE circuit.
 
-The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+The FHE circuit combines the computational graph, mlir, client, and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
 
 **Returns:**
 

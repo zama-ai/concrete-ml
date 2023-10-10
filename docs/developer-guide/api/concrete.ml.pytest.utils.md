@@ -33,7 +33,7 @@ Get the pytest parameters to use for testing linear models.
 
 - <b>`regressor`</b> (bool):  If regressors should be selected.
 - <b>`classifier`</b> (bool):  If classifiers should be selected.
-- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`unique_models`</b> (bool):  If each model should be represented only once.
 - <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
 - <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
 
@@ -63,7 +63,7 @@ Get the pytest parameters to use for testing tree-based models.
 
 - <b>`regressor`</b> (bool):  If regressors should be selected.
 - <b>`classifier`</b> (bool):  If classifiers should be selected.
-- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`unique_models`</b> (bool):  If each model should be represented only once.
 - <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
 - <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
 
@@ -93,7 +93,7 @@ Get the pytest parameters to use for testing neural network models.
 
 - <b>`regressor`</b> (bool):  If regressors should be selected.
 - <b>`classifier`</b> (bool):  If classifiers should be selected.
-- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`unique_models`</b> (bool):  If each model should be represented only once.
 - <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
 - <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
 
@@ -123,7 +123,7 @@ Get the pytest parameters to use for testing neighbor models.
 
 - <b>`regressor`</b> (bool):  If regressors should be selected.
 - <b>`classifier`</b> (bool):  If classifiers should be selected.
-- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`unique_models`</b> (bool):  If each model should be represented only once.
 - <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
 - <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
 
@@ -153,7 +153,7 @@ Get the pytest parameters to use for testing all models available in Concrete ML
 
 - <b>`regressor`</b> (bool):  If regressors should be selected.
 - <b>`classifier`</b> (bool):  If classifiers should be selected.
-- <b>`unique_models`</b> (bool):  If each models should be represented only once.
+- <b>`unique_models`</b> (bool):  If each model should be represented only once.
 - <b>`select`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) match the given string or list of strings. Default to None.
 - <b>`ignore`</b> (Optional\[Union\[str, List\[str\]\]\]):  If not None, only return models which names (or  a part of it) do not match the given string or list of strings. Default to None.
 
@@ -176,7 +176,7 @@ Instantiate any Concrete ML model type.
 **Args:**
 
 - <b>`model_class`</b> (class):  The type of the model to instantiate.
-- <b>`n_bits`</b> (int):  The number of quantization to use when initializing the model. For QNNs,  default parameters are used based on whether `n_bits` is greater or smaller than 8.
+- <b>`n_bits`</b> (int):  The number of quantization bits to use when initializing the model. For QNNs, the default parameters are used based on whether `n_bits` is greater or smaller than 8.
 - <b>`parameters`</b> (dict):  Hyper-parameters for the model instantiation. For QNNs, these parameters  will override the matching default ones.
 
 **Returns:**

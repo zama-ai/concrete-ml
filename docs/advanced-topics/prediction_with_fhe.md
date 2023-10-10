@@ -1,6 +1,6 @@
 # Prediction with FHE
 
-Concrete ML has APIs that make it easy, during model development and testing, to perform encryption, execution in FHE, and decryption in a single step. For more control, these individual steps can be executed separately. The APIs used to accomplish this are different for:
+Concrete ML has APIs that make it simple, during model development and testing, to perform encryption, execution in FHE, and decryption in a single step. For more control, these individual steps can be executed separately. The APIs used to accomplish this are different for:
 
 - [Built-in models](#built-in-models)
 - [Custom models](#custom-models)

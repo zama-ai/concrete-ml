@@ -52,7 +52,7 @@ Sparse Quantized Neural Network constructor.
 - <b>`activation_function`</b> (Type):  The activation function to use in the network  (e.g., torch.ReLU, torch.SELU, torch.Sigmoid, ...).
 - <b>`quant_narrow`</b> (bool):  Whether this network should quantize the values using narrow range  (e.g a 2-bits signed quantization uses \[-1, 0, 1\] instead of \[-2, -1, 0, 1\]).
 - <b>`quant_signed`</b> (bool):  Whether this network should quantize the values using signed  integers.
-- <b>`power_of_two_scaling`</b> (bool):  Force quantization scales to be a power of two  to enable inference speed optimizations. Defaults to True
+- <b>`power_of_two_scaling`</b> (bool):  Force quantization scales to be a power of two to enable inference speed optimizations. Defaults to True
 
 **Raises:**
 

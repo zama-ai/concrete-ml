@@ -257,7 +257,7 @@
 - [`utils.filter_logs`](./concrete.ml.deployment.utils.md#function-filter_logs): Filter logs based on previous logs.
 - [`utils.is_connection_available`](./concrete.ml.deployment.utils.md#function-is_connection_available): Check if ssh connection is available.
 - [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connection to be available.
-- [`convert.fuse_matmul_bias_to_gemm`](./concrete.ml.onnx.convert.md#function-fuse_matmul_bias_to_gemm): Fuse sequence of matmul -> add into a gemm node.
+- [`convert.fuse_matmul_bias_to_gemm`](./concrete.ml.onnx.convert.md#function-fuse_matmul_bias_to_gemm): Fuse a sequence of matmul -> add into a gemm node.
 - [`convert.get_equivalent_numpy_forward_from_onnx`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_onnx): Get the numpy equivalent forward of the provided ONNX model.
 - [`convert.get_equivalent_numpy_forward_from_torch`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_torch): Get the numpy equivalent forward of the provided torch Module.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
@@ -290,7 +290,7 @@
 - [`ops_impl.numpy_celu`](./concrete.ml.onnx.ops_impl.md#function-numpy_celu): Compute celu in numpy according to ONNX spec.
 - [`ops_impl.numpy_concatenate`](./concrete.ml.onnx.ops_impl.md#function-numpy_concatenate): Apply concatenate in numpy according to ONNX spec.
 - [`ops_impl.numpy_constant`](./concrete.ml.onnx.ops_impl.md#function-numpy_constant): Return the constant passed as a kwarg.
-- [`ops_impl.numpy_conv`](./concrete.ml.onnx.ops_impl.md#function-numpy_conv): Compute N-D convolution using Torch.
+- [`ops_impl.numpy_conv`](./concrete.ml.onnx.ops_impl.md#function-numpy_conv): Compute an N-D convolution using Torch.
 - [`ops_impl.numpy_cos`](./concrete.ml.onnx.ops_impl.md#function-numpy_cos): Compute cos in numpy according to ONNX spec.
 - [`ops_impl.numpy_cosh`](./concrete.ml.onnx.ops_impl.md#function-numpy_cosh): Compute cosh in numpy according to ONNX spec.
 - [`ops_impl.numpy_div`](./concrete.ml.onnx.ops_impl.md#function-numpy_div): Compute div in numpy according to ONNX spec.

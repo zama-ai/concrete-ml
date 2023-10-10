@@ -26,7 +26,7 @@ This function loads the version JSON file found in client.zip or server.zip file
 
 **Args:**
 
-- <b>`zip_path`</b> (Path):  The path to the client or server zip file that contains the version.json  file to check.
+- <b>`zip_path`</b> (Path):  The path to the client or server zip file that contains the version.json file to check.
 
 **Raises:**
 
