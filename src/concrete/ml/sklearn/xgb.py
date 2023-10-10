@@ -334,7 +334,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         y_preds = super().post_processing(y_preds)
 
-        # HummingBird Gemm for XGBoostRegressor adds a + 0.5 at the end of the graph.
+        # Hummingbird Gemm for XGBoostRegressor adds a + 0.5 at the end of the graph.
         # We need to add it back here since the graph is cut before this add node.
         y_preds += 0.5
         return y_preds
