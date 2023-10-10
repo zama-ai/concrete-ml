@@ -32,8 +32,6 @@ The `n_bits` parameter can be set to `8` or more bits for models with up to `300
 The following snippet gives an example about training a LogisticRegression model on a simple data-set followed by inference on encrypted data with FHE. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
 
 ```python
-import numpy
-from tqdm import tqdm
 from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 
