@@ -85,6 +85,36 @@ def workaround_squeeze_node_xgboost(onnx_model: onnx.ModelProto):
     onnx_model.graph.node[target_node_id_list[0]].input.insert(1, axes_input_name)
 
 
+def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.ModelProto) -> bool:
+    """
+    Assert if an Add node with a specific constant exists in the ONNX graph.
+
+    Args:
+        onnx_model (onnx.ModelProto): The ONNX model.
+    """
+
+    constant_add_name = "_operators.0.base_prediction"
+    is_expected_add_node_present = False
+
+    # Check if the specified initializer is in the model's initializers
+    initializer_present = any(
+        [init for init in onnx_model.graph.initializer if init.name == constant_add_name]
+    )
+
+    # Iterate over all nodes in the model's graph
+    for node in onnx_model.graph.node:
+        # Check if the node is an "Add" node and has the
+        # specified initializer as one of its inputs
+        if node.op_type == "Add" and constant_add_name in node.input:
+            is_expected_add_node_present = True
+            break
+
+    assert_true(
+        is_expected_add_node_present and initializer_present,
+        "XGBoostRegressor is not supported.",
+    )
+
+
 def add_transpose_after_last_node(onnx_model: onnx.ModelProto):
     """Add transpose after last node.
 
@@ -182,6 +212,12 @@ def tree_onnx_graph_preprocessing(
         len(onnx_model.graph.output) == expected_number_of_outputs,
         on_error_msg=f"{len(onnx_model.graph.output)} != 2",
     )
+
+    # Check that a XGBoostRegressor onnx graph has the + 0.5 add node.
+    if framework == "xgboost":
+        # Make sure it's a regression and so a single onnx output.
+        if len(onnx_model.graph.output) == 1:
+            assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model)
 
     # Cut the graph at the ReduceSum node as large sum are not yet supported.
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
