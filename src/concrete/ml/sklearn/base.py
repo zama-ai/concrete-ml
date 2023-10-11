@@ -1384,13 +1384,12 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4077
         # Incorrect batch inference for XGBoost. We predict one example at a time.
-        y_preds = []
+        y_preds = numpy.empty(q_X.shape[0])
+
         for i in range(q_X.shape[0]):
             single_example = q_X[i].reshape(1, -1)
             single_prediction = self._tree_inference(single_example)[0]
-            y_preds.append(single_prediction[0])
-
-        y_preds = numpy.array(y_preds)
+            y_preds[i] = single_prediction[0]
 
         return y_preds
 
