@@ -221,7 +221,7 @@ def tree_onnx_graph_preprocessing(
 
     # Check that a XGBoostRegressor onnx graph has the + 0.5 add node.
     if framework == "xgboost":
-        # Make sure it's a regression and so a single onnx output.
+        # Make sure it is a regression and so a single onnx output.
         if len(onnx_model.graph.output) == 1:
             assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model)
 
