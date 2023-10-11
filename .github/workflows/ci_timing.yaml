@@ -18,7 +18,9 @@ env:
 
 jobs:
   publish-timings:
-    runs-on: ubuntu-20.04
+    # Using the regular Ubuntu 20.04 version recently started to raise related to grub-efi-amd64-signed
+    # More info : https://github.com/orgs/community/discussions/47863
+    runs-on: ubuntu-22.04
     steps:
       - name: Add masks
         run: |

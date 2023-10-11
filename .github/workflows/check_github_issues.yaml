@@ -2,13 +2,16 @@ name: Check GitHub Issues
 on:
   workflow_dispatch:
 
+  # Each Monday at 9:00 AM
   schedule:
-    - cron: "0 11 * * *"
+    - cron: "0 9 * * 1"
 
 
+# Using the bot-token here is necessary in order to let the GitHub CI access the internal 
+# repository, where issues are located
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.BOT_TOKEN }}
 
 concurrency:
   # Add event_name in the group as workflow dispatch means we could run this in addition to other
@@ -20,10 +23,13 @@ jobs:
   check-github-actions:
     name: Check GitHub Issues
     timeout-minutes: 5
-    runs-on: ubuntu-20.04
+    # Using the regular Ubuntu 20.04 version recently started to raise related to grub-efi-amd64-signed
+    # More info : https://github.com/orgs/community/discussions/47863
+    runs-on: ubuntu-22.04
     defaults:
       run:
         shell: bash
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
@@ -46,7 +52,7 @@ jobs:
           SLACK_ICON: https://pbs.twimg.com/profile_images/1274014582265298945/OjBKP9kn_400x400.png
           SLACK_COLOR: ${{ job.status }}
           SLACK_MESSAGE:
-            "Some 'FIXME: url' issues are present in the code base but closed on github\
+            "Some 'FIXME: url' issues are present in the code base but closed on github \
             (${{ env.ACTION_RUN_URL }})"
           SLACK_USERNAME: ${{ secrets.BOT_USERNAME }}
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
