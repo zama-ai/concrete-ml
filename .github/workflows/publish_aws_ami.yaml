@@ -20,7 +20,7 @@ jobs:
     steps:
 
       # Just a way to check that if triggered by workflow_dispatch the tag exists
-      # TODO: We still need to check that it matches a version tag
+      # FIXME: We still need to check that it matches a version tag
       # This won't work on automatically triggered based on release
       - name: Checkout Concrete ML Repository
         if: ${{ github.event_name == 'workflow_dispatch' }}

@@ -149,8 +149,6 @@ def test_deploy(load_data, tmp_path):  # pylint: disable=too-many-locals,too-man
         encrypted_input = None
         clear_input = None
 
-        # Update all base64 queries encodings with UploadFile
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2932
         response = requests.post(
             f"{url}/add_key", files={"key": io.BytesIO(initial_bytes=serialized_evaluation_keys)}
         )

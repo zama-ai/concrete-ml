@@ -36,7 +36,6 @@ SUPPORTED_TORCH_ACTIVATIONS = [
 
 # Some Torch activation functions are currently not supported in Concrete ML
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/335
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3518
 UNSUPPORTED_TORCH_ACTIVATIONS = [
     activation.GLU,
     activation.MultiheadAttention,

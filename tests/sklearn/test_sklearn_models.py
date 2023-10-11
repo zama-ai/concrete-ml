@@ -1566,21 +1566,19 @@ def test_fitted_compiled_error_raises(
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
-# Enable support for global_p_error testing if possible
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3297
 @pytest.mark.parametrize(
     "error_param",
     [{"p_error": 0.9999999999990905}],  # 1 - 2**-40
     ids=["p_error"],
 )
-def test_p_error_global_p_error_simulation(
+def test_p_error_simulation(
     model_class,
     parameters,
     error_param,
     load_data,
     is_weekly_option,
 ):
-    """Test p_error and global_p_error simulation.
+    """Test p_error simulation.
 
     The test checks that models compiled with a large p_error value predicts very different results
     with simulation or in FHE compared to the expected clear quantized ones.
