@@ -86,8 +86,7 @@ def workaround_squeeze_node_xgboost(onnx_model: onnx.ModelProto):
 
 
 def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.ModelProto):
-    """
-    Assert if an Add node with a specific constant exists in the ONNX graph.
+    """Assert if an Add node with a specific constant exists in the ONNX graph.
 
     Args:
         onnx_model (onnx.ModelProto): The ONNX model.
