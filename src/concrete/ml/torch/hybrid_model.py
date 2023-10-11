@@ -248,6 +248,7 @@ class RemoteModule(nn.Module):
             y = torch.Tensor(
                 self.private_q_module.forward(x.detach().numpy(), fhe=self.fhe_local_mode.value)
             )
+
         elif self.fhe_local_mode == HybridFHEMode.DISABLE:
             # Calling torch
             assert self.private_module is not None
@@ -255,19 +256,22 @@ class RemoteModule(nn.Module):
                 x.detach(),
             )
             assert isinstance(y, (QuantTensor, torch.Tensor))
+
         elif self.fhe_local_mode == HybridFHEMode.CALIBRATE:
             # Calling torch + gathering calibration data
             assert self.private_module is not None
             self.calibration_data.append(x.detach())
             y = self.private_module(x)
             assert isinstance(y, (QuantTensor, torch.Tensor))
-        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3869
+
         elif self.fhe_local_mode == HybridFHEMode.REMOTE:  # pragma:no cover
             # Remote call
             y = self.remote_call(x)
+
         else:  # pragma:no cover
             # Shouldn't happen
             raise ValueError(f"{self.fhe_local_mode} is not recognized")
+
         return y
 
     def remote_call(self, x: torch.Tensor) -> torch.Tensor:  # pragma:no cover
@@ -424,7 +428,7 @@ class HybridFHEModel:
         Raises:
             ValueError: If no module found for the given name.
         """
-        # TODO: Shouldn't this search recursively in name modules of name modules?
+        # FIXME: Shouldn't this search recursively in name modules of name modules?
         for module_name, module in model.named_modules():
             if module_name == name:
                 return module
@@ -556,7 +560,7 @@ class HybridFHEModel:
 
     def publish_to_hub(self):
         """Allow the user to push the model and FHE required files to HF Hub."""
-        # TODO: implement HuggingFace model hub integration
+        # FIXME: implement HuggingFace model hub integration
 
     def set_fhe_mode(self, hybrid_fhe_mode: Union[str, HybridFHEMode]):
         """Set Hybrid FHE mode for all remote modules.

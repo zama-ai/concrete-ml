@@ -130,7 +130,7 @@ class QuantizedModel:
 
                 if fhe == "simulate":
                     # Use new VL with .simulate() once CP's multi-parameter/precision bug is fixed
-                    # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3856
+                    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3856
                     q_y = self.circuit.graph(q_x, p_error=self.circuit.p_error)
 
                 elif fhe == "execute":
