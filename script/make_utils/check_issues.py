@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Any, Dict
 
 ISSUE_URL_PATTERN = re.compile(
-    r"FIXME: https\:\/\/github\.com\/zama-ai\/concrete-ml-internal\/issues\/([0-9]+)"
-)  # We need to escape to hexa color and unicode characters
+    r"(?:FIXME|TODO): https\:\/\/github\.com\/zama-ai\/concrete-ml-internal\/issues\/([0-9]+)"
+)
 EXTENSIONS_TO_CHECK = [".py", ".md"]
-FOLDERS_TO_CHECK = ["src", "docs", "use_case_examples"]
+FOLDERS_TO_CHECK = ["src", "docs", "use_case_examples", "tests", "script"]
 NUMBER_OF_CORES = max(cpu_count() - 2, 1)
 
 
@@ -51,7 +51,7 @@ def check_file(path, root):
         if index not in issues:
             output = subprocess.check_output(
                 shell=True,
-                args=f'gh issue view {index} --json state --repo "zama-ai/concrete-ml"',
+                args=f'gh issue view {index} --json state --repo "zama-ai/concrete-ml-internal"',
                 cwd=root,
             ).decode()
             issues[index] = json.loads(output)
@@ -97,5 +97,5 @@ def main():
         )
 
 
-if __name__ == main():
+if __name__ == "__main__":
     main()
