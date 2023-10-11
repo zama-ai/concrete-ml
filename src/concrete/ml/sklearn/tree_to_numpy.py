@@ -85,7 +85,7 @@ def workaround_squeeze_node_xgboost(onnx_model: onnx.ModelProto):
     onnx_model.graph.node[target_node_id_list[0]].input.insert(1, axes_input_name)
 
 
-def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.ModelProto) -> bool:
+def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.ModelProto):
     """
     Assert if an Add node with a specific constant exists in the ONNX graph.
 
@@ -95,11 +95,18 @@ def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.Mod
 
     constant_add_name = "_operators.0.base_prediction"
     is_expected_add_node_present = False
+    initializer_value_correct = False
 
-    # Check if the specified initializer is in the model's initializers
-    initializer_present = any(
-        [init for init in onnx_model.graph.initializer if init.name == constant_add_name]
+    # Find the initializer with the specified name
+    initializer = next(
+        (init for init in onnx_model.graph.initializer if init.name == constant_add_name), None
     )
+
+    # Check if the initializer exists and its value is 0.5
+    if initializer:
+        values = onnx.numpy_helper.to_array(initializer)
+        if values.size == 1 and values[0] == 0.5:
+            initializer_value_correct = True
 
     # Iterate over all nodes in the model's graph
     for node in onnx_model.graph.node:
@@ -110,7 +117,7 @@ def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.Mod
             break
 
     assert_true(
-        is_expected_add_node_present and initializer_present,
+        is_expected_add_node_present and initializer_value_correct,
         "XGBoostRegressor is not supported.",
     )
 
