@@ -174,9 +174,6 @@ def check_correctness_with_sklearn(
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model, sklearn_model = model.fit_benchmark(x, y)
 
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2604
-    # Generic tests look to show issues in accuracy / R2 score, even for high n_bits
-
     # For R2 score measures
     acceptance_r2scores = {
         "TweedieRegressor": 0.9,
@@ -187,7 +184,7 @@ def check_correctness_with_sklearn(
         "Lasso": 0.9,
         "Ridge": 0.9,
         "ElasticNet": 0.9,
-        "XGBRegressor": -0.2,
+        "XGBRegressor": 0.9,
     }
 
     # For accuracy measures

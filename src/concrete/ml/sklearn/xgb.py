@@ -331,6 +331,14 @@ class XGBRegressor(BaseTreeRegressorMixin):
         super().fit(X, y, *args, **kwargs)
         return self
 
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        y_preds = super().post_processing(y_preds)
+
+        # Hummingbird Gemm for XGBoostRegressor adds a + 0.5 at the end of the graph.
+        # We need to add it back here since the graph is cut before this add node.
+        y_preds += 0.5
+        return y_preds
+
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
 
