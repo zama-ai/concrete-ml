@@ -197,7 +197,7 @@ def check_correctness_with_sklearn(
         "Lasso": 0.9,
         "Ridge": 0.9,
         "ElasticNet": 0.9,
-        "XGBRegressor": -0.2,
+        "XGBRegressor": 0.9,
         "NeuralNetRegressor": -10,
     }
 
