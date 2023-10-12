@@ -6,6 +6,7 @@ from typing import Any, Dict, Type
 import numpy
 import onnx
 import torch
+from concrete.fhe import AutoRounder
 from numpy.random import RandomState
 from skorch.dataset import ValidSplit
 
@@ -179,7 +180,6 @@ def object_hook(d: Any) -> Any:
 
         # pylint: disable-next=global-statement
         global SERIALIZABLE_CLASSES
-
         # Define the list of all classes that can be serialized in Concrete ML (i.e., that have a
         # `dump_dict` and `load_dict` method) if not already done
         if not SERIALIZABLE_CLASSES:
@@ -193,6 +193,7 @@ def object_hook(d: Any) -> Any:
                     QuantizationOptions,
                     UniformQuantizationParameters,
                     MinMaxQuantizationStats,
+                    AutoRounder,
                 ]
             )
 

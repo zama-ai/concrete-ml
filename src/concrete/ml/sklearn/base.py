@@ -37,7 +37,6 @@ from ..common.utils import (
     USE_OLD_VL,
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
-    force_auto_adjust_rounder_in_configuration,
     generate_proxy_function,
     manage_parameters_for_pbs_errors,
 )
@@ -65,8 +64,6 @@ warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 from hummingbird.ml.operator_converters import constants  # noqa: E402
 
-# Default number of bits to keep
-DEFAULT_ROUNDING_THRESHOLD_BITS = 6
 _ALL_SKLEARN_MODELS: Set[Type] = set()
 _LINEAR_MODELS: Set[Type] = set()
 _TREE_MODELS: Set[Type] = set()
@@ -1768,7 +1765,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._y: numpy.ndarray
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
-        # _rounder: The auto-rounder object to use when rounding values
+        # _rounder: The AutoRounder allows to set how many of the most significant bits to keep
         self._rounder = cnp.AutoRounder(target_msbs=DEFAULT_ROUNDING_THRESHOLD_BITS)
 
         BaseEstimator.__init__(self)
@@ -1863,6 +1860,14 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         self._is_fitted = True
 
+        # To enable the AutoRounder feature, it has to be adjusted using an inputset to determine
+        # how many of the least significant bits to remove.
+        # This can be done manually using fhe.AutoRounder.adjust(function, inputset), or
+        # by setting auto_adjust_rounders configuration to True during compilation.Rounding
+        # We chose to adjust it manually to get the same result between clear and FHE inference
+        inputset = numpy.array(list(numpy.expand_dims(q_input, 0) for q_input in self._q_fit_X))
+        self._rounder.adjust(self._inference, inputset)
+
         return self
 
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
@@ -1922,6 +1927,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         Returns:
             numpy.ndarray: The quantized predicted values.
         """
+
         assert self._q_fit_X_quantizer is not None, self._is_not_fitted_error_message()
 
         def pairwise_euclidean_distance(q_X):
@@ -2069,31 +2075,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         topk_labels = topk_sorting(distance_matrix.flatten(), self._y)
         return numpy.expand_dims(topk_labels, axis=0)
-
-    def compile(self, *args, **kwargs) -> Circuit:
-        """Compile the model.
-
-        Args:
-            *args: Additional positional arguments
-            **kwargs: Additional keyword arguments
-
-        Returns:
-            Circuit: The compiled Circuit.
-        """
-        # If a configuration instance is given as a positional parameter, set auto_adjust_rounder
-        if len(args) >= 2:
-            configuration = force_auto_adjust_rounder_in_configuration(args[1])
-            args_list = list(args)
-            args_list[1] = configuration
-            args = tuple(args_list)
-
-        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
-        # auto_adjust_rounder
-        else:
-            configuration = kwargs.get("configuration", None)
-            kwargs["configuration"] = force_auto_adjust_rounder_in_configuration(configuration)
-
-        return BaseEstimator.compile(self, *args, **kwargs)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         """Perform the majority.
