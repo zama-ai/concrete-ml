@@ -75,7 +75,7 @@ def _get_pytest_param_classifier(model, n_classes: int):
     """
     if get_model_class(model) == KNeighborsClassifier:
         dataset_params = {
-            "n_samples": 6,
+            "n_samples": 10,
             "n_features": 2,
             "n_classes": n_classes,
             "n_informative": 2,

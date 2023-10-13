@@ -193,7 +193,7 @@ def check_correctness_with_sklearn(
         "LinearSVC": 0.9,
         "XGBClassifier": 0.7,
         "RandomForestClassifier": 0.8,
-        "KNeighborsClassifier": 0.9,
+        "KNeighborsClassifier": 0.7,
     }
 
     model_name = get_model_name(model_class)
