@@ -76,11 +76,17 @@ concurrency:
 
 env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-  IS_PR: ${{ github.event_name == 'pull_request' }}
+  # The CI can be triggered by the release workflow which itself can be triggered by the merge of a 
+  # pull-request (following the 'prepare_release' workflow). Since GitHub weirdly propagates the 
+  # original 'github.event_name' (here "pull_request") in all nested workflows, we need to 
+  # differentiate the release CI from regular CIs by using 'inputs.event_name', which should be set
+  # to "release" by the release workflow
+  IS_PR: ${{ github.event_name == 'pull_request' && inputs.event_name != 'release' }}
   IS_WEEKLY: ${{ github.event_name == 'schedule' || ((github.event_name == 'workflow_dispatch') && (inputs.event_name == 'weekly')) }}
   # The 'IS_RELEASE' variable indicates that the workflow has been triggered by the releasing 
-  # process itself, before publishing it
-  IS_RELEASE: ${{ github.event_name == 'workflow_dispatch' && !(inputs.manual_call) && inputs.event_name == 'release' }}
+  # process itself, before publishing it. It should only happen when the release workflow triggers
+  # the CI, in which 'inputs.event_name' is set to "release"
+  IS_RELEASE: ${{ inputs.event_name == 'release' }}
   IS_PUSH_TO_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
   IS_PUSH_TO_RELEASE: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release/') }}
   IS_WORKFLOW_DISPATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.manual_call}}
