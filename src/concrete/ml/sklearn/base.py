@@ -564,7 +564,7 @@ class BaseEstimator:
         assert isinstance(self.fhe_circuit, Circuit)
 
         # CRT simulation is not supported yet
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3841
+        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3841
         if not USE_OLD_VL:
             self.fhe_circuit.enable_fhe_simulation()  # pragma: no cover
 
@@ -1284,6 +1284,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
+        self._rounder = cnp.AutoRounder(target_msbs=DEFAULT_ROUNDING_THRESHOLD_BITS)
 
         BaseEstimator.__init__(self)
 
@@ -1865,7 +1866,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # This can be done manually using fhe.AutoRounder.adjust(function, inputset), or
         # by setting auto_adjust_rounders configuration to True during compilation.Rounding
         # We chose to adjust it manually to get the same result between clear and FHE inference
-        inputset = numpy.array(list(numpy.expand_dims(q_input, 0) for q_input in self._q_fit_X))
+        inputset = numpy.array(list(_get_inputset_generator(self._q_fit_X)))
         self._rounder.adjust(self._inference, inputset)
 
         return self
@@ -2077,7 +2078,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return numpy.expand_dims(topk_labels, axis=0)
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Perform the majority.
+        """Provide the majority vote among the topk labels of each point.
 
         For KNN, the de-quantization step is not required. Because _inference returns the label of
         the k-nearest neighbors.
