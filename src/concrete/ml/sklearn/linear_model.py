@@ -76,10 +76,9 @@ class LinearRegression(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
 
         # Instantiate the model
-        obj = LinearRegression()
+        obj = cls(n_bits=metadata["n_bits"])
 
         # Concrete-ML
-        obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
@@ -190,10 +189,9 @@ class ElasticNet(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
 
         # Instantiate the model
-        obj = ElasticNet()
+        obj = cls(n_bits=metadata["n_bits"])
 
         # Concrete-ML
-        obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
@@ -309,10 +307,9 @@ class Lasso(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
 
         # Instantiate the model
-        obj = Lasso()
+        obj = cls(n_bits=metadata["n_bits"])
 
         # Concrete-ML
-        obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
@@ -421,10 +418,9 @@ class Ridge(SklearnLinearRegressorMixin):
     def load_dict(cls, metadata: Dict):
 
         # Instantiate the model
-        obj = Ridge()
+        obj = cls(n_bits=metadata["n_bits"])
 
         # Concrete-ML
-        obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
@@ -546,11 +542,11 @@ class LogisticRegression(SklearnLinearClassifierMixin):
 
     @classmethod
     def load_dict(cls, metadata: Dict):
+
         # Instantiate the model
-        obj = LogisticRegression()
+        obj = cls(n_bits=metadata["n_bits"])
 
         # Concrete-ML
-        obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]

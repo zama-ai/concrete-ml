@@ -1,8 +1,8 @@
-"""Implement sklearn linear model."""
+"""Implement sklearn neighbors model."""
 from typing import Any, Dict, Union
 
 import numpy
-import sklearn.linear_model
+import sklearn.neighbors
 
 from ..common.debugging.custom_assert import assert_true
 from ..common.utils import FheMode
@@ -51,7 +51,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
             "Only `L2` norm is supported with `p=2` and `metric = 'minkowski'`",
         )
 
-        self._y: numpy.ndarray
         self.n_neighbors = n_neighbors
         self.algorithm = algorithm
         self.leaf_size = leaf_size
@@ -78,10 +77,8 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["post_processing_params"] = self.post_processing_params
-        metadata["cml_dumped_class_name"] = type(self).__name__
 
         # scikit-learn
-        metadata["sklearn_model_class"] = self.sklearn_model_class
         metadata["n_neighbors"] = self.n_neighbors
         metadata["algorithm"] = self.algorithm
         metadata["weights"] = self.weights
@@ -97,10 +94,9 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
     def load_dict(cls, metadata: Dict):
 
         # Instantiate the model
-        obj = KNeighborsClassifier()
+        obj = cls(n_bits=metadata["n_bits"])
 
         # Concrete-ML
-        obj.n_bits = metadata["n_bits"]
         obj.sklearn_model = metadata["sklearn_model"]
         obj._is_fitted = metadata["_is_fitted"]
         obj._is_compiled = metadata["_is_compiled"]
@@ -110,13 +106,13 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj._q_fit_X = metadata["_q_fit_X"]
         obj._y = metadata["_y"]
         obj.onnx_model_ = metadata["onnx_model_"]
-
         obj.post_processing_params = metadata["post_processing_params"]
 
         # Scikit-Learn
         obj.n_neighbors = metadata["n_neighbors"]
-        obj.weights = metadata["weights"]
         obj.algorithm = metadata["algorithm"]
+        obj.weights = metadata["weights"]
+        obj.leaf_size = metadata["leaf_size"]
         obj.p = metadata["p"]
         obj.metric = metadata["metric"]
         obj.metric_params = metadata["metric_params"]
