@@ -33,8 +33,6 @@ SUPPORTED_INT_TYPES = {
 SUPPORTED_TYPES = {**SUPPORTED_FLOAT_TYPES, **SUPPORTED_INT_TYPES}
 
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
-# Default number of the most significant bits to keep, when using the rounding feature
-DEFAULT_ROUNDING_THRESHOLD_BITS = 5
 
 # Use new VL with .simulate() by default once CP's multi-parameter/precision bug is fixed
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3856

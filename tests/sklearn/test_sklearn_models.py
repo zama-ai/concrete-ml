@@ -193,7 +193,7 @@ def check_correctness_with_sklearn(
         "LinearSVC": 0.9,
         "XGBClassifier": 0.7,
         "RandomForestClassifier": 0.8,
-        "KNeighborsClassifier": 0.7,
+        "KNeighborsClassifier": 0.9,
     }
 
     model_name = get_model_name(model_class)
@@ -527,9 +527,8 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
         ):
             model.predict_proba(x)
 
-    # KNeighborsClassifier does not provide a kneighbors method
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4080
-    elif get_model_name(model) == "KNeighborsClassifier":
+        # KNeighborsClassifier does not provide a kneighbors method
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4080
         with pytest.raises(
             NotImplementedError,
             match=(

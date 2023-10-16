@@ -33,7 +33,6 @@ from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_m
 from ..common.debugging.custom_assert import assert_true
 from ..common.serialization.dumpers import dump, dumps
 from ..common.utils import (
-    DEFAULT_ROUNDING_THRESHOLD_BITS,
     USE_OLD_VL,
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
@@ -564,7 +563,7 @@ class BaseEstimator:
         assert isinstance(self.fhe_circuit, Circuit)
 
         # CRT simulation is not supported yet
-        # TODO: https://github.com/zama-ai/concrete-ml-internal/issues/3841
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3841
         if not USE_OLD_VL:
             self.fhe_circuit.enable_fhe_simulation()  # pragma: no cover
 
@@ -1284,7 +1283,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
-        self._rounder = cnp.AutoRounder(target_msbs=DEFAULT_ROUNDING_THRESHOLD_BITS)
 
         BaseEstimator.__init__(self)
 
@@ -1766,8 +1764,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._y: numpy.ndarray
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
-        # _rounder: The AutoRounder allows to set how many of the most significant bits to keep
-        self._rounder = cnp.AutoRounder(target_msbs=DEFAULT_ROUNDING_THRESHOLD_BITS)
 
         BaseEstimator.__init__(self)
 
@@ -1861,14 +1857,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         self._is_fitted = True
 
-        # To enable the AutoRounder feature, it has to be adjusted using an inputset to determine
-        # how many of the least significant bits to remove.
-        # This can be done manually using fhe.AutoRounder.adjust(function, inputset), or
-        # by setting auto_adjust_rounders configuration to True during compilation.Rounding
-        # We chose to adjust it manually to get the same result between clear and FHE inference
-        inputset = numpy.array(list(_get_inputset_generator(self._q_fit_X)))
-        self._rounder.adjust(self._inference, inputset)
-
         return self
 
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
@@ -1928,7 +1916,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         Returns:
             numpy.ndarray: The quantized predicted values.
         """
-
         assert self._q_fit_X_quantizer is not None, self._is_not_fitted_error_message()
 
         def pairwise_euclidean_distance(q_X):
@@ -2030,9 +2017,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                             # Select max(a, b)
                             diff = b - a
 
-                        with cnp.tag("Rounded_sign"):
-                            diff = cnp.round_bit_pattern(diff, lsbs_to_remove=self._rounder)
-
                         with cnp.tag("max_value"):
                             max_x = a + numpy.maximum(0, diff)
 
@@ -2064,10 +2048,6 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # 1. Pairwise_euclidiean distance
         with cnp.tag("Original distance"):
             distance_matrix = pairwise_euclidean_distance(q_X)
-
-        # Reduce the bit-width precion to get smaller accumulators
-        with cnp.tag("Rounded distance"):
-            distance_matrix = cnp.round_bit_pattern(distance_matrix, lsbs_to_remove=self._rounder)
 
         # The square root in the Euclidean distance calculation is not applied to speed up FHE
         # computations.
