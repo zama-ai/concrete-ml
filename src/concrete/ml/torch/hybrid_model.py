@@ -105,7 +105,7 @@ def convert_conv1d_to_linear(layer_or_module):
 
 # pylint: disable-next=too-many-instance-attributes
 class RemoteModule(nn.Module):
-    """A wrapper class for the modules to be done remotely with FHE."""
+    """A wrapper class for the modules to be evaluated remotely with FHE."""
 
     def __init__(
         self,
@@ -654,7 +654,7 @@ class HybridFHEModelServer:  # pragma:no cover
                     }
 
     def load_key(self, uid: Union[str, uuid.UUID]) -> bytes:
-        """Load a public key from the file system.
+        """Load a public key from the key path in the file system.
 
         Args:
             uid (Union[str, uuid.UUID]): uid of the public key to load
@@ -665,10 +665,10 @@ class HybridFHEModelServer:  # pragma:no cover
         return _load_key(self.key_path, uid)
 
     def dump_key(self, key_bytes: bytes, uid: Union[uuid.UUID, str]) -> None:
-        """Dump a public key on the file system.
+        """Dump a public key to a stream.
 
         Args:
-            key_bytes (bytes): public serialized key
+            key_bytes (bytes): stream to dump the public serialized key to
             uid (Union[str, uuid.UUID]): uid of the public key to dump
         """
         with open(self.key_path / str(uid), "wb") as file:
@@ -789,7 +789,6 @@ class HybridFHEModelServer:  # pragma:no cover
         """
         self.check_inputs(model_name, module_name, input_shape)
         uid = str(uuid.uuid4())
-        print("before reading")
         self.dump_key(key, uid)
         return {"uid": uid}
 

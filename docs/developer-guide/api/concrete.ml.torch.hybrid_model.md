@@ -84,7 +84,7 @@ ______________________________________________________________________
 
 ## <kbd>class</kbd> `RemoteModule`
 
-A wrapper class for the modules to be done remotely with FHE.
+A wrapper class for the modules to be evaluated remotely with FHE.
 
 <a href="../../../src/concrete/ml/torch/hybrid_model.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
@@ -157,7 +157,7 @@ Set the clients keys.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L273"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `remote_call`
 
@@ -177,7 +177,7 @@ Call the remote server to get the private module inference.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L334"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L338"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `HybridFHEModel`
 
@@ -193,7 +193,7 @@ This is done by converting targeted modules by RemoteModules. This will modify t
 - <b>`model_name`</b> (str):  Model name identifier
 - <b>`verbose`</b> (int):  If logs should be printed when interacting with FHE server
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L348"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L352"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -209,7 +209,7 @@ __init__(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L450"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L454"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compile_model`
 
@@ -235,7 +235,7 @@ Compiles the specific layers to FHE.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L437"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `init_client`
 
@@ -255,7 +255,7 @@ Initialize client for all remote modules.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L557"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L561"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `publish_to_hub`
 
@@ -267,7 +267,7 @@ Allow the user to push the model and FHE required files to HF Hub.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L533"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L537"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `save_and_clear_private_info`
 
@@ -284,7 +284,7 @@ Save the PyTorch model to the provided path and also saves the corresponding FHE
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L561"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L565"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `set_fhe_mode`
 
@@ -300,7 +300,7 @@ Set Hybrid FHE mode for all remote modules.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L572"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L576"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `LoggerStub`
 
@@ -308,7 +308,7 @@ Placeholder type for a typical logger like the one from loguru.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L579"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `info`
 
@@ -324,7 +324,7 @@ Placholder function for logger.info.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L614"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L618"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `HybridFHEModelServer`
 
@@ -332,7 +332,7 @@ Hybrid FHE Model Server.
 
 This is a class object to server FHE models serialized using HybridFHEModel.
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L620"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L624"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -342,7 +342,7 @@ __init__(key_path: Path, model_dir: Path, logger: Optional[LoggerStub])
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L767"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L771"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `add_key`
 
@@ -365,7 +365,7 @@ Dict\[str, str\]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L689"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L693"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `check_inputs`
 
@@ -391,7 +391,7 @@ Check that the given configuration exist in the compiled models folder.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L795"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `compute`
 
@@ -421,7 +421,7 @@ Compute the circuit over encrypted input.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L663"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L667"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_key`
 
@@ -429,16 +429,16 @@ ______________________________________________________________________
 dump_key(key_bytes: bytes, uid: Union[UUID, str]) → None
 ```
 
-Dump a public key on the file system.
+Dump a public key to a stream.
 
 **Args:**
 
-- <b>`key_bytes`</b> (bytes):  public serialized key
+- <b>`key_bytes`</b> (bytes):  stream to dump the public serialized key to
 - <b>`uid`</b> (Union\[str, uuid.UUID\]):  uid of the public key to dump
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L673"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L677"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_circuit`
 
@@ -460,7 +460,7 @@ Get circuit based on model name, module name and input shape.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L745"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L749"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_client`
 
@@ -486,7 +486,7 @@ Get client.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L720"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L724"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `list_modules`
 
@@ -505,7 +505,7 @@ Dict\[str, Dict\[str, Dict\]\]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L732"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L736"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `list_shapes`
 
@@ -525,7 +525,7 @@ Dict\[str, Dict\]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/hybrid_model.py#L652"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/hybrid_model.py#L656"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `load_key`
 
@@ -533,7 +533,7 @@ ______________________________________________________________________
 load_key(uid: Union[str, UUID]) → bytes
 ```
 
-Load a public key from the file system.
+Load a public key from the key path in the file system.
 
 **Args:**
 

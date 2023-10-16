@@ -190,7 +190,7 @@
 - [`linear_model.LinearRegression`](./concrete.ml.sklearn.linear_model.md#class-linearregression): A linear regression model with FHE.
 - [`linear_model.LogisticRegression`](./concrete.ml.sklearn.linear_model.md#class-logisticregression): A logistic regression model with FHE.
 - [`linear_model.Ridge`](./concrete.ml.sklearn.linear_model.md#class-ridge): A Ridge regression model with FHE.
-- [`neighbors.KNeighborsClassifier`](./concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier): A k-nearest classifier model with FHE.
+- [`neighbors.KNeighborsClassifier`](./concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier): A k-nearest neighbors classifier model with FHE.
 - [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): A Fully-Connected Neural Network classifier with FHE.
 - [`qnn.NeuralNetRegressor`](./concrete.ml.sklearn.qnn.md#class-neuralnetregressor): A Fully-Connected Neural Network regressor with FHE.
 - [`qnn_module.SparseQuantNeuralNetwork`](./concrete.ml.sklearn.qnn_module.md#class-sparsequantneuralnetwork): Sparse Quantized Neural Network.
@@ -206,7 +206,7 @@
 - [`hybrid_model.HybridFHEModel`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodel): Convert a model to a hybrid model.
 - [`hybrid_model.HybridFHEModelServer`](./concrete.ml.torch.hybrid_model.md#class-hybridfhemodelserver): Hybrid FHE Model Server.
 - [`hybrid_model.LoggerStub`](./concrete.ml.torch.hybrid_model.md#class-loggerstub): Placeholder type for a typical logger like the one from loguru.
-- [`hybrid_model.RemoteModule`](./concrete.ml.torch.hybrid_model.md#class-remotemodule): A wrapper class for the modules to be done remotely with FHE.
+- [`hybrid_model.RemoteModule`](./concrete.ml.torch.hybrid_model.md#class-remotemodule): A wrapper class for the modules to be evaluated remotely with FHE.
 - [`numpy_module.NumpyModule`](./concrete.ml.torch.numpy_module.md#class-numpymodule): General interface to transform a torch.nn.Module to numpy module.
 
 ## Functions
@@ -356,6 +356,7 @@
 - [`quantizers.fill_from_kwargs`](./concrete.ml.quantization.quantizers.md#function-fill_from_kwargs): Fill a parameter set structure from kwargs parameters.
 - [`p_error_search.compile_and_simulated_fhe_inference`](./concrete.ml.search_parameters.p_error_search.md#function-compile_and_simulated_fhe_inference): Get the quantized module of a given model in FHE, simulated or not.
 - [`tree_to_numpy.add_transpose_after_last_node`](./concrete.ml.sklearn.tree_to_numpy.md#function-add_transpose_after_last_node): Add transpose after last node.
+- [`tree_to_numpy.assert_add_node_and_constant_in_xgboost_regressor_graph`](./concrete.ml.sklearn.tree_to_numpy.md#function-assert_add_node_and_constant_in_xgboost_regressor_graph): Assert if an Add node with a specific constant exists in the ONNX graph.
 - [`tree_to_numpy.get_onnx_model`](./concrete.ml.sklearn.tree_to_numpy.md#function-get_onnx_model): Create ONNX model with Hummingbird convert method.
 - [`tree_to_numpy.preprocess_tree_predictions`](./concrete.ml.sklearn.tree_to_numpy.md#function-preprocess_tree_predictions): Apply post-processing from the graph.
 - [`tree_to_numpy.tree_onnx_graph_preprocessing`](./concrete.ml.sklearn.tree_to_numpy.md#function-tree_onnx_graph_preprocessing): Apply pre-processing onto the ONNX graph.
