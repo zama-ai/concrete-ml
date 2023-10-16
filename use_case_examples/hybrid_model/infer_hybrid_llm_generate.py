@@ -5,7 +5,6 @@ import time
 from pathlib import Path
 
 import torch
-from torch.backends import mps
 from transformers import AutoModelForCausalLM, AutoTokenizer, TextStreamer
 
 from concrete.ml.torch.hybrid_model import HybridFHEMode, HybridFHEModel
@@ -28,8 +27,6 @@ if __name__ == "__main__":
     device = "cpu"
     if torch.cuda.is_available():
         device = "cuda"
-    if mps.is_available():
-        device = "mps"
     print(f"Using device: {device}")
 
     # Get model from Hugging Face using model_name from configuration
