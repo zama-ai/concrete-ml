@@ -10,7 +10,7 @@ from .base import SklearnKNeighborsClassifierMixin
 
 # pylint: disable=invalid-name,too-many-instance-attributes
 class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
-    """A k-nearest classifier model with FHE.
+    """A k-nearest neighbors classifier model with FHE.
 
     Parameters:
         n_bits (int): Number of bits to quantize the model. The value will be used for quantizing
