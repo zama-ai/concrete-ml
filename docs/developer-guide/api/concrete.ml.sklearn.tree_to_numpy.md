@@ -56,6 +56,22 @@ ______________________________________________________________________
 
 <a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L88"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
+## <kbd>function</kbd> `assert_add_node_and_constant_in_xgboost_regressor_graph`
+
+```python
+assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: ModelProto)
+```
+
+Assert if an Add node with a specific constant exists in the ONNX graph.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  The ONNX model.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L124"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
 ## <kbd>function</kbd> `add_transpose_after_last_node`
 
 ```python
@@ -70,7 +86,7 @@ Add transpose after last node.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L109"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `preprocess_tree_predictions`
 
@@ -94,7 +110,7 @@ Apply post-processing from the graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L195"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_onnx_graph_preprocessing`
 
@@ -117,7 +133,7 @@ Apply pre-processing onto the ONNX graph.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L208"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L251"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_values_preprocessing`
 
@@ -144,7 +160,7 @@ Pre-process tree values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/tree_to_numpy.py#L295"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `tree_to_numpy`
 
