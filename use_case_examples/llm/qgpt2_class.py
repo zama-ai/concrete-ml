@@ -129,9 +129,7 @@ class QuantizedModel:
                 q_x = np.expand_dims(q_x, axis=0)
 
                 if fhe == "simulate":
-                    # Use new VL with .simulate() once CP's multi-parameter/precision bug is fixed
-                    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3856
-                    q_y = self.circuit.graph(q_x, p_error=self.circuit.p_error)
+                    q_y = self.circuit.simulate(q_x)
 
                 elif fhe == "execute":
                     q_y = self.circuit.encrypt_run_decrypt(q_x)

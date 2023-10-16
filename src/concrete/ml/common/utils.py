@@ -34,9 +34,8 @@ SUPPORTED_TYPES = {**SUPPORTED_FLOAT_TYPES, **SUPPORTED_INT_TYPES}
 
 MAX_BITWIDTH_BACKWARD_COMPATIBLE = 8
 
-# Use new VL with .simulate() by default once CP's multi-parameter/precision bug is fixed
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3856
-# Indicate if the old simulation method should be used when simulating FHE executions
+# Indicate if the old virtual library method should be used instead of the compiler simulation
+# when simulating FHE executions
 USE_OLD_VL = False
 
 # Debug option for testing round PBS optimization
