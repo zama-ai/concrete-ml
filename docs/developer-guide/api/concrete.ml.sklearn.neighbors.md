@@ -8,11 +8,11 @@ Implement sklearn linear model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/neighbors.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/neighbors.py#L13"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `KNeighborsClassifier`
 
-A k-nearest classifier model with FHE.
+A k-nearest neighbors classifier model with FHE.
 
 **Parameters:**
 
@@ -20,7 +20,7 @@ A k-nearest classifier model with FHE.
 
 For more details on KNeighborsClassifier please refer to the scikit-learn documentation: https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 
-<a href="../../../src/concrete/ml/sklearn/neighbors.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/neighbors.py#L27"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -84,7 +84,7 @@ Is None if the model is not fitted.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/neighbors.py#L63"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/neighbors.py#L64"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dump_dict`
 
@@ -94,10 +94,34 @@ dump_dict() → Dict[str, Any]
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/neighbors.py#L96"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/neighbors.py#L97"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>classmethod</kbd> `load_dict`
 
 ```python
 load_dict(metadata: Dict)
 ```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/neighbors.py#L130"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `predict_proba`
+
+```python
+predict_proba(
+    X: Union[ndarray, Tensor, ForwardRef('DataFrame'), List],
+    fhe: Union[FheMode, str] = <FheMode.DISABLE: 'disable'>
+) → ndarray
+```
+
+Predict class probabilities.
+
+**Args:**
+
+- <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+
+**Raises:**
+
+- <b>`NotImplementedError`</b>:  The method is not implemented for now.
