@@ -634,13 +634,13 @@ class BaseEstimator:
 
                     # If the old simulation method should be used
                     if USE_OLD_VL:
-                        predict_method = partial(  # pragma: no cover
+                        predict_method = partial(
                             self.fhe_circuit.graph, p_error=self.fhe_circuit.p_error
                         )
 
                     # Else, use the official simulation method
                     else:
-                        predict_method = self.fhe_circuit.simulate
+                        predict_method = self.fhe_circuit.simulate  # pragma: no cover
 
                 # Else, use the FHE execution method
                 else:
