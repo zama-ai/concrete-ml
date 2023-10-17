@@ -24,6 +24,7 @@ on:
         - GLMComparison \n
         - HealthCarePrediction \n
         - KaggleTitanic \n
+        - KNearestNeighbors \n
         - LinearRegression \n
         - LinearSVR \n
         - LogisticRegression \n
@@ -67,6 +68,7 @@ env:
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
   HealthCarePrediction: "use_case_examples/disease_prediction/HealthCarePrediction.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
+  KNearestNeighbors: "docs/advanced_examples/KNearestNeighbors.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 
   LinearSVR: "docs/advanced_examples/LinearSVR.ipynb" 
   LogisticRegression: "docs/advanced_examples/LogisticRegression.ipynb" 

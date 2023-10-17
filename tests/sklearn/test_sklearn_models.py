@@ -527,6 +527,18 @@ def check_inference_methods(model, model_class, x, check_float_array_equal):
         ):
             model.predict_proba(x)
 
+        # KNeighborsClassifier does not provide a kneighbors method
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4080
+        with pytest.raises(
+            NotImplementedError,
+            match=(
+                "The `kneighbors` method is not implemented for KNeighborsClassifier. Please call "
+                "`get_topk_labels` to retieve the K-Nearest labels for each point, or `predict` "
+                "method to retieve the predicted label for each data point."
+            ),
+        ):
+            model.kneighbors(x)
+
     # Only check 'predict_proba' and not 'predict' as some issues were found with the argmax not
     # being consistent because of precision errors with epsilon magnitude. This argmax should be
     # done in the clear the same way for both anyway. Ultimately, we would want to only compare the

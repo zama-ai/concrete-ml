@@ -21,8 +21,6 @@ import sklearn
 import skorch.net
 import torch
 from brevitas.export.onnx.qonnx.manager import QONNXManager as BrevitasONNXManager
-from concrete.fhe import array as fhe_array
-from concrete.fhe import zeros as fhe_zeros
 from concrete.fhe.compilation.artifacts import DebugArtifacts
 from concrete.fhe.compilation.circuit import Circuit
 from concrete.fhe.compilation.compiler import Compiler
@@ -1754,7 +1752,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """Initialize the FHE knn model.
 
         Args:
-            n_bits (int): Number of bits to quantize the model. IThe value will be used for
+            n_bits (int): Number of bits to quantize the model. The value will be used for
                 quantizing inputs and X_fit. Default to 3.
         """
         self.n_bits: int = n_bits
@@ -1955,7 +1953,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 arr = []
                 for i in indices:
                     arr.append(x[i])
-                enc_arr = fhe_array(arr)
+                enc_arr = cnp.array(arr)
                 return enc_arr
 
             def scatter1d(x, v, indices):
@@ -1976,20 +1974,23 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 return x
 
             comparisons = numpy.zeros(x.shape)
-            labels = labels + fhe_zeros(labels.shape)
+            labels = labels + cnp.zeros(labels.shape)
 
             n, k = x.size, self.n_neighbors
+            # Determine the number of stages for a sequence of length n
             ln2n = int(numpy.ceil(numpy.log2(n)))
 
-            # Number of stages
+            # Stage loop
             for t in range(ln2n - 1, -1, -1):
+                # p: Determines the range of indexes to be compared in each pass.
                 p = 2**t
+                # r: Offset that adjusts the range of indexes to be compared and sorted in each pass
                 r = 0
-                # d: Length of the bitonic sequence
+                # d: Comparison distance in each pass
                 d = p
-
-                with cnp.tag(f"top_k_t_{t}"):
-                    for bq in range(ln2n - 1, t - 1, -1):
+                # Number of passes for each stage
+                for bq in range(ln2n - 1, t - 1, -1):
+                    with cnp.tag(f"Stage_{t}_pass_{bq}"):
                         q = 2**bq
                         # Determine the range of indexes to be compared
                         range_i = numpy.array(
@@ -2012,38 +2013,41 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                         labels_a = gather1d(labels, range_i)  #
                         labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
 
-                        with cnp.tag("max"):
+                        with cnp.tag("diff"):
                             # Select max(a, b)
-                            diff = a - b
-                            max_x = a + numpy.maximum(0, b - a)
+                            diff = b - a
 
-                        # Swap if a > b
-                        # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
-                        x = scatter1d(x, a + b - max_x, range_i)
-                        # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
-                        x = scatter1d(x, max_x, range_i + d)
+                        with cnp.tag("max_value"):
+                            max_x = a + numpy.maximum(0, diff)
 
-                        with cnp.tag("sign"):
-                            # Max index selection
-                            is_a_greater_than_b = diff <= 0
+                        with cnp.tag("swap_max_value"):
+                            # Swap if a > b
+                            # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
+                            x = scatter1d(x, a + b - max_x, range_i)
+                            # x[range_i + d] = min(a, b): Second bitonic sequence gets max(a, b)
+                            x = scatter1d(x, max_x, range_i + d)
 
-                        # Update labels array according to the max items
-                        with cnp.tag("label_swap"):
+                        # Update labels array according to the max value
+                        with cnp.tag("max_label"):
+                            is_a_greater_than_b = diff > 0
                             max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
 
-                        with cnp.tag("label_set"):
+                        with cnp.tag("swap_max_label"):
                             labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
                             labels = scatter1d(labels, max_labels, range_i + d)
 
                         # Update
-                        comparisons[range_i + d] = comparisons[range_i + d] + 1
-                        d = q - p
-                        r = p
+                        with cnp.tag("update"):
+                            comparisons[range_i + d] = comparisons[range_i + d] + 1
+                            # Reduce the comparison distance by half
+                            d = q - p
+                            r = p
 
             return labels[0 : self.n_neighbors]
 
         # 1. Pairwise_euclidiean distance
-        distance_matrix = pairwise_euclidean_distance(q_X)
+        with cnp.tag("Original distance"):
+            distance_matrix = pairwise_euclidean_distance(q_X)
 
         # The square root in the Euclidean distance calculation is not applied to speed up FHE
         # computations.
@@ -2051,32 +2055,37 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # the argsort.
 
         topk_labels = topk_sorting(distance_matrix.flatten(), self._y)
-
         return numpy.expand_dims(topk_labels, axis=0)
 
-    def compile(self, *args, **kwargs) -> Circuit:
-        return BaseEstimator.compile(self, *args, **kwargs)
-
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        """Perform the majority.
+        """Provide the majority vote among the topk labels of each point.
 
         For KNN, the de-quantization step is not required. Because _inference returns the label of
         the k-nearest neighbors.
 
         Args:
-            y_preds (numpy.ndarray): The topk nearest labels
+            y_preds (numpy.ndarray): The topk nearest labels for each point.
 
         Returns:
-            numpy.ndarray: The majority vote.
+            numpy.ndarray: The majority vote for each point.
         """
-        y_preds_processed = []
-        for y in y_preds:
-            vote = self.majority_vote(y.flatten())
-            y_preds_processed.append(vote)
+        return numpy.array([self.majority_vote(y.flatten()) for y in y_preds])
 
-        return numpy.array(y_preds_processed)
+    def get_topk_labels(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        """Return the K-nearest labels of each point.
 
-    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+        Args:
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
+            fhe (Union[FheMode, str]): The mode to use for prediction.
+                Can be FheMode.DISABLE for Concrete ML Python inference,
+                FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.
+                Can also be the string representation of any of these values.
+                Default to FheMode.DISABLE.
+
+        Returns:
+            numpy.ndarray: The K-Nearest labels for each point.
+        """
 
         X = check_array_and_assert(X)
 
@@ -2084,7 +2093,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         for query in X:
             topk_labels.append(BaseEstimator.predict(self, query[None], fhe=fhe))
 
-        y_preds = self.post_processing(numpy.array(topk_labels))
+        return numpy.array(topk_labels).squeeze()
+
+    def predict(self, X: Data, fhe: Union[FheMode, str] = FheMode.DISABLE) -> numpy.ndarray:
+
+        X = check_array_and_assert(X)
+
+        topk_labels = self.get_topk_labels(X, fhe)
+
+        y_preds = self.post_processing(topk_labels)
 
         return y_preds
 

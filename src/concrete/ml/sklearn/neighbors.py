@@ -75,7 +75,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         metadata["_q_fit_X_quantizer"] = self._q_fit_X_quantizer
         metadata["_q_fit_X"] = self._q_fit_X
         metadata["_y"] = self._y
-
         metadata["output_quantizers"] = self.output_quantizers
         metadata["onnx_model_"] = self.onnx_model_
         metadata["post_processing_params"] = self.post_processing_params
@@ -110,7 +109,6 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         obj._q_fit_X_quantizer = metadata["_q_fit_X_quantizer"]
         obj._q_fit_X = metadata["_q_fit_X"]
         obj._y = metadata["_y"]
-
         obj.onnx_model_ = metadata["onnx_model_"]
 
         obj.post_processing_params = metadata["post_processing_params"]
@@ -146,4 +144,23 @@ class KNeighborsClassifier(SklearnKNeighborsClassifierMixin):
         raise NotImplementedError(
             "The `predict_proba` method is not implemented for KNeighborsClassifier. Please "
             "call `predict` instead."
+        )
+
+    # KNeighborsClassifier does not provide a kneighbors method
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4080
+    def kneighbors(self, X: Data) -> numpy.ndarray:
+        """Return the knearest distances and their respective indices for each query point.
+
+        Args:
+            X (Data): The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame
+                or List.
+
+        Raises:
+            NotImplementedError: The method is not implemented for now.
+        """
+
+        raise NotImplementedError(
+            "The `kneighbors` method is not implemented for KNeighborsClassifier. Please call "
+            "`get_topk_labels` to retieve the K-Nearest labels for each point, or `predict` method "
+            "to retieve the predicted label for each data point."
         )
