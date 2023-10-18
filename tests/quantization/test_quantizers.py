@@ -22,7 +22,9 @@ from concrete.ml.quantization.quantizers import (
     [pytest.param(True, True), pytest.param(True, False), pytest.param(False, False)],
 )
 @pytest.mark.parametrize("values", [pytest.param(numpy.random.randn(2000))])
-def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_array_equal):
+def test_quant_dequant_update(
+    values, n_bits, is_signed, is_symmetric, check_array_equal, check_float_array_equal
+):
     """Test the quant and de-quant function."""
 
     quant_array = QuantizedArray(n_bits, values, is_signed=is_signed, is_symmetric=is_symmetric)
@@ -42,7 +44,7 @@ def test_quant_dequant_update(values, n_bits, is_signed, is_symmetric, check_arr
 
     # Check that all values are close
     tolerance = quant_array.quantizer.scale / 2
-    assert numpy.isclose(dequant_values, values, atol=tolerance).all()
+    check_float_array_equal(dequant_values, values, atol=tolerance)
 
     # Explain the choice of tolerance
     # This test checks the values are quantized and de-quantized correctly

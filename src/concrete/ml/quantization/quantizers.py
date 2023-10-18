@@ -7,9 +7,9 @@ from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
 
-from ..common import utils
 from ..common.debugging import assert_true
 from ..common.serialization.dumpers import dump, dumps
+from ..common.utils import QUANT_ROUND_LIKE_ROUND_PBS, array_allclose_and_same_shape
 
 STABILITY_CONST = 10**-6
 
@@ -369,7 +369,7 @@ class MinMaxQuantizationStats:
 
         re_quant_scales = numpy.rint(unique_scales / min_scale) * min_scale
 
-        return numpy.allclose(unique_scales, re_quant_scales, atol=0.02)
+        return array_allclose_and_same_shape(unique_scales, re_quant_scales, atol=0.02)
 
 
 class UniformQuantizationParameters:
@@ -746,7 +746,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.offset is not None
         assert self.scale is not None
 
-        if utils.QUANT_ROUND_LIKE_ROUND_PBS:
+        if QUANT_ROUND_LIKE_ROUND_PBS:
             qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)
         else:
             qvalues = numpy.rint(values / self.scale + self.zero_point)

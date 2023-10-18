@@ -130,7 +130,6 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
     # Get the data-set. The data generation is seeded in load_data.
     model = instantiate_model_generic(model_class, n_bits=n_bits)
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
-
     with warnings.catch_warnings():
         # Sometimes, we miss convergence, which is not a problem for our test
         warnings.simplefilter("ignore", category=ConvergenceWarning)
@@ -1106,7 +1105,7 @@ def check_exposition_structural_methods_decision_trees(model, x, y):
     )
 
 
-def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y):
+def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_float_array_equal):
     """Check that linear models and QNNs support loading from pre-trained scikit-learn models."""
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
@@ -1131,10 +1130,13 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y):
     y_pred_simulate = concrete_model.predict(x, fhe="simulate")
     y_pred_simulate_loaded = loaded_concrete_model.predict(x, fhe="simulate")
 
-    assert numpy.isclose(y_pred_simulate, y_pred_simulate_loaded).all(), (
-        "Simulated predictions from the initial model do not match the ones made from the "
-        "loaded one."
-    )
+    try:
+        check_float_array_equal(y_pred_simulate, y_pred_simulate_loaded)
+    except AssertionError as e:
+        raise AssertionError(
+            "Simulated predictions from the initial model do not match the ones "
+            "made from the loaded one."
+        ) from e
 
 
 # Neural network models are skipped for this test
@@ -1474,7 +1476,6 @@ def test_predict_correctness(
         pytest.skip("KNeighborsClassifier models can only run with 5 bits at most.")
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
-
     # Run the test with more samples during weekly CIs or when using FHE simulation
     if is_weekly_option or simulate:
         fhe_samples = 5
@@ -1720,6 +1721,7 @@ def test_load_fitted_sklearn_linear_models(
     parameters,
     load_data,
     is_weekly_option,
+    check_float_array_equal,
     verbose=True,
 ):
     """Test that linear models support loading from fitted scikit-learn models."""
@@ -1731,7 +1733,7 @@ def test_load_fitted_sklearn_linear_models(
     if verbose:
         print("Run check_load_pre_trained_sklearn_models")
 
-    check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y)
+    check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_float_array_equal)
 
 
 # Only circuits from linear models do not have any TLUs

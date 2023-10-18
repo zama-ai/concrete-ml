@@ -583,3 +583,27 @@ def all_values_are_of_dtype(*values: Any, dtypes: Union[str, List[str]]) -> bool
         supported_dtypes[dtype] = supported_dtype
 
     return all(_is_of_dtype(value, supported_dtypes) for value in values)
+
+
+def array_allclose_and_same_shape(
+    a, b, rtol: float = 1e-05, atol: float = 1e-08, equal_nan: bool = False
+) -> bool:
+    """Check if two numpy arrays are equal within a tolerances and have the same shape.
+
+    Args:
+        a (numpy.ndarray): The first input array
+        b (numpy.ndarray): The second input array
+        rtol (float): The relative tolerance parameter
+        atol (float): The absolute tolerance parameter
+        equal_nan (bool): Whether to compare NaN’s as equal. If True, NaN’s in a will be considered
+            equal to NaN’s in b in the output array
+
+    Returns:
+        bool: True if the arrays have the same shape and all elements are equal within the specified
+            tolerances, False otherwise.
+    """
+
+    a = check_array_and_assert(a, ensure_2d=False)
+    b = check_array_and_assert(b, ensure_2d=False)
+
+    return a.shape == b.shape and numpy.allclose(a, b, rtol, atol, equal_nan)
