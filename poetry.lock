@@ -445,7 +445,7 @@ typing = ["mypy (>=0.990)"]
 
 [[package]]
 name = "concrete-python"
-version = "2.4.0"
+version = "2.5.0rc1"
 description = "A state-of-the-art homomorphic encryption framework"
 category = "main"
 optional = false
@@ -4303,7 +4303,7 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8.1,<3.11"
-content-hash = "24a88ab121e893df3d89ccc18393b88b18fd57eb9bf95a1dab54828fe59d3743"
+content-hash = "1fa15ee0911206d170224294a023775d451792f78c0d7e40b81f98a08e37483a"
 
 [metadata.files]
 absl-py = [
@@ -4692,18 +4692,18 @@ comm = [
     {file = "comm-0.1.4.tar.gz", hash = "sha256:354e40a59c9dd6db50c5cc6b4acc887d82e9603787f83b68c01a80a923984d15"},
 ]
 concrete-python = [
-    {file = "concrete_python-2.4.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:417f7e3cd7027e09a9da0d19d41067200b8073d6f3d80ca4792113184ff4a7cd"},
-    {file = "concrete_python-2.4.0-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:6f86b4ed1f25c0d0fe26e38bb910704704ee32f1e0d59491141e19c693adf3b3"},
-    {file = "concrete_python-2.4.0-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:1e3dd30ce85b48cb76e3ed0f7ce6fbff402d21117d2a077b8e5f1eb9595b0cdb"},
-    {file = "concrete_python-2.4.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:ad3164ae77962a8f5e6b03e88e1d436015148b35ba2a594f9dc7ca63e7c5a5bf"},
-    {file = "concrete_python-2.4.0-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:185ac9fe385dfc783fc0864777118f7e7ac389f823302df84f62d7de6527a1a4"},
-    {file = "concrete_python-2.4.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:f5a9bac76e6b4d28f36a2eb41dad6bbdeabb9629408a6b902aa42b58e9ee5a1f"},
-    {file = "concrete_python-2.4.0-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:712b3b66afc8b05c724f3dd6c1ae075cf915de7ef78306b75cd30c7c6d5f730e"},
-    {file = "concrete_python-2.4.0-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:fd96a527d09ab53a86605f28f387b846656a83ad7635c2b32be1c85a7cfb1383"},
-    {file = "concrete_python-2.4.0-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:7bf22485cc7e32e1b75c11bef1e353a1f56183af722cfc7ef5de7f49689e49df"},
-    {file = "concrete_python-2.4.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:14d36ef65016cd6cb3e3b48fe071a010e3c06760cd24ffb9ecccfb81b6bb57da"},
-    {file = "concrete_python-2.4.0-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:401351d95ef1123656f5b6c0bc1a666c8d82e49d35da36876ec4d5476b7f323b"},
-    {file = "concrete_python-2.4.0-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:f7ba1684ec0bff6a964340dd9a0a7781bf0b288baabd2ec1c2f7eb6b8e4b0439"},
+    {file = "concrete_python-2.5.0rc1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:4165e0ebd5904fb88ccd4ac2b987aa1e4f39ca50f7afa5834fc23d6645dda657"},
+    {file = "concrete_python-2.5.0rc1-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:c826475edb8fc707e5dde6e7b656bf370319665d1136a4150e6d9160b6957cc2"},
+    {file = "concrete_python-2.5.0rc1-cp310-cp310-manylinux_2_28_x86_64.whl", hash = "sha256:959eb01f5b141bfbeda97134b6f12eca8fe6658403c3245c6d8cd350c3ba4712"},
+    {file = "concrete_python-2.5.0rc1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:415a805362c29958c2c276e7a22a6fab930772641e6992ec1166f330cba30840"},
+    {file = "concrete_python-2.5.0rc1-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:77afc0156230c74055d03adb2446a68de818ca57b63c751abb345fcffc98d43f"},
+    {file = "concrete_python-2.5.0rc1-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:a0fd46216bda3bd653b20d049954556870c83c0f9364ce11c3c4566acf76340f"},
+    {file = "concrete_python-2.5.0rc1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:c2bd7e1acf40f335c5421a843017001dfbdfc8655b38c58e97055a3a1f949aaa"},
+    {file = "concrete_python-2.5.0rc1-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:40e461a0f2338e1095b21e29b8a2f364b5e1c99985f84cdbebd59ff28eb11e33"},
+    {file = "concrete_python-2.5.0rc1-cp38-cp38-manylinux_2_28_x86_64.whl", hash = "sha256:0e6e48969f8f3e44cc6c40dd5c25e3c72b6db37658562b0652ea40f50bc403e7"},
+    {file = "concrete_python-2.5.0rc1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:92c8acd325bbebf04ea9acf30f012ffb54a645083c64c0020c5233790af5eae1"},
+    {file = "concrete_python-2.5.0rc1-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:0556618c065e54abe3cbba6b1f5e17a2a77ade5936108bb27f401c084d686471"},
+    {file = "concrete_python-2.5.0rc1-cp39-cp39-manylinux_2_28_x86_64.whl", hash = "sha256:1a823df58a742ad65e09c7f098140e8f8c565705bdc2bf13c954f5ac32e285b7"},
 ]
 contourpy = [
     {file = "contourpy-1.1.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:89f06eff3ce2f4b3eb24c1055a26981bffe4e7264acd86f15b97e40530b794bc"},
@@ -6772,7 +6772,8 @@ ruamel-yaml-clib = [
     {file = "ruamel.yaml.clib-0.2.7-cp310-cp310-win32.whl", hash = "sha256:763d65baa3b952479c4e972669f679fe490eee058d5aa85da483ebae2009d231"},
     {file = "ruamel.yaml.clib-0.2.7-cp310-cp310-win_amd64.whl", hash = "sha256:d000f258cf42fec2b1bbf2863c61d7b8918d31ffee905da62dede869254d3b8a"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:045e0626baf1c52e5527bd5db361bc83180faaba2ff586e763d3d5982a876a9e"},
-    {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_12_6_arm64.whl", hash = "sha256:721bc4ba4525f53f6a611ec0967bdcee61b31df5a56801281027a3a6d1c2daf5"},
+    {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-macosx_13_0_arm64.whl", hash = "sha256:1a6391a7cabb7641c32517539ca42cf84b87b667bad38b78d4d42dd23e957c81"},
+    {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-manylinux2014_aarch64.whl", hash = "sha256:9c7617df90c1365638916b98cdd9be833d31d337dbcd722485597b43c4a215bf"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl", hash = "sha256:41d0f1fa4c6830176eef5b276af04c89320ea616655d01327d5ce65e50575c94"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-win32.whl", hash = "sha256:f6d3d39611ac2e4f62c3128a9eed45f19a6608670c5a2f4f07f24e8de3441d38"},
     {file = "ruamel.yaml.clib-0.2.7-cp311-cp311-win_amd64.whl", hash = "sha256:da538167284de58a52109a9b89b8f6a53ff8437dd6dc26d33b57bf6699153122"},
