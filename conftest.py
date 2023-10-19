@@ -319,10 +319,16 @@ def check_array_equal():
 def check_float_array_equal():
     """Fixture to check if two float arrays are equal with epsilon precision tolerance."""
 
-    def check_float_array_equal_impl(a, b, rtol=0, atol=0.001):
-        assert array_allclose_and_same_shape(
-            a, b, rtol, atol
-        ), f"Not equal to tolerance rtol={rtol}, atol={atol}\na: {a}\nb: {b}"
+    def check_float_array_equal_impl(
+        a, b, rtol=0, atol=0.001, error_information: Optional[str] = ""
+    ):
+
+        error_message = (
+            f"Not equal to tolerance rtol={rtol}, atol={atol}\na: {a}\nb: {b}\n"
+            f"{error_information}"
+        )
+
+        assert array_allclose_and_same_shape(a, b, rtol, atol), error_message
 
     return check_float_array_equal_impl
 

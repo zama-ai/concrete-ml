@@ -1130,13 +1130,12 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
     y_pred_simulate = concrete_model.predict(x, fhe="simulate")
     y_pred_simulate_loaded = loaded_concrete_model.predict(x, fhe="simulate")
 
-    try:
-        check_float_array_equal(y_pred_simulate, y_pred_simulate_loaded)
-    except AssertionError as e:
-        raise AssertionError(
-            "Simulated predictions from the initial model do not match the ones "
-            "made from the loaded one."
-        ) from e
+    check_float_array_equal(
+        y_pred_simulate,
+        y_pred_simulate_loaded,
+        error_information="Simulated predictions from the initial model do not match the ones made "
+        "from the loaded one.",
+    )
 
 
 # Neural network models are skipped for this test
