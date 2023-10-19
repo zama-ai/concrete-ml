@@ -747,7 +747,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
         assert self.scale is not None
 
         if QUANT_ROUND_LIKE_ROUND_PBS:
-            qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)
+            qvalues = numpy.floor(values / self.scale + self.zero_point + 0.5)  # pragma: no cover
         else:
             qvalues = numpy.rint(values / self.scale + self.zero_point)
 
