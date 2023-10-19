@@ -1127,7 +1127,12 @@ def test_net_has_no_tlu(
 @pytest.mark.parametrize("is_qat", [True, False])
 @pytest.mark.parametrize("n_channels", [2])
 def test_shape_operations_net(
-    simulate, n_channels, is_qat, default_configuration, check_graph_output_has_no_tlu
+    simulate,
+    n_channels,
+    is_qat,
+    default_configuration,
+    check_graph_output_has_no_tlu,
+    check_float_array_equal,
 ):
     """Test a pattern of reshaping, concatenation, chunk extraction."""
     net = ShapeOperationsNet(is_qat)
@@ -1166,7 +1171,7 @@ def test_shape_operations_net(
         # In PTQ the results do not match because of a-priori set quantization options
         # Currently no solution for concat/reshape/transpose correctness in PTQ is proposed.
         if is_qat:
-            assert numpy.allclose(torch_output, predictions, atol=0.05, rtol=0)
+            check_float_array_equal(torch_output, predictions, atol=0.05, rtol=0)
 
             # In QAT, since the quantization is defined a-priori, all TLUs will be removed
             # and the input quantizer is moved to the clear. We can thus check there are no TLUs

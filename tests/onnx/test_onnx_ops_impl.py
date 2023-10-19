@@ -52,9 +52,10 @@ def test_numpy_gemm(alpha, beta, trans_a, size_a, trans_b, size_b):
 
     # Can be a bit different if we have floats
     if isinstance(alpha, float) or isinstance(beta, float):
-        assert numpy.isclose(
+
+        assert numpy.allclose(
             got, expected
-        ).all(), f"expected {expected}, got {got}, abs diff is {numpy.abs(got - expected)}"
+        ), f"expected {expected}, got {got}, abs diff is {numpy.abs(got - expected)}"
     else:
         assert numpy.array_equal(
             got, expected

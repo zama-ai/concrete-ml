@@ -16,6 +16,7 @@ from sklearn.datasets import make_classification, make_regression
 from concrete.ml.common.utils import (
     SUPPORTED_FLOAT_TYPES,
     all_values_are_floats,
+    array_allclose_and_same_shape,
     is_brevitas_model,
     is_classifier_or_partial_classifier,
     is_model_class_in_a_list,
@@ -318,8 +319,16 @@ def check_array_equal():
 def check_float_array_equal():
     """Fixture to check if two float arrays are equal with epsilon precision tolerance."""
 
-    def check_float_array_equal_impl(a, b):
-        assert numpy.all(numpy.isclose(a, b, rtol=0, atol=0.001))
+    def check_float_array_equal_impl(
+        a, b, rtol=0, atol=0.001, error_information: Optional[str] = ""
+    ):
+
+        error_message = (
+            f"Not equal to tolerance rtol={rtol}, atol={atol}\na: {a}\nb: {b}\n"
+            f"{error_information}"
+        )
+
+        assert array_allclose_and_same_shape(a, b, rtol, atol), error_message
 
     return check_float_array_equal_impl
 
@@ -338,8 +347,7 @@ def check_r2_score():
         r2_num = numpy.sum(deltas_actual**2)
 
         # If the values are really close, we consider the test passes
-        is_close = numpy.allclose(expected, actual, atol=1e-4, rtol=0)
-        if is_close:
+        if array_allclose_and_same_shape(expected, actual, atol=1e-4, rtol=0):
             return
 
         # If the variance of the target values is very low, fix the max allowed for residuals
@@ -509,10 +517,7 @@ def check_is_good_execution_for_cml_vs_circuit():
                         "a QuantizedModule object."
                     )
 
-            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2806
-            # fp64 comparisons do not pass the numpy.array_equal while the quantized
-            # int64 values do.
-            if numpy.isclose(results_cnp_circuit, results_model).all():
+            if array_allclose_and_same_shape(results_cnp_circuit, results_model):
                 return
 
         raise RuntimeError(

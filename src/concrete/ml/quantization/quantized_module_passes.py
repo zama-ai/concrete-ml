@@ -242,7 +242,7 @@ class PowerOfTwoScalingRoundPBSAdapter:
             log2_value = int(numpy.rint(numpy.log2(value)))
             # Check that the integer power of two is close to the original value
             # with a small percentage tolerance
-            if numpy.isclose(numpy.power(2.0, log2_value), value, rtol=0.01):
+            if numpy.allclose(numpy.power(2.0, log2_value), value, rtol=0.01):
                 return log2_value, True
             return 0, False
 
