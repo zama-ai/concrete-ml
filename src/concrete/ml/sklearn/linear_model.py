@@ -196,6 +196,20 @@ class SGDRegressor(SklearnSGDRegressorMixin):
 
         metadata: Dict[str, Any] = {}
 
+        # Concrete-ML
+        metadata["n_bits"] = self.n_bits
+        metadata["sklearn_model"] = self.sklearn_model
+        metadata["_is_fitted"] = self._is_fitted
+        metadata["_is_compiled"] = self._is_compiled
+        metadata["input_quantizers"] = self.input_quantizers
+        metadata["_weight_quantizer"] = self._weight_quantizer
+        metadata["output_quantizers"] = self.output_quantizers
+        metadata["onnx_model_"] = self.onnx_model_
+        metadata["_q_weights"] = self._q_weights
+        metadata["_q_bias"] = self._q_bias
+        metadata["post_processing_params"] = self.post_processing_params
+
+        # Scikit-Learn
         metadata["loss"] = self.loss
         metadata["penalty"] = self.penalty
         metadata["alpha"] = self.alpha

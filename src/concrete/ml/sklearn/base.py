@@ -1684,7 +1684,7 @@ class SklearnSGDRegressorMixin(SklearnLinearRegressorMixin):
     """A Mixin class for sklearn SGD regressors with FHE.
 
     This class is used to create a SGD regressor class what can be exported
-    to ONNX using hummingbird.
+    to ONNX using Hummingbird.
     """
 
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
