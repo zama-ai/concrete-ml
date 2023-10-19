@@ -74,6 +74,7 @@ REGRESSORS_NAMES = [
     "NeuralNetRegressor",
     "RandomForestRegressor",
     "XGBRegressor",
+    "SGDRegressor",
 ]
 for model_name in REGRESSORS_NAMES:
     try:

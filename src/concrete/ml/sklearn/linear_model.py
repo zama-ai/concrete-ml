@@ -3,7 +3,11 @@ from typing import Any, Dict
 
 import sklearn.linear_model
 
-from .base import SklearnLinearClassifierMixin, SklearnLinearRegressorMixin
+from .base import (
+    SklearnLinearClassifierMixin,
+    SklearnLinearRegressorMixin,
+    SklearnSGDRegressorMixin,
+)
 
 
 # pylint: disable=invalid-name,too-many-instance-attributes
@@ -96,6 +100,162 @@ class LinearRegression(SklearnLinearRegressorMixin):
         obj.copy_X = metadata["copy_X"]
         obj.n_jobs = metadata["n_jobs"]
         obj.positive = metadata["positive"]
+        return obj
+
+
+class SGDRegressor(SklearnSGDRegressorMixin):
+    """An FHE linear regression model fitted with stochastic gradient descent.
+
+    Parameters:
+        n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+            Default to 8.
+
+    For more details on SGDRegressor please refer to the scikit-learn documentation:
+    https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.SGDRegressor.html
+    """
+
+    sklearn_model_class = sklearn.linear_model.SGDRegressor
+
+    _is_a_public_cml_model = True
+
+    _args = [
+        "penalty",
+        "alpha",
+        "l1_ratio",
+        "fit_intercept",
+        "max_iter",
+        "tol",
+        "shuffle",
+        "verbose",
+        "epsilon",
+        "random_state",
+        "learning_rate",
+        "eta0",
+        "power_t",
+        "early_stopping",
+        "validation_fraction",
+        "n_iter_no_change",
+        "warm_start",
+        "average",
+    ]
+
+    def __init__(
+        self,
+        n_bits=8,
+        loss="squared_error",
+        *,
+        penalty="l2",
+        alpha=0.0001,
+        l1_ratio=0.15,
+        fit_intercept=True,
+        max_iter=1000,
+        tol=1e-3,
+        shuffle=True,
+        verbose=0,
+        epsilon=0.1,
+        random_state=None,
+        learning_rate="invscaling",
+        eta0=0.01,
+        power_t=0.25,
+        early_stopping=False,
+        validation_fraction=0.1,
+        n_iter_no_change=5,
+        warm_start=False,
+        average=False,
+    ):
+
+        super().__init__(n_bits=n_bits)
+
+        self.loss = loss
+        self.penalty = penalty
+        self.alpha = alpha
+        self.l1_ratio = l1_ratio
+        self.fit_intercept = fit_intercept
+        self.max_iter = max_iter
+        self.tol = tol
+        self.shuffle = shuffle
+        self.verbose = verbose
+        self.epsilon = epsilon
+        self.random_state = random_state
+        self.learning_rate = learning_rate
+        self.eta0 = eta0
+        self.power_t = power_t
+        self.early_stopping = early_stopping
+        self.validation_fraction = validation_fraction
+        self.n_iter_no_change = n_iter_no_change
+        self.warm_start = warm_start
+        self.average = average
+
+    def dump_dict(self) -> Dict[str, Any]:
+        assert self._weight_quantizer is not None, self._is_not_fitted_error_message()
+
+        metadata: Dict[str, Any] = {}
+
+        metadata["loss"] = self.loss
+        metadata["penalty"] = self.penalty
+        metadata["alpha"] = self.alpha
+        metadata["l1_ratio"] = self.l1_ratio
+        metadata["fit_intercept"] = self.fit_intercept
+        metadata["max_iter"] = self.max_iter
+        metadata["tol"] = self.tol
+        metadata["shuffle"] = self.shuffle
+        metadata["verbose"] = self.verbose
+        metadata["epsilon"] = self.epsilon
+        metadata["random_state"] = self.random_state
+        metadata["learning_rate"] = self.learning_rate
+        metadata["eta0"] = self.eta0
+        metadata["power_t"] = self.power_t
+        metadata["early_stopping"] = self.early_stopping
+        metadata["validation_fraction"] = self.validation_fraction
+        metadata["n_iter_no_change"] = self.n_iter_no_change
+        metadata["warm_start"] = self.warm_start
+        metadata["average"] = self.average
+
+        return metadata
+
+    @classmethod
+    def load_dict(cls, metadata: Dict):
+
+        # Instantiate the model
+        obj = cls(n_bits=metadata["n_bits"])
+
+        # Concrete-ML
+        obj.sklearn_model = metadata["sklearn_model"]
+        obj._is_fitted = metadata["_is_fitted"]
+        obj._is_compiled = metadata["_is_compiled"]
+        obj.input_quantizers = metadata["input_quantizers"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._weight_quantizer = metadata["_weight_quantizer"]
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj._q_weights = metadata["_q_weights"]
+        obj._q_bias = metadata["_q_bias"]
+        obj.post_processing_params = metadata["post_processing_params"]
+
+        obj.loss = metadata["loss"]
+        obj.penalty = metadata["penalty"]
+        obj.alpha = metadata["alpha"]
+        obj.l1_ratio = metadata["l1_ratio"]
+        obj.fit_intercept = metadata["fit_intercept"]
+        obj.max_iter = metadata["max_iter"]
+        obj.tol = metadata["tol"]
+        obj.shuffle = metadata["shuffle"]
+        obj.verbose = metadata["verbose"]
+        obj.epsilon = metadata["epsilon"]
+        obj.random_state = metadata["random_state"]
+        obj.learning_rate = metadata["learning_rate"]
+        obj.eta0 = metadata["eta0"]
+        obj.power_t = metadata["power_t"]
+        obj.early_stopping = metadata["early_stopping"]
+        obj.validation_fraction = metadata["validation_fraction"]
+        obj.n_iter_no_change = metadata["n_iter_no_change"]
+        obj.warm_start = metadata["warm_start"]
+        obj.average = metadata["average"]
+
         return obj
 
 
