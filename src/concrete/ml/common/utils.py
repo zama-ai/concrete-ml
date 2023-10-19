@@ -603,7 +603,7 @@ def array_allclose_and_same_shape(
             tolerances, False otherwise.
     """
 
-    a = check_array_and_assert(a, ensure_2d=False)
-    b = check_array_and_assert(b, ensure_2d=False)
+    assert isinstance(a, numpy.ndarray)
+    assert isinstance(b, numpy.ndarray)
 
     return a.shape == b.shape and numpy.allclose(a, b, rtol, atol, equal_nan)
