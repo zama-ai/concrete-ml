@@ -103,5 +103,5 @@ def test_get_sklearn_models():
 def test_models_and_datasets():
     """Check that the tested model's configuration lists remain fixed."""
 
-    assert len(MODELS_AND_DATASETS) == 29
-    assert len(UNIQUE_MODELS_AND_DATASETS) == 19
+    assert len(MODELS_AND_DATASETS) == 30
+    assert len(UNIQUE_MODELS_AND_DATASETS) == 20
