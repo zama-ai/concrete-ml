@@ -42,7 +42,7 @@
 - [`concrete.ml.sklearn.base`](./concrete.ml.sklearn.base.md#module-concretemlsklearnbase): Base classes for all estimators.
 - [`concrete.ml.sklearn.glm`](./concrete.ml.sklearn.glm.md#module-concretemlsklearnglm): Implement sklearn's Generalized Linear Models (GLM).
 - [`concrete.ml.sklearn.linear_model`](./concrete.ml.sklearn.linear_model.md#module-concretemlsklearnlinear_model): Implement sklearn linear model.
-- [`concrete.ml.sklearn.neighbors`](./concrete.ml.sklearn.neighbors.md#module-concretemlsklearnneighbors): Implement sklearn linear model.
+- [`concrete.ml.sklearn.neighbors`](./concrete.ml.sklearn.neighbors.md#module-concretemlsklearnneighbors): Implement sklearn neighbors model.
 - [`concrete.ml.sklearn.qnn`](./concrete.ml.sklearn.qnn.md#module-concretemlsklearnqnn): Scikit-learn interface for fully-connected quantized neural networks.
 - [`concrete.ml.sklearn.qnn_module`](./concrete.ml.sklearn.qnn_module.md#module-concretemlsklearnqnn_module): Sparse Quantized Neural Network torch module.
 - [`concrete.ml.sklearn.rf`](./concrete.ml.sklearn.rf.md#module-concretemlsklearnrf): Implement RandomForest models.
@@ -182,6 +182,7 @@
 - [`base.SklearnLinearClassifierMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearclassifiermixin): A Mixin class for sklearn linear classifiers with FHE.
 - [`base.SklearnLinearModelMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearmodelmixin): A Mixin class for sklearn linear models with FHE.
 - [`base.SklearnLinearRegressorMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearregressormixin): A Mixin class for sklearn linear regressors with FHE.
+- [`base.SklearnSGDRegressorMixin`](./concrete.ml.sklearn.base.md#class-sklearnsgdregressormixin): A Mixin class for sklearn SGD regressors with FHE.
 - [`glm.GammaRegressor`](./concrete.ml.sklearn.glm.md#class-gammaregressor): A Gamma regression model with FHE.
 - [`glm.PoissonRegressor`](./concrete.ml.sklearn.glm.md#class-poissonregressor): A Poisson regression model with FHE.
 - [`glm.TweedieRegressor`](./concrete.ml.sklearn.glm.md#class-tweedieregressor): A Tweedie regression model with FHE.
@@ -190,6 +191,7 @@
 - [`linear_model.LinearRegression`](./concrete.ml.sklearn.linear_model.md#class-linearregression): A linear regression model with FHE.
 - [`linear_model.LogisticRegression`](./concrete.ml.sklearn.linear_model.md#class-logisticregression): A logistic regression model with FHE.
 - [`linear_model.Ridge`](./concrete.ml.sklearn.linear_model.md#class-ridge): A Ridge regression model with FHE.
+- [`linear_model.SGDRegressor`](./concrete.ml.sklearn.linear_model.md#class-sgdregressor): An FHE linear regression model fitted with stochastic gradient descent.
 - [`neighbors.KNeighborsClassifier`](./concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier): A k-nearest neighbors classifier model with FHE.
 - [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): A Fully-Connected Neural Network classifier with FHE.
 - [`qnn.NeuralNetRegressor`](./concrete.ml.sklearn.qnn.md#class-neuralnetregressor): A Fully-Connected Neural Network regressor with FHE.
