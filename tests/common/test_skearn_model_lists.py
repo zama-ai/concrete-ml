@@ -14,6 +14,7 @@ from concrete.ml.sklearn.linear_model import (
     LinearRegression,
     LogisticRegression,
     Ridge,
+    SGDRegressor,
 )
 from concrete.ml.sklearn.neighbors import KNeighborsClassifier
 from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
@@ -80,6 +81,7 @@ def test_get_sklearn_models():
         PoissonRegressor,
         Ridge,
         TweedieRegressor,
+        SGDRegressor,
     ]
 
     expected_neighbor_models = [KNeighborsClassifier]

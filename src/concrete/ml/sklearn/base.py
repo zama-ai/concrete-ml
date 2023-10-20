@@ -1687,6 +1687,8 @@ class SklearnSGDRegressorMixin(SklearnLinearRegressorMixin):
     to ONNX using Hummingbird.
     """
 
+    # Remove once Hummingbird supports SGDRegressor
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4100
     def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
         """Retrieve the model's ONNX graph using Hummingbird conversion.
 
