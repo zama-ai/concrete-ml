@@ -80,8 +80,8 @@ def test_get_sklearn_models():
         LogisticRegression,
         PoissonRegressor,
         Ridge,
-        TweedieRegressor,
         SGDRegressor,
+        TweedieRegressor,
     ]
 
     expected_neighbor_models = [KNeighborsClassifier]
