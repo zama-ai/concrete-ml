@@ -342,6 +342,7 @@ def should_test_config_in_fhe(
         "TweedieRegressor",
         "PoissonRegressor",
         "GammaRegressor",
+        "SGDRegressor",
     }:
         return True
 
