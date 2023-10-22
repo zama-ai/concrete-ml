@@ -86,7 +86,7 @@ jobs:
 
       # We don't need to specify the git-ref here since he are just generating the cli arguments 
       - name: Checkout code
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: Set up Python
         uses: actions/setup-python@65d7f2d534ac1bc67fcd62888c5f4f3d2cb2b236
@@ -130,7 +130,7 @@ jobs:
       max-parallel: ${{ fromJson(needs.prepare-scripts.outputs.length) }}
     steps:
       - name: Checkout Slab repo
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           repository: zama-ai/slab
           path: slab
