@@ -24,7 +24,7 @@ jobs:
       # This won't work on automatically triggered based on release
       - name: Checkout Concrete ML Repository
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           ref: ${{ inputs.version || github.ref_name}}
           fetch-depth: 1
@@ -34,14 +34,14 @@ jobs:
       # To use the files and all
       - name: Checkout Concrete ML Repository
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 1
           lfs: false
           path: "concrete-ml-latest"
 
       - name: Checkout Slab Repository
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           repository: "zama-ai/slab"
           path: "slab"
