@@ -3823,7 +3823,7 @@ For KNN, the de-quantization step is not required. Because \_inference returns t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -3846,7 +3846,7 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2138"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `SklearnKNeighborsClassifierMixin`
 
@@ -4183,7 +4183,7 @@ For KNN, the de-quantization step is not required. Because \_inference returns t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2126"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2127"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 

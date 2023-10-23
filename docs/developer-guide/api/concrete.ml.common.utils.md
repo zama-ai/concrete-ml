@@ -455,6 +455,36 @@ Indicate if all unpacked values are of the specified dtype(s).
 
 ______________________________________________________________________
 
+<a href="../../../src/concrete/ml/common/utils.py#L588"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `array_allclose_and_same_shape`
+
+```python
+array_allclose_and_same_shape(
+    a,
+    b,
+    rtol: float = 1e-05,
+    atol: float = 1e-08,
+    equal_nan: bool = False
+) → bool
+```
+
+Check if two numpy arrays are equal within a tolerances and have the same shape.
+
+**Args:**
+
+- <b>`a`</b> (numpy.ndarray):  The first input array
+- <b>`b`</b> (numpy.ndarray):  The second input array
+- <b>`rtol`</b> (float):  The relative tolerance parameter
+- <b>`atol`</b> (float):  The absolute tolerance parameter
+- <b>`equal_nan`</b> (bool):  Whether to compare NaN’s as equal. If True, NaN’s in a will be considered  equal to NaN’s in b in the output array
+
+**Returns:**
+
+- <b>`bool`</b>:  True if the arrays have the same shape and all elements are equal within the specified  tolerances, False otherwise.
+
+______________________________________________________________________
+
 <a href="../../../src/concrete/ml/common/utils.py#L52"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `FheMode`
