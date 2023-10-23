@@ -398,6 +398,15 @@ def test_dump(
   %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
   return %variable
 }""",
+        "SGDRegressor": """graph torch_jit (
+  %input_0[DOUBLE, symx10]
+) initializers (
+  %_operators.0.coefficients[FLOAT, 10x1]
+  %_operators.0.intercepts[FLOAT, 1]
+) {
+  %variable = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)
+  return %variable
+}""",
         "Lasso": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (

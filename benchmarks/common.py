@@ -74,6 +74,7 @@ REGRESSORS_NAMES = [
     "NeuralNetRegressor",
     "RandomForestRegressor",
     "XGBRegressor",
+    "SGDRegressor",
 ]
 for model_name in REGRESSORS_NAMES:
     try:
@@ -341,6 +342,7 @@ def should_test_config_in_fhe(
         "TweedieRegressor",
         "PoissonRegressor",
         "GammaRegressor",
+        "SGDRegressor",
     }:
         return True
 

@@ -26,7 +26,7 @@ def test_sklearn_args():
         )
         test_counter += 1
 
-    assert test_counter == 19
+    assert test_counter == 20
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)

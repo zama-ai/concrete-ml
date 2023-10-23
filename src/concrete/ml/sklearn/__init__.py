@@ -15,7 +15,14 @@ from .base import (
     _TREE_MODELS,
 )
 from .glm import GammaRegressor, PoissonRegressor, TweedieRegressor
-from .linear_model import ElasticNet, Lasso, LinearRegression, LogisticRegression, Ridge
+from .linear_model import (
+    ElasticNet,
+    Lasso,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+    SGDRegressor,
+)
 from .neighbors import KNeighborsClassifier
 from .qnn import NeuralNetClassifier, NeuralNetRegressor
 from .rf import RandomForestClassifier, RandomForestRegressor

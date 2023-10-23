@@ -67,7 +67,7 @@ Get the post-processing parameters.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L698"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `bitwidth_and_range_report`
 
