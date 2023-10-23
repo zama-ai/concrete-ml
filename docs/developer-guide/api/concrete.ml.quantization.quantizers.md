@@ -8,6 +8,7 @@ Quantization utilities for a numpy array/tensor.
 
 ## **Global Variables**
 
+- **QUANT_ROUND_LIKE_ROUND_PBS**
 - **STABILITY_CONST**
 
 ______________________________________________________________________
