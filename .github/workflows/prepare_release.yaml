@@ -7,8 +7,8 @@ on:
         required: true
 
 concurrency:
-  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
-  cancel-in-progress: false
+  group: "Prepare release"
+  cancel-in-progress: true
 
 env:
   BRANCH_NAME: ${{ github.ref_name }}
