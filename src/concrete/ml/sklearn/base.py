@@ -1282,6 +1282,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
+        self._rounder = cnp.AutoRounder(target_msbs=5)
 
         BaseEstimator.__init__(self)
 
@@ -1320,6 +1321,11 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         self._is_fitted = True
 
+        # inputset = numpy.array(list(_get_inputset_generator(q_X)))
+        # self._rounder.adjust(self._tree_inference, inputset)
+
+        self._tree_inference(q_X.astype("int"))
+
         return self
 
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
@@ -1357,6 +1363,26 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def compile(self, *args, **kwargs) -> Circuit:
+        def force_auto_adjust_rounder_in_configuration(configuration):
+            if configuration is None:
+                configuration = Configuration(auto_adjust_rounders=True, **kwargs)
+            else:
+                configuration.auto_adjust_rounders = True
+            return configuration
+
+        # If a configuration instance is given as a positional parameter, set auto_adjust_rounder
+        if len(args) >= 2:
+            configuration = force_auto_adjust_rounder_in_configuration(args[1])
+            args_list = list(args)
+            args_list[1] = configuration
+            args = tuple(args_list)
+
+        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
+        # auto_adjust_rounder
+        else:
+            configuration = kwargs.get("configuration", None)
+            kwargs["configuration"] = force_auto_adjust_rounder_in_configuration(configuration)
+
         BaseEstimator.compile(self, *args, **kwargs)
 
         # Check that the graph only has a single output
