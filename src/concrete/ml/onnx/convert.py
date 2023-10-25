@@ -200,6 +200,7 @@ def get_equivalent_numpy_forward_from_onnx(
 
     # Check supported operators
     required_onnx_operators = set(get_op_type(node) for node in equivalent_onnx_model.graph.node)
+    print(f"{required_onnx_operators=}")
     unsupported_operators = required_onnx_operators - IMPLEMENTED_ONNX_OPS
     if len(unsupported_operators) > 0:
         raise ValueError(
