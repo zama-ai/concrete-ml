@@ -154,6 +154,7 @@ use_case_examples/cifar_deployment/dev/
 use_case_examples/deployment/dev/
 use_case_examples/llm/gpt2*
 use_case_examples/cifar_brevitas_training/.datasets/
+use_case_examples/*/data/
 
 # Key cache
 ConcreteNumpyKeyCache
@@ -168,7 +169,6 @@ execution_time_of_individual_pytest_files.txt
 # Docs: Advance Examples data
 docs/advanced_examples/data/
 
-
 # Hybrid model artifacts
 use_case_examples/hybrid_model/clients/
 use_case_examples/hybrid_model/compiled_models/
@@ -177,3 +177,6 @@ use_case_examples/hybrid_model/user_keys/
 
 # Federated learning trained model
 use_case_examples/federated_learning/model.pkl
+
+# Macos
+.DS_Store
