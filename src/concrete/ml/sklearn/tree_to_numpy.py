@@ -244,8 +244,7 @@ def tree_onnx_graph_preprocessing(
         add_transpose_after_last_node(onnx_model)
 
     # Cast nodes are not necessary so remove them.
-    op_type_to_remove = ["Cast"]
-    remove_node_types(onnx_model, op_type_to_remove)
+    remove_node_types(onnx_model, op_types_to_remove=["Cast"])
 
 
 def tree_values_preprocessing(
