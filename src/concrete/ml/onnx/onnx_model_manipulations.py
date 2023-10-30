@@ -191,7 +191,13 @@ def clean_graph_at_node_op_type(
     node_to_cut = next(node for node in onnx_model.graph.node if node.output[0] == input_name)
     node_name = node_to_cut.name
 
+    # Build a dictionary associating all initializers with their names
+    initializers_name_to_instance = {
+        initializer.name: initializer for initializer in onnx_model.graph.initializer
+    }
+
     nodes_to_remove = []
+    initializers_to_remove = []
     output_to_follow = "variable"
     op_reached = False
 
@@ -201,6 +207,11 @@ def clean_graph_at_node_op_type(
         # If the operator has previously been reached, store the node
         if op_reached:
             nodes_to_remove.append(node)
+
+            # If one of the node's inputs is an initializer, store the initializer
+            for node_input_name in node.input:
+                if node_input_name in initializers_name_to_instance:
+                    initializers_to_remove.append(initializers_name_to_instance[node_input_name])
 
         # ELse, if the current node represents the operator, retrieve its output node
         elif node.name == node_name:
@@ -212,10 +223,15 @@ def clean_graph_at_node_op_type(
             )
             output_to_follow = node.output[0]
 
-    # Once the graph has been covered and a operator was found, remove its its following nodes
+    # If the graph has been covered and an operator to remove has been found, remove it and its
+    # following nodes as well as the initializers they used as inputs
     if op_reached:
         for node in nodes_to_remove:
             onnx_model.graph.node.remove(node)
+
+        for initializer in initializers_to_remove:
+            onnx_model.graph.initializer.remove(initializer)
+
     elif fail_if_not_found:  # pragma: no cover
         raise ValueError(f"Error, can't find {node_name}")  # pragma: no cover
 
