@@ -9,8 +9,6 @@ from models import cnv_2w2a
 from torch.utils.data import DataLoader
 from trainer import get_test_set
 
-from concrete import fhe
-from concrete.ml.deployment.fhe_client_server import FHEModelDev
 from concrete.ml.quantization import QuantizedModule
 from concrete.ml.torch.compile import compile_brevitas_qat_model
 
@@ -87,10 +85,6 @@ quantized_numpy_module, compilation_execution_time = measure_execution_time(
     compile_brevitas_qat_model
 )(torch_model, x, configuration=configuration, rounding_threshold_bits=6, p_error=0.01)
 assert isinstance(quantized_numpy_module, QuantizedModule)
-
-# Save the client/server files to disk.
-dev = FHEModelDev(path_dir="./client_server", model=quantized_numpy_module)
-dev.save()
 
 print(f"Compilation time took {compilation_execution_time} seconds")
 
