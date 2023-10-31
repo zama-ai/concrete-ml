@@ -78,7 +78,7 @@ Once you're satisfied with the model's performance, you can compile it to the FH
 <!--pytest-codeblocks:skip-->
 
 ```bash
-python3 evaluation_one_example_fhe.py
+python3 evaluate_one_example_fhe.py
 ```
 
 Here, an image from the CIFAR10 data-set is randomly chosen and preprocessed. The data is then quantized, encrypted and then given to the FHE circuit that evaluates the encrypted image. The result, encrypted as well, is then decrypted and compared vs. the expected output coming from the clear inference.
