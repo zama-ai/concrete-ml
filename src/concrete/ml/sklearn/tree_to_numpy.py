@@ -244,8 +244,7 @@ def tree_onnx_graph_preprocessing(
         add_transpose_after_last_node(onnx_model)
 
     # Cast nodes are not necessary so remove them.
-    op_type_to_remove = ["Cast"]
-    remove_node_types(onnx_model, op_type_to_remove)
+    remove_node_types(onnx_model, op_types_to_remove=["Cast"])
 
 
 def tree_values_preprocessing(
@@ -279,12 +278,12 @@ def tree_values_preprocessing(
             # Get the preprocessed tree predictions to replace the current (non-quantized)
             # values in the onnx_model.
             init_tensor = q_y.qvalues
-        else:
+        elif "bias_1" in initializer.name:
             if framework == "xgboost":
-                # xgboost uses "<" operator thus we must round up.
+                # xgboost uses "<" (Less) operator thus we must round up.
                 init_tensor = numpy.ceil(init_tensor)
             elif framework == "sklearn":
-                # sklearn trees use ">" operator thus we must round down.
+                # sklearn trees use "<=" (LessOrEqual) operator thus we must round down.
                 init_tensor = numpy.floor(init_tensor)
         new_initializer = numpy_helper.from_array(init_tensor.astype(numpy.int64), initializer.name)
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
