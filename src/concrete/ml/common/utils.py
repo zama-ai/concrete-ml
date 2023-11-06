@@ -607,3 +607,33 @@ def array_allclose_and_same_shape(
     assert isinstance(b, numpy.ndarray)
 
     return a.shape == b.shape and numpy.allclose(a, b, rtol, atol, equal_nan)
+
+
+def get_inputs_encryption_statuses(inputs_encryption_status, function_arg_names):
+    if inputs_encryption_status is None:
+        inputs_encryption_status = tuple("encrypted" for _ in function_arg_names.values())
+    else:
+        if len(inputs_encryption_status) < len(function_arg_names.values()):
+            raise ValueError(
+                f"Missing arguments from '{inputs_encryption_status}', expected "
+                f"{len(function_arg_names.values())} arguments."
+            )
+        if len(inputs_encryption_status) > len(function_arg_names.values()):
+            raise ValueError(
+                f"Too many arguments in '{inputs_encryption_status}', expected "
+                f"{len(function_arg_names.values())} arguments."
+            )
+        if not all(value in {"clear", "encrypted"} for value in inputs_encryption_status):
+            raise ValueError(
+                f"Unexpected status from '{inputs_encryption_status}',"
+                " expected 'clear' or 'encrypted'."
+            )
+        if not any(value == "encrypted" for value in inputs_encryption_status):
+            raise ValueError(
+                f"At least one input should be encrypted but got {inputs_encryption_status}"
+            )
+
+    assert inputs_encryption_status is not None  # For mypy
+    inputs_encryption_status_dict = dict(zip(function_arg_names.values(), inputs_encryption_status))
+
+    return inputs_encryption_status_dict

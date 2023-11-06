@@ -175,6 +175,9 @@ use_case_examples/hybrid_model/compiled_models/
 use_case_examples/hybrid_model/keys/
 use_case_examples/hybrid_model/user_keys/
 
+# Credit card approval detection artifacts
+use_case_examples/credit_card_approval_detection/client_server
+
 # Federated learning trained model
 use_case_examples/federated_learning/model.pkl
 

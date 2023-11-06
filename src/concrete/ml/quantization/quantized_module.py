@@ -23,6 +23,7 @@ from ..common.utils import (
     all_values_are_of_dtype,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
+    get_inputs_encryption_statuses,
     manage_parameters_for_pbs_errors,
     to_tuple,
 )
@@ -69,13 +70,13 @@ def _get_inputset_generator(q_inputs: Union[numpy.ndarray, Tuple[numpy.ndarray, 
     assert len(q_inputs) > 0, "The input-set cannot be empty"
 
     if len(q_inputs) > 1:
-        return (
+        return [
             tuple(numpy.expand_dims(q_input[idx], 0) for q_input in q_inputs)
             for idx in range(q_inputs[0].shape[0])
-        )
+        ]
 
     # Else, there's only a single input (q_inputs, )
-    return (numpy.expand_dims(q_input, 0) for q_input in q_inputs[0])
+    return [numpy.expand_dims(q_input, 0) for q_input in q_inputs[0]]
 
 
 class QuantizedModule:
@@ -598,14 +599,14 @@ class QuantizedModule:
                 error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
-            inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear',
+            inputs_encryption_status (Optional[Sequence[str]]): Encryption status ('clear',
                 'encrypted') for each input.
 
         Returns:
             Circuit: The compiled Circuit.
 
         Raises:
-            ValueError: if inputs_encryption_status does not match with the
+            ValueError: If inputs_encryption_status does not match with the
                 parameters of the quantized module
         """
         inputs = to_tuple(inputs)
@@ -627,39 +628,13 @@ class QuantizedModule:
             self._clear_forward, self.ordered_module_input_names
         )
 
-        if inputs_encryption_status is None:
-            inputs_encryption_status = tuple(
-                "encrypted" for _ in orig_args_to_proxy_func_args.values()
-            )
-        else:
-            if len(inputs_encryption_status) < len(orig_args_to_proxy_func_args.values()):
-                raise ValueError(
-                    f"Missing arguments from '{inputs_encryption_status}', expected "
-                    f"{len(orig_args_to_proxy_func_args.values())} arguments."
-                )
-            if len(inputs_encryption_status) > len(orig_args_to_proxy_func_args.values()):
-                raise ValueError(
-                    f"Too many arguments in '{inputs_encryption_status}', expected "
-                    f"{len(orig_args_to_proxy_func_args.values())} arguments."
-                )
-            if not all(value in {"clear", "encrypted"} for value in inputs_encryption_status):
-                raise ValueError(
-                    f"Unexpected status from '{inputs_encryption_status}',"
-                    " expected 'clear' or 'encrypted'."
-                )
-            if not any(value == "encrypted" for value in inputs_encryption_status):
-                raise ValueError(
-                    f"At least one input should be encrypted but got {inputs_encryption_status}"
-                )
-
-        assert inputs_encryption_status is not None  # For mypy
-        inputs_encryption_status_dict = dict(
-            zip(orig_args_to_proxy_func_args.values(), inputs_encryption_status)
+        inputs_encryption_statuses = get_inputs_encryption_statuses(
+            orig_args_to_proxy_func_args, inputs_encryption_status
         )
 
         compiler = Compiler(
             forward_proxy,
-            parameter_encryption_statuses=inputs_encryption_status_dict,
+            parameter_encryption_statuses=inputs_encryption_statuses,
         )
 
         # Quantize the inputs

@@ -1400,7 +1400,7 @@ def test_inference_methods(
 
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    model.compile(x, default_configuration)
+    model.compile(x, configuration=default_configuration)
 
     if verbose:
         print("Run check_inference_methods")

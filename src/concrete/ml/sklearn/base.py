@@ -11,7 +11,7 @@ import warnings
 from abc import ABC, abstractmethod
 from functools import partial
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Set, TextIO, Type, Union
 
 import brevitas.nn as qnn
 import concrete.fhe as cnp
@@ -38,6 +38,7 @@ from ..common.utils import (
     FheMode,
     check_there_is_no_p_error_options_in_configuration,
     generate_proxy_function,
+    get_inputs_encryption_statuses,
     manage_parameters_for_pbs_errors,
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
@@ -472,7 +473,7 @@ class BaseEstimator:
         """
 
     @abstractmethod
-    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(self, inputs_encryption_status) -> Union[Compiler, QuantizedModule]:
         """Retrieve the module instance to compile.
 
         Returns:
@@ -481,13 +482,15 @@ class BaseEstimator:
 
     def compile(
         self,
-        X: Data,
+        X,
+        *inputs,
         configuration: Optional[Configuration] = None,
         artifacts: Optional[DebugArtifacts] = None,
         show_mlir: bool = False,
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        inputs_encryption_status: Optional[Sequence[str]] = None,
     ) -> Circuit:
         """Compile the model.
 
@@ -510,9 +513,15 @@ class BaseEstimator:
                 currently set to 0. Default to None, which sets this error to a default value.
             verbose (bool): Indicate if compilation information should be printed
                 during compilation. Default to False.
+            inputs_encryption_status (Optional[Sequence[str]]): Encryption status ('clear',
+                'encrypted') for each input.
 
         Returns:
             Circuit: The compiled Circuit.
+
+        Raises:
+            ValueError: If inputs_encryption_status does not match with the
+                parameters of the quantized module
         """
         # Reset for double compile
         self._is_compiled = False
@@ -521,7 +530,12 @@ class BaseEstimator:
         self.check_model_is_fitted()
 
         # Cast pandas, list or torch to numpy
-        X = check_array_and_assert(X)
+        inputs_as_array = []
+        for input in (X,) + inputs:
+            input_as_array = check_array_and_assert(input)
+            inputs_as_array.append(input_as_array)
+
+        inputs_as_array = tuple(inputs_as_array)
 
         # p_error or global_p_error should not be set in both the configuration and direct arguments
         check_there_is_no_p_error_options_in_configuration(configuration)
@@ -530,13 +544,13 @@ class BaseEstimator:
         p_error, global_p_error = manage_parameters_for_pbs_errors(p_error, global_p_error)
 
         # Quantize the inputs
-        q_X = self.quantize_input(X)
+        quantized_inputs = self.quantize_input(*inputs_as_array)
 
         # Generate the compilation input-set with proper dimensions
-        inputset = _get_inputset_generator(q_X)
+        inputset = _get_inputset_generator(quantized_inputs)
 
         # Retrieve the compiler instance
-        module_to_compile = self._get_module_to_compile()
+        module_to_compile = self._get_module_to_compile(inputs_encryption_status)
 
         # Compiling using a QuantizedModule requires different steps and should not be done here
         assert isinstance(module_to_compile, Compiler), (
@@ -1120,7 +1134,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         self.check_model_is_fitted()
         return self.quantized_module_.dequantize_output(q_y_preds)
 
-    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(self, inputs_encryption_status) -> Union[Compiler, QuantizedModule]:
         return self.quantized_module_
 
     def compile(
@@ -1132,6 +1146,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         p_error: Optional[float] = None,
         global_p_error: Optional[float] = None,
         verbose: bool = False,
+        inputs_encryption_status: Optional[Sequence[str]] = None,
     ) -> Circuit:
         # Reset for double compile
         self._is_compiled = False
@@ -1143,7 +1158,7 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         X = check_array_and_assert(X)
 
         # Retrieve the module instance to compile
-        module_to_compile = self._get_module_to_compile()
+        module_to_compile = self._get_module_to_compile(inputs_encryption_status)
 
         # Compile the QuantizedModule
         module_to_compile.compile(
@@ -1319,17 +1334,36 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return self
 
-    def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
+    def quantize_input(self, *X: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        q_X = numpy.zeros_like(X, dtype=numpy.int64)
+        # q_X = numpy.zeros_like(X, dtype=numpy.int64)
 
-        # Quantize using the learned quantization parameters for each feature
-        for i, input_quantizer in enumerate(self.input_quantizers):
-            q_X[:, i] = input_quantizer.quant(X[:, i])
+        # # Quantize using the learned quantization parameters for each feature
+        # for i, input_quantizer in enumerate(self.input_quantizers):
+        #     q_X[:, i] = input_quantizer.quant(X[:, i])
 
-        assert q_X.dtype == numpy.int64, "Inputs were not quantized to int64 values"
-        return q_X
+        # assert q_X.dtype == numpy.int64, "Inputs were not quantized to int64 values"
+        # return q_X
+
+        assert sum(input.shape[1] for input in X) == len(self.input_quantizers)
+
+        base_j = 0
+        q_inputs = []
+        for i, input in enumerate(X):
+            q_input = numpy.zeros_like(input, dtype=numpy.int64)
+
+            for j in range(input.shape[1]):
+                quantizer_index = base_j + j
+                q_input[:, j] = self.input_quantizers[quantizer_index].quant(input[:, j])
+
+            assert q_input.dtype == numpy.int64, f"Inputs {i} were not quantized to int64 values"
+
+            q_inputs.append(q_input)
+            base_j += input.shape[1]
+
+        # TODO: change if predict handles multi inputs
+        return tuple(q_inputs) if len(q_inputs) > 1 else q_inputs[0]
 
     def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
@@ -1337,18 +1371,42 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         q_y_preds = self.output_quantizers[0].dequant(q_y_preds)
         return q_y_preds
 
-    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(self, inputs_encryption_status) -> Union[Compiler, QuantizedModule]:
         assert self._tree_inference is not None, self._is_not_fitted_error_message()
 
+        if inputs_encryption_status is not None and len(inputs_encryption_status) > 1:
+
+            # if ...:
+
+            # Copy the lambda inference (necessary in order to avoid max recursive errors when
+            # compiling)
+            tree_inference = self._tree_inference
+
+            # Concrete Python does not handle the concatenation of single arrays as opposed
+            # to Numpy
+            # FIXME: https://github.com/zama-ai/concrete-internal/issues/515
+            self._tree_inference = lambda *args: tree_inference(numpy.concatenate(args, axis=1))
+
+            input_names = [
+                f"input_{i}_{status}" for i, status in enumerate(inputs_encryption_status)
+            ]
+        else:
+            input_names = ["input_encrypted"]
+
         # Generate the proxy function to compile
-        _tree_inference_proxy, parameters_mapping = generate_proxy_function(
-            self._tree_inference, ["inputs"]
+        tree_inference_proxy, function_arg_names = generate_proxy_function(
+            self._tree_inference,
+            input_names,
+        )
+
+        inputs_encryption_statuses = get_inputs_encryption_statuses(
+            inputs_encryption_status, function_arg_names
         )
 
         # Create the compiler instance
         compiler = Compiler(
-            _tree_inference_proxy,
-            {parameters_mapping["inputs"]: "encrypted"},
+            tree_inference_proxy,
+            inputs_encryption_statuses,
         )
 
         return compiler
@@ -1640,7 +1698,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         return y_preds
 
-    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(self, inputs_encryption_status) -> Union[Compiler, QuantizedModule]:
         # Define the inference function to compile.
         # This function can neither be a class method nor a static one because self we want to avoid
         # having self as a parameter while still being able to access some of its attribute
@@ -1900,7 +1958,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # No need to de-quantize the output values
         return q_y_preds
 
-    def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
+    def _get_module_to_compile(self, inputs_encryption_status) -> Union[Compiler, QuantizedModule]:
         # Define the inference function to compile.
         # This function can neither be a class method nor a static one because self we want to avoid
         # having self as a parameter while still being able to access some of its attribute
