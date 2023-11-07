@@ -43,7 +43,7 @@ on:
         required: true
 
 concurrency:
-  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}"
+  group: "${{ github.ref }}-${{ github.event_name }}-${{ github.workflow }}-${{ github.event.inputs.notebook }}"
   cancel-in-progress: false
 
 env:
@@ -174,7 +174,7 @@ jobs:
           source .venv/bin/activate
           cd ./use_case_examples/titanic && ./download_data.sh
           
-      - name: Refresh One Notebook
+      - name: Refresh ${{ github.event.inputs.notebook }}
         run: |
           make jupyter_execute_one NOTEBOOK="${{ env[env.NOTEBOOK_NAME] }}"
       
