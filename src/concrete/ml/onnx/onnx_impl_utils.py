@@ -1,10 +1,11 @@
 """Utility functions for onnx operator implementations."""
 
-from typing import Tuple, Union
+from typing import Callable, Tuple, Union
 
 import numpy
 from concrete.fhe import conv as cnp_conv
 from concrete.fhe import ones as cnp_ones
+from concrete.fhe import round_bit_pattern
 
 from ..common.debugging import assert_true
 
@@ -223,3 +224,26 @@ def onnx_avgpool_compute_norm_const(
         norm_const = numpy.prod(kernel_shape)
 
     return norm_const
+
+
+def rounded_comparison(
+    x: numpy.ndarray, y: numpy.ndarray, lsbs_to_remove: int, operation: Callable
+) -> Tuple[bool]:
+    """Comparison operation using AutoRounder.
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove (int): The number of the least significant bits to remove
+        operation (Callable): Comparison operation
+
+    Returns:
+        Tuple[bool]: If x and y satisfy the comparison operator.
+    """
+
+    assert isinstance(lsbs_to_remove, int)
+
+    half = 1 << (lsbs_to_remove - 1)
+    rounded_subtraction = round_bit_pattern((x - y) - half, lsbs_to_remove=lsbs_to_remove)
+
+    return (operation(rounded_subtraction),)

@@ -214,8 +214,8 @@
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
 
-
-from typing import Any, Callable, Dict, Tuple
+import math
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy
 import onnx
@@ -413,6 +413,9 @@ ONNX_OPS_TO_NUMPY_IMPL.update(ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT)
 # All numpy operators used for tree-based models
 ONNX_OPS_TO_NUMPY_IMPL_BOOL = {**ONNX_OPS_TO_NUMPY_IMPL, **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL}
 
+# All numpy operators used for tree-based models that support auto rounding
+SUPPORTED_ROUNDED_OPERATIONS = ["Less", "LessOrEqual", "Greater", "GreaterOrEqual", "Equal"]
+
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
 
@@ -443,12 +446,14 @@ def get_op_type(node):
 
 def execute_onnx_with_numpy(
     graph: onnx.GraphProto,
+    lsbs_to_remove: List,
     *inputs: numpy.ndarray,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
+        lsbs_to_remove (List): The number of least significant bit to be removed in each stage.
         *inputs: The inputs of the graph.
 
     Returns:
@@ -461,9 +466,16 @@ def execute_onnx_with_numpy(
             for initializer in graph.initializer
         },
     )
+
     for node in graph.node:
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
+
+        if node.op_type in SUPPORTED_ROUNDED_OPERATIONS:
+            attributes["lsbs_to_remove"] = (
+                lsbs_to_remove[0] if node.op_type != "Equal" else lsbs_to_remove[1]
+            )
+
         outputs = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type](*curr_inputs, **attributes)
 
         node_results.update(zip(node.output, outputs))
@@ -495,3 +507,103 @@ def remove_initializer_from_input(model: onnx.ModelProto):  # pragma: no cover
             inputs.remove(name_to_input[initializer.name])
 
     return model
+
+
+# Remove this function once the truncate feature is released
+# FIXME: https://github.com/zama-ai/concrete-ml/issues/397
+def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndarray) -> List[int]:
+    """Compute the LSB to remove for the comparison operators in the trees.
+
+    Referring to this paper: https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, there are
+    2 levels of comparison for trees, one at the level of X.A < B and a second at
+    the level of I.C == D.
+
+    Args:
+        onnx_model (onnx.ModelProto): The model to clean
+        q_x (numpy.ndarray): The quantized inputs
+
+    Returns:
+        List: the number of LSB to remove for level 1 and level 2
+    """
+
+    def get_bitwidth(array: numpy.ndarray) -> int:
+        """Compute the bitwidth required to represent the largest value in `array`.
+
+        Args:
+            array (umpy.ndarray): The array for which the bitwidth needs to be checked.
+
+        Returns:
+            int: The required bits to represent the array.
+        """
+
+        max_val = numpy.max(numpy.abs(array))
+        # + 1 is added to include the sign bit
+        bitwidth = math.ceil(math.log2(max_val + 1)) + 1
+        return bitwidth
+
+    def update_lsbs_if_overflow_detected(array: numpy.ndarray, initial_bitwidth: int) -> int:
+        """Update the number of LSBs to remove based on overflow detection.
+
+        Args:
+            array (umpy.ndarray): The array for which the bitwidth needs to be checked.
+            initial_bitwidth (int): The target bitwidth that should not be exceeded.
+
+        Returns:
+            int: The updated LSB to remove.
+        """
+
+        lsbs_to_remove = initial_bitwidth
+
+        if lsbs_to_remove > 0:
+            half = 1 << (lsbs_to_remove - 1)
+            if get_bitwidth(array - half) <= initial_bitwidth:
+                lsbs_to_remove -= 1
+
+        return lsbs_to_remove
+
+    quant_params = {
+        onnx_init.name: numpy_helper.to_array(onnx_init)
+        for onnx_init in onnx_model.graph.initializer
+        if "weight" in onnx_init.name or "bias" in onnx_init.name
+    }
+
+    key_mat_1 = [key for key in quant_params.keys() if "_1" in key and "weight" in key][0]
+    key_bias_1 = [key for key in quant_params.keys() if "_1" in key and "bias" in key][0]
+
+    key_mat_2 = [key for key in quant_params.keys() if "_2" in key and "weight" in key][0]
+    key_bias_2 = [key for key in quant_params.keys() if "_2" in key and "bias" in key][0]
+
+    # shape: (nodes, features) or (trees * nodes, features)
+    mat_1 = quant_params[key_mat_1]
+    # shape: (nodes, 1) or (trees * nodes, 1)
+    bias_1 = quant_params[key_bias_1]
+
+    # shape: (trees, leaves, nodes)
+    mat_2 = quant_params[key_mat_2]
+    # shape: (leaves, 1) or (trees * leaves, 1)
+    bias_2 = quant_params[key_bias_2]
+
+    n_features = mat_1.shape[1]
+    n_nodes = mat_2.shape[2]
+    n_leaves = mat_2.shape[1]
+
+    mat_1 = mat_1.reshape(-1, n_nodes, n_features)
+    bias_1 = bias_1.reshape(-1, 1, n_nodes)
+    bias_2 = bias_2.reshape(-1, 1, n_leaves)
+
+    # If <= -> stage = biais_1 - (q_x @ mat_1.transpose(0, 2, 1))
+    # If < -> stage = (q_x @ mat_1.transpose(0, 2, 1)) - biais_1
+    stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
+
+    # The matrix I, as referenced in this paper:
+    # https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, results from the condition:
+    # X.A < B and consists exclusively of binary elements, 1 and 0.
+    # Given this assumption, we randomly generate it.
+    matrix_q = numpy.random.randint(0, 2, size=(stage_1.shape))
+
+    stage_2 = ((matrix_q @ mat_2.transpose(0, 2, 1)) + bias_2).sum(axis=0)
+
+    lsbs_to_remove_1 = update_lsbs_if_overflow_detected(stage_1, get_bitwidth(stage_1))
+    lsbs_to_remove_2 = update_lsbs_if_overflow_detected(stage_2, get_bitwidth(stage_2))
+
+    return [lsbs_to_remove_1, lsbs_to_remove_2]

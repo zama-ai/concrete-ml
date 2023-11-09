@@ -14,18 +14,15 @@ from concrete.fhe import univariate
 from scipy import special
 from typing_extensions import SupportsIndex
 
-from concrete import fhe
+# pylint: disable=ungrouped-imports
 from concrete.ml.common import utils
 from concrete.ml.common.debugging import assert_false, assert_true
 from concrete.ml.onnx.onnx_impl_utils import (
     compute_onnx_pool_padding,
     numpy_onnx_pad,
     onnx_avgpool_compute_norm_const,
+    rounded_comparison,
 )
-
-ROUNDING = -1
-ACTIVATE_MULT = False
-VERBOSE = False
 
 
 class RawOpOutput(numpy.ndarray):
@@ -299,10 +296,6 @@ def numpy_gemm(
     # the compiler here
 
     y = numpy.matmul(a_prime, b_prime)
-    if VERBOSE:
-        print("ops_impl - gemm")
-    if ROUNDING >= 1 and ACTIVATE_MULT:
-        y = fhe.round_bit_pattern(y, lsbs_to_remove=ROUNDING)
 
     if processed_alpha != 1:
         y = y * processed_alpha
@@ -331,15 +324,7 @@ def numpy_matmul(
     Returns:
         Tuple[numpy.ndarray]: Matrix multiply results from A * B
     """
-    if VERBOSE:
-        print("ops_impl - matmul")
-
-    op = numpy.matmul(a, b)
-    if ROUNDING >= 1 and ACTIVATE_MULT:
-        y = fhe.round_bit_pattern(op, lsbs_to_remove=ROUNDING)
-        return y
-    else:
-        return (numpy.matmul(a, b),)
+    return (numpy.matmul(a, b),)
 
 
 def numpy_relu(
@@ -902,6 +887,8 @@ def numpy_exp(
 def numpy_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
+    *,
+    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute equal in numpy according to ONNX spec.
 
@@ -910,11 +897,16 @@ def numpy_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
+        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-    # for this operation, rounding is not equivalent
+
+    # In the case of trees, x == y <=> x <= y or x < y - 1, because y is the max sum.
+    if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
+
     return (numpy.equal(x, y),)
 
 
@@ -955,6 +947,8 @@ def numpy_not_float(
 def numpy_greater(
     x: numpy.ndarray,
     y: numpy.ndarray,
+    *,
+    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute greater in numpy according to ONNX spec.
 
@@ -963,19 +957,17 @@ def numpy_greater(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
+        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if VERBOSE:
-        print(f"ops_impl - greater - {type(x)=}, {type(y)=}")
-    if ROUNDING >= 1 and not ACTIVATE_MULT:
-        half = 1 << ROUNDING - 1
-        op = fhe.round_bit_pattern((y - x) - half, lsbs_to_remove=ROUNDING)
-        return (op < 0,)
-    else:
-        return (numpy.greater(x, y),)
+    if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x < 0)
+
+    # Else, default numpy greater comparison
+    return (numpy.greater(x, y),)
 
 
 def numpy_greater_float(
@@ -1000,6 +992,8 @@ def numpy_greater_float(
 def numpy_greater_or_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
+    *,
+    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute greater or equal in numpy according to ONNX spec.
 
@@ -1008,20 +1002,19 @@ def numpy_greater_or_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
+        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-    # For this opporation, the rounding should work
-    if VERBOSE:
-        print(f"ops_impl - greater_or_equal - {type(x)=}, {type(y)=}")
 
-    if ROUNDING >= 1 and not ACTIVATE_MULT:
-        half = 1 << ROUNDING - 1
-        op = fhe.round_bit_pattern((x - y) - half, lsbs_to_remove=ROUNDING)
-        return (op >= 0,)
-    else:
-        return (numpy.greater_equal(x, y),)
+    if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        return rounded_comparison(
+            x, y, lsbs_to_remove, operation=lambda x: x >= 0
+        )  # pragma: no cover
+
+    # Else, default numpy greater_equal comparison
+    return (numpy.greater_equal(x, y),)
 
 
 def numpy_greater_or_equal_float(
@@ -1046,6 +1039,8 @@ def numpy_greater_or_equal_float(
 def numpy_less(
     x: numpy.ndarray,
     y: numpy.ndarray,
+    *,
+    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute less in numpy according to ONNX spec.
 
@@ -1054,20 +1049,17 @@ def numpy_less(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
+        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-    # For this operation, rounding should work
-    if VERBOSE:
-        print(f"ops_impl - less - {type(x)=}, {type(y)=}")
 
-    if ROUNDING >= 1 and not ACTIVATE_MULT:
-        half = 1 << ROUNDING - 1
-        op = fhe.round_bit_pattern(x - y - half, lsbs_to_remove=ROUNDING)
-        return (op < 0,)
-    else:
-        return (numpy.less(x, y),)
+    if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        return rounded_comparison(x, y, lsbs_to_remove, operation=lambda x: x < 0)
+
+    # Else, default numpy less comparison
+    return (numpy.less(x, y),)
 
 
 def numpy_less_float(
@@ -1092,6 +1084,8 @@ def numpy_less_float(
 def numpy_less_or_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
+    *,
+    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute less or equal in numpy according to ONNX spec.
 
@@ -1100,19 +1094,17 @@ def numpy_less_or_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
+        lsbs_to_remove (Optional[int]]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if VERBOSE:
-        print("ops_impl - less_or_equal")
-    if ROUNDING >= 1 and not ACTIVATE_MULT:
-        half = 1 << (ROUNDING - 1)
-        op = fhe.round_bit_pattern((y - x) - half, lsbs_to_remove=ROUNDING)
-        return (op >= 0,)
-    else:
-        return (numpy.less_equal(x, y),)
+    if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
+
+    # Else, default numpy less_or_equal comparison
+    return (numpy.less_equal(x, y),)
 
 
 def numpy_less_or_equal_float(
