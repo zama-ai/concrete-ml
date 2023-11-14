@@ -425,6 +425,7 @@ def test_all_arith_ops(
 
 
 @pytest.mark.parametrize("n_bits", N_BITS_LIST)
+@pytest.mark.parametrize("batch_size", [None, 10, 100])
 @pytest.mark.parametrize(
     "n_examples, n_features, n_neurons",
     [
@@ -433,6 +434,7 @@ def test_all_arith_ops(
         pytest.param(200, 300, 50),
         pytest.param(10000, 100, 1),
         pytest.param(10, 20, 1),
+        pytest.param(10, 10, 10),
     ],
 )
 @pytest.mark.parametrize(
@@ -449,6 +451,7 @@ def test_all_gemm_ops(
     n_bits: int,
     is_signed: bool,
     produces_output: bool,
+    batch_size: int,
     n_examples: int,
     n_features: int,
     n_neurons: int,
@@ -458,9 +461,14 @@ def test_all_gemm_ops(
 ):
     """Test for gemm style ops."""
 
-    # Multiply input x weights of sizes (N, K) and (K, M)
-    inputs = generator(size=(n_examples, n_features))
-    weights = generator(size=(n_features, n_neurons))
+    if batch_size is None:
+        inputs_shape = (n_examples, n_features)
+    else:
+        inputs_shape = (batch_size, n_examples, n_features)
+    inputs = generator(size=inputs_shape)
+
+    weights_shape = (n_features, n_neurons)
+    weights = generator(size=weights_shape)
 
     # We can assume uniform distribution for the bias without loss of generality
     bias = numpy.random.uniform(size=(1, n_neurons))
@@ -554,6 +562,24 @@ def test_all_gemm_ops(
         q_gemm,
         QuantizedGemm,
         equal_method=partial(quantized_op_results_are_equal, q_input=q_inputs),
+    )
+
+    # 4- Test with 2 int_input_names and empty constant_inputs (encrypted gemm)
+    q_gemm = QuantizedGemm(
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedGemm",
+        int_input_names={"0", "1"},
+        constant_inputs={},
+    )
+    q_gemm.produces_graph_output = produces_output
+    expected_gemm_outputs = q_gemm.calibrate(*(inputs, weights))
+    actual_gemm_output = q_gemm(q_inputs, q_weights).dequant()
+    check_r2_score(expected_gemm_outputs, actual_gemm_output)
+
+    check_serialization(
+        q_gemm,
+        QuantizedGemm,
+        equal_method=partial(quantized_op_results_are_equal, q_input=(q_inputs, q_weights)),
     )
 
 

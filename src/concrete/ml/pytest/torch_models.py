@@ -1409,3 +1409,29 @@ class PartialQATModel(torch.nn.Module):
         """
 
         return self.sub_module(x)
+
+
+class EncryptedMatrixMultiplicationModel(nn.Module):
+    """PyTorch module for performing matrix multiplication between to encrypted values."""
+
+    # pylint: disable-next=unused-argument
+    def __init__(self, input_output, activation_function):
+        super().__init__()
+        self.act = activation_function()
+
+    def forward(self, input1):
+        """Forward function for matrix multiplication.
+
+        Args:
+            input1 (torch.Tensor): The first input tensor.
+
+        Returns:
+            torch.Tensor: The result of the matrix multiplication.
+        """
+        input1 = input1.unsqueeze(1)
+
+        output = torch.matmul(input1, input1.transpose(2, 1))
+        output = self.act(output)
+
+        output = output.squeeze(-1)  # Squeezes out one of the last two singleton dimensions
+        return output
