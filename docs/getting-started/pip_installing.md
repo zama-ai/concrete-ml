@@ -24,7 +24,7 @@ Most of these limits are shared with the rest of the Concrete stack (namely Conc
 
 ### Requirements
 
-Installing Concrete ML using PyPi requires a Linux-based OS or macOS running on an x86 CPU. For Apple Silicon, Docker is the only currently supported option (see [below](pip_installing.md#using-docker)).
+Installing Concrete ML using PyPi requires a Linux-based OS or macOS (both x86 and Apple Silicon CPUs are supported).
 
 Installing on Windows can be done using Docker or WSL. On WSL, Concrete ML will work as long as the package is not installed in the /mnt/c/ directory, which corresponds to the host OS filesystem.
 
@@ -38,6 +38,8 @@ pip install concrete-ml
 ```
 
 This will automatically install all dependencies, notably Concrete.
+
+If you encounter any issue during installation on Apple Silicon mac, please visit this [troubleshooting guide on community](https://community.zama.ai/t/troubleshooting-concrete-installation-on-apple-silicon/577).
 
 ## Using Docker
 
