@@ -336,6 +336,7 @@ class QuantizedGemm(QuantizedMixingOp):
                 # Return the result of matrix multiplication
                 return c
 
+        # Remove the manual matrix multiplication when we can handle input precision with rounding
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
         @univariate
         def copy_function(x):
