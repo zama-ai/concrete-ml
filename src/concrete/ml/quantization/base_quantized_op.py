@@ -936,16 +936,17 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         self,
         x: Union[numpy.ndarray, fhe.tracing.Tracer],
         calibrate_rounding: bool,
-        key: Optional[str] = None,
+        rounding_operation_id: Optional[str] = None,
     ) -> numpy.ndarray:
         """Round the input array to the specified number of bits.
 
         Args:
             x (Union[numpy.ndarray, fhe.tracing.Tracer]): The input array to be rounded.
             calibrate_rounding (bool): Whether to calibrate the rounding
-                (compute the lsbs_to_remove)
-            key (Optional[str]): The key to access the appropriate
-                lsbs_to_remove value in the dictionary.
+                (compute the lsbs_to_remove).
+            rounding_operation_id (Optional[str]): The identifier for a specific rounding
+                operation in a quantized operation. Used to create and access the
+                lsbs_to_remove value in the dictionary. Defaults to None
 
         Returns:
             numpy.ndarray: The rounded array.
@@ -953,12 +954,12 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
 
         # Initialize lsbs_to_remove if not already set
         if not hasattr(self, "lsbs_to_remove") or self.lsbs_to_remove is None:
-            self.lsbs_to_remove = {} if key else 0
+            self.lsbs_to_remove = {} if rounding_operation_id else 0
 
         if self.rounding_threshold_bits is not None and calibrate_rounding:
-            # Compute new_value only when calibration is True
+            # Compute lsbs_to_remove only when calibration is True
             current_n_bits_accumulator = compute_bits_precision(x)
-            new_value = current_n_bits_accumulator - self.rounding_threshold_bits
+            computed_lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
 
             assert_true(
                 not isinstance(x, fhe.tracing.Tracer),
@@ -966,25 +967,29 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
             )
 
             # Key-based logic (dictionary)
-            if key:
+            if rounding_operation_id:
                 # mypy
                 assert isinstance(self.lsbs_to_remove, dict)
-                self.lsbs_to_remove[key] = max(self.lsbs_to_remove.get(key, 0), new_value)
+                self.lsbs_to_remove[rounding_operation_id] = max(
+                    self.lsbs_to_remove.get(rounding_operation_id, 0), computed_lsbs_to_remove
+                )
 
             # No key (integer logic)
             else:
                 # mypy
                 assert isinstance(self.lsbs_to_remove, int)
-                self.lsbs_to_remove = max(self.lsbs_to_remove, new_value)
+                self.lsbs_to_remove = max(self.lsbs_to_remove, computed_lsbs_to_remove)
 
         # Rounding logic
         if isinstance(self.lsbs_to_remove, dict):
-            lsbs_value = self.lsbs_to_remove.get(key, 0) if key else 0
+            lsbs_value = (
+                self.lsbs_to_remove.get(rounding_operation_id, 0) if rounding_operation_id else 0
+            )
         else:
             lsbs_value = self.lsbs_to_remove
 
-        # Ensure lsbs_value is an integer
-        lsbs_value = int(lsbs_value)
+        # mypy
+        assert isinstance(lsbs_value, int)
 
         if lsbs_value > 0:
             x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value)

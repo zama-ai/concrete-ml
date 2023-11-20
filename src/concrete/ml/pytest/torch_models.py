@@ -1433,5 +1433,6 @@ class EncryptedMatrixMultiplicationModel(nn.Module):
         output = torch.matmul(input1, input1.transpose(2, 1))
         output = self.act(output)
 
-        output = output.squeeze(-1)  # Squeezes out one of the last two singleton dimensions
+        # Squeeze out one of the last two singleton dimensions
+        output = output.squeeze(-1)
         return output
