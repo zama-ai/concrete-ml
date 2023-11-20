@@ -1449,10 +1449,10 @@ class ManualLogisticRegressionTraining(torch.nn.Module):
         """Forward function for matrix multiplication.
 
         Args:
-            x (torch.Tensor)        : The training data tensor.
-            y (torch.Tensor)        : The target tensor.
-            weights (torch.Tensor)  : The weights to be learned.
-            bias (torch.Tensor)     : The bias to be learned.
+            x (torch.Tensor): The training data tensor.
+            y (torch.Tensor): The target tensor.
+            weights (torch.Tensor): The weights to be learned.
+            bias (torch.Tensor): The bias to be learned.
 
         Returns:
             torch.Tensor: The updated weights after performing a training step.
@@ -1472,9 +1472,9 @@ class ManualLogisticRegressionTraining(torch.nn.Module):
         """Predicts based on weights and bias as inputs.
 
         Args:
-            x (torch.Tensor)       : Input data tensor.
-            weights (torch.Tensor) : Weights tensor.
-            bias (torch.Tensor)    : Bias tensor.
+            x (torch.Tensor): Input data tensor.
+            weights (torch.Tensor): Weights tensor.
+            bias (torch.Tensor): Bias tensor.
 
         Returns:
             torch.Tensor: The predicted outputs for the given inputs.
