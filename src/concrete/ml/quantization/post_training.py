@@ -710,13 +710,6 @@ class ONNXConverter:
                 # use that op's quantization options (ensures matching options that allows
                 # the optimization to take place)
                 opts = layer_using_input[inp_idx][0].input_quant_opts
-                for layer in layer_using_input[inp_idx][1:]:
-                    opts_k = layer.input_quant_opts
-                    assert_true(
-                        opts.is_equal(opts_k),
-                        "Multiple quantizers "
-                        "applied to the same input must have the same quantization options",
-                    )
 
                 q_input_list.append(QuantizedArray(opts.n_bits, val, options=opts).quantizer)
 
