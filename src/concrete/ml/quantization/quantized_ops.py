@@ -342,9 +342,18 @@ class QuantizedGemm(QuantizedMixingOp):
         def copy_function(x):
             return x
 
-        # This is done to block the precision raising at compilation time
-        # Here we add a PBS to protect inputs precision. We don't want to do it
-        # when it is not needed as it is costly. We just use it for encrypted matmul
+        # Copy trick explanation:
+        # The copy_function is used to preserve the original precision of input values across
+        # various operations. Operations like addition, subtraction, sum, and matmul can
+        # unintentionally increase precision ('precision raising').
+        #
+        # Precision raising in one of these operations can inadvertently affect the precision of
+        # the same value in other branches of the code. By creating copies of the input values,
+        # any precision changes are limited to these copies, not the original values.
+        #
+        # This strategy is particularly important to make sure PBS in all branches are done on the
+        # pre-defined precision. The use of the copy is conditional, applied only when needed
+        # to optimize performance.
         input1_q_values_copy = (
             copy_function(input1_q_values) if is_encrypted_gemm else input1_q_values
         )
