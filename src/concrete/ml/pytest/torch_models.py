@@ -1412,7 +1412,7 @@ class PartialQATModel(torch.nn.Module):
 
 
 class EncryptedMatrixMultiplicationModel(nn.Module):
-    """PyTorch module for performing matrix multiplication between to encrypted values."""
+    """PyTorch module for performing matrix multiplication between two encrypted values."""
 
     # pylint: disable-next=unused-argument
     def __init__(self, input_output, activation_function):

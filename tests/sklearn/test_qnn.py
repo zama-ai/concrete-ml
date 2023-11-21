@@ -569,7 +569,12 @@ def test_power_of_two_scaling(
     for (_, node_op) in model.quantized_module_.quant_layers_dict.values():
         if isinstance(node_op, QuantizedMixingOp):
             num_round_pbs_layers += 1 if node_op.rounding_threshold_bits is not None else 0
-            assert node_op.rounding_threshold_bits == node_op.lsbs_to_remove
+            lsbs_to_remove = (
+                node_op.lsbs_to_remove["matmul"]
+                if (node_op.lsbs_to_remove is not None) and ("matmul" in node_op.lsbs_to_remove)
+                else None
+            )
+            assert node_op.rounding_threshold_bits == lsbs_to_remove
 
     # Apply the PowerOfTwoScalingRoundPBSAdapter again. The second time
     # the adapter will ignore already optimized patterns but report them

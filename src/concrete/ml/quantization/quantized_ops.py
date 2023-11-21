@@ -186,6 +186,10 @@ class QuantizedGemm(QuantizedMixingOp):
         assert isinstance(q_input1, QuantizedArray)
         q_input2 = prepared_inputs[1]
         assert isinstance(q_input2, QuantizedArray)
+
+        # In the operation Y = alpha * A' * B' + beta * C, q_bias is used for
+        # generalised matrix multiplication. q_bias is set to None for standard
+        # matrix multiplication (beta == 0 or only two inputs)
         q_bias = None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
         assert isinstance(q_bias, (type(None), QuantizedArray))
 
@@ -443,7 +447,9 @@ class QuantizedGemm(QuantizedMixingOp):
         if not is_encrypted_gemm:
             with tag(self.op_instance_name + ".matmul_rounding"):
                 # Apply Concrete rounding (if relevant)
-                numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
+                numpy_q_out = self.cnp_round(
+                    numpy_q_out, calibrate_rounding, rounding_operation_id="matmul"
+                )
 
                 # Force a PBS with astype float64
                 numpy_q_out = numpy_q_out.astype(numpy.float64)
@@ -942,7 +948,9 @@ class QuantizedConv(QuantizedMixingOp):
 
         with tag(self.op_instance_name + ".conv_rounding"):
             # Apply Concrete rounding (if relevant)
-            numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
+            numpy_q_out = self.cnp_round(
+                numpy_q_out, calibrate_rounding, rounding_operation_id="matmul"
+            )
 
         # Now compute the whole sum (sum of the four terms)
         numpy_q_out = numpy_q_out.astype(numpy.float64) + final_term - sum_weights
