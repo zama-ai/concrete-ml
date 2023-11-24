@@ -1409,3 +1409,82 @@ class PartialQATModel(torch.nn.Module):
         """
 
         return self.sub_module(x)
+
+
+class EncryptedMatrixMultiplicationModel(nn.Module):
+    """PyTorch module for performing matrix multiplication between two encrypted values."""
+
+    # pylint: disable-next=unused-argument
+    def __init__(self, input_output, activation_function):
+        super().__init__()
+        self.act = activation_function()
+
+    def forward(self, input1):
+        """Forward function for matrix multiplication.
+
+        Args:
+            input1 (torch.Tensor): The first input tensor.
+
+        Returns:
+            torch.Tensor: The result of the matrix multiplication.
+        """
+        input1 = input1.unsqueeze(1)
+
+        output = torch.matmul(input1, input1.transpose(2, 1))
+        output = self.act(output)
+
+        # Squeeze out one of the last two singleton dimensions
+        output = output.squeeze(-1)
+        return output
+
+
+class ManualLogisticRegressionTraining(torch.nn.Module):
+    """PyTorch module for performing SGD training."""
+
+    def __init__(self, learning_rate=0.1):
+        super().__init__()
+        self.learning_rate = learning_rate
+
+    def forward(self, x, y, weights, bias):
+        """Forward function for matrix multiplication.
+
+        Args:
+            x (torch.Tensor): The training data tensor.
+            y (torch.Tensor): The target tensor.
+            weights (torch.Tensor): The weights to be learned.
+            bias (torch.Tensor): The bias to be learned.
+
+        Returns:
+            torch.Tensor: The updated weights after performing a training step.
+        """
+        z = torch.bmm(x, weights) + bias
+        output = torch.sigmoid(z)
+
+        difference_z = output - y
+        dweights = torch.bmm(x.transpose(1, 2), difference_z) / x.size(1)
+
+        weights = weights - self.learning_rate * dweights
+
+        return weights
+
+    @staticmethod
+    def predict(x, weights, bias):
+        """Predicts based on weights and bias as inputs.
+
+        Args:
+            x (torch.Tensor): Input data tensor.
+            weights (torch.Tensor): Weights tensor.
+            bias (torch.Tensor): Bias tensor.
+
+        Returns:
+            torch.Tensor: The predicted outputs for the given inputs.
+        """
+        with torch.no_grad():
+            batch_size = x.shape[0]
+
+            # Expand weights and bias dimensions to match the batch size of X
+            weights_expanded = weights.expand(batch_size, -1, -1)
+            bias_expanded = bias.expand(batch_size, -1, -1)
+
+            outputs = torch.sigmoid(torch.bmm(x, weights_expanded) + bias_expanded)
+        return outputs.squeeze()

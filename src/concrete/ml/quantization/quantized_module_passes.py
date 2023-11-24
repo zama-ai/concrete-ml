@@ -294,7 +294,9 @@ class PowerOfTwoScalingRoundPBSAdapter:
                 lsbs_to_round = -(log2_input + log2_weights - log2_output)
                 if lsbs_to_round > 0:
                     path_start_node.rounding_threshold_bits = lsbs_to_round
-                    path_start_node.lsbs_to_remove = lsbs_to_round
+                    # For mypy
+                    assert isinstance(path_start_node.lsbs_to_remove, dict)
+                    path_start_node.lsbs_to_remove["matmul"] = lsbs_to_round
             else:
                 invalid_paths.append(path_start_node)
 

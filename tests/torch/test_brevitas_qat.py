@@ -533,7 +533,12 @@ def test_brevitas_power_of_two(
         if isinstance(node_op, QuantizedMixingOp):
             num_round_pbs_layers += 1 if node_op.rounding_threshold_bits is not None else 0
             if pot_should_be_applied:
-                assert node_op.rounding_threshold_bits == node_op.lsbs_to_remove
+                lsbs_to_remove = (
+                    node_op.lsbs_to_remove["matmul"]
+                    if (node_op.lsbs_to_remove is not None) and ("matmul" in node_op.lsbs_to_remove)
+                    else None
+                )
+                assert node_op.rounding_threshold_bits == lsbs_to_remove
             elif manual_rounding:
                 # If manual rounding was set, LSBs_to_remove must be equal
                 # to the accumulator size minus the requested rounding_threshold_bits

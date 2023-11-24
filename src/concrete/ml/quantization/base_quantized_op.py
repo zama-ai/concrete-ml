@@ -865,7 +865,7 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
     Mixing operators cannot be fused to TLUs.
     """
 
-    lsbs_to_remove: Optional[int] = None
+    lsbs_to_remove: Optional[Union[int, dict]] = None
     rounding_threshold_bits: Optional[int] = None
 
     def __init__(self, *args, rounding_threshold_bits: Optional[int] = None, **kwargs) -> None:
@@ -933,39 +933,52 @@ class QuantizedMixingOp(QuantizedOp, is_utility=True):
         )
 
     def cnp_round(
-        self, x: Union[numpy.ndarray, fhe.tracing.Tracer], calibrate_rounding: bool
+        self,
+        x: Union[numpy.ndarray, fhe.tracing.Tracer],
+        calibrate_rounding: bool,
+        rounding_operation_id: Optional[str] = "single_rounding_op",
     ) -> numpy.ndarray:
         """Round the input array to the specified number of bits.
 
         Args:
             x (Union[numpy.ndarray, fhe.tracing.Tracer]): The input array to be rounded.
             calibrate_rounding (bool): Whether to calibrate the rounding
-                (compute the lsbs_to_remove)
+                (compute the lsbs_to_remove).
+            rounding_operation_id (Optional[str]): The identifier for a specific rounding
+                operation in a quantized operation. Used to create and access the
+                lsbs_to_remove value in the dictionary. Defaults to "single_rounding_op"
+                if not provided.
 
         Returns:
             numpy.ndarray: The rounded array.
         """
 
-        # Rounding is applied only if specified by user
-        if self.rounding_threshold_bits is not None:
-            if calibrate_rounding:
-                assert_true(
-                    not isinstance(x, fhe.tracing.Tracer),
-                    "Can't compute lsbs_to_remove at compilation time.",
-                )
-                assert_true(
-                    self.lsbs_to_remove is None,
-                    "Rounding has already been calibrated.",
-                )
+        # Ensure lsbs_to_remove is initialized as a dictionary
+        if not hasattr(self, "lsbs_to_remove") or not isinstance(self.lsbs_to_remove, dict):
+            self.lsbs_to_remove = {}
 
-                current_n_bits_accumulator = compute_bits_precision(x)
-                self.lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
+        if self.rounding_threshold_bits is not None and calibrate_rounding:
+            # Compute lsbs_to_remove only when calibration is True
+            current_n_bits_accumulator = compute_bits_precision(x)
+            computed_lsbs_to_remove = current_n_bits_accumulator - self.rounding_threshold_bits
 
-            # mypy
-            assert self.lsbs_to_remove is not None
+            assert_true(
+                not isinstance(x, fhe.tracing.Tracer),
+                "Can't compute lsbs_to_remove at compilation time.",
+            )
 
-            # Apply rounding if needed
-            if self.lsbs_to_remove > 0:
-                x = fhe.round_bit_pattern(x, lsbs_to_remove=self.lsbs_to_remove)
+            # Update the lsbs_to_remove value in the dictionary
+            self.lsbs_to_remove[rounding_operation_id] = max(
+                self.lsbs_to_remove.get(rounding_operation_id, 0), computed_lsbs_to_remove
+            )
+
+        # Rounding logic
+        lsbs_value = self.lsbs_to_remove.get(rounding_operation_id, 0)
+
+        # mypy
+        assert isinstance(lsbs_value, int)
+
+        if lsbs_value > 0:
+            x = fhe.round_bit_pattern(x, lsbs_to_remove=lsbs_value)
 
         return x

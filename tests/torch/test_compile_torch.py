@@ -26,6 +26,7 @@ from concrete.ml.pytest.torch_models import (
     CNNOther,
     ConcatFancyIndexing,
     DoubleQuantQATMixNet,
+    EncryptedMatrixMultiplicationModel,
     FCSmall,
     MultiInputNN,
     MultiInputNNConfigurable,
@@ -448,6 +449,7 @@ def accuracy_test_rounding(
         pytest.param(MultiInputNNDifferentSize, [5, 10]),
         pytest.param(UnivariateModule, 5),
         pytest.param(StepActivationModule, 5),
+        pytest.param(EncryptedMatrixMultiplicationModel, 5),
     ],
 )
 @pytest.mark.parametrize("simulate", [True, False], ids=["FHE_simulation", "FHE"])

@@ -10,7 +10,7 @@ from typing import Any, Dict, Optional, Sequence, Set, Union
 import numpy
 from concrete.fhe import conv as cnp_conv
 from concrete.fhe import maxpool as cnp_maxpool
-from concrete.fhe import tag
+from concrete.fhe import tag, univariate, zeros
 from typing_extensions import SupportsIndex
 
 from ..common.debugging import assert_false, assert_true
@@ -134,9 +134,9 @@ class QuantizedGemm(QuantizedMixingOp):
         self,
         n_bits_output: int,
         op_instance_name: str,
-        int_input_names: Set[str] = None,
+        int_input_names: Optional[Set[str]] = None,
         constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
-        input_quant_opts: QuantizationOptions = None,
+        input_quant_opts: Optional[QuantizationOptions] = None,
         **attrs,
     ) -> None:
         super().__init__(
@@ -157,13 +157,7 @@ class QuantizedGemm(QuantizedMixingOp):
             f"Got alpha == {alpha} and beta == {beta}.",
         )
 
-        assert_true(
-            1 in self.constant_inputs,
-            f"{self.__class__.__name__} currently only supports quantizing "
-            f"{self._impl_for_op_named} if weights are provided as the 'b' constant input.",
-        )
-
-    # pylint: disable-next=too-many-statements
+    # pylint: disable-next=too-many-statements,too-many-locals
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
@@ -174,41 +168,59 @@ class QuantizedGemm(QuantizedMixingOp):
         alpha = self.attrs.get("alpha", 1)
         beta = self.attrs.get("beta", 1)
 
+        # If self.constant_inputs is empty this is an encrypted gemm
+        # There might be caveats here
+        # (for example when one of the input is passed in clear with encrypted statuses.)
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4132
+        is_encrypted_gemm = isinstance(self.constant_inputs, dict) and not self.constant_inputs
+
         # If alpha != 1 or beta not in [0, 1], this function must be modified
         assert_true(alpha == 1)
-        assert_true(beta in [0, 1])
+        assert_true(beta in {0, 1})
 
         prepared_inputs = self._prepare_inputs_with_constants(
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
-        q_input: QuantizedArray = prepared_inputs[0]
-        q_weights: QuantizedArray = prepared_inputs[1]
-        q_bias: Optional[QuantizedArray] = (
-            None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
-        )
+        q_input1 = prepared_inputs[0]
+        assert isinstance(q_input1, QuantizedArray)
+        q_input2 = prepared_inputs[1]
+        assert isinstance(q_input2, QuantizedArray)
+
+        # In the operation Y = alpha * A' * B' + beta * C, q_bias is used for
+        # generalised matrix multiplication. q_bias is set to None for standard
+        # matrix multiplication (beta == 0 or only two inputs)
+        q_bias = None if len(prepared_inputs) == 2 or beta == 0 else prepared_inputs[2]
+        assert isinstance(q_bias, (type(None), QuantizedArray))
 
         # Using snake case here to please the Python format, the original attrs don't have the '_'
         # Use default false so we also support MatMul impl, MatMul does not have these flags
-        transpose_inputs = attrs.get("transA", False)
-        transpose_w = attrs.get("transB", False)
+        transpose_inputs1 = attrs.get("transA", False)
+        transpose_inputs2 = attrs.get("transB", False)
 
         with tag(self.op_instance_name + ".input"):
-            input_q_values = (
-                numpy.transpose(q_input.qvalues) if transpose_inputs else q_input.qvalues
+            input1_q_values = (
+                numpy.transpose(q_input1.qvalues) if transpose_inputs1 else q_input1.qvalues
             )
-        weights_q_values = numpy.transpose(q_weights.qvalues) if transpose_w else q_weights.qvalues
+        input2_q_values = (
+            numpy.transpose(q_input2.qvalues) if transpose_inputs2 else q_input2.qvalues
+        )
+
+        assert_true(
+            input2_q_values.ndim in {2, 3},
+            f"Unsupported dimension for the weight input of the gemm: {input2_q_values.ndim}",
+        )
 
         # For mypy
         assert self.output_quant_params is not None
         assert self.output_quant_params.scale is not None
         assert self.output_quant_params.zero_point is not None
 
-        assert q_weights.quantizer.scale is not None
-        assert q_weights.quantizer.zero_point is not None
+        assert q_input2.quantizer.scale is not None
+        assert q_input2.quantizer.zero_point is not None
 
-        assert q_input.quantizer.scale is not None
-        assert q_input.quantizer.zero_point is not None
+        assert q_input1.quantizer.scale is not None
+        assert q_input1.quantizer.zero_point is not None
 
         # The following MatMul is done with integers, and thus, does not use of any PBS.
         # Rescaling the output of the integer MatMul to handle scale changes is done
@@ -217,20 +229,163 @@ class QuantizedGemm(QuantizedMixingOp):
         # Here we follow Eq.7 in https://arxiv.org/abs/1712.05877 to split the core computation
         # from the zero points and scales.
 
-        p = weights_q_values.shape[0]
+        p = input2_q_values.shape[-2]
+
+        # Remove the manual matrix multiplication when we can handle input precision with rounding
+        # FIXME: https://github.com/zama-ai/concrete-internal/issues/512
+        def enc_mul(x, y):
+            r"""Encrypted multiplication of two input arrays.
+
+            This function computes the encrypted multiplication of two numpy arrays.
+            It uses the following equality:
+
+            \[
+            (x + y)^2 - (x - y)^2 = 4xy
+            \]
+
+            This equation simplifies to the standard multiplication operation.
+
+            In TFHE, this allows to do encrypted multiplication with 2 PBS.
+
+            Args:
+                x (numpy.ndarray): The first input numpy array.
+                y (numpy.ndarray): The second input numpy array.
+
+            Returns:
+                numpy.ndarray: The result of the encrypted multiplication.
+            """
+            with tag("pbs_multiplication"):
+                # Compute sum and difference of x and y
+                add = x + y
+                sub = x - y
+
+                # Apply Concrete rounding to the addition and substraction
+                with tag(self.op_instance_name + ".pbs_matmul_rounding_add"):
+                    add = self.cnp_round(add, calibrate_rounding, rounding_operation_id="add")
+                with tag(self.op_instance_name + ".pbs_matmul_rounding_sub"):
+                    sub = self.cnp_round(sub, calibrate_rounding, rounding_operation_id="sub")
+
+                # Square the rounded sums and differences, and divide by 4
+                add_pow = (add.astype(numpy.float64)) ** 2
+                sub_pow = (sub.astype(numpy.float64)) ** 2
+                add_pow_divide = (add_pow / 4.0).astype(numpy.int64)
+                sub_pow_divide = (sub_pow / 4.0).astype(numpy.int64)
+
+            # Return the result of the multiplication
+            return add_pow_divide - sub_pow_divide
+
+        # Remove the manual matrix multiplication when we can handle input precision with rounding
+        # FIXME: https://github.com/zama-ai/concrete-internal/issues/512
+        def matmul(a, b):
+            """Matrix multiplication of two input arrays, supporting 2D or 3D.
+
+            This function performs matrix multiplication on either 2D or 3D numpy arrays.
+            It supports batch processing, where either or both inputs can be a batch
+            (3D array), and handles the reshaping and summation operations required
+            for matrix multiplication.
+
+            Args:
+                a (numpy.ndarray): The first input array, can be 2D or 3D.
+                b (numpy.ndarray): The second input array, can be 2D or 3D.
+
+            Returns:
+                numpy.ndarray: The result of the matrix multiplication.
+            """
+            with tag("encrypted_matmul"):
+                # Determine the dimensions of inputs and handle 3D (batch) inputs
+                a_3d = a.ndim == 3
+                b_3d = b.ndim == 3
+
+                # Extract shapes and batch sizes
+                if a_3d:
+                    batch_a, m, n = a.shape
+                else:
+                    m, n = a.shape
+                    batch_a = 1
+
+                if b_3d:
+                    batch_b, n_b, p = b.shape
+                else:
+                    n_b, p = b.shape
+                    batch_b = 1
+
+                # Check for dimension compatibility
+                assert_true(n == n_b, "Inner dimensions do not match for matrix multiplication")
+                assert (
+                    batch_a == batch_b or batch_a == 1 or batch_b == 1
+                ), "Batch sizes must be equal or one must be 1"
+
+                # Determine the batch size for the operation
+                batch_size = batch_a
+                c = zeros(shape=(batch_size, m, p))
+
+                # Perform batched matrix multiplication
+                for i in range(batch_size):
+                    # Slice the batch or use the whole array if not batched
+                    a_slice = a[i] if a_3d else a
+                    b_slice = b[i] if b_3d else b
+
+                    # Reshape for element-wise multiplication
+                    a_reshaped = a_slice.reshape((m, n, 1))
+                    b_reshaped = b_slice.reshape((1, n, p))
+
+                    # Perform encrypted multiplication and sum along the axis
+                    enc_mul_result = enc_mul(a_reshaped, b_reshaped)
+                    c[i] = numpy.sum(enc_mul_result, axis=1)
+
+                # Squeeze the first dimension if both inputs were 2D
+                if not a_3d and not b_3d:
+                    c = numpy.squeeze(c, axis=0)
+
+                # Return the result of matrix multiplication
+                return c
+
+        # Remove the manual matrix multiplication when we can handle input precision with rounding
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
+        @univariate
+        def copy_function(x):
+            return x
+
+        # Copy trick explanation:
+        # The copy_function is used to preserve the original precision of input values across
+        # various operations. Operations like addition, subtraction, sum, and matmul can
+        # unintentionally increase precision ('precision raising').
+        #
+        # Precision raising in one of these operations can inadvertently affect the precision of
+        # the same value in other branches of the code. By creating copies of the input values,
+        # any precision changes are limited to these copies, not the original values.
+        #
+        # This strategy is particularly important to make sure PBS in all branches are done on the
+        # pre-defined precision. The use of the copy is conditional, applied only when needed
+        # to optimize performance.
+        input1_q_values_copy = (
+            copy_function(input1_q_values) if is_encrypted_gemm else input1_q_values
+        )
+        input2_q_values_copy = (
+            copy_function(input2_q_values) if is_encrypted_gemm else input2_q_values
+        )
 
         # Core matmul operation in full integers with a shape change (INTEGERS)
         with tag(self.op_instance_name + ".matmul"):
-            matmul = input_q_values @ weights_q_values
+            # We implement our own encrypted matmul to be able to round before PBS
+            if is_encrypted_gemm:
+                matmul = matmul(input1_q_values_copy, input2_q_values_copy)
+            # Otherwise we let concrete do it
+            else:
+                matmul = input1_q_values_copy @ input2_q_values_copy
+
+        input1_q_values_copy = (
+            copy_function(input1_q_values) if is_encrypted_gemm else input1_q_values
+        )
 
         # If the weights have symmetric quantization, their zero point will be 0
         # The following check avoids the computation of the sum of the inputs, which may have
         # large bit-width, in the case where it would be multiplied by zero
-        if q_weights.quantizer.zero_point != 0:
+        if q_input2.quantizer.zero_point != 0:
             # Sum operation in full integers resulting in large integers (INTEGERS)
             with tag(self.op_instance_name + ".matmul_inputsum"):
-                sum_input = -q_weights.quantizer.zero_point * numpy.sum(
-                    input_q_values, axis=1, keepdims=True
+                sum_input = -q_input2.quantizer.zero_point * numpy.sum(
+                    input1_q_values_copy, axis=-1, keepdims=True
                 )
 
             with tag(self.op_instance_name + ".matmul_add_inputsum"):
@@ -243,22 +398,28 @@ class QuantizedGemm(QuantizedMixingOp):
             # pylint: disable-next=unsubscriptable-object
             self.debug_value_tracker[self.op_instance_name]["output"] = numpy_q_out  # type: ignore
 
-        # sum_weights is a constant
-        sum_weights = q_input.quantizer.zero_point * numpy.sum(
-            weights_q_values, axis=0, keepdims=True
+        input2_q_values_copy = (
+            copy_function(input2_q_values) if is_encrypted_gemm else input2_q_values
         )
 
-        final_term = p * q_input.quantizer.zero_point * q_weights.quantizer.zero_point
+        with tag(self.op_instance_name + ".sum_weights_times_zero_point"):
+
+            # sum_weights is a constant
+            sum_weights = q_input1.quantizer.zero_point * numpy.sum(
+                input2_q_values_copy, axis=-2, keepdims=True
+            )
+
+        final_term = p * q_input1.quantizer.zero_point * q_input2.quantizer.zero_point
 
         # Note that here we do not rescale to the output_scale and we do not add a zero-point
         # Any following Gemm/MatMul/Conv layers will do the rescaling (during re-quantization)
         # by calling _prepare_inputs_with_constants(...quantize_real_values=True)
-        m_matmul = q_input.quantizer.scale * q_weights.quantizer.scale
+        m_matmul = q_input1.quantizer.scale * q_input2.quantizer.scale
 
         # If this operation's result are network outputs, return
         # directly the integer values and a appropriate quantization parameters that
         # allow direct in-the-clear de-quantization, including the bias
-        if self.produces_graph_output:
+        if self.produces_graph_output and not is_encrypted_gemm:
             out_zp: Union[int, numpy.ndarray] = sum_weights - final_term
             if q_bias is not None:
                 # Make mypy happy
@@ -281,13 +442,30 @@ class QuantizedGemm(QuantizedMixingOp):
             assert numpy.isclose(q_bias.quantizer.scale, m_matmul)
             numpy_q_out += q_bias.qvalues
 
-        with tag(self.op_instance_name + ".matmul_rounding"):
-            # Apply Concrete rounding (if relevant)
-            numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
+        # If weights are not encrypted then we can round as the next
+        # line is going to be done in a PBS
+        if not is_encrypted_gemm:
+            with tag(self.op_instance_name + ".matmul_rounding"):
+                # Apply Concrete rounding (if relevant)
+                numpy_q_out = self.cnp_round(
+                    numpy_q_out, calibrate_rounding, rounding_operation_id="matmul"
+                )
 
-        # Quantization scales and zero points (FLOATS involved)
-        # This is going to be compiled with a PBS (along with the following activation function)
-        numpy_q_out = numpy_q_out.astype(numpy.float64) + final_term - sum_weights
+                # Force a PBS with astype float64
+                numpy_q_out = numpy_q_out.astype(numpy.float64)
+
+        # Quantization scales and zero points
+        # This is done in a PBS if is_encrypted_gemm == False
+        # (along with the following activation function)
+        # Otherwise it is done in FHE
+        numpy_q_out = numpy_q_out + final_term - sum_weights
+
+        if is_encrypted_gemm:
+            with tag(self.op_instance_name + ".matmul_rounding"):
+                # Apply Concrete rounding (if relevant)
+                numpy_q_out = self.cnp_round(
+                    numpy_q_out, calibrate_rounding, rounding_operation_id="matmul"
+                )
 
         numpy_q_out = m_matmul * numpy_q_out
 
@@ -770,7 +948,9 @@ class QuantizedConv(QuantizedMixingOp):
 
         with tag(self.op_instance_name + ".conv_rounding"):
             # Apply Concrete rounding (if relevant)
-            numpy_q_out = self.cnp_round(numpy_q_out, calibrate_rounding)
+            numpy_q_out = self.cnp_round(
+                numpy_q_out, calibrate_rounding, rounding_operation_id="matmul"
+            )
 
         # Now compute the whole sum (sum of the four terms)
         numpy_q_out = numpy_q_out.astype(numpy.float64) + final_term - sum_weights
