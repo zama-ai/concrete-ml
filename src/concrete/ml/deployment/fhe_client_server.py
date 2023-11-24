@@ -192,13 +192,6 @@ class FHEModelDev:
             )
         self.model.check_model_is_compiled()
 
-        # Model must be compiled with jit=False
-        # In a jit model, everything is in memory so it is not serializable.
-        assert_true(
-            not self.model.fhe_circuit.configuration.jit,
-            "The model must be compiled with the configuration option jit=False.",
-        )
-
         # Export the quantizers
         json_path = self._export_model_to_json()
 

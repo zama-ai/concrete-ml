@@ -246,7 +246,6 @@ BENCHMARK_CONFIGURATION = fhe.Configuration(
     enable_unsafe_features=True,
     use_insecure_key_cache=True,
     insecure_key_cache_location="ConcreteNumpyKeyCache",
-    jit=False,
 )
 
 

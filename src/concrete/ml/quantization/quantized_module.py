@@ -90,10 +90,10 @@ class QuantizedModule:
 
     def __init__(
         self,
-        ordered_module_input_names: Iterable[str] = None,
-        ordered_module_output_names: Iterable[str] = None,
-        quant_layers_dict: Dict[str, Tuple[Tuple[str, ...], QuantizedOp]] = None,
-        onnx_model: onnx.ModelProto = None,
+        ordered_module_input_names: Optional[Iterable[str]] = None,
+        ordered_module_output_names: Optional[Iterable[str]] = None,
+        quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
+        onnx_model: Optional[onnx.ModelProto] = None,
     ):
         # Set base attributes for API consistency. This could be avoided if an abstract base class
         # is created for both Concrete ML models and QuantizedModule
@@ -115,13 +115,6 @@ class QuantizedModule:
         assert all([ordered_module_input_names, ordered_module_output_names, quant_layers_dict])
         self.ordered_module_input_names = tuple(ordered_module_input_names)
         self.ordered_module_output_names = tuple(ordered_module_output_names)
-
-        num_outputs = len(self.ordered_module_output_names)
-        assert_true(
-            (num_outputs) == 1,
-            f"{QuantizedModule.__class__.__name__} only supports a single output for now, "
-            f"got {num_outputs}",
-        )
 
         assert quant_layers_dict is not None
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
@@ -293,7 +286,14 @@ class QuantizedModule:
         *x: numpy.ndarray,
         fhe: Union[FheMode, str] = FheMode.DISABLE,
         debug: bool = False,
-    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, Optional[Dict[Any, Any]]]]:
+    ) -> Union[
+        numpy.ndarray,
+        Tuple[numpy.ndarray, ...],
+        Tuple[
+            Union[Tuple[numpy.ndarray, ...], numpy.ndarray],
+            Dict[str, Dict[Union[int, str], ONNXOpInputOutputType]],
+        ],
+    ]:
         """Forward pass with numpy function only on floating points.
 
         This method executes the forward pass in the clear, with simulation or in FHE. Input values
@@ -337,26 +337,27 @@ class QuantizedModule:
         q_x = to_tuple(self.quantize_input(*x))
 
         if debug and fhe == "disable":
-            debug_value_tracker: Optional[
-                Dict[str, Dict[Union[int, str], Optional[ONNXOpInputOutputType]]]
+            debug_value_tracker: Dict[
+                str, Dict[Union[int, str], Optional[ONNXOpInputOutputType]]
             ] = {}
             for (_, layer) in self.quant_layers_dict.values():
                 layer.debug_value_tracker = debug_value_tracker
-            result = self.quantized_forward(*q_x, fhe="disable")
+            q_y_pred = self.quantized_forward(*q_x, fhe="disable")
             for (_, layer) in self.quant_layers_dict.values():
                 layer.debug_value_tracker = None
-            return result, debug_value_tracker
+            # De-quantize the output predicted values
+            y_pred = self.dequantize_output(*to_tuple(q_y_pred))
+            return y_pred, debug_value_tracker
 
         q_y_pred = self.quantized_forward(*q_x, fhe=fhe)
 
         # De-quantize the output predicted values
-        y_pred = self.dequantize_output(q_y_pred)
-
+        y_pred = self.dequantize_output(*to_tuple(q_y_pred))
         return y_pred
 
     def quantized_forward(
         self, *q_x: numpy.ndarray, fhe: Union[FheMode, str] = FheMode.DISABLE
-    ) -> numpy.ndarray:
+    ) -> Union[Tuple[numpy.ndarray, ...], numpy.ndarray]:
         """Forward function for the FHE circuit.
 
         Args:
@@ -367,7 +368,8 @@ class QuantizedModule:
                 any of these values. Default to FheMode.DISABLE.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model, with integer values.
+            (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): Predictions of the quantized model,
+            with integer values.
 
         """
         # Make sure that the inputs are integers
@@ -389,18 +391,20 @@ class QuantizedModule:
 
         if fhe == "disable":
             return self._clear_forward(*q_x)
-
         simulate = fhe == "simulate"
         return self._fhe_forward(*q_x, simulate=simulate)
 
-    def _clear_forward(self, *q_x: numpy.ndarray) -> numpy.ndarray:
+    def _clear_forward(
+        self, *q_x: numpy.ndarray
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Forward function for the FHE circuit executed in the clear.
 
         Args:
             *q_x (numpy.ndarray): Input integer values to consider.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model, with integer values.
+            (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): Predictions of the quantized model,
+                with integer values.
 
         """
 
@@ -434,7 +438,7 @@ class QuantizedModule:
                 # The error message contains the ONNX tensor name that
                 # triggered this error
                 for input_idx in error_tracker:
-                    bad_qat_ops.append((input_names[input_idx], layer.__class__.op_type()))
+                    bad_qat_ops.append((input_names[input_idx], str(layer.__class__.op_type())))
 
             layer_results[output_name] = output
 
@@ -445,14 +449,19 @@ class QuantizedModule:
             layer_results[output_name] for output_name in self.ordered_module_output_names
         )
 
-        assert_true(len(output_quantized_arrays) == 1)
-
         # The output of a graph must be a QuantizedArray
-        assert isinstance(output_quantized_arrays[0], QuantizedArray)
+        assert all(isinstance(elt, QuantizedArray) for elt in output_quantized_arrays)
 
-        return output_quantized_arrays[0].qvalues
+        results = tuple(
+            elt.qvalues for elt in output_quantized_arrays if isinstance(elt, QuantizedArray)
+        )
+        if len(results) == 1:
+            return results[0]
+        return results
 
-    def _fhe_forward(self, *q_x: numpy.ndarray, simulate: bool = True) -> numpy.ndarray:
+    def _fhe_forward(
+        self, *q_x: numpy.ndarray, simulate: bool = True
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Forward function executed in FHE or with simulation.
 
         Args:
@@ -461,7 +470,8 @@ class QuantizedModule:
                 Default to True.
 
         Returns:
-            (numpy.ndarray): Predictions of the quantized model, with integer values.
+            (Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]): Predictions of the quantized model,
+                with integer values.
 
         """
 
@@ -471,8 +481,7 @@ class QuantizedModule:
             "The quantized module is not compiled. Please run compile(...) first before "
             "executing it in FHE.",
         )
-
-        results_cnp_circuit_list = []
+        results_cnp_circuit_list: List[List[numpy.ndarray]] = [[] for _ in self.output_quantizers]
         for i in range(q_x[0].shape[0]):
 
             # Extract example i from every element in the tuple q_x
@@ -499,12 +508,20 @@ class QuantizedModule:
                 predict_method = self.fhe_circuit.encrypt_run_decrypt
 
             # Execute the forward pass in FHE or with simulation
-            q_result = predict_method(*q_input)
+            q_result = to_tuple(predict_method(*q_input))
 
-            results_cnp_circuit_list.append(q_result)
+            assert len(q_result) == len(results_cnp_circuit_list), (
+                "Number of outputs does not match the number of output quantizers.\n"
+                f"{len(q_result)=}!={len(self.output_quantizers)=}"
+            )
+            for elt_index, elt in enumerate(q_result):
+                results_cnp_circuit_list[elt_index].append(elt)
 
-        results_cnp_circuit = numpy.concatenate(results_cnp_circuit_list, axis=0)
-
+        results_cnp_circuit: Tuple[numpy.ndarray, ...] = tuple(
+            numpy.concatenate(elt, axis=0) for elt in results_cnp_circuit_list
+        )
+        if len(results_cnp_circuit) == 1:
+            return results_cnp_circuit[0]
         return results_cnp_circuit
 
     def quantize_input(self, *x: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
@@ -532,22 +549,31 @@ class QuantizedModule:
 
         return q_x[0] if len(q_x) == 1 else q_x
 
-    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+    def dequantize_output(
+        self, *q_y_preds: numpy.ndarray
+    ) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Take the last layer q_out and use its de-quant function.
 
         Args:
-            q_y_preds (numpy.ndarray): Quantized output values of the last layer.
+            q_y_preds (numpy.ndarray): Quantized outputs values.
 
         Returns:
-            numpy.ndarray: De-quantized output values of the last layer.
+            Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]: De-quantized output values of
+                the last layer.
         """
-        y_preds = tuple(
-            output_quantizer.dequant(q_y_preds) for output_quantizer in self.output_quantizers
+        # Make sure that we have as many predictions as quantizers
+        assert len(q_y_preds) == len(self.output_quantizers), (
+            f"{len(q_y_preds)=} != {len(self.output_quantizers)=} "
+            "but the number of outputs to de-quantize should match the number of output quantizers."
         )
 
-        assert_true(len(y_preds) == 1)
-
-        return y_preds[0]
+        y_preds = tuple(
+            output_quantizer.dequant(q_y_pred)
+            for q_y_pred, output_quantizer in zip(q_y_preds, self.output_quantizers)
+        )
+        if len(y_preds) == 1:
+            return y_preds[0]
+        return y_preds
 
     def set_inputs_quantization_parameters(self, *input_q_params: UniformQuantizer):
         """Set the quantization parameters for the module's inputs.
@@ -616,7 +642,9 @@ class QuantizedModule:
             "Mismatched dataset lengths",
         )
 
-        assert not numpy.any([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs]), (
+        assert not numpy.any(
+            numpy.array([numpy.issubdtype(input.dtype, numpy.integer) for input in inputs])
+        ), (
             "Inputs used for compiling a QuantizedModule should only be floating points and not"
             "already-quantized values."
         )
@@ -688,7 +716,6 @@ class QuantizedModule:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
-            jit=False,
         )
 
         self._is_compiled = True
@@ -719,7 +746,9 @@ class QuantizedModule:
             # so first craft a regex to match all such tags.
             pattern = re.compile(re.escape(op_inst.op_instance_name) + "(\\..*)?")
             value_range = self.fhe_circuit.graph.integer_range(pattern)
-            bitwidth = self.fhe_circuit.graph.maximum_integer_bit_width(pattern)
+            bitwidth = self.fhe_circuit.graph.maximum_integer_bit_width(
+                pattern,
+            )
 
             # Only store the range and bit-width if there are valid ones,
             # as some ops (fusable ones) do not have tags

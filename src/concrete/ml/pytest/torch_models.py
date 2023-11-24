@@ -15,6 +15,29 @@ from concrete.ml.quantization.qat_quantizers import Int8ActPerTensorPoT, Int8Wei
 # pylint: disable=too-many-lines
 
 
+class MultiOutputModel(nn.Module):
+    """Multi-output model."""
+
+    def __init__(
+        self,
+    ) -> None:
+        """Torch Model."""
+        super().__init__()
+        self.value = 3.0
+
+    def forward(self, x, y):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The input of the model.
+            y (torch.Tensor): The input of the model.
+
+        Returns:
+            Tuple[torch.Tensor. torch.Tensor]: Output of the network.
+        """
+        return x + y + self.value, (x - y) ** 2
+
+
 class SimpleNet(torch.nn.Module):
     """Fake torch model used to generate some onnx."""
 

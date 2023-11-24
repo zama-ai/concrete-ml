@@ -6,6 +6,7 @@ from copy import deepcopy
 from typing import Any, Dict, Optional, TextIO, Union, get_type_hints
 
 import numpy
+from concrete.fhe.tracing.tracer import Tracer
 
 from ..common.debugging import assert_true
 from ..common.serialization.dumpers import dump, dumps
@@ -771,14 +772,14 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         return qvalues.astype(numpy.int64)
 
-    def dequant(self, qvalues: numpy.ndarray) -> Union[Any, numpy.ndarray]:
+    def dequant(self, qvalues: numpy.ndarray) -> Union[numpy.ndarray, Tracer]:
         """De-quantize values.
 
         Args:
             qvalues (numpy.ndarray): integer values to de-quantize
 
         Returns:
-            Union[Any, numpy.ndarray]: De-quantized float values.
+            Union[numpy.ndarray, Tracer]: De-quantized float values.
         """
 
         # for mypy
@@ -793,9 +794,10 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
             + ((" " + str(self.scale.dtype)) if isinstance(self.scale, numpy.ndarray) else ""),
         )
 
-        ans = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
+        values = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 
-        return ans
+        assert isinstance(values, (numpy.ndarray, Tracer))
+        return values
 
 
 class QuantizedArray:
