@@ -4,4 +4,7 @@
 2d3b4ca188efb338c03d8d2c921ef39ffc5537e3:tests/deployment/test_deployment.py:generic-api-key:59
 198d3fef188aaf3e3a582b9f7943f7ac6e9b5186:tests/deployment/test_deployment.py:generic-api-key:59
 5abc7e86bb192e1f9f829bb2f22173c9d663e1d1:use_case_examples/credit_scoring/CreditScoringWithGraphics.ipynb:easypost-test-api-token:1414
+a99389ee01cbb972e46a892d3d0e9c7f8ee23f59:use_case_examples/training/analyze.ipynb:easypost-api-token:4651
+a99389ee01cbb972e46a892d3d0e9c7f8ee23f59:use_case_examples/training/analyze.ipynb:aws-access-token:18379
+f41de03048a9ed27946b875e81b34138bb4bb17b:use_case_examples/training/analyze.ipynb:aws-access-token:6404
 e2904473898ddd325f245f4faca526a0e9520f49:builders/Dockerfile.zamalang-env:generic-api-key:5

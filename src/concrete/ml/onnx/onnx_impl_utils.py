@@ -5,6 +5,7 @@ from typing import Tuple, Union
 import numpy
 from concrete.fhe import conv as cnp_conv
 from concrete.fhe import ones as cnp_ones
+from concrete.fhe.tracing import Tracer
 
 from ..common.debugging import assert_true
 
@@ -14,7 +15,7 @@ def numpy_onnx_pad(
     pads: Tuple[int, ...],
     pad_value: Union[float, int, numpy.ndarray] = 0,
     int_only: bool = False,
-) -> numpy.ndarray:
+) -> Union[numpy.ndarray, Tracer]:
     """Pad a tensor according to ONNX spec, using an optional custom pad value.
 
     Args:
@@ -52,6 +53,7 @@ def numpy_onnx_pad(
         else:
             # Floating point mode
             x_pad = numpy.ones(padded_shape, dtype=numpy.float32) * pad_value
+        assert isinstance(x_pad, (numpy.ndarray, Tracer))
 
         # Create the indices for slice assignment, copy all on batch size and channels dimension
         indices = [slice(None), slice(None)] + [
@@ -159,7 +161,7 @@ def onnx_avgpool_compute_norm_const(
     pads: Tuple[int, ...],
     strides: Tuple[int, ...],
     ceil_mode: int,
-) -> Union[numpy.ndarray, float]:
+) -> Union[numpy.ndarray, float, Tracer]:
     """Compute the average pooling normalization constant.
 
     This constant can be a tensor of the same shape as the input or a scalar.
@@ -220,6 +222,6 @@ def onnx_avgpool_compute_norm_const(
     else:
         # For the PyTorch mode, only positions with all valid indices are used so
         # the averaging is done over the number of cells in the kernel
-        norm_const = numpy.prod(kernel_shape)
+        norm_const = float(numpy.prod(numpy.array(kernel_shape)))
 
     return norm_const

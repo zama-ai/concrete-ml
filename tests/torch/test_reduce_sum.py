@@ -97,6 +97,7 @@ def test_sum(
 
     # Compute the sum, in FHE or with simulation
     computed_sum = quantized_module.forward(numpy_input, fhe=fhe_mode)
+    assert isinstance(computed_sum, numpy.ndarray)
 
     # Compute the expected sum
     # As the calibration input-set and inputs are ran over several samples, we need to apply the

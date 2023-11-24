@@ -557,7 +557,6 @@ class BaseEstimator:
             single_precision=False,
             fhe_simulation=False,
             fhe_execution=True,
-            jit=False,
         )
 
         self._is_compiled = True
@@ -647,7 +646,7 @@ class BaseEstimator:
 
                 # Execute the inference in FHE or with simulation
                 q_y_pred_i = predict_method(q_X_i)
-
+                assert isinstance(q_y_pred_i, numpy.ndarray)
                 q_y_pred_list.append(q_y_pred_i[0])
 
             q_y_pred = numpy.array(q_y_pred_list)
@@ -658,7 +657,7 @@ class BaseEstimator:
 
         # De-quantize the predicted values in the clear
         y_pred = self.dequantize_output(q_y_pred)
-
+        assert isinstance(y_pred, numpy.ndarray)
         return y_pred
 
     # pylint: disable-next=no-self-use
@@ -1116,9 +1115,11 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
         assert isinstance(q_X, numpy.ndarray)
         return q_X
 
-    def dequantize_output(self, q_y_preds: numpy.ndarray) -> numpy.ndarray:
+    def dequantize_output(self, *q_y_preds: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
-        return self.quantized_module_.dequantize_output(q_y_preds)
+        result = self.quantized_module_.dequantize_output(*q_y_preds)
+        assert isinstance(result, numpy.ndarray)
+        return result
 
     def _get_module_to_compile(self) -> Union[Compiler, QuantizedModule]:
         return self.quantized_module_
@@ -1171,7 +1172,9 @@ class QuantizedTorchEstimatorMixin(BaseEstimator):
     def _inference(self, q_X: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
 
-        return self.quantized_module_.quantized_forward(q_X)
+        result = self.quantized_module_.quantized_forward(q_X)
+        assert isinstance(result, numpy.ndarray)
+        return result
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         # Cast the predictions to float32 in order to match Torch's softmax outputs

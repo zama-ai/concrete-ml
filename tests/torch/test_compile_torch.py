@@ -16,7 +16,11 @@ import torch.quantization
 from concrete.fhe import ParameterSelectionStrategy  # pylint: disable=ungrouped-imports
 from torch import nn
 
-from concrete.ml.common.utils import manage_parameters_for_pbs_errors, to_tuple
+from concrete.ml.common.utils import (
+    array_allclose_and_same_shape,
+    manage_parameters_for_pbs_errors,
+    to_tuple,
+)
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.pytest.torch_models import (
     FC,
@@ -32,6 +36,7 @@ from concrete.ml.pytest.torch_models import (
     MultiInputNN,
     MultiInputNNConfigurable,
     MultiInputNNDifferentSize,
+    MultiOutputModel,
     NetWithLoops,
     PaddingNet,
     ShapeOperationsNet,
@@ -1256,6 +1261,68 @@ def test_fancy_indexing_torch(model_object, default_configuration):
     model = model_object(10, 10, 2, 4, 3)
     x = numpy.random.randint(0, 2, size=(100, 3, 10)).astype(numpy.float64)
     compile_brevitas_qat_model(model, x, n_bits=4, configuration=default_configuration)
+
+
+@pytest.mark.parametrize(
+    "model_object",
+    [
+        pytest.param(MultiOutputModel),
+    ],
+)
+def test_multi_output(model_object, default_configuration):
+    """Test torch compilation with multi-output models."""
+    # Create model and random dataset
+    model = model_object()
+    x = numpy.random.randint(0, 2, size=(100, 3, 10)).astype(numpy.float64)
+    y = numpy.random.randint(0, 2, size=(100, 3, 10)).astype(numpy.float64)
+
+    # Pytorch baseline
+    torch_result = model(x[[0]], y[[0]])
+
+    # Compile with low bit width
+    quantized_module = compile_torch_model(
+        model, (x, y), n_bits=4, configuration=default_configuration
+    )
+    qm_result = quantized_module.forward(x[[0]], y[[0]])
+    simulation_result = quantized_module.forward(x[[0]], y[[0]], fhe="simulate")
+
+    # Assert that we have the expected number of outputs
+    assert isinstance(qm_result, tuple) and len(qm_result) == 2
+    assert isinstance(simulation_result, tuple) and len(simulation_result) == 2
+    assert isinstance(torch_result, tuple) and len(torch_result) == 2
+
+    # Assert that we are exact between simulation and clear quantized
+    for qm_res, sim_res in zip(qm_result, simulation_result):
+        assert isinstance(qm_res, numpy.ndarray)
+        assert isinstance(sim_res, numpy.ndarray)
+        assert array_allclose_and_same_shape(qm_res, sim_res, atol=1e-30)
+
+    # Assert that we aren't too far away from torch with low bit width
+    for qm_res, trch_res in zip(qm_result, torch_result):
+        assert isinstance(qm_res, numpy.ndarray)
+        assert isinstance(trch_res, numpy.ndarray)
+
+        # Very high tolerance because we use low bit width
+        assert array_allclose_and_same_shape(qm_res, trch_res, atol=1e-1)
+
+    # Create quantized module with high bit width
+    quantized_module = build_quantized_module(
+        model,
+        (x, y),
+        n_bits=24,
+    )
+    qm_result = quantized_module.forward(x[[0]], y[[0]])
+
+    # Assert that we the correct number of outputs again
+    assert isinstance(qm_result, tuple) and len(qm_result) == 2
+
+    # Assert that we have the same results as torch with high bit width quantization
+    for qm_res, trch_res in zip(qm_result, torch_result):
+        assert isinstance(qm_res, numpy.ndarray)
+        assert isinstance(trch_res, numpy.ndarray)
+
+        # Very low tolerance because we use high bit width
+        assert array_allclose_and_same_shape(qm_res, trch_res, atol=1e-10)
 
 
 @pytest.mark.parametrize(
