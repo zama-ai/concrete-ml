@@ -423,10 +423,6 @@ class ONNXConverter:
 
             quantized_op_class = ONNX_OPS_TO_QUANTIZED_IMPL[op_type]
 
-            # Add rounding_threshold_bits to the attributes if available in quantized_op_class
-            if issubclass(quantized_op_class, QuantizedMixingOp):
-                attributes.update({"rounding_threshold_bits": self.rounding_threshold_bits})
-
             # All inputs, allow optional constants (they become None)
             # Note that input of a node can be duplicated, e.g., (%a, %a, %b)
             curr_inputs = [
@@ -478,6 +474,12 @@ class ONNXConverter:
 
             # If we depend on a variable input use the quantized version of the operator
             if has_variable_inputs:
+
+                # Add rounding_threshold_bits to the attributes if available in quantized_op_class
+                # rounding_thresholds_bits only applies to QuantizedOp for now so we can't use them
+                # if we use the original operator on float (ops_impl.py)
+                if issubclass(quantized_op_class, QuantizedMixingOp):
+                    attributes.update({"rounding_threshold_bits": self.rounding_threshold_bits})
 
                 assert_true(
                     op_type in ONNX_OPS_TO_QUANTIZED_IMPL,
