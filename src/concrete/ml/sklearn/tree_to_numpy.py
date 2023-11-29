@@ -1,6 +1,7 @@
 """Implements the conversion of a tree model to a numpy function."""
+import math
 import warnings
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Tuple
 
 import numpy
 import onnx
@@ -324,9 +325,11 @@ def tree_to_numpy(
     # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
     onnx_model = get_onnx_model(model, q_x[:1], framework)
 
-    # if use_rounding:
-    # compute LSB to remove in stage 1 and 2
-    # attach LSBs to the ONNX
+    if use_rounding:
+        # compute LSB to remove in stage 1 and 2
+        # <!>: List[lsbs_to_remove_stage1, lsbs_to_remove_stage2]
+        lsbs_to_remove = compute_lsb_to_remove_for_trees(onnx_model, q_x)
+        # TODO: Jordan's function - attach LSBs to the ONNX
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
@@ -340,8 +343,106 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
-        onnx_model, q_x, use_rounding=use_rounding
-    )
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model)
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
+
+
+# Remove this function once the truncate feature is released
+# FIXME: https://github.com/zama-ai/concrete-ml/issues/397
+def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndarray) -> List[int]:
+    """Compute the LSB to remove for the comparison operators in the trees.
+
+    Referring to this paper: https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, there are
+    2 levels of comparison for trees, one at the level of X.A < B and a second at
+    the level of I.C == D.
+
+    Args:
+        onnx_model (onnx.ModelProto): The model to clean
+        q_x (numpy.ndarray): The quantized inputs
+
+    Returns:
+        List: the number of LSB to remove for level 1 and level 2
+    """
+
+    def get_bitwidth(array: numpy.ndarray) -> int:
+        """Compute the bitwidth required to represent the largest value in `array`.
+
+        Args:
+            array (umpy.ndarray): The array for which the bitwidth needs to be checked.
+
+        Returns:
+            int: The required bits to represent the array.
+        """
+
+        max_val = numpy.max(numpy.abs(array))
+        # + 1 is added to include the sign bit
+        bitwidth = math.ceil(math.log2(max_val + 1)) + 1
+        return bitwidth
+
+    def update_lsbs_if_overflow_detected(array: numpy.ndarray, initial_bitwidth: int) -> int:
+        """Update the number of LSBs to remove based on overflow detection.
+
+        Args:
+            array (umpy.ndarray): The array for which the bitwidth needs to be checked.
+            initial_bitwidth (int): The target bitwidth that should not be exceeded.
+
+        Returns:
+            int: The updated LSB to remove.
+        """
+
+        lsbs_to_remove = initial_bitwidth
+
+        if lsbs_to_remove > 0:
+            half = 1 << (lsbs_to_remove - 1)
+            if get_bitwidth(array - half) <= initial_bitwidth:
+                lsbs_to_remove -= 1
+
+        return lsbs_to_remove
+
+    quant_params = {
+        onnx_init.name: numpy_helper.to_array(onnx_init)
+        for onnx_init in onnx_model.graph.initializer
+        if "weight" in onnx_init.name or "bias" in onnx_init.name
+    }
+
+    key_mat_1 = [key for key in quant_params.keys() if "_1" in key and "weight" in key][0]
+    key_bias_1 = [key for key in quant_params.keys() if "_1" in key and "bias" in key][0]
+
+    key_mat_2 = [key for key in quant_params.keys() if "_2" in key and "weight" in key][0]
+    key_bias_2 = [key for key in quant_params.keys() if "_2" in key and "bias" in key][0]
+
+    # shape: (nodes, features) or (trees * nodes, features)
+    mat_1 = quant_params[key_mat_1]
+    # shape: (nodes, 1) or (trees * nodes, 1)
+    bias_1 = quant_params[key_bias_1]
+
+    # shape: (trees, leaves, nodes)
+    mat_2 = quant_params[key_mat_2]
+    # shape: (leaves, 1) or (trees * leaves, 1)
+    bias_2 = quant_params[key_bias_2]
+
+    n_features = mat_1.shape[1]
+    n_nodes = mat_2.shape[2]
+    n_leaves = mat_2.shape[1]
+
+    mat_1 = mat_1.reshape(-1, n_nodes, n_features)
+    bias_1 = bias_1.reshape(-1, 1, n_nodes)
+    bias_2 = bias_2.reshape(-1, 1, n_leaves)
+
+    # If <= -> stage = biais_1 - (q_x @ mat_1.transpose(0, 2, 1))
+    # If < -> stage = (q_x @ mat_1.transpose(0, 2, 1)) - biais_1
+    stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
+
+    # The matrix I, as referenced in this paper:
+    # https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, results from the condition:
+    # X.A < B and consists exclusively of binary elements, 1 and 0.
+    # Given this assumption, we randomly generate it.
+    matrix_q = numpy.random.randint(0, 2, size=(stage_1.shape))
+
+    stage_2 = ((matrix_q @ mat_2.transpose(0, 2, 1)) + bias_2).sum(axis=0)
+
+    lsbs_to_remove_1 = update_lsbs_if_overflow_detected(stage_1, get_bitwidth(stage_1))
+    lsbs_to_remove_2 = update_lsbs_if_overflow_detected(stage_2, get_bitwidth(stage_2))
+
+    return [lsbs_to_remove_1, lsbs_to_remove_2]
