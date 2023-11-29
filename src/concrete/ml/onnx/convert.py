@@ -196,12 +196,11 @@ def get_equivalent_numpy_forward_from_onnx(
         "eliminate_unused_initializer",
     ]
     equivalent_onnx_model = onnxoptimizer.optimize(onnx_model, onnx_passes)
-    checker.check_model(equivalent_onnx_model)
+
     # Custom optimization
     # ONNX optimizer does not optimize Mat-Mult + Bias pattern into GEMM if the input isn't a matrix
     # We manually do the optimization for this case
     equivalent_onnx_model = fuse_matmul_bias_to_gemm(equivalent_onnx_model)
-    checker.check_model(equivalent_onnx_model)
 
     # Check supported operators
     required_onnx_operators = set(get_op_type(node) for node in equivalent_onnx_model.graph.node)

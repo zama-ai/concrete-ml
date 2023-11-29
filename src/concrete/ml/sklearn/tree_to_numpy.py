@@ -22,6 +22,9 @@ from ..quantization.quantizers import UniformQuantizer
 
 # Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
+from typing import List
+
+import onnx
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 
 # pylint: enable=wrong-import-position,wrong-import-order
@@ -194,7 +197,7 @@ def preprocess_tree_predictions(
 
 
 def tree_onnx_graph_preprocessing(
-    onnx_model: onnx.ModelProto, framework: str, expected_number_of_outputs: int
+    onnx_model: onnx.ModelProto, framework: str, expected_number_of_outputs: int, use_rounding: bool
 ):
     """Apply pre-processing onto the ONNX graph.
 
@@ -203,6 +206,7 @@ def tree_onnx_graph_preprocessing(
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         expected_number_of_outputs (int): The expected number of outputs in the ONNX model.
+        use_rounding (bool): Whether to use rounding.
     """
     # Make sure the ONNX version returned by Hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
@@ -246,6 +250,54 @@ def tree_onnx_graph_preprocessing(
 
     # Cast nodes are not necessary so remove them.
     remove_node_types(onnx_model, op_types_to_remove=["Cast"])
+
+    # Replace Greater and Less by a rounded op if use_rounding.
+    if use_rounding:
+        replace_operator_with_rounded_version(onnx_model, lsbs_to_remove=lsbs_to_remove)
+
+
+def replace_operator_with_rounded_version(onnx_model, lsbs_to_remove):
+    """
+    Replace the first occurrence of Greater/Less/GreaterOrEqual/LessOrEqual
+    with RoundedGreater/RoundedLess/RoundedGreaterOrEqual/RoundedLessOrEqual.
+
+    Args:
+        onnx_model (onnx.ModelProto): The ONNX model.
+        lsbs_to_remove (int): The number of LSBs to remove.
+
+    Returns:
+        onnx.ModelProto: The modified ONNX model.
+    """
+    # Mapping of original operators to their rounded counterparts
+    operator_mapping = {
+        'Greater': 'RoundedGreater',
+        'Less': 'RoundedLess',
+        'GreaterOrEqual': 'RoundedGreaterOrEqual',
+        'LessOrEqual': 'RoundedLessOrEqual'
+    }
+
+    new_nodes = []
+    replaced = False
+
+    for node in onnx_model.graph.node:
+        if not replaced and node.op_type in operator_mapping:
+            # Create a new node with the corresponding rounded operator
+            rounded_node = onnx.helper.make_node(
+                operator_mapping[node.op_type],
+                inputs=node.input,
+                outputs=node.output,
+                lsbs_to_remove=lsbs_to_remove
+            )
+            new_nodes.append(rounded_node)
+            replaced = True
+        else:
+            new_nodes.append(node)
+
+    # Replace the graph's node list with the new list
+    onnx_model.graph.ClearField('node')
+    onnx_model.graph.node.extend(new_nodes)
+
+    return onnx_model
 
 
 def tree_values_preprocessing(
@@ -336,14 +388,16 @@ def tree_to_numpy(
 
     # ONNX graph pre-processing to make the model FHE friendly
     # i.e., delete irrelevant nodes and cut the graph before the final ensemble sum)
-    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs)
+    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs, use_rounding)
 
     # Tree values pre-processing
     # i.e., mainly predictions quantization
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model)
+    # Get the numpy inference for the quantized tree (_tree_inference).
+    # Use check_model = False here since we have custom onnx operator that won't be recognised.
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model, q_x, check_model=False)
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
 
