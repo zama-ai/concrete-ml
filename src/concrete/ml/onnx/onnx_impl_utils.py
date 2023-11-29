@@ -10,6 +10,8 @@ from concrete.fhe import round_bit_pattern
 
 from ..common.debugging import assert_true
 
+ComparisonOperationType = Callable[[int], bool]
+
 
 def numpy_onnx_pad(
     x: numpy.ndarray,

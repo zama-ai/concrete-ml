@@ -213,7 +213,6 @@
 
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
-
 from typing import Any, Callable, Dict, Tuple
 
 import numpy
@@ -352,7 +351,6 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Log": numpy_log,
     "Exp": numpy_exp,
     "Equal": numpy_equal,
-    "RoundedOrEqual": numpy_rounded_equal,
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Transpose": numpy_transpose,
@@ -407,18 +405,29 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
     "Greater": numpy_greater,
     "GreaterOrEqual": numpy_greater_or_equal,
     "Less": numpy_less,
-    "RoundedOrLess": numpy_rounded_less,
     "LessOrEqual": numpy_less_or_equal,
-    "RoundedOrLessOrEqual": numpy_rounded_less_or_equal,
+}
+
+# Rounded comparison operators used in tree-based models
+ONNX_ROUNDED_COMPARISON_OPS_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
+    "RoundedEqual": numpy_rounded_equal,
+    "RoundedLess": numpy_rounded_less,
+    "RoundedLessOrEqual": numpy_rounded_less_or_equal,
 }
 
 # All numpy operators used in QuantizedOps
 ONNX_OPS_TO_NUMPY_IMPL.update(ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT)
 
 # All numpy operators used for tree-based models
-ONNX_OPS_TO_NUMPY_IMPL_BOOL = {**ONNX_OPS_TO_NUMPY_IMPL, **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL}
+ONNX_OPS_TO_NUMPY_IMPL_BOOL = {
+    **ONNX_OPS_TO_NUMPY_IMPL,
+    **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL,
+    **ONNX_ROUNDED_COMPARISON_OPS_IMPL_BOOL,
+}
 
-IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
+IMPLEMENTED_ONNX_OPS = set(
+    ONNX_OPS_TO_NUMPY_IMPL.keys() | ONNX_ROUNDED_COMPARISON_OPS_IMPL_BOOL.keys()
+)
 
 
 def get_attribute(attribute: onnx.AttributeProto) -> Any:
@@ -465,11 +474,9 @@ def execute_onnx_with_numpy(
             for initializer in graph.initializer
         },
     )
-
     for node in graph.node:
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
-
         outputs = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type](*curr_inputs, **attributes)
 
         node_results.update(zip(node.output, outputs))

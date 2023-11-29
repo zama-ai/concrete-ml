@@ -23,12 +23,8 @@ from ..quantization.quantizers import UniformQuantizer
 
 # Silence Hummingbird warnings
 warnings.filterwarnings("ignore")
-from typing import List
 
-import onnx
 from hummingbird.ml import convert as hb_convert  # noqa: E402
-
-# pylint: enable=wrong-import-position,wrong-import-order
 
 # pylint: disable=too-many-branches
 
@@ -268,9 +264,7 @@ def replace_operator_with_rounded_version(onnx_model, lsbs_to_remove):
 
     # Mapping of original operators to their rounded counterparts
     operator_mapping = {
-        "Greater": "RoundedGreater",
         "Less": "RoundedLess",
-        "GreaterOrEqual": "RoundedGreaterOrEqual",
         "LessOrEqual": "RoundedLessOrEqual",
         "Equal": "RoundedEqual",
     }
@@ -392,14 +386,12 @@ def tree_to_numpy(
     # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
     onnx_model = get_onnx_model(model, q_x[:1], framework)
 
+    # compute LSB to remove in stage 1 and stage 2
     if use_rounding:
-        # compute LSB to remove in stage 1 and 2
-        # <=, <, ==
-        # <!>: List[(lsbs_to_remove_stage1, lsbs_to_remove_stage1), lsbs_to_remove_stage2]
+        # First LSB refers to Less or LessOrEqual comparisons
+        # Second LSB refers to Equal comparison
         lsbs_to_remove = compute_lsb_to_remove_for_trees(onnx_model, q_x)
-        replace_operator_with_rounded_version(onnx_model, lsbs_to_remove)
-
-    replace_operator_with_rounded_version(onnx_model, [3, 3])
+        onnx_model = replace_operator_with_rounded_version(onnx_model, lsbs_to_remove)
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
@@ -416,14 +408,14 @@ def tree_to_numpy(
     # Get the numpy inference for the quantized tree (_tree_inference).
     # Use check_model = False here since we have custom onnx operator that won't be recognised.
     _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
-        onnx_model, q_x, check_model=False
+        onnx_model, check_model=False
     )
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
 
 
 # Remove this function once the truncate feature is released
-# FIXME: https://github.com/zama-ai/concrete-ml/issues/397
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4143
 def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndarray) -> List[int]:
     """Compute the LSB to remove for the comparison operators in the trees.
 
@@ -454,23 +446,25 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         bitwidth = math.ceil(math.log2(max_val + 1)) + 1
         return bitwidth
 
-    def update_lsbs_if_overflow_detected(array: numpy.ndarray, initial_bitwidth: int) -> int:
+    def get_lsbs_to_remove(array: numpy.ndarray) -> int:
         """Update the number of LSBs to remove based on overflow detection.
 
         Args:
             array (umpy.ndarray): The array for which the bitwidth needs to be checked.
-            initial_bitwidth (int): The target bitwidth that should not be exceeded.
 
         Returns:
             int: The updated LSB to remove.
         """
 
+        initial_bitwidth = get_bitwidth(array)
         lsbs_to_remove = initial_bitwidth
 
-        if lsbs_to_remove > 0:
+        while lsbs_to_remove > 0:
             half = 1 << (lsbs_to_remove - 1)
             if get_bitwidth(array - half) <= initial_bitwidth:
                 lsbs_to_remove -= 1
+            else:
+                break
 
         return lsbs_to_remove
 
@@ -506,18 +500,18 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
 
     required_onnx_operators = set(get_op_type(node) for node in onnx_model.graph.node)
 
-    # If operator == `<`, np.less(x, y) is equivalent to:
+    # If operator is `<`, np.less(x, y) is equivalent to:
     # round_bit_pattern((x - y) - half, lsbs_to_remove=r) < 0.
     # Therfore, stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
     if "Less" in required_onnx_operators:
         stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
-    else:
-        # If operator == `<=`, np.less_equal(x, y) is equivalent to:
+    elif "LessOrEqual" in required_onnx_operators:
+        # If operator is `<=`, np.less_equal(x, y) is equivalent to:
         # round_bit_pattern((y - x) - half, lsbs_to_remove=r) >= 0.
         # Therfore, stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
         stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
 
-    lsbs_to_remove_1 = update_lsbs_if_overflow_detected(stage_1, get_bitwidth(stage_1))
+    lsbs_to_remove_stage_1 = get_lsbs_to_remove(stage_1)
 
     # The matrix I, as referenced in this paper:
     # https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, results from the condition:
@@ -525,11 +519,11 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
     # Given this assumption, we randomly generate it.
     matrix_q = numpy.random.randint(0, 2, size=(stage_1.shape))
 
-    # If operator == `==`, np.equal(x, y) is equivalent to:
+    # If operator is `==`, np.equal(x, y) is equivalent to:
     # round_bit_pattern((x - y) - half, lsbs_to_remove=r) >= 0.
     # Therfore, stage_2 = bias_1 - (q_x @ mat_2.transpose(0, 2, 1))
     stage_2 = ((bias_2 - matrix_q @ mat_2.transpose(0, 2, 1))).sum(axis=0)
 
-    lsbs_to_remove_2 = update_lsbs_if_overflow_detected(stage_2, get_bitwidth(stage_2))
+    lsbs_to_remove_stage_2 = get_lsbs_to_remove(stage_2)
 
-    return [lsbs_to_remove_1, lsbs_to_remove_2]
+    return [lsbs_to_remove_stage_1, lsbs_to_remove_stage_2]
