@@ -887,8 +887,6 @@ def numpy_exp(
 def numpy_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
-    *,
-    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute equal in numpy according to ONNX spec.
 
@@ -897,17 +895,36 @@ def numpy_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.equal(x, y),)
+
+
+def numpy_rounded_equal(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+    lsbs_to_remove: int,
+) -> Tuple[numpy.ndarray]:
+    """Compute rounded equal according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove (int): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
     # In the case of trees, x == y <=> x <= y or x < y - 1, because y is the max sum.
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
+    if lsbs_to_remove > 0:
         return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
 
-    return (numpy.equal(x, y),)
+    return numpy_equal(x, y)
 
 
 def numpy_not(
@@ -947,8 +964,6 @@ def numpy_not_float(
 def numpy_greater(
     x: numpy.ndarray,
     y: numpy.ndarray,
-    *,
-    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute greater in numpy according to ONNX spec.
 
@@ -957,16 +972,11 @@ def numpy_greater(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x < 0)
-
-    # Else, default numpy greater comparison
     return (numpy.greater(x, y),)
 
 
@@ -992,8 +1002,6 @@ def numpy_greater_float(
 def numpy_greater_or_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
-    *,
-    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute greater or equal in numpy according to ONNX spec.
 
@@ -1002,18 +1010,11 @@ def numpy_greater_or_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        return rounded_comparison(
-            x, y, lsbs_to_remove, operation=lambda x: x >= 0
-        )  # pragma: no cover
-
-    # Else, default numpy greater_equal comparison
     return (numpy.greater_equal(x, y),)
 
 
@@ -1039,8 +1040,6 @@ def numpy_greater_or_equal_float(
 def numpy_less(
     x: numpy.ndarray,
     y: numpy.ndarray,
-    *,
-    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute less in numpy according to ONNX spec.
 
@@ -1049,16 +1048,11 @@ def numpy_less(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        return rounded_comparison(x, y, lsbs_to_remove, operation=lambda x: x < 0)
-
-    # Else, default numpy less comparison
     return (numpy.less(x, y),)
 
 
@@ -1081,11 +1075,34 @@ def numpy_less_float(
     return cast_to_float(numpy_less(x, y))
 
 
+def numpy_rounded_less(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+    lsbs_to_remove: int,
+) -> Tuple[numpy.ndarray]:
+    """Compute rounded less according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove (int): The number of the least significant bits to remove
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    if lsbs_to_remove > 0:
+        return rounded_comparison(x, y, lsbs_to_remove, operation=lambda x: x < 0)
+
+    # Else, default numpy less_or_equal comparison
+    return numpy_less(x, y)
+
+
 def numpy_less_or_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
-    *,
-    lsbs_to_remove: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute less or equal in numpy according to ONNX spec.
 
@@ -1094,16 +1111,11 @@ def numpy_less_or_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]]): The number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
-
-    # Else, default numpy less_or_equal comparison
     return (numpy.less_equal(x, y),)
 
 
@@ -1124,6 +1136,31 @@ def numpy_less_or_equal_float(
     """
 
     return cast_to_float(numpy_less_or_equal(x, y))
+
+
+def numpy_rounded_less_or_equal(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+    lsbs_to_remove: int,
+) -> Tuple[numpy.ndarray]:
+    """Compute rounded less or equal according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove (int): The number of the least significant bits to remove
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    if lsbs_to_remove > 0:
+        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
+
+    # Else, default numpy less_or_equal comparison
+    return numpy_less_or_equal(x, y)
 
 
 def numpy_identity(
