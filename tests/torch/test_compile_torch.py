@@ -20,6 +20,7 @@ from concrete.ml.common.utils import manage_parameters_for_pbs_errors, to_tuple
 from concrete.ml.onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT
 from concrete.ml.pytest.torch_models import (
     FC,
+    AddNet,
     BranchingGemmModule,
     BranchingModule,
     CNNGrouped,
@@ -1038,6 +1039,7 @@ def test_qat_import_check(default_configuration, check_is_good_execution_for_cml
         (MultiInputNNConfigurable, (1, 8, 8), 2, False),
         (DoubleQuantQATMixNet, (1, 8, 8), 1, False),
         (DoubleQuantQATMixNet, 10, 1, False),
+        (AddNet, 10, 2, False),
     ],
 )
 def test_net_has_no_tlu(

@@ -1488,3 +1488,24 @@ class ManualLogisticRegressionTraining(torch.nn.Module):
 
             outputs = torch.sigmoid(torch.bmm(x, weights_expanded) + bias_expanded)
         return outputs.squeeze()
+
+
+class AddNet(nn.Module):
+    """Torch model that performs a simple addition between two inputs."""
+
+    def __init__(self, use_conv, use_qat, input_output, n_bits):  # pylint: disable=unused-argument
+        super().__init__()
+        # No initialization needed for simple addition
+
+    @staticmethod
+    def forward(x, y):
+        """Forward pass.
+
+        Args:
+            x: First input tensor.
+            y: Second input tensor.
+
+        Returns:
+            Result of adding x and y.
+        """
+        return x + y

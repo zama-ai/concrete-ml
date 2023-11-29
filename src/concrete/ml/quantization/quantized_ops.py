@@ -26,7 +26,12 @@ from .base_quantized_op import (
     QuantizedOp,
     QuantizedOpUnivariateOfEncrypted,
 )
-from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizationParameters
+from .quantizers import (
+    QuantizationOptions,
+    QuantizedArray,
+    UniformQuantizationParameters,
+    UniformQuantizer,
+)
 
 
 def _check_op_input_zero_point(zero_point: Any, op_name: Optional[str]):
@@ -492,7 +497,7 @@ class QuantizedMatMul(QuantizedGemm):
     _impl_for_op_named: str = "MatMul"
 
 
-class QuantizedAdd(QuantizedOp):
+class QuantizedAdd(QuantizedMixingOp):
     """Quantized Addition operator.
 
     Can add either two variables (both encrypted) or a variable and a constant
@@ -554,22 +559,32 @@ class QuantizedAdd(QuantizedOp):
         assert q_input_1.quantizer.scale is not None
         assert q_input_1.quantizer.zero_point is not None
 
-        # De-quantize with input params and re-quantize with output parameters
-        # This will use TLUs over each element of the two inputs
-        # We do the de-quantization directly, instead of q_inputs[0].dequant(),
-        # So that we do not lose precision in the computation
+        # Dequantize
+        input_0 = q_input_0.dequant()
+        input_1 = q_input_1.dequant()
 
-        rescale_q0 = numpy.rint(
-            q_input_0.quantizer.scale
-            / self.output_quant_params.scale
-            * (q_input_0.qvalues + (-q_input_0.quantizer.zero_point))
-        ).astype(numpy.int64)
+        # If this operator is the last one in the graph,
+        # we rescale using the smallest scale to keep all information
+        if self.produces_graph_output:
+            common_scale = min(q_input_0.quantizer.scale, q_input_1.quantizer.scale)
+        # Otherwise we use the output op quantization scale
+        else:
+            common_scale = self.output_quant_params.scale
 
-        rescale_q1 = numpy.rint(
-            q_input_1.quantizer.scale
-            / self.output_quant_params.scale
-            * (q_input_1.qvalues + (-q_input_1.quantizer.zero_point))
-        ).astype(numpy.int64)
+        common_zero_point = 0
+        offset = 0
+
+        output_quant_params = UniformQuantizationParameters(
+            scale=common_scale,
+            zero_point=common_zero_point,
+            offset=offset,
+        )
+
+        quantizer = UniformQuantizer(params=output_quant_params, no_clipping=True)
+
+        # Re-quantize using the common quantization paramaters
+        q_input_0_rescaled = quantizer.quant(input_0)
+        q_input_1_rescaled = quantizer.quant(input_1)
 
         # The sum of quantized encrypted integer values
         # This sum has << max(in_bits0, in_bits1) + 1 >> bits
@@ -580,12 +595,15 @@ class QuantizedAdd(QuantizedOp):
         #       sum_q = rescale_q0 + self.b_sign * rescale_q1
         # when zama-ai/concrete-numpy-internal#1749 is done
         if self.b_sign == 1:
-            sum_q = rescale_q0 + rescale_q1
+            sum_q = q_input_0_rescaled + q_input_1_rescaled
         elif self.b_sign == -1:
-            sum_q = rescale_q0 - rescale_q1
+            sum_q = q_input_0_rescaled - q_input_1_rescaled
+
+        if self.produces_graph_output:
+            return self.make_output_quant_parameters(sum_q, common_scale, common_zero_point)
 
         # But we would like the output to have n_bits, so we de-quantize
-        dequant_sum = self.output_quant_params.scale * sum_q
+        dequant_sum = quantizer.dequant(sum_q)
 
         # Return the raw float values without re-quantizing them to the new scale, as any
         # following Gemm/Add/Conv will quantize them with _prepare_inputs_with_constants(...)
