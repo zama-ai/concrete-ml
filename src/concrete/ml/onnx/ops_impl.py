@@ -899,6 +899,7 @@ def numpy_equal(
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
+
     return (numpy.equal(x, y),)
 
 
@@ -924,6 +925,7 @@ def numpy_rounded_equal(
     if lsbs_to_remove > 0:
         return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
 
+    # Else, default numpy_equal operator
     return numpy_equal(x, y)
 
 
@@ -1096,7 +1098,7 @@ def numpy_rounded_less(
     if lsbs_to_remove > 0:
         return rounded_comparison(x, y, lsbs_to_remove, operation=lambda x: x < 0)
 
-    # Else, default numpy less_or_equal comparison
+    # Else, default numpy_less operator
     return numpy_less(x, y)
 
 
@@ -1159,7 +1161,7 @@ def numpy_rounded_less_or_equal(
     if lsbs_to_remove > 0:
         return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
 
-    # Else, default numpy less_or_equal comparison
+    # Else, default numpy_less_or_equal operator
     return numpy_less_or_equal(x, y)
 
 
@@ -1595,7 +1597,6 @@ def numpy_or_float(
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-
     return cast_to_float(numpy_or(a, b))
 
 

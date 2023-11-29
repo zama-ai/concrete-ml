@@ -176,11 +176,9 @@ def get_equivalent_numpy_forward_from_onnx(
         Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
             the equivalent numpy function.
     """
-
     if check_model:
         checker.check_model(onnx_model)
 
-    # plus pour NN
     # Optimize ONNX graph
     # List of all currently supported onnx optimizer passes
     # From https://github.com/onnx/optimizer/blob/master/onnxoptimizer/pass_registry.h

@@ -9,6 +9,8 @@ from concrete.fhe import round_bit_pattern
 
 from ..common.debugging import assert_true
 
+ComparisonOperationType = Callable[[int], bool]
+
 
 def numpy_onnx_pad(
     x: numpy.ndarray,
@@ -227,15 +229,22 @@ def onnx_avgpool_compute_norm_const(
 
 
 def rounded_comparison(
-    x: numpy.ndarray, y: numpy.ndarray, lsbs_to_remove: int, operation: Callable
+    x: numpy.ndarray, y: numpy.ndarray, lsbs_to_remove: int, operation: ComparisonOperationType
 ) -> Tuple[bool]:
-    """Comparison operation using AutoRounder.
+    """Comparison operation using `round_bit_pattern` function.
+
+    `round_bit_pattern` rounds the bit pattern of an integer.
+    It also checks for any potential overflow. If so, it readjusts the LSBs accordingly.
+
+    The parameter `lsbs_to_remove` can either be an integer specifying the number of LSBS to
+    remove, or an `AutoRounder` object that determines the required number of LSBs based on the
+    specified number of MSBs to retain. But in our case, we choose to compute the LSBs manually.
 
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
         lsbs_to_remove (int): The number of the least significant bits to remove
-        operation (Callable): Comparison operation
+        operation (ComparisonOperationType): Comparison operation
 
     Returns:
         Tuple[bool]: If x and y satisfy the comparison operator.
@@ -243,7 +252,12 @@ def rounded_comparison(
 
     assert isinstance(lsbs_to_remove, int)
 
+    # In this context, `round_bit_pattern` is used as a truncate operation.
+    # Consequently, we subtract a term, called `half` that will subsequently be re-added during the
+    # `round_bit_pattern` process.
     half = 1 << (lsbs_to_remove - 1)
+
+    # To determine if 'x' 'operation' 'y' (operation being <, >, >=, <=), we evaluate 'x - y'
     rounded_subtraction = round_bit_pattern((x - y) - half, lsbs_to_remove=lsbs_to_remove)
 
     return (operation(rounded_subtraction),)

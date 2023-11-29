@@ -1277,7 +1277,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         self.n_bits: int = n_bits
 
-        # _tree_inference: The model's inference function. Is None if the model is not fitted.
+        #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
         BaseEstimator.__init__(self)
@@ -1307,11 +1307,11 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
-        self._is_fitted = True
-
         # Convert the tree inference with Numpy operators
         # Adjust the auto rounder manually
         self._convert_tree_to_numpy_and_compute_lsbs_to_remove(q_X, use_rounding=True)
+
+        self._is_fitted = True
 
         return self
 
@@ -1319,7 +1319,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self, q_X: numpy.ndarray, use_rounding: bool
     ):
 
-        assert self._is_fitted is True, "Model must be fitted"
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         check_array_and_assert(q_X)
 
