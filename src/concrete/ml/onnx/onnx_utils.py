@@ -281,6 +281,9 @@ from .ops_impl import (
     numpy_relu,
     numpy_reshape,
     numpy_round,
+    numpy_rounded_equal,
+    numpy_rounded_less,
+    numpy_rounded_less_or_equal,
     numpy_selu,
     numpy_shape,
     numpy_sigmoid,
@@ -350,6 +353,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Log": numpy_log,
     "Exp": numpy_exp,
     "Equal": numpy_equal,
+    "Rounded_Equal": numpy_rounded_equal,
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Transpose": numpy_transpose,
@@ -404,7 +408,9 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
     "Greater": numpy_greater,
     "GreaterOrEqual": numpy_greater_or_equal,
     "Less": numpy_less,
+    "Rounded_Less": numpy_rounded_less,
     "LessOrEqual": numpy_less_or_equal,
+    "Rounded_LessOrEqual": numpy_rounded_less_or_equal,
 }
 
 # All numpy operators used in QuantizedOps
@@ -412,10 +418,6 @@ ONNX_OPS_TO_NUMPY_IMPL.update(ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT)
 
 # All numpy operators used for tree-based models
 ONNX_OPS_TO_NUMPY_IMPL_BOOL = {**ONNX_OPS_TO_NUMPY_IMPL, **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL}
-
-# All numpy operators used for tree-based models that support auto rounding
-SUPPORTED_ROUNDED_OPERATIONS = ["Less", "LessOrEqual", "Greater", "GreaterOrEqual", "Equal"]
-
 
 IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
 
@@ -446,14 +448,12 @@ def get_op_type(node):
 
 def execute_onnx_with_numpy(
     graph: onnx.GraphProto,
-    lsbs_to_remove: List,
     *inputs: numpy.ndarray,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
-        lsbs_to_remove (List): The number of least significant bit to be removed in each stage.
         *inputs: The inputs of the graph.
 
     Returns:
@@ -470,11 +470,6 @@ def execute_onnx_with_numpy(
     for node in graph.node:
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
-
-        if node.op_type in SUPPORTED_ROUNDED_OPERATIONS:
-            attributes["lsbs_to_remove"] = (
-                lsbs_to_remove[0] if node.op_type != "Equal" else lsbs_to_remove[1]
-            )
 
         outputs = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type](*curr_inputs, **attributes)
 
