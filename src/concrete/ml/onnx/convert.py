@@ -10,11 +10,7 @@ import onnxoptimizer
 import torch
 from onnx import checker, helper
 
-from .onnx_utils import (
-    IMPLEMENTED_ONNX_OPS,
-    execute_onnx_with_numpy,
-    get_op_type,
-)
+from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy, get_op_type
 
 OPSET_VERSION_FOR_ONNX_EXPORT = 14
 

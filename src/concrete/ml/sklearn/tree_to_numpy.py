@@ -197,7 +197,7 @@ def preprocess_tree_predictions(
 
 
 def tree_onnx_graph_preprocessing(
-    onnx_model: onnx.ModelProto, framework: str, expected_number_of_outputs: int, use_rounding: bool
+    onnx_model: onnx.ModelProto, framework: str, expected_number_of_outputs: int
 ):
     """Apply pre-processing onto the ONNX graph.
 
@@ -206,7 +206,6 @@ def tree_onnx_graph_preprocessing(
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         expected_number_of_outputs (int): The expected number of outputs in the ONNX model.
-        use_rounding (bool): Whether to use rounding.
     """
     # Make sure the ONNX version returned by Hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
@@ -251,50 +250,65 @@ def tree_onnx_graph_preprocessing(
     # Cast nodes are not necessary so remove them.
     remove_node_types(onnx_model, op_types_to_remove=["Cast"])
 
-    # Replace Greater and Less by a rounded op if use_rounding.
-    if use_rounding:
-        replace_operator_with_rounded_version(onnx_model, lsbs_to_remove=lsbs_to_remove)
-
 
 def replace_operator_with_rounded_version(onnx_model, lsbs_to_remove):
-    """
-    Replace the first occurrence of Greater/Less/GreaterOrEqual/LessOrEqual
-    with RoundedGreater/RoundedLess/RoundedGreaterOrEqual/RoundedLessOrEqual.
+    """Replace comparisons with rounded comparisons.
 
     Args:
         onnx_model (onnx.ModelProto): The ONNX model.
-        lsbs_to_remove (int): The number of LSBs to remove.
+        lsbs_to_remove (List[int]): A list of two integers specifying the number of LSBs to remove.
 
     Returns:
         onnx.ModelProto: The modified ONNX model.
     """
+
+    assert_true(isinstance(lsbs_to_remove, list), "lsbs_to_remove must be a list.")
+    assert_true(len(lsbs_to_remove) == 2, "lsbs_to_remove must have exactly two values.")
+
     # Mapping of original operators to their rounded counterparts
     operator_mapping = {
-        'Greater': 'RoundedGreater',
-        'Less': 'RoundedLess',
-        'GreaterOrEqual': 'RoundedGreaterOrEqual',
-        'LessOrEqual': 'RoundedLessOrEqual'
+        "Greater": "RoundedGreater",
+        "Less": "RoundedLess",
+        "GreaterOrEqual": "RoundedGreaterOrEqual",
+        "LessOrEqual": "RoundedLessOrEqual",
+        "Equal": "RoundedEqual",
     }
 
+    # Track if the required operators have been replaced
+    comparison_replaced = False
+    equal_replaced = False
+
     new_nodes = []
-    replaced = False
 
     for node in onnx_model.graph.node:
-        if not replaced and node.op_type in operator_mapping:
-            # Create a new node with the corresponding rounded operator
-            rounded_node = onnx.helper.make_node(
-                operator_mapping[node.op_type],
-                inputs=node.input,
-                outputs=node.output,
-                lsbs_to_remove=lsbs_to_remove
-            )
-            new_nodes.append(rounded_node)
-            replaced = True
+        if not comparison_replaced and node.op_type in operator_mapping and node.op_type != "Equal":
+            # Use the first value in lsbs_to_remove for the comparison operator
+            lsbs = lsbs_to_remove[0]
+            comparison_replaced = True
+        elif not equal_replaced and node.op_type == "Equal":
+            # Use the second value in lsbs_to_remove for the Equal operator
+            lsbs = lsbs_to_remove[1]
+            equal_replaced = True
         else:
             new_nodes.append(node)
+            continue
+
+        # Create a new node with the corresponding rounded operator
+        rounded_node = onnx.helper.make_node(
+            operator_mapping[node.op_type],
+            inputs=node.input,
+            outputs=node.output,
+            lsbs_to_remove=lsbs,
+        )
+        new_nodes.append(rounded_node)
+
+    # Ensure that both a comparison and an equal operator were replaced
+    assert_true(
+        comparison_replaced and equal_replaced, "Required operators not found in the model."
+    )
 
     # Replace the graph's node list with the new list
-    onnx_model.graph.ClearField('node')
+    onnx_model.graph.ClearField("node")
     onnx_model.graph.node.extend(new_nodes)
 
     return onnx_model
@@ -381,14 +395,16 @@ def tree_to_numpy(
         # compute LSB to remove in stage 1 and 2
         # <!>: List[lsbs_to_remove_stage1, lsbs_to_remove_stage2]
         lsbs_to_remove = compute_lsb_to_remove_for_trees(onnx_model, q_x)
-        # TODO: Jordan's function - attach LSBs to the ONNX
+        replace_operator_with_rounded_version(onnx_model, lsbs_to_remove)
+
+    replace_operator_with_rounded_version(onnx_model, [3, 3])
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
 
     # ONNX graph pre-processing to make the model FHE friendly
     # i.e., delete irrelevant nodes and cut the graph before the final ensemble sum)
-    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs, use_rounding)
+    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs)
 
     # Tree values pre-processing
     # i.e., mainly predictions quantization
@@ -397,7 +413,9 @@ def tree_to_numpy(
 
     # Get the numpy inference for the quantized tree (_tree_inference).
     # Use check_model = False here since we have custom onnx operator that won't be recognised.
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model, q_x, check_model=False)
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
+        onnx_model, q_x, check_model=False
+    )
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
 
