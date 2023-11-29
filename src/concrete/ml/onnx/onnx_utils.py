@@ -352,7 +352,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Log": numpy_log,
     "Exp": numpy_exp,
     "Equal": numpy_equal,
-    "Rounded_Equal": numpy_rounded_equal,
+    "RoundedOrEqual": numpy_rounded_equal,
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Transpose": numpy_transpose,
@@ -407,9 +407,9 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
     "Greater": numpy_greater,
     "GreaterOrEqual": numpy_greater_or_equal,
     "Less": numpy_less,
-    "Rounded_Less": numpy_rounded_less,
+    "RoundedOrLess": numpy_rounded_less,
     "LessOrEqual": numpy_less_or_equal,
-    "Rounded_LessOrEqual": numpy_rounded_less_or_equal,
+    "RoundedOrLessOrEqual": numpy_rounded_less_or_equal,
 }
 
 # All numpy operators used in QuantizedOps

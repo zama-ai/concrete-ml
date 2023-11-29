@@ -15,6 +15,7 @@ from ..common.utils import (
 )
 from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward_from_onnx
 from ..onnx.onnx_model_manipulations import clean_graph_at_node_op_type, remove_node_types
+from ..onnx.onnx_utils import get_op_type
 from ..quantization import QuantizedArray
 from ..quantization.quantizers import UniformQuantizer
 
@@ -393,7 +394,8 @@ def tree_to_numpy(
 
     if use_rounding:
         # compute LSB to remove in stage 1 and 2
-        # <!>: List[lsbs_to_remove_stage1, lsbs_to_remove_stage2]
+        # <=, <, ==
+        # <!>: List[(lsbs_to_remove_stage1, lsbs_to_remove_stage1), lsbs_to_remove_stage2]
         lsbs_to_remove = compute_lsb_to_remove_for_trees(onnx_model, q_x)
         replace_operator_with_rounded_version(onnx_model, lsbs_to_remove)
 
@@ -502,9 +504,20 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
     bias_1 = bias_1.reshape(-1, 1, n_nodes)
     bias_2 = bias_2.reshape(-1, 1, n_leaves)
 
-    # If <= -> stage = biais_1 - (q_x @ mat_1.transpose(0, 2, 1))
-    # If < -> stage = (q_x @ mat_1.transpose(0, 2, 1)) - biais_1
-    stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
+    required_onnx_operators = set(get_op_type(node) for node in onnx_model.graph.node)
+
+    # If operator == `<`, np.less(x, y) is equivalent to:
+    # round_bit_pattern((x - y) - half, lsbs_to_remove=r) < 0.
+    # Therfore, stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
+    if "Less" in required_onnx_operators:
+        stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
+    else:
+        # If operator == `<=`, np.less_equal(x, y) is equivalent to:
+        # round_bit_pattern((y - x) - half, lsbs_to_remove=r) >= 0.
+        # Therfore, stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
+        stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
+
+    lsbs_to_remove_1 = update_lsbs_if_overflow_detected(stage_1, get_bitwidth(stage_1))
 
     # The matrix I, as referenced in this paper:
     # https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, results from the condition:
@@ -512,9 +525,11 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
     # Given this assumption, we randomly generate it.
     matrix_q = numpy.random.randint(0, 2, size=(stage_1.shape))
 
-    stage_2 = ((matrix_q @ mat_2.transpose(0, 2, 1)) + bias_2).sum(axis=0)
+    # If operator == `==`, np.equal(x, y) is equivalent to:
+    # round_bit_pattern((x - y) - half, lsbs_to_remove=r) >= 0.
+    # Therfore, stage_2 = bias_1 - (q_x @ mat_2.transpose(0, 2, 1))
+    stage_2 = ((bias_2 - matrix_q @ mat_2.transpose(0, 2, 1))).sum(axis=0)
 
-    lsbs_to_remove_1 = update_lsbs_if_overflow_detected(stage_1, get_bitwidth(stage_1))
     lsbs_to_remove_2 = update_lsbs_if_overflow_detected(stage_2, get_bitwidth(stage_2))
 
     return [lsbs_to_remove_1, lsbs_to_remove_2]
