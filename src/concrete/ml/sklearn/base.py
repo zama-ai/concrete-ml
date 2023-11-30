@@ -1280,6 +1280,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
+        #: Set to `True` to enable the rounding feature, or `False` to disable it.
+        self._use_rounding: bool = True
+
         BaseEstimator.__init__(self)
 
     def fit(self, X: Data, y: Target, **fit_parameters):
@@ -1308,28 +1311,28 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Convert the tree inference with Numpy operators
-        # Adjust the auto rounder manually
-        self._convert_tree_to_numpy_and_compute_lsbs_to_remove(q_X, use_rounding=True)
-
+        self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
+            self.sklearn_model,  # type: ignore[arg-type]
+            q_X,
+            use_rounding=self._use_rounding,
+            framework=self.framework,
+            output_n_bits=self.n_bits,
+        )
         self._is_fitted = True
 
         return self
 
-    def _convert_tree_to_numpy_and_compute_lsbs_to_remove(
-        self, q_X: numpy.ndarray, use_rounding: bool
-    ):
+    def disable_rounding(self):
+        """Disable the rounding feature."""
 
-        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+        self.use_rounding = False
 
-        check_array_and_assert(q_X)
-
-        # Convert the tree inference with Numpy operators
-        self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
-            self.sklearn_model,  # type: ignore[arg-type]
-            q_X,
-            use_rounding=use_rounding,
-            framework=self.framework,
-            output_n_bits=self.n_bits,
+        warnings.warn(
+            "Using tree models without the rounding function is deprecated. "
+            "Consider setting 'use_rounding' to True for accelerated execution "
+            "of FHE calculations and key generation.",
+            category=UserWarning,
+            stacklevel=2,
         )
 
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:

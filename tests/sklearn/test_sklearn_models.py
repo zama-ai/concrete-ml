@@ -152,6 +152,17 @@ def get_n_bits_non_correctness(model_class):
     return n_bits
 
 
+def fit_and_compile(model, x, y):
+    """Fit the model and compile it."""
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    model.compile(x)
+
+
 def check_correctness_with_sklearn(
     model_class,
     x,
@@ -1143,25 +1154,28 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
 def check_rounding_consistency(
     model,
     x,
+    y,
     predict_method,
     metric,
 ):
-
     """Test that Concrete ML witout and with rounding are 'equivalent'."""
 
     random_int = random.randint(0, x.shape[0] - 1)
 
-    model.compile(x)
+    # Fit and compile with rounding enabled
+    fit_and_compile(model, x, y)
 
     rounded_predict_quantized = predict_method(x, fhe="disable")
     rounded_predict_simulate = predict_method(x, fhe="simulate")
     rounded_predict_fhe = predict_method(x[random_int, None], fhe="execute")
 
-    # pylint: disable=protected-access
-    quant_x = model.quantize_input(x).astype("float")
-    model._convert_tree_to_numpy_and_compute_lsbs_to_remove(quant_x, use_rounding=False)
+    # Fit and compile without rounding
 
-    model.compile(x)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        model.disable_rounding()
+
+    fit_and_compile(model, x, y)
 
     not_rounded_predict_quantized = predict_method(x, fhe="disable")
     not_rounded_predict_simulate = predict_method(x, fhe="simulate")
@@ -1816,13 +1830,15 @@ def test_rounding_consistency(
     if verbose:
         print("Run check_rounding_consistency")
 
-    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check `predict_proba` for classifiers
     if is_classifier_or_partial_classifier(model):
         check_rounding_consistency(
             model,
             x,
+            y,
             predict_method=model.predict_proba,
             metric=check_r2_score,
         )
@@ -1831,6 +1847,7 @@ def test_rounding_consistency(
         check_rounding_consistency(
             model,
             x,
+            y,
             predict_method=model.predict,
             metric=check_accuracy,
         )
