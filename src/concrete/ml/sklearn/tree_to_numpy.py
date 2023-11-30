@@ -276,12 +276,15 @@ def replace_operator_with_rounded_version(onnx_model, lsbs_to_remove):
     new_nodes = []
 
     for node in onnx_model.graph.node:
+        # The first comparison in the tree involves the operators `<` and `<=`
+        # Assign the first value of LBS  in `lsbs_to_remove` to the relevant nodes
         if not comparison_replaced and node.op_type in operator_mapping and node.op_type != "Equal":
             # Use the first value in lsbs_to_remove for the comparison operator
             lsbs = lsbs_to_remove[0]
             comparison_replaced = True
+        # The second comparison in the tree involves only the operator `==`
+        # Assign the second value of LBS in `lsbs_to_remove` to the relevant node
         elif not equal_replaced and node.op_type == "Equal":
-            # Use the second value in lsbs_to_remove for the Equal operator
             lsbs = lsbs_to_remove[1]
             equal_replaced = True
         else:
