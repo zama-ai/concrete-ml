@@ -1325,7 +1325,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     def disable_rounding(self):
         """Disable the rounding feature."""
 
-        self.use_rounding = False
+        self._use_rounding = False
 
         warnings.warn(
             "Using tree models without the rounding function is deprecated. "
