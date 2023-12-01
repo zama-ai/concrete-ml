@@ -248,70 +248,6 @@ def tree_onnx_graph_preprocessing(
     remove_node_types(onnx_model, op_types_to_remove=["Cast"])
 
 
-def replace_operator_with_rounded_version(onnx_model, lsbs_to_remove):
-    """Replace comparisons with rounded comparisons.
-
-    Args:
-        onnx_model (onnx.ModelProto): The ONNX model.
-        lsbs_to_remove (List[int]): A list of two integers specifying the number of LSBs to remove.
-
-    Returns:
-        onnx.ModelProto: The modified ONNX model.
-    """
-
-    assert_true(isinstance(lsbs_to_remove, list), "lsbs_to_remove must be a list.")
-    assert_true(len(lsbs_to_remove) == 2, "lsbs_to_remove must have exactly two values.")
-
-    # Mapping of original operators to their rounded counterparts
-    operator_mapping = {
-        "Less": "RoundedLess",
-        "LessOrEqual": "RoundedLessOrEqual",
-        "Equal": "RoundedEqual",
-    }
-
-    # Track if the required operators have been replaced
-    comparison_replaced = False
-    equal_replaced = False
-
-    new_nodes = []
-
-    for node in onnx_model.graph.node:
-        # The first comparison in the tree involves the operators `<` and `<=`
-        # Assign the first value of LBS  in `lsbs_to_remove` to the relevant nodes
-        if not comparison_replaced and node.op_type in operator_mapping and node.op_type != "Equal":
-            # Use the first value in lsbs_to_remove for the comparison operator
-            lsbs = lsbs_to_remove[0]
-            comparison_replaced = True
-        # The second comparison in the tree involves only the operator `==`
-        # Assign the second value of LBS in `lsbs_to_remove` to the relevant node
-        elif not equal_replaced and node.op_type == "Equal":
-            lsbs = lsbs_to_remove[1]
-            equal_replaced = True
-        else:
-            new_nodes.append(node)
-            continue
-
-        # Create a new node with the corresponding rounded operator
-        rounded_node = onnx.helper.make_node(
-            operator_mapping[node.op_type],
-            inputs=node.input,
-            outputs=node.output,
-            lsbs_to_remove=lsbs,
-        )
-        new_nodes.append(rounded_node)
-
-    # Ensure that both a comparison and an equal operator were replaced
-    assert_true(
-        comparison_replaced and equal_replaced, "Required operators not found in the model."
-    )
-
-    # Replace the graph's node list with the new list
-    onnx_model.graph.ClearField("node")
-    onnx_model.graph.node.extend(new_nodes)
-
-    return onnx_model
-
-
 def tree_values_preprocessing(
     onnx_model: onnx.ModelProto,
     framework: str,
@@ -409,8 +345,6 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    # Get the numpy inference for the quantized tree (_tree_inference).
-    # Use check_model = False here since we have custom onnx operator that won't be recognised.
     _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model, lsbs_to_remove)
 
     return (_tree_inference, [q_y.quantizer], onnx_model)

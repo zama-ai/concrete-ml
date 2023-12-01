@@ -1172,7 +1172,7 @@ def check_rounding_consistency(
     # Fit and compile without rounding
 
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
+        warnings.simplefilter("ignore", category=DeprecationWarning)
         model.disable_rounding()
 
     fit_and_compile(model, x, y)
@@ -1816,7 +1816,7 @@ def test_linear_models_have_no_tlu(
 
 # Test only tree-based models
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
-@pytest.mark.parametrize("n_bits", [2, 3, 4, 5])
+@pytest.mark.parametrize("n_bits", [2, 3, 4, 5, 6])
 def test_rounding_consistency(
     model_class,
     parameters,

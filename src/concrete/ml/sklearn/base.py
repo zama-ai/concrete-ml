@@ -1331,11 +1331,12 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         self._use_rounding = False
 
+        warnings.simplefilter("always")
         warnings.warn(
-            "Using tree models without the rounding function is deprecated. "
-            "Consider setting 'use_rounding' to True for accelerated execution "
-            "of FHE calculations and key generation.",
-            category=UserWarning,
+            "Using Concrete tree-based models without the `rounding feature` s deprecated. "
+            "Consider setting '_use_rounding' to `True` for improved speed in FHE computation and "
+            "key generation.",
+            category=DeprecationWarning,
             stacklevel=2,
         )
 
