@@ -1,7 +1,7 @@
 """Implements the conversion of a tree model to a numpy function."""
 import math
 import warnings
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy
 import onnx
@@ -381,6 +381,8 @@ def tree_to_numpy(
     # mypy
     assert output_n_bits is not None
 
+    lsbs_to_remove: Optional[List[int]] = None
+
     assert_true(
         framework in ["xgboost", "sklearn"],
         f"framework={framework} is not supported. It must be either 'xgboost' or 'sklearn'",
@@ -394,7 +396,6 @@ def tree_to_numpy(
         # First LSB refers to Less or LessOrEqual comparisons
         # Second LSB refers to Equal comparison
         lsbs_to_remove = compute_lsb_to_remove_for_trees(onnx_model, q_x)
-        onnx_model = replace_operator_with_rounded_version(onnx_model, lsbs_to_remove)
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
@@ -410,9 +411,7 @@ def tree_to_numpy(
 
     # Get the numpy inference for the quantized tree (_tree_inference).
     # Use check_model = False here since we have custom onnx operator that won't be recognised.
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
-        onnx_model, check_model=False
-    )
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model, lsbs_to_remove)
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
 
