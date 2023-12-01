@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from typing import Callable, Tuple, Union
+from typing import Callable, List, Tuple, Union
 
 import numpy
 import onnx
@@ -158,6 +158,7 @@ def get_equivalent_numpy_forward_from_torch(
 
 def get_equivalent_numpy_forward_from_onnx(
     onnx_model: onnx.ModelProto,
+    lsbs_to_remove: List[int] = None,
     check_model: bool = True,
 ) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
     """Get the numpy equivalent forward of the provided ONNX model.
@@ -167,6 +168,10 @@ def get_equivalent_numpy_forward_from_onnx(
             forward.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
+        lsbs_to_remove (List[int]): Contains the values of the least significant bits to
+            remove during tree traversal. The first value pertains to the first comparison (either
+            "less" or "less_or_equal"), and the second value relates to the "Equal" comparison
+            operation. Default value set to None, when the rounding feature is not used.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
@@ -208,5 +213,5 @@ def get_equivalent_numpy_forward_from_onnx(
 
     # Return lambda of numpy equivalent of onnx execution
     return (
-        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args)
+        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, lsbs_to_remove, *args)
     ), equivalent_onnx_model

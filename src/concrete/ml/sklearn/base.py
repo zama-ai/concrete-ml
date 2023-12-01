@@ -1318,6 +1318,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             framework=self.framework,
             output_n_bits=self.n_bits,
         )
+
         self._is_fitted = True
 
         return self

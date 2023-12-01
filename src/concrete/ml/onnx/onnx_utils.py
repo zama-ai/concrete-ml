@@ -213,7 +213,7 @@
 
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
-from typing import Any, Callable, Dict, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy
 import onnx
@@ -279,9 +279,6 @@ from .ops_impl import (
     numpy_relu,
     numpy_reshape,
     numpy_round,
-    numpy_rounded_equal,
-    numpy_rounded_less,
-    numpy_rounded_less_or_equal,
     numpy_selu,
     numpy_shape,
     numpy_sigmoid,
@@ -408,26 +405,16 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
     "LessOrEqual": numpy_less_or_equal,
 }
 
-# Rounded comparison operators used in tree-based models
-ONNX_ROUNDED_COMPARISON_OPS_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
-    "RoundedEqual": numpy_rounded_equal,
-    "RoundedLess": numpy_rounded_less,
-    "RoundedLessOrEqual": numpy_rounded_less_or_equal,
-}
+# All numpy operators used for tree-based models that support auto rounding
+SUPPORTED_ROUNDED_OPERATIONS = ["Less", "LessOrEqual", "Equal"]
 
 # All numpy operators used in QuantizedOps
 ONNX_OPS_TO_NUMPY_IMPL.update(ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT)
 
 # All numpy operators used for tree-based models
-ONNX_OPS_TO_NUMPY_IMPL_BOOL = {
-    **ONNX_OPS_TO_NUMPY_IMPL,
-    **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL,
-    **ONNX_ROUNDED_COMPARISON_OPS_IMPL_BOOL,
-}
+ONNX_OPS_TO_NUMPY_IMPL_BOOL = {**ONNX_OPS_TO_NUMPY_IMPL, **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL}
 
-IMPLEMENTED_ONNX_OPS = set(
-    ONNX_OPS_TO_NUMPY_IMPL.keys() | ONNX_ROUNDED_COMPARISON_OPS_IMPL_BOOL.keys()
-)
+IMPLEMENTED_ONNX_OPS = set(ONNX_OPS_TO_NUMPY_IMPL.keys())
 
 
 def get_attribute(attribute: onnx.AttributeProto) -> Any:
@@ -456,12 +443,17 @@ def get_op_type(node):
 
 def execute_onnx_with_numpy(
     graph: onnx.GraphProto,
+    lsbs_to_remove: Optional[List[int]],
     *inputs: numpy.ndarray,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
+        lsbs_to_remove (Optional[List[int]]): Contains the values of the least significant bits to
+            remove during tree traversal. The first value pertains to the first comparison (either
+            "less" or "less_or_equal"), and the second value relates to the "Equal" comparison
+            operation. Default value set to None, when the rounding feature is not used.
         *inputs: The inputs of the graph.
 
     Returns:
@@ -477,6 +469,12 @@ def execute_onnx_with_numpy(
     for node in graph.node:
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
+
+        if lsbs_to_remove is not None and node.op_type in SUPPORTED_ROUNDED_OPERATIONS:
+            attributes["lsbs_to_remove"] = (
+                lsbs_to_remove[0] if node.op_type != "Equal" else lsbs_to_remove[1]
+            )
+
         outputs = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type](*curr_inputs, **attributes)
 
         node_results.update(zip(node.output, outputs))

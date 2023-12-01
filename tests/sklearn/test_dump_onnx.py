@@ -214,11 +214,11 @@ def test_dump(
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %/_operators.0/LessOrEqual_output_0 = RoundedLessOrEqual[lsbs_to_remove = 7](%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
-  %/_operators.0/Equal_output_0 = RoundedEqual[lsbs_to_remove = 5](%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
@@ -286,11 +286,11 @@ def test_dump(
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %/_operators.0/LessOrEqual_output_0 = RoundedLessOrEqual[lsbs_to_remove = 7](%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/LessOrEqual_output_0 = LessOrEqual(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/LessOrEqual_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
-  %/_operators.0/Equal_output_0 = RoundedEqual[lsbs_to_remove = 5](%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
@@ -328,11 +328,11 @@ def test_dump(
   %input_0[DOUBLE, symx10]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %/_operators.0/Less_output_0 = RoundedLess[lsbs_to_remove = 7](%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/Less_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
-  %/_operators.0/Equal_output_0 = RoundedEqual[lsbs_to_remove = 0](%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
@@ -376,11 +376,11 @@ def test_dump(
   %/_operators.0/Constant_4_output_0[INT64, 3]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
-  %/_operators.0/Less_output_0 = RoundedLess[lsbs_to_remove = 7](%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
+  %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
   %/_operators.0/Reshape_output_0 = Reshape[allowzero = 0](%/_operators.0/Less_output_0, %/_operators.0/Constant_output_0)
   %/_operators.0/MatMul_output_0 = MatMul(%_operators.0.weight_2, %/_operators.0/Reshape_output_0)
   %/_operators.0/Reshape_1_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_output_0, %/_operators.0/Constant_1_output_0)
-  %/_operators.0/Equal_output_0 = RoundedEqual[lsbs_to_remove = 0](%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
+  %/_operators.0/Equal_output_0 = Equal(%_operators.0.bias_2, %/_operators.0/Reshape_1_output_0)
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
