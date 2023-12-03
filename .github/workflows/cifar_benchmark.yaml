@@ -59,7 +59,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
       - name: Start CIFAR-10 8-bit runner
         id: start-cifar10-8bit-runner
-        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        uses: machulav/ec2-github-runner@2c4d1dcf2c54673ed3bfd194c4b6919ed396a209
         with:
           mode: start
           github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
@@ -192,7 +192,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@4e0303de215db88e1c489e07a15ca4d867f488ea
+        uses: machulav/ec2-github-runner@2c4d1dcf2c54673ed3bfd194c4b6919ed396a209
         if: ${{ always() }}
         with:
           mode: stop
