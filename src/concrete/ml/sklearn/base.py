@@ -1285,6 +1285,36 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
+    @property
+    def use_rounding(self) -> bool:
+        """The rounding property.
+
+        Returns:
+            bool: Whether to enable or disable rounding
+        """
+        return self._use_rounding  # pragma: no cover
+
+    @use_rounding.setter
+    def use_rounding(self, value: bool) -> None:
+        """Set the rounding feature.
+
+        Args:
+            value (bool): Whether to enable or disable rounding
+        """
+        assert isinstance(value, bool)
+
+        self._use_rounding = value
+
+        if not value:
+            warnings.simplefilter("always")
+            warnings.warn(
+                "Using Concrete tree-based models without the `rounding feature` s deprecated. "
+                "Consider setting '_use_rounding' to `True` for improved speed in FHE computation "
+                "and key generation.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
@@ -1322,20 +1352,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._is_fitted = True
 
         return self
-
-    def disable_rounding(self):
-        """Disable the rounding feature."""
-
-        self._use_rounding = False
-
-        warnings.simplefilter("always")
-        warnings.warn(
-            "Using Concrete tree-based models without the `rounding feature` s deprecated. "
-            "Consider setting '_use_rounding' to `True` for improved speed in FHE computation and "
-            "key generation.",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
 
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()

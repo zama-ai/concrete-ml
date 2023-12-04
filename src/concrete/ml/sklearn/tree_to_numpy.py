@@ -355,7 +355,7 @@ def tree_to_numpy(
 def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndarray) -> List[int]:
     """Compute the LSB to remove for the comparison operators in the trees.
 
-    Referring to this paper: https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, there are
+    Referring to this paper: https://arxiv.org/pdf/2010.04804.pdf, there are
     2 levels of comparison for trees, one at the level of X.A < B and a second at
     the level of I.C == D.
 
@@ -393,7 +393,8 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         """
 
         initial_bitwidth = get_bitwidth(array)
-        lsbs_to_remove = initial_bitwidth + 1
+        # The subtraction operation increases precision by 1 or 2 bits
+        lsbs_to_remove = initial_bitwidth + 2
 
         while lsbs_to_remove > 0:
             half = 1 << (lsbs_to_remove - 1)
@@ -450,7 +451,7 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
     lsbs_to_remove_stage_1 = get_lsbs_to_remove(stage_1)
 
     # The matrix I, as referenced in this paper:
-    # https://scnakandala.github.io/papers/TR_2020_Hummingbird.pdf, results from the condition:
+    # https://arxiv.org/pdf/2010.04804.pdf, results from the condition:
     # X.A < B and consists exclusively of binary elements, 1 and 0.
     # Given this assumption, we randomly generate it.
     matrix_q = numpy.random.randint(0, 2, size=(stage_1.shape))

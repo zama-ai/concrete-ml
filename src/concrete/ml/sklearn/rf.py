@@ -118,7 +118,9 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         obj._is_compiled = metadata["_is_compiled"]
         obj.input_quantizers = metadata["input_quantizers"]
         obj.framework = metadata["framework"]
-        obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._tree_inference, _, _ = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
@@ -251,7 +253,9 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         obj._is_compiled = metadata["_is_compiled"]
         obj.input_quantizers = metadata["input_quantizers"]
         obj.framework = metadata["framework"]
-        obj._tree_inference, obj.output_quantizers, obj.onnx_model_ = tree_to_numpy(
+        obj.onnx_model_ = metadata["onnx_model_"]
+        obj.output_quantizers = metadata["output_quantizers"]
+        obj._tree_inference, _, _ = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
