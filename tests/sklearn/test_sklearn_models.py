@@ -1175,7 +1175,7 @@ def check_rounding_consistency(
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=DeprecationWarning)
-        model.disable_rounding()
+        model.use_rounding = False
 
     fit_and_compile(model, x, y)
 
