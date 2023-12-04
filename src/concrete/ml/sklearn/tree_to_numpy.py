@@ -393,7 +393,7 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         """
 
         initial_bitwidth = get_bitwidth(array)
-        lsbs_to_remove = initial_bitwidth
+        lsbs_to_remove = initial_bitwidth + 1
 
         while lsbs_to_remove > 0:
             half = 1 << (lsbs_to_remove - 1)
