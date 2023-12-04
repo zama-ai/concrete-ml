@@ -424,6 +424,7 @@ def check_serialization_dump_load(model, x, use_dump_method):
             serialized_model_dict["serialized_value"].pop(attribute, None)
             re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
+        # Check if the graphs are similar
         assert serialized_model_dict == re_serialized_model_dict
 
         # Check that the predictions made by both model are identical
@@ -476,6 +477,7 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
         serialized_model_dict["serialized_value"].pop(attribute, None)
         re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
+    # Check if the graphs are similar
     assert serialized_model_dict == re_serialized_model_dict
 
     # Check that the predictions made by both model are identical
