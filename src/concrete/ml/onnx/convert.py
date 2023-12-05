@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from typing import Callable, List, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -145,7 +145,7 @@ def get_equivalent_numpy_forward_from_torch(
         output_onnx_file_path.unlink()
 
     equivalent_numpy_forward, equivalent_onnx_model = get_equivalent_numpy_forward_from_onnx(
-        equivalent_onnx_model, check_model=True
+        equivalent_onnx_model
     )
     with output_onnx_file_path.open("wb") as file:
         file.write(equivalent_onnx_model.SerializeToString())
@@ -158,8 +158,8 @@ def get_equivalent_numpy_forward_from_torch(
 
 def get_equivalent_numpy_forward_from_onnx(
     onnx_model: onnx.ModelProto,
-    lsbs_to_remove: List[int] = None,
     check_model: bool = True,
+    lsbs_to_remove: Optional[Tuple[int, int]] = None,
 ) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
     """Get the numpy equivalent forward of the provided ONNX model.
 
@@ -168,10 +168,11 @@ def get_equivalent_numpy_forward_from_onnx(
             forward.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
-        lsbs_to_remove (List[int]): Contains the values of the least significant bits to
-            remove during tree traversal. The first value pertains to the first comparison (either
-            "less" or "less_or_equal"), and the second value relates to the "Equal" comparison
-            operation. Default value set to None, when the rounding feature is not used.
+        lsbs_to_remove (Optional[Tuple[int, int]]): Contains the values of the least significant
+            bits to remove during tree traversal only. The first value pertains to the first
+            comparison (either "less" or "less_or_equal"), and the second value relates to the
+            "Equal" comparison operation. Default value set to None, when the rounding feature
+            is not used.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
@@ -181,6 +182,9 @@ def get_equivalent_numpy_forward_from_onnx(
         Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
             the equivalent numpy function.
     """
+
+    # All onnx models should be checked, "check_model" parameter must be removed
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4157
     if check_model:
         checker.check_model(onnx_model)
 
@@ -195,11 +199,13 @@ def get_equivalent_numpy_forward_from_onnx(
         "eliminate_unused_initializer",
     ]
     equivalent_onnx_model = onnxoptimizer.optimize(onnx_model, onnx_passes)
+    checker.check_model(equivalent_onnx_model)
 
     # Custom optimization
     # ONNX optimizer does not optimize Mat-Mult + Bias pattern into GEMM if the input isn't a matrix
     # We manually do the optimization for this case
     equivalent_onnx_model = fuse_matmul_bias_to_gemm(equivalent_onnx_model)
+    checker.check_model(equivalent_onnx_model)
 
     # Check supported operators
     required_onnx_operators = set(get_op_type(node) for node in equivalent_onnx_model.graph.node)

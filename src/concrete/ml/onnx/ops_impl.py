@@ -897,7 +897,7 @@ def numpy_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove.
+        lsbs_to_remove (Optional[int]): Number of the least significant bits to remove.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
@@ -905,6 +905,7 @@ def numpy_equal(
 
     # In the case of trees, x == y <=> x <= y or x < y - 1, because y is the max sum.
     if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        print("equal", lsbs_to_remove)
         return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
 
     # Else, default numpy_equal operator
@@ -1034,13 +1035,14 @@ def numpy_less(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
+        lsbs_to_remove (Optional[int]): Number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
     if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        print("less", lsbs_to_remove)
         return rounded_comparison(x, y, lsbs_to_remove, operation=lambda x: x < 0)
 
     # Else, default numpy_less operator
@@ -1079,13 +1081,14 @@ def numpy_less_or_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): The number of the least significant bits to remove
+        lsbs_to_remove (Optional[int]): Number of the least significant bits to remove
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
     if lsbs_to_remove is not None and lsbs_to_remove > 0:
+        print("equal or less", lsbs_to_remove)
         return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
 
     # Else, default numpy_less_or_equal operator

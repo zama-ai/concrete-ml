@@ -1283,7 +1283,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
-        #: Set to `True` to enable the rounding feature, or `False` to disable it.
+        #: Boolean that indicates whether the rounding feature is enabled or not.
         self._use_rounding: bool = True
 
         BaseEstimator.__init__(self)
@@ -1311,8 +1311,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         if not value:
             warnings.simplefilter("always")
             warnings.warn(
-                "Using Concrete tree-based models without the `rounding feature` s deprecated. "
-                "Consider setting '_use_rounding' to `True` for improved speed in FHE computation "
+                "Using Concrete tree-based models without the `rounding feature` is deprecated. "
+                "Consider setting 'use_rounding' to `True` for making the FHE inference faster "
                 "and key generation.",
                 category=DeprecationWarning,
                 stacklevel=2,
@@ -1345,7 +1345,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Convert the tree inference with Numpy operators
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
-            self.sklearn_model,  # type: ignore[arg-type]
+            self.sklearn_model,
             q_X,
             use_rounding=self._use_rounding,
             framework=self.framework,

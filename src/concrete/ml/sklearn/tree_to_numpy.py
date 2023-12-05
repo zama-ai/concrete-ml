@@ -28,6 +28,9 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 
 # pylint: disable=too-many-branches
 
+# Most significant bits to retain when applying rounding to the tree
+MSB_TO_KEEP_FOR_TREES = 4
+
 
 def get_onnx_model(model: Callable, x: numpy.ndarray, framework: str) -> onnx.ModelProto:
     """Create ONNX model with Hummingbird convert method.
@@ -294,17 +297,17 @@ def tree_values_preprocessing(
 # pylint: disable=too-many-locals
 def tree_to_numpy(
     model: Callable,
-    q_x: numpy.ndarray,
+    x: numpy.ndarray,
     framework: str,
-    use_rounding: bool = False,
+    use_rounding: Optional[bool] = False,
     output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
     Args:
         model (Callable): The tree model to convert.
-        q_x (numpy.ndarray): The quantized input data.
-        use_rounding (bool): Use rounding feature or not.
+        x (numpy.ndarray): The input data.
+        use_rounding (Optional[bool]): Use rounding feature or not.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output. Default to 8.
@@ -317,7 +320,7 @@ def tree_to_numpy(
     # mypy
     assert output_n_bits is not None
 
-    lsbs_to_remove: Optional[List[int]] = None
+    lsbs_to_remove: Optional[Tuple[int, int]] = None
 
     assert_true(
         framework in ["xgboost", "sklearn"],
@@ -325,13 +328,16 @@ def tree_to_numpy(
     )
 
     # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
-    onnx_model = get_onnx_model(model, q_x[:1], framework)
+    onnx_model = get_onnx_model(model, x[:1], framework)
 
-    # compute LSB to remove in stage 1 and stage 2
+    # Compute for tree-based models the LSB to remove in stage 1 and stage 2
     if use_rounding:
         # First LSB refers to Less or LessOrEqual comparisons
         # Second LSB refers to Equal comparison
-        lsbs_to_remove = compute_lsb_to_remove_for_trees(onnx_model, q_x)
+        lsbs_to_remove = _compute_lsb_to_remove_for_trees(onnx_model, x)
+
+        # mypy
+        assert len(lsbs_to_remove) == 2
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
@@ -345,14 +351,18 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model, lsbs_to_remove)
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
+        onnx_model, lsbs_to_remove=lsbs_to_remove
+    )
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
 
 
 # Remove this function once the truncate feature is released
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4143
-def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndarray) -> List[int]:
+def _compute_lsb_to_remove_for_trees(
+    onnx_model: onnx.ModelProto, q_x: numpy.ndarray
+) -> Tuple[int, int]:
     """Compute the LSB to remove for the comparison operators in the trees.
 
     Referring to this paper: https://arxiv.org/pdf/2010.04804.pdf, there are
@@ -364,7 +374,7 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         q_x (numpy.ndarray): The quantized inputs
 
     Returns:
-        List: the number of LSB to remove for level 1 and level 2
+        Tuple[int, int]: the number of LSB to remove for level 1 and level 2
     """
 
     def get_bitwidth(array: numpy.ndarray) -> int:
@@ -378,6 +388,7 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         """
 
         max_val = numpy.max(numpy.abs(array))
+
         # + 1 is added to include the sign bit
         bitwidth = math.ceil(math.log2(max_val + 1)) + 1
         return bitwidth
@@ -386,24 +397,27 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         """Update the number of LSBs to remove based on overflow detection.
 
         Args:
-            array (umpy.ndarray): The array for which the bitwidth needs to be checked.
+            array (numpy.ndarray): The array for which the bitwidth needs to be checked.
 
         Returns:
             int: The updated LSB to remove.
         """
 
         initial_bitwidth = get_bitwidth(array)
-        # The subtraction operation increases precision by 1 or 2 bits
-        lsbs_to_remove = initial_bitwidth + 2
 
-        while lsbs_to_remove > 0:
-            half = 1 << (lsbs_to_remove - 1)
-            if get_bitwidth(array - half) <= initial_bitwidth:
-                lsbs_to_remove -= 1  # pragma: no cover
-            else:
-                break  # pragma: no cover
+        if initial_bitwidth - MSB_TO_KEEP_FOR_TREES > 0:
+            lsbs_to_remove = initial_bitwidth
 
-        return lsbs_to_remove
+            while lsbs_to_remove > 0:
+                half = 1 << (lsbs_to_remove - 1)
+
+                # The subtraction operation may increase or decrease the precision by 1 or 2 bits
+                if get_bitwidth(array - half) <= initial_bitwidth:
+                    lsbs_to_remove -= 1  # pragma: no cover
+                else:
+                    return lsbs_to_remove
+
+        return 0
 
     quant_params = {
         onnx_init.name: numpy_helper.to_array(onnx_init)
@@ -419,11 +433,13 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
 
     # shape: (nodes, features) or (trees * nodes, features)
     mat_1 = quant_params[key_mat_1]
+
     # shape: (nodes, 1) or (trees * nodes, 1)
     bias_1 = quant_params[key_bias_1]
 
     # shape: (trees, leaves, nodes)
     mat_2 = quant_params[key_mat_2]
+
     # shape: (leaves, 1) or (trees * leaves, 1)
     bias_2 = quant_params[key_bias_2]
 
@@ -439,28 +455,25 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
 
     # If operator is `<`, np.less(x, y) is equivalent to:
     # round_bit_pattern((x - y) - half, lsbs_to_remove=r) < 0.
-    # Therfore, stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
+    # Therefore, stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
     if "Less" in required_onnx_operators:
         stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
+        matrix_q = stage_1 < 0
+
+    # Else, if operator is `<=`, np.less_equal(x, y) is equivalent to:
+    # round_bit_pattern((y - x) - half, lsbs_to_remove=r) >= 0.
+    # Therefore, stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
     elif "LessOrEqual" in required_onnx_operators:
-        # If operator is `<=`, np.less_equal(x, y) is equivalent to:
-        # round_bit_pattern((y - x) - half, lsbs_to_remove=r) >= 0.
-        # Therfore, stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
         stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
+        matrix_q = stage_1 >= 0
 
     lsbs_to_remove_stage_1 = get_lsbs_to_remove(stage_1)
 
-    # The matrix I, as referenced in this paper:
-    # https://arxiv.org/pdf/2010.04804.pdf, results from the condition:
-    # X.A < B and consists exclusively of binary elements, 1 and 0.
-    # Given this assumption, we randomly generate it.
-    matrix_q = numpy.random.randint(0, 2, size=(stage_1.shape))
-
     # If operator is `==`, np.equal(x, y) is equivalent to:
     # round_bit_pattern((x - y) - half, lsbs_to_remove=r) >= 0.
-    # Therfore, stage_2 = bias_1 - (q_x @ mat_2.transpose(0, 2, 1))
+    # Therefore, stage_2 = bias_1 - (q_x @ mat_2.transpose(0, 2, 1))
     stage_2 = ((bias_2 - matrix_q @ mat_2.transpose(0, 2, 1))).sum(axis=0)
 
     lsbs_to_remove_stage_2 = get_lsbs_to_remove(stage_2)
 
-    return [lsbs_to_remove_stage_1, lsbs_to_remove_stage_2]
+    return (lsbs_to_remove_stage_1, lsbs_to_remove_stage_2)

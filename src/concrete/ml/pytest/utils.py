@@ -661,3 +661,26 @@ def check_serialization(
                 "Loaded object (from file) is not equal to the initial one, using equal method "
                 f"{equal_method}."
             )
+
+
+def get_random_samples(x: numpy.ndarray, n_sample: int) -> numpy.ndarray:
+    """Select `n_sample` random elements from a 2D NumPy array.
+
+    Args:
+        x (numpy.ndarray): The 2D NumPy array from which random rows will be selected.
+        n_sample (int): The number of rows to randomly select.
+
+    Returns:
+        numpy.ndarray: A new 2D NumPy array containing the randomly selected rows.
+
+    Raises:
+        AssertionError: If `n_sample` is not within the range (0, x.shape[0]) or
+            if `x` is not a 2D array.
+    """
+
+    # Sanity checks
+    assert 0 < n_sample < x.shape[0]
+    assert len(x.shape) == 2
+
+    random_rows_indices = numpy.random.choice(x.shape[0], size=n_sample, replace=False)
+    return x[random_rows_indices]
