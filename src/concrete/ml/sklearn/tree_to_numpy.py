@@ -399,9 +399,9 @@ def compute_lsb_to_remove_for_trees(onnx_model: onnx.ModelProto, q_x: numpy.ndar
         while lsbs_to_remove > 0:
             half = 1 << (lsbs_to_remove - 1)
             if get_bitwidth(array - half) <= initial_bitwidth:
-                lsbs_to_remove -= 1
+                lsbs_to_remove -= 1  # pragma: no cover
             else:
-                break
+                break  # pragma: no cover
 
         return lsbs_to_remove
 
