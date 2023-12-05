@@ -3486,27 +3486,29 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1788"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1787"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `SklearnKNeighborsMixin`
+## <kbd>class</kbd> `SklearnSGDClassifierMixin`
 
-A Mixin class for sklearn KNeighbors models with FHE.
+A Mixin class for sklearn SGD classifiers with FHE.
 
-This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
+This class is used to create a SGD classifier class what can be exported to ONNX using Hummingbird.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1802"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1457"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
 ```python
-__init__(n_bits: 'int' = 3)
+__init__(n_bits: 'Union[int, Dict[str, int]]' = 8)
 ```
 
-Initialize the FHE knn model.
+Initialize the FHE linear model.
 
 **Args:**
 
-- <b>`n_bits`</b> (int):  Number of bits to quantize the model. The value will be used for  quantizing inputs and X_fit. Default to 3.
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
 
 ______________________________________________________________________
 
@@ -3542,6 +3544,18 @@ Indicate if the model is fitted.
 
 ______________________________________________________________________
 
+#### <kbd>property</kbd> n_classes\_
+
+Get the model's number of classes.
+
+Using this attribute is deprecated.
+
+**Returns:**
+
+- <b>`int`</b>:  The model's number of classes.
+
+______________________________________________________________________
+
 #### <kbd>property</kbd> onnx_model
 
 Get the ONNX model.
@@ -3551,6 +3565,18 @@ Is None if the model is not fitted.
 **Returns:**
 
 - <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> target_classes\_
+
+Get the model's classes.
+
+Using this attribute is deprecated.
+
+**Returns:**
+
+- <b>`Optional[numpy.ndarray]`</b>:  The model's classes.
 
 ______________________________________________________________________
 
@@ -3620,7 +3646,31 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1920"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1759"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `decision_function`
+
+```python
+decision_function(
+    X: 'Data',
+    fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>
+) → ndarray
+```
+
+Predict confidence scores.
+
+**Args:**
+
+- <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  The predicted confidence scores.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1658"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -3678,7 +3728,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1850"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L748"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -3715,6 +3765,33 @@ The Concrete ML and float equivalent fitted estimators.
 
 ______________________________________________________________________
 
+<a href="../../../src/concrete/ml/sklearn/base.py#L1482"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `from_sklearn_model`
+
+```python
+from_sklearn_model(
+    sklearn_model: 'BaseEstimator',
+    X: 'Data',
+    n_bits: 'Union[int, Dict[str, int]]' = 8
+)
+```
+
+Build a FHE-compliant model using a fitted scikit-learn model.
+
+**Args:**
+
+- <b>`sklearn_model`</b> (sklearn.base.BaseEstimator):  The fitted scikit-learn model to convert.
+- <b>`X`</b> (Data):  A representative set of input values used for computing quantization  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`n_bits`</b> (int, Dict\[str, int\]):  Number of bits to quantize the model. If an int is passed  for n_bits, the value will be used for quantizing inputs and weights. If a dict is  passed, then it should contain "op_inputs" and "op_weights" as keys with  corresponding number of quantization bits so that:
+  \- op_inputs : number of bits to quantize the input values
+  \- op_weights: number of bits to quantize the learned parameters  Default to 8.
+
+**Returns:**
+The FHE-compliant fitted model.
+
+______________________________________________________________________
+
 <a href="../../../src/concrete/ml/sklearn/base.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_sklearn_params`
@@ -3734,30 +3811,6 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 **Returns:**
 
 - <b>`params`</b> (dict):  Parameter names mapped to their values.
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L2125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `get_topk_labels`
-
-```python
-get_topk_labels(
-    X: 'Data',
-    fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>
-) → ndarray
-```
-
-Return the K-nearest labels of each point.
-
-**Args:**
-
-- <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
-- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The K-Nearest labels for each point.
 
 ______________________________________________________________________
 
@@ -3781,27 +3834,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1946"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
-
-### <kbd>method</kbd> `majority_vote`
-
-```python
-majority_vote(nearest_classes: 'ndarray')
-```
-
-Determine the most common class among nearest neighborsfor each query.
-
-**Args:**
-
-- <b>`nearest_classes`</b> (numpy.ndarray):  The class labels of the nearest neighbors for a query
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The majority-voted class label for the corresponding query.
-
-______________________________________________________________________
-
-<a href="../../../src/concrete/ml/sklearn/base.py#L2111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L787"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -3809,21 +3842,9 @@ ______________________________________________________________________
 post_processing(y_preds: 'ndarray') → ndarray
 ```
 
-Provide the majority vote among the topk labels of each point.
-
-For KNN, the de-quantization step is not required. Because \_inference returns the label of the k-nearest neighbors.
-
-**Args:**
-
-- <b>`y_preds`</b> (numpy.ndarray):  The topk nearest labels for each point.
-
-**Returns:**
-
-- <b>`numpy.ndarray`</b>:  The majority vote for each point.
-
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L778"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -3836,7 +3857,20 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1913"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1781"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `predict_proba`
+
+```python
+predict_proba(
+    X: 'Data',
+    fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>
+) → ndarray
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1651"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 
@@ -3846,15 +3880,15 @@ quantize_input(X: 'ndarray') → ndarray
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1820"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
-## <kbd>class</kbd> `SklearnKNeighborsClassifierMixin`
+## <kbd>class</kbd> `SklearnKNeighborsMixin`
 
-A Mixin class for sklearn KNeighbors classifiers with FHE.
+A Mixin class for sklearn KNeighbors models with FHE.
 
-This class is used to create a KNeighbors classifier class that inherits from SklearnKNeighborsMixin and sklearn.base.ClassifierMixin. By inheriting from sklearn.base.ClassifierMixin, it allows this class to be recognized as a classifier."
+This class inherits from sklearn.base.BaseEstimator in order to have access to scikit-learn's `get_params` and `set_params` methods.
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1802"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1834"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -3980,7 +4014,7 @@ Compile the model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1920"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1952"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `dequantize_output`
 
@@ -4038,7 +4072,7 @@ Dump itself to a string.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1850"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1882"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `fit`
 
@@ -4097,7 +4131,7 @@ This method is used to instantiate a scikit-learn model using the Concrete ML mo
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `get_topk_labels`
 
@@ -4141,7 +4175,7 @@ Load itself from a dict.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1946"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1978"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `majority_vote`
 
@@ -4161,7 +4195,7 @@ Determine the most common class among nearest neighborsfor each query.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `post_processing`
 
@@ -4183,7 +4217,7 @@ For KNN, the de-quantization step is not required. Because \_inference returns t
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L2150"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L2182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `predict`
 
@@ -4196,7 +4230,367 @@ predict(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/sklearn/base.py#L1913"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/sklearn/base.py#L1945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `quantize_input`
+
+```python
+quantize_input(X: 'ndarray') → ndarray
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L2193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>class</kbd> `SklearnKNeighborsClassifierMixin`
+
+A Mixin class for sklearn KNeighbors classifiers with FHE.
+
+This class is used to create a KNeighbors classifier class that inherits from SklearnKNeighborsMixin and sklearn.base.ClassifierMixin. By inheriting from sklearn.base.ClassifierMixin, it allows this class to be recognized as a classifier."
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1834"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `__init__`
+
+```python
+__init__(n_bits: 'int' = 3)
+```
+
+Initialize the FHE knn model.
+
+**Args:**
+
+- <b>`n_bits`</b> (int):  Number of bits to quantize the model. The value will be used for  quantizing inputs and X_fit. Default to 3.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> fhe_circuit
+
+Get the FHE circuit.
+
+The FHE circuit combines computational graph, mlir, client and server into a single object. More information available in Concrete documentation (https://docs.zama.ai/concrete/getting-started/terminology_and_structure) Is None if the model is not fitted.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The FHE circuit.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> is_compiled
+
+Indicate if the model is compiled.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is compiled.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> is_fitted
+
+Indicate if the model is fitted.
+
+**Returns:**
+
+- <b>`bool`</b>:  If the model is fitted.
+
+______________________________________________________________________
+
+#### <kbd>property</kbd> onnx_model
+
+Get the ONNX model.
+
+Is None if the model is not fitted.
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The ONNX model.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L314"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_compiled`
+
+```python
+check_model_is_compiled() → None
+```
+
+Check if the model is compiled.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not compiled.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L290"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `check_model_is_fitted`
+
+```python
+check_model_is_fitted() → None
+```
+
+Check if the model is fitted.
+
+**Raises:**
+
+- <b>`AttributeError`</b>:  If the model is not fitted.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L489"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `compile`
+
+```python
+compile(
+    X: 'Data',
+    configuration: 'Optional[Configuration]' = None,
+    artifacts: 'Optional[DebugArtifacts]' = None,
+    show_mlir: 'bool' = False,
+    p_error: 'Optional[float]' = None,
+    global_p_error: 'Optional[float]' = None,
+    verbose: 'bool' = False
+) → Circuit
+```
+
+Compile the model.
+
+**Args:**
+
+- <b>`X`</b> (Data):  A representative set of input values used for building cryptographic  parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is  usually the training data-set or a sub-set of it.
+- <b>`configuration`</b> (Optional\[Configuration\]):  Options to use for compilation. Default  to None.
+- <b>`artifacts`</b> (Optional\[DebugArtifacts\]):  Artifacts information about the compilation  process to store for debugging. Default to None.
+- <b>`show_mlir`</b> (bool):  Indicate if the MLIR graph should be printed during compilation.  Default to False.
+- <b>`p_error`</b> (Optional\[float\]):  Probability of error of a single PBS. A p_error value cannot  be given if a global_p_error value is already set. Default to None, which sets this  error to a default value.
+- <b>`global_p_error`</b> (Optional\[float\]):  Probability of error of the full circuit. A  global_p_error value cannot be given if a p_error value is already set. This feature  is not supported during the FHE simulation mode, meaning the probability is  currently set to 0. Default to None, which sets this error to a default value.
+- <b>`verbose`</b> (bool):  Indicate if compilation information should be printed  during compilation. Default to False.
+
+**Returns:**
+
+- <b>`Circuit`</b>:  The compiled Circuit.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1952"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dequantize_output`
+
+```python
+dequantize_output(q_y_preds: 'ndarray') → ndarray
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L234"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump`
+
+```python
+dump(file: 'TextIO') → None
+```
+
+Dump itself to a file.
+
+**Args:**
+
+- <b>`file`</b> (TextIO):  The file to dump the serialized object into.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L206"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dump_dict`
+
+```python
+dump_dict() → Dict[str, Any]
+```
+
+Dump the object as a dict.
+
+**Returns:**
+
+- <b>`Dict[str, Any]`</b>:  Dict of serialized objects.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L226"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `dumps`
+
+```python
+dumps() → str
+```
+
+Dump itself to a string.
+
+**Returns:**
+
+- <b>`metadata`</b> (str):  String of the serialized object.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1882"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `fit`
+
+```python
+fit(X: 'Data', y: 'Target', **fit_parameters)
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L402"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `fit_benchmark`
+
+```python
+fit_benchmark(
+    X: 'Data',
+    y: 'Target',
+    random_state: 'Optional[int]' = None,
+    **fit_parameters
+)
+```
+
+Fit both the Concrete ML and its equivalent float estimators.
+
+**Args:**
+
+- <b>`X`</b> (Data):  The training data, as a Numpy array, Torch tensor, Pandas DataFrame or List.
+- <b>`y`</b> (Target):  The target data, as a Numpy array, Torch tensor, Pandas DataFrame, Pandas  Series or List.
+- <b>`random_state`</b> (Optional\[int\]):  The random state to use when fitting. Defaults to None.
+- <b>`**fit_parameters`</b>:  Keyword arguments to pass to the float estimator's fit method.
+
+**Returns:**
+The Concrete ML and float equivalent fitted estimators.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L323"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_sklearn_params`
+
+```python
+get_sklearn_params(deep: 'bool' = True) → dict
+```
+
+Get parameters for this estimator.
+
+This method is used to instantiate a scikit-learn model using the Concrete ML model's parameters. It does not override scikit-learn's existing `get_params` method in order to not break its implementation of `set_params`.
+
+**Args:**
+
+- <b>`deep`</b> (bool):  If True, will return the parameters for this estimator and contained  subobjects that are estimators. Default to True.
+
+**Returns:**
+
+- <b>`params`</b> (dict):  Parameter names mapped to their values.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L2157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `get_topk_labels`
+
+```python
+get_topk_labels(
+    X: 'Data',
+    fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>
+) → ndarray
+```
+
+Return the K-nearest labels of each point.
+
+**Args:**
+
+- <b>`X`</b> (Data):  The input values to predict, as a Numpy array, Torch tensor, Pandas DataFrame  or List.
+- <b>`fhe`</b> (Union\[FheMode, str\]):  The mode to use for prediction.  Can be FheMode.DISABLE for Concrete ML Python inference,  FheMode.SIMULATE for FHE simulation and FheMode.EXECUTE for actual FHE execution.  Can also be the string representation of any of these values.  Default to FheMode.DISABLE.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  The K-Nearest labels for each point.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L214"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>classmethod</kbd> `load_dict`
+
+```python
+load_dict(metadata: 'Dict[str, Any]') → BaseEstimator
+```
+
+Load itself from a dict.
+
+**Args:**
+
+- <b>`metadata`</b> (Dict\[str, Any\]):  Dict of serialized objects.
+
+**Returns:**
+
+- <b>`BaseEstimator`</b>:  The loaded object.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1978"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `majority_vote`
+
+```python
+majority_vote(nearest_classes: 'ndarray')
+```
+
+Determine the most common class among nearest neighborsfor each query.
+
+**Args:**
+
+- <b>`nearest_classes`</b> (numpy.ndarray):  The class labels of the nearest neighbors for a query
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  The majority-voted class label for the corresponding query.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L2143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `post_processing`
+
+```python
+post_processing(y_preds: 'ndarray') → ndarray
+```
+
+Provide the majority vote among the topk labels of each point.
+
+For KNN, the de-quantization step is not required. Because \_inference returns the label of the k-nearest neighbors.
+
+**Args:**
+
+- <b>`y_preds`</b> (numpy.ndarray):  The topk nearest labels for each point.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  The majority vote for each point.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L2182"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+### <kbd>method</kbd> `predict`
+
+```python
+predict(
+    X: 'Data',
+    fhe: 'Union[FheMode, str]' = <FheMode.DISABLE: 'disable'>
+) → ndarray
+```
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/sklearn/base.py#L1945"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `quantize_input`
 

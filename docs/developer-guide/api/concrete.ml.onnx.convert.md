@@ -13,7 +13,7 @@ ONNX conversion related code.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L25"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fuse_matmul_bias_to_gemm`
 
@@ -33,7 +33,7 @@ Fuse sequence of matmul -> add into a gemm node.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L116"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_torch`
 
@@ -59,7 +59,7 @@ Get the numpy equivalent forward of the provided torch Module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L165"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `preprocess_onnx_model`
 
@@ -84,7 +84,7 @@ Get the numpy equivalent forward of the provided ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L227"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx`
 
@@ -108,7 +108,7 @@ Get the numpy equivalent forward of the provided ONNX model.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L252"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx_tree`
 

@@ -273,7 +273,7 @@ q_impl(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L494"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L495"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedMatMul`
 
@@ -320,7 +320,7 @@ q_impl(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L500"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L501"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedAdd`
 
@@ -358,7 +358,7 @@ Add operation can be computed in float and fused if it operates over inputs prod
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L509"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L510"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1101,7 +1101,7 @@ Add operation can be computed in float and fused if it operates over inputs prod
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L509"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L510"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1239,7 +1239,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1688"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1689"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `calibrate`
 
@@ -1259,13 +1259,14 @@ Create corresponding QuantizedArray for the output of the activation function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1712"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1713"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
 ```python
 q_impl(
     *q_inputs: Optional[ndarray, QuantizedArray],
+    calibrate_rounding: bool = False,
     **attrs
 ) → Union[ndarray, QuantizedArray, NoneType]
 ```
@@ -1275,6 +1276,7 @@ Sum the encrypted tensor's values along the given axes.
 **Args:**
 
 - <b>`q_inputs`</b> (QuantizedArray):  An encrypted integer tensor at index 0.
+- <b>`calibrate_rounding`</b> (bool):  Whether to calibrate rounding or not.
 - <b>`attrs`</b> (Dict):  Options are handled in constructor.
 
 **Returns:**
@@ -1283,7 +1285,7 @@ Sum the encrypted tensor's values along the given axes.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1806"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedErf`
 
@@ -1301,7 +1303,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1792"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1812"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedNot`
 
@@ -1319,13 +1321,13 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1798"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1818"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedBrevitasQuant`
 
 Brevitas uniform quantization with encrypted input.
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1808"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1828"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -1368,7 +1370,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1910"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1930"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `calibrate`
 
@@ -1388,7 +1390,7 @@ Create corresponding QuantizedArray for the output of Quantization function.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1936"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L1956"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1412,7 +1414,7 @@ Quantize values.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2001"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2021"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedTranspose`
 
@@ -1432,7 +1434,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2043"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2063"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1450,7 +1452,7 @@ Transpose can not be fused since it must be performed over integer tensors as it
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2011"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2031"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1474,7 +1476,7 @@ Transpose the input integer encrypted tensor.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2055"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2075"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedFloor`
 
@@ -1492,7 +1494,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2061"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2081"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedMax`
 
@@ -1510,7 +1512,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2067"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2087"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedMin`
 
@@ -1528,7 +1530,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2073"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2093"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedNeg`
 
@@ -1546,7 +1548,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2079"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2099"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSign`
 
@@ -1564,7 +1566,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2085"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2105"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedUnsqueeze`
 
@@ -1582,7 +1584,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2125"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2145"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1600,7 +1602,7 @@ Unsqueeze can not be fused since it must be performed over integer tensors as it
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2091"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2111"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1624,7 +1626,7 @@ Unsqueeze the input tensors on a given axis.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2137"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2157"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedConcat`
 
@@ -1642,7 +1644,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2193"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2213"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1660,7 +1662,7 @@ Concatenation can not be fused since it must be performed over integer tensors a
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2143"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2163"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1684,7 +1686,7 @@ Concatenate the input tensors on a given axis.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2205"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2225"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedSqueeze`
 
@@ -1702,7 +1704,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2245"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2265"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1720,7 +1722,7 @@ Squeeze can not be fused since it must be performed over integer tensors as it r
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2211"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2231"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1744,7 +1746,7 @@ Squeeze the input tensors on a given axis.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2257"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2277"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ONNXShape`
 
@@ -1762,7 +1764,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2272"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2292"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1780,7 +1782,7 @@ This operation returns the shape of the tensor and thus can not be fused into a 
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2262"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2282"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1793,7 +1795,7 @@ q_impl(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2284"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2304"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ONNXConstantOfShape`
 
@@ -1811,7 +1813,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2289"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1829,7 +1831,7 @@ This operation returns a new encrypted tensor and thus can not be fused.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2321"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ONNXGather`
 
@@ -1849,7 +1851,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2333"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2353"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1867,7 +1869,7 @@ This operation returns values from a tensor and thus can not be fused into a uni
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2329"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1880,7 +1882,7 @@ q_impl(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2345"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2365"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `ONNXSlice`
 
@@ -1898,7 +1900,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2394"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1916,7 +1918,7 @@ This operation returns values from a tensor and thus can not be fused into a uni
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2350"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2370"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1929,7 +1931,7 @@ q_impl(
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2386"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2406"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedExpand`
 
@@ -1947,7 +1949,7 @@ Get the names of encrypted integer tensors that are used by this op.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2426"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2446"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `can_fuse`
 
@@ -1965,7 +1967,7 @@ Unsqueeze can not be fused since it must be performed over integer tensors as it
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2412"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `q_impl`
 
@@ -1989,7 +1991,7 @@ Expand the input tensor to a specified shape.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2438"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2458"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedEqual`
 
@@ -1997,7 +1999,7 @@ Comparison operator ==.
 
 Only supports comparison with a constant.
 
-<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2447"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_ops.py#L2467"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
