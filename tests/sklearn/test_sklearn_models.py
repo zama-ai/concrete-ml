@@ -54,6 +54,7 @@ from concrete.ml.common.utils import (
 from concrete.ml.pytest.utils import (
     MODELS_AND_DATASETS,
     UNIQUE_MODELS_AND_DATASETS,
+    get_random_samples,
     get_sklearn_all_models_and_datasets,
     get_sklearn_linear_models_and_datasets,
     get_sklearn_neighbors_models_and_datasets,
@@ -160,17 +161,6 @@ def fit_and_compile(model, x, y):
         model.fit(x, y)
 
     model.compile(x)
-
-
-def get_random_samples(x, n_sample):
-    """Selects `n_sample` random elements from a 2D NumPy array."""
-
-    # Sanity checks
-    assert 0 < n_sample < x.shape[0]
-    assert len(x.shape) == 2
-
-    random_rows_indices = numpy.random.choice(x.shape[0], size=n_sample, replace=False)
-    return x[random_rows_indices]
 
 
 def check_correctness_with_sklearn(
@@ -434,7 +424,7 @@ def check_serialization_dump_load(model, x, use_dump_method):
             serialized_model_dict["serialized_value"].pop(attribute, None)
             re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
-        # Check if the graphs are similar
+        # Check if the serialized models are identical
         assert serialized_model_dict == re_serialized_model_dict
 
         # Check that the predictions made by both model are identical
@@ -487,7 +477,7 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
         serialized_model_dict["serialized_value"].pop(attribute, None)
         re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
-    # Check if the graphs are similar
+    # Check if the serialized models are identical
     assert serialized_model_dict == re_serialized_model_dict
 
     # Check that the predictions made by both model are identical
@@ -1171,7 +1161,7 @@ def check_rounding_consistency(
     metric,
     is_weekly_option,
 ):
-    """Test that Concrete ML witout and with rounding are 'equivalent'."""
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
 
     # Run the test with more samples during weekly CIs
     if is_weekly_option:
@@ -1179,8 +1169,6 @@ def check_rounding_consistency(
     else:
         fhe_samples = 1
 
-    # Check that separated inference steps (encrypt, run, decrypt, post_processing, ...) are
-    # equivalent to built-in methods (predict, predict_proba, ...)
     fhe_test = get_random_samples(x, fhe_samples)
 
     # Fit and compile with rounding enabled
@@ -1848,7 +1836,7 @@ def test_rounding_consistency(
     is_weekly_option,
     verbose=True,
 ):
-    """Test that Concrete ML witout and with rounding are 'equivalent'."""
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
 
     if verbose:
         print("Run check_rounding_consistency")

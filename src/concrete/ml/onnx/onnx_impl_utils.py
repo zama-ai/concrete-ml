@@ -228,6 +228,13 @@ def onnx_avgpool_compute_norm_const(
     return norm_const
 
 
+# This function needs to be updated when the truncate feature is released.
+# The following changes should be made:
+# - Remove the `half` term
+# - Replace `rounding_bit_pattern` with `truncate_bit_pattern`
+# - Potentially replace `lsbs_to_remove` with `auto_truncate`
+# - Adjust the typing
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4143
 def rounded_comparison(
     x: numpy.ndarray, y: numpy.ndarray, lsbs_to_remove: int, operation: ComparisonOperationType
 ) -> Tuple[bool]:
@@ -243,8 +250,8 @@ def rounded_comparison(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (int): The number of the least significant bits to remove
-        operation (ComparisonOperationType): Comparison operation
+        lsbs_to_remove (int): Number of the least significant bits to remove
+        operation (ComparisonOperationType): Comparison operation, which can `<`, `<=` and `==`
 
     Returns:
         Tuple[bool]: If x and y satisfy the comparison operator.
@@ -252,7 +259,7 @@ def rounded_comparison(
 
     assert isinstance(lsbs_to_remove, int)
 
-    # In this context, `round_bit_pattern` is used as a truncate operation.
+    # Workaround: in this context, `round_bit_pattern` is used as a truncate operation.
     # Consequently, we subtract a term, called `half` that will subsequently be re-added during the
     # `round_bit_pattern` process.
     half = 1 << (lsbs_to_remove - 1)
