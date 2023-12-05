@@ -23,7 +23,6 @@ Generic tests test:
 
 import copy
 import json
-import random
 import tempfile
 
 # pylint: disable=too-many-lines, too-many-arguments
@@ -161,6 +160,17 @@ def fit_and_compile(model, x, y):
         model.fit(x, y)
 
     model.compile(x)
+
+
+def get_random_samples(x, n_sample):
+    """Selects `n_sample` random elements from a 2D NumPy array."""
+
+    # Sanity checks
+    assert 0 < n_sample < x.shape[0]
+    assert len(x.shape) == 2
+
+    random_rows_indices = numpy.random.choice(x.shape[0], size=n_sample, replace=False)
+    return x[random_rows_indices]
 
 
 def check_correctness_with_sklearn(
@@ -1159,17 +1169,26 @@ def check_rounding_consistency(
     y,
     predict_method,
     metric,
+    is_weekly_option,
 ):
     """Test that Concrete ML witout and with rounding are 'equivalent'."""
 
-    random_int = random.randint(0, x.shape[0] - 1)
+    # Run the test with more samples during weekly CIs
+    if is_weekly_option:
+        fhe_samples = 5
+    else:
+        fhe_samples = 1
+
+    # Check that separated inference steps (encrypt, run, decrypt, post_processing, ...) are
+    # equivalent to built-in methods (predict, predict_proba, ...)
+    fhe_test = get_random_samples(x, fhe_samples)
 
     # Fit and compile with rounding enabled
     fit_and_compile(model, x, y)
 
     rounded_predict_quantized = predict_method(x, fhe="disable")
     rounded_predict_simulate = predict_method(x, fhe="simulate")
-    rounded_predict_fhe = predict_method(x[random_int, None], fhe="execute")
+    rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     # Fit and compile without rounding
 
@@ -1181,7 +1200,7 @@ def check_rounding_consistency(
 
     not_rounded_predict_quantized = predict_method(x, fhe="disable")
     not_rounded_predict_simulate = predict_method(x, fhe="simulate")
-    not_rounded_predict_fhe = predict_method(x[random_int, None], fhe="execute")
+    not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     metric(rounded_predict_quantized, not_rounded_predict_quantized)
     metric(rounded_predict_simulate, not_rounded_predict_simulate)
@@ -1540,7 +1559,8 @@ def test_predict_correctness(
         print(f"Check prediction correctness for {fhe_samples} samples.")
 
     # Check prediction correctness between quantized clear and FHE simulation or execution
-    check_is_good_execution_for_cml_vs_circuit(x[:fhe_samples], model=model, simulate=simulate)
+    fhe_test = get_random_samples(x, fhe_samples)
+    check_is_good_execution_for_cml_vs_circuit(fhe_test, model=model, simulate=simulate)
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
@@ -1602,7 +1622,8 @@ def test_separated_inference(
 
     # Check that separated inference steps (encrypt, run, decrypt, post_processing, ...) are
     # equivalent to built-in methods (predict, predict_proba, ...)
-    check_separated_inference(model, fhe_circuit, x[:fhe_samples], check_float_array_equal)
+    fhe_test = get_random_samples(x, fhe_samples)
+    check_separated_inference(model, fhe_circuit, fhe_test, check_float_array_equal)
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
@@ -1839,19 +1860,18 @@ def test_rounding_consistency(
 
     # Check `predict_proba` for classifiers
     if is_classifier_or_partial_classifier(model):
-        check_rounding_consistency(
-            model,
-            x,
-            y,
-            predict_method=model.predict_proba,
-            metric=check_r2_score,
-        )
+        predict_method = model.predict_proba
+        metric = check_r2_score
     else:
         # Check `predict` for regressors
-        check_rounding_consistency(
-            model,
-            x,
-            y,
-            predict_method=model.predict,
-            metric=check_accuracy,
-        )
+        predict_method = model.predict
+        metric = check_accuracy
+
+    check_rounding_consistency(
+        model,
+        x,
+        y,
+        predict_method,
+        metric,
+        is_weekly_option,
+    )
