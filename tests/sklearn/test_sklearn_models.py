@@ -197,6 +197,7 @@ def check_correctness_with_sklearn(
         "Ridge": 0.9,
         "ElasticNet": 0.9,
         "XGBRegressor": 0.9,
+        "SGDClassifier": 0.9,
     }
 
     # For accuracy measures

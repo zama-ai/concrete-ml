@@ -453,7 +453,8 @@ def test_dump(
   %variable = ArgMax[axis = 1, keepdims = 0, select_last_index = 0](%onnx::ArgMax_44)
   return %variable, %onnx::ArgMax_44
 }""",
+        "SGDClassifier": "graph torch_jit (\n  %input_0[DOUBLE, symx10]\n) initializers (\n  %_operators.0.coefficients[FLOAT, 10x1]\n  %_operators.0.intercepts[FLOAT, 1]\n) {\n  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)\n  return %/_operators.0/Gemm_output_0\n}",
     }
 
-    str_expected = expected_strings[model_name]
+    str_expected = expected_strings.get(model_name, "")
     check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration)

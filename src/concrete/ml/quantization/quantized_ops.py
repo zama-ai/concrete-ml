@@ -363,6 +363,7 @@ class QuantizedGemm(QuantizedMixingOp):
         # This strategy is particularly important to make sure PBS in all branches are done on the
         # pre-defined precision. The use of the copy is conditional, applied only when needed
         # to optimize performance.
+
         input1_q_values_copy = (
             copy_function(input1_q_values) if is_encrypted_gemm else input1_q_values
         )
@@ -511,7 +512,6 @@ class QuantizedAdd(QuantizedMixingOp):
         *q_inputs: ONNXOpInputOutputType,
         **attrs,
     ) -> ONNXOpInputOutputType:
-
         # If operating over all raw inputs, just perform the op in the clear
         if all(isinstance(q_input, RawOpOutput) for q_input in q_inputs):
             prepared_inputs = self._prepare_inputs_with_constants(
@@ -1684,6 +1684,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         # this type difference
         self.keepdims = bool(attrs.get("keepdims", 1))
         self.noop_with_empty_axes = attrs.get("noop_with_empty_axes", 0)
+        self.copy_inputs = False
 
     def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
@@ -1712,12 +1713,14 @@ class QuantizedReduceSum(QuantizedMixingOp):
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,
         **attrs,
     ) -> ONNXOpInputOutputType:
         """Sum the encrypted tensor's values along the given axes.
 
         Args:
             q_inputs (QuantizedArray): An encrypted integer tensor at index 0.
+            calibrate_rounding (bool): Whether to calibrate rounding or not.
             attrs (Dict): Options are handled in constructor.
 
         Returns:
@@ -1750,26 +1753,43 @@ class QuantizedReduceSum(QuantizedMixingOp):
             f"the inference. Got {axes}",
         )
 
-        # Sum all the quantized values
-        q_sum = numpy.sum(q_values, axis=axes, keepdims=self.keepdims)
+        with tag(self.op_instance_name):
 
-        # Determining the number of output zero_points to use for de-quantization with the total
-        # number of elements summed all together, which is the product of all the number of elements
-        # found within the given axes
-        n_elem = numpy.prod([q_values.shape[axis] for axis in axes])
+            # Need to copy to prevent the following sum to raise precision of the input
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
+            @univariate
+            def copy_function(x):
+                return x
 
-        # Determining the output scale and zero_point
-        input_quantizer = prepared_inputs[0].quantizer
-        scale = input_quantizer.scale
-        zero_point = n_elem * input_quantizer.zero_point
+            if self.copy_inputs:
+                q_values = copy_function(q_values)
 
-        # If this operator is the graph's last operator, there's is no need to created additional
-        # TLUs
-        if self.produces_graph_output:
-            return self.make_output_quant_parameters(q_sum, scale, zero_point)
+            # Sum all the quantized values
+            q_sum = numpy.sum(q_values, axis=axes, keepdims=self.keepdims)
+
+            # Determining the number of output zero_points to use for de-quantization with
+            # the total number of elements summed all together, which is the product of all
+            # the number of elements found within the given axes
+            n_elem = numpy.prod([q_values.shape[axis] for axis in axes])
+
+            # Determining the output scale and zero_point
+            input_quantizer = prepared_inputs[0].quantizer
+            scale = input_quantizer.scale
+            zero_point = n_elem * input_quantizer.zero_point
+
+            # If this operator is the graph's last operator,
+            # there's is no need to created additional TLUs
+            if self.produces_graph_output:
+                return self.make_output_quant_parameters(q_sum, scale, zero_point)
+
+            f_substract = q_sum - zero_point
+
+        with tag(self.op_instance_name + ".rounding"):
+            # Apply Concrete rounding (if relevant)
+            f_substract = self.cnp_round(f_substract, calibrate_rounding)
 
         # De-quantize the sum
-        f_sum = scale * (q_sum - zero_point)
+        f_sum = scale * f_substract
 
         sum_qarray = QuantizedArray(
             self.n_bits,

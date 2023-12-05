@@ -27,6 +27,7 @@ from ..common.utils import (
     to_tuple,
 )
 from .base_quantized_op import ONNXOpInputOutputType, QuantizedOp
+from .quantized_ops import QuantizedReduceSum
 from .quantizers import QuantizedArray, UniformQuantizer
 
 
@@ -118,7 +119,20 @@ class QuantizedModule:
 
         assert quant_layers_dict is not None
         self.quant_layers_dict = copy.deepcopy(quant_layers_dict)
+
         self.output_quantizers = self._set_output_quantizers()
+
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
+    def set_reduce_sum_copy(self):
+        """Set reduce sum to copy or not the inputs.
+
+        Due to bit-width propagation in the compilation we need, in some situations,
+        to copy the inputs with a PBS to avoid it.
+        """
+        assert self.quant_layers_dict is not None
+        for (_, quantized_op) in self.quant_layers_dict.values():
+            if isinstance(quantized_op, QuantizedReduceSum):
+                quantized_op.copy_inputs = True
 
     def dump_dict(self) -> Dict:
         """Dump itself to a dict.

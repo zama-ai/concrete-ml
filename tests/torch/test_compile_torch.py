@@ -717,7 +717,7 @@ def test_compile_brevitas_qat(
             FC,
             (
                 """graph torch_jit (
-  %onnx::Gemm_0[FLOAT, 1x7]
+  %x[FLOAT, 1x7]
 ) initializers (
   %fc1.weight[FLOAT, 128x7]
   %fc1.bias[FLOAT, 128]
@@ -731,7 +731,7 @@ def test_compile_brevitas_qat(
   %fc5.bias[FLOAT, 10]
 ) {
   %/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
-                """(%onnx::Gemm_0, %fc1.weight, %fc1.bias)
+                """(%x, %fc1.weight, %fc1.bias)
   %/act_1/Relu_output_0 = Relu(%/fc1/Gemm_output_0)
   %/fc2/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
                 """(%/act_1/Relu_output_0, %fc2.weight, %fc2.bias)

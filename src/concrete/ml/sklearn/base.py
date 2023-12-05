@@ -28,7 +28,7 @@ from concrete.fhe.compilation.compiler import Compiler
 from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import check_is_fitted
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
@@ -811,7 +811,7 @@ class BaseClassifier(BaseEstimator):
 # is expected as the QuantizedTorchEstimatorMixin class is not supposed to be used as such. This
 # disable could probably be removed when refactoring the serialization of models
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3250
-# pylint: disable-next=abstract-method
+# pylint: disable-next=abstract-method,too-many-instance-attributes
 class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API."""
 
@@ -1593,7 +1593,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Quantize the inputs and store the associated quantizer
         q_inputs = QuantizedArray(n_bits=input_n_bits, values=X, options=input_options)
         input_quantizer = q_inputs.quantizer
-        self.input_quantizers.append(input_quantizer)
+        self.input_quantizers = [input_quantizer]
 
         weights_n_bits = n_bits["op_weights"]
         weight_options = QuantizationOptions(n_bits=weights_n_bits, is_signed=True)
@@ -1639,7 +1639,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # output zero_point by 2
         assert output_quantizer.zero_point is not None
         output_quantizer.zero_point *= 2
-        self.output_quantizers.append(output_quantizer)
+        self.output_quantizers = [output_quantizer]
 
         # Updating post-processing parameters
         self._set_post_processing_params()
@@ -1782,6 +1782,38 @@ class SklearnLinearClassifierMixin(
         y_logits = self.decision_function(X, fhe=fhe)
         y_proba = self.post_processing(y_logits)
         return y_proba
+
+
+class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
+    """A Mixin class for sklearn SGD classifiers with FHE.
+
+    This class is used to create a SGD classifier class what can be exported
+    to ONNX using Hummingbird.
+    """
+
+    # Remove once Hummingbird supports SGDRegressor
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4100
+    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+            test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        model_for_onnx = LogisticRegression()
+        model_for_onnx.coef_ = self.sklearn_model.coef_
+        model_for_onnx.intercept_ = self.sklearn_model.intercept_
+
+        self.onnx_model_ = hb_convert(
+            model_for_onnx,
+            backend="onnx",
+            test_input=test_input,
+            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
+        ).model
+
+        self._clean_graph()
 
 
 # pylint: disable-next=invalid-name,too-many-instance-attributes
