@@ -84,6 +84,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
+        metadata["_use_rounding"] = self._use_rounding
 
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
@@ -120,12 +121,14 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
-        obj._tree_inference, _, _ = tree_to_numpy(
+        obj._use_rounding = metadata["_use_rounding"]
+        obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            use_rounding=obj._use_rounding,
             framework=obj.framework,
             output_n_bits=obj.n_bits,
-        )
+        )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
         # Scikit-Learn
@@ -219,6 +222,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
+        metadata["_use_rounding"] = self._use_rounding
 
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
@@ -255,12 +259,14 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
-        obj._tree_inference, _, _ = tree_to_numpy(
+        obj._use_rounding = metadata["_use_rounding"]
+        obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
+            use_rounding=obj._use_rounding,
             framework=obj.framework,
             output_n_bits=obj.n_bits,
-        )
+        )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
         # Scikit-Learn
