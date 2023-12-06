@@ -888,7 +888,7 @@ def numpy_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    lsbs_to_remove: Optional[int] = None,
+    lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute equal in numpy according to ONNX spec.
 
@@ -897,16 +897,16 @@ def numpy_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): Number of the least significant bits to remove.
+        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+            for tree-based models only.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # In the case of trees, x == y <=> x <= y or x < y - 1, because y is the max sum.
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        print("equal", lsbs_to_remove)
-        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
+    # For tree-based models, x == y <=> x <= y or x < y - 1, because y is the max sum.
+    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 
     # Else, default numpy_equal operator
     return (numpy.equal(x, y),)
@@ -1026,7 +1026,7 @@ def numpy_less(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    lsbs_to_remove: Optional[int] = None,
+    lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute less in numpy according to ONNX spec.
 
@@ -1035,15 +1035,15 @@ def numpy_less(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): Number of the least significant bits to remove
+        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+            for tree-based models only.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        print("less", lsbs_to_remove)
-        return rounded_comparison(x, y, lsbs_to_remove, operation=lambda x: x < 0)
+    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+        return rounded_comparison(x, y, lsbs_to_remove_for_trees, operation=lambda x: x < 0)
 
     # Else, default numpy_less operator
     return (numpy.less(x, y),)
@@ -1072,7 +1072,7 @@ def numpy_less_or_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    lsbs_to_remove: Optional[int] = None,
+    lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
     """Compute less or equal in numpy according to ONNX spec.
 
@@ -1081,15 +1081,15 @@ def numpy_less_or_equal(
     Args:
         x (numpy.ndarray): Input tensor
         y (numpy.ndarray): Input tensor
-        lsbs_to_remove (Optional[int]): Number of the least significant bits to remove
+        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+            for tree-based models only.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    if lsbs_to_remove is not None and lsbs_to_remove > 0:
-        print("equal or less", lsbs_to_remove)
-        return rounded_comparison(y, x, lsbs_to_remove, operation=lambda x: x >= 0)
+    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 
     # Else, default numpy_less_or_equal operator
     return (numpy.less_equal(x, y),)
