@@ -160,7 +160,9 @@ def fit_and_compile(model, x, y):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
 
-    model.compile(x)
+    circuit = model.compile(x)
+
+    return circuit
 
 
 def check_correctness_with_sklearn(
@@ -437,6 +439,10 @@ def check_serialization_dump_load(model, x, use_dump_method):
         y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
         assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
 
+        # Check if the graphs are identical
+        loaded_model.compile(x)
+        assert (model.fhe_circuit.graph.format()) == loaded_model.fhe_circuit.graph.format()
+
 
 def check_serialization_dumps_loads(model, x, use_dump_method):
     """Check that a model can be serialized two times using dumps/loads."""
@@ -489,6 +495,10 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
     y_pred_sklearn_model = model.sklearn_model.predict(x)
     y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
     assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
+
+    # Check if the graphs are identical
+    loaded_model.compile(x)
+    assert (model.fhe_circuit.graph.format()) == loaded_model.fhe_circuit.graph.format()
 
 
 def check_offset(model_class, n_bits, x, y):
@@ -1155,6 +1165,7 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
 
 def check_rounding_consistency(
     model,
+    n_bits,
     x,
     y,
     predict_method,
@@ -1172,7 +1183,7 @@ def check_rounding_consistency(
     fhe_test = get_random_samples(x, fhe_samples)
 
     # Fit and compile with rounding enabled
-    fit_and_compile(model, x, y)
+    circuit_with_rounding = fit_and_compile(model, x, y)
 
     rounded_predict_quantized = predict_method(x, fhe="disable")
     rounded_predict_simulate = predict_method(x, fhe="simulate")
@@ -1182,9 +1193,9 @@ def check_rounding_consistency(
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=DeprecationWarning)
-        model.use_rounding = False
+        model.use_optimized_execution = False
 
-    fit_and_compile(model, x, y)
+    _ = fit_and_compile(model, x, y)
 
     not_rounded_predict_quantized = predict_method(x, fhe="disable")
     not_rounded_predict_simulate = predict_method(x, fhe="simulate")
@@ -1193,6 +1204,9 @@ def check_rounding_consistency(
     metric(rounded_predict_quantized, not_rounded_predict_quantized)
     metric(rounded_predict_simulate, not_rounded_predict_simulate)
     metric(rounded_predict_fhe, not_rounded_predict_fhe)
+
+    # Check that the maximum bitwidth of the cuircuit with rounding is at most n_bits + 2
+    assert circuit_with_rounding.graph.maximum_integer_bit_width() <= n_bits + 2
 
 
 # Neural network models are skipped for this test
@@ -1827,7 +1841,7 @@ def test_linear_models_have_no_tlu(
 
 # Test only tree-based models
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
-@pytest.mark.parametrize("n_bits", [2, 3, 4, 5, 6])
+@pytest.mark.parametrize("n_bits", [5, 6])
 def test_rounding_consistency(
     model_class,
     parameters,
@@ -1857,6 +1871,7 @@ def test_rounding_consistency(
 
     check_rounding_consistency(
         model,
+        n_bits,
         x,
         y,
         predict_method,

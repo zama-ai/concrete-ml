@@ -1289,7 +1289,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         BaseEstimator.__init__(self)
 
     @property
-    def use_rounding(self) -> bool:
+    def use_optimized_execution(self) -> bool:
         """The rounding property.
 
         Returns:
@@ -1297,8 +1297,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         return self._use_rounding  # pragma: no cover
 
-    @use_rounding.setter
-    def use_rounding(self, value: bool) -> None:
+    @use_optimized_execution.setter
+    def use_optimized_execution(self, value: bool) -> None:
         """Set the rounding feature.
 
         Args:

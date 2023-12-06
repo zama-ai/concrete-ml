@@ -11,7 +11,12 @@ import onnxoptimizer
 import torch
 from onnx import checker, helper
 
-from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy, get_op_type
+from .onnx_utils import (
+    IMPLEMENTED_ONNX_OPS,
+    execute_onnx_with_numpy,
+    execute_onnx_with_numpy_trees,
+    get_op_type,
+)
 
 OPSET_VERSION_FOR_ONNX_EXPORT = 14
 
@@ -157,11 +162,7 @@ def get_equivalent_numpy_forward_from_torch(
     )
 
 
-def get_equivalent_numpy_forward_from_onnx(
-    onnx_model: onnx.ModelProto,
-    check_model: bool = True,
-    lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None,
-) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
+def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onnx.ModelProto:
     """Get the numpy equivalent forward of the provided ONNX model.
 
     Args:
@@ -169,19 +170,13 @@ def get_equivalent_numpy_forward_from_onnx(
             forward.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
-        lsbs_to_remove_for_trees (Optional[Tuple[int, int]]): This parameter is exclusively used for
-            optimizing tree-based models. It contains the values of the least significant bits to
-            remove during the tree traversal, where the first value refers to the first comparison
-            (either "less" or "less_or_equal"), while the second value refers to the "Equal"
-            comparison operation. Default to None, as it is not applicable to other types of models.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
             model to numpy.
 
     Returns:
-        Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
-            the equivalent numpy function.
+        onnx.ModelProto: The preprocessed ONNX model.
     """
 
     # All onnx models should be checked, "check_model" parameter must be removed
@@ -226,9 +221,62 @@ def get_equivalent_numpy_forward_from_onnx(
             f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
         )
 
+    return equivalent_onnx_model
+
+
+def get_equivalent_numpy_forward_from_onnx(
+    onnx_model: onnx.ModelProto,
+    check_model: bool = True,
+) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
+    """Get the numpy equivalent forward of the provided ONNX model.
+
+    Args:
+        onnx_model (onnx.ModelProto): the ONNX model for which to get the equivalent numpy
+            forward.
+        check_model (bool): set to True to run the onnx checker on the model.
+            Defaults to True.
+
+    Returns:
+        Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
+            the equivalent numpy function.
+    """
+
+    equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
+
     # Return lambda of numpy equivalent of onnx execution
     return (
-        lambda *args: execute_onnx_with_numpy(
+        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args)
+    ), equivalent_onnx_model
+
+
+def get_equivalent_numpy_forward_from_onnx_tree(
+    onnx_model: onnx.ModelProto,
+    check_model: bool = True,
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None,
+) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
+    """Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
+
+    Args:
+        onnx_model (onnx.ModelProto): the ONNX model for which to get the equivalent numpy
+            forward.
+        check_model (bool): set to True to run the onnx checker on the model.
+            Defaults to True.
+        lsbs_to_remove_for_trees (Optional[Tuple[int, int]]): This parameter is exclusively used for
+            optimizing tree-based models. It contains the values of the least significant bits to
+            remove during the tree traversal, where the first value refers to the first comparison
+            (either "less" or "less_or_equal"), while the second value refers to the "Equal"
+            comparison operation. Default to None, as it is not applicable to other types of models.
+
+    Returns:
+        Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
+            the equivalent numpy function.
+    """
+
+    equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
+
+    # Return lambda of numpy equivalent of onnx execution
+    return (
+        lambda *args: execute_onnx_with_numpy_trees(
             equivalent_onnx_model.graph, lsbs_to_remove_for_trees, *args
         )
     ), equivalent_onnx_model

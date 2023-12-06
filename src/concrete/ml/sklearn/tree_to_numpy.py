@@ -13,7 +13,10 @@ from ..common.utils import (
     get_onnx_opset_version,
     is_regressor_or_partial_regressor,
 )
-from ..onnx.convert import OPSET_VERSION_FOR_ONNX_EXPORT, get_equivalent_numpy_forward_from_onnx
+from ..onnx.convert import (
+    OPSET_VERSION_FOR_ONNX_EXPORT,
+    get_equivalent_numpy_forward_from_onnx_tree,
+)
 from ..onnx.onnx_model_manipulations import clean_graph_at_node_op_type, remove_node_types
 from ..onnx.onnx_utils import get_op_type
 from ..quantization import QuantizedArray
@@ -27,9 +30,13 @@ warnings.filterwarnings("ignore")
 from hummingbird.ml import convert as hb_convert  # noqa: E402
 
 # pylint: disable=too-many-branches
+# pylint: enable=wrong-import-position,wrong-import-order
 
 # Most significant bits to retain when applying rounding to the tree
-MSB_TO_KEEP_FOR_TREES = 4
+MSB_TO_KEEP_FOR_TREES = 1
+
+# Minimum circuit size to apply rounding
+MIN_ROUNDING_THRESHOLD = 4
 
 
 def get_onnx_model(model: Callable, x: numpy.ndarray, framework: str) -> onnx.ModelProto:
@@ -352,7 +359,7 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx_tree(
         onnx_model, lsbs_to_remove_for_trees=lsbs_to_remove_for_trees
     )
 
@@ -397,6 +404,8 @@ def _compute_lsb_to_remove_for_trees(
     def get_lsbs_to_remove_for_trees(array: numpy.ndarray) -> int:
         """Update the number of LSBs to remove based on overflow detection.
 
+        this function works only for MSB = 1
+
         Args:
             array (numpy.ndarray): The array for which the bitwidth needs to be checked.
 
@@ -406,17 +415,26 @@ def _compute_lsb_to_remove_for_trees(
 
         initial_bitwidth = get_bitwidth(array)
 
-        if initial_bitwidth - MSB_TO_KEEP_FOR_TREES > 0:
+        # No need to compute if the bitwidth doesn't satisfy the threshold
+        if initial_bitwidth - MIN_ROUNDING_THRESHOLD > 0:
             lsbs_to_remove_for_trees = initial_bitwidth
+            half = 1 << (lsbs_to_remove_for_trees - 1)
 
+            # The subtraction operation may increase or decrease the precision by 1 or 2 bits
+            # In the following, we handle the case where the precision decreases
             while lsbs_to_remove_for_trees > 0:
-                half = 1 << (lsbs_to_remove_for_trees - 1)
+                new_bitwidth = get_bitwidth(array - half)
 
-                # The subtraction operation may increase or decrease the precision by 1 or 2 bits
-                if get_bitwidth(array - half) <= initial_bitwidth:
-                    lsbs_to_remove_for_trees -= 1
+                # Readjust the LSB
+                if initial_bitwidth - new_bitwidth > 0:
+                    lsbs_to_remove_for_trees -= 1  # pragma: no cover
+                    half = 1 << (lsbs_to_remove_for_trees - 1)  # pragma: no cover
                 else:
-                    return lsbs_to_remove_for_trees
+                    break
+
+            assert MSB_TO_KEEP_FOR_TREES == new_bitwidth - lsbs_to_remove_for_trees
+
+            return lsbs_to_remove_for_trees
 
         return 0
 
@@ -473,7 +491,7 @@ def _compute_lsb_to_remove_for_trees(
     # If operator is `==`, np.equal(x, y) is equivalent to:
     # round_bit_pattern((x - y) - half, lsbs_to_remove_for_trees=r) >= 0.
     # Therefore, stage_2 = bias_1 - (q_x @ mat_2.transpose(0, 2, 1))
-    stage_2 = ((bias_2 - matrix_q @ mat_2.transpose(0, 2, 1))).sum(axis=0)
+    stage_2 = ((bias_2 - matrix_q @ mat_2.transpose(0, 2, 1))).max(axis=0)
 
     lsbs_to_remove_for_trees_stage_2 = get_lsbs_to_remove_for_trees(stage_2)
 
