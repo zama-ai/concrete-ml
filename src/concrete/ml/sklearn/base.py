@@ -1281,20 +1281,10 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._tree_inference: Optional[Callable] = None
 
         #: Boolean that indicates whether the rounding feature is enabled or not.
-        self._use_rounding: bool = True
+        self.__use_rounding: bool = True
 
         BaseEstimator.__init__(self)
 
-    @property
-    def use_rounding(self) -> bool:
-        """The rounding property.
-
-        Returns:
-            bool: Whether to enable or disable rounding
-        """
-        return self._use_rounding  # pragma: no cover
-
-    @use_rounding.setter
     def use_rounding(self, value: bool) -> None:
         """Set the rounding feature.
 
@@ -1303,7 +1293,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         assert isinstance(value, bool)
 
-        self._use_rounding = value
+        self.__use_rounding = value
 
         if not value:
             warnings.simplefilter("always")
@@ -1344,7 +1334,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
             self.sklearn_model,
             q_X,
-            use_rounding=self._use_rounding,
+            use_rounding=self.__use_rounding,
             framework=self.framework,
             output_n_bits=self.n_bits,
         )

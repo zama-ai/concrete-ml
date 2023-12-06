@@ -887,6 +887,24 @@ def numpy_exp(
 def numpy_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
+    """Compute equal in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.equal(x, y),)
+
+
+def rounded_numpy_equal_for_trees(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
     *,
     lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
@@ -906,7 +924,9 @@ def numpy_equal(
 
     # For tree-based models, x == y <=> x <= y or x < y - 1, because y is the max sum.
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
-        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
+        return rounded_comparison(
+            y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0
+        )  # pragma: no cover
 
     # Else, default numpy_equal operator
     return (numpy.equal(x, y),)
@@ -1025,6 +1045,24 @@ def numpy_greater_or_equal_float(
 def numpy_less(
     x: numpy.ndarray,
     y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
+    """Compute less in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.less(x, y),)
+
+
+def rounded_numpy_less_for_trees(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
     *,
     lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
@@ -1046,7 +1084,7 @@ def numpy_less(
         return rounded_comparison(x, y, lsbs_to_remove_for_trees, operation=lambda x: x < 0)
 
     # Else, default numpy_less operator
-    return (numpy.less(x, y),)
+    return numpy_less(x, y)
 
 
 def numpy_less_float(
@@ -1071,6 +1109,24 @@ def numpy_less_float(
 def numpy_less_or_equal(
     x: numpy.ndarray,
     y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
+    """Compute less or equal in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+    return (numpy.less_equal(x, y),)
+
+
+def rounded_numpy_less_or_equal_for_trees(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
     *,
     lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
@@ -1092,7 +1148,7 @@ def numpy_less_or_equal(
         return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 
     # Else, default numpy_less_or_equal operator
-    return (numpy.less_equal(x, y),)
+    return numpy_less_or_equal(x, y)
 
 
 def numpy_less_or_equal_float(
