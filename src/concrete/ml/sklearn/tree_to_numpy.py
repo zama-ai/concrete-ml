@@ -307,7 +307,8 @@ def tree_to_numpy(
     Args:
         model (Callable): The tree model to convert.
         x (numpy.ndarray): The input data.
-        use_rounding (Optional[bool]): Use rounding feature or not.
+        use_rounding (Optional[bool]): This parameter is exclusively used to tree-based models.
+            It determines whether the rounding feature is enabled or disabled.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output. Default to 8.
@@ -320,7 +321,7 @@ def tree_to_numpy(
     # mypy
     assert output_n_bits is not None
 
-    lsbs_to_remove: Optional[Tuple[int, int]] = None
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None
 
     assert_true(
         framework in ["xgboost", "sklearn"],
@@ -334,10 +335,10 @@ def tree_to_numpy(
     if use_rounding:
         # First LSB refers to Less or LessOrEqual comparisons
         # Second LSB refers to Equal comparison
-        lsbs_to_remove = _compute_lsb_to_remove_for_trees(onnx_model, x)
+        lsbs_to_remove_for_trees = _compute_lsb_to_remove_for_trees(onnx_model, x)
 
         # mypy
-        assert len(lsbs_to_remove) == 2
+        assert len(lsbs_to_remove_for_trees) == 2
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
@@ -352,7 +353,7 @@ def tree_to_numpy(
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
     _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
-        onnx_model, lsbs_to_remove=lsbs_to_remove
+        onnx_model, lsbs_to_remove_for_trees=lsbs_to_remove_for_trees
     )
 
     return (_tree_inference, [q_y.quantizer], onnx_model)
@@ -393,7 +394,7 @@ def _compute_lsb_to_remove_for_trees(
         bitwidth = math.ceil(math.log2(max_val + 1)) + 1
         return bitwidth
 
-    def get_lsbs_to_remove(array: numpy.ndarray) -> int:
+    def get_lsbs_to_remove_for_trees(array: numpy.ndarray) -> int:
         """Update the number of LSBs to remove based on overflow detection.
 
         Args:
@@ -406,16 +407,16 @@ def _compute_lsb_to_remove_for_trees(
         initial_bitwidth = get_bitwidth(array)
 
         if initial_bitwidth - MSB_TO_KEEP_FOR_TREES > 0:
-            lsbs_to_remove = initial_bitwidth
+            lsbs_to_remove_for_trees = initial_bitwidth
 
-            while lsbs_to_remove > 0:
-                half = 1 << (lsbs_to_remove - 1)
+            while lsbs_to_remove_for_trees > 0:
+                half = 1 << (lsbs_to_remove_for_trees - 1)
 
                 # The subtraction operation may increase or decrease the precision by 1 or 2 bits
                 if get_bitwidth(array - half) <= initial_bitwidth:
-                    lsbs_to_remove -= 1  # pragma: no cover
+                    lsbs_to_remove_for_trees -= 1
                 else:
-                    return lsbs_to_remove
+                    return lsbs_to_remove_for_trees
 
         return 0
 
@@ -454,26 +455,26 @@ def _compute_lsb_to_remove_for_trees(
     required_onnx_operators = set(get_op_type(node) for node in onnx_model.graph.node)
 
     # If operator is `<`, np.less(x, y) is equivalent to:
-    # round_bit_pattern((x - y) - half, lsbs_to_remove=r) < 0.
+    # round_bit_pattern((x - y) - half, lsbs_to_remove_for_trees=r) < 0.
     # Therefore, stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
     if "Less" in required_onnx_operators:
         stage_1 = (q_x @ mat_1.transpose(0, 2, 1)) - bias_1
         matrix_q = stage_1 < 0
 
     # Else, if operator is `<=`, np.less_equal(x, y) is equivalent to:
-    # round_bit_pattern((y - x) - half, lsbs_to_remove=r) >= 0.
+    # round_bit_pattern((y - x) - half, lsbs_to_remove_for_trees=r) >= 0.
     # Therefore, stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
     elif "LessOrEqual" in required_onnx_operators:
         stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
         matrix_q = stage_1 >= 0
 
-    lsbs_to_remove_stage_1 = get_lsbs_to_remove(stage_1)
+    lsbs_to_remove_for_trees_stage_1 = get_lsbs_to_remove_for_trees(stage_1)
 
     # If operator is `==`, np.equal(x, y) is equivalent to:
-    # round_bit_pattern((x - y) - half, lsbs_to_remove=r) >= 0.
+    # round_bit_pattern((x - y) - half, lsbs_to_remove_for_trees=r) >= 0.
     # Therefore, stage_2 = bias_1 - (q_x @ mat_2.transpose(0, 2, 1))
     stage_2 = ((bias_2 - matrix_q @ mat_2.transpose(0, 2, 1))).sum(axis=0)
 
-    lsbs_to_remove_stage_2 = get_lsbs_to_remove(stage_2)
+    lsbs_to_remove_for_trees_stage_2 = get_lsbs_to_remove_for_trees(stage_2)
 
-    return (lsbs_to_remove_stage_1, lsbs_to_remove_stage_2)
+    return (lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2)

@@ -443,17 +443,18 @@ def get_op_type(node):
 
 def execute_onnx_with_numpy(
     graph: onnx.GraphProto,
-    lsbs_to_remove: Optional[Tuple[int, int]],
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]],
     *inputs: numpy.ndarray,
 ) -> Tuple[numpy.ndarray, ...]:
     """Execute the provided ONNX graph on the given inputs.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
-        lsbs_to_remove (Optional[Tuple[int, int]]): Contains the values of the least significant
-            bits to remove during tree traversal. The first value pertains to the first comparison
-            (either "less" or "less_or_equal"), and the second value relates to the "Equal"
-            comparison operation. Default value set to None, when the rounding feature is not used.
+        lsbs_to_remove_for_trees (Optional[Tuple[int, int]]): This parameter is exclusively used for
+            optimizing tree-based models. It contains the values of the least significant bits to
+            remove during the tree traversal, where the first value refers to the first comparison
+            (either "less" or "less_or_equal"), while the second value refers to the "Equal"
+            comparison operation. Default to None, as it is not applicable to other types of models.
         *inputs: The inputs of the graph.
 
     Returns:
@@ -472,9 +473,11 @@ def execute_onnx_with_numpy(
 
         # For trees, the first LSB refers to `Less` or `LessOrEqual` comparisons and the second
         # LSB refers to `Equal` comparison
-        if lsbs_to_remove is not None and node.op_type in SUPPORTED_ROUNDED_OPERATIONS:
-            attributes["lsbs_to_remove"] = (
-                lsbs_to_remove[0] if node.op_type != "Equal" else lsbs_to_remove[1]
+        if lsbs_to_remove_for_trees is not None and node.op_type in SUPPORTED_ROUNDED_OPERATIONS:
+            attributes["lsbs_to_remove_for_trees"] = (
+                lsbs_to_remove_for_trees[0]
+                if node.op_type != "Equal"
+                else lsbs_to_remove_for_trees[1]
             )
 
         outputs = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type](*curr_inputs, **attributes)

@@ -1,6 +1,7 @@
 """ONNX conversion related code."""
 
 import tempfile
+import warnings
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
 
@@ -159,7 +160,7 @@ def get_equivalent_numpy_forward_from_torch(
 def get_equivalent_numpy_forward_from_onnx(
     onnx_model: onnx.ModelProto,
     check_model: bool = True,
-    lsbs_to_remove: Optional[Tuple[int, int]] = None,
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None,
 ) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
     """Get the numpy equivalent forward of the provided ONNX model.
 
@@ -168,11 +169,11 @@ def get_equivalent_numpy_forward_from_onnx(
             forward.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
-        lsbs_to_remove (Optional[Tuple[int, int]]): Contains the values of the least significant
-            bits to remove during tree traversal only. The first value pertains to the first
-            comparison (either "less" or "less_or_equal"), and the second value relates to the
-            "Equal" comparison operation. Default value set to None, when the rounding feature
-            is not used.
+        lsbs_to_remove_for_trees (Optional[Tuple[int, int]]): This parameter is exclusively used for
+            optimizing tree-based models. It contains the values of the least significant bits to
+            remove during the tree traversal, where the first value refers to the first comparison
+            (either "less" or "less_or_equal"), while the second value refers to the "Equal"
+            comparison operation. Default to None, as it is not applicable to other types of models.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
@@ -185,8 +186,16 @@ def get_equivalent_numpy_forward_from_onnx(
 
     # All onnx models should be checked, "check_model" parameter must be removed
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4157
-    if check_model:
-        checker.check_model(onnx_model)
+    if not check_model:
+        warnings.simplefilter("always")
+        warnings.warn(
+            "`check_model` parameter should always be set to True, to ensure proper onnx model "
+            "verification and avoid bypassing essential onnx model validation checks.",
+            category=UserWarning,
+            stacklevel=2,
+        )
+
+    checker.check_model(onnx_model)
 
     # Optimize ONNX graph
     # List of all currently supported onnx optimizer passes
@@ -219,5 +228,7 @@ def get_equivalent_numpy_forward_from_onnx(
 
     # Return lambda of numpy equivalent of onnx execution
     return (
-        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, lsbs_to_remove, *args)
+        lambda *args: execute_onnx_with_numpy(
+            equivalent_onnx_model.graph, lsbs_to_remove_for_trees, *args
+        )
     ), equivalent_onnx_model
