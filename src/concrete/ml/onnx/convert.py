@@ -186,7 +186,7 @@ def get_equivalent_numpy_forward_from_onnx(
 
     # All onnx models should be checked, "check_model" parameter must be removed
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4157
-    if not check_model:
+    if not check_model:  # pragma: no cover
         warnings.simplefilter("always")
         warnings.warn(
             "`check_model` parameter should always be set to True, to ensure proper onnx model "
