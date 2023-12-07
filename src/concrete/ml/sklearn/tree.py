@@ -53,6 +53,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         self.random_state = random_state
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+        self.is_rounding_used = self._BaseTreeEstimatorMixin__use_rounding
 
     def __getattr__(self, attr: str):
         # We directly expose the following methods as they are commonly used with decision trees
@@ -84,7 +85,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
-        metadata["__use_rounding"] = self.__use_rounding
+        metadata["is_rounding_used"] = self.is_rounding_used
 
         # Scikit-Learn
         metadata["criterion"] = self.criterion
@@ -116,12 +117,11 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
-        # pylint: disable=unused-private-member,attribute-defined-outside-init
-        obj.__use_rounding = metadata["__use_rounding"]
+        obj.is_rounding_used = metadata["is_rounding_used"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
-            use_rounding=obj.__use_rounding,
+            use_rounding=obj.is_rounding_used,
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )[0]
@@ -187,6 +187,7 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         self.random_state = random_state
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+        self.is_rounding_used = self._BaseTreeEstimatorMixin__use_rounding
 
     def __getattr__(self, attr: str):
         # We directly expose the following methods as they are commonly used with decision trees
@@ -212,7 +213,7 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
-        metadata["__use_rounding"] = self.__use_rounding
+        metadata["is_rounding_used"] = self.is_rounding_used
 
         # Scikit-Learn
         metadata["criterion"] = self.criterion
@@ -244,11 +245,11 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
         # pylint: disable=unused-private-member,attribute-defined-outside-init
-        obj.__use_rounding = metadata["__use_rounding"]
+        obj.is_rounding_used = metadata["is_rounding_used"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
-            use_rounding=obj.__use_rounding,
+            use_rounding=obj.is_rounding_used,
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )[0]

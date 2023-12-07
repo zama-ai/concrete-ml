@@ -908,7 +908,7 @@ def rounded_numpy_equal_for_trees(
     *,
     lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
-    """Compute equal in numpy according to ONNX spec.
+    """Compute rounded equal in numpy according to ONNX spec for tree-based models only.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
 
@@ -1066,7 +1066,7 @@ def rounded_numpy_less_for_trees(
     *,
     lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
-    """Compute less in numpy according to ONNX spec.
+    """Compute rounded less in numpy according to ONNX spec for tree-based models only.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
 
@@ -1080,6 +1080,7 @@ def rounded_numpy_less_for_trees(
         Tuple[numpy.ndarray]: Output tensor
     """
 
+    # x < y is equivalent to (x - y < 0) or (y - x > 0)
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(x, y, lsbs_to_remove_for_trees, operation=lambda x: x < 0)
 
@@ -1130,7 +1131,7 @@ def rounded_numpy_less_or_equal_for_trees(
     *,
     lsbs_to_remove_for_trees: Optional[int] = None,
 ) -> Tuple[numpy.ndarray]:
-    """Compute less or equal in numpy according to ONNX spec.
+    """Compute rounded less or equal in numpy according to ONNX spec for tree-based models only.
 
     See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
 
@@ -1144,6 +1145,8 @@ def rounded_numpy_less_or_equal_for_trees(
         Tuple[numpy.ndarray]: Output tensor
     """
 
+    # x <= y is equivalent to (x - y <= 0) or (y - x >= 0)
+    # rounding_bit_pattern gives accuracte results with (y-x <= 0) approach compred to (x-y <= 0)
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 

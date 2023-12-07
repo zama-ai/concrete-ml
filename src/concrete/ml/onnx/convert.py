@@ -162,7 +162,7 @@ def get_equivalent_numpy_forward_from_torch(
     )
 
 
-def preprocess_onnx_model(onnx_model, check_model):
+def preprocess_onnx_model(onnx_model: onnx.ModelProto, check_model: bool) -> onnx.ModelProto:
     """Get the numpy equivalent forward of the provided ONNX model.
 
     Args:

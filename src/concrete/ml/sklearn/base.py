@@ -1285,25 +1285,14 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
-    def use_rounding(self, value: bool) -> None:
-        """Set the rounding feature.
+    def get_use_rounding(self) -> bool:
+        """Get the value of the private parameter '__use_rounding'.
 
-        Args:
-            value (bool): Whether to enable or disable rounding
+        Returns:
+            bool: The current value of '__use_rounding', which should be set to `True`
+                to benefit from the FHE speedup.
         """
-        assert isinstance(value, bool)
-
-        self.__use_rounding = value
-
-        if not value:
-            warnings.simplefilter("always")
-            warnings.warn(
-                "Using Concrete tree-based models without the `rounding feature` is deprecated. "
-                "Consider setting 'use_rounding' to `True` for making the FHE inference faster "
-                "and key generation.",
-                category=DeprecationWarning,
-                stacklevel=2,
-            )
+        return self.__use_rounding
 
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit

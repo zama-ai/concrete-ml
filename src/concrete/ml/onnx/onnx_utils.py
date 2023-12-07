@@ -408,7 +408,7 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
     "LessOrEqual": numpy_less_or_equal,
 }
 # All numpy operators used for tree-based models that support auto rounding
-ONNX_COMPARISON_OPS_TO_ROUNDED_NUMPY_IMPL_BOOL = {
+ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL = {
     "Less": rounded_numpy_less_for_trees,
     "Equal": rounded_numpy_equal_for_trees,
     "LessOrEqual": rounded_numpy_less_or_equal_for_trees,
@@ -514,7 +514,7 @@ def execute_onnx_with_numpy_trees(
         curr_inputs = (node_results[input_name] for input_name in node.input)
         attributes = {attribute.name: get_attribute(attribute) for attribute in node.attribute}
 
-        if node.op_type in ONNX_COMPARISON_OPS_TO_ROUNDED_NUMPY_IMPL_BOOL:
+        if node.op_type in ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL:
 
             # The first LSB refers to `Less` or `LessOrEqual` comparisons
             # The second LSB refers to `Equal` comparison
@@ -522,7 +522,7 @@ def execute_onnx_with_numpy_trees(
             attributes["lsbs_to_remove_for_trees"] = lsbs_to_remove_for_trees[stage]
 
             # Use rounded numpy operation to relevant comparison nodes
-            op_type = ONNX_COMPARISON_OPS_TO_ROUNDED_NUMPY_IMPL_BOOL[node.op_type]
+            op_type = ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL[node.op_type]
         else:
             op_type = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type]  # type: ignore[assignment]
 

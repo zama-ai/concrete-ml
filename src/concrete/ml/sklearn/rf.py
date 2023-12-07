@@ -64,6 +64,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         self.max_leaf_nodes = max_leaf_nodes
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+        self.is_rounding_used = self._BaseTreeEstimatorMixin__use_rounding
 
     def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
         # Here, we want to use BaseTreeEstimatorMixin's `post-processing` method as
@@ -84,7 +85,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
-        metadata["__use_rounding"] = self.__use_rounding
+        metadata["is_rounding_used"] = self.is_rounding_used
 
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
@@ -121,12 +122,11 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
-        # pylint: disable=unused-private-member,attribute-defined-outside-init
-        obj.__use_rounding = metadata["__use_rounding"]
+        obj.is_rounding_used = metadata["is_rounding_used"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
-            use_rounding=obj.__use_rounding,
+            use_rounding=obj.is_rounding_used,
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )[0]
@@ -209,6 +209,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         self.max_leaf_nodes = max_leaf_nodes
         self.min_impurity_decrease = min_impurity_decrease
         self.ccp_alpha = ccp_alpha
+        self.is_rounding_used = self._BaseTreeEstimatorMixin__use_rounding
 
     def dump_dict(self) -> Dict[str, Any]:
         metadata: Dict[str, Any] = {}
@@ -223,7 +224,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
-        metadata["__use_rounding"] = self.__use_rounding
+        metadata["is_rounding_used"] = self.is_rounding_used
 
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
@@ -260,12 +261,11 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
-        # pylint: disable=unused-private-member,attribute-defined-outside-init
-        obj.__use_rounding = metadata["__use_rounding"]
+        obj.is_rounding_used = metadata["is_rounding_used"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
-            use_rounding=obj.__use_rounding,
+            use_rounding=obj.is_rounding_used,
             framework=obj.framework,
             output_n_bits=obj.n_bits,
         )[0]

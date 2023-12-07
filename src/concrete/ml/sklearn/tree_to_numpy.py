@@ -404,6 +404,8 @@ def _compute_lsb_to_remove_for_trees(
     def get_lsbs_to_remove_for_trees(array: numpy.ndarray) -> int:
         """Update the number of LSBs to remove based on overflow detection.
 
+        this function works only for MSB = 1
+
         Args:
             array (numpy.ndarray): The array for which the bitwidth needs to be checked.
 
@@ -413,19 +415,27 @@ def _compute_lsb_to_remove_for_trees(
 
         initial_bitwidth = get_bitwidth(array)
 
+        # No need to compute if the bitwidth doesn't satisfy the threshold
         if initial_bitwidth - MIN_ROUNDING_THRESHOLD > 0:
             lsbs_to_remove_for_trees = initial_bitwidth
+            half = 1 << (lsbs_to_remove_for_trees - 1)
 
+            # The subtraction operation may increase or decrease the precision by 1 or 2 bits
+            # In the following, we handle the case where the precision decreases
             while lsbs_to_remove_for_trees > 0:
-                half = 1 << (lsbs_to_remove_for_trees - 1)
-
-                # The subtraction operation may increase or decrease the precision by 1 or 2 bits
                 new_bitwidth = get_bitwidth(array - half)
 
-                if initial_bitwidth - new_bitwidth >= MSB_TO_KEEP_FOR_TREES:
+                # Readjust the LSB
+                if initial_bitwidth - new_bitwidth > 0:
                     lsbs_to_remove_for_trees -= 1  # pragma: no cover
+                    half = 1 << (lsbs_to_remove_for_trees - 1)  # pragma: no cover
                 else:
-                    return lsbs_to_remove_for_trees
+                    break
+
+            assert MSB_TO_KEEP_FOR_TREES == new_bitwidth - lsbs_to_remove_for_trees
+
+            return lsbs_to_remove_for_trees
+
         return 0
 
     quant_params = {
@@ -485,4 +495,8 @@ def _compute_lsb_to_remove_for_trees(
 
     lsbs_to_remove_for_trees_stage_2 = get_lsbs_to_remove_for_trees(stage_2)
 
+    print(
+        "(lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2)",
+        (lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2),
+    )
     return (lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2)
