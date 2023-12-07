@@ -495,8 +495,4 @@ def _compute_lsb_to_remove_for_trees(
 
     lsbs_to_remove_for_trees_stage_2 = get_lsbs_to_remove_for_trees(stage_2)
 
-    print(
-        "(lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2)",
-        (lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2),
-    )
     return (lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2)

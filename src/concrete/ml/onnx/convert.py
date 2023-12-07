@@ -254,7 +254,7 @@ def get_equivalent_numpy_forward_from_onnx_tree(
     check_model: bool = True,
     lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None,
 ) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
-    """Get the numpy equivalent forward of the provided ONNX model.
+    """Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
 
     Args:
         onnx_model (onnx.ModelProto): the ONNX model for which to get the equivalent numpy

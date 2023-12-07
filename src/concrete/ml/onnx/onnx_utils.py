@@ -482,7 +482,7 @@ def execute_onnx_with_numpy_trees(
     lsbs_to_remove_for_trees: Optional[Tuple[int, int]],
     *inputs: numpy.ndarray,
 ) -> Tuple[numpy.ndarray, ...]:
-    """Execute the provided ONNX graph on the given inputs for tree-based models.
+    """Execute the provided ONNX graph on the given inputs for tree-based models only.
 
     Args:
         graph (onnx.GraphProto): The ONNX graph to execute.
