@@ -33,7 +33,10 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 # pylint: enable=wrong-import-position,wrong-import-order
 
 # Most significant bits to retain when applying rounding to the tree
-MSB_TO_KEEP_FOR_TREES = 4
+MSB_TO_KEEP_FOR_TREES = 1
+
+# Minimum circuit size to apply rounding
+MIN_ROUNDING_THRESHOLD = 4
 
 
 def get_onnx_model(model: Callable, x: numpy.ndarray, framework: str) -> onnx.ModelProto:
@@ -410,7 +413,7 @@ def _compute_lsb_to_remove_for_trees(
 
         initial_bitwidth = get_bitwidth(array)
 
-        if initial_bitwidth - MSB_TO_KEEP_FOR_TREES > 0:
+        if initial_bitwidth - MIN_ROUNDING_THRESHOLD > 0:
             lsbs_to_remove_for_trees = initial_bitwidth
 
             while lsbs_to_remove_for_trees > 0:
@@ -419,7 +422,7 @@ def _compute_lsb_to_remove_for_trees(
                 # The subtraction operation may increase or decrease the precision by 1 or 2 bits
                 new_bitwidth = get_bitwidth(array - half)
 
-                if initial_bitwidth - new_bitwidth >= 1:
+                if initial_bitwidth - new_bitwidth >= MSB_TO_KEEP_FOR_TREES:
                     lsbs_to_remove_for_trees -= 1  # pragma: no cover
                 else:
                     return lsbs_to_remove_for_trees
