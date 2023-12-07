@@ -1146,7 +1146,7 @@ def rounded_numpy_less_or_equal_for_trees(
     """
 
     # x <= y is equivalent to (x - y <= 0) or (y - x >= 0)
-    # rounding_bit_pattern gives accuracte results with (y-x <= 0) approach compred to (x-y <= 0)
+    # `rounding_bit_pattern` gives accurate results with (y-x <= 0) approach compred to (x-y <= 0)
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 
