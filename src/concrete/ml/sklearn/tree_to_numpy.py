@@ -35,8 +35,8 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 # Most significant bits to retain when applying rounding to the tree
 MSB_TO_KEEP_FOR_TREES = 1
 
-# Minimum circuit size to apply rounding
-MIN_ROUNDING_THRESHOLD = 4
+# Minimum bitwidth to apply rounding
+MIN_CIRCUIT_THRESHOLD_FOR_TREES = 4
 
 
 def get_onnx_model(model: Callable, x: numpy.ndarray, framework: str) -> onnx.ModelProto:
@@ -413,30 +413,18 @@ def _compute_lsb_to_remove_for_trees(
             int: The updated LSB to remove.
         """
 
-        initial_bitwidth = get_bitwidth(array)
+        lsbs_to_remove_for_trees: int = 0
 
-        # No need to compute if the bitwidth doesn't satisfy the threshold
-        if initial_bitwidth - MIN_ROUNDING_THRESHOLD > 0:
-            lsbs_to_remove_for_trees = initial_bitwidth
-            half = 1 << (lsbs_to_remove_for_trees - 1)
+        prev_bitwidth = get_bitwidth(array)
 
-            # The subtraction operation may increase or decrease the precision by 1 or 2 bits
-            # In the following, we handle the case where the precision decreases
-            while lsbs_to_remove_for_trees > 0:
-                new_bitwidth = get_bitwidth(array - half)
+        if prev_bitwidth > MIN_CIRCUIT_THRESHOLD_FOR_TREES:
 
-                # Readjust the LSB
-                if initial_bitwidth - new_bitwidth > 0:
-                    lsbs_to_remove_for_trees -= 1  # pragma: no cover
-                    half = 1 << (lsbs_to_remove_for_trees - 1)  # pragma: no cover
-                else:
-                    break
+            if prev_bitwidth - MSB_TO_KEEP_FOR_TREES > 0:
 
-            assert MSB_TO_KEEP_FOR_TREES == new_bitwidth - lsbs_to_remove_for_trees
+                msb = MSB_TO_KEEP_FOR_TREES if MSB_TO_KEEP_FOR_TREES > 1 else 0
+                lsbs_to_remove_for_trees = prev_bitwidth - msb
 
-            return lsbs_to_remove_for_trees
-
-        return 0
+        return lsbs_to_remove_for_trees
 
     quant_params = {
         onnx_init.name: numpy_helper.to_array(onnx_init)
