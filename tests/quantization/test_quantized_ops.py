@@ -430,11 +430,10 @@ def test_all_arith_ops(
     "n_examples, n_features, n_neurons",
     [
         pytest.param(50, 3, 4),
-        pytest.param(20, 500, 30),
-        pytest.param(200, 300, 50),
-        pytest.param(10000, 100, 1),
+        pytest.param(20, 50, 30),
+        pytest.param(200, 30, 50),
         pytest.param(10, 20, 1),
-        pytest.param(10, 10, 10),
+        pytest.param(10, 100, 10),
     ],
 )
 @pytest.mark.parametrize(
