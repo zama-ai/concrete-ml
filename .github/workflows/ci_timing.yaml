@@ -43,14 +43,10 @@ jobs:
           SYSTEM_VERSION_COMPAT: 0
         run: |
           sudo apt update
-          sudo ./script/make_utils/setup_os_deps.sh
-          # Needed to include Python.h
-          export C_INCLUDE_PATH="${C_INCLUDE_PATH}:/__w/_tool/Python/$(python -c 'import platform; print(platform.python_version())')/x64/include"
           # We need to freeze docker.io because its update requires user input
           sudo apt-mark hold docker.io
-          sudo ./script/make_utils/setup_os_deps.sh --linux-install-python
+          sudo ./script/make_utils/setup_os_deps.sh
           make setup_env
-          poetry run pip install matplotlib
 
       - name: Generate figure
         run: |
