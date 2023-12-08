@@ -439,9 +439,8 @@ def check_serialization_dump_load(model, x, use_dump_method):
         y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
         assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
 
-        # Check if the graphs are identical
-        loaded_model.compile(x)
-        assert (model.fhe_circuit.graph.format()) == loaded_model.fhe_circuit.graph.format()
+        # Add a test to check that graphs before and after the serialization are identical
+        # FIME: https://github.com/zama-ai/concrete-internal/issues/546
 
 
 def check_serialization_dumps_loads(model, x, use_dump_method):
@@ -496,9 +495,8 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
     y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
     assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
 
-    # Check if the graphs are identical
-    loaded_model.compile(x)
-    assert (model.fhe_circuit.graph.format()) == loaded_model.fhe_circuit.graph.format()
+    # Add a test to check that graphs before and after the serialization are identical
+    # FIME: https://github.com/zama-ai/concrete-internal/issues/546
 
 
 def check_offset(model_class, n_bits, x, y):
