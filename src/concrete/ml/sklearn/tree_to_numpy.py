@@ -33,7 +33,7 @@ from hummingbird.ml import convert as hb_convert  # noqa: E402
 # pylint: enable=wrong-import-position,wrong-import-order
 
 # Most significant bits to retain when applying rounding to the tree
-MSB_TO_KEEP_FOR_TREES = 4
+MSB_TO_KEEP_FOR_TREES = 1
 
 # Minimum bitwidth to apply rounding
 MIN_CIRCUIT_THRESHOLD_FOR_TREES = 4
@@ -343,7 +343,7 @@ def tree_to_numpy(
         # First LSB refers to Less or LessOrEqual comparisons
         # Second LSB refers to Equal comparison
         lsbs_to_remove_for_trees = _compute_lsb_to_remove_for_trees(onnx_model, x)
-        print("LSB computed", lsbs_to_remove_for_trees)
+
         # mypy
         assert len(lsbs_to_remove_for_trees) == 2
 

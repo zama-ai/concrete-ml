@@ -1206,7 +1206,6 @@ def check_rounding_consistency(
     max_bitwitdth_with_rounding = circuit_with_rounding.graph.maximum_integer_bit_width()
     max_bitwitdth_without_rounding = circuit_without_rounding.graph.maximum_integer_bit_width()
 
-    print(max_bitwitdth_with_rounding, max_bitwitdth_without_rounding)
     assert max_bitwitdth_with_rounding <= max_bitwitdth_without_rounding + 2
 
 
@@ -1842,7 +1841,7 @@ def test_linear_models_have_no_tlu(
 
 # Test only tree-based models
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
-@pytest.mark.parametrize("n_bits", [3, 5, 6])
+@pytest.mark.parametrize("n_bits", [2, 6])
 def test_rounding_consistency(
     model_class,
     parameters,
