@@ -268,6 +268,8 @@ def rounded_comparison(
     half = 1 << (lsbs_to_remove - 1)
 
     # To determine if 'x' 'operation' 'y' (operation being <, >, >=, <=), we evaluate 'x - y'
-    rounded_subtraction = round_bit_pattern((x - y) - half, lsbs_to_remove=lsbs_to_remove)
+    rounded_subtraction = round_bit_pattern(
+        (x - y) - half, lsbs_to_remove=lsbs_to_remove, overflow_protection=False
+    )
 
     return (operation(rounded_subtraction),)
