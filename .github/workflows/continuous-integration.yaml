@@ -921,6 +921,9 @@ jobs:
         run: |
           ./script/make_utils/check_installation_with_all_python.sh --version ${{ matrix.python_version }} --clone
 
+      - name: Time reporter
+        uses: DeviesDevelopment/workflow-timer@v0.0.2
+
   # This is to manage build matrices and have a single status point for PRs
   # This can be updated to take macOS into account but it is impractical because of long builds 
   # and therefore expensive macOS testing
