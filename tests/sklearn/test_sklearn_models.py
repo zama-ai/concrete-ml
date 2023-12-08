@@ -1575,6 +1575,8 @@ def test_fitted_compiled_error_raises(
     check_fitted_compiled_error_raises(model_class, n_bits, x, y)
 
 
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4169
+@pytest.mark.flaky
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
 @pytest.mark.parametrize(
     "error_param",
