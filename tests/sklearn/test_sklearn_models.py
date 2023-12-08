@@ -1165,7 +1165,6 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
 
 def check_rounding_consistency(
     model,
-    n_bits,
     x,
     y,
     predict_method,
@@ -1195,7 +1194,7 @@ def check_rounding_consistency(
         warnings.simplefilter("ignore", category=DeprecationWarning)
         model.use_optimized_execution = False
 
-    _ = fit_and_compile(model, x, y)
+    circuit_without_rounding = fit_and_compile(model, x, y)
 
     not_rounded_predict_quantized = predict_method(x, fhe="disable")
     not_rounded_predict_simulate = predict_method(x, fhe="simulate")
@@ -1206,7 +1205,11 @@ def check_rounding_consistency(
     metric(rounded_predict_fhe, not_rounded_predict_fhe)
 
     # Check that the maximum bitwidth of the cuircuit with rounding is at most n_bits + 2
-    assert circuit_with_rounding.graph.maximum_integer_bit_width() <= n_bits + 2
+    max_bitwitdth_with_rounding = circuit_with_rounding.graph.maximum_integer_bit_width()
+    max_bitwitdth_without_rounding = circuit_without_rounding.graph.maximum_integer_bit_width()
+
+    print(max_bitwitdth_with_rounding, max_bitwitdth_without_rounding)
+    assert max_bitwitdth_with_rounding <= max_bitwitdth_without_rounding + 2
 
 
 # Neural network models are skipped for this test
@@ -1871,7 +1874,6 @@ def test_rounding_consistency(
 
     check_rounding_consistency(
         model,
-        n_bits,
         x,
         y,
         predict_method,
