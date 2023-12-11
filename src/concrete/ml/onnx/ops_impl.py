@@ -922,16 +922,16 @@ def rounded_numpy_equal_for_trees(
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # For tree-based models in the second stage, x == y is equivalent to x <= y or x < y - 1
+    # For tree-based models in the second stage, x == y is equivalent to x <= y
     # Because y is the max sum, see this paper: https://arxiv.org/pdf/2010.04804.pdf
     # The approach x <= y, is equivalent to:
-    # x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
-    # y - x >= 0 => round_bit_pattern(y - x - half) >= 0
-    # `rounding_bit_pattern` rounds to the closer
+    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+
+    # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
+    # which does: (a - b) - half.
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
-        return rounded_comparison(
-            y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0
-        )  # pragma: no cover
+        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 
     # Else, default numpy_equal operator
     return (numpy.equal(x, y),)
@@ -1153,8 +1153,11 @@ def rounded_numpy_less_or_equal_for_trees(
     """
 
     # numpy.less_equal(x, y) <= y is equivalent to :
-    # x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
-    # y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+
+    # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
+    # which does: (a - b) - half.
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 
@@ -1522,7 +1525,7 @@ def numpy_batchnorm(
         training_mode (int): if the model was exported in training mode this is set to 1, else 0
 
     Returns:
-        numpy.ndarray: Normalized tensor
+        numpy.ndarray: Normalized tenso
     """
 
     assert_true(

@@ -5,8 +5,8 @@ from typing import Callable, Tuple, Union
 import numpy
 from concrete.fhe import conv as cnp_conv
 from concrete.fhe import ones as cnp_ones
-from concrete.fhe.tracing import Tracer
 from concrete.fhe import round_bit_pattern
+from concrete.fhe.tracing import Tracer
 
 from ..common.debugging import assert_true
 
