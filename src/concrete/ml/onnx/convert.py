@@ -2,7 +2,7 @@
 
 import tempfile
 from pathlib import Path
-from typing import Callable, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
 
 import numpy
 import onnx
@@ -10,7 +10,12 @@ import onnxoptimizer
 import torch
 from onnx import checker, helper
 
-from .onnx_utils import IMPLEMENTED_ONNX_OPS, execute_onnx_with_numpy, get_op_type
+from .onnx_utils import (
+    IMPLEMENTED_ONNX_OPS,
+    compute_lsb_to_remove_for_trees,
+    execute_onnx_with_numpy,
+    get_op_type,
+)
 
 OPSET_VERSION_FOR_ONNX_EXPORT = 14
 
@@ -158,15 +163,21 @@ def get_equivalent_numpy_forward_from_torch(
 
 def get_equivalent_numpy_forward_from_onnx(
     onnx_model: onnx.ModelProto,
+    q_x: Optional[numpy.ndarray] = None,
     check_model: bool = True,
+    use_rounding: bool = False,
 ) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
     """Get the numpy equivalent forward of the provided ONNX model.
 
     Args:
         onnx_model (onnx.ModelProto): the ONNX model for which to get the equivalent numpy
             forward.
+        q_x (numpy.ndarray): Quantized input used to compute the LSBs to remove if 'use_rounding'.
+            Defaults to None if rounding is not used.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
+        use_rounding (bool): Use rounding feature or not.
+            Defaults to False.
 
     Raises:
         ValueError: Raised if there is an unsupported ONNX operator required to convert the torch
@@ -176,9 +187,11 @@ def get_equivalent_numpy_forward_from_onnx(
         Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
             the equivalent numpy function.
     """
+
+    lsbs_to_remove: list = [0, 0]
+
     if check_model:
         checker.check_model(onnx_model)
-    checker.check_model(onnx_model)
 
     # Optimize ONNX graph
     # List of all currently supported onnx optimizer passes
@@ -200,7 +213,6 @@ def get_equivalent_numpy_forward_from_onnx(
 
     # Check supported operators
     required_onnx_operators = set(get_op_type(node) for node in equivalent_onnx_model.graph.node)
-    print(f"{required_onnx_operators=}")
     unsupported_operators = required_onnx_operators - IMPLEMENTED_ONNX_OPS
     if len(unsupported_operators) > 0:
         raise ValueError(
@@ -209,7 +221,16 @@ def get_equivalent_numpy_forward_from_onnx(
             f"Available ONNX operators: {', '.join(sorted(IMPLEMENTED_ONNX_OPS))}"
         )
 
+    # Remove this workaround (which computes the LSB to be remove manually) once
+    # the truncate feature is released
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4143
+    if use_rounding:
+        assert (
+            q_x is not None
+        ), "A representative quantized input-set is needed  when using the rounding feature"
+        lsbs_to_remove = compute_lsb_to_remove_for_trees(equivalent_onnx_model, q_x)
+
     # Return lambda of numpy equivalent of onnx execution
     return (
-        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, *args)
+        lambda *args: execute_onnx_with_numpy(equivalent_onnx_model.graph, lsbs_to_remove, *args)
     ), equivalent_onnx_model

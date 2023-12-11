@@ -1280,9 +1280,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         self.n_bits: int = n_bits
 
-        #: The model's inference function. Is None if the model is not fitted.
+        # _tree_inference: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
-        self._rounder = cnp.AutoRounder(target_msbs=5)
 
         BaseEstimator.__init__(self)
 
@@ -1311,22 +1310,30 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
+        self._is_fitted = True
+
+        # Convert the tree inference with Numpy operators
+        # Adjust the auto rounder manually
+        self._convert_tree_to_numpy_and_compute_lsbs_to_remove(q_X, use_rounding=True)
+
+        return self
+
+    def _convert_tree_to_numpy_and_compute_lsbs_to_remove(
+        self, q_X: numpy.ndarray, use_rounding: bool
+    ):
+
+        assert self._is_fitted is True, "Model must be fitted"
+
+        check_array_and_assert(q_X)
+
         # Convert the tree inference with Numpy operators
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
-            self.sklearn_model,
-            q_X[:1],
+            self.sklearn_model,  # type: ignore[arg-type]
+            q_X,
+            use_rounding=use_rounding,
             framework=self.framework,
             output_n_bits=self.n_bits,
         )
-
-        self._is_fitted = True
-
-        # inputset = numpy.array(list(_get_inputset_generator(q_X)))
-        # self._rounder.adjust(self._tree_inference, inputset)
-
-        self._tree_inference(q_X.astype("int"))
-
-        return self
 
     def quantize_input(self, X: numpy.ndarray) -> numpy.ndarray:
         self.check_model_is_fitted()
@@ -1363,26 +1370,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def compile(self, *args, **kwargs) -> Circuit:
-        def force_auto_adjust_rounder_in_configuration(configuration):
-            if configuration is None:
-                configuration = Configuration(auto_adjust_rounders=True, **kwargs)
-            else:
-                configuration.auto_adjust_rounders = True
-            return configuration
-
-        # If a configuration instance is given as a positional parameter, set auto_adjust_rounder
-        if len(args) >= 2:
-            configuration = force_auto_adjust_rounder_in_configuration(args[1])
-            args_list = list(args)
-            args_list[1] = configuration
-            args = tuple(args_list)
-
-        # Else, retrieve the configuration in kwargs if it exists, or create a new one, and set the
-        # auto_adjust_rounder
-        else:
-            configuration = kwargs.get("configuration", None)
-            kwargs["configuration"] = force_auto_adjust_rounder_in_configuration(configuration)
-
         BaseEstimator.compile(self, *args, **kwargs)
 
         # Check that the graph only has a single output

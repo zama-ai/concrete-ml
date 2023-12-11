@@ -1,6 +1,6 @@
 """Implements the conversion of a tree model to a numpy function."""
 import warnings
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 
 import numpy
 import onnx
@@ -293,15 +293,17 @@ def tree_values_preprocessing(
 # pylint: disable=too-many-locals
 def tree_to_numpy(
     model: Callable,
-    x: numpy.ndarray,
+    q_x: numpy.ndarray,
     framework: str,
+    use_rounding: bool = False,
     output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
 
     Args:
         model (Callable): The tree model to convert.
-        x (numpy.ndarray): The input data.
+        q_x (numpy.ndarray): The quantized input data.
+        use_rounding (bool): Use rounding feature or not.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output. Default to 8.
@@ -319,7 +321,12 @@ def tree_to_numpy(
         f"framework={framework} is not supported. It must be either 'xgboost' or 'sklearn'",
     )
 
-    onnx_model = get_onnx_model(model, x, framework)
+    # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
+    onnx_model = get_onnx_model(model, q_x[:1], framework)
+
+    # if use_rounding:
+    # compute LSB to remove in stage 1 and 2
+    # attach LSBs to the ONNX
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
@@ -333,6 +340,8 @@ def tree_to_numpy(
     # but also rounding the threshold such that they are now integers
     q_y = tree_values_preprocessing(onnx_model, framework, output_n_bits)
 
-    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(onnx_model)
+    _tree_inference, onnx_model = get_equivalent_numpy_forward_from_onnx(
+        onnx_model, q_x, use_rounding=use_rounding
+    )
 
     return (_tree_inference, [q_y.quantizer], onnx_model)

@@ -22,10 +22,11 @@ Generic tests test:
 """
 
 import copy
+import json
+import random
+import tempfile
 
 # pylint: disable=too-many-lines, too-many-arguments
-import json
-import tempfile
 import warnings
 from typing import Any, Dict, List
 
@@ -1139,6 +1140,38 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
     )
 
 
+def check_rounding_consistency(
+    model,
+    x,
+    predict_method,
+    metric,
+):
+
+    """Test that Concrete ML witout and with rounding are 'equivalent'."""
+
+    random_int = random.randint(0, x.shape[0] - 1)
+
+    model.compile(x)
+
+    rounded_predict_quantized = predict_method(x, fhe="disable")
+    rounded_predict_simulate = predict_method(x, fhe="simulate")
+    rounded_predict_fhe = predict_method(x[random_int, None], fhe="execute")
+
+    # pylint: disable=protected-access
+    quant_x = model.quantize_input(x).astype("float")
+    model._convert_tree_to_numpy_and_compute_lsbs_to_remove(quant_x, use_rounding=False)
+
+    model.compile(x)
+
+    not_rounded_predict_quantized = predict_method(x, fhe="disable")
+    not_rounded_predict_simulate = predict_method(x, fhe="simulate")
+    not_rounded_predict_fhe = predict_method(x[random_int, None], fhe="execute")
+
+    metric(rounded_predict_quantized, not_rounded_predict_quantized)
+    metric(rounded_predict_simulate, not_rounded_predict_simulate)
+    metric(rounded_predict_fhe, not_rounded_predict_fhe)
+
+
 # Neural network models are skipped for this test
 # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
 # in structure but trained from scratch. Furthermore, the `n_bits` setting
@@ -1765,3 +1798,41 @@ def test_linear_models_have_no_tlu(
 
     # Check that no TLUs are found within the MLIR
     check_circuit_has_no_tlu(fhe_circuit)
+
+
+# Test only tree-based models
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
+@pytest.mark.parametrize("n_bits", [2, 3, 4, 5])
+def test_rounding_consistency(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    check_r2_score,
+    check_accuracy,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test that Concrete ML witout and with rounding are 'equivalent'."""
+
+    if verbose:
+        print("Run check_rounding_consistency")
+
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Check `predict_proba` for classifiers
+    if is_classifier_or_partial_classifier(model):
+        check_rounding_consistency(
+            model,
+            x,
+            predict_method=model.predict_proba,
+            metric=check_r2_score,
+        )
+    else:
+        # Check `predict` for regressors
+        check_rounding_consistency(
+            model,
+            x,
+            predict_method=model.predict,
+            metric=check_accuracy,
+        )
