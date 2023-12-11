@@ -306,7 +306,7 @@ def tree_to_numpy(
     model: Callable,
     x: numpy.ndarray,
     framework: str,
-    use_rounding: Optional[bool] = False,
+    use_rounding: bool = True,
     output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
@@ -314,7 +314,7 @@ def tree_to_numpy(
     Args:
         model (Callable): The tree model to convert.
         x (numpy.ndarray): The input data.
-        use_rounding (Optional[bool]): This parameter is exclusively used to tree-based models.
+        use_rounding (bool): This parameter is exclusively used to tree-based models.
             It determines whether the rounding feature is enabled or disabled.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
