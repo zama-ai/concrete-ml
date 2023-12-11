@@ -1841,7 +1841,7 @@ def test_linear_models_have_no_tlu(
 
 # Test only tree-based models
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
-@pytest.mark.parametrize("n_bits", [2, 6])
+@pytest.mark.parametrize("n_bits", [2, 5])
 def test_rounding_consistency(
     model_class,
     parameters,

@@ -924,9 +924,10 @@ def rounded_numpy_equal_for_trees(
 
     # For tree-based models in the second stage, x == y is equivalent to x <= y or x < y - 1
     # Because y is the max sum, see this paper: https://arxiv.org/pdf/2010.04804.pdf
-    # The approach x <= y, is equivalent to: x - y <= 0 or y - x >= 0
-    # We take y - x >= 0, because with `rounding_bit_pattern` feature, it gives accurate outputs
-    # compared to x - y <= 0.
+    # The approach x <= y, is equivalent to:
+    # x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+    # `rounding_bit_pattern` rounds to the closer
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(
             y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0
@@ -1084,7 +1085,8 @@ def rounded_numpy_less_for_trees(
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # x < y is equivalent to (x - y < 0) or (y - x > 0)
+    # numpy.less(x, y) is equivalent to :
+    # x - y <= 0 => round_bit_pattern(x - y - half) < 0
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(x, y, lsbs_to_remove_for_trees, operation=lambda x: x < 0)
 
@@ -1150,8 +1152,9 @@ def rounded_numpy_less_or_equal_for_trees(
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # x <= y is equivalent to (x - y <= 0) or (y - x >= 0)
-    # `rounding_bit_pattern` gives accurate results with (y-x <= 0) approach compred to (x-y <= 0)
+    # numpy.less_equal(x, y) <= y is equivalent to :
+    # x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # y - x >= 0 => round_bit_pattern(y - x - half) >= 0
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
         return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
 

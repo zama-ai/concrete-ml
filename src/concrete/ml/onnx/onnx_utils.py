@@ -498,6 +498,8 @@ def execute_onnx_with_numpy_trees(
         Tuple[numpy.ndarray]: The result of the graph's execution.
     """
 
+    op_type: Callable[..., Tuple[numpy.ndarray[Any, Any], ...]]
+
     # If no tree-based optimization is specified, return standard execution
     if lsbs_to_remove_for_trees is None:
         return execute_onnx_with_numpy(graph, *inputs)
@@ -524,7 +526,7 @@ def execute_onnx_with_numpy_trees(
             # Use rounded numpy operation to relevant comparison nodes
             op_type = ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL[node.op_type]
         else:
-            op_type = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type]  # type: ignore[assignment]
+            op_type = ONNX_OPS_TO_NUMPY_IMPL_BOOL[node.op_type]
 
         outputs = op_type(*curr_inputs, **attributes)
 

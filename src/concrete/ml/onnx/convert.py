@@ -268,8 +268,8 @@ def get_equivalent_numpy_forward_from_onnx_tree(
             comparison operation. Default to None, as it is not applicable to other types of models.
 
     Returns:
-        Callable[..., Tuple[numpy.ndarray, ...]]: The function that will execute
-            the equivalent numpy function.
+        Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]: The function that will
+            execute the equivalent numpy function.
     """
 
     equivalent_onnx_model = preprocess_onnx_model(onnx_model, check_model)
