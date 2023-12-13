@@ -14,12 +14,14 @@ from concrete.fhe import univariate
 from scipy import special
 from typing_extensions import SupportsIndex
 
-from ..common import utils
-from ..common.debugging import assert_false, assert_true
-from .onnx_impl_utils import (
+# pylint: disable=ungrouped-imports
+from concrete.ml.common import utils
+from concrete.ml.common.debugging import assert_false, assert_true
+from concrete.ml.onnx.onnx_impl_utils import (
     compute_onnx_pool_padding,
     numpy_onnx_pad,
     onnx_avgpool_compute_norm_const,
+    rounded_comparison,
 )
 
 
@@ -897,7 +899,45 @@ def numpy_equal(
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
+    return (numpy.equal(x, y),)
 
+
+# Remove `# pragma: no cover` once the following issue will be resolved
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
+def rounded_numpy_equal_for_trees(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+    *,
+    lsbs_to_remove_for_trees: Optional[int] = None,
+) -> Tuple[numpy.ndarray]:
+    """Compute rounded equal in numpy according to ONNX spec for tree-based models only.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+            for tree-based models only.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # For tree-based models in the second stage, x == y is equivalent to x <= y
+    # Because y is the max sum, see this paper: https://arxiv.org/pdf/2010.04804.pdf
+    # The approach x <= y, is equivalent to:
+    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+
+    # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
+    # which does: (a - b) - half.
+    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+        return rounded_comparison(
+            y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0
+        )  # pragma: no cover
+
+    # Else, default numpy_equal operator
     return (numpy.equal(x, y),)
 
 
@@ -1026,8 +1066,36 @@ def numpy_less(
     Returns:
         Tuple[numpy.ndarray]: Output tensor
     """
-
     return (numpy.less(x, y),)
+
+
+def rounded_numpy_less_for_trees(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+    *,
+    lsbs_to_remove_for_trees: Optional[int] = None,
+) -> Tuple[numpy.ndarray]:
+    """Compute rounded less in numpy according to ONNX spec for tree-based models only.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+            for tree-based models only.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # numpy.less(x, y) is equivalent to :
+    # x - y <= 0 => round_bit_pattern(x - y - half) < 0
+    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+        return rounded_comparison(x, y, lsbs_to_remove_for_trees, operation=lambda x: x < 0)
+
+    # Else, default numpy_less operator
+    return numpy_less(x, y)
 
 
 def numpy_less_float(
@@ -1066,6 +1134,39 @@ def numpy_less_or_equal(
     """
 
     return (numpy.less_equal(x, y),)
+
+
+def rounded_numpy_less_or_equal_for_trees(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+    *,
+    lsbs_to_remove_for_trees: Optional[int] = None,
+) -> Tuple[numpy.ndarray]:
+    """Compute rounded less or equal in numpy according to ONNX spec for tree-based models only.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+        lsbs_to_remove_for_trees (Optional[int]): Number of the least significant bits to remove
+            for tree-based models only.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    # numpy.less_equal(x, y) <= y is equivalent to :
+    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+
+    # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
+    # which does: (a - b) - half.
+    if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
+        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
+
+    # Else, default numpy_less_or_equal operator
+    return numpy_less_or_equal(x, y)
 
 
 def numpy_less_or_equal_float(
@@ -1428,7 +1529,7 @@ def numpy_batchnorm(
         training_mode (int): if the model was exported in training mode this is set to 1, else 0
 
     Returns:
-        numpy.ndarray: Normalized tensor
+        numpy.ndarray: Normalized tenso
     """
 
     assert_true(

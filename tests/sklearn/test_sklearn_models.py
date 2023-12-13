@@ -22,10 +22,11 @@ Generic tests test:
 """
 
 import copy
+import json
+import os
+import tempfile
 
 # pylint: disable=too-many-lines, too-many-arguments
-import json
-import tempfile
 import warnings
 from typing import Any, Dict, List
 
@@ -54,6 +55,7 @@ from concrete.ml.common.utils import (
 from concrete.ml.pytest.utils import (
     MODELS_AND_DATASETS,
     UNIQUE_MODELS_AND_DATASETS,
+    get_random_samples,
     get_sklearn_all_models_and_datasets,
     get_sklearn_linear_models_and_datasets,
     get_sklearn_neighbors_models_and_datasets,
@@ -149,6 +151,17 @@ def get_n_bits_non_correctness(model_class):
         n_bits = min(N_BITS_REGULAR_BUILDS)
 
     return n_bits
+
+
+def fit_and_compile(model, x, y):
+    """Fit the model and compile it."""
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
+
+    model.compile(x)
 
 
 def check_correctness_with_sklearn(
@@ -412,6 +425,7 @@ def check_serialization_dump_load(model, x, use_dump_method):
             serialized_model_dict["serialized_value"].pop(attribute, None)
             re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
+        # Check if the serialized models are identical
         assert serialized_model_dict == re_serialized_model_dict
 
         # Check that the predictions made by both model are identical
@@ -423,6 +437,9 @@ def check_serialization_dump_load(model, x, use_dump_method):
         y_pred_sklearn_model = model.sklearn_model.predict(x)
         y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
         assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
+
+        # Add a test to check that graphs before and after the serialization are identical
+        # FIME: https://github.com/zama-ai/concrete-ml-internal/issues/4175
 
 
 def check_serialization_dumps_loads(model, x, use_dump_method):
@@ -464,6 +481,7 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
         serialized_model_dict["serialized_value"].pop(attribute, None)
         re_serialized_model_dict["serialized_value"].pop(attribute, None)
 
+    # Check if the serialized models are identical
     assert serialized_model_dict == re_serialized_model_dict
 
     # Check that the predictions made by both model are identical
@@ -475,6 +493,9 @@ def check_serialization_dumps_loads(model, x, use_dump_method):
     y_pred_sklearn_model = model.sklearn_model.predict(x)
     y_pred_loaded_sklearn_model = loaded_model.sklearn_model.predict(x)
     assert numpy.array_equal(y_pred_sklearn_model, y_pred_loaded_sklearn_model)
+
+    # Add a test to check that graphs before and after the serialization are identical
+    # FIME: https://github.com/zama-ai/concrete-ml-internal/issues/4175
 
 
 def check_offset(model_class, n_bits, x, y):
@@ -1139,6 +1160,69 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
     )
 
 
+def check_rounding_consistency(
+    model,
+    x,
+    y,
+    predict_method,
+    metric,
+    is_weekly_option,
+):
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
+
+    # Run the test with more samples during weekly CIs
+    if is_weekly_option:
+        fhe_test = get_random_samples(x, n_sample=5)
+
+    # Check that rounding is enabled
+    rounding_enabled = os.getenv("TREES_USE_ROUNDING") == "1"
+    assert rounding_enabled
+
+    # Fit and compile with rounding enabled
+    fit_and_compile(model, x, y)
+
+    rounded_predict_quantized = predict_method(x, fhe="disable")
+    rounded_predict_simulate = predict_method(x, fhe="simulate")
+
+    # Compute the FHE predictions only during weekly CIs
+    if is_weekly_option:
+        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+
+    with pytest.MonkeyPatch.context() as mp_context:
+
+        # Disable rounding
+        mp_context.setenv("TREES_USE_ROUNDING", "0")
+
+        # Check that rounding is disabled
+        rounding_disabled = os.environ.get("TREES_USE_ROUNDING") == "0"
+        assert rounding_disabled
+
+        with pytest.warns(
+            DeprecationWarning,
+            match=(
+                "Using Concrete tree-based models without the `rounding feature` is " "deprecated.*"
+            ),
+        ):
+
+            # Fit and compile without rounding
+            fit_and_compile(model, x, y)
+
+        not_rounded_predict_quantized = predict_method(x, fhe="disable")
+        not_rounded_predict_simulate = predict_method(x, fhe="simulate")
+
+        metric(rounded_predict_quantized, not_rounded_predict_quantized)
+        metric(rounded_predict_simulate, not_rounded_predict_simulate)
+
+        # Compute the FHE predictions only during weekly CIs
+        if is_weekly_option:
+            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+            metric(rounded_predict_fhe, not_rounded_predict_fhe)
+
+        # Check that the maximum bit-width of the circuit with rounding is at most:
+        # maximum bit-width (of the circuit without rounding) + 2
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
+
+
 # Neural network models are skipped for this test
 # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
 # in structure but trained from scratch. Furthermore, the `n_bits` setting
@@ -1491,7 +1575,8 @@ def test_predict_correctness(
         print(f"Check prediction correctness for {fhe_samples} samples.")
 
     # Check prediction correctness between quantized clear and FHE simulation or execution
-    check_is_good_execution_for_cml_vs_circuit(x[:fhe_samples], model=model, simulate=simulate)
+    fhe_test = get_random_samples(x, fhe_samples)
+    check_is_good_execution_for_cml_vs_circuit(fhe_test, model=model, simulate=simulate)
 
 
 @pytest.mark.parametrize("model_class, parameters", MODELS_AND_DATASETS)
@@ -1553,7 +1638,8 @@ def test_separated_inference(
 
     # Check that separated inference steps (encrypt, run, decrypt, post_processing, ...) are
     # equivalent to built-in methods (predict, predict_proba, ...)
-    check_separated_inference(model, fhe_circuit, x[:fhe_samples], check_float_array_equal)
+    fhe_test = get_random_samples(x, fhe_samples)
+    check_separated_inference(model, fhe_circuit, fhe_test, check_float_array_equal)
 
 
 @pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
@@ -1765,3 +1851,46 @@ def test_linear_models_have_no_tlu(
 
     # Check that no TLUs are found within the MLIR
     check_circuit_has_no_tlu(fhe_circuit)
+
+
+# This test does not check rounding at level 2
+# Additional tests for this purpose should be added in future updates
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
+@pytest.mark.parametrize("n_bits", [2, 5, 11])
+def test_rounding_consistency_for_regular_models(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    check_r2_score,
+    check_accuracy,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
+
+    if verbose:
+        print("Run check_rounding_consistency")
+
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Check `predict_proba` for classifiers
+    if is_classifier_or_partial_classifier(model):
+        predict_method = model.predict_proba
+        metric = check_r2_score
+    else:
+        # Check `predict` for regressors
+        predict_method = model.predict
+        metric = check_accuracy
+
+    check_rounding_consistency(
+        model,
+        x,
+        y,
+        predict_method,
+        metric,
+        is_weekly_option,
+    )

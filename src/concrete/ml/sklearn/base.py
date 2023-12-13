@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import os
 import tempfile
 
 # Disable pylint as some names like X and q_X are used, following scikit-Learn's standard. The file
@@ -90,8 +91,14 @@ Target = Union[
 # Define QNN's attribute that will be auto-generated when fitting
 QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 
+# Enable rounding feature for all tree-based models by default
+# Note: This setting is fixed and cannot be altered by users
+# However, for internal testing purposes, we retain the capability to disable this feature
+os.environ["TREES_USE_ROUNDING"] = "1"
 
 # pylint: disable=too-many-public-methods
+
+
 class BaseEstimator:
     """Base class for all estimators in Concrete ML.
 
@@ -1311,9 +1318,22 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Convert the tree inference with Numpy operators
+        enable_rounding = os.environ.get("TREES_USE_ROUNDING", "1") == "1"
+
+        if not enable_rounding:
+            warnings.simplefilter("always")
+            warnings.warn(
+                "Using Concrete tree-based models without the `rounding feature` is deprecated. "
+                "Consider setting 'use_rounding' to `True` for making the FHE inference faster "
+                "and key generation.",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
             self.sklearn_model,
-            q_X[:1],
+            q_X,
+            use_rounding=enable_rounding,
             framework=self.framework,
             output_n_bits=self.n_bits,
         )
