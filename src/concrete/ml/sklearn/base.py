@@ -91,13 +91,15 @@ Target = Union[
 # Define QNN's attribute that will be auto-generated when fitting
 QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 
-# Enable rounding feature for all tree-based models by default
+# Most significant bits to retain when applying rounding to the tree
+MSB_TO_KEEP_FOR_TREES = 1
+
+# Enable truncate feature for all tree-based models by default
 # Note: This setting is fixed and cannot be altered by users
 # However, for internal testing purposes, we retain the capability to disable this feature
 os.environ["TREES_USE_ROUNDING"] = "1"
 
 # pylint: disable=too-many-public-methods
-
 
 class BaseEstimator:
     """Base class for all estimators in Concrete ML.
@@ -521,6 +523,7 @@ class BaseEstimator:
         Returns:
             Circuit: The compiled Circuit.
         """
+        print("compilation stage 2")
         # Reset for double compile
         self._is_compiled = False
 
@@ -1290,6 +1293,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
+        #: Determines the LSB to remove given a `target_msbs`
+        self.auto_truncate = cnp.AutoTruncator(target_msbs=MSB_TO_KEEP_FOR_TREES)
+
         BaseEstimator.__init__(self)
 
     def fit(self, X: Data, y: Target, **fit_parameters):
@@ -1318,9 +1324,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
         # Convert the tree inference with Numpy operators
-        enable_rounding = os.environ.get("TREES_USE_ROUNDING", "1") == "1"
+        enable_truncate = os.environ.get("TREES_USE_ROUNDING", "1") == "1"
 
-        if not enable_rounding:
+        if not enable_truncate:
             warnings.simplefilter("always")
             warnings.warn(
                 "Using Concrete tree-based models without the `rounding feature` is deprecated. "
@@ -1329,14 +1335,23 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 category=DeprecationWarning,
                 stacklevel=2,
             )
+            self.auto_truncate = None
 
+        print(f"{self.auto_truncate=}")
+        
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
             self.sklearn_model,
             q_X,
-            use_rounding=enable_rounding,
+            auto_truncate=self.auto_truncate,
             framework=self.framework,
             output_n_bits=self.n_bits,
         )
+
+        # Adjust the truncate
+        inputset = numpy.array(list(_get_inputset_generator(q_X))).astype(int)
+        self.auto_truncate.adjust(self._tree_inference, inputset)
+
+        self._tree_inference(q_X.astype("int"))
 
         self._is_fitted = True
 
@@ -1377,6 +1392,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return compiler
 
     def compile(self, *args, **kwargs) -> Circuit:
+        print("Compilation base.py")
         BaseEstimator.compile(self, *args, **kwargs)
 
         # Check that the graph only has a single output
