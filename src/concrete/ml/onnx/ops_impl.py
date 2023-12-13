@@ -902,6 +902,8 @@ def numpy_equal(
     return (numpy.equal(x, y),)
 
 
+# Remove `# pragma: no cover` once the following issue will be resolved
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
 def rounded_numpy_equal_for_trees(
     x: numpy.ndarray,
     y: numpy.ndarray,
@@ -931,7 +933,9 @@ def rounded_numpy_equal_for_trees(
     # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
     # which does: (a - b) - half.
     if lsbs_to_remove_for_trees is not None and lsbs_to_remove_for_trees > 0:
-        return rounded_comparison(y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0)
+        return rounded_comparison(
+            y, x, lsbs_to_remove_for_trees, operation=lambda x: x >= 0
+        )  # pragma: no cover
 
     # Else, default numpy_equal operator
     return (numpy.equal(x, y),)

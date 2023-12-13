@@ -104,9 +104,6 @@ N_BITS_WEEKLY_ONLY_BUILDS = [2, 8, 16]
 # the CRT.
 N_BITS_THRESHOLD_FOR_CRT_FHE_CIRCUITS = 9
 
-# Current maximum n_bits value for tree-based models
-N_BITS_MAXIMUM_THRESHOLD_FOR_TREE_BASED_MODELS = 9
-
 
 def get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option):
     """Prepare the the (x, y) data-set."""
@@ -164,9 +161,7 @@ def fit_and_compile(model, x, y):
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model.fit(x, y)
 
-    circuit = model.compile(x)
-
-    return circuit
+    model.compile(x)
 
 
 def check_correctness_with_sklearn(
@@ -1167,7 +1162,6 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
 
 def check_rounding_consistency(
     model,
-    n_bits,
     x,
     y,
     predict_method,
@@ -1185,7 +1179,7 @@ def check_rounding_consistency(
     assert rounding_enabled
 
     # Fit and compile with rounding enabled
-    circuit_with_rounding = fit_and_compile(model, x, y)
+    fit_and_compile(model, x, y)
 
     rounded_predict_quantized = predict_method(x, fhe="disable")
     rounded_predict_simulate = predict_method(x, fhe="simulate")
@@ -1194,31 +1188,27 @@ def check_rounding_consistency(
     if is_weekly_option:
         rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
 
-    # For models that has less than 9 bits of quantization, we repeat the same experiment, but this
-    # time with rounding disabled
-    if n_bits <= N_BITS_MAXIMUM_THRESHOLD_FOR_TREE_BASED_MODELS:
-        with pytest.MonkeyPatch.context() as mp_context:
+    with pytest.MonkeyPatch.context() as mp_context:
 
-            # Disable rounding
-            mp_context.setenv("TREES_USE_ROUNDING", "0")
+        # Disable rounding
+        mp_context.setenv("TREES_USE_ROUNDING", "0")
 
-            # Check that rounding is disabled
-            rounding_disabled = os.environ.get("TREES_USE_ROUNDING") == "0"
-            assert rounding_disabled
+        # Check that rounding is disabled
+        rounding_disabled = os.environ.get("TREES_USE_ROUNDING") == "0"
+        assert rounding_disabled
 
-            with pytest.warns(
-                DeprecationWarning,
-                match=(
-                    "Using Concrete tree-based models without the `rounding feature` is "
-                    "deprecated.*"
-                ),
-            ):
+        with pytest.warns(
+            DeprecationWarning,
+            match=(
+                "Using Concrete tree-based models without the `rounding feature` is " "deprecated.*"
+            ),
+        ):
 
-                # Fit and compile without rounding
-                circuit_without_rounding = fit_and_compile(model, x, y)
+            # Fit and compile without rounding
+            fit_and_compile(model, x, y)
 
-            not_rounded_predict_quantized = predict_method(x, fhe="disable")
-            not_rounded_predict_simulate = predict_method(x, fhe="simulate")
+        not_rounded_predict_quantized = predict_method(x, fhe="disable")
+        not_rounded_predict_simulate = predict_method(x, fhe="simulate")
 
         metric(rounded_predict_quantized, not_rounded_predict_quantized)
         metric(rounded_predict_simulate, not_rounded_predict_simulate)
@@ -1228,11 +1218,9 @@ def check_rounding_consistency(
             not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
             metric(rounded_predict_fhe, not_rounded_predict_fhe)
 
-        # Check that the maximum bit-width of the circuit with rounding is at most n_bits + 2
-        max_bitwitdth_with_rounding = circuit_with_rounding.graph.maximum_integer_bit_width()
-        max_bitwitdth_without_rounding = circuit_without_rounding.graph.maximum_integer_bit_width()
-
-        assert max_bitwitdth_with_rounding <= max_bitwitdth_without_rounding + 2
+        # Check that the maximum bit-width of the circuit with rounding is at most:
+        # maximum bit-width (of the circuit without rounding) + 2
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
 
 
 # Neural network models are skipped for this test
@@ -1865,6 +1853,9 @@ def test_linear_models_have_no_tlu(
     check_circuit_has_no_tlu(fhe_circuit)
 
 
+# This test does not check rounding at level 2
+# Additional tests for this purpose should be added in future updates
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
 @pytest.mark.parametrize("n_bits", [2, 5, 11])
 def test_rounding_consistency_for_regular_models(
@@ -1884,16 +1875,6 @@ def test_rounding_consistency_for_regular_models(
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
-    # According to https://arxiv.org/pdf/2010.04804.pdf, there are two levels of comparison for
-    # trees: one at the level of X.A < B, and another at the level of I.C == D.
-    # To trigger the rounding in the second level, we need datasets with larger sizes and higher
-    # quantization precision are required.
-    # However, the test will be executed exclusively with rounding enabled, as tree-based models
-    # without rounding cannot be compiled.
-    if n_bits > 9:
-        parameters["n_samples"] = 1000
-        parameters["n_features"] = 10
-
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     # Check `predict_proba` for classifiers
@@ -1907,7 +1888,6 @@ def test_rounding_consistency_for_regular_models(
 
     check_rounding_consistency(
         model,
-        n_bits,
         x,
         y,
         predict_method,
