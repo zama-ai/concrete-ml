@@ -1332,18 +1332,22 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
 @pytest.mark.parametrize(
     "keepdims", [pytest.param(keepdims, id=f"keepdims-{keepdims}") for keepdims in [0, 1]]
 )
+# In Concrete ML, we consider that all inputs' first dimension should be a batch size
+# even in single batch cases. This is why the following test parameters are considering axes that
+# are sometimes equal to the input size's dimension, as the batch size is added within the
+# test itself.
+# Finally, the axis parameter should neither be None nor contain axis 0 as this dimension is used
+# for batching the inference
 @pytest.mark.parametrize(
     "size, axes, noop_with_empty_axes",
     [
         pytest.param(size, axes, noop, id=f"size-{size}-axes-{axes}-noop-{noop}")
         for (size, axes, noop) in [
-            ((1,), (0,), 0),
-            ((100, 1), (1,), 0),
-            ((100, 10), None, 0),
-            ((100, 10), None, 1),
-            ((10, 100), (0,), 0),
-            ((10, 10, 1000), (2,), 0),
-            ((10, 10, 1000), (0, 2), 0),
+            ((1,), (1,), 0),
+            ((100, 1), (2,), 0),
+            ((10, 100), (1,), 0),
+            ((10, 10, 1000), (3,), 0),
+            ((10, 10, 1000), (1, 3), 0),
         ]
     ],
 )
@@ -1354,27 +1358,33 @@ def test_reduce_sum(
     n_bits, size, data_generator, axes, keepdims, noop_with_empty_axes, check_r2_score
 ):
     """Test the QuantizedReduceSum operator."""
+
     # Generate the inputs
-    inputs = data_generator(size=(10,) + size)
+    inputs = data_generator(size=(100,) + size)
 
     # Instantiate the operator
     quantized_reduce_sum = QuantizedReduceSum(
         n_bits,
         OP_DEBUG_NAME + "QuantizedReduceSum",
-        constant_inputs={"axes": numpy.array(axes) if axes is not None else None},
+        constant_inputs={"axes": numpy.array(axes)},
         keepdims=keepdims,
         noop_with_empty_axes=noop_with_empty_axes,
     )
 
     # Calibrate the quantized op and retrieve the expected results
-    expected_outputs = quantized_reduce_sum.calibrate(inputs)
+    expected_sum = quantized_reduce_sum.calibrate(inputs)
 
     # Retrieve the results computed by the quantized op applied on quantized inputs
     q_inputs = QuantizedArray(n_bits, inputs)
-    actual_output = quantized_reduce_sum(q_inputs)
-    actual_output = actual_output.dequant()
+    q_computed_sum = quantized_reduce_sum(q_inputs)
+    computed_sum = q_computed_sum.dequant()
 
-    check_r2_score(expected_outputs, actual_output)
+    assert computed_sum.shape == expected_sum.shape, (
+        f"Mismatch found in output shapes. Got {computed_sum.shape} but expected "
+        f"{expected_sum.shape}."
+    )
+
+    check_r2_score(expected_sum, computed_sum)
 
     # Test the serialization of QuantizedReduceSum
     check_serialization(

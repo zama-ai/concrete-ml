@@ -1061,12 +1061,13 @@ class DoubleQuantQATMixNet(nn.Module):
 class TorchSum(nn.Module):
     """Torch model to test the ReduceSum ONNX operator in a leveled circuit."""
 
-    def __init__(self, dim=(0,), keepdim=True):
+    def __init__(self, dim=(0,), keepdim=True, with_pbs=False):
         """Initialize the module.
 
         Args:
             dim (Tuple[int]): The axis along which the sum should be executed
             keepdim (bool): If the output should keep the same dimension as the input or not
+            with_pbs (bool): If the forward function should be forced to consider at least one PBS
         """
         # Torch sum doesn't seem to handle dim=None, as opposed to its documentation. Instead, the
         # op should be called without it. Additionally, in this exact case, keepdim parameter is not
@@ -1076,22 +1077,7 @@ class TorchSum(nn.Module):
         super().__init__()
         self.dim = dim
         self.keepdim = keepdim
-
-    def forward(self, x):
-        """Forward pass.
-
-        Args:
-            x (torch.tensor): The input of the model
-
-        Returns:
-            torch_sum (torch.tensor): The sum of the input's tensor elements along the given axis
-        """
-        torch_sum = x.sum(dim=self.dim, keepdim=self.keepdim)
-        return torch_sum
-
-
-class TorchSumMod(TorchSum):
-    """Torch model to test the ReduceSum ONNX operator in a circuit containing a PBS."""
+        self.with_pbs = with_pbs
 
     def forward(self, x):
         """Forward pass.
@@ -1106,7 +1092,9 @@ class TorchSumMod(TorchSum):
 
         # Add an additional operator that requires a TLU in order to force this circuit to
         # handle a PBS without actually changing the results
-        torch_sum = torch_sum + torch_sum % 2 - torch_sum % 2
+        if self.with_pbs:
+            torch_sum = torch_sum + torch_sum % 2 - torch_sum % 2  # pragma: no cover
+
         return torch_sum
 
 
