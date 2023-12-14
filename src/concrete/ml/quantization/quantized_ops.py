@@ -1728,9 +1728,27 @@ class QuantizedReduceSum(QuantizedMixingOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
-        # Retrieve values and axes parameters
+        assert_true(
+            isinstance(prepared_inputs[0], (QuantizedArray)),
+            "Prepared inputs' values should be found in a QuantizedArray. "
+            f"Got {type(prepared_inputs[0])}",
+        )
+
+        assert_true(
+            isinstance(prepared_inputs[1], numpy.ndarray),
+            "ReduceSum axis parameter should be a Numpy array. " f"Got {type(prepared_inputs[1])}",
+        )
+
+        # Retrieve the quantized values and the axes to sum over
+        # Parameter "axis" Numpy's sum operator has to be a tuple (and not an array)
         q_values = prepared_inputs[0].qvalues
-        axes = prepared_inputs[1]
+        axes = tuple(prepared_inputs[1])
+
+        assert_true(
+            0 not in axes,
+            "ReduceSum axis parameter should not contain axis 0 as it is used for batching "
+            f"the inference. Got {axes}",
+        )
 
         # Sum all the quantized values
         q_sum = numpy.sum(q_values, axis=axes, keepdims=self.keepdims)
@@ -1763,73 +1781,6 @@ class QuantizedReduceSum(QuantizedMixingOp):
         )
 
         return sum_qarray
-
-    def _prepare_inputs_with_constants(
-        self,
-        *inputs: ONNXOpInputOutputType,
-        calibrate: bool,
-        quantize_actual_values: bool,
-    ):
-        """Retrieve all the inputs of an operator in the computational graph.
-
-        This helper method will prepare a list of inputs to an operator. Inputs can be variables,
-        i.e., encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
-        the slots of a list, as the order of inputs is important.
-
-        Usually the input list is populated with QuantizedArrays. Operators that require the
-        original float (operators that only produce or contribute to TLUs) values will just read
-        out the .values of  these quantized arrays. Operators that do matrix multiplication will
-        read out the quantized integer values of the arrays.  The method can be called during
-        calibration, in which case the variable inputs are just float numpy tensors.
-
-        Args:
-             *inputs (ONNXOpInputOutputType): A list of all variable inputs
-            calibrate (bool): A flag specifying if the method is called during calibration
-            quantize_actual_values (bool): If called by a quantized operator that does matrix
-                multiplication between encrypted and clear values, this method will apply
-                the quantization computation to the input, which will be fused in a (potentially
-                larger) TLU, with preceding floating point computations
-
-        Returns:
-            result (List): a list of inputs which are either QuantizedArray or numpy.arrays. If
-                quantize_actual_values==True then the quantization code is applied
-        """
-        prepared_inputs = super()._prepare_inputs_with_constants(
-            *inputs,
-            calibrate=calibrate,
-            quantize_actual_values=quantize_actual_values,
-        )
-
-        assert_true(
-            isinstance(prepared_inputs[0], (numpy.ndarray, QuantizedArray)),
-            "Prepared inputs's first element should either be a Numpy array of QuantizedArray. "
-            f"Got {type(prepared_inputs[0])}",
-        )
-
-        # Retrieve the input array's shape. The first elements is either an array or a
-        # QuantizedArray depending on if the method is used for calibration or not
-        if isinstance(prepared_inputs[0], numpy.ndarray):
-            shape = prepared_inputs[0].shape
-        elif isinstance(prepared_inputs[0], QuantizedArray):
-            shape = prepared_inputs[0].qvalues.shape
-
-        assert_true(
-            isinstance(prepared_inputs[1], numpy.ndarray) or prepared_inputs[1] is None,
-            "ReduceSum axis parameter should either be a Numpy array or None. "
-            f"Got {type(prepared_inputs[1])}",
-        )
-
-        # Retrieve the axis parameter
-        axes = prepared_inputs[1]
-
-        # As the calibration input-set and inputs are ran over several samples, we need to apply the
-        # sum on all the given axes except the first one (the sample axis), including when axes is
-        # set to None (i.e., sum over all axes).
-        prepared_inputs[1] = (
-            tuple(axes + 1) if axes is not None else tuple(numpy.arange(1, len(shape)))
-        )
-
-        return prepared_inputs
 
 
 class QuantizedErf(QuantizedOp):
