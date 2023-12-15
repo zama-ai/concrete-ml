@@ -932,10 +932,10 @@ def rounded_numpy_equal_for_trees(
 
     # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
     # which does: (a - b) - half.
-    # if auto_truncate is not None:
-    #     return rounded_comparison(
-    #         y, x, auto_truncate, operation=lambda x: x >= 0
-    #     )  # pragma: no cover
+    if auto_truncate is not None:
+        return rounded_comparison(
+            y, x, auto_truncate, operation=lambda x: x >= 0
+        )  # pragma: no cover
 
     # Else, default numpy_equal operator
     return (numpy.equal(x, y),)

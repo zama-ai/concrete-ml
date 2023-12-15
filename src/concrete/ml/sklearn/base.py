@@ -1293,9 +1293,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
-        #: Determines the LSB to remove given a `target_msbs`
-        self.auto_truncate = cnp.AutoTruncator(target_msbs=MSB_TO_KEEP_FOR_TREES)
-
         BaseEstimator.__init__(self)
 
     def fit(self, X: Data, y: Target, **fit_parameters):
@@ -1304,6 +1301,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.input_quantizers = []
         self.output_quantizers = []
 
+        #: Determines the LSB to remove given a `target_msbs`
+        self.auto_truncate = cnp.AutoTruncator(target_msbs=MSB_TO_KEEP_FOR_TREES)
+        
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         q_X = numpy.zeros_like(X)
@@ -1348,10 +1348,10 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         )
 
         # Adjust the truncate
-        inputset = numpy.array(list(_get_inputset_generator(q_X))).astype(int)
-        self.auto_truncate.adjust(self._tree_inference, inputset)
-
-        self._tree_inference(q_X.astype("int"))
+        if enable_truncate:
+            inputset = numpy.array(list(_get_inputset_generator(q_X))).astype(int)
+            self.auto_truncate.adjust(self._tree_inference, inputset)
+            self._tree_inference(q_X.astype("int"))
 
         self._is_fitted = True
 
