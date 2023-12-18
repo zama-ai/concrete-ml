@@ -1165,6 +1165,7 @@ class ShapeOperationsNet(nn.Module):
     def __init__(self, is_qat):
         super().__init__()
         self.is_qat = is_qat
+        self.is_qat_compatible = True
         if is_qat:
             self.input_quant = qnn.QuantIdentity(bit_width=8)
 
@@ -1532,3 +1533,24 @@ class AddNet(nn.Module):
             Result of adding x and y.
         """
         return x + y
+
+
+class ExpandModel(nn.Module):
+    """Minimalist network that expands the input tensor to a larger size."""
+
+    def __init__(self, is_qat):  # pylint: disable=unused-argument
+        super().__init__()
+        self.is_qat_compatible = False
+
+    @staticmethod
+    def forward(x):
+        """Expand the input tensor to the target size.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Expanded tensor.
+        """
+        x = x.reshape(x.shape + (1,))
+        return x.expand(x.shape[:-1] + (4,))

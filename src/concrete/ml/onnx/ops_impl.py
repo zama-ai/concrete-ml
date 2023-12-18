@@ -941,6 +941,25 @@ def rounded_numpy_equal_for_trees(
     return (numpy.equal(x, y),)
 
 
+def numpy_equal_float(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
+    """Compute equal in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_equal(x, y))
+
+
 def numpy_not(
     x: numpy.ndarray,
 ) -> Tuple[numpy.ndarray]:
@@ -2043,3 +2062,24 @@ def numpy_gather(
     slices = tuple(slice(None) if i != axis else indices_list for i in range(x.ndim))
 
     return (x[slices],)
+
+
+@onnx_func_raw_args("shape")
+def numpy_expand(x: numpy.ndarray, shape=None) -> Tuple[numpy.ndarray]:
+    """Apply the expand operator in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md#expand
+
+    Args:
+        x (numpy.ndarray): Input tensor.
+        shape: Tuple of the new shape.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor.
+    """
+    target_shape = numpy.array(shape, dtype=int)
+    padding = len(target_shape) - len(x.shape)
+
+    assert_true(padding >= 0, "Target shape cannot have fewer dimensions than input shape")
+
+    return (numpy.broadcast_to(x, target_shape),)

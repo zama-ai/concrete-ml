@@ -32,6 +32,7 @@ from concrete.ml.pytest.torch_models import (
     ConcatFancyIndexing,
     DoubleQuantQATMixNet,
     EncryptedMatrixMultiplicationModel,
+    ExpandModel,
     FCSmall,
     MultiInputNN,
     MultiInputNNConfigurable,
@@ -1132,10 +1133,12 @@ def test_net_has_no_tlu(
             assert "lookup_table" not in mlir
 
 
+@pytest.mark.parametrize("model", [pytest.param(ShapeOperationsNet), pytest.param(ExpandModel)])
 @pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_qat", [True, False])
 @pytest.mark.parametrize("n_channels", [2])
 def test_shape_operations_net(
+    model,
     simulate,
     n_channels,
     is_qat,
@@ -1144,7 +1147,12 @@ def test_shape_operations_net(
     check_float_array_equal,
 ):
     """Test a pattern of reshaping, concatenation, chunk extraction."""
-    net = ShapeOperationsNet(is_qat)
+    net = model(is_qat)
+    if is_qat and not net.is_qat_compatible:
+        pytest.skip(f"Model {model.__name__} is not compatible with is_qat=True")
+
+    # Shape transformation do not support >1 example in the inputset
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3871
     inputset = numpy.random.uniform(size=(1, n_channels, 2, 2))
 
     if is_qat:

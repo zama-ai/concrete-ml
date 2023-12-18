@@ -2430,3 +2430,87 @@ class ONNXSlice(QuantizedOp):
             bool: False, this operation can not be fused
         """
         return False
+
+
+class QuantizedExpand(QuantizedOp):
+    """Expand operator for quantized tensors."""
+
+    _impl_for_op_named: str = "Expand"
+    quantize_inputs_with_model_outputs_precision = True
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+        """Expand the input tensor to a specified shape.
+
+        Args:
+            q_inputs: an encrypted integer tensor at index 0, shape at index 1
+            attrs: additional optional expand options
+
+        Returns:
+            result (QuantizedArray): expanded encrypted integer tensor
+        """
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        # Ensure the input is a quantized array
+        assert isinstance(q_inputs[0], QuantizedArray)
+
+        target_shape = prepared_inputs[1]
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].quantizer.n_bits,
+            self.call_impl(prepared_inputs[0].qvalues, target_shape, **attrs),
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Unsqueeze can not be fused since it must be performed over integer tensors as
+        it reshapes an encrypted tensor.
+
+        Returns:
+            bool: False, this operation can not be fused as it operates on encrypted tensors
+        """
+        return False
+
+
+class QuantizedEqual(QuantizedOp):
+    """Comparison operator ==.
+
+    Only supports comparison with a constant.
+    """
+
+    _impl_for_op_named: str = "Equal"
+
+    # Since this op takes a single variable input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        op_instance_name: str,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
+
+        # We do not support testing a == b where a,b are encrypted
+        # only comparing to a constant is supported
+        assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
