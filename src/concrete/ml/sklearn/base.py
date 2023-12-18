@@ -1408,15 +1408,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         y_pred = self.post_processing(y_pred)
         return y_pred
 
-    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
-        # Sum all tree outputs
-        # Remove the sum once we handle multi-precision circuits
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=-1)
-
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-        return y_preds
-
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):
     """Mixin class for tree-based regressors.

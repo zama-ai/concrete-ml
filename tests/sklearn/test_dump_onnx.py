@@ -222,7 +222,8 @@ def test_dump(
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
+  %/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
+  %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   return %transposed_output
 }""",
         "RandomForestClassifier": """graph torch_jit (
@@ -294,7 +295,8 @@ def test_dump(
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
+  %/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
+  %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   return %transposed_output
 }""",
         "GammaRegressor": """graph torch_jit (
@@ -339,7 +341,8 @@ def test_dump(
   %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
   %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
   %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
-  return %/_operators.0/Reshape_4_output_0
+  %/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_4_output_0, %onnx::ReduceSum_26)
+  return %/_operators.0/ReduceSum_output_0
 }""",
         "RandomForestRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -374,6 +377,7 @@ def test_dump(
   %/_operators.0/Constant_2_output_0[INT64, 3]
   %/_operators.0/Constant_3_output_0[INT64, 3]
   %/_operators.0/Constant_4_output_0[INT64, 3]
+  %onnx::ReduceSum_27[INT64, 1]
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
@@ -387,7 +391,8 @@ def test_dump(
   %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
   %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
   %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
-  return %/_operators.0/Reshape_4_output_0
+  %/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_4_output_0, %onnx::ReduceSum_27)
+  return %/_operators.0/ReduceSum_output_0
 }""",
         "LinearRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
