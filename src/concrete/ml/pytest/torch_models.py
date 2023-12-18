@@ -1092,6 +1092,8 @@ class TorchSum(nn.Module):
 
         # Add an additional operator that requires a TLU in order to force this circuit to
         # handle a PBS without actually changing the results
+        # This is only tested in weekly CIs because compiling the circuits make the tests too long
+        # to execute (which is why it is not included in the regular coverage)
         if self.with_pbs:
             torch_sum = torch_sum + torch_sum % 2 - torch_sum % 2  # pragma: no cover
 
