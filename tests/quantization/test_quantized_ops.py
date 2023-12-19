@@ -1252,7 +1252,6 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
 @pytest.fixture(scope="module")
 def random_test_data():
     """Generate data for comparisons operators."""
-    numpy.random.seed(42)  # Fixing the seed for reproducibility
     return [
         (
             numpy.random.uniform(size=(1, 3, 32, 32)) * 4,

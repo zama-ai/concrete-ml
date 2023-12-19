@@ -2065,21 +2065,21 @@ def numpy_gather(
 
 
 @onnx_func_raw_args("shape")
-def numpy_expand(x: numpy.ndarray, shape=None) -> Tuple[numpy.ndarray]:
+def numpy_expand(x: numpy.ndarray, shape: Optional[Tuple[int]] = None) -> Tuple[numpy.ndarray]:
     """Apply the expand operator in numpy according to ONNX spec.
 
     See https://github.com/onnx/onnx/blob/main/docs/Operators.md#expand
 
     Args:
         x (numpy.ndarray): Input tensor.
-        shape: Tuple of the new shape.
+        shape (Optional[Tuple[int]]): Tuple of the new shape.
 
     Returns:
         Tuple[numpy.ndarray]: Output tensor.
     """
     target_shape = numpy.array(shape, dtype=int)
-    padding = len(target_shape) - len(x.shape)
+    shape_difference = len(target_shape) - len(x.shape)
 
-    assert_true(padding >= 0, "Target shape cannot have fewer dimensions than input shape")
+    assert_true(shape_difference >= 0, "Target shape cannot have fewer dimensions than input shape")
 
     return (numpy.broadcast_to(x, target_shape),)
