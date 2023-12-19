@@ -1165,7 +1165,6 @@ class ShapeOperationsNet(nn.Module):
     def __init__(self, is_qat):
         super().__init__()
         self.is_qat = is_qat
-        self.is_qat_compatible = True
         if is_qat:
             self.input_quant = qnn.QuantIdentity(bit_width=8)
 
@@ -1540,10 +1539,11 @@ class ExpandModel(nn.Module):
 
     def __init__(self, is_qat):  # pylint: disable=unused-argument
         super().__init__()
-        self.is_qat_compatible = False
+        self.is_qat = is_qat
+        if is_qat:
+            self.input_quant = qnn.QuantIdentity(bit_width=8)
 
-    @staticmethod
-    def forward(x):
+    def forward(self, x):
         """Expand the input tensor to the target size.
 
         Args:
@@ -1552,5 +1552,7 @@ class ExpandModel(nn.Module):
         Returns:
             torch.Tensor: Expanded tensor.
         """
+        if self.is_qat:
+            x = self.input_quant(x)
         x = x.reshape(x.shape + (1,))
         return x.expand(x.shape[:-1] + (4,))

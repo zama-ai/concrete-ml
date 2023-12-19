@@ -1150,8 +1150,6 @@ def test_shape_operations_net(
 ):
     """Test a pattern of reshaping, concatenation, chunk extraction."""
     model = model_class(is_qat)
-    if is_qat and not model.is_qat_compatible:
-        pytest.skip(f"Model {model_class.__name__} is not compatible with is_qat=True")
 
     # Shape transformation do not support >1 example in the inputset
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3871
