@@ -1522,3 +1522,27 @@ class AddNet(nn.Module):
             Result of adding x and y.
         """
         return x + y
+
+
+class ExpandModel(nn.Module):
+    """Minimalist network that expands the input tensor to a larger size."""
+
+    def __init__(self, is_qat):  # pylint: disable=unused-argument
+        super().__init__()
+        self.is_qat = is_qat
+        if is_qat:
+            self.input_quant = qnn.QuantIdentity(bit_width=8)
+
+    def forward(self, x):
+        """Expand the input tensor to the target size.
+
+        Args:
+            x (torch.Tensor): Input tensor.
+
+        Returns:
+            torch.Tensor: Expanded tensor.
+        """
+        if self.is_qat:
+            x = self.input_quant(x)
+        x = x.reshape(x.shape + (1,))
+        return x.expand(x.shape[:-1] + (4,))

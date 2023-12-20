@@ -136,6 +136,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Equal
 - Erf
 - Exp
+- Expand
 - Flatten
 - Floor
 - Gather
