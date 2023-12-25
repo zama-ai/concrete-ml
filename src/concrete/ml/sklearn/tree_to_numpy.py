@@ -261,7 +261,7 @@ def tree_onnx_graph_preprocessing(
 def tree_values_preprocessing(
     onnx_model: onnx.ModelProto,
     framework: str,
-    output_n_bits: int,
+    n_bits: int,
 ) -> QuantizedArray:
     """Pre-process tree values.
 
@@ -277,18 +277,23 @@ def tree_values_preprocessing(
 
     # Modify ONNX graph to fit in FHE
     for i, initializer in enumerate(onnx_model.graph.initializer):
+        
+        
         # All constants in our tree should be integers.
         # Tree thresholds can be rounded up or down (depending on the tree implementation)
         # while the final probabilities/regression values must be quantized.
         # We extract the value stored in each initializer node into the init_tensor.
         init_tensor = numpy_helper.to_array(initializer)
+        #print(initializer.name, init_tensor.shape)
         if "weight_3" in initializer.name:
+            #print(init_tensor)
             # weight_3 is the prediction tensor, apply the required pre-processing
-            q_y = preprocess_tree_predictions(init_tensor, output_n_bits)
+            q_y = preprocess_tree_predictions(init_tensor, n_bits["leaves"])
 
             # Get the preprocessed tree predictions to replace the current (non-quantized)
             # values in the onnx_model.
             init_tensor = q_y.qvalues
+            
         elif "bias_1" in initializer.name:
             if framework == "xgboost":
                 # xgboost uses "<" (Less) operator thus we must round up.

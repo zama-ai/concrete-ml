@@ -1292,6 +1292,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
+
         BaseEstimator.__init__(self)
 
     def fit(self, X: Data, y: Target, **fit_parameters):
@@ -1306,7 +1307,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
-            input_quantizer = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
+            input_quantizer = QuantizedArray(n_bits=self.n_bits["op_inputs"], values=X[:, i]).quantizer
             self.input_quantizers.append(input_quantizer)
             q_X[:, i] = input_quantizer.quant(X[:, i])
 

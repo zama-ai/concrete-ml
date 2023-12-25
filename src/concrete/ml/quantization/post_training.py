@@ -50,7 +50,7 @@ def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
         or (
             isinstance(n_bits, Dict)
             and set(n_bits.keys()).issubset(
-                {"model_inputs", "op_weights", "model_outputs", "op_inputs"}
+                {"model_inputs", "op_weights", "model_outputs", "op_inputs", "leaves"}
             )
             and {"op_weights", "op_inputs"}.issubset(set(n_bits.keys()))
         ),
@@ -69,6 +69,7 @@ def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
             "op_weights": n_bits,
             "op_inputs": n_bits,
             "model_outputs": max(DEFAULT_MODEL_BITS, n_bits),
+            "leaves": n_bits,
         }
 
     # If model_inputs or model_outputs are not given, we consider a default value
