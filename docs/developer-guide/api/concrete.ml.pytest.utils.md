@@ -286,3 +286,28 @@ This function serializes all objects using the `dump`, `dumps`, `load` and `load
 - <b>`expected_type`</b> (Type):  The object's expected type.
 - <b>`equal_method`</b> (Optional\[Callable\]):  The function to use to compare the two loaded objects.  Default to `values_are_equal`.
 - <b>`check_str`</b> (bool):  If the JSON strings should also be checked. Default to True.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/pytest/utils.py#L666"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_random_samples`
+
+```python
+get_random_samples(x: ndarray, n_sample: int) → ndarray
+```
+
+Select `n_sample` random elements from a 2D NumPy array.
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  The 2D NumPy array from which random rows will be selected.
+- <b>`n_sample`</b> (int):  The number of rows to randomly select.
+
+**Returns:**
+
+- <b>`numpy.ndarray`</b>:  A new 2D NumPy array containing the randomly selected rows.
+
+**Raises:**
+
+- <b>`AssertionError`</b>:  If `n_sample` is not within the range (0, x.shape\[0\]) or  if `x` is not a 2D array.
