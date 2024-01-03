@@ -56,10 +56,10 @@ boto3 = "^1.23.5"
 fastapi = "^0.102.0"
 uvicorn = "^0.21.0"
 tqdm = "^4.64.1"
-transformers = "^4.30.2"
+transformers = "^4.36.0"
 certifi = "2023.07.22"
 pytest-json-report = "1.5.0"
-gitpython = "3.1.35"
+gitpython = "3.1.37"
 
 [tool.poetry.dev-dependencies]
 isort = "^5.10.1"
