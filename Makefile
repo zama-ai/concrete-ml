@@ -715,9 +715,11 @@ check_supported_ops:
 	git diff docs/deep-learning/onnx_support.md
 	git diff --quiet docs/deep-learning/onnx_support.md
 
+# The log-opts option checks the whole history between the first commit and the current commit
+# The default of gitleaks it to check the whole history.
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:
-	gitleaks --source "$${PWD}" detect --redact -v
+	gitleaks --source "$${PWD}" detect --redact -v --log-opts="$$(git rev-list HEAD | tail -n 1)..$$(git rev-parse HEAD)"
 
 .PHONY: sanity_check # Sanity checks, e.g. to check that a release is viable
 sanity_check:
