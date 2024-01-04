@@ -186,33 +186,9 @@ def check_correctness_with_sklearn(
         warnings.simplefilter("ignore", category=ConvergenceWarning)
         model, sklearn_model = model.fit_benchmark(x, y)
 
-    # For R2 score measures
-    acceptance_r2scores = {
-        "TweedieRegressor": 0.9,
-        "GammaRegressor": 0.9,
-        "LinearRegression": 0.9,
-        "LinearSVR": 0.9,
-        "PoissonRegressor": 0.9,
-        "Lasso": 0.9,
-        "Ridge": 0.9,
-        "ElasticNet": 0.9,
-        "XGBRegressor": 0.9,
-        "SGDClassifier": 0.9,
-    }
-
-    # For accuracy measures
-    threshold_accuracies = {
-        "LogisticRegression": 0.9,
-        "LinearSVC": 0.9,
-        "XGBClassifier": 0.7,
-        "RandomForestClassifier": 0.8,
-        "KNeighborsClassifier": 0.9,
-        "SGDRegressor": 0.9,
-    }
-
     model_name = get_model_name(model_class)
-    acceptance_r2score = acceptance_r2scores.get(model_name, 0.9)
-    threshold_accuracy = threshold_accuracies.get(model_name, 0.9)
+    acceptance_r2score = 0.9
+    threshold_accuracy = 0.9
 
     # If the model is a classifier
     # KNeighborsClassifier does not provide a predict_proba method for now
