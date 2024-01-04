@@ -14,13 +14,13 @@ QuantizedModule API.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L83"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L82"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>class</kbd> `QuantizedModule`
 
 Inference for a quantized model.
 
-<a href="../../../src/concrete/ml/quantization/quantized_module.py#L93"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/quantization/quantized_module.py#L92"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ### <kbd>method</kbd> `__init__`
 
@@ -347,4 +347,4 @@ set_reduce_sum_copy()
 
 Set reduce sum to copy or not the inputs.
 
-Due to bit-width propagation in the compilation we might or not want to copy the inputs with a PBS to avoid it.
+Due to bit-width propagation in the compilation we need, in some situations, to copy the inputs with a PBS to avoid it.
