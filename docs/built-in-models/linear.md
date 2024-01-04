@@ -28,6 +28,9 @@ The `n_bits` parameter controls the bit-width of the inputs and weights of the l
 
 The `n_bits` parameter can be set to `8` or more bits for models with up to `300` input dimensions. When the input has more dimensions, `n_bits` must be reduced to `6-7`. All performance metrics are preserved down to `n_bits=6`, compared to the non-quantized float models from scikit-learn.
 
+The same quantization parameters (i.e., scale and zero-point) are applied on all features, so it can be beneficial to make all feature distribution similar by using standard or min-max normalization.
+For a more detailed comparison of the impact of such pre-processing please refer to [the logistic regression notebook](../advanced_examples/LogisticRegression.ipynb).
+
 ## Example
 
 The following snippet gives an example about training a LogisticRegression model on a simple data-set followed by inference on encrypted data with FHE. A more complete example can be found in the [LogisticRegression notebook](ml_examples.md).
