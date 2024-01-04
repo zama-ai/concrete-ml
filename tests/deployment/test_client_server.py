@@ -286,5 +286,34 @@ def check_client_server_execution(
     check_float_array_equal(y_pred, y_pred_dev)
     check_array_equal(q_y_pred, q_y_pred_dev)
 
+    if True:
+        # And check with a single input
+        for i in range(min(2, len(x_test))):
+
+            # Client side : Encrypt the data
+            q_x_encrypted_serialized_i = fhe_model_client.quantize_encrypt_serialize([x_test[i]])
+
+            # Server side: Run the model over encrypted data
+            q_y_pred_encrypted_serialized_i = fhe_model_server.run(
+                q_x_encrypted_serialized_i, evaluation_keys
+            )
+
+            # Client side : Decrypt, de-quantize and post-process the result
+            q_y_pred_i = fhe_model_client.deserialize_decrypt(q_y_pred_encrypted_serialized_i)
+            y_pred_i = fhe_model_client.deserialize_decrypt_dequantize(
+                q_y_pred_encrypted_serialized_i
+            )
+
+            # Dev side: Predict using the model and circuit from development
+            q_x_test_i = model.quantize_input([x_test[i]])
+            q_y_pred_dev_i = model.fhe_circuit.encrypt_run_decrypt(q_x_test_i)
+            y_pred_dev_i = model.dequantize_output(q_y_pred_dev_i)
+            y_pred_dev_i = model.post_processing(y_pred_dev_i)
+
+            # Check that both quantized and de-quantized (+ post-processed) results from the server are
+            # matching the ones from the dec model
+            check_float_array_equal(y_pred_i, y_pred_dev_i)
+            check_array_equal(q_y_pred_i, q_y_pred_dev_i)
+
     # Clean up
     disk_network.cleanup()
