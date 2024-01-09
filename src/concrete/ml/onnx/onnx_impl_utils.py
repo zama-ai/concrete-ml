@@ -3,8 +3,8 @@
 from typing import Callable, Tuple, Union
 
 import numpy
-from concrete.fhe import conv as cnp_conv
-from concrete.fhe import ones as cnp_ones
+from concrete.fhe import conv as fhe_conv
+from concrete.fhe import ones as fhe_ones
 from concrete.fhe import round_bit_pattern
 from concrete.fhe.tracing import Tracer
 
@@ -52,7 +52,7 @@ def numpy_onnx_pad(
         # to the real-axis 0
         if int_only:
             # Work in integer Concrete mode
-            x_pad = cnp_ones(tuple(padded_shape)) * numpy.int64(pad_value)
+            x_pad = fhe_ones(tuple(padded_shape)) * numpy.int64(pad_value)
         else:
             # Floating point mode
             x_pad = numpy.ones(padded_shape, dtype=numpy.float32) * pad_value
@@ -219,7 +219,7 @@ def onnx_avgpool_compute_norm_const(
         padded_ceil[:, :, 0 : padded_flr.shape[2], 0 : padded_flr.shape[3]] = 1
 
         # Compute the sum of valid indices in each kernel position
-        norm_const = cnp_conv(
+        norm_const = fhe_conv(
             padded_ceil, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels
         )
     else:

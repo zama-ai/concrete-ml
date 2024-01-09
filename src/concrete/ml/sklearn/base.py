@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
 import brevitas.nn as qnn
-import concrete.fhe as cnp
 import numpy
 import onnx
 import sklearn
@@ -30,6 +29,9 @@ from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import check_is_fitted
+
+# pylint: disable-next=ungrouped-imports
+from concrete import fhe as cp
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -2036,7 +2038,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 arr = []
                 for i in indices:
                     arr.append(x[i])
-                enc_arr = cnp.array(arr)
+                enc_arr = cp.array(arr)
                 return enc_arr
 
             def scatter1d(x, v, indices):
@@ -2057,7 +2059,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 return x
 
             comparisons = numpy.zeros(x.shape)
-            labels = labels + cnp.zeros(labels.shape)
+            labels = labels + cp.zeros(labels.shape)
 
             n, k = x.size, self.n_neighbors
             # Determine the number of stages for a sequence of length n
@@ -2073,7 +2075,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 d = p
                 # Number of passes for each stage
                 for bq in range(ln2n - 1, t - 1, -1):
-                    with cnp.tag(f"Stage_{t}_pass_{bq}"):
+                    with cp.tag(f"Stage_{t}_pass_{bq}"):
                         q = 2**bq
                         # Determine the range of indexes to be compared
                         range_i = numpy.array(
@@ -2096,14 +2098,14 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                         labels_a = gather1d(labels, range_i)  #
                         labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
 
-                        with cnp.tag("diff"):
+                        with cp.tag("diff"):
                             # Select max(a, b)
                             diff = b - a
 
-                        with cnp.tag("max_value"):
+                        with cp.tag("max_value"):
                             max_x = a + numpy.maximum(0, diff)
 
-                        with cnp.tag("swap_max_value"):
+                        with cp.tag("swap_max_value"):
                             # Swap if a > b
                             # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
                             x = scatter1d(x, a + b - max_x, range_i)
@@ -2111,16 +2113,16 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                             x = scatter1d(x, max_x, range_i + d)
 
                         # Update labels array according to the max value
-                        with cnp.tag("max_label"):
+                        with cp.tag("max_label"):
                             is_a_greater_than_b = diff > 0
                             max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
 
-                        with cnp.tag("swap_max_label"):
+                        with cp.tag("swap_max_label"):
                             labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
                             labels = scatter1d(labels, max_labels, range_i + d)
 
                         # Update
-                        with cnp.tag("update"):
+                        with cp.tag("update"):
                             comparisons[range_i + d] = comparisons[range_i + d] + 1
                             # Reduce the comparison distance by half
                             d = q - p
@@ -2129,7 +2131,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             return labels[0 : self.n_neighbors]
 
         # 1. Pairwise_euclidiean distance
-        with cnp.tag("Original distance"):
+        with cp.tag("Original distance"):
             distance_matrix = pairwise_euclidean_distance(q_X)
 
         # The square root in the Euclidean distance calculation is not applied to speed up FHE
