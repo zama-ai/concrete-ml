@@ -1,0 +1,48 @@
+# Training on Encrypted Data
+
+Concrete ML offers the possibility to train [SGD Logistic Regression](../developer-guide/api/concrete.ml.sklearn.linear_model.md#class-sgdclassifier) on encrypted data. The [logistic regression training](../advanced_examples/LogisticRegressionTraining.ipynb) example shows this feature in action.
+
+This example shows how to instantiate a logistic regression model that trains on encrypted data:
+
+```python
+parameters_range = (-1.0, 1.0)
+
+sgd_clf_binary_simulate = SGDClassifier(
+    random_state=RANDOM_STATE,
+    max_iter=N_ITERATIONS,
+    fit_encrypted=True,
+    parameters_range=parameters_range,
+)
+```
+
+To activate encrypted training simply set `fit_encrypted=True` in the constructor. If this value is not set, training is performed
+on clear data using `scikit-learn` gradient descent.
+
+Next, to perform the training on encrypted data, call the `fit` function with the `fhe="execute"` argument:
+
+<!--pytest-codeblocks:skip-->
+
+```python
+sgd_clf_binary_fhe.fit(X_binary, y_binary, fhe="execute")
+```
+
+{% hint style="info" %}
+Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured through _differential privacy_ instead of encryption. Concrete ML
+can import linear models, including logistic regression, that are trained using federated learning using the [`from_sklearn` function](linear.md#pre-trained-models).
+
+{% endhint %}
+
+## Training configuration
+
+The `max_iter` parameter controls the number of batches that are processed by the training algorithm. Good values for this parameter are 8-64.
+
+The `parameters_range` parameter determines the initialization of the coefficients and the bias of the logistic regression. It is recommended to give values that are close to the min/max of the training data. It is also possible to normalize the training data so that it lies in the range $$[-1, 1]$$.
+
+## Capabilities and Limitations
+
+The logistic model that can be trained uses Stochastic Gradient Descent (SGD) and quantizes for data, weights, gradients and the error measure. It currently supports training 6-bit models, training both the coefficients and the bias.
+
+The `SGDClassifier` does not currently support training models with other values for the bit-widths. Second, the time to train the model
+is proportional to the number of features and the number of training examples.
+
+The `SGDClassifier` training does not currently support client/server deployment for training.

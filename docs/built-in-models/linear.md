@@ -20,6 +20,8 @@ Using these models in FHE is extremely similar to what can be done with scikit-l
 
 Models are also compatible with some of scikit-learn's main workflows, such as `Pipeline()` and `GridSearch()`.
 
+## Pre-trained models
+
 It is possible to convert an already trained scikit-learn linear model to a Concrete ML one by using the [`from_sklearn_model`](../developer-guide/api/concrete.ml.sklearn.base.md#classmethod-from_sklearn_model) method. See [below for an example](#loading-a-pre-trained-model). This functionality is only available for linear models.
 
 ## Quantization parameters
