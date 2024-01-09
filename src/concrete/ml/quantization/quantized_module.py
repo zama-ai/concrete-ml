@@ -495,7 +495,7 @@ class QuantizedModule:
             "The quantized module is not compiled. Please run compile(...) first before "
             "executing it in FHE.",
         )
-        results_cnp_circuit_list: List[List[numpy.ndarray]] = [[] for _ in self.output_quantizers]
+        q_result_by_output: List[List[numpy.ndarray]] = [[] for _ in self.output_quantizers]
         for i in range(q_x[0].shape[0]):
 
             # Extract example i from every element in the tuple q_x
@@ -524,19 +524,19 @@ class QuantizedModule:
             # Execute the forward pass in FHE or with simulation
             q_result = to_tuple(predict_method(*q_input))
 
-            assert len(q_result) == len(results_cnp_circuit_list), (
+            assert len(q_result) == len(q_result_by_output), (
                 "Number of outputs does not match the number of output quantizers.\n"
                 f"{len(q_result)=}!={len(self.output_quantizers)=}"
             )
             for elt_index, elt in enumerate(q_result):
-                results_cnp_circuit_list[elt_index].append(elt)
+                q_result_by_output[elt_index].append(elt)
 
-        results_cnp_circuit: Tuple[numpy.ndarray, ...] = tuple(
-            numpy.concatenate(elt, axis=0) for elt in results_cnp_circuit_list
+        q_results: Tuple[numpy.ndarray, ...] = tuple(
+            numpy.concatenate(elt, axis=0) for elt in q_result_by_output
         )
-        if len(results_cnp_circuit) == 1:
-            return results_cnp_circuit[0]
-        return results_cnp_circuit
+        if len(q_results) == 1:
+            return q_results[0]
+        return q_results
 
     def quantize_input(self, *x: numpy.ndarray) -> Union[numpy.ndarray, Tuple[numpy.ndarray, ...]]:
         """Take the inputs in fp32 and quantize it using the learned quantization parameters.

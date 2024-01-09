@@ -8,8 +8,8 @@
 from typing import Any, Dict, Optional, Sequence, Set, Union
 
 import numpy
-from concrete.fhe import conv as cnp_conv
-from concrete.fhe import maxpool as cnp_maxpool
+from concrete.fhe import conv as fhe_conv
+from concrete.fhe import maxpool as fhe_maxpool
 from concrete.fhe import tag, univariate, zeros
 from typing_extensions import SupportsIndex
 
@@ -591,13 +591,7 @@ class QuantizedAdd(QuantizedMixingOp):
         # Moreover, the zero-point will be sum of input zero-points
         assert self.b_sign in [-1, 1]
 
-        # This lines will be simplified into
-        #       sum_q = rescale_q0 + self.b_sign * rescale_q1
-        # when zama-ai/concrete-numpy-internal#1749 is done
-        if self.b_sign == 1:
-            sum_q = q_input_0_rescaled + q_input_1_rescaled
-        elif self.b_sign == -1:
-            sum_q = q_input_0_rescaled - q_input_1_rescaled
+        sum_q = q_input_0_rescaled + self.b_sign * q_input_1_rescaled
 
         if self.produces_graph_output:
             return self.make_output_quant_parameters(sum_q, common_scale, common_zero_point)
@@ -878,7 +872,7 @@ class QuantizedConv(QuantizedMixingOp):
         fake_pads = [0] * len(self.pads)
 
         with tag(self.op_instance_name + ".conv"):
-            conv_wx = cnp_conv(
+            conv_wx = fhe_conv(
                 q_input_pad,
                 q_weights.qvalues,
                 bias=None,
@@ -902,7 +896,7 @@ class QuantizedConv(QuantizedMixingOp):
                 f"op {self.op_instance_name} must be integer",
             )
             with tag(self.op_instance_name + ".conv_inputsum"):
-                zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
+                zw_conv_1x = -q_weights.quantizer.zero_point * fhe_conv(
                     q_input_pad,
                     q_weights_1,
                     bias=None,
@@ -1112,7 +1106,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
         with tag(self.op_instance_name + ".avgpool"):
-            sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
+            sum_result = fhe_conv(q_input_pad, kernel, None, fake_pads, self.strides)
 
         with tag(self.op_instance_name + ".avgpool_rounding"):
             # Apply Concrete rounding (if relevant)
@@ -1229,7 +1223,7 @@ class QuantizedMaxPool(QuantizedOp):
         # 0's while we want to pad with zero-point's. So, instead, he have done the padding
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
-        sum_result = cnp_maxpool(
+        sum_result = fhe_maxpool(
             q_input_pad,
             kernel_shape=self.kernel_shape,
             strides=self.strides,

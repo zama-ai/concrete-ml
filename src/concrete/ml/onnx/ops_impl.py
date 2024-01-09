@@ -8,8 +8,8 @@ import numpy
 import onnx
 import onnx.helper
 from brevitas.function import max_int, min_int
-from concrete.fhe import conv as cnp_conv
-from concrete.fhe import maxpool as cnp_maxpool
+from concrete.fhe import conv as fhe_conv
+from concrete.fhe import maxpool as fhe_maxpool
 from concrete.fhe import univariate
 from scipy import special
 from typing_extensions import SupportsIndex
@@ -1317,7 +1317,7 @@ def numpy_conv(
     x_pad = numpy_onnx_pad(x, pads)
 
     # Compute the torch convolution
-    res = cnp_conv(x_pad, w, b, None, strides, dilations, None, group)
+    res = fhe_conv(x_pad, w, b, None, strides, dilations, None, group)
 
     return (res,)
 
@@ -1381,7 +1381,7 @@ def numpy_avgpool(
     q_input_pad = numpy_onnx_pad(x, pool_pads)
 
     # Compute the sums of input values for each kernel position
-    res = cnp_conv(q_input_pad, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
+    res = fhe_conv(q_input_pad, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
 
     # Compute the average of the input values for each kernel position
     res /= norm_const
@@ -1445,7 +1445,7 @@ def numpy_maxpool(
     q_input_pad = numpy_onnx_pad(x, pool_pads)
 
     fake_pads = [0] * len(pads)
-    res = cnp_maxpool(
+    res = fhe_maxpool(
         q_input_pad,
         kernel_shape=kernel_shape,
         strides=strides,

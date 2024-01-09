@@ -155,7 +155,7 @@ jobs:
             # Needed for some reason
             make setup_env
             source ./.venv/bin/activate
-            python -m pip show concrete-numpy
+            python -m pip show concrete-python
 
       # Now we get our most up to date version
       - name: Run the benchmark command

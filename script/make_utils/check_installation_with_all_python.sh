@@ -73,8 +73,7 @@ do
         # Build the wheel file
         poetry build -f wheel
 
-        # Install the dependencies as PyPI would do using the wheel file, inclusing the current
-        # Concrete-Numpy RC version
+        # Install the dependencies as PyPI would do using the wheel file
         PYPI_WHEEL=$(find dist -type f -name "*.whl")
         python -m pip install "${PYPI_WHEEL}"
 

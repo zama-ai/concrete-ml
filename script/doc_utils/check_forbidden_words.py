@@ -124,6 +124,7 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("concrete Numpy", [], []),  # use Concrete
         ("Concrete numpy", [], []),  # use Concrete
         ("Concrete Numpy", [], []),  # use Concrete
+        ("cnp", [], []),  # use fhe (or cp, worst case)
         ("tool-kit", [], []),  # use toolkit
         ("tool-kits", [], []),  # use toolkits
         (
