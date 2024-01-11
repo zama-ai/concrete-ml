@@ -104,7 +104,7 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 os.environ["TREES_USE_ROUNDING"] = "1"
 
 # TODO
-os.environ["TREES_USE_FHE_SUM"] = "0"
+os.environ["TREES_USE_FHE_SUM"] = "1"
 
 # pylint: disable=too-many-public-methods
 
@@ -1427,6 +1427,20 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         y_pred = BaseEstimator.predict(self, X, fhe=fhe)
         y_pred = self.post_processing(y_pred)
         return y_pred
+
+    def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+        # Sum all tree outputs
+        # Remove the sum once we handle multi-precision circuits
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
+        if os.getenv("TREES_USE_FHE_SUM") == "0":
+            print("post_processing: Non FHE SUM")
+            y_preds = numpy.sum(y_preds, axis=-1)
+
+            assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+            return y_preds
+        else:
+            print("post_processing: FHE SUM")
+            return super().post_processing(y_preds)
 
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):

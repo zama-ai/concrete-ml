@@ -1,6 +1,11 @@
 """Modules for quantization."""
 from .base_quantized_op import QuantizedOp
-from .post_training import PostTrainingAffineQuantization, PostTrainingQATImporter, get_n_bits_dict, get_n_bits_dict_trees
+from .post_training import (
+    PostTrainingAffineQuantization,
+    PostTrainingQATImporter,
+    get_n_bits_dict,
+    get_n_bits_dict_trees,
+)
 from .quantized_module import QuantizedModule
 from .quantized_ops import (
     QuantizedAbs,
