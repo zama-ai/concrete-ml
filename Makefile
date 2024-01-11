@@ -54,13 +54,17 @@ setup_env:
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 
 .PHONY: sync_env # Synchronise the environment
-sync_env: check_poetry_version
-	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
-		poetry install --remove-untracked --only dev; \
+sync_env: 
+	if [[ $$(poetry --version) != "Poetry (version $(POETRY_VERSION))" ]];then \
+		echo "Current Poetry version is different than $(POETRY_VERSION). Please update it.";\
 	else \
-		poetry install --remove-untracked; \
+		if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
+			poetry install --remove-untracked --only dev; \
+		else \
+			poetry install --remove-untracked; \
+		fi; \
+		"$(MAKE)" setup_env; \
 	fi
-	"$(MAKE)" setup_env
 
 .PHONY: fix_omp_issues_for_intel_mac # Fix OMP issues for macOS Intel, https://github.com/zama-ai/concrete-ml-internal/issues/3951
 fix_omp_issues_for_intel_mac:
@@ -88,15 +92,6 @@ reinstall_env:
 		"$(MAKE)" setup_env; \
 		echo "Source venv with:"; \
 		echo "source $${SOURCE_VENV_PATH}"; \
-	fi
-
-.PHONY: check_poetry_version # Check poetry's version
-check_poetry_version:
-	if [[ $$(poetry --version) == "Poetry (version $(POETRY_VERSION))" ]];then \
-		echo "Poetry version is ok";\
-	else\
-		echo "Expected poetry version is not the expected one: $(POETRY_VERSION)"\
-		exit 1;\
 	fi
 
 .PHONY: python_format # Apply python formatting
