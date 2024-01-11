@@ -176,7 +176,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Gemm-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L312"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L296"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_matmul`
 
@@ -199,7 +199,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#MatMul-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L314"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_relu`
 
@@ -221,7 +221,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Relu-14
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L346"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L330"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sigmoid`
 
@@ -243,7 +243,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sigmoid-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L362"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L346"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_softmax`
 
@@ -269,7 +269,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#softmax-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L369"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cos`
 
@@ -291,7 +291,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Cos-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L385"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cosh`
 
@@ -313,7 +313,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Cosh-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L401"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sin`
 
@@ -335,7 +335,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sin-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L417"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sinh`
 
@@ -357,7 +357,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sinh-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L433"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_tan`
 
@@ -379,7 +379,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Tan-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L465"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L449"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_tanh`
 
@@ -401,7 +401,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Tanh-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L481"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L465"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_acos`
 
@@ -423,7 +423,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Acos-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L481"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_acosh`
 
@@ -445,7 +445,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Acosh-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L497"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_asin`
 
@@ -467,7 +467,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Asin-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L529"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L513"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_asinh`
 
@@ -489,7 +489,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Asinh-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L529"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_atan`
 
@@ -511,7 +511,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Atan-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L561"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L545"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_atanh`
 
@@ -533,7 +533,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Atanh-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L577"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L561"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_elu`
 
@@ -556,7 +556,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Elu-6
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L593"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L577"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_selu`
 
@@ -584,7 +584,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Selu-6
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L615"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L599"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_celu`
 
@@ -607,7 +607,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Celu-12
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L631"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L615"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_leakyrelu`
 
@@ -630,7 +630,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LeakyRelu-6
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L647"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L631"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_thresholdedrelu`
 
@@ -653,7 +653,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#ThresholdedRelu-10
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L666"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L650"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_hardsigmoid`
 
@@ -681,7 +681,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#HardSigmoid-6
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L685"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L669"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_softplus`
 
@@ -703,7 +703,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Softplus-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L702"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L686"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_abs`
 
@@ -725,7 +725,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Abs-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L719"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L703"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_div`
 
@@ -748,7 +748,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Div-14
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L751"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L735"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_mul`
 
@@ -771,7 +771,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Mul-14
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L770"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L754"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sub`
 
@@ -794,7 +794,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sub-14
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L789"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L773"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_log`
 
@@ -816,7 +816,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Log-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L832"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L816"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_erf`
 
@@ -838,7 +838,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Erf-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L849"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L833"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_hardswish`
 
@@ -860,7 +860,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#hardswish-14
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L870"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L854"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_exp`
 
@@ -882,7 +882,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Exp-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L887"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L871"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_equal`
 
@@ -905,7 +905,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L907"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L891"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `rounded_numpy_equal_for_trees`
 
@@ -933,7 +933,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-11
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L944"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L928"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_equal_float`
 
@@ -956,7 +956,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L963"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L947"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_not`
 
@@ -978,7 +978,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L980"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L964"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_not_float`
 
@@ -1000,7 +1000,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Not-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L997"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L981"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater`
 
@@ -1023,7 +1023,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1016"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1000"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater_float`
 
@@ -1046,7 +1046,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Greater-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1035"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1019"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater_or_equal`
 
@@ -1069,7 +1069,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1054"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1038"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_greater_or_equal_float`
 
@@ -1092,7 +1092,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#GreaterOrEqual-12
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1073"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1057"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less`
 
@@ -1115,7 +1115,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1091"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1075"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `rounded_numpy_less_for_trees`
 
@@ -1143,7 +1143,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1120"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1104"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less_float`
 
@@ -1166,7 +1166,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Less-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1139"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1123"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less_or_equal`
 
@@ -1189,7 +1189,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1158"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1142"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `rounded_numpy_less_or_equal_for_trees`
 
@@ -1217,7 +1217,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1191"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1175"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_less_or_equal_float`
 
@@ -1240,7 +1240,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#LessOrEqual-12
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1210"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1194"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_identity`
 
@@ -1262,7 +1262,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Identity-14
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1248"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1232"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_transpose`
 
@@ -1285,7 +1285,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Transpose-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1263"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1247"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_conv`
 
@@ -1326,7 +1326,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Conv
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1325"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1309"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_avgpool`
 
@@ -1365,7 +1365,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#AveragePool
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1392"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1376"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_maxpool`
 
@@ -1406,7 +1406,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#MaxPool
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1495"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1479"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_cast`
 
@@ -1431,7 +1431,7 @@ See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1520"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1504"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_batchnorm`
 
@@ -1473,7 +1473,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#BatchNormalization-
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1591"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1575"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_flatten`
 
@@ -1496,7 +1496,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Flatten-13.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1609"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1593"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or`
 
@@ -1519,7 +1519,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1627"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1611"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_or_float`
 
@@ -1542,7 +1542,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Or-7
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1645"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1629"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_round`
 
@@ -1564,7 +1564,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Round-11 Remark tha
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1662"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1646"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_pow`
 
@@ -1587,7 +1587,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Pow-13
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1788"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1772"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_floor`
 
@@ -1609,7 +1609,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Floor-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1802"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1786"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_max`
 
@@ -1634,7 +1634,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1819"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1803"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_min`
 
@@ -1659,7 +1659,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Max-1
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1836"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1820"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_sign`
 
@@ -1681,7 +1681,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1850"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1834"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_neg`
 
@@ -1703,7 +1703,7 @@ See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Sign-9
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1864"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/ops_impl.py#L1848"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_concatenate`
 
