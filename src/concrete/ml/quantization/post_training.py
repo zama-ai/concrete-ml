@@ -24,6 +24,46 @@ from .quantized_ops import QuantizedBrevitasQuant
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
 
+def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
+    """Convert the n_bits parameter into a proper dictionary for tree based-models.
+
+    Args:
+        n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" (mandatory)
+            - "op_leaves" (optional)
+            TODO
+
+    Returns:
+        n_bits_dict (Dict[str, int]): TODO
+    """
+
+    assert_true(
+        isinstance(n_bits, int)
+        or (isinstance(n_bits, Dict) and set(n_bits.keys()).issubset({"op_inputs", "op_leaves"})),
+        "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
+        "the following keys:\n"
+        "- `op_inputs` and `op_leaves` (mandatory)",
+    )
+
+    # If a single integer is passed, we use a default value for the model's input and
+    # output bits
+    if isinstance(n_bits, int):
+        n_bits_dict = {
+            "op_inputs": n_bits,
+            "op_leaves": n_bits,
+        }
+    # If model_inputs or model_outputs are not given, we consider a default value
+    elif isinstance(n_bits, Dict):
+        n_bits_dict = {
+            "model_inputs": n_bits,
+            "model_outputs": n_bits,
+        }
+
+        n_bits_dict.update(n_bits)
+    return n_bits_dict
+
+
 def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     """Convert the n_bits parameter into a proper dictionary.
 
@@ -50,7 +90,7 @@ def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
         or (
             isinstance(n_bits, Dict)
             and set(n_bits.keys()).issubset(
-                {"model_inputs", "op_weights", "model_outputs", "op_inputs", "leaves"}
+                {"model_inputs", "op_weights", "model_outputs", "op_inputs"}
             )
             and {"op_weights", "op_inputs"}.issubset(set(n_bits.keys()))
         ),
@@ -69,7 +109,6 @@ def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
             "op_weights": n_bits,
             "op_inputs": n_bits,
             "model_outputs": max(DEFAULT_MODEL_BITS, n_bits),
-            "leaves": n_bits,
         }
 
     # If model_inputs or model_outputs are not given, we consider a default value
