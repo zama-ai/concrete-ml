@@ -53,14 +53,23 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
             "op_inputs": n_bits,
             "op_leaves": n_bits,
         }
+
     # If model_inputs or model_outputs are not given, we consider a default value
     elif isinstance(n_bits, Dict):
         n_bits_dict = {
-            "model_inputs": n_bits,
-            "model_outputs": n_bits,
+            "model_inputs": DEFAULT_MODEL_BITS,
+            "model_outputs": max(DEFAULT_MODEL_BITS, n_bits["op_inputs"]),  # TODO
         }
 
         n_bits_dict.update(n_bits)
+
+    assert_true(
+        n_bits_dict["op_inputs"] >= n_bits_dict["op_leaves"],
+        "Using fewer bits to represent the model_outputs than the op inputs is not "
+        f"recommended. Got op_leaves: {n_bits_dict['op_leaves']} and op_inputs: "
+        f"{n_bits_dict['op_inputs']}",
+    )
+
     return n_bits_dict
 
 

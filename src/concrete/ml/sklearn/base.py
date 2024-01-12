@@ -1303,9 +1303,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         """
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
-        # Convert the n_bits attribute into a proper dictionary
-        self.n_bits = get_n_bits_dict_trees(self.n_bits)
-
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
@@ -1320,6 +1317,10 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         q_X = numpy.zeros_like(X)
+
+        # Convert the n_bits attribute into a proper dictionary
+        self.n_bits = get_n_bits_dict_trees(self.n_bits)
+        print(f"{self.n_bits=}")
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -1337,6 +1338,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        # Convert the n_bits attribute into a proper dictionary
+        self.n_bits = get_n_bits_dict_trees(self.n_bits)
 
         # Enable rounding feature
         enable_rounding = os.environ.get("TREES_USE_ROUNDING", "1") == "1"

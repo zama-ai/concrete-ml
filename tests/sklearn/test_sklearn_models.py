@@ -726,11 +726,15 @@ def check_pipeline(model_class, x, y):
         {key: value} for key, values in hyper_param_combinations.items() for value in values
     ]
 
+    print(f"{hyperparameters_list=}")
+
     # Take one of the hyper_parameters randomly (testing everything would be too long)
     if len(hyperparameters_list) == 0:
         hyper_parameters = {}
     else:
         hyper_parameters = hyperparameters_list[numpy.random.randint(0, len(hyperparameters_list))]
+
+    print(f"{hyperparameters_list=}")
 
     pipe_cv = Pipeline(
         [
@@ -748,6 +752,7 @@ def check_pipeline(model_class, x, y):
         }
 
     else:
+        print("ELSE")
         param_grid = {
             "model__n_bits": [2, 3],
         }
