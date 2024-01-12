@@ -1,5 +1,6 @@
 """Implements the conversion of a tree model to a numpy function."""
 import math
+import os
 import warnings
 from typing import Callable, List, Optional, Tuple
 
@@ -141,12 +142,16 @@ def add_transpose_after_last_node(onnx_model: onnx.ModelProto):
     # Get the output node
     output_node = onnx_model.graph.output[0]
 
+    if os.getenv("TREES_USE_FHE_SUM") == "1":
+        perm = [1, 0]
+    else:
+        perm = [2, 1, 0]
     # Create the node with perm attribute equal to (1, 0)
     transpose_node = onnx.helper.make_node(
         "Transpose",
         inputs=[output_node.name],
         outputs=["transposed_output"],
-        perm=[1, 0],
+        perm=perm,
     )
 
     onnx_model.graph.node.append(transpose_node)

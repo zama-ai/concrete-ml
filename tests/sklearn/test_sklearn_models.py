@@ -1664,9 +1664,9 @@ def test_p_error_simulation(
     with simulation or in FHE compared to the expected clear quantized ones.
     """
 
-    if os.getenv('TREES_USE_FHE_SUM') == "1":
+    if os.getenv("TREES_USE_FHE_SUM") == "1":
         n_bits = 4
-    else: 
+    else:
         n_bits = get_n_bits_non_correctness(model_class)
 
     # Get data-set, initialize and fit the model
@@ -1880,6 +1880,96 @@ def test_rounding_consistency_for_regular_models(
         model,
         x,
         y,
+        predict_method,
+        metric,
+        is_weekly_option,
+    )
+
+
+def check_fhe_sum_consistency(
+    x,
+    predict_method,
+    metric,
+    is_weekly_option,
+):
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
+
+    # Run the test with more samples during weekly CIs
+    if is_weekly_option:
+        fhe_test = get_random_samples(x, n_sample=5)
+
+    # By default, FHE_SUM is disabled
+    fhe_sum_disabled = os.getenv("TREES_USE_FHE_SUM") == "1"
+    assert fhe_sum_disabled
+
+    non_fhe_sume_predict_quantized = predict_method(x, fhe="disable")
+    non_fhe_sume_predict_simulate = predict_method(x, fhe="simulate")
+
+    # Compute the FHE predictions only during weekly CIs
+    if is_weekly_option:
+        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+
+    print("ROUNGING ENABLED")
+
+    with pytest.MonkeyPatch.context() as mp_context:
+
+        # Enable FHE sum
+        mp_context.setenv("TREES_USE_FHE_SUM", "0")
+
+        # Check that rounding is disabled
+        fhe_sum_enbled = os.environ.get("TREES_USE_FHE_SUM") == "0"
+        assert fhe_sum_enbled
+
+        fhe_sum_predict_quantized = predict_method(x, fhe="disable")
+        fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
+
+        metric(non_fhe_sume_predict_quantized, fhe_sum_predict_quantized)
+        metric(non_fhe_sume_predict_simulate, fhe_sum_predict_simulate)
+
+        # Compute the FHE predictions only during weekly CIs
+        if is_weekly_option:
+            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+            metric(rounded_predict_fhe, not_rounded_predict_fhe)
+
+        # Check that the maximum bit-width of the circuit with rounding is at most:
+        # maximum bit-width (of the circuit without rounding) + 2
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
+
+
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
+@pytest.mark.parametrize("n_bits", [2, 5, 10])
+def test_fhe_sum_for_tree_based_models(
+    model_class,
+    parameters,
+    n_bits,
+    load_data,
+    check_r2_score,
+    check_accuracy,
+    is_weekly_option,
+    default_configuration,
+    verbose=True,
+):
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
+
+    if verbose:
+        print("Run check_rounding_consistency")
+
+    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    # Compile the model to make sure we consider all possible attributes during the serialization
+    model.compile(x, default_configuration)
+
+    # Check `predict_proba` for classifiers
+    if is_classifier_or_partial_classifier(model):
+        predict_method = model.predict_proba
+        metric = check_r2_score
+    else:
+        # Check `predict` for regressors
+        predict_method = model.predict
+        metric = check_accuracy
+
+    check_fhe_sum_consistency(
+        x,
         predict_method,
         metric,
         is_weekly_option,
