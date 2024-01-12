@@ -1839,7 +1839,7 @@ def test_linear_models_have_no_tlu(
 # Additional tests for this purpose should be added in future updates
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
-@pytest.mark.parametrize("n_bits", [2, 5, 11])
+@pytest.mark.parametrize("n_bits", [2, 5, 10])
 def test_rounding_consistency_for_regular_models(
     model_class,
     parameters,

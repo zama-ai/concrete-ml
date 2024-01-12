@@ -124,7 +124,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits,
+            output_n_bits=obj.n_bits["op_leaves"],
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
@@ -259,7 +259,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits,
+            output_n_bits=obj.n_bits["op_leaves"],
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 

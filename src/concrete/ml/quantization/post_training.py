@@ -46,6 +46,8 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
         "- `op_inputs` and `op_leaves` (mandatory)",
     )
 
+    n_bits_dict = {}
+
     # If a single integer is passed, we use a default value for the model's input and
     # output bits
     if isinstance(n_bits, int):
@@ -55,12 +57,8 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
         }
 
     # If model_inputs or model_outputs are not given, we consider a default value
-    elif isinstance(n_bits, Dict):
-        n_bits_dict = {
-            "model_inputs": DEFAULT_MODEL_BITS,
-            "model_outputs": max(DEFAULT_MODEL_BITS, n_bits["op_inputs"]),  # TODO
-        }
 
+    elif isinstance(n_bits, Dict):
         n_bits_dict.update(n_bits)
 
     assert_true(
