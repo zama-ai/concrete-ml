@@ -1663,7 +1663,11 @@ def test_p_error_simulation(
     The test checks that models compiled with a large p_error value predicts very different results
     with simulation or in FHE compared to the expected clear quantized ones.
     """
-    n_bits = get_n_bits_non_correctness(model_class)
+
+    if os.getenv('TREES_USE_FHE_SUM') == "1":
+        n_bits = 4
+    else: 
+        n_bits = get_n_bits_non_correctness(model_class)
 
     # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
@@ -1672,7 +1676,7 @@ def test_p_error_simulation(
     is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
 
     # Compile with a large p_error to be sure the result is random.
-    model.compile(x, **error_param)
+    c = model.compile(x, **error_param)
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
@@ -1693,7 +1697,11 @@ def test_p_error_simulation(
                 return True
         return False
 
+    print("Start simulation")
+    print(model)
+
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
+    print("execution")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
     # Check for differences in predictions
