@@ -142,37 +142,37 @@ jobs:
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
 
       - name: Archive raw predictions
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.1.0
         with:
           name: predictions.csv
           path: inference_results.csv
 
       - name: Archive metrics
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.1.0
         with:
           name: metrics.json
           path: to_upload.json
 
       - name: Archive MLIR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.1.0
         with:
           name: mlir.txt
           path: cifar10.mlir
 
       - name: Archive Graph
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.1.0
         with:
           name: graph.txt
           path: cifar10.graph
 
       - name: Archive client
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.1.0
         with:
           name: client.zip
           path: client_server/client.zip
 
       - name: Archive server
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.1.0
         with:
           name: server.zip
           path: client_server/server.zip
