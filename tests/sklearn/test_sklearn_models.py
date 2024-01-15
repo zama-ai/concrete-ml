@@ -46,6 +46,7 @@ from concrete.ml.common.serialization.dumpers import dump, dumps
 from concrete.ml.common.serialization.loaders import load, loads
 from concrete.ml.common.utils import (
     USE_OLD_VL,
+    array_allclose_and_same_shape,
     get_model_class,
     get_model_name,
     is_classifier_or_partial_classifier,
@@ -726,15 +727,11 @@ def check_pipeline(model_class, x, y):
         {key: value} for key, values in hyper_param_combinations.items() for value in values
     ]
 
-    print(f"{hyperparameters_list=}")
-
     # Take one of the hyper_parameters randomly (testing everything would be too long)
     if len(hyperparameters_list) == 0:
         hyper_parameters = {}
     else:
         hyper_parameters = hyperparameters_list[numpy.random.randint(0, len(hyperparameters_list))]
-
-    print(f"{hyperparameters_list=}")
 
     pipe_cv = Pipeline(
         [
@@ -752,7 +749,6 @@ def check_pipeline(model_class, x, y):
         }
 
     else:
-        print("ELSE")
         param_grid = {
             "model__n_bits": [2, 3],
         }
@@ -1206,47 +1202,73 @@ def check_rounding_consistency(
 
 
 def check_fhe_sum_consistency(
+    model_class,
     x,
-    predict_method,
-    metric,
+    y,
+    n_bits,
     is_weekly_option,
 ):
-    """Test that Concrete ML without and with rounding are 'equivalent'."""
+    """Test that Concrete ML without and with FHE sum are 'equivalent'."""
 
     # Run the test with more samples during weekly CIs
     if is_weekly_option:
         fhe_test = get_random_samples(x, n_sample=5)
 
-    # By default, FHE_SUM is disabled
-    fhe_sum_disabled = os.getenv("TREES_USE_FHE_SUM") == "1"
+    # By default, the summation of tree ensemble outputs is done in clear
+    fhe_sum_disabled = os.getenv("TREES_USE_FHE_SUM") == "0"
     assert fhe_sum_disabled
+
+    model_ref = instantiate_model_generic(model_class, n_bits=n_bits)
+    fit_and_compile(model_ref, x, y)
+
+    # Check `predict_proba` for classifiers and `predict` for regressors
+    predict_method = (
+        model_ref.predict_proba
+        if is_classifier_or_partial_classifier(model_class)
+        else model_ref.predict
+    )
 
     non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
     non_fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
 
+    # Sanity check
+    array_allclose_and_same_shape(non_fhe_sum_predict_quantized, non_fhe_sum_predict_simulate)
+
     # Compute the FHE predictions only during weekly CIs
     if is_weekly_option:
-        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+        non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     with pytest.MonkeyPatch.context() as mp_context:
 
-        # Enable FHE sum
-        mp_context.setenv("TREES_USE_FHE_SUM", "0")
+        # Enable the FHE summation of tree ensemble outputs
+        mp_context.setenv("TREES_USE_FHE_SUM", "1")
 
-        # Check that rounding is disabled
-        fhe_sum_enbled = os.environ.get("TREES_USE_FHE_SUM") == "0"
-        assert fhe_sum_enbled
+        # Check that the summation of tree ensemble outputs is enabled
+        fhe_sum_enabled = os.environ.get("TREES_USE_FHE_SUM") == "1"
+        assert fhe_sum_enabled
+
+        model = model_class(**model_ref.get_params())
+        fit_and_compile(model, x, y)
+
+        # Check `predict_proba` for classifiers and `predict` for regressors
+        predict_method = (
+            model.predict_proba
+            if is_classifier_or_partial_classifier(model_class)
+            else model.predict
+        )
 
         fhe_sum_predict_quantized = predict_method(x, fhe="disable")
         fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
 
-        metric(non_fhe_sum_predict_quantized, fhe_sum_predict_quantized)
-        metric(non_fhe_sum_predict_simulate, fhe_sum_predict_simulate)
+        # Sanity check
+        array_allclose_and_same_shape(fhe_sum_predict_quantized, fhe_sum_predict_simulate)
 
-        # Compute the FHE predictions only during weekly CIs
-        if is_weekly_option:
-            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
-            metric(rounded_predict_fhe, not_rounded_predict_fhe)
+    # Check that we have the exact same predictions
+    array_allclose_and_same_shape(fhe_sum_predict_quantized, non_fhe_sum_predict_quantized)
+    array_allclose_and_same_shape(fhe_sum_predict_simulate, non_fhe_sum_predict_simulate)
+    if is_weekly_option:
+        fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
+        array_allclose_and_same_shape(fhe_sum_predict_fhe, non_fhe_sum_predict_fhe)
 
 
 # Neural network models are skipped for this test
@@ -1741,11 +1763,7 @@ def test_p_error_simulation(
                 return True
         return False
 
-    print("Start simulation")
-    print(model)
-
     simulation_diff_found = check_for_divergent_predictions(x, model, fhe="simulate")
-    print("execution")
     fhe_diff_found = check_for_divergent_predictions(x, model, fhe="execute")
 
     # Check for differences in predictions
@@ -1937,34 +1955,20 @@ def test_fhe_sum_for_tree_based_models(
     parameters,
     n_bits,
     load_data,
-    check_r2_score,
-    check_accuracy,
     is_weekly_option,
-    default_configuration,
     verbose=True,
 ):
     """Test that Concrete ML without and with rounding are 'equivalent'."""
 
     if verbose:
-        print("Run check_rounding_consistency")
+        print("Run check_fhe_sum_consistency")
 
-    model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
-
-    # Compile the model to make sure we consider all possible attributes during the serialization
-    model.compile(x, default_configuration)
-
-    # Check `predict_proba` for classifiers
-    if is_classifier_or_partial_classifier(model):
-        predict_method = model.predict_proba
-        metric = check_r2_score
-    else:
-        # Check `predict` for regressors
-        predict_method = model.predict
-        metric = check_accuracy
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
     check_fhe_sum_consistency(
+        model_class,
         x,
-        predict_method,
-        metric,
+        y,
+        n_bits,
         is_weekly_option,
     )

@@ -18,7 +18,11 @@ from ..onnx.convert import (
     OPSET_VERSION_FOR_ONNX_EXPORT,
     get_equivalent_numpy_forward_from_onnx_tree,
 )
-from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remove_node_types
+from ..onnx.onnx_model_manipulations import (
+    clean_graph_after_node_op_type,
+    clean_graph_at_node_op_type,
+    remove_node_types,
+)
 from ..onnx.onnx_utils import get_op_type
 from ..quantization import QuantizedArray
 from ..quantization.quantizers import UniformQuantizer
@@ -142,13 +146,14 @@ def add_transpose_after_last_node(onnx_model: onnx.ModelProto):
     # Get the output node
     output_node = onnx_model.graph.output[0]
 
+    # When using FHE sum for tree ensembles, create the node with perm attribute equal to (1, 0)
     if os.getenv("TREES_USE_FHE_SUM") == "1":
-        # Create the node with perm attribute equal to (1, 0)
         perm = [1, 0]
+
+    # Otherwise, create the node with perm attribute equal to (2, 1, 0)
     else:
-        # Create the node with perm attribute equal to (2, 1, 0)
         perm = [2, 1, 0]
-    
+
     transpose_node = onnx.helper.make_node(
         "Transpose",
         inputs=[output_node.name],
@@ -246,7 +251,10 @@ def tree_onnx_graph_preprocessing(
 
     # Cut the graph after the ReduceSum node to remove
     # argmax, sigmoid, softmax from the graph.
-    clean_graph_after_node_op_type(onnx_model, "ReduceSum")
+    if os.getenv("TREES_USE_FHE_SUM") == "1":
+        clean_graph_after_node_op_type(onnx_model, "ReduceSum")
+    else:
+        clean_graph_at_node_op_type(onnx_model, "ReduceSum")
 
     if framework == "xgboost":
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2778

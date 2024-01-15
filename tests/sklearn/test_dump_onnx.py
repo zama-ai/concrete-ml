@@ -69,7 +69,6 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
     str_model = onnx.helper.printable_graph(onnx_model.graph)
     print(f"{model_name}:")
     print(str_model)
-
     # Test equality when it does not depend on seeds
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
     if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
@@ -228,7 +227,7 @@ def test_dump(
   %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   """
             if os.getenv("TREES_USE_FHE_SUM") == "1"
-            else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)"
+            else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)\n  "
         )
         + """return %transposed_output
 }""",
@@ -307,7 +306,7 @@ def test_dump(
   %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   """
             if os.getenv("TREES_USE_FHE_SUM") == "1"
-            else ""
+            else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)\n  "
         )
         + """return %transposed_output
 }""",
@@ -359,8 +358,7 @@ def test_dump(
   return %/_operators.0/ReduceSum_output_0
 }"""
             if os.getenv("TREES_USE_FHE_SUM") == "1"
-            else """return %/_operators.0/Reshape_4_output_0
-            }"""
+            else "return %/_operators.0/Reshape_4_output_0\n}"
         ),
         "RandomForestRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -401,9 +399,8 @@ def test_dump(
   %/_operators.0/Constant_1_output_0[INT64, 2]
   %/_operators.0/Constant_2_output_0[INT64, 3]
   %/_operators.0/Constant_3_output_0[INT64, 3]
-  %/_operators.0/Constant_4_output_0[INT64, 3]
-  """
-        + ("%onnx::ReduceSum_27[INT64, 1]" if os.getenv("TREES_USE_FHE_SUM") == "1" else "")
+  %/_operators.0/Constant_4_output_0[INT64, 3]"""
+        + ("\n  %onnx::ReduceSum_27[INT64, 1]" if os.getenv("TREES_USE_FHE_SUM") == "1" else "")
         + """
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -424,7 +421,7 @@ def test_dump(
   return %/_operators.0/ReduceSum_output_0
 }"""
             if os.getenv("TREES_USE_FHE_SUM") == "1"
-            else "return %/_operators.0/Reshape_4_output_0"
+            else """return %/_operators.0/Reshape_4_output_0\n}"""
         ),
         "LinearRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
