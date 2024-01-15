@@ -182,7 +182,7 @@ jobs:
           curl --fail-with-body \
           -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
           -H "Content-Type: application/json; charset=UTF-8" \
-          -d @to_upload.json \
+          --json @to_upload.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
 
 
