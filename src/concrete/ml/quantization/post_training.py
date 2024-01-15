@@ -23,6 +23,8 @@ from .quantized_module_passes import PowerOfTwoScalingRoundPBSAdapter
 from .quantized_ops import QuantizedBrevitasQuant
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
+# pylint: disable=too-many-lines
+
 
 def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     """Convert the n_bits parameter into a proper dictionary for tree based-models.
@@ -32,10 +34,12 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
             a dictionary with the following keys :
             - "op_inputs" (mandatory)
             - "op_leaves" (optional)
-            TODO
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_leaves" bits.
 
     Returns:
-        n_bits_dict (Dict[str, int]): TODO
+        n_bits_dict (Dict[str, int]): A dictionary properly representing the number of bits to use
+            for quantization.
     """
 
     assert_true(
@@ -46,7 +50,7 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
         "- `op_inputs` and `op_leaves` (mandatory)",
     )
 
-    n_bits_dict = {}
+    n_bits_dict: Dict = {}
 
     # If a single integer is passed, we use a default value for the model's input and
     # output bits
@@ -55,8 +59,6 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
             "op_inputs": n_bits,
             "op_leaves": n_bits,
         }
-
-    # If model_inputs or model_outputs are not given, we consider a default value
 
     elif isinstance(n_bits, Dict):
         n_bits_dict.update(n_bits)

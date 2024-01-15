@@ -103,8 +103,8 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 # However, for internal testing purposes, we retain the capability to disable this feature
 os.environ["TREES_USE_ROUNDING"] = "1"
 
-# TODO
-os.environ["TREES_USE_FHE_SUM"] = "1"
+# By default, the decision of the tree ensembles is made in clear
+os.environ["TREES_USE_FHE_SUM"] = "0"
 
 # pylint: disable=too-many-public-methods
 
@@ -1289,7 +1289,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _TREE_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: int):
+    def __init__(self, n_bits: Union[int, Dict[str, int]]):
         """Initialize the TreeBasedEstimatorMixin.
 
         Args:
@@ -1432,6 +1432,16 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         y_pred = self.post_processing(y_pred)
         return y_pred
 
+    # def post_processing(self, y_preds: numpy.ndarray) -> numpy.ndarray:
+
+
+    #     # Sum all tree outputs
+    #     # Remove the sum once we handle multi-precision circuits
+    #     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
+    #     y_preds = numpy.sum(y_preds, axis=-1)
+
+    #     assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+    #     return y_preds
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):
     """Mixin class for tree-based regressors.

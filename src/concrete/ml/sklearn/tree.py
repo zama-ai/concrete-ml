@@ -1,5 +1,5 @@
 """Implement DecisionTree models."""
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy
 import sklearn.tree
@@ -31,7 +31,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
         min_impurity_decrease=0.0,
         class_weight=None,
         ccp_alpha: float = 0.0,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
     ):
         """Initialize the DecisionTreeClassifier.
 
@@ -119,7 +119,7 @@ class DecisionTreeClassifier(BaseTreeClassifierMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits["op_leaves"],
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
@@ -162,7 +162,7 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
         max_leaf_nodes=None,
         min_impurity_decrease=0.0,
         ccp_alpha=0.0,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
     ):
         """Initialize the DecisionTreeRegressor.
 
@@ -242,7 +242,7 @@ class DecisionTreeRegressor(BaseTreeRegressorMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits["op_leaves"],
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 

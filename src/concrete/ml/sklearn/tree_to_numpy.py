@@ -143,10 +143,12 @@ def add_transpose_after_last_node(onnx_model: onnx.ModelProto):
     output_node = onnx_model.graph.output[0]
 
     if os.getenv("TREES_USE_FHE_SUM") == "1":
+        # Create the node with perm attribute equal to (1, 0)
         perm = [1, 0]
     else:
+        # Create the node with perm attribute equal to (2, 1, 0)
         perm = [2, 1, 0]
-    # Create the node with perm attribute equal to (1, 0)
+    
     transpose_node = onnx.helper.make_node(
         "Transpose",
         inputs=[output_node.name],
@@ -266,7 +268,7 @@ def tree_onnx_graph_preprocessing(
 def tree_values_preprocessing(
     onnx_model: onnx.ModelProto,
     framework: str,
-    n_bits: int,
+    output_n_bits: int,
 ) -> QuantizedArray:
     """Pre-process tree values.
 
@@ -292,7 +294,7 @@ def tree_values_preprocessing(
         if "weight_3" in initializer.name:
             # print(init_tensor)
             # weight_3 is the prediction tensor, apply the required pre-processing
-            q_y = preprocess_tree_predictions(init_tensor, n_bits)
+            q_y = preprocess_tree_predictions(init_tensor, output_n_bits)
 
             # Get the preprocessed tree predictions to replace the current (non-quantized)
             # values in the onnx_model.

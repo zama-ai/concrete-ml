@@ -27,7 +27,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
     # pylint: disable=too-many-arguments,too-many-locals
     def __init__(
         self,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = None,
         n_estimators: Optional[int] = 20,
@@ -178,7 +178,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits["op_leaves"],
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
@@ -233,7 +233,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
     # pylint: disable=too-many-arguments,too-many-locals
     def __init__(
         self,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
         max_depth: Optional[int] = 3,
         learning_rate: Optional[float] = None,
         n_estimators: Optional[int] = 20,
@@ -407,7 +407,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits["op_leaves"],
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 

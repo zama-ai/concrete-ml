@@ -1205,6 +1205,50 @@ def check_rounding_consistency(
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
 
 
+def check_fhe_sum_consistency(
+    x,
+    predict_method,
+    metric,
+    is_weekly_option,
+):
+    """Test that Concrete ML without and with rounding are 'equivalent'."""
+
+    # Run the test with more samples during weekly CIs
+    if is_weekly_option:
+        fhe_test = get_random_samples(x, n_sample=5)
+
+    # By default, FHE_SUM is disabled
+    fhe_sum_disabled = os.getenv("TREES_USE_FHE_SUM") == "1"
+    assert fhe_sum_disabled
+
+    non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
+    non_fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
+
+    # Compute the FHE predictions only during weekly CIs
+    if is_weekly_option:
+        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+
+    with pytest.MonkeyPatch.context() as mp_context:
+
+        # Enable FHE sum
+        mp_context.setenv("TREES_USE_FHE_SUM", "0")
+
+        # Check that rounding is disabled
+        fhe_sum_enbled = os.environ.get("TREES_USE_FHE_SUM") == "0"
+        assert fhe_sum_enbled
+
+        fhe_sum_predict_quantized = predict_method(x, fhe="disable")
+        fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
+
+        metric(non_fhe_sum_predict_quantized, fhe_sum_predict_quantized)
+        metric(non_fhe_sum_predict_simulate, fhe_sum_predict_simulate)
+
+        # Compute the FHE predictions only during weekly CIs
+        if is_weekly_option:
+            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+            metric(rounded_predict_fhe, not_rounded_predict_fhe)
+
+
 # Neural network models are skipped for this test
 # The `fit_benchmark` function of QNNs returns a QAT model and a FP32 model that is similar
 # in structure but trained from scratch. Furthermore, the `n_bits` setting
@@ -1676,7 +1720,7 @@ def test_p_error_simulation(
     is_linear_model = is_model_class_in_a_list(model_class, _get_sklearn_linear_models())
 
     # Compile with a large p_error to be sure the result is random.
-    c = model.compile(x, **error_param)
+    model.compile(x, **error_param)
 
     def check_for_divergent_predictions(x, model, fhe, max_iterations=N_ALLOWED_FHE_RUN):
         """Detect divergence between simulated/FHE execution and clear run."""
@@ -1884,56 +1928,6 @@ def test_rounding_consistency_for_regular_models(
         metric,
         is_weekly_option,
     )
-
-
-def check_fhe_sum_consistency(
-    x,
-    predict_method,
-    metric,
-    is_weekly_option,
-):
-    """Test that Concrete ML without and with rounding are 'equivalent'."""
-
-    # Run the test with more samples during weekly CIs
-    if is_weekly_option:
-        fhe_test = get_random_samples(x, n_sample=5)
-
-    # By default, FHE_SUM is disabled
-    fhe_sum_disabled = os.getenv("TREES_USE_FHE_SUM") == "1"
-    assert fhe_sum_disabled
-
-    non_fhe_sume_predict_quantized = predict_method(x, fhe="disable")
-    non_fhe_sume_predict_simulate = predict_method(x, fhe="simulate")
-
-    # Compute the FHE predictions only during weekly CIs
-    if is_weekly_option:
-        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
-
-    print("ROUNGING ENABLED")
-
-    with pytest.MonkeyPatch.context() as mp_context:
-
-        # Enable FHE sum
-        mp_context.setenv("TREES_USE_FHE_SUM", "0")
-
-        # Check that rounding is disabled
-        fhe_sum_enbled = os.environ.get("TREES_USE_FHE_SUM") == "0"
-        assert fhe_sum_enbled
-
-        fhe_sum_predict_quantized = predict_method(x, fhe="disable")
-        fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
-
-        metric(non_fhe_sume_predict_quantized, fhe_sum_predict_quantized)
-        metric(non_fhe_sume_predict_simulate, fhe_sum_predict_simulate)
-
-        # Compute the FHE predictions only during weekly CIs
-        if is_weekly_option:
-            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
-            metric(rounded_predict_fhe, not_rounded_predict_fhe)
-
-        # Check that the maximum bit-width of the circuit with rounding is at most:
-        # maximum bit-width (of the circuit without rounding) + 2
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
 
 
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())

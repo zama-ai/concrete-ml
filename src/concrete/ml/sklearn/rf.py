@@ -1,5 +1,5 @@
 """Implement RandomForest models."""
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy
 import sklearn.ensemble
@@ -19,7 +19,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
         n_estimators=20,
         criterion="gini",
         max_depth=4,
@@ -124,7 +124,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits["op_leaves"],
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
@@ -162,7 +162,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
         n_estimators=20,
         criterion="squared_error",
         max_depth=4,
@@ -259,7 +259,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits["op_leaves"],
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
