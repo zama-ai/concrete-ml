@@ -131,16 +131,6 @@ jobs:
           NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
           python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
-      - name: Upload results
-        if: ${{ github.repository == 'zama-ai/concrete-ml-internal' }}
-        id: upload-results
-        run: |
-          curl \
-          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d @to_upload.json \
-          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
-
       - name: Archive raw predictions
         uses: actions/upload-artifact@v4.1.0
         with:
@@ -176,6 +166,25 @@ jobs:
         with:
           name: server.zip
           path: client_server/server.zip
+
+      # We need to keep this as the last step to avoid not uploading the artifacts
+      # if the step crashes
+      - name: Upload results
+        id: upload-results
+        run: |
+          # Log the json
+          cat to_upload.json | jq
+          
+          # We need to sleep to avoid log issues
+          sleep 1.
+
+          # Upload the json to the benchmark database
+          curl --fail-with-body \
+          -H "Authorization: Bearer ${{ secrets.NEW_ML_PROGRESS_TRACKER_TOKEN }}" \
+          -H "Content-Type: application/json; charset=UTF-8" \
+          --json @to_upload.json \
+          -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
+
 
   stop-runner:
     name: Stop EC2 runner
