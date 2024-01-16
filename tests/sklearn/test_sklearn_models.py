@@ -1201,7 +1201,7 @@ def check_rounding_consistency(
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4178
 
 
-def check_fhe_sum_consistency(
+def check_fhe_sum_for_tree_based_models(
     model_class,
     x,
     y,
@@ -1961,11 +1961,11 @@ def test_fhe_sum_for_tree_based_models(
     """Test that the tree ensembles' output are the same with and without the sum in FHE."""
 
     if verbose:
-        print("Run check_fhe_sum_consistency")
+        print("Run check_fhe_sum_for_tree_based_models")
 
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
-    check_fhe_sum_consistency(
+    check_fhe_sum_for_tree_based_models(
         model_class,
         x,
         y,

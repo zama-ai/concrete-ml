@@ -298,9 +298,7 @@ def tree_values_preprocessing(
         # while the final probabilities/regression values must be quantized.
         # We extract the value stored in each initializer node into the init_tensor.
         init_tensor = numpy_helper.to_array(initializer)
-        # print(initializer.name, init_tensor.shape)
         if "weight_3" in initializer.name:
-            # print(init_tensor)
             # weight_3 is the prediction tensor, apply the required pre-processing
             q_y = preprocess_tree_predictions(init_tensor, output_n_bits)
 
