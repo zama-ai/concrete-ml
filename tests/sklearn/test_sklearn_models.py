@@ -1958,7 +1958,7 @@ def test_fhe_sum_for_tree_based_models(
     is_weekly_option,
     verbose=True,
 ):
-    """Test that Concrete ML without and with rounding are 'equivalent'."""
+    """Test that the tree ensembles' output are the same with and without the sum in FHE."""
 
     if verbose:
         print("Run check_fhe_sum_consistency")

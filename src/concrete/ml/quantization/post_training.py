@@ -32,8 +32,10 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     Args:
         n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
             a dictionary with the following keys :
-            - "op_inputs" (mandatory)
-            - "op_leaves" (optional)
+            - "op_inputs" (mandatory): number of bits to quantize the input values
+            - "op_leaves" (optional): number of bits to quantize the leaves, defaults to the value
+                of "op_inputs" if not specified.
+
             When using a single integer for n_bits, its value is assigned to "op_inputs" and
             "op_leaves" bits.
 
@@ -44,10 +46,11 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
 
     assert_true(
         isinstance(n_bits, int)
-        or (isinstance(n_bits, Dict) and set(n_bits.keys()).issubset({"op_inputs", "op_leaves"})),
+        or (isinstance(n_bits, Dict) and not set(n_bits.keys()) - set(("op_leaves", "op_input"))),
         "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
         "the following keys:\n"
-        "- `op_inputs` and `op_leaves` (mandatory)",
+        "- `op_inputs` (mandatory)\n"
+        "- `op_leaves` (optional)",
     )
 
     n_bits_dict: Dict = {}

@@ -101,10 +101,10 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 # Enable rounding feature for all tree-based models by default
 # Note: This setting is fixed and cannot be altered by users
 # However, for internal testing purposes, we retain the capability to disable this feature
-os.environ["TREES_USE_ROUNDING"] = "1"
+os.environ["TREES_USE_ROUNDING"] = os.environ.get("TREES_USE_ROUNDING", "1")
 
 # By default, the decision of the tree ensembles is made in clear
-os.environ["TREES_USE_FHE_SUM"] = "0"
+os.environ["TREES_USE_FHE_SUM"] = os.environ.get("TREES_USE_FHE_SUM", "0")
 
 # pylint: disable=too-many-public-methods
 
@@ -1297,8 +1297,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 for n_bits, the value will be used for quantizing inputs and leaves. If a dict is
                 passed, then it should contain "op_inputs" and "op_leaves" as keys with
                 corresponding number of quantization bits so that:
-                    - op_inputs : number of bits to quantize the input values
-                    - op_leaves: number of bits to quantize the leaves
+                    - op_inputs (mandatory): number of bits to quantize the input values
+                    - op_leaves (optional): number of bits to quantize the leaves
                 Default to 6.
         """
         self.n_bits: Union[int, Dict[str, int]] = n_bits
