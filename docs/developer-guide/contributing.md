@@ -6,7 +6,11 @@ There are three ways to contribute to Concrete ML:
 - You can become an official contributor but you need to sign our Contributor License Agreement (CLA) on your first contribution. Our CLA-bot will guide you through the process when you will open a Pull Request on Github.
 - You can also provide new tutorials or use-cases, showing what can be done with the library. The more examples we have, the better and clearer it is for the other users.
 
-## 1. Creating a new branch
+## 1. Setting up the project
+
+First, you need to properly set up the project by following the steps provided [here](project_setup.md).
+
+## 2. Creating a new branch
 
 To create your branch, you have to use the issue ID somewhere in the branch name:
 
@@ -24,9 +28,9 @@ git checkout -b tracing_indexing_42
 git checkout -b 42_tracing_indexing
 ```
 
-## 2. Before committing
+## 3. Before committing
 
-### 2.1 Conformance
+### 3.1 Conformance
 
 Each commit to Concrete ML should conform to the standards of the project. You can let the development tools fix some issues automatically with the following command:
 
@@ -40,7 +44,7 @@ Conformance can be checked using the following command:
 make pcc
 ```
 
-### 2.2 Testing
+### 3.2 Testing
 
 Your code must be well documented, containing tests and not breaking other tests:
 
@@ -54,7 +58,7 @@ If your coverage is below 100%, you should write more tests and then create the 
 
 There may be cases where covering your code is not possible (an exception that cannot be triggered in normal execution circumstances). In those cases, you may be allowed to disable coverage for some specific lines. This should be the exception rather than the rule, and reviewers will ask why some lines are not covered. If it appears they can be covered, then the PR won't be accepted in that state.
 
-## 3. Committing
+## 4. Committing
 
 Concrete ML uses a consistent commit naming scheme, and you are expected to follow it as well (the CI will make sure you do). The accepted format can be printed to your terminal by running:
 
@@ -72,7 +76,7 @@ git commit -m "fix(tracing): fix a bug that crashed PyTorch tracer"
 
 Just a reminder that commit messages are checked in the conformance step and are rejected if they don't follow the rules. To learn more about conventional commits, check [this](https://www.conventionalcommits.org/en/v1.0.0/) page.
 
-## 4. Rebasing
+## 5. Rebasing
 
 You should rebase on top of the `main` branch before you create your pull request. Merge commits are not allowed, so rebasing on `main` before pushing gives you the best chance of to avoid rewriting parts of your PR later if conflicts arise with other PRs being merged. After you commit changes to your new branch, you can use the following commands to rebase:
 
