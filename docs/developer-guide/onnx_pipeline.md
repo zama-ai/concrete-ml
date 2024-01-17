@@ -19,7 +19,7 @@ All Concrete ML built-in models follow the same pattern for FHE conversion:
 
 Moreover, by passing a user provided `nn.Module` to step 2 of the above process, Concrete ML supports custom user models. See the associated [FHE-friendly model documentation](../deep-learning/fhe_friendly_models.md) for instructions about working with such models.
 
-![Torch compilation flow with ONNX](../_static/compilation-pipeline/torch_to_numpy_with_onnx.svg)
+![Torch compilation flow with ONNX](../.gitbook/assets/torch_to_numpy_with_onnx.svg)
 
 Once an ONNX model is imported, it is converted to a `NumpyModule`, then to a `QuantizedModule` and, finally, to an FHE circuit. However, as the diagram shows, it is perfectly possible to stop at the `NumpyModule` level if you just want to run the PyTorch model as NumPy code without doing quantization.
 
