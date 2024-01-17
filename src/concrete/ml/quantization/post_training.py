@@ -44,14 +44,13 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
             for quantization.
     """
 
-    assert_true(
-        isinstance(n_bits, int)
-        or (isinstance(n_bits, Dict) and not set(n_bits.keys()) - set(("op_leaves", "op_input"))),
-        "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
-        "the following keys:\n"
-        "- `op_inputs` (mandatory)\n"
-        "- `op_leaves` (optional)",
-    )
+    if not isinstance(n_bits, int) and not(isinstance(n_bits, Dict) and not set(n_bits.keys()) - set(("op_leaves", "op_inputs"))):
+        raise ValueError(
+            "Invalid n_bits, either pass an integer or a dictionary containing integer values for "
+            "the following keys:\n"
+            "- `op_inputs` (mandatory)\n"
+            "- `op_leaves` (optional)"
+        )
 
     n_bits_dict: Dict = {}
 
@@ -66,12 +65,13 @@ def get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     elif isinstance(n_bits, Dict):
         n_bits_dict.update(n_bits)
 
-    assert_true(
-        n_bits_dict["op_inputs"] >= n_bits_dict["op_leaves"],
-        "Using fewer bits to represent the model_outputs than the op inputs is not "
-        f"recommended. Got op_leaves: {n_bits_dict['op_leaves']} and op_inputs: "
-        f"{n_bits_dict['op_inputs']}",
-    )
+    if n_bits_dict["op_inputs"] < n_bits_dict["op_leaves"]:
+
+        raise ValueError(
+            "Using fewer bits to represent the model_outputs than the op inputs is not "
+            f"recommended. Got op_leaves: {n_bits_dict['op_leaves']} and op_inputs: "
+            f"{n_bits_dict['op_inputs']}",
+        )
 
     return n_bits_dict
 
