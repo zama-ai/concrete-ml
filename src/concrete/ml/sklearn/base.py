@@ -53,7 +53,8 @@ from ..quantization import (
     PostTrainingQATImporter,
     QuantizedArray,
     get_n_bits_dict,
-    get_n_bits_dict_trees,
+    _get_n_bits_dict_trees,
+    _inspect_tree_n_bits,
 )
 from ..quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from ..quantization.quantizers import (
@@ -1301,6 +1302,10 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                     - op_leaves (optional): number of bits to quantize the leaves
                 Default to 6.
         """
+
+        # Check if 'n_bits' is a valid value
+        _inspect_tree_n_bits(n_bits)
+
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
         #: The model's inference function. Is None if the model is not fitted.
@@ -1319,7 +1324,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         q_X = numpy.zeros_like(X)
 
         # Convert the n_bits attribute into a proper dictionary
-        self.n_bits = get_n_bits_dict_trees(self.n_bits)
+        self.n_bits = _get_n_bits_dict_trees(self.n_bits)
 
         # Quantization of each feature in X
         for i in range(X.shape[1]):
@@ -1337,9 +1342,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
-
-        # Convert the n_bits attribute into a proper dictionary
-        self.n_bits = get_n_bits_dict_trees(self.n_bits)
 
         # Enable rounding feature
         enable_rounding = os.environ.get("TREES_USE_ROUNDING", "1") == "1"
@@ -1867,12 +1869,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 quantizing inputs and X_fit. Default to 3.
         """
         self.n_bits: int = n_bits
+
         # _q_fit_X: In distance metric algorithms, `_q_fit_X` stores the training set to compute
         # the similarity or distance measures. There is no `weights` attribute because there isn't
         # a training phase
         self._q_fit_X: numpy.ndarray
+
         # _y: Labels of `_q_fit_X`
         self._y: numpy.ndarray
+
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
 

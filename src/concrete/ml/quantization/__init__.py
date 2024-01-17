@@ -4,7 +4,8 @@ from .post_training import (
     PostTrainingAffineQuantization,
     PostTrainingQATImporter,
     get_n_bits_dict,
-    get_n_bits_dict_trees,
+    _get_n_bits_dict_trees,
+    _inspect_tree_n_bits,
 )
 from .quantized_module import QuantizedModule
 from .quantized_ops import (

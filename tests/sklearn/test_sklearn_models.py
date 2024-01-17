@@ -1972,3 +1972,37 @@ def test_fhe_sum_for_tree_based_models(
         n_bits,
         is_weekly_option,
     )
+
+
+@pytest.mark.parametrize(
+    "n_bits, error_message",
+    [
+        (0, "n_bits must be a non-null, positive integer"),
+        (-1, "n_bits must be a non-null, positive integer"),
+        # (
+        #     {"op_inputs": 4, "op_leaves": 2, "op_weights": 2},
+        #     "Invalid keys in `n_bits` dictionary. Only 'op_inputs' (mandatory) and 'op_leaves' "
+        #     "(optional) are allowed",
+        # ),
+        (
+            {"op_inputs": -2, "op_leaves": -5},
+            "All values in `n_bits` dictionary must be non-null, positive integers",
+        ),
+        ({"op_inputs": 2, "op_leaves": 5}, "`op_leaves` must be less than or equal to `op_inputs`"),
+        (0.5, "n_bits must be either an integer or a dictionary"),
+    ],
+)
+@pytest.mark.parametrize("model_class", _get_sklearn_tree_models())
+def test_invalid_n_bits_setting(model_class, n_bits, error_message):
+    """Check if the model instantiation raises an exception with invalid 'n_bits' settings."""
+
+    with pytest.raises(ValueError, match=f"{error_message}. Got `{type(n_bits)}` and `{n_bits}`.*"):
+        instantiate_model_generic(model_class, n_bits=n_bits)
+
+
+@pytest.mark.parametrize("n_bits", [5, {"op_inputs": 5}, {"op_inputs": 2, "op_leaves": 1}])
+@pytest.mark.parametrize("model_class", _get_sklearn_tree_models())
+def test_valid_n_bits_setting(model_class, n_bits):
+    """Check valid `n_bits' settings."""
+
+    instantiate_model_generic(model_class, n_bits=n_bits)
