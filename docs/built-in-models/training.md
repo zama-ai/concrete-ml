@@ -27,7 +27,7 @@ model.fit(X_binary, y_binary, fhe="execute")
 ```
 
 {% hint style="info" %}
-Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured through _differential privacy_ instead of encryption. Concrete ML
+Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML
 can import linear models, including logistic regression, that are trained using federated learning using the [`from_sklearn` function](linear.md#pre-trained-models).
 
 {% endhint %}
@@ -42,5 +42,5 @@ The `parameters_range` parameter determines the initialization of the coefficien
 
 The logistic model that can be trained uses Stochastic Gradient Descent (SGD) and quantizes for data, weights, gradients and the error measure. It currently supports training 6-bit models, training both the coefficients and the bias.
 
-The `SGDClassifier` does not currently support training models with other values for the bit-widths. The time to train the model
-is proportional to the number of features and the number of training examples. The `SGDClassifier` training does not currently support client/server deployment for training.
+The `SGDClassifier` does not currently support training models with other values for the bit-widths. The execution time to train a model
+is proportional to the number of features and the number of training examples in the batch. The `SGDClassifier` training does not currently support client/server deployment for training.

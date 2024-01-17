@@ -14,8 +14,8 @@ Concrete ML has a _simulation_ mode where the impact of approximate computation 
 
 In Concrete ML, there are three different ways to define the  tolerance to off-by-one errors for each TLU operation:
 
-- setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#an-error-probability-for-an-individual-tlu))
-- setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-error-probability-for-the-entire-model))
+- setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu))
+- setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-tolerance-for-one-off-errors-for-the-entire-model))
 - not setting `p_error` nor `global_p_error`, and using default parameters (see [here](advanced_features.md#using-default-error-probability))
 
 {% hint style="warning" %}

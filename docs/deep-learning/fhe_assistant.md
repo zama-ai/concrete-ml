@@ -58,8 +58,9 @@ concrete_clf.compile(X, debug_config)
 ## Compilation error debugging
 
 Compilation errors that signal that the ML model is not FHE compatible are usually of two types:
+
 1. TLU input maximum bit-width is exceeded
-2. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
+1. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
 
 The following produces a neural network that is not FHE-compatible:
 
@@ -115,10 +116,12 @@ Function you are trying to compile cannot be compiled:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an input to a table lookup
 ```
 
-The error  `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](#simulation). 
+The error  `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](#simulation).
 
 To make this network FHE-compatible one can apply several techniques:
+
 1. use [rounded accumulators](../advanced-topics/advanced_features.md#rounded-activations-and-quantizers) by specifying the `rounding_threshold_bits` parameter. Please evaluate the accuracy of the model using simulation if you use this feature, as it may impact accuracy. Setting a value 2-bit higher than the quantization `n_bits` should be a good start.
+
 <!--pytest-codeblocks:cont-->
 
 ```python
@@ -131,7 +134,6 @@ quantized_numpy_module = compile_torch_model(
     rounding_threshold_bits=8,
 )
 ```
-
 
 2. reduce the accumulator bit-width of the second layer named `fc2`. To do this, a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
 

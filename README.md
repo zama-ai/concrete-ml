@@ -154,6 +154,8 @@ Various tutorials are given for [built-in models](docs/built-in-models/ml_exampl
 - [Health diagnosis](use_case_examples/disease_prediction/): based on a patient's symptoms, history and other health factors, give
   a diagnosis using FHE to preserve the privacy of the patient.
 
+- [Private inference for federated learned models](use_case_examples/federated_learning/): private training of a Logistic Regression model and then import the model into Concrete ML and perform encrypted prediction
+
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): solve the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 
 - [Sentiment analysis with transformers](use_case_examples/sentiment_analysis_with_transformer): predict if an encrypted tweet / short message is positive, negative or neutral, using FHE. The [live interactive](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis) demo is available on Hugging Face. This [blog post](https://huggingface.co/blog/sentiment-analysis-fhe) explains how this demo works!

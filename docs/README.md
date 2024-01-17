@@ -8,7 +8,7 @@ Concrete ML is an open source, privacy-preserving, machine learning framework ba
 
 Fully Homomorphic Encryption is an encryption technique that allows computing directly on encrypted data, without needing to decrypt it. With FHE, you can build private-by-design applications without compromising on features. You can learn more about FHE in [this introduction](https://www.zama.ai/post/tfhe-deep-dive-part-1) or by joining the [FHE.org](https://fhe.org) community.
 
-Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured through _differential privacy_ instead of encryption. Concrete ML
+Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML
 can import linear models, including logistic regression, that are trained using federated learning using the [`from_sklearn` function](./built-in-models/linear.md#pre-trained-models).
 
 ## Example usage
@@ -89,7 +89,7 @@ This example shows the typical flow of a Concrete ML model:
 
 To make a model work with FHE, the only constraint is to make it run within the supported precision limitations of Concrete ML (currently 16-bit integers). Thus, machine learning models must be quantized, which sometimes leads to a loss of accuracy versus the original model, which operates on plaintext.
 
-Additionally, Concrete ML currently only supports training on encrypted data for some models, while it supports  _inference_ for a large variety of models.
+Additionally, Concrete ML currently only supports training on encrypted data for some models, while it supports _inference_ for a large variety of models.
 
 Finally, there is currently no support for pre-processing model inputs and post-processing model outputs. These processing stages may involve text-to-numerical feature transformation, dimensionality reduction, KNN or clustering, featurization, normalization, and the mixing of results of ensemble models.
 

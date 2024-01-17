@@ -6,7 +6,6 @@ As [Quantization Aware Training (QAT)](../advanced-topics/quantization.md) is th
 
 The following example uses a simple QAT PyTorch model that implements a fully connected neural network with two hidden layers. Due to its small size, making this model respect FHE constraints is relatively easy.
 
-
 {% hint style="info" %}
 Converting neural networks to use FHE can be done with `compile_brevitas_qat_model` or with `compile_torch_model` for post-training quantization. If the model can not be converted to FHE two types of errors can be raised: (1) crypto-parameters can not be found and, (2) table look-up bit-width limit is exceeded. See the [debugging section](./fhe_assistant.md#compilation-error-debugging) if you encounter these errors.
 {% endhint %}
