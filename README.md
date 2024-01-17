@@ -168,6 +168,10 @@ Various tutorials are given for [built-in models](docs/built-in-models/ml_exampl
 
 If you have built awesome projects using Concrete ML, feel free to let us know and we'll link to them!
 
+## Contributing 
+
+To contribute to Concrete ML, please refer to this [section](docs/developer-guide/contributing.md).
+
 ## Citing Concrete ML
 
 To cite Concrete ML, notably in academic papers, please use the following entry, which list authors by order of first commit:
