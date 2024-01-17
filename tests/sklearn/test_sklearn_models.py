@@ -1982,11 +1982,11 @@ def test_fhe_sum_for_tree_based_models(
     [
         (0, "n_bits must be a non-null, positive integer"),
         (-1, "n_bits must be a non-null, positive integer"),
-        # (
-        #     {"op_inputs": 4, "op_leaves": 2, "op_weights": 2},
-        #     "Invalid keys in `n_bits` dictionary. Only 'op_inputs' (mandatory) and 'op_leaves' "
-        #     "(optional) are allowed",
-        # ),
+        (
+            {"op_inputs": 4, "op_leaves": 2, "op_weights": 2},
+            "Invalid keys in `n_bits` dictionary. Only 'op_inputs' \\(mandatory\\) and 'op_leaves' "
+            "\\(optional\\) are allowed",
+        ),
         (
             {"op_inputs": -2, "op_leaves": -5},
             "All values in `n_bits` dictionary must be non-null, positive integers",

@@ -67,8 +67,8 @@ def _inspect_tree_n_bits(n_bits):
     elif isinstance(n_bits, dict):
         if "op_inputs" not in n_bits.keys() or set(n_bits.keys()) - {"op_leaves", "op_inputs"}:
             error_message = (
-                "Invalid keys in `n_bits` dictionary. Only 'op_inputs' (mandatory) and "
-                "'op_leaves' (optional) are allowed"
+                "Invalid keys in `n_bits` dictionary. Only 'op_inputs' (mandatory) and 'op_leaves' "
+                "(optional) are allowed"
             )
         elif not all(isinstance(value, int) and value > 0 for value in n_bits.values()):
             error_message = "All values in `n_bits` dictionary must be non-null, positive integers"
@@ -110,7 +110,7 @@ def _get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]
 
     # Default `op_leaves` to `op_inputs` if not specified
     if "op_leaves" not in n_bits:
-        n_bits["op_leaves"] = n_bits["op_inputs"]
+        n_bits["op_leaves"] = n_bits["op_inputs"]  # pragma: no cover
 
     return n_bits
 
