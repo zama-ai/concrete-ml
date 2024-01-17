@@ -5,11 +5,12 @@ Concrete ML offers the possibility to train [SGD Logistic Regression](../develop
 This example shows how to instantiate a logistic regression model that trains on encrypted data:
 
 ```python
+from concrete.ml.sklearn import SGDClassifier
 parameters_range = (-1.0, 1.0)
 
 model = SGDClassifier(
-    random_state=RANDOM_STATE,
-    max_iter=N_ITERATIONS,
+    random_state=42,
+    max_iter=50,
     fit_encrypted=True,
     parameters_range=parameters_range,
 )
