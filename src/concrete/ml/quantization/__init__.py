@@ -3,9 +3,9 @@ from .base_quantized_op import QuantizedOp
 from .post_training import (
     PostTrainingAffineQuantization,
     PostTrainingQATImporter,
-    get_n_bits_dict,
     _get_n_bits_dict_trees,
     _inspect_tree_n_bits,
+    get_n_bits_dict,
 )
 from .quantized_module import QuantizedModule
 from .quantized_ops import (

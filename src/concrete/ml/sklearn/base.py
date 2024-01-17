@@ -52,9 +52,9 @@ from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
 from ..quantization import (
     PostTrainingQATImporter,
     QuantizedArray,
-    get_n_bits_dict,
     _get_n_bits_dict_trees,
     _inspect_tree_n_bits,
+    get_n_bits_dict,
 )
 from ..quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from ..quantization.quantizers import (

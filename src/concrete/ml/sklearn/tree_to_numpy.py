@@ -146,6 +146,12 @@ def add_transpose_after_last_node(onnx_model: onnx.ModelProto):
     # Get the output node
     output_node = onnx_model.graph.output[0]
 
+    # The state of the `TREES_USE_FHE_SUM` variable affects the structure of the model's ONNX graph.
+    # When the option is enabled, the graph is cut after the ReduceSum node.
+    # On the other hand, when it is disabled, the graph is cut at the ReduceSum node,
+    # which alters the output shape.
+    # Therefore, it is necessary to adjust this shape with the correct permutation.
+
     # When using FHE sum for tree ensembles, create the node with perm attribute equal to (1, 0)
     if os.getenv("TREES_USE_FHE_SUM") == "1":
         perm = [1, 0]
