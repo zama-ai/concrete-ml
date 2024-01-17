@@ -144,10 +144,16 @@ def preamble(model_class, parameters, n_bits, load_data, is_weekly_option):
 def get_n_bits_non_correctness(model_class):
     """Get the number of bits to use for non correctness related tests."""
 
+    # KNN can only be compiled with small quantization bit numbers for now
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
     if get_model_name(model_class) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
         n_bits = 2
+
+    # Adjust the quantization precision for tree-based model based on `TREES_USE_FHE_SUM` setting.
+    # When enabled, the circuit's bitwidth increases, potentially leading to Out-of-Memory issues.
+    # Therefore, the maximum quantization precision is 4 bits in this case.
+    elif model_class in _get_sklearn_tree_models() and os.environ.get("TREES_USE_FHE_SUM") == "1":
+        n_bits = min(min(N_BITS_REGULAR_BUILDS), 4)
     else:
         n_bits = min(N_BITS_REGULAR_BUILDS)
 
@@ -1730,10 +1736,7 @@ def test_p_error_simulation(
     with simulation or in FHE compared to the expected clear quantized ones.
     """
 
-    if os.getenv("TREES_USE_FHE_SUM") == "1":
-        n_bits = 4
-    else:
-        n_bits = get_n_bits_non_correctness(model_class)
+    n_bits = get_n_bits_non_correctness(model_class)
 
     # Get data-set, initialize and fit the model
     model, x = preamble(model_class, parameters, n_bits, load_data, is_weekly_option)
