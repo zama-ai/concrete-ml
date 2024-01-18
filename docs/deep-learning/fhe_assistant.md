@@ -118,6 +118,8 @@ Function you are trying to compile cannot be compiled:
 
 The error  `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](#simulation).
 
+### Fixing compilation errors
+
 To make this network FHE-compatible one can apply several techniques:
 
 1. use [rounded accumulators](../advanced-topics/advanced_features.md#rounded-activations-and-quantizers) by specifying the `rounding_threshold_bits` parameter. Please evaluate the accuracy of the model using simulation if you use this feature, as it may impact accuracy. Setting a value 2-bit higher than the quantization `n_bits` should be a good start.
@@ -130,8 +132,8 @@ torch_model = SimpleNet(20)
 quantized_numpy_module = compile_torch_model(
     torch_model,
     torch_input,
-    n_bits=7,
-    rounding_threshold_bits=8,
+    n_bits=6,
+    rounding_threshold_bits=7,
 )
 ```
 
@@ -146,6 +148,19 @@ quantized_numpy_module = compile_torch_model(
     torch_model,
     torch_input,
     n_bits=7,
+)
+```
+
+3. adjust the tolerance for one-off errors using the `p_error` parameter. See [this section for more explanation](../advanced-topics/advanced_features.md#approximate-computations) on this tolerance.
+
+```python
+torch_model = SimpleNet(10)
+
+quantized_numpy_module = compile_torch_model(
+    torch_model,
+    torch_input,
+    n_bits=7,
+    p_error=0.01
 )
 ```
 

@@ -12,7 +12,7 @@ The result of TLU operations is obtained with a specific tolerance to off-by-one
 Concrete ML has a _simulation_ mode where the impact of approximate computation of TLUs on the model accuracy can be determined. The simulation is much faster, speeding up model development significantly. The behavior in simulation mode is representative of the behavior of the model on encrypted data.
 {% endhint %}
 
-In Concrete ML, there are three different ways to define the  tolerance to off-by-one errors for each TLU operation:
+In Concrete ML, there are three different ways to define the tolerance to off-by-one errors for each TLU operation:
 
 - setting `p_error`, the error probability of an individual TLU (see [here](advanced_features.md#tolerance-to-off-by-one-error-for-an-individual-tlu))
 - setting `global_p_error`, the error probability of the full circuit (see [here](advanced_features.md#a-global-tolerance-for-one-off-errors-for-the-entire-model))
@@ -24,7 +24,7 @@ In Concrete ML, there are three different ways to define the  tolerance to off-b
 
 ### Tolerance to off-by-one error for an individual TLU
 
-The first way to set error probabilities in Concrete ML is at the local level, by directly setting the tolerance to error of each individual TLU operation (such as activation functions for a neuron output). This tolerance is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being correct 100% of the time. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear. Otherwise, off-by-one errors might occur, which may not actually reduce model accuracy in practice.
+The first way to set error probabilities in Concrete ML is at the local level, by directly setting the tolerance to error of each individual TLU operation (such as activation functions for a neuron output). This tolerance is referred to as `p_error`. A given PBS operation has a `1 - p_error` chance of being correct 100% of the time. The successful evaluation here means that the value decrypted after FHE evaluation is exactly the same as the one that would be computed in the clear. Otherwise, off-by-one errors might occur, but, in practice, these errors are not necessarily problematic if they are sufficiently rare.
 
 For simplicity, it is best to use [default options](advanced_features.md#using-default-error-probability), irrespective of the type of model. Especially for deep neural networks, default values may be too pessimistic, reducing computation speed without any improvement in accuracy. For deep neural networks, some TLU errors might not affect the accuracy of the network, so `p_error` can be safely increased (e.g., see CIFAR classifications in [our showcase](../getting-started/showcase.md)).
 
