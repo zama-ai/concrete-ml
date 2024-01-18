@@ -153,6 +153,7 @@ quantized_numpy_module = compile_torch_model(
 
 3. adjust the tolerance for one-off errors using the `p_error` parameter. See [this section for more explanation](../advanced-topics/advanced_features.md#approximate-computations) on this tolerance.
 
+<!--pytest-codeblocks:cont-->
 ```python
 torch_model = SimpleNet(10)
 
