@@ -1159,8 +1159,7 @@ def check_rounding_consistency(
         fhe_test = get_random_samples(x, n_sample=5)
 
     # Check that rounding is enabled
-    rounding_enabled = os.getenv("TREES_USE_ROUNDING") == "1"
-    assert rounding_enabled
+    assert os.environ.get("TREES_USE_ROUNDING") == "1", "'TREES_USE_ROUNDING' is not enabled"
 
     # Fit and compile with rounding enabled
     fit_and_compile(model, x, y)
@@ -1178,8 +1177,7 @@ def check_rounding_consistency(
         mp_context.setenv("TREES_USE_ROUNDING", "0")
 
         # Check that rounding is disabled
-        rounding_disabled = os.environ.get("TREES_USE_ROUNDING") == "0"
-        assert rounding_disabled
+        assert os.environ.get("TREES_USE_ROUNDING") == "0", "'TREES_USE_ROUNDING' is not disabled"
 
         with pytest.warns(
             DeprecationWarning,
@@ -1221,8 +1219,7 @@ def check_fhe_sum_for_tree_based_models(
         fhe_test = get_random_samples(x, n_sample=5)
 
     # By default, the summation of tree ensemble outputs is done in clear
-    fhe_sum_disabled = os.getenv("TREES_USE_FHE_SUM") == "0"
-    assert fhe_sum_disabled
+    assert os.getenv("TREES_USE_FHE_SUM") == "0", "'TREES_USE_FHE_SUM' is not disabled"
 
     model_ref = instantiate_model_generic(model_class, n_bits=n_bits)
     fit_and_compile(model_ref, x, y)
@@ -1250,8 +1247,7 @@ def check_fhe_sum_for_tree_based_models(
         mp_context.setenv("TREES_USE_FHE_SUM", "1")
 
         # Check that the summation of tree ensemble outputs is enabled
-        fhe_sum_enabled = os.environ.get("TREES_USE_FHE_SUM") == "1"
-        assert fhe_sum_enabled
+        assert os.getenv("TREES_USE_FHE_SUM") == "1", "'TREES_USE_FHE_SUM' is not enabled"
 
         model = model_class(**model_ref.get_params())
         fit_and_compile(model, x, y)
