@@ -508,7 +508,8 @@ class SGDClassifier(SklearnSGDClassifierMixin):
         X_indexes = numpy.arange(0, len(X))
 
         if self.verbose:
-            print("Training starts")
+            mode_string = " (simulation)" if fhe == "simulate" else ""
+            print(f"Training on encrypted data{mode_string}...")
 
         # Iterate on the training quantized module in the clear
         for iteration_step in range(self.max_iter):
@@ -533,8 +534,6 @@ class SGDClassifier(SklearnSGDClassifierMixin):
 
             to = time.time()
             # Train the model over one iteration
-            if self.verbose:
-                print("Starting iteration ...")
             weights, bias = self.training_quantized_module.forward(  # type: ignore[assignment]
                 X_batch, y_batch, weights, bias, fhe=fhe
             )
