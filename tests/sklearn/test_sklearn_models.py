@@ -1982,16 +1982,17 @@ def test_fhe_sum_for_tree_based_models(
     [
         (0, "n_bits must be a non-null, positive integer"),
         (-1, "n_bits must be a non-null, positive integer"),
+        ({"op_leaves": 2}, "The key 'op_inputs' is mandatory"),
         (
             {"op_inputs": 4, "op_leaves": 2, "op_weights": 2},
-            "Invalid keys in `n_bits` dictionary. Only 'op_inputs' \\(mandatory\\) and 'op_leaves' "
+            "Invalid keys in 'n_bits' dictionary. Only 'op_inputs' \\(mandatory\\) and 'op_leaves' "
             "\\(optional\\) are allowed",
         ),
         (
             {"op_inputs": -2, "op_leaves": -5},
-            "All values in `n_bits` dictionary must be non-null, positive integers",
+            "All values in 'n_bits' dictionary must be non-null, positive integers",
         ),
-        ({"op_inputs": 2, "op_leaves": 5}, "`op_leaves` must be less than or equal to `op_inputs`"),
+        ({"op_inputs": 2, "op_leaves": 5}, "'op_leaves' must be less than or equal to 'op_inputs'"),
         (0.5, "n_bits must be either an integer or a dictionary"),
     ],
 )
@@ -1999,13 +2000,30 @@ def test_fhe_sum_for_tree_based_models(
 def test_invalid_n_bits_setting(model_class, n_bits, error_message):
     """Check if the model instantiation raises an exception with invalid 'n_bits' settings."""
 
-    with pytest.raises(ValueError, match=f"{error_message}. Got `{type(n_bits)}` and `{n_bits}`.*"):
+    with pytest.raises(ValueError, match=f"{error_message}. Got '{type(n_bits)}' and '{n_bits}'.*"):
         instantiate_model_generic(model_class, n_bits=n_bits)
 
 
 @pytest.mark.parametrize("n_bits", [5, {"op_inputs": 5}, {"op_inputs": 2, "op_leaves": 1}])
-@pytest.mark.parametrize("model_class", _get_sklearn_tree_models())
-def test_valid_n_bits_setting(model_class, n_bits):
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
+def test_valid_n_bits_setting(
+    model_class,
+    n_bits,
+    parameters,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
     """Check valid `n_bits' settings."""
 
-    instantiate_model_generic(model_class, n_bits=n_bits)
+    if verbose:
+        print("Run test_valid_n_bits_setting")
+
+    x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
+
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        model.fit(x, y)
