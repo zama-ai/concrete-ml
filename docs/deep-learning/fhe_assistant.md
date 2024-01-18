@@ -55,7 +55,12 @@ concrete_clf.fit(X, y)
 concrete_clf.compile(X, debug_config)
 ```
 
-## Compilation debugging
+## Compilation error debugging
+
+Compilation errors that signal that the ML model is not FHE compatible are usually of two types:
+
+1. TLU input maximum bit-width is exceeded
+1. No crypto-parameters can be found for the ML model: `RuntimeError: NoParametersFound` is raised by the compiler
 
 The following produces a neural network that is not FHE-compatible:
 
@@ -100,46 +105,39 @@ except RuntimeError as err:
 Upon execution, the Compiler will raise the following error within the graph representation:
 
 ```
-Function you are trying to compile cannot be converted to MLIR:
+Function you are trying to compile cannot be compiled:
 
-%0 = _onnx__Gemm_0                    # EncryptedTensor<int7, shape=(1, 2)>        ∈ [-64, 63]
-%1 = [[ 33 -27  ...   22 -29]]        # ClearTensor<int7, shape=(2, 120)>          ∈ [-63, 62]
-%2 = matmul(%0, %1)                   # EncryptedTensor<int14, shape=(1, 120)>     ∈ [-4973, 4828]
-%3 = subgraph(%2)                     # EncryptedTensor<uint7, shape=(1, 120)>     ∈ [0, 126]
-%4 = [[ 16   6  ...   10  54]]        # ClearTensor<int7, shape=(120, 120)>        ∈ [-63, 63]
-%5 = matmul(%3, %4)                   # EncryptedTensor<int17, shape=(1, 120)>     ∈ [-45632, 43208]
-%6 = subgraph(%5)                     # EncryptedTensor<uint7, shape=(1, 120)>     ∈ [0, 126]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ table lookups are only supported on circuits with up to 16-bit integers
-%7 = [[ -7 -52] ... [-12  62]]        # ClearTensor<int7, shape=(120, 2)>          ∈ [-63, 62]
-%8 = matmul(%6, %7)                   # EncryptedTensor<int16, shape=(1, 2)>       ∈ [-26971, 29843]
-return %8
+%0 = _x                               # EncryptedTensor<int7, shape=(1, 2)>           ∈ [-64, 63]
+%1 = [[ -9  18  ...   30  34]]        # ClearTensor<int7, shape=(2, 120)>             ∈ [-62, 63]              @ /fc1/Gemm.matmul
+%2 = matmul(%0, %1)                   # EncryptedTensor<int14, shape=(1, 120)>        ∈ [-5834, 5770]          @ /fc1/Gemm.matmul
+%3 = subgraph(%2)                     # EncryptedTensor<uint7, shape=(1, 120)>        ∈ [0, 127]
+%4 = [[-36   6  ...   27 -11]]        # ClearTensor<int7, shape=(120, 120)>           ∈ [-63, 63]              @ /fc2/Gemm.matmul
+%5 = matmul(%3, %4)                   # EncryptedTensor<int17, shape=(1, 120)>        ∈ [-34666, 37702]        @ /fc2/Gemm.matmul
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ this 17-bit value is used as an input to a table lookup
 ```
 
-The error `table lookups are only supported on circuits with up to 16-bit integers` indicates that the 16-bit limit on the input of the Table Lookup operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](#simulation). Then, calling the function on the module above returns the following:
+The error  `this 17-bit value is used as an input to a table lookup` indicates that the 16-bit limit on the input of the Table Lookup (TLU) operation has been exceeded. To pinpoint the model layer that causes the error, Concrete ML provides the [bitwidth_and_range_report](../developer-guide/api/concrete.ml.quantization.quantized_module.md#method-bitwidth_and_range_report) helper function. First, the model must be compiled so that it can be [simulated](#simulation).
 
-```
+### Fixing compilation errors
+
+To make this network FHE-compatible one can apply several techniques:
+
+1. use [rounded accumulators](../advanced-topics/advanced_features.md#rounded-activations-and-quantizers) by specifying the `rounding_threshold_bits` parameter. Please evaluate the accuracy of the model using simulation if you use this feature, as it may impact accuracy. Setting a value 2-bit higher than the quantization `n_bits` should be a good start.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+torch_model = SimpleNet(20)
+
 quantized_numpy_module = compile_torch_model(
     torch_model,
     torch_input,
-    n_bits=7,
-    use_virtual_lib=True
+    n_bits=6,
+    rounding_threshold_bits=7,
 )
-
-res = quantized_numpy_module.bitwidth_and_range_report()
-print(res)
 ```
 
-```
-{
-    '/fc1/Gemm': {'range': (-6180, 6840), 'bitwidth': 14}, 
-    '/fc2/Gemm': {'range': (-45051, 43090), 'bitwidth': 17}, 
-    '/fc3/Gemm': {'range': (-17351, 13868), 'bitwidth': 16}
-}
-```
-
-To make this network FHE-compatible one can reduce the bit-width of the second layer named `fc2`. To do this, a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
-
-Reducing the number of neurons in this layer resolves the error and makes the network FHE-compatible:
+2. reduce the accumulator bit-width of the second layer named `fc2`. To do this, a simple solution is to reduce the number of neurons, as it is proportional to the bit-width.
 
 <!--pytest-codeblocks:cont-->
 
@@ -150,6 +148,21 @@ quantized_numpy_module = compile_torch_model(
     torch_model,
     torch_input,
     n_bits=7,
+)
+```
+
+3. adjust the tolerance for one-off errors using the `p_error` parameter. See [this section for more explanation](../advanced-topics/advanced_features.md#approximate-computations) on this tolerance.
+
+<!--pytest-codeblocks:cont-->
+
+```python
+torch_model = SimpleNet(10)
+
+quantized_numpy_module = compile_torch_model(
+    torch_model,
+    torch_input,
+    n_bits=7,
+    p_error=0.01
 )
 ```
 

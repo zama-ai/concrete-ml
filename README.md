@@ -23,11 +23,11 @@
 </p>
 <hr>
 
-Concrete ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It aims to simplify the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+Concrete ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It simplifies the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent. Concrete ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 
 ## Main features.
 
-Data scientists can use models with APIs which are close to the frameworks they use, with additional options to run inferences in FHE.
+Data scientists can use models with APIs which are close to the frameworks they use, while additional options to those models allow them to run inference or training on encrypted data with FHE.
 
 Concrete ML features:
 
@@ -153,6 +153,8 @@ Various tutorials are given for [built-in models](docs/built-in-models/ml_exampl
 
 - [Health diagnosis](use_case_examples/disease_prediction/): based on a patient's symptoms, history and other health factors, give
   a diagnosis using FHE to preserve the privacy of the patient.
+
+- [Private inference for federated learned models](use_case_examples/federated_learning/): private training of a Logistic Regression model and then import the model into Concrete ML and perform encrypted prediction
 
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): solve the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 

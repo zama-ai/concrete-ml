@@ -4,9 +4,12 @@
 
 ![](.gitbook/assets/3.png)
 
-Concrete ML is an open source, privacy-preserving, machine learning inference framework based on Fully Homomorphic Encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how it looks for [linear models](built-in-models/linear.md), [tree-based models](built-in-models/tree.md), and [neural networks](built-in-models/neural-networks.md)).
+Concrete ML is an open source, privacy-preserving, machine learning framework based on Fully Homomorphic Encryption (FHE). It enables data scientists without any prior knowledge of cryptography to automatically turn machine learning models into their FHE equivalent, using familiar APIs from scikit-learn and PyTorch (see how it looks for [linear models](built-in-models/linear.md), [tree-based models](built-in-models/tree.md), and [neural networks](built-in-models/neural-networks.md)). Concrete ML supports converting models for inference with FHE but can also [train some models](built-in-models/training.md) on encrypted data.
 
 Fully Homomorphic Encryption is an encryption technique that allows computing directly on encrypted data, without needing to decrypt it. With FHE, you can build private-by-design applications without compromising on features. You can learn more about FHE in [this introduction](https://www.zama.ai/post/tfhe-deep-dive-part-1) or by joining the [FHE.org](https://fhe.org) community.
+
+Training on encrypted data provides the highest level of privacy but is slower than training on clear data. Federated learning is an alternative approach, where data privacy can be ensured by using a trusted gradient aggregator, coupled with optional _differential privacy_ instead of encryption. Concrete ML
+can import linear models, including logistic regression, that are trained using federated learning using the [`from_sklearn` function](./built-in-models/linear.md#pre-trained-models).
 
 ## Example usage
 
@@ -86,11 +89,11 @@ This example shows the typical flow of a Concrete ML model:
 
 To make a model work with FHE, the only constraint is to make it run within the supported precision limitations of Concrete ML (currently 16-bit integers). Thus, machine learning models must be quantized, which sometimes leads to a loss of accuracy versus the original model, which operates on plaintext.
 
-Additionally, Concrete ML currently only supports FHE _inference_. Training has to be done on unencrypted data, producing a model which is then converted to an FHE equivalent that can perform encrypted inference (i.e., prediction over encrypted data).
+Additionally, Concrete ML currently only supports training on encrypted data for some models, while it supports _inference_ for a large variety of models.
 
 Finally, there is currently no support for pre-processing model inputs and post-processing model outputs. These processing stages may involve text-to-numerical feature transformation, dimensionality reduction, KNN or clustering, featurization, normalization, and the mixing of results of ensemble models.
 
-These issues are currently being addressed, and significant improvements are expected to be released in the coming months.
+These issues are currently being addressed, and significant improvements are expected to be released in the near future.
 
 ## Concrete stack
 
