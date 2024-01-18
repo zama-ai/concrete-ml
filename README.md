@@ -170,7 +170,7 @@ If you have built awesome projects using Concrete ML, feel free to let us know a
 
 ## Contributing 
 
-To contribute to Concrete ML, please refer to this [section](docs/developer-guide/contributing.md).
+To contribute to Concrete ML, please refer to this [section of the documentation](docs/developer-guide/contributing.md).
 
 ## Citing Concrete ML
 
