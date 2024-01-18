@@ -158,7 +158,12 @@ def _compile_torch_or_onnx_model(
         artifacts (DebugArtifacts): Artifacts object to fill during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-        n_bits: the number of bits for the quantization
+        n_bits: number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" and "op_weights" (mandatory)
+            - "model_inputs" and "model_outputs" (optional, default to 5 bits).
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_weights" bits.
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
@@ -253,7 +258,12 @@ def compile_torch_model(
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-        n_bits: the number of bits for the quantization
+        n_bits: number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" and "op_weights" (mandatory)
+            - "model_inputs" and "model_outputs" (optional, default to 5 bits).
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_weights" bits.
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
@@ -330,7 +340,12 @@ def compile_onnx_model(
             during compilation
         show_mlir (bool): if set, the MLIR produced by the converter and which is going
             to be sent to the compiler backend is shown on the screen, e.g., for debugging or demo
-        n_bits: the number of bits for the quantization
+        n_bits: number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" and "op_weights" (mandatory)
+            - "model_inputs" and "model_outputs" (optional, default to 5 bits).
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_weights" bits.
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
         p_error (Optional[float]): probability of error of a single PBS
