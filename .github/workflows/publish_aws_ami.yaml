@@ -23,7 +23,6 @@ jobs:
       # FIXME: We still need to check that it matches a version tag
       # This won't work on automatically triggered based on release
       - name: Checkout Concrete ML Repository
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           ref: ${{ inputs.version || github.ref_name}}
@@ -33,7 +32,6 @@ jobs:
 
       # To use the files and all
       - name: Checkout Concrete ML Repository
-        if: ${{ github.event_name == 'workflow_dispatch' }}
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
         with:
           fetch-depth: 1
@@ -74,7 +72,7 @@ jobs:
 
           SIGNATURE="$(bash slab/scripts/hmac_calculator.sh payload.json '${{ secrets.JOB_SECRET }}')"
 
-          curl -v -k \
+          curl --fail-with-body -v -k \
           -H "Content-Type: application/json" \
           -H "X-Slab-Repository: ${{ github.repository }}" \
           -H "X-Slab-Command: build_aws_ami" \
