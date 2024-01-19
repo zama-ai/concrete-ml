@@ -170,7 +170,7 @@ Various tutorials are given for [built-in models](docs/built-in-models/ml_exampl
 
 If you have built awesome projects using Concrete ML, feel free to let us know and we'll link to them!
 
-## Contributing 
+## Contributing
 
 To contribute to Concrete ML, please refer to this [section of the documentation](docs/developer-guide/contributing.md).
 
