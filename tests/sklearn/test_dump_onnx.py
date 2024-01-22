@@ -67,8 +67,9 @@ def check_onnx_file_dump(model_class, parameters, load_data, str_expected, defau
             del onnx_model.graph.initializer[0]
 
     str_model = onnx.helper.printable_graph(onnx_model.graph)
-    print(f"{model_name}:")
-    print(str_model)
+    print(f"\nCurrent {model_name=}:\n{str_model}")
+    print(f"\nExpected {model_name=}:\n{str_expected}")
+  
     # Test equality when it does not depend on seeds
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
     if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
