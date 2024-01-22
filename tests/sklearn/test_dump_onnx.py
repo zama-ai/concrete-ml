@@ -20,107 +20,10 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 # pylint: disable=line-too-long
 
 
-def check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration):
+def check_onnx_file_dump(model_class, parameters, load_data, default_configuration):
     """Fit the model and dump the corresponding ONNX."""
 
-    # Get the data-set. The data generation is seeded in load_data.
-    x, y = load_data(model_class, **parameters)
-
-    # Set the model
-    model = model_class()
-
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
-
-        model.set_params(**model_params)
-
-    if get_model_name(model) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        model.n_bits = 2
-
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-        model.fit(x, y)
-
-    with warnings.catch_warnings():
-        # Use FHE simulation to not have issues with precision
-        model.compile(x, default_configuration)
-
-    # Get ONNX model
-    onnx_model = model.onnx_model
-
-    # Remove initializers, since they change from one seed to the other
     model_name = get_model_name(model_class)
-    if model_name in [
-        "DecisionTreeRegressor",
-        "DecisionTreeClassifier",
-        "RandomForestClassifier",
-        "RandomForestRegressor",
-        "XGBClassifier",
-        "KNeighborsClassifier",
-    ]:
-        while len(onnx_model.graph.initializer) > 0:
-            del onnx_model.graph.initializer[0]
-
-    str_model = onnx.helper.printable_graph(onnx_model.graph)
-    print(f"\nCurrent {model_name=}:\n{str_model}")
-    print(f"\nExpected {model_name=}:\n{str_expected}")
-  
-    # Test equality when it does not depend on seeds
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
-    if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
-        # The expected graph is usually a string and we therefore directly test if it is equal to
-        # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
-        # this graph can slightly changed depending on some input's values. We then expected the
-        # string to match as least one of them expected strings (as a list)
-        if isinstance(str_expected, str):
-            assert str_model == str_expected
-        else:
-            assert str_model in str_expected
-
-
-@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
-def test_dump(
-    model_class,
-    parameters,
-    load_data,
-    default_configuration,
-):
-    """Tests dump."""
-
-    model_name = get_model_name(model_class)
-
-    # Some models have been done with different n_classes which create different ONNX
-    if parameters.get("n_classes", 2) != 2 and model_name in ["LinearSVC", "LogisticRegression"]:
-        return
-
-    if model_name == "NeuralNetClassifier":
-        model_class = partial(
-            NeuralNetClassifier,
-            module__n_layers=3,
-            module__power_of_two_scaling=False,
-            max_epochs=1,
-            verbose=0,
-            callbacks="disable",
-        )
-    elif model_name == "NeuralNetRegressor":
-        model_class = partial(
-            NeuralNetRegressor,
-            module__n_layers=3,
-            module__n_w_bits=2,
-            module__n_a_bits=2,
-            module__n_accum_bits=7,  # Stay with 7 bits for test exec time
-            module__n_hidden_neurons_multiplier=1,
-            module__power_of_two_scaling=False,
-            max_epochs=1,
-            verbose=0,
-            callbacks="disable",
-        )
-
     n_classes = parameters.get("n_classes", 2)
 
     # Ignore long lines here
@@ -492,4 +395,114 @@ def test_dump(
     }
 
     str_expected = expected_strings.get(model_name, "")
-    check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration)
+
+    # Get the data-set. The data generation is seeded in load_data.
+    x, y = load_data(model_class, **parameters)
+
+    # Set the model
+    model = model_class()
+
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+
+        model.set_params(**model_params)
+
+    if model_name == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        model.n_bits = 2
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        model.fit(x, y)
+
+    with warnings.catch_warnings():
+        # Use FHE simulation to not have issues with precision
+        model.compile(x, default_configuration)
+
+    # Get ONNX model
+    onnx_model = model.onnx_model
+
+    # Remove initializers, since they change from one seed to the other
+    model_name = get_model_name(model_class)
+    if model_name in [
+        "DecisionTreeRegressor",
+        "DecisionTreeClassifier",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+        "XGBClassifier",
+        "KNeighborsClassifier",
+    ]:
+        while len(onnx_model.graph.initializer) > 0:
+            del onnx_model.graph.initializer[0]
+
+    str_model = onnx.helper.printable_graph(onnx_model.graph)
+    print(f"\nCurrent {model_name=}:\n{str_model}")
+    print(f"\nExpected {model_name=}:\n{str_expected}")
+
+    # Test equality when it does not depend on seeds
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
+    if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
+        # The expected graph is usually a string and we therefore directly test if it is equal to
+        # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
+        # this graph can slightly changed depending on some input's values. We then expected the
+        # string to match as least one of them expected strings (as a list)
+        if isinstance(str_expected, str):
+            assert str_model == str_expected
+        else:
+            assert str_model in str_expected
+
+
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
+def test_dump(
+    model_class,
+    parameters,
+    load_data,
+    default_configuration,
+):
+    """Tests dump."""
+
+    model_name = get_model_name(model_class)
+
+    # Some models have been done with different n_classes which create different ONNX
+    if parameters.get("n_classes", 2) != 2 and model_name in ["LinearSVC", "LogisticRegression"]:
+        return
+
+    if model_name == "NeuralNetClassifier":
+        model_class = partial(
+            NeuralNetClassifier,
+            module__n_layers=3,
+            module__power_of_two_scaling=False,
+            max_epochs=1,
+            verbose=0,
+            callbacks="disable",
+        )
+    elif model_name == "NeuralNetRegressor":
+        model_class = partial(
+            NeuralNetRegressor,
+            module__n_layers=3,
+            module__n_w_bits=2,
+            module__n_a_bits=2,
+            module__n_accum_bits=7,  # Stay with 7 bits for test exec time
+            module__n_hidden_neurons_multiplier=1,
+            module__power_of_two_scaling=False,
+            max_epochs=1,
+            verbose=0,
+            callbacks="disable",
+        )
+
+    # Check with 'TREES_USE_ROUNDING' disabled
+    assert os.environ.get("TREES_USE_FHE_SUM") == "0", "'TREES_USE_FHE_SUM' is not disabled"
+    check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
+
+    with pytest.MonkeyPatch.context() as mp_context:
+
+        # Disable rounding
+        mp_context.setenv("TREES_USE_FHE_SUM", "1")
+
+        # Check that rounding is disabled
+        assert os.environ.get("TREES_USE_FHE_SUM") == "1", "'TREES_USE_FHE_SUM' is enabled"
+        check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
