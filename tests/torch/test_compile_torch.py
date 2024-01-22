@@ -1373,3 +1373,29 @@ def test_mono_parameter_rounding_warning(
             verbose=False,
             get_and_compile=False,
         )
+
+
+def test_onnx_no_input():
+    """Test a torch model that has no input when converted to onnx."""
+
+    torch_input = torch.randn(100, 28)
+
+    class SimplifiedNet(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.fc1 = nn.Linear(28, 10)
+            self.threshold = torch.tensor(0.5, dtype=torch.float32)
+
+        def forward(self, x):
+            zeros = numpy.zeros_like(x)
+            x = x + zeros
+            x = (x > self.threshold).to(torch.float32)
+            x = self.fc1(x)
+            return x
+
+    model = SimplifiedNet()
+
+    with pytest.raises(AssertionError) as excinfo:
+        compile_torch_model(model, torch_input, rounding_threshold_bits=3)
+
+    assert "Input 'x' is not present in the ONNX model" in str(excinfo.value)

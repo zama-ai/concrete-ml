@@ -12,6 +12,7 @@ import onnxoptimizer
 import torch
 from onnx import checker, helper
 
+from ..common.debugging import assert_true
 from .onnx_utils import (
     IMPLEMENTED_ONNX_OPS,
     execute_onnx_with_numpy,
@@ -149,6 +150,14 @@ def get_equivalent_numpy_forward_from_torch(
         input_names=arguments,
     )
     equivalent_onnx_model = onnx.load_model(str(output_onnx_file_path))
+
+    # Check if the inputs are present in the model's graph
+    for input_name in arguments:
+        assert_true(
+            any(input_name == node.name for node in equivalent_onnx_model.graph.input),
+            f"Input '{input_name}' is not present in the ONNX model. Please check the onnx graph.",
+        )
+
     # Remove the tempfile if we used one
     if use_tempfile:
         output_onnx_file_path.unlink()
