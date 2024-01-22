@@ -1206,10 +1206,10 @@ def check_rounding_consistency(
 
 
 def check_fhe_sum_for_tree_based_models(
-    model_class,
+    model,
     x,
     y,
-    n_bits,
+    predict_method,
     is_weekly_option,
 ):
     """Test that Concrete ML without and with FHE sum are 'equivalent'."""
@@ -1218,18 +1218,8 @@ def check_fhe_sum_for_tree_based_models(
     if is_weekly_option:
         fhe_test = get_random_samples(x, n_sample=5)
 
-    # By default, the summation of tree ensemble outputs is done in clear
-    assert os.getenv("TREES_USE_FHE_SUM") == "0", "'TREES_USE_FHE_SUM' is not disabled"
-
-    model_ref = instantiate_model_generic(model_class, n_bits=n_bits)
-    fit_and_compile(model_ref, x, y)
-
-    # Check `predict_proba` for classifiers and `predict` for regressors
-    predict_method = (
-        model_ref.predict_proba
-        if is_classifier_or_partial_classifier(model_class)
-        else model_ref.predict
-    )
+    assert not model.use_fhe_sum, "`use_fhe_sum` is disabled by default."
+    fit_and_compile(model, x, y)
 
     non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
     non_fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
@@ -1241,29 +1231,15 @@ def check_fhe_sum_for_tree_based_models(
     if is_weekly_option:
         non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
-    with pytest.MonkeyPatch.context() as mp_context:
+    model.use_fhe_sum = True
 
-        # Enable the FHE summation of tree ensemble outputs
-        mp_context.setenv("TREES_USE_FHE_SUM", "1")
+    fit_and_compile(model, x, y)
 
-        # Check that the summation of tree ensemble outputs is enabled
-        assert os.getenv("TREES_USE_FHE_SUM") == "1", "'TREES_USE_FHE_SUM' is not enabled"
+    fhe_sum_predict_quantized = predict_method(x, fhe="disable")
+    fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
 
-        model = model_class(**model_ref.get_params())
-        fit_and_compile(model, x, y)
-
-        # Check `predict_proba` for classifiers and `predict` for regressors
-        predict_method = (
-            model.predict_proba
-            if is_classifier_or_partial_classifier(model_class)
-            else model.predict
-        )
-
-        fhe_sum_predict_quantized = predict_method(x, fhe="disable")
-        fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
-
-        # Sanity check
-        array_allclose_and_same_shape(fhe_sum_predict_quantized, fhe_sum_predict_simulate)
+    # Sanity check
+    array_allclose_and_same_shape(fhe_sum_predict_quantized, fhe_sum_predict_simulate)
 
     # Check that we have the exact same predictions
     array_allclose_and_same_shape(fhe_sum_predict_quantized, non_fhe_sum_predict_quantized)
@@ -1962,13 +1938,19 @@ def test_fhe_sum_for_tree_based_models(
     if verbose:
         print("Run check_fhe_sum_for_tree_based_models")
 
+    model = instantiate_model_generic(model_class, n_bits=n_bits)
+
     x, y = get_dataset(model_class, parameters, n_bits, load_data, is_weekly_option)
 
+    predict_method = (
+        model.predict_proba if is_classifier_or_partial_classifier(model) else model.predict
+    )
+
     check_fhe_sum_for_tree_based_models(
-        model_class,
+        model,
         x,
         y,
-        n_bits,
+        predict_method,
         is_weekly_option,
     )
 

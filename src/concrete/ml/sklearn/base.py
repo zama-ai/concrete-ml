@@ -105,7 +105,7 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 os.environ["TREES_USE_ROUNDING"] = os.environ.get("TREES_USE_ROUNDING", "1")
 
 # By default, the decision of the tree ensembles is made in clear
-os.environ["TREES_USE_FHE_SUM"] = os.environ.get("TREES_USE_FHE_SUM", "0")
+TREES_USE_FHE_SUM = False
 
 # pylint: disable=too-many-public-methods
 
@@ -1312,7 +1312,42 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
 
+        #: Wether to perform the sum of the output's tree ensembles in FHE or not.
+        self._use_fhe_sum = False
+
         BaseEstimator.__init__(self)
+
+    @property
+    def use_fhe_sum(self) -> bool:
+        """Property getter for `use_fhe_sum`.
+
+        Returns:
+            bool: The current setting of the `_use_fhe_sum` attribute.
+        """
+        return self._use_fhe_sum
+
+    @use_fhe_sum.setter
+    def use_fhe_sum(self, value) -> None:
+        """Property setter for `use_fhe_sum`.
+
+        Args:
+            value (int): Whether to enable or disable the feature.
+        """
+
+        assert isinstance(value, bool), "Value must be a boolean type"
+
+        if value is True:
+            warnings.simplefilter("always")
+            warnings.warn(
+                "Enabling `use_fhe_sum` computes the sum of the ouputs of tree ensembles in FHE.\n"
+                "This may slow down the computation and increase the maximum bitwidth.\n"
+                "To optimize performance, consider reducing the quantization leaf precision.\n"
+                "Additionally, the model must be refitted for these changes to take effect.",
+                category=UserWarning,
+                stacklevel=2,
+            )
+
+        self._use_fhe_sum = value
 
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
@@ -1362,6 +1397,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             self.sklearn_model,
             q_X,
             use_rounding=enable_rounding,
+            use_fhe_sum=self._use_fhe_sum,
             framework=self.framework,
             output_n_bits=self.n_bits["op_leaves"],
         )
@@ -1438,7 +1474,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Sum all tree outputs
         # Remove the sum once we handle multi-precision circuits
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        if os.getenv("TREES_USE_FHE_SUM") == "0":
+        if not self._use_fhe_sum:
             y_preds = numpy.sum(y_preds, axis=-1)
 
             assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")

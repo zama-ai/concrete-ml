@@ -1,6 +1,5 @@
 """Tests for the sklearn decision trees."""
 
-import os
 import warnings
 from functools import partial
 
@@ -20,11 +19,19 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 # pylint: disable=line-too-long
 
 
-def check_onnx_file_dump(model_class, parameters, load_data, default_configuration):
+def check_onnx_file_dump(model_class, parameters, load_data, default_configuration, use_fhe_sum):
     """Fit the model and dump the corresponding ONNX."""
 
     model_name = get_model_name(model_class)
     n_classes = parameters.get("n_classes", 2)
+
+    # Set the model
+    model = model_class()
+
+    # Set `use_fhe_sum`
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UserWarning)
+        model.use_fhe_sum = use_fhe_sum
 
     # Ignore long lines here
     # ruff: noqa: E501
@@ -130,7 +137,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
             """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
   %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   """
-            if os.getenv("TREES_USE_FHE_SUM") == "1"
+            if use_fhe_sum
             else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)\n  "
         )
         + """return %transposed_output
@@ -209,7 +216,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
             """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
   %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   """
-            if os.getenv("TREES_USE_FHE_SUM") == "1"
+            if use_fhe_sum is True
             else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)\n  "
         )
         + """return %transposed_output
@@ -261,7 +268,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
             """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_4_output_0, %onnx::ReduceSum_26)
   return %/_operators.0/ReduceSum_output_0
 }"""
-            if os.getenv("TREES_USE_FHE_SUM") == "1"
+            if use_fhe_sum is True
             else "return %/_operators.0/Reshape_4_output_0\n}"
         ),
         "RandomForestRegressor": """graph torch_jit (
@@ -285,7 +292,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
             """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
   %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
   """
-            if os.getenv("TREES_USE_FHE_SUM") == "1"
+            if use_fhe_sum is True
             else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)"
         )
         + """return %transposed_output
@@ -304,7 +311,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
   %/_operators.0/Constant_2_output_0[INT64, 3]
   %/_operators.0/Constant_3_output_0[INT64, 3]
   %/_operators.0/Constant_4_output_0[INT64, 3]"""
-        + ("\n  %onnx::ReduceSum_27[INT64, 1]" if os.getenv("TREES_USE_FHE_SUM") == "1" else "")
+        + ("\n  %onnx::ReduceSum_27[INT64, 1]" if use_fhe_sum is True else "")
         + """
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
@@ -324,7 +331,7 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
             """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_4_output_0, %onnx::ReduceSum_27)
   return %/_operators.0/ReduceSum_output_0
 }"""
-            if os.getenv("TREES_USE_FHE_SUM") == "1"
+            if use_fhe_sum is True
             else """return %/_operators.0/Reshape_4_output_0\n}"""
         ),
         "LinearRegression": """graph torch_jit (
@@ -398,9 +405,6 @@ def check_onnx_file_dump(model_class, parameters, load_data, default_configurati
 
     # Get the data-set. The data generation is seeded in load_data.
     x, y = load_data(model_class, **parameters)
-
-    # Set the model
-    model = model_class()
 
     model_params = model.get_params()
     if "random_state" in model_params:
@@ -494,15 +498,9 @@ def test_dump(
             callbacks="disable",
         )
 
-    # Check with 'TREES_USE_ROUNDING' disabled
-    assert os.environ.get("TREES_USE_FHE_SUM") == "0", "'TREES_USE_FHE_SUM' is not disabled"
-    check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
-
-    with pytest.MonkeyPatch.context() as mp_context:
-
-        # Disable rounding
-        mp_context.setenv("TREES_USE_FHE_SUM", "1")
-
-        # Check that rounding is disabled
-        assert os.environ.get("TREES_USE_FHE_SUM") == "1", "'TREES_USE_FHE_SUM' is enabled"
-        check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
+    check_onnx_file_dump(
+        model_class, parameters, load_data, default_configuration, use_fhe_sum=False
+    )
+    check_onnx_file_dump(
+        model_class, parameters, load_data, default_configuration, use_fhe_sum=True
+    )
