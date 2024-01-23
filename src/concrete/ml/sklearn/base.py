@@ -1338,8 +1338,8 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             print("LAA")
             warnings.simplefilter("always")
             warnings.warn(
-                "Enabling `fhe_ensembling` computes the sum of the ouputs of tree ensembles in FHE.\n"
-                "This may slow down the computation and increase the maximum bitwidth.\n"
+                "Enabling `fhe_ensembling` computes the sum of the ouputs of tree ensembles in "
+                "FHE.\nThis may slow down the computation and increase the maximum bitwidth.\n"
                 "To optimize performance, consider reducing the quantization leaf precision.\n"
                 "Additionally, the model must be refitted for these changes to take effect.",
                 category=UserWarning,
