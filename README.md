@@ -190,8 +190,9 @@ To cite Concrete ML, notably in academic papers, please use the following entry,
 ## Need support?
 
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://user-images.githubusercontent.com/5758427/231115030-21195b55-2629-4c01-9809-be5059243999.png">
+  <img src="https://github.com/zama-ai/concrete-ml/assets/157474013/8ef18a7e-671b-495c-8346-fa75227d0af3">
 </a>
+
 
 ## License.
 
