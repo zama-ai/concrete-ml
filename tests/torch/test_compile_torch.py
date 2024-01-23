@@ -1381,12 +1381,15 @@ def test_onnx_no_input():
     torch_input = torch.randn(100, 28)
 
     class SimplifiedNet(nn.Module):
+        """Network with no input in the onnx graph."""
+
         def __init__(self):
             super().__init__()
             self.fc1 = nn.Linear(28, 10)
             self.threshold = torch.tensor(0.5, dtype=torch.float32)
 
         def forward(self, x):
+            """Forward pass."""
             zeros = numpy.zeros_like(x)
             x = x + zeros
             x = (x > self.threshold).to(torch.float32)
