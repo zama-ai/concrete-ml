@@ -141,8 +141,8 @@ def add_transpose_after_last_node(onnx_model: onnx.ModelProto, use_fhe_sum: bool
 
     Args:
         onnx_model (onnx.ModelProto): The ONNX model.
-        use_fhe_sum (bool): This parameter is exclusively used to tree-based models.
-            It determines whether the sum of the trees' outputs is computed in FHE.
+        use_fhe_sum (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+            Default to False.
     """
     # Get the output node
     output_node = onnx_model.graph.output[0]
@@ -230,8 +230,8 @@ def tree_onnx_graph_preprocessing(
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         expected_number_of_outputs (int): The expected number of outputs in the ONNX model.
-        use_fhe_sum (bool): This parameter is exclusively used to tree-based models.
-            It determines whether the sum of the trees' outputs is computed in FHE.
+        use_fhe_sum (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+            Default to False.
     """
     # Make sure the ONNX version returned by Hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
@@ -339,10 +339,10 @@ def tree_to_numpy(
     Args:
         model (Callable): The tree model to convert.
         x (numpy.ndarray): The input data.
-        use_rounding (bool): This parameter is exclusively used to tree-based models.
-            It determines whether the rounding feature is enabled or disabled.
-        use_fhe_sum (bool): This parameter is exclusively used to tree-based models.
-            It determines whether the sum of the trees' outputs is computed in FHE.
+        use_rounding (bool): Determines whether the rounding feature is enabled or disabled.
+            Default to True.
+        use_fhe_sum (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+            Default to False.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output. Default to 8.

@@ -104,9 +104,6 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 # However, for internal testing purposes, we retain the capability to disable this feature
 os.environ["TREES_USE_ROUNDING"] = os.environ.get("TREES_USE_ROUNDING", "1")
 
-# By default, the decision of the tree ensembles is made in clear
-TREES_USE_FHE_SUM = False
-
 # pylint: disable=too-many-public-methods
 
 
@@ -1313,6 +1310,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._tree_inference: Optional[Callable] = None
 
         #: Wether to perform the sum of the output's tree ensembles in FHE or not.
+        # By default, the decision of the tree ensembles is made in clear.
         self._use_fhe_sum = False
 
         BaseEstimator.__init__(self)
@@ -1327,11 +1325,11 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         return self._use_fhe_sum
 
     @use_fhe_sum.setter
-    def use_fhe_sum(self, value) -> None:
+    def use_fhe_sum(self, value: bool) -> None:
         """Property setter for `use_fhe_sum`.
 
         Args:
-            value (int): Whether to enable or disable the feature.
+            value (bool): Whether to enable or disable the feature.
         """
 
         assert isinstance(value, bool), "Value must be a boolean type"
