@@ -149,13 +149,7 @@ def get_n_bits_non_correctness(model_class):
     if get_model_name(model_class) == "KNeighborsClassifier":
         n_bits = 2
 
-    # Adjust the quantization precision for tree-based model based on `TREES_USE_FHE_SUM` setting.
-    # When enabled, the circuit's bitwidth increases, potentially leading to Out-of-Memory issues.
-    # Therefore, the maximum quantization precision is 4 bits in this case.
-    elif model_class in _get_sklearn_tree_models() and os.environ.get("TREES_USE_FHE_SUM") == "1":
-        n_bits = min(min(N_BITS_REGULAR_BUILDS), 4)
-    else:
-        n_bits = min(N_BITS_REGULAR_BUILDS)
+    n_bits = min(N_BITS_REGULAR_BUILDS)
 
     return n_bits
 
@@ -1218,7 +1212,7 @@ def check_fhe_sum_for_tree_based_models(
     if is_weekly_option:
         fhe_test = get_random_samples(x, n_sample=5)
 
-    assert not model.use_fhe_sum, "`use_fhe_sum` is disabled by default."
+    assert not model.fhe_ensembling, "`fhe_ensembling` is disabled by default."
     fit_and_compile(model, x, y)
 
     non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
@@ -1231,7 +1225,8 @@ def check_fhe_sum_for_tree_based_models(
     if is_weekly_option:
         non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
-    model.use_fhe_sum = True
+    with pytest.warns(UserWarning, match="Enabling `fhe_ensembling` .*"):
+        model.fhe_ensembling = True
 
     fit_and_compile(model, x, y)
 
@@ -1955,6 +1950,8 @@ def test_fhe_sum_for_tree_based_models(
     )
 
 
+# This test should be extended to all built-in models.
+# FIXME: https://github.com/zama-ai/concrete-ml-internal#4234
 @pytest.mark.parametrize(
     "n_bits, error_message",
     [
@@ -1982,6 +1979,8 @@ def test_invalid_n_bits_setting(model_class, n_bits, error_message):
         instantiate_model_generic(model_class, n_bits=n_bits)
 
 
+# This test should be extended to all built-in models.
+# FIXME: https://github.com/zama-ai/concrete-ml-internal#4234
 @pytest.mark.parametrize("n_bits", [5, {"op_inputs": 5}, {"op_inputs": 2, "op_leaves": 1}])
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
 def test_valid_n_bits_setting(

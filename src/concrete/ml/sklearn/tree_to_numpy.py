@@ -331,7 +331,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     use_rounding: bool = True,
-    use_fhe_sum: bool = False,
+    fhe_ensembling: bool = False,
     output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
@@ -341,7 +341,7 @@ def tree_to_numpy(
         x (numpy.ndarray): The input data.
         use_rounding (bool): Determines whether the rounding feature is enabled or disabled.
             Default to True.
-        use_fhe_sum (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+        fhe_ensembling (bool): Determines whether the sum of the trees' outputs is computed in FHE.
             Default to False.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
@@ -379,7 +379,7 @@ def tree_to_numpy(
 
     # ONNX graph pre-processing to make the model FHE friendly
     # i.e., delete irrelevant nodes and cut the graph before the final ensemble sum)
-    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs, use_fhe_sum)
+    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs, fhe_ensembling)
 
     # Tree values pre-processing
     # i.e., mainly predictions quantization

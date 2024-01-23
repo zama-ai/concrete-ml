@@ -19,7 +19,9 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 # pylint: disable=line-too-long
 
 
-def check_onnx_file_dump(model_class, parameters, load_data, default_configuration, use_fhe_sum):
+def check_onnx_file_dump(
+    model_class, parameters, load_data, default_configuration, use_fhe_sum=False
+):
     """Fit the model and dump the corresponding ONNX."""
 
     model_name = get_model_name(model_class)
@@ -498,9 +500,10 @@ def test_dump(
             callbacks="disable",
         )
 
-    check_onnx_file_dump(
-        model_class, parameters, load_data, default_configuration, use_fhe_sum=False
-    )
-    check_onnx_file_dump(
-        model_class, parameters, load_data, default_configuration, use_fhe_sum=True
-    )
+    check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
+
+    # Additional tests exclusively dedicated for tree ensemble models.
+    if model_class in _get_sklearn_tree_models()[2:]:
+        check_onnx_file_dump(
+            model_class, parameters, load_data, default_configuration, use_fhe_sum=True
+        )
