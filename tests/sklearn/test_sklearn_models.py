@@ -148,8 +148,8 @@ def get_n_bits_non_correctness(model_class):
     # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
     if get_model_name(model_class) == "KNeighborsClassifier":
         n_bits = 2
-
-    n_bits = min(N_BITS_REGULAR_BUILDS)
+    else:
+        n_bits = min(N_BITS_REGULAR_BUILDS)
 
     return n_bits
 
