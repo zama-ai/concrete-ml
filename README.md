@@ -61,7 +61,8 @@ To install with Docker, pull the `concrete-ml` image as follows:
 To install Concrete ML from PyPi, run the following:
 
 ```
-pip install -U pip wheel setuptools
+pip install -U pip wheel
+pip install setuptools==65.6.3
 pip install concrete-ml
 ```
 
