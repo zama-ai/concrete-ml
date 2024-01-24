@@ -1212,7 +1212,8 @@ def check_fhe_sum_for_tree_based_models(
     if is_weekly_option:
         fhe_test = get_random_samples(x, n_sample=5)
 
-    assert not model.fhe_ensembling, "`fhe_ensembling` is disabled by default."
+    # pylint: disable=protected-access
+    assert not model._fhe_ensembling, "`_fhe_ensembling` is disabled by default."
     fit_and_compile(model, x, y)
 
     non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
@@ -1225,8 +1226,8 @@ def check_fhe_sum_for_tree_based_models(
     if is_weekly_option:
         non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
-    with pytest.warns(UserWarning, match="Enabling `fhe_ensembling` .*"):
-        model.fhe_ensembling = True
+    # pylint: disable=protected-access
+    model._fhe_ensembling = True
 
     fit_and_compile(model, x, y)
 

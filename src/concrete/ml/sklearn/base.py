@@ -1310,42 +1310,11 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self._tree_inference: Optional[Callable] = None
 
         #: Wether to perform the sum of the output's tree ensembles in FHE or not.
-        # By default, the decision of the tree ensembles is made in clear.
+        # By default, the decision of the tree ensembles is made in clear (not in FHE).
+        # This attribute should not be modified by users.
         self._fhe_ensembling = False
 
         BaseEstimator.__init__(self)
-
-    @property
-    def fhe_ensembling(self) -> bool:
-        """Property getter for `_fhe_ensembling`.
-
-        Returns:
-            bool: The current setting of the `fhe_ensembling` attribute.
-        """
-        return self._fhe_ensembling
-
-    @fhe_ensembling.setter
-    def fhe_ensembling(self, value: bool) -> None:
-        """Property setter for `fhe_ensembling`.
-
-        Args:
-            value (bool): Whether to enable or disable the feature.
-        """
-
-        assert isinstance(value, bool), "Value must be a boolean type"
-
-        if value is True:
-            warnings.simplefilter("always")
-            warnings.warn(
-                "Enabling `fhe_ensembling` computes the sum of the ouputs of tree ensembles in "
-                "FHE.\nThis may slow down the computation and increase the maximum bitwidth.\n"
-                "To optimize performance, consider reducing the quantization leaf precision.\n"
-                "Additionally, the model must be refitted for these changes to take effect.",
-                category=UserWarning,
-                stacklevel=2,
-            )
-
-        self._fhe_ensembling = value
 
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
@@ -1395,7 +1364,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             self.sklearn_model,
             q_X,
             use_rounding=enable_rounding,
-            fhe_ensembling=self.fhe_ensembling,
+            fhe_ensembling=self._fhe_ensembling,
             framework=self.framework,
             output_n_bits=self.n_bits["op_leaves"],
         )

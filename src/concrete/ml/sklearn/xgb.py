@@ -125,6 +125,7 @@ class XGBClassifier(BaseTreeClassifierMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
+        metadata["_fhe_ensembling"] = self._fhe_ensembling
 
         # XGBoost
         metadata["max_depth"] = self.max_depth
@@ -174,11 +175,13 @@ class XGBClassifier(BaseTreeClassifierMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
+        obj._fhe_ensembling = metadata["_fhe_ensembling"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
             output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
+            fhe_ensembling=obj._fhe_ensembling,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
@@ -354,6 +357,7 @@ class XGBRegressor(BaseTreeRegressorMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
+        metadata["_fhe_ensembling"] = self._fhe_ensembling
 
         # XGBoost
         metadata["max_depth"] = self.max_depth
@@ -403,11 +407,13 @@ class XGBRegressor(BaseTreeRegressorMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
+        obj._fhe_ensembling = metadata["_fhe_ensembling"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
             output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
+            fhe_ensembling=obj._fhe_ensembling,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 

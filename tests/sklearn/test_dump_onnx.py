@@ -30,10 +30,11 @@ def check_onnx_file_dump(
     # Set the model
     model = model_class()
 
-    # Set `use_fhe_sum`
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UserWarning)
-        model.use_fhe_sum = use_fhe_sum
+    # Set `_fhe_ensembling` for tree based models only
+    if model_class in _get_sklearn_tree_models():
+
+        # pylint: disable=protected-access
+        model._fhe_ensembling = use_fhe_sum
 
     # Ignore long lines here
     # ruff: noqa: E501
