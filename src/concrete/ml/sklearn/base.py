@@ -1335,7 +1335,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         assert isinstance(value, bool), "Value must be a boolean type"
 
         if value is True:
-            print("LAA")
             warnings.simplefilter("always")
             warnings.warn(
                 "Enabling `fhe_ensembling` computes the sum of the ouputs of tree ensembles in "

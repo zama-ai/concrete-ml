@@ -50,7 +50,7 @@ def _inspect_tree_n_bits(n_bits):
     """
 
     detailed_message = (
-        "Invalid 'n_bits', either pass a non-null positive integer or a dictionary containing "
+        "Invalid 'n_bits', either pass a strictly positive integer or a dictionary containing "
         "integer values for the following keys:\n"
         "- 'op_inputs' (mandatory): number of bits to quantize the input values\n"
         "- 'op_leaves' (optional): number of bits to quantize the leaves, must be less than or "
@@ -63,7 +63,7 @@ def _inspect_tree_n_bits(n_bits):
 
     if isinstance(n_bits, int):
         if n_bits <= 0:
-            error_message = "n_bits must be a non-null, positive integer"
+            error_message = "n_bits must be a strictly positive integer"
     elif isinstance(n_bits, dict):
         if "op_inputs" not in n_bits.keys():
             error_message = "Invalid keys in `n_bits` dictionary. The key 'op_inputs' is mandatory"
@@ -73,7 +73,7 @@ def _inspect_tree_n_bits(n_bits):
                 "(optional) are allowed"
             )
         elif not all(isinstance(value, int) and value > 0 for value in n_bits.values()):
-            error_message = "All values in 'n_bits' dictionary must be non-null, positive integers"
+            error_message = "All values in 'n_bits' dictionary must be strictly positive integers"
 
         elif n_bits.get("op_leaves", 0) > n_bits.get("op_inputs", 0):
             error_message = "'op_leaves' must be less than or equal to 'op_inputs'"
