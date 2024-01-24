@@ -96,21 +96,21 @@ class QuantizedModule:
         quant_layers_dict: Optional[Dict[str, Tuple[Tuple[str, ...], QuantizedOp]]] = None,
         onnx_model: Optional[onnx.ModelProto] = None,
     ):
-        # Set base attributes for API consistency. This could be avoided if an abstract base class
-        # is created for both Concrete ML models and QuantizedModule
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
 
         all_or_none_params = [
             ordered_module_input_names,
             ordered_module_output_names,
             quant_layers_dict,
         ]
-        assert_true(
+        if not (
             all(v is None or v == {} for v in all_or_none_params)
-            or not any(v is None or v == {} for v in all_or_none_params),
-            "All of ordered_module_input_names, ordered_module_output_names, "
-            "and quant_layers_dict must be provided if any one of them is provided.",
-        )
+            or not any(v is None or v == {} for v in all_or_none_params)
+        ):
+            raise ValueError(
+                "Please either set all three 'ordered_module_input_names', "
+                "'ordered_module_output_names' and 'quant_layers_dict' or none of them."
+            )
+
         self.ordered_module_input_names = (
             tuple(ordered_module_input_names) if ordered_module_input_names else ()
         )
@@ -120,9 +120,13 @@ class QuantizedModule:
         self.quant_layers_dict = (
             copy.deepcopy(quant_layers_dict) if quant_layers_dict is not None else {}
         )
+
+        # Set base attributes for API consistency. This could be avoided if an abstract base class
+        # is created for both Concrete ML models and QuantizedModule
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2899
         self.input_quantizers: List[UniformQuantizer] = []
         self.output_quantizers: List[UniformQuantizer] = []
-        self.fhe_circuit: Union[None, Circuit] = None
+        self.fhe_circuit: Optional[Circuit] = None
         self._is_compiled = False
         self._onnx_model = onnx_model
         self._post_processing_params: Dict[str, Any] = {}

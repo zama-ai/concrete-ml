@@ -1479,10 +1479,9 @@ def numpy_pad(
 def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     """Execute ONNX cast in Numpy.
 
-    For traced values during compilation, it supports booleans and floats,
-    which are converted to float. For raw values (used in constant folding or shape computations),
+    This function supports casting to booleans, floats, and double for traced values,
+    converting them accordingly. For raw values (used in constant folding or shape computations),
     any cast is allowed.
-
     See: https://github.com/onnx/onnx/blob/main/docs/Operators.md#Cast
 
     Args:
@@ -1496,8 +1495,12 @@ def numpy_cast(data: numpy.ndarray, *, to: int) -> Tuple[numpy.ndarray]:
     if isinstance(data, RawOpOutput):
         return (data.astype(onnx.helper.tensor_dtype_to_np_dtype(to)).view(RawOpOutput),)
 
-    # Allow both bool and float types
-    assert_true(to in (onnx.TensorProto.BOOL, onnx.TensorProto.FLOAT))
+    allowed_types = (onnx.TensorProto.BOOL, onnx.TensorProto.FLOAT, onnx.TensorProto.DOUBLE)
+    assert to in allowed_types, (
+        f"Invalid 'to' data type: {onnx.TensorProto.DataType.Name(to)}. "
+        f"Only {', '.join(onnx.TensorProto.DataType.Name(t) for t in allowed_types)}"
+        "are allowed for casting."
+    )
 
     # Will be used for traced values
     return (data.astype(numpy.float64),)

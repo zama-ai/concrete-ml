@@ -496,3 +496,18 @@ def test_serialization(model_class, input_shape):
         QuantizedModule,
         equal_method=partial(quantized_module_predictions_are_equal, x=numpy_input),
     )
+
+
+def test_quantized_module_initialization_error():
+    """Test initialization fails with mismatched parameters."""
+    # Initialize with invalid parameters
+    with pytest.raises(
+        ValueError,
+        match=r"Please either set all three 'ordered_module_input_names', "
+        r"'ordered_module_output_names' and 'quant_layers_dict' or none of them.",
+    ):
+        QuantizedModule(
+            ordered_module_input_names=["input1", "input2"],
+            ordered_module_output_names=None,  # This makes the combination invalid
+            quant_layers_dict={"layer1": (["input1"], "QuantizedOp")},
+        )

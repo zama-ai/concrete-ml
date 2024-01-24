@@ -155,7 +155,8 @@ def get_equivalent_numpy_forward_from_torch(
     for input_name in arguments:
         assert_true(
             any(input_name == node.name for node in equivalent_onnx_model.graph.input),
-            f"Input '{input_name}' is not present in the ONNX model. Please check the onnx graph.",
+            f"Input '{input_name}' is missing in the ONNX graph after export. "
+            "Verify the forward pass for issues.",
         )
 
     # Remove the tempfile if we used one
