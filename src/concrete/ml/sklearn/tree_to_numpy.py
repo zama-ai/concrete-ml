@@ -136,7 +136,7 @@ def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.Mod
     )
 
 
-def add_transpose_after_last_node(onnx_model: onnx.ModelProto, fhe_ensembling: bool):
+def add_transpose_after_last_node(onnx_model: onnx.ModelProto, fhe_ensembling: bool = False):
     """Add transpose after last node.
 
     Args:

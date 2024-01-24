@@ -1952,7 +1952,7 @@ def test_fhe_sum_for_tree_based_models(
 
 
 # This test should be extended to all built-in models.
-# FIXME: https://github.com/zama-ai/concrete-ml-internal#4234
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4234
 @pytest.mark.parametrize(
     "n_bits, error_message",
     [
@@ -1981,7 +1981,7 @@ def test_invalid_n_bits_setting(model_class, n_bits, error_message):
 
 
 # This test should be extended to all built-in models.
-# FIXME: https://github.com/zama-ai/concrete-ml-internal#4234
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4234
 @pytest.mark.parametrize("n_bits", [5, {"op_inputs": 5}, {"op_inputs": 2, "op_leaves": 1}])
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
 def test_valid_n_bits_setting(
