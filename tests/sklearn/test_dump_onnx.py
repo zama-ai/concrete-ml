@@ -504,7 +504,7 @@ def test_dump(
     check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
 
     # Additional tests exclusively dedicated for tree ensemble models.
-    if model_class in _get_sklearn_tree_models()[2:]:
+    if model_class in _get_sklearn_tree_models():
         check_onnx_file_dump(
             model_class, parameters, load_data, default_configuration, use_fhe_sum=True
         )
