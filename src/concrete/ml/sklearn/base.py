@@ -1303,7 +1303,6 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Check if 'n_bits' is a valid value.
         _inspect_tree_n_bits(n_bits)
 
-        #: The number of bits to quantize the model.
         self.n_bits: Union[int, Dict[str, int]] = n_bits
 
         #: The model's inference function. Is None if the model is not fitted.
