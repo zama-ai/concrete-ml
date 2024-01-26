@@ -1373,3 +1373,67 @@ def test_mono_parameter_rounding_warning(
             verbose=False,
             get_and_compile=False,
         )
+
+
+@pytest.mark.parametrize(
+    "cast_type, should_fail, error_message",
+    [
+        (torch.bool, False, None),
+        (torch.float32, False, None),
+        (torch.float64, False, None),
+        (torch.int64, True, r"Invalid 'to' data type: INT64"),
+    ],
+)
+def test_compile_torch_model_with_cast(cast_type, should_fail, error_message):
+    """Test compiling a Torch model with various casts, expecting failure for invalid types."""
+    torch_input = torch.randn(100, 28)
+
+    class CastNet(nn.Module):
+        """Network with cast."""
+
+        def __init__(self, cast_to):
+            super().__init__()
+            self.threshold = torch.tensor(0.5, dtype=torch.float32)
+            self.cast_to = cast_to
+
+        def forward(self, x):
+            """Forward pass with dynamic cast."""
+            zeros = torch.zeros_like(x)
+            x = x + zeros
+            x = (x > self.threshold).to(self.cast_to)
+            return x
+
+    model = CastNet(cast_type)
+
+    if should_fail:
+        with pytest.raises(AssertionError, match=error_message):
+            compile_torch_model(model, torch_input, cast_type, rounding_threshold_bits=3)
+    else:
+        compile_torch_model(model, torch_input, cast_type, rounding_threshold_bits=3)
+
+
+def test_onnx_no_input():
+    """Test a torch model that has no input when converted to onnx."""
+
+    torch_input = torch.randn(100, 28)
+
+    class NoInputNet(nn.Module):
+        """Network with no input in the onnx graph."""
+
+        def __init__(self):
+            super().__init__()
+            self.threshold = torch.tensor(0.5, dtype=torch.float32)
+
+        def forward(self, x):
+            """Forward pass."""
+            zeros = numpy.zeros_like(x)
+            x = x + zeros
+            x = (x > self.threshold).to(torch.float32)
+            return x
+
+    model = NoInputNet()
+
+    with pytest.raises(
+        AssertionError, match="Input 'x' is missing in the ONNX graph after export."
+    ):
+        compile_torch_model(model, torch_input, rounding_threshold_bits=3)

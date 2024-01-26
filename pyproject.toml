@@ -143,6 +143,8 @@ filterwarnings = [
     "ignore:non-integer arguments to randrange\\(\\) have been deprecated since Python 3\\.10 and will be removed in a subsequent version:DeprecationWarning",
     "ignore:Deprecated call to `pkg_resources.declare_namespace:DeprecationWarning",
     "ignore:The --rsyncdir command line argument and rsyncdirs config variable are deprecated.:DeprecationWarning",
+    "ignore:Converting a tensor to a NumPy array might cause the trace to be incorrect.",
+    "ignore:torch.from_numpy results are registered as constants in the trace.",
 ]
 
 [tool.semantic_release]
