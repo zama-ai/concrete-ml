@@ -86,6 +86,8 @@ def _inspect_tree_n_bits(n_bits):
         )
 
 
+# Find a better naming to describe leaf quantization in tree-based models
+# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4258
 def _get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     """Convert the n_bits parameter into a proper dictionary for tree based-models.
 

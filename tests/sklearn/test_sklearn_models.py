@@ -1210,7 +1210,11 @@ def check_fhe_sum_for_tree_based_models(
 
     # Run the test with more samples during weekly CIs
     if is_weekly_option:
-        fhe_test = get_random_samples(x, n_sample=5)
+        fhe_samples = 5
+    else:
+        fhe_samples = 1
+
+    fhe_test = get_random_samples(x, n_sample=fhe_samples)
 
     # pylint: disable=protected-access
     assert not model._fhe_ensembling, "`_fhe_ensembling` is disabled by default."
@@ -1218,13 +1222,10 @@ def check_fhe_sum_for_tree_based_models(
 
     non_fhe_sum_predict_quantized = predict_method(x, fhe="disable")
     non_fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
+    non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     # Sanity check
     array_allclose_and_same_shape(non_fhe_sum_predict_quantized, non_fhe_sum_predict_simulate)
-
-    # Compute the FHE predictions only during weekly CIs
-    if is_weekly_option:
-        non_fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     # pylint: disable=protected-access
     model._fhe_ensembling = True
@@ -1233,6 +1234,7 @@ def check_fhe_sum_for_tree_based_models(
 
     fhe_sum_predict_quantized = predict_method(x, fhe="disable")
     fhe_sum_predict_simulate = predict_method(x, fhe="simulate")
+    fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     # Sanity check
     array_allclose_and_same_shape(fhe_sum_predict_quantized, fhe_sum_predict_simulate)
@@ -1240,9 +1242,7 @@ def check_fhe_sum_for_tree_based_models(
     # Check that we have the exact same predictions
     array_allclose_and_same_shape(fhe_sum_predict_quantized, non_fhe_sum_predict_quantized)
     array_allclose_and_same_shape(fhe_sum_predict_simulate, non_fhe_sum_predict_simulate)
-    if is_weekly_option:
-        fhe_sum_predict_fhe = predict_method(fhe_test, fhe="execute")
-        array_allclose_and_same_shape(fhe_sum_predict_fhe, non_fhe_sum_predict_fhe)
+    array_allclose_and_same_shape(fhe_sum_predict_fhe, non_fhe_sum_predict_fhe)
 
 
 # Neural network models are skipped for this test
