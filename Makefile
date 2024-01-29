@@ -577,13 +577,10 @@ changelog: check_version_coherence
 	PROJECT_VER="$${poetry version --short}" && \
 	poetry run python ./script/make_utils/changelog_helper.py > "CHANGELOG_$${PROJECT_VER}.md"
 
-.PHONY: show_scope # Show the accepted types and optional scopes (for git conventional commits)
-show_scope:
-	@echo "Accepted types and optional scopes:"
+.PHONY: show_commit_rules # Show the accepted rules for git conventional commits
+show_commit_rules:
+	@echo "Accepted commit rules:"
 	@cat .github/workflows/continuous-integration.yaml | grep feat | grep pattern | cut -f 2- -d ":" | cut -f 2- -d " "
-
-.PHONY: show_type # Show the accepted types and optional scopes (for git conventional commits)
-show_type:show_scope
 
 .PHONY: licenses # Generate the list of licenses of dependencies
 licenses:

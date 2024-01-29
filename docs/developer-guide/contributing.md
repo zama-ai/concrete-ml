@@ -63,7 +63,7 @@ There may be cases where covering your code is not possible (an exception that c
 Concrete ML uses a consistent commit naming scheme, and you are expected to follow it as well (the CI will make sure you do). The accepted format can be printed to your terminal by running:
 
 ```shell
-make show_scope
+make show_commit_rules
 ```
 
 For example:
