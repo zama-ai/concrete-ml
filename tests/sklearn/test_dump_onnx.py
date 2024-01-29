@@ -1,6 +1,5 @@
 """Tests for the sklearn decision trees."""
 
-
 import warnings
 from functools import partial
 
@@ -20,108 +19,22 @@ from concrete.ml.sklearn.qnn import NeuralNetClassifier, NeuralNetRegressor
 # pylint: disable=line-too-long
 
 
-def check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration):
+def check_onnx_file_dump(
+    model_class, parameters, load_data, default_configuration, use_fhe_sum=False
+):
     """Fit the model and dump the corresponding ONNX."""
 
-    # Get the data-set. The data generation is seeded in load_data.
-    x, y = load_data(model_class, **parameters)
+    model_name = get_model_name(model_class)
+    n_classes = parameters.get("n_classes", 2)
 
     # Set the model
     model = model_class()
 
-    model_params = model.get_params()
-    if "random_state" in model_params:
-        model_params["random_state"] = numpy.random.randint(0, 2**15)
+    # Set `_fhe_ensembling` for tree based models only
+    if model_class in _get_sklearn_tree_models():
 
-        model.set_params(**model_params)
-
-    if get_model_name(model) == "KNeighborsClassifier":
-        # KNN can only be compiled with small quantization bit numbers for now
-        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
-        model.n_bits = 2
-
-    with warnings.catch_warnings():
-        # Sometimes, we miss convergence, which is not a problem for our test
-        warnings.simplefilter("ignore", category=ConvergenceWarning)
-
-        model.fit(x, y)
-
-    with warnings.catch_warnings():
-        # Use FHE simulation to not have issues with precision
-        model.compile(x, default_configuration)
-
-    # Get ONNX model
-    onnx_model = model.onnx_model
-
-    # Remove initializers, since they change from one seed to the other
-    model_name = get_model_name(model_class)
-    if model_name in [
-        "DecisionTreeRegressor",
-        "DecisionTreeClassifier",
-        "RandomForestClassifier",
-        "RandomForestRegressor",
-        "XGBClassifier",
-        "KNeighborsClassifier",
-    ]:
-        while len(onnx_model.graph.initializer) > 0:
-            del onnx_model.graph.initializer[0]
-
-    str_model = onnx.helper.printable_graph(onnx_model.graph)
-    print(f"{model_name}:")
-    print(str_model)
-
-    # Test equality when it does not depend on seeds
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
-    if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
-        # The expected graph is usually a string and we therefore directly test if it is equal to
-        # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
-        # this graph can slightly changed depending on some input's values. We then expected the
-        # string to match as least one of them expected strings (as a list)
-        if isinstance(str_expected, str):
-            assert str_model == str_expected
-        else:
-            assert str_model in str_expected
-
-
-@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
-def test_dump(
-    model_class,
-    parameters,
-    load_data,
-    default_configuration,
-):
-    """Tests dump."""
-
-    model_name = get_model_name(model_class)
-
-    # Some models have been done with different n_classes which create different ONNX
-    if parameters.get("n_classes", 2) != 2 and model_name in ["LinearSVC", "LogisticRegression"]:
-        return
-
-    if model_name == "NeuralNetClassifier":
-        model_class = partial(
-            NeuralNetClassifier,
-            module__n_layers=3,
-            module__power_of_two_scaling=False,
-            max_epochs=1,
-            verbose=0,
-            callbacks="disable",
-        )
-    elif model_name == "NeuralNetRegressor":
-        model_class = partial(
-            NeuralNetRegressor,
-            module__n_layers=3,
-            module__n_w_bits=2,
-            module__n_a_bits=2,
-            module__n_accum_bits=7,  # Stay with 7 bits for test exec time
-            module__n_hidden_neurons_multiplier=1,
-            module__power_of_two_scaling=False,
-            max_epochs=1,
-            verbose=0,
-            callbacks="disable",
-        )
-
-    n_classes = parameters.get("n_classes", 2)
+        # pylint: disable=protected-access
+        model._fhe_ensembling = use_fhe_sum
 
     # Ignore long lines here
     # ruff: noqa: E501
@@ -222,8 +135,15 @@ def test_dump(
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
-  return %transposed_output
+  """
+        + (
+            """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
+  %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
+  """
+            if use_fhe_sum
+            else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)\n  "
+        )
+        + """return %transposed_output
 }""",
         "RandomForestClassifier": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -294,8 +214,15 @@ def test_dump(
   %/_operators.0/Reshape_2_output_0 = Reshape[allowzero = 0](%/_operators.0/Equal_output_0, %/_operators.0/Constant_2_output_0)
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
-  return %transposed_output
+  """
+        + (
+            """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
+  %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
+  """
+            if use_fhe_sum is True
+            else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)\n  "
+        )
+        + """return %transposed_output
 }""",
         "GammaRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -339,8 +266,14 @@ def test_dump(
   %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
   %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
   %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
-  return %/_operators.0/Reshape_4_output_0
-}""",
+  """
+        + (
+            """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_4_output_0, %onnx::ReduceSum_26)
+  return %/_operators.0/ReduceSum_output_0
+}"""
+            if use_fhe_sum is True
+            else "return %/_operators.0/Reshape_4_output_0\n}"
+        ),
         "RandomForestRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) {
@@ -357,8 +290,15 @@ def test_dump(
   %/_operators.0/MatMul_1_output_0 = MatMul(%_operators.0.weight_3, %/_operators.0/Reshape_2_output_0)
   %/_operators.0/Constant_3_output_0 = Constant[value = <Tensor>]()
   %/_operators.0/Reshape_3_output_0 = Reshape[allowzero = 0](%/_operators.0/MatMul_1_output_0, %/_operators.0/Constant_3_output_0)
-  %transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)
-  return %transposed_output
+  """
+        + (
+            """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_3_output_0, %onnx::ReduceSum_22)
+  %transposed_output = Transpose[perm = [1, 0]](%/_operators.0/ReduceSum_output_0)
+  """
+            if use_fhe_sum is True
+            else "%transposed_output = Transpose[perm = [2, 1, 0]](%/_operators.0/Reshape_3_output_0)"
+        )
+        + """return %transposed_output
 }""",
         "XGBRegressor": """graph torch_jit (
   %input_0[DOUBLE, symx10]
@@ -373,7 +313,9 @@ def test_dump(
   %/_operators.0/Constant_1_output_0[INT64, 2]
   %/_operators.0/Constant_2_output_0[INT64, 3]
   %/_operators.0/Constant_3_output_0[INT64, 3]
-  %/_operators.0/Constant_4_output_0[INT64, 3]
+  %/_operators.0/Constant_4_output_0[INT64, 3]"""
+        + ("\n  %onnx::ReduceSum_27[INT64, 1]" if use_fhe_sum is True else "")
+        + """
 ) {
   %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 0, transB = 1](%_operators.0.weight_1, %input_0)
   %/_operators.0/Less_output_0 = Less(%/_operators.0/Gemm_output_0, %_operators.0.bias_1)
@@ -387,8 +329,14 @@ def test_dump(
   %/_operators.0/Squeeze_output_0 = Squeeze(%/_operators.0/Reshape_3_output_0, %axes_squeeze)
   %/_operators.0/Transpose_output_0 = Transpose[perm = [1, 0]](%/_operators.0/Squeeze_output_0)
   %/_operators.0/Reshape_4_output_0 = Reshape[allowzero = 0](%/_operators.0/Transpose_output_0, %/_operators.0/Constant_4_output_0)
-  return %/_operators.0/Reshape_4_output_0
-}""",
+  """
+        + (
+            """%/_operators.0/ReduceSum_output_0 = ReduceSum[keepdims = 0](%/_operators.0/Reshape_4_output_0, %onnx::ReduceSum_27)
+  return %/_operators.0/ReduceSum_output_0
+}"""
+            if use_fhe_sum is True
+            else """return %/_operators.0/Reshape_4_output_0\n}"""
+        ),
         "LinearRegression": """graph torch_jit (
   %input_0[DOUBLE, symx10]
 ) initializers (
@@ -453,7 +401,110 @@ def test_dump(
   %variable = ArgMax[axis = 1, keepdims = 0, select_last_index = 0](%onnx::ArgMax_44)
   return %variable, %onnx::ArgMax_44
 }""",
+        "SGDClassifier": "graph torch_jit (\n  %input_0[DOUBLE, symx10]\n) initializers (\n  %_operators.0.coefficients[FLOAT, 10x1]\n  %_operators.0.intercepts[FLOAT, 1]\n) {\n  %/_operators.0/Gemm_output_0 = Gemm[alpha = 1, beta = 1](%input_0, %_operators.0.coefficients, %_operators.0.intercepts)\n  return %/_operators.0/Gemm_output_0\n}",
     }
 
-    str_expected = expected_strings[model_name]
-    check_onnx_file_dump(model_class, parameters, load_data, str_expected, default_configuration)
+    str_expected = expected_strings.get(model_name, "")
+
+    # Get the data-set. The data generation is seeded in load_data.
+    x, y = load_data(model_class, **parameters)
+
+    model_params = model.get_params()
+    if "random_state" in model_params:
+        model_params["random_state"] = numpy.random.randint(0, 2**15)
+
+        model.set_params(**model_params)
+
+    if model_name == "KNeighborsClassifier":
+        # KNN can only be compiled with small quantization bit numbers for now
+        # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3979
+        model.n_bits = 2
+
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+
+        model.fit(x, y)
+
+    with warnings.catch_warnings():
+        # Use FHE simulation to not have issues with precision
+        model.compile(x, default_configuration)
+
+    # Get ONNX model
+    onnx_model = model.onnx_model
+
+    # Remove initializers, since they change from one seed to the other
+    model_name = get_model_name(model_class)
+    if model_name in [
+        "DecisionTreeRegressor",
+        "DecisionTreeClassifier",
+        "RandomForestClassifier",
+        "RandomForestRegressor",
+        "XGBClassifier",
+        "KNeighborsClassifier",
+    ]:
+        while len(onnx_model.graph.initializer) > 0:
+            del onnx_model.graph.initializer[0]
+
+    str_model = onnx.helper.printable_graph(onnx_model.graph)
+    print(f"\nCurrent {model_name=}:\n{str_model}")
+    print(f"\nExpected {model_name=}:\n{str_expected}")
+
+    # Test equality when it does not depend on seeds
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3266
+    if not is_model_class_in_a_list(model_class, _get_sklearn_tree_models(select="RandomForest")):
+        # The expected graph is usually a string and we therefore directly test if it is equal to
+        # the retrieved graph's string. However, in some cases such as for TweedieRegressor models,
+        # this graph can slightly changed depending on some input's values. We then expected the
+        # string to match as least one of them expected strings (as a list)
+        if isinstance(str_expected, str):
+            assert str_model == str_expected
+        else:
+            assert str_model in str_expected
+
+
+@pytest.mark.parametrize("model_class, parameters", UNIQUE_MODELS_AND_DATASETS)
+def test_dump(
+    model_class,
+    parameters,
+    load_data,
+    default_configuration,
+):
+    """Tests dump."""
+
+    model_name = get_model_name(model_class)
+
+    # Some models have been done with different n_classes which create different ONNX
+    if parameters.get("n_classes", 2) != 2 and model_name in ["LinearSVC", "LogisticRegression"]:
+        return
+
+    if model_name == "NeuralNetClassifier":
+        model_class = partial(
+            NeuralNetClassifier,
+            module__n_layers=3,
+            module__power_of_two_scaling=False,
+            max_epochs=1,
+            verbose=0,
+            callbacks="disable",
+        )
+    elif model_name == "NeuralNetRegressor":
+        model_class = partial(
+            NeuralNetRegressor,
+            module__n_layers=3,
+            module__n_w_bits=2,
+            module__n_a_bits=2,
+            module__n_accum_bits=7,  # Stay with 7 bits for test exec time
+            module__n_hidden_neurons_multiplier=1,
+            module__power_of_two_scaling=False,
+            max_epochs=1,
+            verbose=0,
+            callbacks="disable",
+        )
+
+    check_onnx_file_dump(model_class, parameters, load_data, default_configuration)
+
+    # Additional tests exclusively dedicated for tree ensemble models.
+    if model_class in _get_sklearn_tree_models():
+        check_onnx_file_dump(
+            model_class, parameters, load_data, default_configuration, use_fhe_sum=True
+        )

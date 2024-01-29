@@ -14,6 +14,7 @@ from concrete.ml.sklearn.linear_model import (
     LinearRegression,
     LogisticRegression,
     Ridge,
+    SGDClassifier,
     SGDRegressor,
 )
 from concrete.ml.sklearn.neighbors import KNeighborsClassifier
@@ -53,24 +54,24 @@ def test_get_sklearn_models():
         print(f"     {m}")
 
     # Check values
-    expected_neural_network_models = [NeuralNetClassifier, NeuralNetRegressor]
+    expected_neural_network_models = {NeuralNetClassifier, NeuralNetRegressor}
     assert (
-        neural_network_models == expected_neural_network_models
-    ), "Please change the expected number of models if new models have been added"
+        set(neural_network_models) == expected_neural_network_models
+    ), "Please change the expected number of models if neural network models have been added"
 
-    expected_tree_models = [
+    expected_tree_models = {
         DecisionTreeClassifier,
         DecisionTreeRegressor,
         RandomForestClassifier,
         RandomForestRegressor,
         XGBClassifier,
         XGBRegressor,
-    ]
+    }
     assert (
-        tree_models == expected_tree_models
-    ), "Please change the expected number of models if new models have been added"
+        set(tree_models) == expected_tree_models
+    ), "Please change the expected number of tree models if new models have been added"
 
-    expected_linear_models = [
+    expected_linear_models = {
         ElasticNet,
         GammaRegressor,
         Lasso,
@@ -81,27 +82,32 @@ def test_get_sklearn_models():
         PoissonRegressor,
         Ridge,
         SGDRegressor,
+        SGDClassifier,
         TweedieRegressor,
-    ]
-
-    expected_neighbor_models = [KNeighborsClassifier]
+    }
 
     assert (
-        linear_models == expected_linear_models
-    ), "Please change the expected number of models if new models have been added"
+        set(linear_models) == expected_linear_models
+    ), "Please change the expected number of linear models if new models have been added"
+
+    expected_neighbor_models = {KNeighborsClassifier}
 
     # Check number
-    assert all_models == sorted(
+    expected = set(all_models)
+    obtained = (
         expected_linear_models
-        + expected_tree_models
-        + expected_neural_network_models
-        + expected_neighbor_models,
-        key=lambda m: m.__name__,
-    ), "Please change the expected number of models if new models have been added"
+        | expected_tree_models
+        | expected_neural_network_models
+        | expected_neighbor_models
+    )
+    assert expected == obtained, (
+        "Please change the expected number of models if new models have been added\n"
+        f"Missing: {expected ^ obtained}"
+    )
 
 
 def test_models_and_datasets():
     """Check that the tested model's configuration lists remain fixed."""
 
-    assert len(MODELS_AND_DATASETS) == 30
-    assert len(UNIQUE_MODELS_AND_DATASETS) == 20
+    assert len(MODELS_AND_DATASETS) == 32
+    assert len(UNIQUE_MODELS_AND_DATASETS) == 21

@@ -73,6 +73,7 @@ def build_quantized_module(
     import_qat: bool = False,
     n_bits: Union[int, Dict[str, int]] = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
     rounding_threshold_bits: Optional[int] = None,
+    reduce_sum_copy=False,
 ) -> QuantizedModule:
     """Build a quantized module from a Torch or ONNX model.
 
@@ -89,6 +90,8 @@ def build_quantized_module(
         n_bits: the number of bits for the quantization
         rounding_threshold_bits (int): if not None, every accumulators in the model are rounded down
             to the given bits of precision
+        reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
+            bit-width propagation
 
     Returns:
         QuantizedModule: The resulting QuantizedModule.
@@ -117,7 +120,9 @@ def build_quantized_module(
     # only work over shape of (1, ., .). For example, some reshape have newshape hardcoded based
     # on the inputset we sent in the NumpyModule.
     quantized_module = post_training_quant.quantize_module(*inputset_as_numpy_tuple)
-
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
+    if reduce_sum_copy:
+        quantized_module.set_reduce_sum_copy()
     return quantized_module
 
 
@@ -135,6 +140,7 @@ def _compile_torch_or_onnx_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy=False,
 ) -> QuantizedModule:
     """Compile a torch module or ONNX into an FHE equivalent.
 
@@ -161,6 +167,8 @@ def _compile_torch_or_onnx_model(
         verbose (bool): whether to show compilation information
         inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
             for each input. By default all arguments will be encrypted.
+        reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
+            bit-width propagation
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -177,6 +185,7 @@ def _compile_torch_or_onnx_model(
         import_qat=import_qat,
         n_bits=n_bits,
         rounding_threshold_bits=rounding_threshold_bits,
+        reduce_sum_copy=reduce_sum_copy,
     )
 
     # Check that p_error or global_p_error is not set in both the configuration and in the direct
@@ -225,6 +234,7 @@ def compile_torch_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -252,6 +262,8 @@ def compile_torch_model(
         verbose (bool): whether to show compilation information
         inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
             for each input. By default all arguments will be encrypted.
+        reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
+            bit-width propagation
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -281,6 +293,7 @@ def compile_torch_model(
         global_p_error=global_p_error,
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
+        reduce_sum_copy=reduce_sum_copy,
     )
 
 
@@ -298,6 +311,7 @@ def compile_onnx_model(
     global_p_error: Optional[float] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy: bool = False,
 ) -> QuantizedModule:
     """Compile a torch module into an FHE equivalent.
 
@@ -325,6 +339,8 @@ def compile_onnx_model(
         verbose (bool): whether to show compilation information
         inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
             for each input. By default all arguments will be encrypted.
+        reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
+            bit-width propagation
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -350,6 +366,7 @@ def compile_onnx_model(
         global_p_error=global_p_error,
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
+        reduce_sum_copy=reduce_sum_copy,
     )
 
 
@@ -367,6 +384,7 @@ def compile_brevitas_qat_model(
     output_onnx_file: Union[None, Path, str] = None,
     verbose: bool = False,
     inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy: bool = False,
 ) -> QuantizedModule:
     """Compile a Brevitas Quantization Aware Training model.
 
@@ -401,6 +419,8 @@ def compile_brevitas_qat_model(
         verbose (bool): whether to show compilation information
         inputs_encryption_status (Optional[Sequence[str]]): encryption status ('clear', 'encrypted')
             for each input. By default all arguments will be encrypted.
+        reduce_sum_copy (bool): if the inputs of QuantizedReduceSum should be copied to avoid
+            bit-width propagation
 
     Returns:
         QuantizedModule: The resulting compiled QuantizedModule.
@@ -495,6 +515,7 @@ def compile_brevitas_qat_model(
         global_p_error=global_p_error,
         verbose=verbose,
         inputs_encryption_status=inputs_encryption_status,
+        reduce_sum_copy=reduce_sum_copy,
     )
 
     # Remove the tempfile if we used one

@@ -65,8 +65,8 @@ if ${USE_PIP_WHEEL}; then
     # Build the wheel file
     poetry build -f wheel
 
-    # Install the dependencies as PyPI would do using the wheel file, inclusing the current
-    # Concrete-Numpy RC version
+    # Install the dependencies as PyPI would do using the wheel file as well as the given
+    # Concrete-Python version
     PYPI_WHEEL=$(find dist -type f -name "*.whl")
     python -m pip install "${PYPI_WHEEL}"
     python -m pip install "${CONCRETE_PYTHON}"

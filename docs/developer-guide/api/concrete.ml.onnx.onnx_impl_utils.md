@@ -8,7 +8,7 @@ Utility functions for onnx operator implementations.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L12"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L16"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `numpy_onnx_pad`
 
@@ -18,7 +18,7 @@ numpy_onnx_pad(
     pads: Tuple[int, ],
     pad_value: Union[float, int, ndarray] = 0,
     int_only: bool = False
-) → ndarray
+) → Union[ndarray, Tracer]
 ```
 
 Pad a tensor according to ONNX spec, using an optional custom pad value.
@@ -36,7 +36,7 @@ Pad a tensor according to ONNX spec, using an optional custom pad value.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L66"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L71"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_conv_output_dims`
 
@@ -68,7 +68,7 @@ See https://pytorch.org/docs/stable/generated/torch.nn.AvgPool2d.html for detail
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L115"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compute_onnx_pool_padding`
 
@@ -100,7 +100,7 @@ The ONNX standard uses ceil_mode=1 to match TensorFlow style pooling output comp
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L156"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L161"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `onnx_avgpool_compute_norm_const`
 
@@ -111,7 +111,7 @@ onnx_avgpool_compute_norm_const(
     pads: Tuple[int, ],
     strides: Tuple[int, ],
     ceil_mode: int
-) → Union[ndarray, float]
+) → Union[ndarray, float, Tracer]
 ```
 
 Compute the average pooling normalization constant.
@@ -129,3 +129,35 @@ This constant can be a tensor of the same shape as the input or a scalar.
 **Returns:**
 
 - <b>`res`</b> (float):  tensor or scalar, corresponding to normalization factors to apply for the  average pool computation for each valid kernel position
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/onnx_impl_utils.py#L240"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `rounded_comparison`
+
+```python
+rounded_comparison(
+    x: ndarray,
+    y: ndarray,
+    lsbs_to_remove: int,
+    operation: Callable[[int], bool]
+) → Tuple[bool]
+```
+
+Comparison operation using `round_bit_pattern` function.
+
+`round_bit_pattern` rounds the bit pattern of an integer to the closer It also checks for any potential overflow. If so, it readjusts the LSBs accordingly.
+
+The parameter `lsbs_to_remove` in `round_bit_pattern` can either be an integer specifying the number of LSBS to remove, or an `AutoRounder` object that determines the required number of LSBs based on the specified number of MSBs to retain. But in our case, we choose to compute the LSBs manually.
+
+**Args:**
+
+- <b>`x`</b> (numpy.ndarray):  Input tensor
+- <b>`y`</b> (numpy.ndarray):  Input tensor
+- <b>`lsbs_to_remove`</b> (int):  Number of the least significant bits to remove
+- <b>`operation`</b> (ComparisonOperationType):  Comparison operation, which can `<`, `<=` and `==`
+
+**Returns:**
+
+- <b>`Tuple[bool]`</b>:  If x and y satisfy the comparison operator.

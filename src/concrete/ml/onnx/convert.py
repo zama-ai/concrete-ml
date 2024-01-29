@@ -1,5 +1,6 @@
 """ONNX conversion related code."""
 
+import inspect
 import tempfile
 import warnings
 from pathlib import Path
@@ -138,12 +139,14 @@ def get_equivalent_numpy_forward_from_torch(
     )
     use_tempfile: bool = output_onnx_file is None
 
+    arguments = list(inspect.signature(torch_module.forward).parameters)
     # Export to ONNX
     torch.onnx.export(
         torch_module,
         dummy_input,
         str(output_onnx_file_path),
         opset_version=OPSET_VERSION_FOR_ONNX_EXPORT,
+        input_names=arguments,
     )
     equivalent_onnx_model = onnx.load_model(str(output_onnx_file_path))
     # Remove the tempfile if we used one

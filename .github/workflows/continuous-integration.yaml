@@ -495,7 +495,7 @@ jobs:
           && steps.install-deps.outcome == 'success'
           && steps.make-pcc.outcome == 'success' 
           && !cancelled()
-        uses: tj-actions/changed-files@v40.2.2
+        uses: tj-actions/changed-files@v41.1.1
         with:
           files_yaml: |
             src:
@@ -517,6 +517,7 @@ jobs:
               - '!.*/**'
               - '!docs/_*/**'
               - '!docs/SUMMARY.md'
+              - '!docs/developer-guide/api/**.md'
             dependencies:
               - deps_licenses/licenses_linux_user.txt.md5
             conftest:
@@ -625,7 +626,7 @@ jobs:
 
       - name: Upload docs artifacts
         if: ${{ steps.tar-docs.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
         with:
           name: html-docs
           path: docs/_build/html/docs.tar
@@ -650,7 +651,7 @@ jobs:
   
       - name: Upload changelog artifacts
         if: ${{ steps.changelog.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
         with:
           name: changelog
           path: ${{ steps.changelog.outputs.changelog-file }}
@@ -672,7 +673,7 @@ jobs:
 
       - name: Upload wheel artifacts
         if: ${{ steps.build-wheel.outcome == 'success' && !cancelled() }}
-        uses: actions/upload-artifact@0b7f8abb1508181956e8e162db84b466c27e18ce
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
         with:
           name: py3-wheel
           path: dist/*.whl

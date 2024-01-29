@@ -8,8 +8,8 @@ import numpy
 import onnx
 import onnx.helper
 from brevitas.function import max_int, min_int
-from concrete.fhe import conv as cnp_conv
-from concrete.fhe import maxpool as cnp_maxpool
+from concrete.fhe import conv as fhe_conv
+from concrete.fhe import maxpool as fhe_maxpool
 from concrete.fhe import univariate
 from scipy import special
 from typing_extensions import SupportsIndex
@@ -288,23 +288,7 @@ def numpy_gemm(
     b_prime = numpy.transpose(b) if transB else b
     c_prime: Union[numpy.ndarray, float] = c if c is not None else 0
 
-    # Do
-    #
-    #       y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
-    #
-    # in an efficient way, i.e., to make tracing directly optimized, without expecting any opt from
-    # the compiler here
-
-    y = numpy.matmul(a_prime, b_prime)
-
-    if processed_alpha != 1:
-        y = y * processed_alpha
-
-    if numpy.any(c_prime != 0):
-        if processed_beta == 1:
-            y = y + c_prime
-        else:
-            y = y + processed_beta * c_prime
+    y = processed_alpha * numpy.matmul(a_prime, b_prime) + processed_beta * c_prime
 
     return (y,)
 
@@ -941,6 +925,26 @@ def rounded_numpy_equal_for_trees(
     return (numpy.equal(x, y),)
 
 
+
+def numpy_equal_float(
+    x: numpy.ndarray,
+    y: numpy.ndarray,
+) -> Tuple[numpy.ndarray]:
+    """Compute equal in numpy according to ONNX spec and cast outputs to floats.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Changelog.md#Equal-13
+
+    Args:
+        x (numpy.ndarray): Input tensor
+        y (numpy.ndarray): Input tensor
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor
+    """
+
+    return cast_to_float(numpy_equal(x, y))
+
+
 def numpy_not(
     x: numpy.ndarray,
 ) -> Tuple[numpy.ndarray]:
@@ -1166,6 +1170,12 @@ def rounded_numpy_less_or_equal_for_trees(
     if auto_truncate is not None:
         #print("Use truncate for <=")
         return rounded_comparison(y, x, auto_truncate, operation=lambda x: x >= 0)
+    # numpy.less_equal(x, y) <= y is equivalent to :
+    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+
+    # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
+    # which does: (a - b) - half.
 
     # Else, default numpy_less_or_equal operator
     return numpy_less_or_equal(x, y)
@@ -1300,7 +1310,7 @@ def numpy_conv(
     x_pad = numpy_onnx_pad(x, pads)
 
     # Compute the torch convolution
-    res = cnp_conv(x_pad, w, b, None, strides, dilations, None, group)
+    res = fhe_conv(x_pad, w, b, None, strides, dilations, None, group)
 
     return (res,)
 
@@ -1364,7 +1374,7 @@ def numpy_avgpool(
     q_input_pad = numpy_onnx_pad(x, pool_pads)
 
     # Compute the sums of input values for each kernel position
-    res = cnp_conv(q_input_pad, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
+    res = fhe_conv(q_input_pad, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
 
     # Compute the average of the input values for each kernel position
     res /= norm_const
@@ -1428,7 +1438,7 @@ def numpy_maxpool(
     q_input_pad = numpy_onnx_pad(x, pool_pads)
 
     fake_pads = [0] * len(pads)
-    res = cnp_maxpool(
+    res = fhe_maxpool(
         q_input_pad,
         kernel_shape=kernel_shape,
         strides=strides,
@@ -2045,3 +2055,24 @@ def numpy_gather(
     slices = tuple(slice(None) if i != axis else indices_list for i in range(x.ndim))
 
     return (x[slices],)
+
+
+@onnx_func_raw_args("shape")
+def numpy_expand(x: numpy.ndarray, shape: Optional[Tuple[int]] = None) -> Tuple[numpy.ndarray]:
+    """Apply the expand operator in numpy according to ONNX spec.
+
+    See https://github.com/onnx/onnx/blob/main/docs/Operators.md#expand
+
+    Args:
+        x (numpy.ndarray): Input tensor.
+        shape (Optional[Tuple[int]]): Tuple of the new shape.
+
+    Returns:
+        Tuple[numpy.ndarray]: Output tensor.
+    """
+    target_shape = numpy.array(shape, dtype=int)
+    shape_difference = len(target_shape) - len(x.shape)
+
+    assert_true(shape_difference >= 0, "Target shape cannot have fewer dimensions than input shape")
+
+    return (numpy.broadcast_to(x, target_shape),)

@@ -3,9 +3,10 @@
 from typing import Callable, Tuple, Union
 
 import numpy
-from concrete.fhe import conv as cnp_conv
-from concrete.fhe import ones as cnp_ones
-from concrete.fhe import truncate_bit_pattern
+
+from concrete.fhe import truncate_bit_pattern, round_bit_pattern
+from concrete.fhe import conv as fhe_conv
+from concrete.fhe import ones as fhe_ones
 from concrete.fhe.tracing import Tracer
 
 from ..common.debugging import assert_true
@@ -52,7 +53,7 @@ def numpy_onnx_pad(
         # to the real-axis 0
         if int_only:
             # Work in integer Concrete mode
-            x_pad = cnp_ones(tuple(padded_shape)) * numpy.int64(pad_value)
+            x_pad = fhe_ones(tuple(padded_shape)) * numpy.int64(pad_value)
         else:
             # Floating point mode
             x_pad = numpy.ones(padded_shape, dtype=numpy.float32) * pad_value
@@ -219,7 +220,7 @@ def onnx_avgpool_compute_norm_const(
         padded_ceil[:, :, 0 : padded_flr.shape[2], 0 : padded_flr.shape[3]] = 1
 
         # Compute the sum of valid indices in each kernel position
-        norm_const = cnp_conv(
+        norm_const = fhe_conv(
             padded_ceil, kernel, None, [0, 0, 0, 0], strides, None, None, n_in_channels
         )
     else:
@@ -264,3 +265,17 @@ def rounded_comparison(
     rounded_subtraction = truncate_bit_pattern(x - y, lsbs_to_remove=auto_truncate)
 
     return (operation(rounded_subtraction),)
+
+    # # To determine if 'x' 'operation' 'y' (operation being <, >, >=, <=), we evaluate 'x - y'
+    # rounded_subtraction = truncate_bit_pattern(x - y, lsbs_to_remove=auto_truncate)
+    # assert isinstance(lsbs_to_remove, int)
+
+    # # Workaround: in this context, `round_bit_pattern` is used as a truncate operation.
+    # # Consequently, we subtract a term, called `half` that will subsequently be re-added during the
+    # # `round_bit_pattern` process.
+    # half = 1 << (lsbs_to_remove - 1)
+
+    # # To determine if 'x' 'operation' 'y' (operation being <, >, >=, <=), we evaluate 'x - y'
+    # rounded_subtraction = round_bit_pattern((x - y) - half, lsbs_to_remove=lsbs_to_remove)
+
+    # return (operation(rounded_subtraction),)

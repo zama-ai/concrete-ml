@@ -13,12 +13,13 @@ Utils to interpret an ONNX model with numpy.
 - **ONNX_OPS_TO_NUMPY_IMPL**
 - **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT**
 - **ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL**
+- **ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL**
 - **ONNX_OPS_TO_NUMPY_IMPL_BOOL**
 - **IMPLEMENTED_ONNX_OPS**
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L420"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L431"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_attribute`
 
@@ -38,7 +39,7 @@ Get the attribute from an ONNX AttributeProto.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L432"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L443"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_op_type`
 
@@ -58,7 +59,7 @@ Construct the qualified type name of the ONNX operator.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L444"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L455"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `execute_onnx_with_numpy`
 
@@ -79,7 +80,33 @@ Execute the provided ONNX graph on the given inputs.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L475"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L484"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `execute_onnx_with_numpy_trees`
+
+```python
+execute_onnx_with_numpy_trees(
+    graph: GraphProto,
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]],
+    *inputs: ndarray
+) → Tuple[ndarray, ]
+```
+
+Execute the provided ONNX graph on the given inputs for tree-based models only.
+
+**Args:**
+
+- <b>`graph`</b> (onnx.GraphProto):  The ONNX graph to execute.
+- <b>`lsbs_to_remove_for_trees`</b> (Optional\[Tuple\[int, int\]\]):  This parameter is exclusively used for  optimizing tree-based models. It contains the values of the least significant bits to  remove during the tree traversal, where the first value refers to the first comparison  (either "less" or "less_or_equal"), while the second value refers to the "Equal"  comparison operation.  Default to None.
+- <b>`*inputs`</b>:  The inputs of the graph.
+
+**Returns:**
+
+- <b>`Tuple[numpy.ndarray]`</b>:  The result of the graph's execution.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/onnx_utils.py#L543"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `remove_initializer_from_input`
 

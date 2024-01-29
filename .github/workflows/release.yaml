@@ -249,7 +249,7 @@ jobs:
 
     steps:
       - name: Import GPG
-        uses: crazy-max/ghaction-import-gpg@v6.0.0
+        uses: crazy-max/ghaction-import-gpg@v6.1.0
         with:
           gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
@@ -401,7 +401,7 @@ jobs:
       - name: Download Documentation
         if: ${{ success() && !cancelled() }}
         id: download-docs
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935
         with:
           name: html-docs
           path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
@@ -416,7 +416,7 @@ jobs:
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
@@ -424,7 +424,7 @@ jobs:
       - name: Download python3 wheel
         if: ${{ success() && !cancelled() }}
         id: download-wheel
-        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a
+        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935
         with:
           name: py3-wheel
           path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/

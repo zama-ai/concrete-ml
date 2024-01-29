@@ -479,8 +479,8 @@ def check_is_good_execution_for_cml_vs_circuit():
         for _ in range(n_allowed_runs):
             # Check if model is QuantizedModule
             if isinstance(model, QuantizedModule):
-                results_cnp_circuit = model.forward(*inputs, fhe=fhe_mode)
-                results_model = model.forward(*inputs, fhe="disable")
+                y_pred_fhe = model.forward(*inputs, fhe=fhe_mode)
+                y_pred_quantized = model.forward(*inputs, fhe="disable")
 
             else:
                 assert isinstance(
@@ -504,12 +504,12 @@ def check_is_good_execution_for_cml_vs_circuit():
                     if is_classifier_or_partial_classifier(model) and not isinstance(
                         model, SklearnKNeighborsMixin
                     ):
-                        results_cnp_circuit = model.predict_proba(*inputs, fhe=fhe_mode)
-                        results_model = model.predict_proba(*inputs, fhe="disable")
+                        y_pred_fhe = model.predict_proba(*inputs, fhe=fhe_mode)
+                        y_pred_quantized = model.predict_proba(*inputs, fhe="disable")
 
                     else:
-                        results_cnp_circuit = model.predict(*inputs, fhe=fhe_mode)
-                        results_model = model.predict(*inputs, fhe="disable")
+                        y_pred_fhe = model.predict(*inputs, fhe=fhe_mode)
+                        y_pred_quantized = model.predict(*inputs, fhe="disable")
 
                 else:
                     raise ValueError(
@@ -517,12 +517,12 @@ def check_is_good_execution_for_cml_vs_circuit():
                         "a QuantizedModule object."
                     )
 
-            if array_allclose_and_same_shape(results_cnp_circuit, results_model):
+            if array_allclose_and_same_shape(y_pred_fhe, y_pred_quantized):
                 return
 
         raise RuntimeError(
-            f"Mismatch between circuit results:\n{results_cnp_circuit}\n"
-            f"and model function results:\n{results_model}"
+            f"Mismatch between circuit results:\n{y_pred_fhe}\n"
+            f"and model function results:\n{y_pred_quantized}"
         )
 
     return check_is_good_execution_for_cml_vs_circuit_impl

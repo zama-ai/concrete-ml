@@ -243,8 +243,10 @@ from .ops_impl import (
     numpy_div,
     numpy_elu,
     numpy_equal,
+    numpy_equal_float,
     numpy_erf,
     numpy_exp,
+    numpy_expand,
     numpy_flatten,
     numpy_floor,
     numpy_gather,
@@ -350,7 +352,6 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Sub": numpy_sub,
     "Log": numpy_log,
     "Exp": numpy_exp,
-    "Equal": numpy_equal,
     "Identity": numpy_identity,
     "Reshape": numpy_reshape,
     "Transpose": numpy_transpose,
@@ -380,6 +381,7 @@ ONNX_OPS_TO_NUMPY_IMPL: Dict[str, Callable[..., Tuple[numpy.ndarray, ...]]] = {
     "Gather": numpy_gather,
     "Shape": numpy_shape,
     "ConstantOfShape": numpy_constant_of_shape,
+    "Expand": numpy_expand,
 }
 
 
@@ -396,6 +398,7 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_FLOAT: Dict[str, Callable[..., Tuple[numpy.nda
     "GreaterOrEqual": numpy_greater_or_equal_float,
     "Less": numpy_less_float,
     "LessOrEqual": numpy_less_or_equal_float,
+    "Equal": numpy_equal_float,
 }
 
 # Comparison operators used in tree-based models as they keep the outputs' boolean dtype.
@@ -406,6 +409,7 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
     "GreaterOrEqual": numpy_greater_or_equal,
     "Less": numpy_less,
     "LessOrEqual": numpy_less_or_equal,
+    "Equal": numpy_equal,
 }
 # All numpy operators used for tree-based models that support auto rounding
 ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL = {
@@ -518,6 +522,11 @@ def execute_onnx_with_numpy_trees(
 
         if node.op_type in ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL:
             attributes["auto_truncate"] = auto_truncate
+
+            # # The first LSB refers to `Less` or `LessOrEqual` comparisons
+            # # The second LSB refers to `Equal` comparison
+            # stage = 0 if node.op_type != "Equal" else 1
+            # attributes["lsbs_to_remove_for_trees"] = lsbs_to_remove_for_trees[stage]
 
             # Use rounded numpy operation to relevant comparison nodes
             op_type = ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL[node.op_type]

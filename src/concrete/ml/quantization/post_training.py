@@ -23,6 +23,99 @@ from .quantized_module_passes import PowerOfTwoScalingRoundPBSAdapter
 from .quantized_ops import QuantizedBrevitasQuant
 from .quantizers import QuantizationOptions, QuantizedArray, UniformQuantizer
 
+# pylint: disable=too-many-lines
+
+
+def _inspect_tree_n_bits(n_bits):
+    """Validate the 'n_bits' parameter for tree-based models.
+
+    This function checks whether 'n_bits' is a valid integer or dictionary.
+    - If 'n_bits' is an integer, it must be a non-null positive, its value is assigned to
+        'op_inputs' and 'op_leaves' bits
+    - If it is a dictionary, it should contain integer values for keys 'op_leaves' and 'op_inputs',
+        where 'op_leaves' should not exceed 'op_inputs'.
+
+    The function raises a ValueError with a descriptive message if 'n_bits' does not meet
+    these criteria.
+
+    Args:
+        n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" (mandatory): number of bits to quantize the input values
+            - "op_leaves" (optional): number of bits to quantize the leaves, must be less than or
+                equal to 'op_inputs. defaults to the value of 'op_inputs if not specified.
+
+    Raises:
+        ValueError: If 'n_bits' does not conform to the required format or value constraints.
+    """
+
+    detailed_message = (
+        "Invalid 'n_bits', either pass a strictly positive integer or a dictionary containing "
+        "integer values for the following keys:\n"
+        "- 'op_inputs' (mandatory): number of bits to quantize the input values\n"
+        "- 'op_leaves' (optional): number of bits to quantize the leaves, must be less than or "
+        "equal to 'op_inputs'. Defaults to the value of 'op_inputs' if not specified."
+        "When using a single integer for n_bits, its value is assigned to 'op_inputs' and "
+        "'op_leaves' bits.\n"
+    )
+
+    error_message = ""
+
+    if isinstance(n_bits, int):
+        if n_bits <= 0:
+            error_message = "n_bits must be a strictly positive integer"
+    elif isinstance(n_bits, dict):
+        if "op_inputs" not in n_bits.keys():
+            error_message = "Invalid keys in `n_bits` dictionary. The key 'op_inputs' is mandatory"
+        elif set(n_bits.keys()) - {"op_leaves", "op_inputs"}:
+            error_message = (
+                "Invalid keys in 'n_bits' dictionary. Only 'op_inputs' (mandatory) and 'op_leaves' "
+                "(optional) are allowed"
+            )
+        elif not all(isinstance(value, int) and value > 0 for value in n_bits.values()):
+            error_message = "All values in 'n_bits' dictionary must be strictly positive integers"
+
+        elif n_bits.get("op_leaves", 0) > n_bits.get("op_inputs", 0):
+            error_message = "'op_leaves' must be less than or equal to 'op_inputs'"
+    else:
+        error_message = "n_bits must be either an integer or a dictionary"
+
+    if len(error_message) > 0:
+        raise ValueError(
+            f"{error_message}. Got '{type(n_bits)}' and '{n_bits}' value.\n{detailed_message}"
+        )
+
+
+def _get_n_bits_dict_trees(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
+    """Convert the n_bits parameter into a proper dictionary for tree based-models.
+
+    Args:
+        n_bits (int, Dict[str, int]): number of bits for quantization, can be a single value or
+            a dictionary with the following keys :
+            - "op_inputs" (mandatory): number of bits to quantize the input values
+            - "op_leaves" (optional): number of bits to quantize the leaves, must be less than or
+                equal to 'op_inputs'. defaults to the value of "op_inputs" if not specified.
+
+            When using a single integer for n_bits, its value is assigned to "op_inputs" and
+            "op_leaves" bits.
+
+    Returns:
+        n_bits_dict (Dict[str, int]): A dictionary properly representing the number of bits to use
+            for quantization.
+    """
+
+    _inspect_tree_n_bits(n_bits)
+
+    # If a single integer is passed, we use a default value for the model's input and leaves
+    if isinstance(n_bits, int):
+        return {"op_inputs": n_bits, "op_leaves": n_bits}
+
+    # Default 'op_leaves' to 'op_inputs' if not specified
+    if "op_leaves" not in n_bits:
+        n_bits["op_leaves"] = n_bits["op_inputs"]
+
+    return n_bits
+
 
 def get_n_bits_dict(n_bits: Union[int, Dict[str, int]]) -> Dict[str, int]:
     """Convert the n_bits parameter into a proper dictionary.

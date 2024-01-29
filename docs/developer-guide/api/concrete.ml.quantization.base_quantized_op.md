@@ -613,7 +613,11 @@ ______________________________________________________________________
 ### <kbd>method</kbd> `cnp_round`
 
 ```python
-cnp_round(x: Union[ndarray, Tracer], calibrate_rounding: bool) → ndarray
+cnp_round(
+    x: Union[ndarray, Tracer],
+    calibrate_rounding: bool,
+    rounding_operation_id: Optional[str] = 'single_rounding_op'
+) → ndarray
 ```
 
 Round the input array to the specified number of bits.
@@ -621,7 +625,8 @@ Round the input array to the specified number of bits.
 **Args:**
 
 - <b>`x`</b> (Union\[numpy.ndarray, fhe.tracing.Tracer\]):  The input array to be rounded.
-- <b>`calibrate_rounding`</b> (bool):  Whether to calibrate the rounding  (compute the lsbs_to_remove)
+- <b>`calibrate_rounding`</b> (bool):  Whether to calibrate the rounding  (compute the lsbs_to_remove).
+- <b>`rounding_operation_id`</b> (Optional\[str\]):  The identifier for a specific rounding  operation in a quantized operation. Used to create and access the  lsbs_to_remove value in the dictionary. Defaults to "single_rounding_op"  if not provided.
 
 **Returns:**
 

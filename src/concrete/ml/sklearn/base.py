@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
 import brevitas.nn as qnn
-import concrete.fhe as cnp
 import numpy
 import onnx
 import sklearn
@@ -28,8 +27,11 @@ from concrete.fhe.compilation.compiler import Compiler
 from concrete.fhe.compilation.configuration import Configuration
 from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import check_is_fitted
+
+# pylint: disable-next=ungrouped-imports
+from concrete import fhe as cp
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -47,7 +49,13 @@ from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remo
 # The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
 # here in order to avoid duplicating them.
 from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
-from ..quantization import PostTrainingQATImporter, QuantizedArray, get_n_bits_dict
+from ..quantization import (
+    PostTrainingQATImporter,
+    QuantizedArray,
+    _get_n_bits_dict_trees,
+    _inspect_tree_n_bits,
+    get_n_bits_dict,
+)
 from ..quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from ..quantization.quantizers import (
     QuantizationOptions,
@@ -94,12 +102,13 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 # Most significant bits to retain when applying rounding to the tree
 MSB_TO_KEEP_FOR_TREES = 1
 
-# Enable truncate feature for all tree-based models by default
+# Enable rounding feature for all tree-based models by default
 # Note: This setting is fixed and cannot be altered by users
 # However, for internal testing purposes, we retain the capability to disable this feature
-os.environ["TREES_USE_ROUNDING"] = "1"
+os.environ["TREES_USE_ROUNDING"] = os.environ.get("TREES_USE_ROUNDING", "1")
 
 # pylint: disable=too-many-public-methods
+
 
 class BaseEstimator:
     """Base class for all estimators in Concrete ML.
@@ -814,7 +823,7 @@ class BaseClassifier(BaseEstimator):
 # is expected as the QuantizedTorchEstimatorMixin class is not supposed to be used as such. This
 # disable could probably be removed when refactoring the serialization of models
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3250
-# pylint: disable-next=abstract-method
+# pylint: disable-next=abstract-method,too-many-instance-attributes
 class QuantizedTorchEstimatorMixin(BaseEstimator):
     """Mixin that provides quantization for a torch module and follows the Estimator API."""
 
@@ -1282,16 +1291,31 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _TREE_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: int):
+    def __init__(self, n_bits: Union[int, Dict[str, int]]):
         """Initialize the TreeBasedEstimatorMixin.
 
         Args:
-            n_bits (int): The number of bits used for quantization.
+            n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+                for n_bits, the value will be used for quantizing inputs and leaves. If a dict is
+                passed, then it should contain "op_inputs" and "op_leaves" as keys with
+                corresponding number of quantization bits so that:
+                    - op_inputs (mandatory): number of bits to quantize the input values
+                    - op_leaves (optional): number of bits to quantize the leaves
+                Default to 6.
         """
-        self.n_bits: int = n_bits
+
+        # Check if 'n_bits' is a valid value.
+        _inspect_tree_n_bits(n_bits)
+
+        self.n_bits: Union[int, Dict[str, int]] = n_bits
 
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
+
+        #: Wether to perform the sum of the output's tree ensembles in FHE or not.
+        # By default, the decision of the tree ensembles is made in clear (not in FHE).
+        # This attribute should not be modified by users.
+        self._fhe_ensembling = False
 
         BaseEstimator.__init__(self)
 
@@ -1302,15 +1326,20 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.output_quantizers = []
 
         #: Determines the LSB to remove given a `target_msbs`
-        self.auto_truncate = cnp.AutoTruncator(target_msbs=MSB_TO_KEEP_FOR_TREES)
+        self.auto_truncate = cp.AutoTruncator(target_msbs=MSB_TO_KEEP_FOR_TREES)
         
         X, y = check_X_y_and_assert_multi_output(X, y)
 
         q_X = numpy.zeros_like(X)
 
+        # Convert the n_bits attribute into a proper dictionary
+        self.n_bits = _get_n_bits_dict_trees(self.n_bits)
+
         # Quantization of each feature in X
         for i in range(X.shape[1]):
-            input_quantizer = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
+            input_quantizer = QuantizedArray(
+                n_bits=self.n_bits["op_inputs"], values=X[:, i]
+            ).quantizer
             self.input_quantizers.append(input_quantizer)
             q_X[:, i] = input_quantizer.quant(X[:, i])
 
@@ -1323,7 +1352,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
-        # Convert the tree inference with Numpy operators
+        # Enable optimized computation
         enable_truncate = os.environ.get("TREES_USE_ROUNDING", "1") == "1"
 
         if not enable_truncate:
@@ -1343,8 +1372,9 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             self.sklearn_model,
             q_X,
             auto_truncate=self.auto_truncate,
+            fhe_ensembling=self._fhe_ensembling,
             framework=self.framework,
-            output_n_bits=self.n_bits,
+            output_n_bits=self.n_bits["op_leaves"],
         )
 
         # Adjust the truncate
@@ -1426,10 +1456,13 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Sum all tree outputs
         # Remove the sum once we handle multi-precision circuits
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=-1)
+        if not self._fhe_ensembling:
+            y_preds = numpy.sum(y_preds, axis=-1)
 
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-        return y_preds
+            assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+            return y_preds
+
+        return super().post_processing(y_preds)
 
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):
@@ -1609,7 +1642,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Quantize the inputs and store the associated quantizer
         q_inputs = QuantizedArray(n_bits=input_n_bits, values=X, options=input_options)
         input_quantizer = q_inputs.quantizer
-        self.input_quantizers.append(input_quantizer)
+        self.input_quantizers = [input_quantizer]
 
         weights_n_bits = n_bits["op_weights"]
         weight_options = QuantizationOptions(n_bits=weights_n_bits, is_signed=True)
@@ -1655,7 +1688,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # output zero_point by 2
         assert output_quantizer.zero_point is not None
         output_quantizer.zero_point *= 2
-        self.output_quantizers.append(output_quantizer)
+        self.output_quantizers = [output_quantizer]
 
         # Updating post-processing parameters
         self._set_post_processing_params()
@@ -1800,6 +1833,38 @@ class SklearnLinearClassifierMixin(
         return y_proba
 
 
+class SklearnSGDClassifierMixin(SklearnLinearClassifierMixin):
+    """A Mixin class for sklearn SGD classifiers with FHE.
+
+    This class is used to create a SGD classifier class what can be exported
+    to ONNX using Hummingbird.
+    """
+
+    # Remove once Hummingbird supports SGDRegressor
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4100
+    def _set_onnx_model(self, test_input: numpy.ndarray) -> None:
+        """Retrieve the model's ONNX graph using Hummingbird conversion.
+
+        Args:
+            test_input (numpy.ndarray): An input data used to trace the model execution.
+        """
+        # Check that the underlying sklearn model has been set and fit
+        assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
+
+        model_for_onnx = LogisticRegression()
+        model_for_onnx.coef_ = self.sklearn_model.coef_
+        model_for_onnx.intercept_ = self.sklearn_model.intercept_
+
+        self.onnx_model_ = hb_convert(
+            model_for_onnx,
+            backend="onnx",
+            test_input=test_input,
+            extra_config={"onnx_target_opset": OPSET_VERSION_FOR_ONNX_EXPORT},
+        ).model
+
+        self._clean_graph()
+
+
 # pylint: disable-next=invalid-name,too-many-instance-attributes
 class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
     """A Mixin class for sklearn KNeighbors models with FHE.
@@ -1823,12 +1888,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 quantizing inputs and X_fit. Default to 3.
         """
         self.n_bits: int = n_bits
+
         # _q_fit_X: In distance metric algorithms, `_q_fit_X` stores the training set to compute
         # the similarity or distance measures. There is no `weights` attribute because there isn't
         # a training phase
         self._q_fit_X: numpy.ndarray
+
         # _y: Labels of `_q_fit_X`
         self._y: numpy.ndarray
+
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
 
@@ -2020,7 +2088,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 arr = []
                 for i in indices:
                     arr.append(x[i])
-                enc_arr = cnp.array(arr)
+                enc_arr = cp.array(arr)
                 return enc_arr
 
             def scatter1d(x, v, indices):
@@ -2041,7 +2109,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 return x
 
             comparisons = numpy.zeros(x.shape)
-            labels = labels + cnp.zeros(labels.shape)
+            labels = labels + cp.zeros(labels.shape)
 
             n, k = x.size, self.n_neighbors
             # Determine the number of stages for a sequence of length n
@@ -2057,7 +2125,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 d = p
                 # Number of passes for each stage
                 for bq in range(ln2n - 1, t - 1, -1):
-                    with cnp.tag(f"Stage_{t}_pass_{bq}"):
+                    with cp.tag(f"Stage_{t}_pass_{bq}"):
                         q = 2**bq
                         # Determine the range of indexes to be compared
                         range_i = numpy.array(
@@ -2080,14 +2148,14 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                         labels_a = gather1d(labels, range_i)  #
                         labels_b = gather1d(labels, range_i + d)  # idx[range_i + d]
 
-                        with cnp.tag("diff"):
+                        with cp.tag("diff"):
                             # Select max(a, b)
                             diff = b - a
 
-                        with cnp.tag("max_value"):
+                        with cp.tag("max_value"):
                             max_x = a + numpy.maximum(0, diff)
 
-                        with cnp.tag("swap_max_value"):
+                        with cp.tag("swap_max_value"):
                             # Swap if a > b
                             # x[range_i] = max_x(a, b): First bitonic sequence gets min(a, b)
                             x = scatter1d(x, a + b - max_x, range_i)
@@ -2095,16 +2163,16 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                             x = scatter1d(x, max_x, range_i + d)
 
                         # Update labels array according to the max value
-                        with cnp.tag("max_label"):
+                        with cp.tag("max_label"):
                             is_a_greater_than_b = diff > 0
                             max_labels = labels_a + (labels_b - labels_a) * is_a_greater_than_b
 
-                        with cnp.tag("swap_max_label"):
+                        with cp.tag("swap_max_label"):
                             labels = scatter1d(labels, labels_a + labels_b - max_labels, range_i)
                             labels = scatter1d(labels, max_labels, range_i + d)
 
                         # Update
-                        with cnp.tag("update"):
+                        with cp.tag("update"):
                             comparisons[range_i + d] = comparisons[range_i + d] + 1
                             # Reduce the comparison distance by half
                             d = q - p
@@ -2113,7 +2181,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
             return labels[0 : self.n_neighbors]
 
         # 1. Pairwise_euclidiean distance
-        with cnp.tag("Original distance"):
+        with cp.tag("Original distance"):
             distance_matrix = pairwise_euclidean_distance(q_X)
 
         # The square root in the Euclidean distance calculation is not applied to speed up FHE

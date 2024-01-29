@@ -38,8 +38,10 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedConv,
     QuantizedDiv,
     QuantizedElu,
+    QuantizedEqual,
     QuantizedErf,
     QuantizedExp,
+    QuantizedExpand,
     QuantizedFlatten,
     QuantizedFloor,
     QuantizedGemm,
@@ -1147,6 +1149,60 @@ def test_quantized_reshape(shape):
 
 
 @pytest.mark.parametrize(
+    "original_shape, expand_shape",
+    [
+        ((1, 1, 1), (10, 5, 2)),  # Basic expansion in 3D
+        ((10, 1, 2), (10, 5, 2)),  # Expansion with one dimension already matching
+        ((1,), (3, 1)),  # Expansion from 1D to 2D
+        ((1, 1), (10, 5)),  # Expansion in 2D
+        ((3, 1, 1), (3, 5, 7)),  # 3D expansion with first dimension already matching
+        ((1, 4), (3, 4)),  # 2D expansion where one dimension needs no expansion
+        ((1, 1, 3), (2, 6, 3)),  # 3D, last dimension matches, others expand
+        ((1,), (1, 1, 1, 1)),  # Expansion from 1D to 4D
+        ((2, 2), (1, 2, 2)),  # 2D to 3D where original dimensions are in the middle
+        ((1, 1, 1, 1), (5, 4, 3, 2)),  # 4D expansion from all ones
+        ((1, 7, 1), (3, 7, 5)),  # 3D with middle dimension already matching
+        ((2, 1), (2, 3)),  # 2D expansion where first dimension needs no expansion
+        ((1, 2, 1, 4), (3, 2, 5, 4)),  # 4D, two dimensions match, others expand
+    ],
+)
+def test_quantized_expand(original_shape, expand_shape):
+    """Test quantized expand."""
+
+    n_bits_expand = MAX_BITWIDTH_BACKWARD_COMPATIBLE
+
+    num_values = numpy.prod(numpy.asarray(original_shape))
+    data = numpy.arange(num_values).astype(numpy.float32)
+    data = data.reshape(original_shape)
+
+    q_arr0 = QuantizedArray(n_bits_expand, data)
+
+    # Apply QuantizedExpand operation
+    expand = QuantizedExpand(
+        n_bits_expand,
+        OP_DEBUG_NAME + "QuantizedExpand",
+        constant_inputs={1: numpy.asarray(expand_shape)},
+        input_quant_opts=q_arr0.quantizer.quant_options,
+    )
+
+    q_expanded = expand(q_arr0)
+
+    # Assertions for expanded array
+    assert q_expanded.quantizer.zero_point == q_arr0.quantizer.zero_point
+    assert q_expanded.quantizer.scale == q_arr0.quantizer.scale
+    assert q_expanded.qvalues.shape == expand_shape
+    assert numpy.all(numpy.broadcast_to(q_arr0.qvalues, expand_shape) == q_expanded.qvalues)
+
+    # Test the serialization of QuantizedExpand (if applicable)
+    # Replace with appropriate serialization test if needed
+    check_serialization(
+        expand,
+        QuantizedExpand,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_arr0),
+    )
+
+
+@pytest.mark.parametrize(
     "n_bits",
     [pytest.param(n_bits) for n_bits in N_BITS_LIST],
 )
@@ -1193,81 +1249,65 @@ def test_quantized_prelu(n_bits, input_range, input_shape, slope, is_signed, che
     )
 
 
-@pytest.mark.parametrize(
-    "params",
-    [
+@pytest.fixture(scope="module")
+def random_test_data():
+    """Generate data for comparisons operators."""
+    return [
         (
             numpy.random.uniform(size=(1, 3, 32, 32)) * 4,
             numpy.random.uniform() * 0.7 + 2,
             numpy.random.uniform(),
             numpy.random.uniform(),
         ),
-        (
-            numpy.random.uniform(size=(1, 32)) * 100 - 50,
-            numpy.random.uniform() * 50 - 25,
-            0,
-            -1,
-        ),
-        (
-            numpy.random.uniform(size=(1024,)),
-            numpy.random.uniform(),
-            -100,
-            100,
-        ),
-    ],
-)
+        (numpy.random.uniform(size=(1, 32)) * 100 - 50, numpy.random.uniform() * 50 - 25, 0, -1),
+        (numpy.random.uniform(size=(1024,)), numpy.random.uniform(), -100, 100),
+    ]
+
+
 @pytest.mark.parametrize("n_bits", [16])
 @pytest.mark.parametrize(
-    "comparator", [QuantizedGreater, QuantizedGreaterOrEqual, QuantizedLess, QuantizedLessOrEqual]
+    "comparator",
+    [
+        QuantizedGreater,
+        QuantizedGreaterOrEqual,
+        QuantizedLess,
+        QuantizedLessOrEqual,
+        QuantizedEqual,
+    ],
 )
-def test_quantized_comparators_and_where(params, n_bits, comparator, check_r2_score):
+# pylint: disable-next=redefined-outer-name
+def test_quantized_comparators_and_where(random_test_data, n_bits, comparator, check_r2_score):
     """Test a conditional pattern that is very common in quantization aware training."""
-    values, threshold, val_if_true, val_if_false = params
+    for values, threshold, val_if_true, val_if_false in random_test_data:
+        q_values = QuantizedArray(n_bits, values)
+        q_op_comparator = comparator(
+            n_bits,
+            OP_DEBUG_NAME + comparator.__name__,
+            constant_inputs={1: QuantizedArray(n_bits, threshold)},
+        )
+        q_cast = QuantizedCast(n_bits, OP_DEBUG_NAME + "QuantizedCast", to=onnx.TensorProto.BOOL)
+        q_op_where = QuantizedWhere(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedWhere",
+            constant_inputs={
+                1: QuantizedArray(n_bits, float(val_if_true)),
+                2: QuantizedArray(n_bits, float(val_if_false)),
+            },
+        )
 
-    q_values = QuantizedArray(n_bits, values)
-    q_op_comparator = comparator(
-        n_bits,
-        OP_DEBUG_NAME + comparator.__name__,
-        constant_inputs={1: QuantizedArray(n_bits, threshold)},
-    )
-    q_cast = QuantizedCast(n_bits, OP_DEBUG_NAME + "QuantizedCast", to=onnx.TensorProto.BOOL)
-    q_op_where = QuantizedWhere(
-        n_bits,
-        OP_DEBUG_NAME + "QuantizedWhere",
-        constant_inputs={
-            1: QuantizedArray(n_bits, float(val_if_true)),
-            2: QuantizedArray(n_bits, float(val_if_false)),
-        },
-    )
+        reference_value = q_op_where.calibrate(q_cast.calibrate(q_op_comparator.calibrate(values)))
+        q_result = q_op_where(q_cast(q_op_comparator(q_values)))
+        result = q_result.dequant()
 
-    reference_value = q_op_where.calibrate(q_cast.calibrate(q_op_comparator.calibrate(values)))
+        check_r2_score(reference_value, result)
 
-    q_result = q_op_where(q_cast(q_op_comparator(q_values)))
-
-    result = q_result.dequant()
-
-    check_r2_score(reference_value, result)
-
-    # Test the serialization of QuantizedCast
-    check_serialization(
-        q_op_comparator,
-        comparator,
-        equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
-    )
-
-    # Test the serialization of QuantizedCast
-    check_serialization(
-        q_cast,
-        QuantizedCast,
-        equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
-    )
-
-    # Test the serialization of QuantizedWhere
-    check_serialization(
-        q_op_where,
-        QuantizedWhere,
-        equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
-    )
+        # Test the serialization of each Quantized operation
+        for q_op in [q_op_comparator, q_cast, q_op_where]:
+            check_serialization(
+                q_op,
+                type(q_op),
+                equal_method=partial(quantized_op_results_are_equal, q_input=q_values),
+            )
 
 
 @pytest.mark.parametrize(
@@ -1332,18 +1372,22 @@ def test_batch_normalization(tensor_shape, n_bits, check_r2_score):
 @pytest.mark.parametrize(
     "keepdims", [pytest.param(keepdims, id=f"keepdims-{keepdims}") for keepdims in [0, 1]]
 )
+# In Concrete ML, we consider that all inputs' first dimension should be a batch size
+# even in single batch cases. This is why the following test parameters are considering axes that
+# are sometimes equal to the input size's dimension, as the batch size is added within the
+# test itself.
+# Finally, the axis parameter should neither be None nor contain axis 0 as this dimension is used
+# for batching the inference
 @pytest.mark.parametrize(
     "size, axes, noop_with_empty_axes",
     [
         pytest.param(size, axes, noop, id=f"size-{size}-axes-{axes}-noop-{noop}")
         for (size, axes, noop) in [
-            ((1,), (0,), 0),
-            ((100, 1), (1,), 0),
-            ((100, 10), None, 0),
-            ((100, 10), None, 1),
-            ((10, 100), (0,), 0),
-            ((10, 10, 1000), (2,), 0),
-            ((10, 10, 1000), (0, 2), 0),
+            ((1,), (1,), 0),
+            ((100, 1), (2,), 0),
+            ((10, 100), (1,), 0),
+            ((10, 10, 1000), (3,), 0),
+            ((10, 10, 1000), (1, 3), 0),
         ]
     ],
 )
@@ -1354,27 +1398,33 @@ def test_reduce_sum(
     n_bits, size, data_generator, axes, keepdims, noop_with_empty_axes, check_r2_score
 ):
     """Test the QuantizedReduceSum operator."""
+
     # Generate the inputs
-    inputs = data_generator(size=(10,) + size)
+    inputs = data_generator(size=(100,) + size)
 
     # Instantiate the operator
     quantized_reduce_sum = QuantizedReduceSum(
         n_bits,
         OP_DEBUG_NAME + "QuantizedReduceSum",
-        constant_inputs={"axes": numpy.array(axes) if axes is not None else None},
+        constant_inputs={"axes": numpy.array(axes)},
         keepdims=keepdims,
         noop_with_empty_axes=noop_with_empty_axes,
     )
 
     # Calibrate the quantized op and retrieve the expected results
-    expected_outputs = quantized_reduce_sum.calibrate(inputs)
+    expected_sum = quantized_reduce_sum.calibrate(inputs)
 
     # Retrieve the results computed by the quantized op applied on quantized inputs
     q_inputs = QuantizedArray(n_bits, inputs)
-    actual_output = quantized_reduce_sum(q_inputs)
-    actual_output = actual_output.dequant()
+    q_computed_sum = quantized_reduce_sum(q_inputs)
+    computed_sum = q_computed_sum.dequant()
 
-    check_r2_score(expected_outputs, actual_output)
+    assert computed_sum.shape == expected_sum.shape, (
+        f"Mismatch found in output shapes. Got {computed_sum.shape} but expected "
+        f"{expected_sum.shape}."
+    )
+
+    check_r2_score(expected_sum, computed_sum)
 
     # Test the serialization of QuantizedReduceSum
     check_serialization(
@@ -1440,6 +1490,8 @@ def test_all_ops_were_tested():
         QuantizedUnsqueeze: test_quantized_unsqueeze,
         QuantizedConcat: test_quantized_concat,
         QuantizedSqueeze: test_quantized_squeeze,
+        QuantizedExpand: test_quantized_expand,
+        QuantizedEqual: test_quantized_comparators_and_where,
         ONNXSlice: test_quantized_slice,
         ONNXGather: test_quantized_gather,
         ONNXShape: test_quantized_shape,

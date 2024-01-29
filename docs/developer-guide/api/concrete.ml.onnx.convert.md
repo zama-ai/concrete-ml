@@ -13,7 +13,7 @@ ONNX conversion related code.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L19"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L26"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `fuse_matmul_bias_to_gemm`
 
@@ -33,7 +33,7 @@ Fuse sequence of matmul -> add into a gemm node.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L110"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L117"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_torch`
 
@@ -59,7 +59,32 @@ Get the numpy equivalent forward of the provided torch Module.
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/onnx/convert.py#L159"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/onnx/convert.py#L168"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `preprocess_onnx_model`
+
+```python
+preprocess_onnx_model(onnx_model: ModelProto, check_model: bool) → ModelProto
+```
+
+Get the numpy equivalent forward of the provided ONNX model.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  the ONNX model for which to get the equivalent numpy  forward.
+- <b>`check_model`</b> (bool):  set to True to run the onnx checker on the model.  Defaults to True.
+
+**Raises:**
+
+- <b>`ValueError`</b>:  Raised if there is an unsupported ONNX operator required to convert the torch  model to numpy.
+
+**Returns:**
+
+- <b>`onnx.ModelProto`</b>:  The preprocessed ONNX model.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/convert.py#L230"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx`
 
@@ -77,10 +102,32 @@ Get the numpy equivalent forward of the provided ONNX model.
 - <b>`onnx_model`</b> (onnx.ModelProto):  the ONNX model for which to get the equivalent numpy  forward.
 - <b>`check_model`</b> (bool):  set to True to run the onnx checker on the model.  Defaults to True.
 
-**Raises:**
-
-- <b>`ValueError`</b>:  Raised if there is an unsupported ONNX operator required to convert the torch  model to numpy.
-
 **Returns:**
 
 - <b>`Callable[..., Tuple[numpy.ndarray, ...]]`</b>:  The function that will execute  the equivalent numpy function.
+
+______________________________________________________________________
+
+<a href="../../../src/concrete/ml/onnx/convert.py#L255"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+
+## <kbd>function</kbd> `get_equivalent_numpy_forward_from_onnx_tree`
+
+```python
+get_equivalent_numpy_forward_from_onnx_tree(
+    onnx_model: ModelProto,
+    check_model: bool = True,
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None
+) → Tuple[Callable[, Tuple[ndarray, ]], ModelProto]
+```
+
+Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
+
+**Args:**
+
+- <b>`onnx_model`</b> (onnx.ModelProto):  the ONNX model for which to get the equivalent numpy  forward.
+- <b>`check_model`</b> (bool):  set to True to run the onnx checker on the model.  Defaults to True.
+- <b>`lsbs_to_remove_for_trees`</b> (Optional\[Tuple\[int, int\]\]):  This parameter is exclusively used for  optimizing tree-based models. It contains the values of the least significant bits to  remove during the tree traversal, where the first value refers to the first comparison  (either "less" or "less_or_equal"), while the second value refers to the "Equal"  comparison operation. Default to None, as it is not applicable to other types of models.
+
+**Returns:**
+
+- <b>`Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]`</b>:  The function that will  execute the equivalent numpy function.

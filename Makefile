@@ -19,7 +19,7 @@ OPEN_PR="true"
 # Force the installation of a Concrete Python version, which is very useful with nightly versions
 # /!\ WARNING /!\: This version should NEVER be a wildcard as it might create some
 # issues when trying to run it in the future.
-CONCRETE_PYTHON_VERSION="concrete-python==2023.12.5"
+CONCRETE_PYTHON_VERSION="concrete-python==2.5.0"
 
 # Force the installation of Concrete Python's latest version, release-candidates included
 # CONCRETE_PYTHON_VERSION="$$(poetry run python \
@@ -40,24 +40,31 @@ setup_env:
 	if [[ $$(uname) != "Darwin" ]]; then \
 		poetry run python -m pip install -U --force-reinstall setuptools; \
 	fi
+
+	echo "Installing poetry lock ..."
 	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
 		poetry install --only dev; \
 	else \
 		poetry install; \
 	fi
+	echo "Finished installing poetry lock."
 
 	echo "Installing $(CONCRETE_PYTHON_VERSION)" && \
 	poetry run python -m pip install -U --pre "$(CONCRETE_PYTHON_VERSION)"
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 
 .PHONY: sync_env # Synchronise the environment
-sync_env: check_poetry_version
-	if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
-		poetry install --remove-untracked --only dev; \
+sync_env: 
+	if [[ $$(poetry --version) != "Poetry (version $(POETRY_VERSION))" ]];then \
+		echo "Current Poetry version is different than $(POETRY_VERSION). Please update it.";\
 	else \
-		poetry install --remove-untracked; \
+		if [[ $$(uname) != "Linux" ]] && [[ $$(uname) != "Darwin" ]]; then \
+			poetry install --remove-untracked --only dev; \
+		else \
+			poetry install --remove-untracked; \
+		fi; \
+		"$(MAKE)" setup_env; \
 	fi
-	"$(MAKE)" setup_env
 
 .PHONY: fix_omp_issues_for_intel_mac # Fix OMP issues for macOS Intel, https://github.com/zama-ai/concrete-ml-internal/issues/3951
 fix_omp_issues_for_intel_mac:
@@ -85,15 +92,6 @@ reinstall_env:
 		"$(MAKE)" setup_env; \
 		echo "Source venv with:"; \
 		echo "source $${SOURCE_VENV_PATH}"; \
-	fi
-
-.PHONY: check_poetry_version # Check poetry's version
-check_poetry_version:
-	if [[ $$(poetry --version) == "Poetry (version $(POETRY_VERSION))" ]];then \
-		echo "Poetry version is ok";\
-	else\
-		echo "Expected poetry version is not the expected one: $(POETRY_VERSION)"\
-		exit 1;\
 	fi
 
 .PHONY: python_format # Apply python formatting
@@ -712,9 +710,11 @@ check_supported_ops:
 	git diff docs/deep-learning/onnx_support.md
 	git diff --quiet docs/deep-learning/onnx_support.md
 
+# The log-opts option checks the whole history between the first commit and the current commit
+# The default of gitleaks it to check the whole history.
 .PHONY: gitleaks # Check for secrets in the repo using gitleaks
 gitleaks:
-	gitleaks --source "$${PWD}" detect --redact -v
+	gitleaks --source "$${PWD}" detect --redact -v --log-opts="$$(git rev-list HEAD | tail -n 1)..$$(git rev-parse HEAD)"
 
 .PHONY: sanity_check # Sanity checks, e.g. to check that a release is viable
 sanity_check:
@@ -760,6 +760,7 @@ check_links:
 	@#		markdown link checker, `local_link_check.sh`.
 	@#  --ignore-url=https://arxiv.org: this website returns a lots of timeouts
 	poetry run linkchecker docs --check-extern \
+		--no-warnings \
 		--ignore-url=_static/webpack-macros.html \
 		--ignore-url=https://www.conventionalcommits.org/en/v1.0.0/ \
 		--ignore-url=https://www.openml.org \

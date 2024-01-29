@@ -67,6 +67,7 @@
 - [`fhe_client_server.FHEModelServer`](./concrete.ml.deployment.fhe_client_server.md#class-fhemodelserver): Server API to load and run the FHE circuit.
 - [`ops_impl.ONNXMixedFunction`](./concrete.ml.onnx.ops_impl.md#class-onnxmixedfunction): A mixed quantized-raw valued onnx function.
 - [`ops_impl.RawOpOutput`](./concrete.ml.onnx.ops_impl.md#class-rawopoutput): Type construct that marks an ndarray as a raw output of a quantized op.
+- [`torch_models.AddNet`](./concrete.ml.pytest.torch_models.md#class-addnet): Torch model that performs a simple addition between two inputs.
 - [`torch_models.BranchingGemmModule`](./concrete.ml.pytest.torch_models.md#class-branchinggemmmodule): Torch model with some branching and skip connections.
 - [`torch_models.BranchingModule`](./concrete.ml.pytest.torch_models.md#class-branchingmodule): Torch model with some branching and skip connections.
 - [`torch_models.CNN`](./concrete.ml.pytest.torch_models.md#class-cnn): Torch CNN model for the tests.
@@ -76,14 +77,18 @@
 - [`torch_models.CNNOther`](./concrete.ml.pytest.torch_models.md#class-cnnother): Torch CNN model for the tests.
 - [`torch_models.ConcatFancyIndexing`](./concrete.ml.pytest.torch_models.md#class-concatfancyindexing): Concat with fancy indexing.
 - [`torch_models.DoubleQuantQATMixNet`](./concrete.ml.pytest.torch_models.md#class-doublequantqatmixnet): Torch model that with two different quantizers on the input.
+- [`torch_models.EncryptedMatrixMultiplicationModel`](./concrete.ml.pytest.torch_models.md#class-encryptedmatrixmultiplicationmodel): PyTorch module for performing matrix multiplication between two encrypted values.
+- [`torch_models.ExpandModel`](./concrete.ml.pytest.torch_models.md#class-expandmodel): Minimalist network that expands the input tensor to a larger size.
 - [`torch_models.FC`](./concrete.ml.pytest.torch_models.md#class-fc): Torch model for the tests.
 - [`torch_models.FCSeq`](./concrete.ml.pytest.torch_models.md#class-fcseq): Torch model that should generate MatMul->Add ONNX patterns.
 - [`torch_models.FCSeqAddBiasVec`](./concrete.ml.pytest.torch_models.md#class-fcseqaddbiasvec): Torch model that should generate MatMul->Add ONNX patterns.
 - [`torch_models.FCSmall`](./concrete.ml.pytest.torch_models.md#class-fcsmall): Torch model for the tests.
+- [`torch_models.ManualLogisticRegressionTraining`](./concrete.ml.pytest.torch_models.md#class-manuallogisticregressiontraining): PyTorch module for performing SGD training.
 - [`torch_models.MultiInputNN`](./concrete.ml.pytest.torch_models.md#class-multiinputnn): Torch model to test multiple inputs forward.
 - [`torch_models.MultiInputNNConfigurable`](./concrete.ml.pytest.torch_models.md#class-multiinputnnconfigurable): Torch model to test multiple inputs forward.
 - [`torch_models.MultiInputNNDifferentSize`](./concrete.ml.pytest.torch_models.md#class-multiinputnndifferentsize): Torch model to test multiple inputs with different shape in the forward pass.
 - [`torch_models.MultiOpOnSingleInputConvNN`](./concrete.ml.pytest.torch_models.md#class-multioponsingleinputconvnn): Network that applies two quantized operations on a single input.
+- [`torch_models.MultiOutputModel`](./concrete.ml.pytest.torch_models.md#class-multioutputmodel): Multi-output model.
 - [`torch_models.NetWithConcatUnsqueeze`](./concrete.ml.pytest.torch_models.md#class-netwithconcatunsqueeze): Torch model to test the concat and unsqueeze operators.
 - [`torch_models.NetWithConstantsFoldedBeforeOps`](./concrete.ml.pytest.torch_models.md#class-netwithconstantsfoldedbeforeops): Torch QAT model that does not quantize the inputs.
 - [`torch_models.NetWithLoops`](./concrete.ml.pytest.torch_models.md#class-netwithloops): Torch model, where we reuse some elements in a loop.
@@ -100,7 +105,6 @@
 - [`torch_models.TinyQATCNN`](./concrete.ml.pytest.torch_models.md#class-tinyqatcnn): A very small QAT CNN to classify the sklearn digits data-set.
 - [`torch_models.TorchCustomModel`](./concrete.ml.pytest.torch_models.md#class-torchcustommodel): A small network with Brevitas, trained on make_classification.
 - [`torch_models.TorchSum`](./concrete.ml.pytest.torch_models.md#class-torchsum): Torch model to test the ReduceSum ONNX operator in a leveled circuit.
-- [`torch_models.TorchSumMod`](./concrete.ml.pytest.torch_models.md#class-torchsummod): Torch model to test the ReduceSum ONNX operator in a circuit containing a PBS.
 - [`torch_models.UnivariateModule`](./concrete.ml.pytest.torch_models.md#class-univariatemodule): Torch model that calls univariate and shape functions of torch.
 - [`base_quantized_op.QuantizedMixingOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedmixingop): An operator that mixes (adds or multiplies) together encrypted inputs.
 - [`base_quantized_op.QuantizedOp`](./concrete.ml.quantization.base_quantized_op.md#class-quantizedop): Base class for quantized ONNX ops implemented in numpy.
@@ -126,8 +130,10 @@
 - [`quantized_ops.QuantizedConv`](./concrete.ml.quantization.quantized_ops.md#class-quantizedconv): Quantized Conv op.
 - [`quantized_ops.QuantizedDiv`](./concrete.ml.quantization.quantized_ops.md#class-quantizeddiv): Div operator /.
 - [`quantized_ops.QuantizedElu`](./concrete.ml.quantization.quantized_ops.md#class-quantizedelu): Quantized Elu op.
+- [`quantized_ops.QuantizedEqual`](./concrete.ml.quantization.quantized_ops.md#class-quantizedequal): Comparison operator ==.
 - [`quantized_ops.QuantizedErf`](./concrete.ml.quantization.quantized_ops.md#class-quantizederf): Quantized erf op.
 - [`quantized_ops.QuantizedExp`](./concrete.ml.quantization.quantized_ops.md#class-quantizedexp): Quantized Exp op.
+- [`quantized_ops.QuantizedExpand`](./concrete.ml.quantization.quantized_ops.md#class-quantizedexpand): Expand operator for quantized tensors.
 - [`quantized_ops.QuantizedFlatten`](./concrete.ml.quantization.quantized_ops.md#class-quantizedflatten): Quantized flatten for encrypted inputs.
 - [`quantized_ops.QuantizedFloor`](./concrete.ml.quantization.quantized_ops.md#class-quantizedfloor): Quantized Floor op.
 - [`quantized_ops.QuantizedGemm`](./concrete.ml.quantization.quantized_ops.md#class-quantizedgemm): Quantized Gemm op.
@@ -182,6 +188,7 @@
 - [`base.SklearnLinearClassifierMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearclassifiermixin): A Mixin class for sklearn linear classifiers with FHE.
 - [`base.SklearnLinearModelMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearmodelmixin): A Mixin class for sklearn linear models with FHE.
 - [`base.SklearnLinearRegressorMixin`](./concrete.ml.sklearn.base.md#class-sklearnlinearregressormixin): A Mixin class for sklearn linear regressors with FHE.
+- [`base.SklearnSGDClassifierMixin`](./concrete.ml.sklearn.base.md#class-sklearnsgdclassifiermixin): A Mixin class for sklearn SGD classifiers with FHE.
 - [`base.SklearnSGDRegressorMixin`](./concrete.ml.sklearn.base.md#class-sklearnsgdregressormixin): A Mixin class for sklearn SGD regressors with FHE.
 - [`glm.GammaRegressor`](./concrete.ml.sklearn.glm.md#class-gammaregressor): A Gamma regression model with FHE.
 - [`glm.PoissonRegressor`](./concrete.ml.sklearn.glm.md#class-poissonregressor): A Poisson regression model with FHE.
@@ -191,6 +198,7 @@
 - [`linear_model.LinearRegression`](./concrete.ml.sklearn.linear_model.md#class-linearregression): A linear regression model with FHE.
 - [`linear_model.LogisticRegression`](./concrete.ml.sklearn.linear_model.md#class-logisticregression): A logistic regression model with FHE.
 - [`linear_model.Ridge`](./concrete.ml.sklearn.linear_model.md#class-ridge): A Ridge regression model with FHE.
+- [`linear_model.SGDClassifier`](./concrete.ml.sklearn.linear_model.md#class-sgdclassifier): An FHE linear classifier model fitted with stochastic gradient descent.
 - [`linear_model.SGDRegressor`](./concrete.ml.sklearn.linear_model.md#class-sgdregressor): An FHE linear regression model fitted with stochastic gradient descent.
 - [`neighbors.KNeighborsClassifier`](./concrete.ml.sklearn.neighbors.md#class-kneighborsclassifier): A k-nearest neighbors classifier model with FHE.
 - [`qnn.NeuralNetClassifier`](./concrete.ml.sklearn.qnn.md#class-neuralnetclassifier): A Fully-Connected Neural Network classifier with FHE.
@@ -262,19 +270,23 @@
 - [`utils.wait_for_connection_to_be_available`](./concrete.ml.deployment.utils.md#function-wait_for_connection_to_be_available): Wait for connection to be available.
 - [`convert.fuse_matmul_bias_to_gemm`](./concrete.ml.onnx.convert.md#function-fuse_matmul_bias_to_gemm): Fuse sequence of matmul -> add into a gemm node.
 - [`convert.get_equivalent_numpy_forward_from_onnx`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_onnx): Get the numpy equivalent forward of the provided ONNX model.
+- [`convert.get_equivalent_numpy_forward_from_onnx_tree`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_onnx_tree): Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
 - [`convert.get_equivalent_numpy_forward_from_torch`](./concrete.ml.onnx.convert.md#function-get_equivalent_numpy_forward_from_torch): Get the numpy equivalent forward of the provided torch Module.
+- [`convert.preprocess_onnx_model`](./concrete.ml.onnx.convert.md#function-preprocess_onnx_model): Get the numpy equivalent forward of the provided ONNX model.
 - [`onnx_impl_utils.compute_conv_output_dims`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_conv_output_dims): Compute the output shape of a pool or conv operation.
 - [`onnx_impl_utils.compute_onnx_pool_padding`](./concrete.ml.onnx.onnx_impl_utils.md#function-compute_onnx_pool_padding): Compute any additional padding needed to compute pooling layers.
 - [`onnx_impl_utils.numpy_onnx_pad`](./concrete.ml.onnx.onnx_impl_utils.md#function-numpy_onnx_pad): Pad a tensor according to ONNX spec, using an optional custom pad value.
 - [`onnx_impl_utils.onnx_avgpool_compute_norm_const`](./concrete.ml.onnx.onnx_impl_utils.md#function-onnx_avgpool_compute_norm_const): Compute the average pooling normalization constant.
-- [`onnx_model_manipulations.clean_graph_after_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_op_type): Clean the graph of the onnx model by removing nodes after the given node type.
-- [`onnx_model_manipulations.clean_graph_at_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_at_node_op_type): Clean the graph of the onnx model by removing nodes at the given node type.
+- [`onnx_impl_utils.rounded_comparison`](./concrete.ml.onnx.onnx_impl_utils.md#function-rounded_comparison): Comparison operation using `round_bit_pattern` function.
+- [`onnx_model_manipulations.clean_graph_after_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_after_node_op_type): Remove the nodes following first node matching node_op_type from the ONNX graph.
+- [`onnx_model_manipulations.clean_graph_at_node_op_type`](./concrete.ml.onnx.onnx_model_manipulations.md#function-clean_graph_at_node_op_type): Remove the first node matching node_op_type and its following nodes from the ONNX graph.
 - [`onnx_model_manipulations.keep_following_outputs_discard_others`](./concrete.ml.onnx.onnx_model_manipulations.md#function-keep_following_outputs_discard_others): Keep the outputs given in outputs_to_keep and remove the others from the model.
 - [`onnx_model_manipulations.remove_identity_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_identity_nodes): Remove identity nodes from a model.
 - [`onnx_model_manipulations.remove_node_types`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_node_types): Remove unnecessary nodes from the ONNX graph.
 - [`onnx_model_manipulations.remove_unused_constant_nodes`](./concrete.ml.onnx.onnx_model_manipulations.md#function-remove_unused_constant_nodes): Remove unused Constant nodes in the provided onnx model.
 - [`onnx_model_manipulations.simplify_onnx_model`](./concrete.ml.onnx.onnx_model_manipulations.md#function-simplify_onnx_model): Simplify an ONNX model, removes unused Constant nodes and Identity nodes.
 - [`onnx_utils.execute_onnx_with_numpy`](./concrete.ml.onnx.onnx_utils.md#function-execute_onnx_with_numpy): Execute the provided ONNX graph on the given inputs.
+- [`onnx_utils.execute_onnx_with_numpy_trees`](./concrete.ml.onnx.onnx_utils.md#function-execute_onnx_with_numpy_trees): Execute the provided ONNX graph on the given inputs for tree-based models only.
 - [`onnx_utils.get_attribute`](./concrete.ml.onnx.onnx_utils.md#function-get_attribute): Get the attribute from an ONNX AttributeProto.
 - [`onnx_utils.get_op_type`](./concrete.ml.onnx.onnx_utils.md#function-get_op_type): Construct the qualified type name of the ONNX operator.
 - [`onnx_utils.remove_initializer_from_input`](./concrete.ml.onnx.onnx_utils.md#function-remove_initializer_from_input): Remove initializers from model inputs.
@@ -299,6 +311,7 @@
 - [`ops_impl.numpy_div`](./concrete.ml.onnx.ops_impl.md#function-numpy_div): Compute div in numpy according to ONNX spec.
 - [`ops_impl.numpy_elu`](./concrete.ml.onnx.ops_impl.md#function-numpy_elu): Compute elu in numpy according to ONNX spec.
 - [`ops_impl.numpy_equal`](./concrete.ml.onnx.ops_impl.md#function-numpy_equal): Compute equal in numpy according to ONNX spec.
+- [`ops_impl.numpy_equal_float`](./concrete.ml.onnx.ops_impl.md#function-numpy_equal_float): Compute equal in numpy according to ONNX spec and cast outputs to floats.
 - [`ops_impl.numpy_erf`](./concrete.ml.onnx.ops_impl.md#function-numpy_erf): Compute erf in numpy according to ONNX spec.
 - [`ops_impl.numpy_exp`](./concrete.ml.onnx.ops_impl.md#function-numpy_exp): Compute exponential in numpy according to ONNX spec.
 - [`ops_impl.numpy_flatten`](./concrete.ml.onnx.ops_impl.md#function-numpy_flatten): Flatten a tensor into a 2d array.
@@ -345,8 +358,12 @@
 - [`ops_impl.numpy_where`](./concrete.ml.onnx.ops_impl.md#function-numpy_where): Compute the equivalent of numpy.where.
 - [`ops_impl.numpy_where_body`](./concrete.ml.onnx.ops_impl.md#function-numpy_where_body): Compute the equivalent of numpy.where.
 - [`ops_impl.onnx_func_raw_args`](./concrete.ml.onnx.ops_impl.md#function-onnx_func_raw_args): Decorate a numpy onnx function to flag the raw/non quantized inputs.
+- [`ops_impl.rounded_numpy_equal_for_trees`](./concrete.ml.onnx.ops_impl.md#function-rounded_numpy_equal_for_trees): Compute rounded equal in numpy according to ONNX spec for tree-based models only.
+- [`ops_impl.rounded_numpy_less_for_trees`](./concrete.ml.onnx.ops_impl.md#function-rounded_numpy_less_for_trees): Compute rounded less in numpy according to ONNX spec for tree-based models only.
+- [`ops_impl.rounded_numpy_less_or_equal_for_trees`](./concrete.ml.onnx.ops_impl.md#function-rounded_numpy_less_or_equal_for_trees): Compute rounded less or equal in numpy according to ONNX spec for tree-based models only.
 - [`utils.check_serialization`](./concrete.ml.pytest.utils.md#function-check_serialization): Check that the given object can properly be serialized.
 - [`utils.data_calibration_processing`](./concrete.ml.pytest.utils.md#function-data_calibration_processing): Reduce size of the given data-set.
+- [`utils.get_random_samples`](./concrete.ml.pytest.utils.md#function-get_random_samples): Select `n_sample` random elements from a 2D NumPy array.
 - [`utils.get_sklearn_all_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_all_models_and_datasets): Get the pytest parameters to use for testing all models available in Concrete ML.
 - [`utils.get_sklearn_linear_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_linear_models_and_datasets): Get the pytest parameters to use for testing linear models.
 - [`utils.get_sklearn_neighbors_models_and_datasets`](./concrete.ml.pytest.utils.md#function-get_sklearn_neighbors_models_and_datasets): Get the pytest parameters to use for testing neighbor models.

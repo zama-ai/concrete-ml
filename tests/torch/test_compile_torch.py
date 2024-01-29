@@ -32,6 +32,7 @@ from concrete.ml.pytest.torch_models import (
     ConcatFancyIndexing,
     DoubleQuantQATMixNet,
     EncryptedMatrixMultiplicationModel,
+    ExpandModel,
     FCSmall,
     MultiInputNN,
     MultiInputNNConfigurable,
@@ -716,7 +717,7 @@ def test_compile_brevitas_qat(
             FC,
             (
                 """graph torch_jit (
-  %onnx::Gemm_0[FLOAT, 1x7]
+  %x[FLOAT, 1x7]
 ) initializers (
   %fc1.weight[FLOAT, 128x7]
   %fc1.bias[FLOAT, 128]
@@ -730,7 +731,7 @@ def test_compile_brevitas_qat(
   %fc5.bias[FLOAT, 10]
 ) {
   %/fc1/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
-                """(%onnx::Gemm_0, %fc1.weight, %fc1.bias)
+                """(%x, %fc1.weight, %fc1.bias)
   %/act_1/Relu_output_0 = Relu(%/fc1/Gemm_output_0)
   %/fc2/Gemm_output_0 = Gemm[alpha = 1, beta = 1, transB = 1]"""
                 """(%/act_1/Relu_output_0, %fc2.weight, %fc2.bias)
@@ -1132,10 +1133,14 @@ def test_net_has_no_tlu(
             assert "lookup_table" not in mlir
 
 
+@pytest.mark.parametrize(
+    "model_class", [pytest.param(ShapeOperationsNet), pytest.param(ExpandModel)]
+)
 @pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_qat", [True, False])
 @pytest.mark.parametrize("n_channels", [2])
 def test_shape_operations_net(
+    model_class,
     simulate,
     n_channels,
     is_qat,
@@ -1144,19 +1149,22 @@ def test_shape_operations_net(
     check_float_array_equal,
 ):
     """Test a pattern of reshaping, concatenation, chunk extraction."""
-    net = ShapeOperationsNet(is_qat)
+    model = model_class(is_qat)
+
+    # Shape transformation do not support >1 example in the inputset
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/3871
     inputset = numpy.random.uniform(size=(1, n_channels, 2, 2))
 
     if is_qat:
         quantized_module = compile_brevitas_qat_model(
-            net,
+            model,
             inputset,
             configuration=default_configuration,
             p_error=0.01,
         )
     else:
         quantized_module = compile_torch_model(
-            net,
+            model,
             inputset,
             configuration=default_configuration,
             n_bits=3,
@@ -1175,7 +1183,9 @@ def test_shape_operations_net(
 
         predictions = quantized_module.forward(inputset, fhe=fhe_mode)
 
-        torch_output = net(torch.tensor(inputset)).detach().numpy()
+        torch_output = model(torch.tensor(inputset)).detach().numpy()
+
+        assert predictions.shape == torch_output.shape, "Output shape must be the same."
 
         # In PTQ the results do not match because of a-priori set quantization options
         # Currently no solution for concat/reshape/transpose correctness in PTQ is proposed.

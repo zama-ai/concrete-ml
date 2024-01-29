@@ -67,7 +67,8 @@ build_quantized_module(
     torch_inputset: Union[Tensor, ndarray, Tuple[Union[Tensor, ndarray], ]],
     import_qat: bool = False,
     n_bits: Union[int, Dict[str, int]] = 8,
-    rounding_threshold_bits: Optional[int] = None
+    rounding_threshold_bits: Optional[int] = None,
+    reduce_sum_copy=False
 ) → QuantizedModule
 ```
 
@@ -82,6 +83,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 - <b>`import_qat`</b> (bool):  Flag to signal that the network being imported contains quantizers in  in its computation graph and that Concrete ML should not re-quantize it
 - <b>`n_bits`</b>:  the number of bits for the quantization
 - <b>`rounding_threshold_bits`</b> (int):  if not None, every accumulators in the model are rounded down  to the given bits of precision
+- <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
 
 **Returns:**
 
@@ -89,7 +91,7 @@ Take a model in torch or ONNX, turn it to numpy, quantize its inputs / weights /
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L215"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L224"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_torch_model`
 
@@ -106,7 +108,8 @@ compile_torch_model(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
-    inputs_encryption_status: Optional[Sequence[str]] = None
+    inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy: bool = False
 ) → QuantizedModule
 ```
 
@@ -128,6 +131,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
 - <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
+- <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
 
 **Returns:**
 
@@ -135,7 +139,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L288"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L301"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_onnx_model`
 
@@ -152,7 +156,8 @@ compile_onnx_model(
     p_error: Optional[float] = None,
     global_p_error: Optional[float] = None,
     verbose: bool = False,
-    inputs_encryption_status: Optional[Sequence[str]] = None
+    inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy: bool = False
 ) → QuantizedModule
 ```
 
@@ -174,6 +179,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 - <b>`global_p_error`</b> (Optional\[float\]):  probability of error of the full circuit. In FHE  simulation `global_p_error` is set to 0
 - <b>`verbose`</b> (bool):  whether to show compilation information
 - <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
+- <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
 
 **Returns:**
 
@@ -181,7 +187,7 @@ Take a model in torch, turn it to numpy, quantize its inputs / weights / outputs
 
 ______________________________________________________________________
 
-<a href="../../../src/concrete/ml/torch/compile.py#L357"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
+<a href="../../../src/concrete/ml/torch/compile.py#L374"><img align="right" style="float:right;" src="https://img.shields.io/badge/-source-cccccc?style=flat-square"></a>
 
 ## <kbd>function</kbd> `compile_brevitas_qat_model`
 
@@ -198,7 +204,8 @@ compile_brevitas_qat_model(
     global_p_error: Optional[float] = None,
     output_onnx_file: Union[NoneType, Path, str] = None,
     verbose: bool = False,
-    inputs_encryption_status: Optional[Sequence[str]] = None
+    inputs_encryption_status: Optional[Sequence[str]] = None,
+    reduce_sum_copy: bool = False
 ) → QuantizedModule
 ```
 
@@ -220,6 +227,7 @@ The torch_model parameter is a subclass of torch.nn.Module that uses quantized o
 - <b>`output_onnx_file`</b> (str):  temporary file to store ONNX model. If None a temporary file  is generated
 - <b>`verbose`</b> (bool):  whether to show compilation information
 - <b>`inputs_encryption_status`</b> (Optional\[Sequence\[str\]\]):  encryption status ('clear', 'encrypted')  for each input. By default all arguments will be encrypted.
+- <b>`reduce_sum_copy`</b> (bool):  if the inputs of QuantizedReduceSum should be copied to avoid  bit-width propagation
 
 **Returns:**
 

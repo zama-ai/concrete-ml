@@ -8,8 +8,8 @@
 from typing import Any, Dict, Optional, Sequence, Set, Union
 
 import numpy
-from concrete.fhe import conv as cnp_conv
-from concrete.fhe import maxpool as cnp_maxpool
+from concrete.fhe import conv as fhe_conv
+from concrete.fhe import maxpool as fhe_maxpool
 from concrete.fhe import tag, univariate, zeros
 from typing_extensions import SupportsIndex
 
@@ -363,6 +363,7 @@ class QuantizedGemm(QuantizedMixingOp):
         # This strategy is particularly important to make sure PBS in all branches are done on the
         # pre-defined precision. The use of the copy is conditional, applied only when needed
         # to optimize performance.
+
         input1_q_values_copy = (
             copy_function(input1_q_values) if is_encrypted_gemm else input1_q_values
         )
@@ -511,7 +512,6 @@ class QuantizedAdd(QuantizedMixingOp):
         *q_inputs: ONNXOpInputOutputType,
         **attrs,
     ) -> ONNXOpInputOutputType:
-
         # If operating over all raw inputs, just perform the op in the clear
         if all(isinstance(q_input, RawOpOutput) for q_input in q_inputs):
             prepared_inputs = self._prepare_inputs_with_constants(
@@ -591,13 +591,7 @@ class QuantizedAdd(QuantizedMixingOp):
         # Moreover, the zero-point will be sum of input zero-points
         assert self.b_sign in [-1, 1]
 
-        # This lines will be simplified into
-        #       sum_q = rescale_q0 + self.b_sign * rescale_q1
-        # when zama-ai/concrete-numpy-internal#1749 is done
-        if self.b_sign == 1:
-            sum_q = q_input_0_rescaled + q_input_1_rescaled
-        elif self.b_sign == -1:
-            sum_q = q_input_0_rescaled - q_input_1_rescaled
+        sum_q = q_input_0_rescaled + self.b_sign * q_input_1_rescaled
 
         if self.produces_graph_output:
             return self.make_output_quant_parameters(sum_q, common_scale, common_zero_point)
@@ -878,7 +872,7 @@ class QuantizedConv(QuantizedMixingOp):
         fake_pads = [0] * len(self.pads)
 
         with tag(self.op_instance_name + ".conv"):
-            conv_wx = cnp_conv(
+            conv_wx = fhe_conv(
                 q_input_pad,
                 q_weights.qvalues,
                 bias=None,
@@ -902,7 +896,7 @@ class QuantizedConv(QuantizedMixingOp):
                 f"op {self.op_instance_name} must be integer",
             )
             with tag(self.op_instance_name + ".conv_inputsum"):
-                zw_conv_1x = -q_weights.quantizer.zero_point * cnp_conv(
+                zw_conv_1x = -q_weights.quantizer.zero_point * fhe_conv(
                     q_input_pad,
                     q_weights_1,
                     bias=None,
@@ -1112,7 +1106,7 @@ class QuantizedAvgPool(QuantizedMixingOp):
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
         with tag(self.op_instance_name + ".avgpool"):
-            sum_result = cnp_conv(q_input_pad, kernel, None, fake_pads, self.strides)
+            sum_result = fhe_conv(q_input_pad, kernel, None, fake_pads, self.strides)
 
         with tag(self.op_instance_name + ".avgpool_rounding"):
             # Apply Concrete rounding (if relevant)
@@ -1229,7 +1223,7 @@ class QuantizedMaxPool(QuantizedOp):
         # 0's while we want to pad with zero-point's. So, instead, he have done the padding
         # on our side, with q_input_pad
         fake_pads = [0] * len(self.pads)
-        sum_result = cnp_maxpool(
+        sum_result = fhe_maxpool(
             q_input_pad,
             kernel_shape=self.kernel_shape,
             strides=self.strides,
@@ -1684,6 +1678,7 @@ class QuantizedReduceSum(QuantizedMixingOp):
         # this type difference
         self.keepdims = bool(attrs.get("keepdims", 1))
         self.noop_with_empty_axes = attrs.get("noop_with_empty_axes", 0)
+        self.copy_inputs = False
 
     def calibrate(self, *inputs: numpy.ndarray) -> numpy.ndarray:
         """Create corresponding QuantizedArray for the output of the activation function.
@@ -1712,12 +1707,14 @@ class QuantizedReduceSum(QuantizedMixingOp):
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,
         **attrs,
     ) -> ONNXOpInputOutputType:
         """Sum the encrypted tensor's values along the given axes.
 
         Args:
             q_inputs (QuantizedArray): An encrypted integer tensor at index 0.
+            calibrate_rounding (bool): Whether to calibrate rounding or not.
             attrs (Dict): Options are handled in constructor.
 
         Returns:
@@ -1728,30 +1725,65 @@ class QuantizedReduceSum(QuantizedMixingOp):
             *q_inputs, calibrate=False, quantize_actual_values=True
         )
 
-        # Retrieve values and axes parameters
+        assert_true(
+            isinstance(prepared_inputs[0], (QuantizedArray)),
+            "Prepared inputs' values should be found in a QuantizedArray. "
+            f"Got {type(prepared_inputs[0])}",
+        )
+
+        assert_true(
+            isinstance(prepared_inputs[1], numpy.ndarray),
+            "ReduceSum axis parameter should be a Numpy array. " f"Got {type(prepared_inputs[1])}",
+        )
+
+        # Retrieve the quantized values and the axes to sum over
+        # Parameter "axis" Numpy's sum operator has to be a tuple (and not an array)
         q_values = prepared_inputs[0].qvalues
-        axes = prepared_inputs[1]
+        axes = tuple(prepared_inputs[1])
 
-        # Sum all the quantized values
-        q_sum = numpy.sum(q_values, axis=axes, keepdims=self.keepdims)
+        assert_true(
+            0 not in axes,
+            "ReduceSum axis parameter should not contain axis 0 as it is used for batching "
+            f"the inference. Got {axes}",
+        )
 
-        # Determining the number of output zero_points to use for de-quantization with the total
-        # number of elements summed all together, which is the product of all the number of elements
-        # found within the given axes
-        n_elem = numpy.prod([q_values.shape[axis] for axis in axes])
+        with tag(self.op_instance_name):
 
-        # Determining the output scale and zero_point
-        input_quantizer = prepared_inputs[0].quantizer
-        scale = input_quantizer.scale
-        zero_point = n_elem * input_quantizer.zero_point
+            # Need to copy to prevent the following sum to raise precision of the input
+            # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4127
+            @univariate
+            def copy_function(x):
+                return x
 
-        # If this operator is the graph's last operator, there's is no need to created additional
-        # TLUs
-        if self.produces_graph_output:
-            return self.make_output_quant_parameters(q_sum, scale, zero_point)
+            if self.copy_inputs:
+                q_values = copy_function(q_values)
+
+            # Sum all the quantized values
+            q_sum = numpy.sum(q_values, axis=axes, keepdims=self.keepdims)
+
+            # Determining the number of output zero_points to use for de-quantization with
+            # the total number of elements summed all together, which is the product of all
+            # the number of elements found within the given axes
+            n_elem = numpy.prod([q_values.shape[axis] for axis in axes])
+
+            # Determining the output scale and zero_point
+            input_quantizer = prepared_inputs[0].quantizer
+            scale = input_quantizer.scale
+            zero_point = n_elem * input_quantizer.zero_point
+
+            # If this operator is the graph's last operator,
+            # there's is no need to created additional TLUs
+            if self.produces_graph_output:
+                return self.make_output_quant_parameters(q_sum, scale, zero_point)
+
+            f_substract = q_sum - zero_point
+
+        with tag(self.op_instance_name + ".rounding"):
+            # Apply Concrete rounding (if relevant)
+            f_substract = self.cnp_round(f_substract, calibrate_rounding)
 
         # De-quantize the sum
-        f_sum = scale * (q_sum - zero_point)
+        f_sum = scale * f_substract
 
         sum_qarray = QuantizedArray(
             self.n_bits,
@@ -1763,73 +1795,6 @@ class QuantizedReduceSum(QuantizedMixingOp):
         )
 
         return sum_qarray
-
-    def _prepare_inputs_with_constants(
-        self,
-        *inputs: ONNXOpInputOutputType,
-        calibrate: bool,
-        quantize_actual_values: bool,
-    ):
-        """Retrieve all the inputs of an operator in the computational graph.
-
-        This helper method will prepare a list of inputs to an operator. Inputs can be variables,
-        i.e., encrypted tensors, or constants (in the clear). Inputs to an operator are set-up in
-        the slots of a list, as the order of inputs is important.
-
-        Usually the input list is populated with QuantizedArrays. Operators that require the
-        original float (operators that only produce or contribute to TLUs) values will just read
-        out the .values of  these quantized arrays. Operators that do matrix multiplication will
-        read out the quantized integer values of the arrays.  The method can be called during
-        calibration, in which case the variable inputs are just float numpy tensors.
-
-        Args:
-             *inputs (ONNXOpInputOutputType): A list of all variable inputs
-            calibrate (bool): A flag specifying if the method is called during calibration
-            quantize_actual_values (bool): If called by a quantized operator that does matrix
-                multiplication between encrypted and clear values, this method will apply
-                the quantization computation to the input, which will be fused in a (potentially
-                larger) TLU, with preceding floating point computations
-
-        Returns:
-            result (List): a list of inputs which are either QuantizedArray or numpy.arrays. If
-                quantize_actual_values==True then the quantization code is applied
-        """
-        prepared_inputs = super()._prepare_inputs_with_constants(
-            *inputs,
-            calibrate=calibrate,
-            quantize_actual_values=quantize_actual_values,
-        )
-
-        assert_true(
-            isinstance(prepared_inputs[0], (numpy.ndarray, QuantizedArray)),
-            "Prepared inputs's first element should either be a Numpy array of QuantizedArray. "
-            f"Got {type(prepared_inputs[0])}",
-        )
-
-        # Retrieve the input array's shape. The first elements is either an array or a
-        # QuantizedArray depending on if the method is used for calibration or not
-        if isinstance(prepared_inputs[0], numpy.ndarray):
-            shape = prepared_inputs[0].shape
-        elif isinstance(prepared_inputs[0], QuantizedArray):
-            shape = prepared_inputs[0].qvalues.shape
-
-        assert_true(
-            isinstance(prepared_inputs[1], numpy.ndarray) or prepared_inputs[1] is None,
-            "ReduceSum axis parameter should either be a Numpy array or None. "
-            f"Got {type(prepared_inputs[1])}",
-        )
-
-        # Retrieve the axis parameter
-        axes = prepared_inputs[1]
-
-        # As the calibration input-set and inputs are ran over several samples, we need to apply the
-        # sum on all the given axes except the first one (the sample axis), including when axes is
-        # set to None (i.e., sum over all axes).
-        prepared_inputs[1] = (
-            tuple(axes + 1) if axes is not None else tuple(numpy.arange(1, len(shape)))
-        )
-
-        return prepared_inputs
 
 
 class QuantizedErf(QuantizedOp):
@@ -2430,3 +2395,87 @@ class ONNXSlice(QuantizedOp):
             bool: False, this operation can not be fused
         """
         return False
+
+
+class QuantizedExpand(QuantizedOp):
+    """Expand operator for quantized tensors."""
+
+    _impl_for_op_named: str = "Expand"
+    quantize_inputs_with_model_outputs_precision = True
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+        """Expand the input tensor to a specified shape.
+
+        Args:
+            q_inputs: an encrypted integer tensor at index 0, shape at index 1
+            attrs: additional optional expand options
+
+        Returns:
+            result (QuantizedArray): expanded encrypted integer tensor
+        """
+
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+
+        # Ensure the input is a quantized array
+        assert isinstance(q_inputs[0], QuantizedArray)
+
+        target_shape = prepared_inputs[1]
+
+        # Return a new quantized array with the same quantization parameters
+        return QuantizedArray(
+            q_inputs[0].quantizer.n_bits,
+            self.call_impl(prepared_inputs[0].qvalues, target_shape, **attrs),
+            value_is_float=False,
+            options=self._get_output_quant_opts(),
+            stats=prepared_inputs[0].quantizer.quant_stats,
+            params=prepared_inputs[0].quantizer.quant_params,
+        )
+
+    def can_fuse(self) -> bool:
+        """Determine if this op can be fused.
+
+        Unsqueeze can not be fused since it must be performed over integer tensors as
+        it reshapes an encrypted tensor.
+
+        Returns:
+            bool: False, this operation can not be fused as it operates on encrypted tensors
+        """
+        return False
+
+
+class QuantizedEqual(QuantizedOp):
+    """Comparison operator ==.
+
+    Only supports comparison with a constant.
+    """
+
+    _impl_for_op_named: str = "Equal"
+
+    # Since this op takes a single variable input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        op_instance_name: str,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
+
+        # We do not support testing a == b where a,b are encrypted
+        # only comparing to a constant is supported
+        assert_true(constant_inputs is not None and len(constant_inputs) >= 1)

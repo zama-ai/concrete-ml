@@ -21,6 +21,7 @@ from .linear_model import (
     LinearRegression,
     LogisticRegression,
     Ridge,
+    SGDClassifier,
     SGDRegressor,
 )
 from .neighbors import KNeighborsClassifier
