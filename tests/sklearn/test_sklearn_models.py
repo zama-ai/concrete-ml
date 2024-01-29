@@ -1138,7 +1138,7 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
     )
 
 
-def check_rounding_consistency(
+def check_truncate_consistency(
     model,
     x,
     y,
@@ -1146,53 +1146,53 @@ def check_rounding_consistency(
     metric,
     is_weekly_option,
 ):
-    """Test that Concrete ML without and with rounding are 'equivalent'."""
+    """Test that Concrete ML without and with truncate are 'equivalent'."""
 
     # Run the test with more samples during weekly CIs
     if is_weekly_option:
         fhe_test = get_random_samples(x, n_sample=5)
 
-    # Check that rounding is enabled
-    assert os.environ.get("TREES_USE_ROUNDING") == "1", "'TREES_USE_ROUNDING' is not enabled"
+    # Check that truncate is enabled
+    assert os.environ.get("TREES_USE_TRUNCATE") == "1", "'TREES_USE_TRUNCATE' is not enabled"
 
-    # Fit and compile with rounding enabled
+    # Fit and compile with truncate enabled
     fit_and_compile(model, x, y)
 
-    rounded_predict_quantized = predict_method(x, fhe="disable")
-    rounded_predict_simulate = predict_method(x, fhe="simulate")
+    truncate_predict_quantized = predict_method(x, fhe="disable")
+    truncate_predict_simulate = predict_method(x, fhe="simulate")
 
     # Compute the FHE predictions only during weekly CIs
     if is_weekly_option:
-        rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
+        truncate_predict_fhe = predict_method(fhe_test, fhe="execute")
 
     with pytest.MonkeyPatch.context() as mp_context:
 
-        # Disable rounding
-        mp_context.setenv("TREES_USE_ROUNDING", "0")
+        # Disable truncate
+        mp_context.setenv("TREES_USE_TRUNCATE", "0")
 
-        # Check that rounding is disabled
-        assert os.environ.get("TREES_USE_ROUNDING") == "0", "'TREES_USE_ROUNDING' is not disabled"
+        # Check that truncate is disabled
+        assert os.environ.get("TREES_USE_TRUNCATE") == "0", "'TREES_USE_TRUNCATE' is not disabled"
 
         with pytest.warns(
             DeprecationWarning,
             match=(
-                "Using Concrete tree-based models without the `rounding feature` is " "deprecated.*"
+                "Using Concrete tree-based models without the `truncate feature` is " "deprecated.*"
             ),
         ):
 
-            # Fit and compile without rounding
+            # Fit and compile without truncate
             fit_and_compile(model, x, y)
 
-        not_rounded_predict_quantized = predict_method(x, fhe="disable")
-        not_rounded_predict_simulate = predict_method(x, fhe="simulate")
+        not_truncate_predict_quantized = predict_method(x, fhe="disable")
+        not_truncate_predict_simulate = predict_method(x, fhe="simulate")
 
-        metric(rounded_predict_quantized, not_rounded_predict_quantized)
-        metric(rounded_predict_simulate, not_rounded_predict_simulate)
+        metric(truncate_predict_quantized, not_truncate_predict_quantized)
+        metric(truncate_predict_simulate, not_truncate_predict_simulate)
 
         # Compute the FHE predictions only during weekly CIs
         if is_weekly_option:
-            not_rounded_predict_fhe = predict_method(fhe_test, fhe="execute")
-            metric(rounded_predict_fhe, not_rounded_predict_fhe)
+            not_truncate_predict_fhe = predict_method(fhe_test, fhe="execute")
+            metric(truncate_predict_fhe, not_truncate_predict_fhe)
 
         # Check that the maximum bit-width of the circuit with rounding is at most:
         # maximum bit-width (of the circuit without rounding) + 2
@@ -1881,7 +1881,7 @@ def test_linear_models_have_no_tlu(
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4179
 @pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
 @pytest.mark.parametrize("n_bits", [2, 5, 10])
-def test_rounding_consistency_for_regular_models(
+def test_truncate_consistency_for_regular_models(
     model_class,
     parameters,
     n_bits,
@@ -1894,7 +1894,7 @@ def test_rounding_consistency_for_regular_models(
     """Test that Concrete ML without and with rounding are 'equivalent'."""
 
     if verbose:
-        print("Run check_rounding_consistency")
+        print("Run check_truncate_consistency")
 
     model = instantiate_model_generic(model_class, n_bits=n_bits)
 
@@ -1909,7 +1909,7 @@ def test_rounding_consistency_for_regular_models(
         predict_method = model.predict
         metric = check_accuracy
 
-    check_rounding_consistency(
+    check_truncate_consistency(
         model,
         x,
         y,

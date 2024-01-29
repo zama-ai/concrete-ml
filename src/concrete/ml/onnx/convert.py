@@ -4,7 +4,7 @@ import inspect
 import tempfile
 import warnings
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Tuple, Union
 
 import numpy
 import onnx
@@ -255,7 +255,7 @@ def get_equivalent_numpy_forward_from_onnx(
 def get_equivalent_numpy_forward_from_onnx_tree(
     onnx_model: onnx.ModelProto,
     check_model: bool = True,
-    auto_truncate = None,
+    auto_truncate=None,
 ) -> Tuple[Callable[..., Tuple[numpy.ndarray, ...]], onnx.ModelProto]:
     """Get the numpy equivalent forward of the provided ONNX model for tree-based models only.
 
@@ -264,7 +264,7 @@ def get_equivalent_numpy_forward_from_onnx_tree(
             forward.
         check_model (bool): set to True to run the onnx checker on the model.
             Defaults to True.
-        auto_truncate: This parameter is exclusively used for
+        auto_truncate (TODO): This parameter is exclusively used for
             optimizing tree-based models. It contains the values of the least significant bits to
             remove during the tree traversal, where the first value refers to the first comparison
             (either "less" or "less_or_equal"), while the second value refers to the "Equal"

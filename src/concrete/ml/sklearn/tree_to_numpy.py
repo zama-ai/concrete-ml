@@ -1,7 +1,7 @@
 """Implements the conversion of a tree model to a numpy function."""
 import math
 import warnings
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Tuple
 
 import numpy
 import onnx
@@ -330,7 +330,7 @@ def tree_to_numpy(
     model: Callable,
     x: numpy.ndarray,
     framework: str,
-    auto_truncate: bool = None,
+    auto_truncate=None,
     fhe_ensembling: bool = False,
     output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
@@ -339,7 +339,7 @@ def tree_to_numpy(
     Args:
         model (Callable): The tree model to convert.
         x (numpy.ndarray): The input data.
-        auto_truncate (bool): Determines whether the rounding feature is enabled or disabled.
+        auto_truncate (TODO): Determines whether the rounding feature is enabled or disabled.
             Default to True.
         fhe_ensembling (bool): Determines whether the sum of the trees' outputs is computed in FHE.
             Default to False.
@@ -364,15 +364,6 @@ def tree_to_numpy(
 
     # Execute with 1 example for efficiency in large data scenarios to prevent slowdown
     onnx_model = get_onnx_model(model, x[:1], framework)
-
-    # # Compute for tree-based models the LSB to remove in stage 1 and stage 2
-    # if use_rounding:
-    #     # First LSB refers to Less or LessOrEqual comparisons
-    #     # Second LSB refers to Equal comparison
-    #     lsbs_to_remove_for_trees = _compute_lsb_to_remove_for_trees(onnx_model, x)
-
-    #     # mypy
-    #     assert len(lsbs_to_remove_for_trees) == 2
 
     # Get the expected number of ONNX outputs in the sklearn model.
     expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2

@@ -213,7 +213,7 @@
 
 # Original file:
 # https://github.com/google/jax/blob/f6d329b2d9b5f83c6a59e5739aa1ca8d4d1ffa1c/examples/onnx2xla.py
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Tuple
 
 import numpy
 import onnx
@@ -413,7 +413,7 @@ ONNX_COMPARISON_OPS_TO_NUMPY_IMPL_BOOL: Dict[str, Callable[..., Tuple[numpy.ndar
 }
 # All numpy operators used for tree-based models that support auto rounding
 ONNX_COMPARISON_OPS_TO_ROUNDED_TREES_NUMPY_IMPL_BOOL = {
-    "Less": rounded_numpy_less_for_trees,
+    "Less": rounded_numpy_less_for_trees,  # type: ignore[dict-item]
     "Equal": rounded_numpy_equal_for_trees,
     "LessOrEqual": rounded_numpy_less_or_equal_for_trees,
 }

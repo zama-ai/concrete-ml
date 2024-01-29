@@ -892,7 +892,7 @@ def rounded_numpy_equal_for_trees(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    auto_truncate = None,
+    auto_truncate=None,
 ) -> Tuple[numpy.ndarray]:
     """Compute rounded equal in numpy according to ONNX spec for tree-based models only.
 
@@ -923,7 +923,6 @@ def rounded_numpy_equal_for_trees(
 
     # Else, default numpy_equal operator
     return (numpy.equal(x, y),)
-
 
 
 def numpy_equal_float(
@@ -1096,7 +1095,6 @@ def rounded_numpy_less_for_trees(
     # numpy.less(x, y) is equivalent to :
     # x - y <= 0 => round_bit_pattern(x - y - half) < 0
     if auto_truncate is not None:
-        #print("Use truncate for <")
         return rounded_comparison(x, y, auto_truncate, operation=lambda x: x < 0)
 
     # Else, default numpy_less operator
@@ -1145,7 +1143,7 @@ def rounded_numpy_less_or_equal_for_trees(
     x: numpy.ndarray,
     y: numpy.ndarray,
     *,
-    auto_truncate = None,
+    auto_truncate=None,
 ) -> Tuple[numpy.ndarray]:
     """Compute rounded less or equal in numpy according to ONNX spec for tree-based models only.
 
@@ -1161,21 +1159,15 @@ def rounded_numpy_less_or_equal_for_trees(
         Tuple[numpy.ndarray]: Output tensor
     """
 
-    # numpy.less_equal(x, y) <= 0 is equivalent to :
-    # np.less_equal(x, y), truncate_bit_pattern((y - x), lsbs_to_remove=r) >=  0
-    # option 1: x - y <= 0 => round_bit_pattern(x - y) <= 0 
-    #   gives bad results for : 0 < x - y <= 2**lsbs_to_remove because truncate_bit_pattern(x - y, lsb) = 0
-    # option 2: y - x >= 0 => round_bit_pattern(y - x) >= 0
-
-    if auto_truncate is not None:
-        #print("Use truncate for <=")
-        return rounded_comparison(y, x, auto_truncate, operation=lambda x: x >= 0)
     # numpy.less_equal(x, y) <= y is equivalent to :
-    # option 1: x - y <= 0 => round_bit_pattern(x - y + half) <= 0 or
-    # option 2: y - x >= 0 => round_bit_pattern(y - x - half) >= 0
+    # option 1: x - y <= 0 => truncate_bit_pattern(x - y + half) <= 0 or
+    # option 2: y - x >= 0 => truncate_bit_pattern(y - x - half) >= 0
 
     # Option 2 is selected because it adheres to the established pattern in `rounded_comparison`
-    # which does: (a - b) - half.
+    # which does: (a - b).
+
+    if auto_truncate is not None:
+        return rounded_comparison(y, x, auto_truncate, operation=lambda x: x >= 0)
 
     # Else, default numpy_less_or_equal operator
     return numpy_less_or_equal(x, y)
