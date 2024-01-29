@@ -270,12 +270,21 @@ pytest_no_flaky: check_current_flaky_tests
 
 # Runnning latest failed tests works by accessing pytest's cache. It is therefore recommended to
 # call '--cache-clear' when calling the previous pytest run. 
+# --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
+# --cov-append is to make the coverage of the previous pytest run to also consider the tests that are
+# going to be re-executed by 'pytest_run_last_failed'
+# --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --last-failed runs all last failed tests
 # --last-failed-no-failures none' indicates pytest not to run anything (instead of running 
 # all tests over again) if no failed tests are found
 .PHONY: pytest_run_last_failed # Run all failed tests from the previous pytest run
 pytest_run_last_failed:
-	poetry run pytest $(TEST) --last-failed --last-failed-no-failures none
+	poetry run pytest $(TEST) \
+	--cov=$(SRC_DIR) \
+	--cov-append \
+	--global-coverage-infos-json=global-coverage-infos.json \
+	--last-failed \
+	--last-failed-no-failures none
 
 .PHONY: pytest_one # Run pytest on a single file or directory (TEST)
 pytest_one:
