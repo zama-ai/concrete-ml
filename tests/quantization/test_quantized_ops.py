@@ -2036,7 +2036,7 @@ def test_quantized_shape(shape):
             (1, 2, 0, 4),
             1,
         ),
-        (   # this test fails because of padding
+        (  # this test fails because of padding
             numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 16, 16)),
             (2, 2),
             (4, 4),
