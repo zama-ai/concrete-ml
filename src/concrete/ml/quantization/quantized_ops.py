@@ -2479,3 +2479,145 @@ class QuantizedEqual(QuantizedOp):
         # We do not support testing a == b where a,b are encrypted
         # only comparing to a constant is supported
         assert_true(constant_inputs is not None and len(constant_inputs) >= 1)
+
+
+class QuantizedUnfold(QuantizedMixingOp):
+    """Quantized Unfold op."""
+
+    _impl_for_op_named: str = "Unfold"
+
+    # Since this op takes a single input, we can set int_input_names to a single default id
+    def __init__(
+        self,
+        n_bits_output: int,
+        op_instance_name: str,
+        int_input_names: Set[str] = None,
+        constant_inputs: Optional[Union[Dict[str, Any], Dict[int, Any]]] = None,
+        input_quant_opts: QuantizationOptions = None,
+        **attrs,
+    ) -> None:
+
+        super().__init__(
+            n_bits_output,
+            op_instance_name,
+            int_input_names,
+            constant_inputs,
+            input_quant_opts,
+            **attrs,
+        )
+
+        # Get the ONNX parameters
+        self.ceil_mode = attrs.get("ceil_mode", None)
+        self.kernel_shape = attrs.get("kernel_shape", None)
+        self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
+        self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
+        self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
+
+        # Validate the parameters
+        assert_true(
+            len(self.kernel_shape) == 2,
+            "The Unfold operator currently supports only 2d",
+        )
+        assert_true(
+            len(self.kernel_shape) == len(self.strides),
+            "The Unfold operator requires the number of strides to "
+            "be the same as the number of kernel dimensions",
+        )
+        assert_true(
+            len(self.pads) == 2 * len(self.kernel_shape),
+            "The Unfold operator in Concrete ML requires padding to be specified as "
+            " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
+            " standard",
+        )
+
+        self.kernel: Union[numpy.ndarray, None] = None
+        self.norm_const: Union[float, None] = None
+
+    def q_impl(
+        self,
+        *q_inputs: ONNXOpInputOutputType,
+        calibrate_rounding: bool = False,
+        **attrs,
+    ) -> ONNXOpInputOutputType:
+
+        # Retrieve the quantized inputs
+        prepared_inputs = self._prepare_inputs_with_constants(
+            *q_inputs, calibrate=False, quantize_actual_values=True
+        )
+        q_input: QuantizedArray = prepared_inputs[0]
+
+        n_in_channels = q_input.qvalues.shape[1]
+        kernels = []
+        for _ in range(n_in_channels):
+            for row in range(self.kernel_shape[0]):
+                for col in range(self.kernel_shape[1]):
+                    kernel = numpy.zeros(
+                        (1, 1, self.kernel_shape[0], self.kernel_shape[1]),
+                        dtype=numpy.int64,
+                    )
+                    kernel[:, :, row, col] = 1
+                    kernels.append(kernel)
+        kernels = numpy.concatenate(numpy.array(kernels), axis=0, dtype=numpy.int64)
+
+        # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
+        # parameters (i.e., were fully constructed). This should always be the case, except
+        # during the UniformQuantizer initialization when the zero_point can exist as None
+        assert q_input.quantizer.zero_point is not None
+
+        # Compute padding with floor and apply it to the input, pad with the input zero-point
+        pool_pads = compute_onnx_pool_padding(
+            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
+        )
+
+        # Can only pad with scalar zero-points, but zero-points can be float in special cases
+        # for output layers
+        _check_op_input_zero_point(q_input.quantizer.zero_point, self.op_instance_name)
+        pad_value = int(q_input.quantizer.zero_point)
+        q_input_pad = numpy_onnx_pad(q_input.qvalues, pool_pads, pad_value, int_only=True)
+
+        if self.ceil_mode == 1:
+            # Padding for TensorFlow style
+
+            # Compute padding with ceil and apply it to the input, pad with zeros, the zeros
+            # will be ignored in the computation
+            pool_pads_ceil = compute_onnx_pool_padding(
+                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 1
+            )
+
+            # Can only pad with scalar zero-points, but zero-points can be float in special cases
+            # for output layers
+            q_input_pad_ceil = numpy_onnx_pad(q_input.qvalues, pool_pads_ceil, 0, True)
+
+            # Copy the PyTorch style padded input to the larger 0 padded tensor
+            q_input_pad_ceil[:, :, 0 : q_input_pad.shape[2], 0 : q_input_pad.shape[3]] = q_input_pad
+            q_input_pad = q_input_pad_ceil
+
+        # Remark that here, we are _not_ using Concrete pad, since it would pad with
+        # 0's while we want to pad with zero-point's. So, instead, he have done the padding
+        # on our side, with q_input_pad
+        fake_pads = [0] * len(self.pads)
+
+        with tag(self.op_instance_name + ".unfold"):
+            sum_result = fhe_conv(
+                q_input_pad, kernels, None, fake_pads, self.strides, None, None, n_in_channels
+            )
+
+        if self.debug_value_tracker is not None:
+            # pylint: disable-next=unsubscriptable-object
+            self.debug_value_tracker[self.op_instance_name]["output"] = sum_result
+
+        result = (
+            sum_result.astype(numpy.float64) - q_input.quantizer.zero_point
+        ) * q_input.quantizer.scale
+
+        # Reshape to fit the same shape output as unfold
+        result = result.reshape((result.shape[0], result.shape[1], -1))
+
+        return QuantizedArray(
+            self.n_bits,
+            result,
+            value_is_float=True,
+            options=self._get_output_quant_opts(),
+            stats=self.output_quant_stats,
+            params=self.output_quant_params,
+        )

@@ -78,6 +78,7 @@ from concrete.ml.quantization.quantized_ops import (
     QuantizedSub,
     QuantizedTanh,
     QuantizedTranspose,
+    QuantizedUnfold,
     QuantizedUnsqueeze,
     QuantizedWhere,
 )
@@ -1979,4 +1980,115 @@ def test_quantized_shape(shape):
     # Test the serialization of ONNXShape
     check_serialization(
         q_op, ONNXShape, equal_method=partial(quantized_op_results_are_equal, q_input=q_input)
+    )
+
+
+@pytest.mark.parametrize("n_bits", [16])
+@pytest.mark.parametrize(
+    "params",
+    [
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 32, 32)),
+            (3, 3),
+            (2, 2),
+            (0, 0, 0, 0),
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-1.2, high=0.2, size=(10, 1, 16, 16)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 2),
+            (1, 1),
+            (0, 0, 0, 0),
+            0,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 4),
+            (1, 1),
+            (1, 2, 1, 2),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
+            (2, 4),
+            (1, 1),
+            (0, 2, 0, 2),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 5, 5)),
+            (3, 3),
+            (1, 1),
+            (1, 1, 1, 1),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(2, 1, 7, 5)),
+            (5, 1),
+            (1, 1),
+            (1, 2, 0, 4),
+            1,
+        ),
+        (
+            numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 16, 16)),  ## this test fails
+            (2, 2),
+            (4, 4),
+            (1, 2, 0, 4),
+            1,
+        ),
+    ],
+)
+@pytest.mark.parametrize("is_signed", [True, False])
+def test_quantized_unfold(params, n_bits, is_signed, check_r2_score, check_float_array_equal):
+    """Test the quantized average pool operator."""
+
+    # Retrieve arguments
+    net_input, kernel_shape, strides, pads, ceil_mode = params
+
+    # Create quantized data
+    q_input = QuantizedArray(n_bits, net_input, is_signed=is_signed)
+
+    q_op = QuantizedUnfold(
+        n_bits,
+        OP_DEBUG_NAME + "QuantizedUnfold",
+        strides=strides,
+        pads=pads,
+        kernel_shape=kernel_shape,
+        ceil_mode=ceil_mode,
+        input_quant_opts=q_input.quantizer.quant_options,
+    )
+
+    # Compute the result in floating point
+    expected_result = q_op.calibrate(net_input)
+
+    # Pad the input if needed
+    tinputs = torch.Tensor(net_input.copy())
+
+    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
+    tx_pad = torch.nn.functional.pad(tinputs, (pads[1], pads[3], pads[0], pads[2]))
+
+    # Compute the torch unfold
+    torch_res = torch.nn.functional.unfold(tx_pad, kernel_shape, 1, 0, strides).numpy()
+
+    check_float_array_equal(torch_res, expected_result)
+
+    # Compute the quantized result
+    result = q_op(q_input).dequant()
+
+    # The fp32 and quantized results should be very similar when quantization precision is high
+    check_r2_score(expected_result, result)
+
+    # Test the serialization of QuantizedUnfold
+    check_serialization(
+        q_op,
+        QuantizedUnfold,
+        equal_method=partial(quantized_op_results_are_equal, q_input=q_input),
     )
