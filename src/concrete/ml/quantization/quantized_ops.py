@@ -2536,7 +2536,6 @@ class QuantizedUnfold(QuantizedMixingOp):
     def q_impl(
         self,
         *q_inputs: ONNXOpInputOutputType,
-        calibrate_rounding: bool = False,
         **attrs,
     ) -> ONNXOpInputOutputType:
 
@@ -2547,7 +2546,7 @@ class QuantizedUnfold(QuantizedMixingOp):
         q_input: QuantizedArray = prepared_inputs[0]
 
         n_in_channels = q_input.qvalues.shape[1]
-        kernels = []
+        kernels_list = []
         for _ in range(n_in_channels):
             for row in range(self.kernel_shape[0]):
                 for col in range(self.kernel_shape[1]):
@@ -2556,8 +2555,8 @@ class QuantizedUnfold(QuantizedMixingOp):
                         dtype=numpy.int64,
                     )
                     kernel[:, :, row, col] = 1
-                    kernels.append(kernel)
-        kernels = numpy.concatenate(numpy.array(kernels), axis=0, dtype=numpy.int64)
+                    kernels_list.append(kernel)
+        kernels = numpy.concatenate(numpy.array(kernels_list), axis=0)
 
         # for mypy: The Quantized ops can only run on QuantizedArray that have quantization
         # parameters (i.e., were fully constructed). This should always be the case, except

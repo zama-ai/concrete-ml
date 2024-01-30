@@ -2122,7 +2122,7 @@ def numpy_unfold(
     # We create kernels with only one one at each position, which will redirect the kernel
     # outputs to the output channels
     n_in_channels = x.shape[1]
-    kernels = []
+    kernels_list = []
     for _ in range(n_in_channels):
         for row in range(kernel_shape[0]):
             for col in range(kernel_shape[1]):
@@ -2131,8 +2131,8 @@ def numpy_unfold(
                     dtype=numpy.int64,
                 )
                 kernel[:, :, row, col] = 1
-                kernels.append(kernel)
-    kernels = numpy.concatenate(numpy.array(kernels), axis=0)
+                kernels_list.append(kernel)
+    kernels = numpy.concatenate(numpy.array(kernels_list), axis=0)
 
     # Pad the input tensor
     pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode)
