@@ -7,6 +7,16 @@ on:
         default: "main"
         required: true
         type: string
+      alternative-cp-wheel-artifact-id:
+        description: Alternative Concrete-Python Wheel Artifact-ID (see https://github.com/zama-ai/concrete/actions/workflows/concrete_python_release.yml)
+        default: "none"
+        required: true
+        type: string
+      alternative-cp-branch:
+        description: Alternative Concrete-Python Branch
+        default: "none"
+        required: true
+        type: string
       benchmark:
         description: Benchmark to run (cifar-10-8b or cifar-10-16b)
         default: "cifar-10-16b"
@@ -92,6 +102,36 @@ jobs:
           ./script/make_utils/setup_os_deps.sh
           make setup_env
 
+      - name: Alternative Concrete Python Wheel Download
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          curl -L \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o concrete-python.whl.zip \
+          https://api.github.com/repos/zama-ai/concrete/actions/artifacts/${{ github.event.inputs.alternative-cp-wheel-artifact-id }}/zip
+
+      - name: Alternative Concrete Python Wheel Install
+        if: github.event.inputs.alternative-cp-wheel-artifact-id != 'none'
+        run: |
+          source .venv/bin/activate
+          unzip concrete-python.whl.zip
+          pip install concrete_python-*.whl
+
+      - name: Alternative Concrete Python Branch Checkout
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          path: concrete
+          repository: zama-ai/concrete
+          ref: ${{ github.event.inputs.alternative-cp-branch }}
+
+      - name: Alternative Concrete Python Branch Source Install
+        if: github.event.inputs.alternative-cp-branch != 'none'
+        run: |
+          cp -R concrete/frontends/concrete-python/concrete/* .venv/lib/python3.*/site-packages/concrete/
+
       # CIFAR-10-8b benchmark
       - name: Benchmark - CIFAR-10-8b
         if: github.event.inputs.benchmark == 'cifar-10-8b'
@@ -148,6 +188,7 @@ jobs:
       # if the step crashes
       - name: Upload results
         id: upload-results
+        if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
         run: |
           # Log the json
           cat to_upload.json | jq
@@ -182,6 +223,7 @@ jobs:
   slack-notification:
     runs-on: ubuntu-20.04
     needs: [run-cifar-10]
+    if: github.event.inputs.alternative-cp-branch == 'none' && github.event.inputs.alternative-cp-wheel-artifact-id == 'none'
     steps:
       - name: Slack Notification
         if: ${{ always() }}
