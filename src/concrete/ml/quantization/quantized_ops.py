@@ -2603,7 +2603,7 @@ class QuantizedUnfold(QuantizedMixingOp):
 
         if self.debug_value_tracker is not None:
             # pylint: disable-next=unsubscriptable-object
-            self.debug_value_tracker[self.op_instance_name]["output"] = sum_result
+            self.debug_value_tracker[self.op_instance_name]["output"] = sum_result  # type: ignore
 
         result = (
             sum_result.astype(numpy.float64) - q_input.quantizer.zero_point

@@ -1493,6 +1493,7 @@ def test_all_ops_were_tested():
         QuantizedSqueeze: test_quantized_squeeze,
         QuantizedExpand: test_quantized_expand,
         QuantizedEqual: test_quantized_comparators_and_where,
+        QuantizedUnfold: test_quantized_unfold,
         ONNXSlice: test_quantized_slice,
         ONNXGather: test_quantized_gather,
         ONNXShape: test_quantized_shape,
