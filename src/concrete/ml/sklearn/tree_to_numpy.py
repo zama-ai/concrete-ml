@@ -1,11 +1,13 @@
 """Implements the conversion of a tree model to a numpy function."""
 
 import math
+import os
 import warnings
 from typing import Callable, List, Optional, Tuple
 
 import numpy
 import onnx
+import sklearn
 from onnx import numpy_helper
 
 from ..common.debugging.custom_assert import assert_true
@@ -44,11 +46,11 @@ MSB_TO_KEEP_FOR_TREES = 1
 MIN_CIRCUIT_THRESHOLD_FOR_TREES = 4
 
 
-def get_onnx_model(model: Callable, x: numpy.ndarray, framework: str) -> onnx.ModelProto:
+def get_onnx_model(model, x: numpy.ndarray, framework: str) -> onnx.ModelProto:
     """Create ONNX model with Hummingbird convert method.
 
     Args:
-        model (Callable): The tree model to convert.
+        model: The tree model to convert.
         x (numpy.ndarray): Dataset used to trace the tree inference and convert the model to ONNX.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
@@ -297,6 +299,9 @@ def tree_values_preprocessing(
     Returns:
         QuantizedArray: Quantizer for the tree predictions.
     """
+    q_y = QuantizedArray(
+        n_bits=1, values=numpy.zeros(shape=(2,), dtype=numpy.float64), value_is_float=True
+    )
 
     # Modify ONNX graph to fit in FHE
     for i, initializer in enumerate(onnx_model.graph.initializer):
@@ -323,12 +328,13 @@ def tree_values_preprocessing(
                 init_tensor = numpy.floor(init_tensor)
         new_initializer = numpy_helper.from_array(init_tensor.astype(numpy.int64), initializer.name)
         onnx_model.graph.initializer[i].CopyFrom(new_initializer)
+
     return q_y
 
 
 # pylint: disable=too-many-locals
 def tree_to_numpy(
-    model: Callable,
+    model: sklearn.base.BaseEstimator,
     x: numpy.ndarray,
     framework: str,
     use_rounding: bool = True,
@@ -411,6 +417,9 @@ def _compute_lsb_to_remove_for_trees(
 
     Returns:
         Tuple[int, int]: the number of LSB to remove for level 1 and level 2
+
+    Raises:
+        ValueError: if comparison function ('Less' or 'LessOrEqual') cannot be determined.
     """
 
     def get_bitwidth(array: numpy.ndarray) -> int:
@@ -502,6 +511,9 @@ def _compute_lsb_to_remove_for_trees(
         stage_1 = bias_1 - (q_x @ mat_1.transpose(0, 2, 1))
         matrix_q = stage_1 >= 0
 
+    else:  # pragma: no cover
+        raise ValueError("Couldn't see if the comparison is 'Less' or 'LessOrEqual'")
+
     lsbs_to_remove_for_trees_stage_1 = get_lsbs_to_remove_for_trees(stage_1)
 
     # If operator is `==`, np.equal(x, y) is equivalent to:
@@ -512,3 +524,227 @@ def _compute_lsb_to_remove_for_trees(
     lsbs_to_remove_for_trees_stage_2 = get_lsbs_to_remove_for_trees(stage_2)
 
     return (lsbs_to_remove_for_trees_stage_1, lsbs_to_remove_for_trees_stage_2)
+
+
+# pylint: disable=too-many-locals,too-many-statements,too-many-branches
+def onnx_fp32_model_to_quantized_model(
+    onnx_model: onnx.ModelProto,
+    n_bits: int,
+    framework: str,
+    expected_number_of_outputs: int,
+    n_features: int,
+    model_inputs: Optional[numpy.ndarray] = None,
+):
+    """Build a FHE-compliant onnx-model using a fitted scikit-learn model.
+
+    Args:
+        onnx_model (onnx.ModelProto): The fitted scikit-learn as a Hummingbird onnx model to convert
+        n_bits (int): Number of bits to quantize the model. If an int is passed
+            for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+            passed, then it should contain "op_inputs" and "op_weights" as keys with
+            corresponding number of quantization bits so that:
+            - op_inputs : number of bits to quantize the input values
+            - op_weights: number of bits to quantize the learned parameters
+        framework (str): either sklearn or xgboost
+        expected_number_of_outputs (int): expected number of outputs
+        n_features (int): number of features as inputs of the model
+        model_inputs (Optional[numpy.ndarray]): optional dataset to use for quantization
+
+    Returns:
+        onnx.ModelProto: The converted onnx model
+        Optional[Tuple[int, int]]: Least significant bits to remove
+        list[UniformQuantizer]: inputs quantizers
+        list[UniformQuantizer]: outputs quantizers
+    """
+    # Get feature -> thresholds mappings and threshold values
+    weight_1 = numpy.empty((0,))
+    bias_1 = numpy.empty((0,))
+    bias_1_index = -1
+    bias_1_name = ""
+
+    for initializer_index, initializer in enumerate(onnx_model.graph.initializer):
+        init_tensor = numpy_helper.to_array(initializer)
+        if "weight_1" in initializer.name:
+            # weight_1 is the feature node selector
+            weight_1 = init_tensor.copy()
+        elif "bias_1" in initializer.name:
+            # bias _1 is the threshold tensor
+            bias_1 = init_tensor.copy()
+            bias_1_index = initializer_index
+            bias_1_name = initializer.name
+
+    assert bias_1_name
+    assert bias_1_index >= 0
+    assert weight_1.size != 0
+    assert bias_1.size != 0
+
+    # Compute input/threshold quantizers
+    input_quantizers: List[UniformQuantizer] = []
+
+    # Quantization of each feature in X
+    for feature_index in range(n_features):
+
+        # Get all thresholds for a given feature
+        threshold_for_feature: numpy.ndarray = bias_1[weight_1[:, feature_index] == 1][:, 0]
+
+        # Sorting threshold values makes things easier afterwards
+        threshold_for_feature.sort()
+
+        # All unique threshold values
+        unique_threshold_for_feature_sorted = numpy.unique(threshold_for_feature)
+        unique_threshold_for_feature_sorted.sort()
+        num_unique_thresholds = len(unique_threshold_for_feature_sorted)
+
+        if num_unique_thresholds >= 1:
+            max_threshold_value = unique_threshold_for_feature_sorted.max()
+            min_threshold_value = unique_threshold_for_feature_sorted.min()
+        else:
+            max_threshold_value = 1.0
+            min_threshold_value = 0.0
+
+        # We compute a epsilon such that we have one quantized value on each side of the range
+        # This offset will either be a right or left offset according to the framework
+        number_of_need_offset_values = 2
+        if num_unique_thresholds == 0:
+            epsilon = 1.0
+        elif num_unique_thresholds == 1:
+            epsilon = 1.0
+        else:
+            epsilon = (max_threshold_value - min_threshold_value) / (
+                (2**n_bits) - number_of_need_offset_values
+            )
+
+        # Input quantizers based on thresholds
+        if model_inputs is None:
+            if num_unique_thresholds:
+                min_quantization_value = min_threshold_value
+                max_quantization_value = max_threshold_value
+            else:
+                min_quantization_value = 0
+                max_quantization_value = 1.0
+
+            if num_unique_thresholds == 1:
+                # If there is only one threshold for this feature
+                # We want the threshold to be in the middle of a quantization bin
+                min_quantization_value -= epsilon
+                max_quantization_value += epsilon
+            elif framework == "xgboost":
+                # XGBoost uses a < op so we must add a left offset
+                min_quantization_value -= epsilon
+            else:
+                # scikit-learn uses =< op so we must add a right offset
+                max_quantization_value += epsilon
+
+        # Quantizer based on data
+        else:
+            min_quantization_value = model_inputs[:, feature_index].min()
+            max_quantization_value = model_inputs[:, feature_index].max()
+
+        min_quantization_value = float(min_quantization_value)
+        max_quantization_value = float(max_quantization_value)
+        input_quantizer = QuantizedArray(
+            n_bits=n_bits,
+            values=numpy.array([min_quantization_value, max_quantization_value]),
+        ).quantizer
+        input_quantizers.append(input_quantizer)
+
+    # Convert thresholds to their quantized equivalent
+    quantized_thresholds_array = numpy.empty(bias_1.shape, dtype=numpy.int64)
+    dequantized_thresholds_array = numpy.empty(bias_1.shape, dtype=numpy.float64)
+
+    for threshold_index, threshold_value in enumerate(bias_1[:, 0]):
+        feature_index = int(weight_1[threshold_index, :].argmax())
+        quantized_threshold_value = (
+            input_quantizers[feature_index].quant(threshold_value).astype(numpy.int64)
+        )
+        dequantized_threshold_value = input_quantizers[feature_index].dequant(
+            quantized_threshold_value
+        )
+        quantized_thresholds_array[threshold_index, 0] = quantized_threshold_value
+        dequantized_thresholds_array[threshold_index, 0] = dequantized_threshold_value
+
+    onnx_model.graph.initializer[bias_1_index].CopyFrom(
+        numpy_helper.from_array(
+            quantized_thresholds_array,
+            bias_1_name,
+        )
+    )
+
+    # Modify the graph inplace to keep only the parts that are of interest to us
+    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs)
+
+    # Get the preprocessed tree predictions to replace the current
+    # (non-quantized) values in the onnx_model.
+    q_y = None
+    for initializer_index, initializer in enumerate(onnx_model.graph.initializer):
+        init_tensor = numpy_helper.to_array(initializer)
+        if "weight_3" in initializer.name:
+            # weight_3 is the prediction tensor
+            # Here we quantize it
+            q_y = preprocess_tree_predictions(init_tensor, n_bits)
+            init_tensor_as_int = q_y.qvalues.astype(numpy.int64)
+        else:
+            init_tensor_as_int = init_tensor.astype(numpy.int64)
+        assert (
+            isinstance(init_tensor_as_int, numpy.ndarray)
+            and init_tensor_as_int.dtype == numpy.int64
+        )
+        new_initializer = numpy_helper.from_array(init_tensor_as_int, initializer.name)
+        onnx_model.graph.initializer[initializer_index].CopyFrom(new_initializer)
+
+    # Convert the tree inference with Numpy operators
+    enable_rounding = bool(int(os.environ.get("TREES_USE_ROUNDING", 1)))
+
+    if not enable_rounding:
+        warnings.simplefilter("always")
+        warnings.warn(
+            "Using Concrete tree-based models without the `rounding feature` is deprecated. "
+            "Consider setting 'use_rounding' to `True` for making the FHE inference faster "
+            "and key generation.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+
+    lsbs_to_remove_for_trees: Optional[Tuple[int, int]] = None
+
+    assert q_y is not None
+    output_quantizers = [q_y.quantizer]
+
+    if enable_rounding:
+        # Quantize data to compute lsbs to remove
+        if model_inputs is None:
+            # If we have no data we can just randomly generate a dataset
+            assert isinstance(n_features, int)
+            calibration_set_size = 1_000
+            quantized_model_inputs = numpy.empty(
+                (calibration_set_size, n_features), dtype=numpy.int64
+            )
+            for feature_index in range(n_features):
+                min_value = input_quantizers[feature_index].rmin
+                assert min_value is not None
+                max_value = input_quantizers[feature_index].rmax
+                assert max_value is not None
+                quantized_model_inputs[:, feature_index] = (
+                    input_quantizers[feature_index]
+                    .quant(numpy.linspace(min_value, max_value, calibration_set_size))
+                    .astype(numpy.int64)
+                )
+            quantized_model_inputs = numpy.random.permutation(quantized_model_inputs)
+        else:
+            # Quantize using the learned quantization parameters for each feature
+            quantized_model_inputs = numpy.zeros_like(model_inputs, dtype=numpy.int64)
+            for i, input_quantizer in enumerate(input_quantizers):
+                quantized_model_inputs[:, i] = input_quantizer.quant(model_inputs[:, i])
+
+        # Compute for tree-based models the LSB to remove in stage 1 and stage 2
+        # First LSB refers to Less or LessOrEqual comparisons
+        # Second LSB refers to Equal comparison
+        assert quantized_model_inputs.dtype == numpy.int64
+        lsbs_to_remove_for_trees = _compute_lsb_to_remove_for_trees(
+            onnx_model, quantized_model_inputs
+        )
+
+        # mypy
+        assert len(lsbs_to_remove_for_trees) == 2
+
+    return onnx_model, lsbs_to_remove_for_trees, input_quantizers, output_quantizers

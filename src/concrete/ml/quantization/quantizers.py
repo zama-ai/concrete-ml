@@ -773,7 +773,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         return qvalues.astype(numpy.int64)
 
-    def dequant(self, qvalues: numpy.ndarray) -> Union[numpy.ndarray, Tracer]:
+    def dequant(self, qvalues: numpy.ndarray) -> Union[float, numpy.ndarray, Tracer]:
         """De-quantize values.
 
         Args:
@@ -797,7 +797,7 @@ class UniformQuantizer(UniformQuantizationParameters, QuantizationOptions, MinMa
 
         values = self.scale * (qvalues - numpy.asarray(self.zero_point, dtype=numpy.float64))
 
-        assert isinstance(values, (numpy.ndarray, Tracer))
+        assert isinstance(values, (float, numpy.ndarray, Tracer)), f"{values=}, {type(values)=}"
         return values
 
 

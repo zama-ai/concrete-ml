@@ -38,8 +38,14 @@ import pandas
 import pytest
 import torch
 from sklearn.decomposition import PCA
-from sklearn.exceptions import UndefinedMetricWarning
-from sklearn.metrics import make_scorer, matthews_corrcoef, top_k_accuracy_score
+from sklearn.exceptions import ConvergenceWarning, UndefinedMetricWarning
+from sklearn.metrics import (
+    accuracy_score,
+    make_scorer,
+    matthews_corrcoef,
+    mean_squared_error,
+    top_k_accuracy_score,
+)
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -71,6 +77,7 @@ from concrete.ml.sklearn import (
     _get_sklearn_neural_net_models,
     _get_sklearn_tree_models,
 )
+from concrete.ml.sklearn.base import BaseTreeEstimatorMixin
 
 # Allow multiple runs in FHE to make sure we always have the correct output
 N_ALLOWED_FHE_RUN = 5
@@ -661,7 +668,12 @@ def check_input_support(model_class, n_bits, default_configuration, x, y, input_
     def cast_input(x, y, input_type):
         "Convert x and y either in Pandas, List, Numpy or Torch type."
 
-        assert input_type in ["pandas", "torch", "list", "numpy"], "Not a valid type casting"
+        assert input_type in [
+            "pandas",
+            "torch",
+            "list",
+            "numpy",
+        ], "Not a valid type casting"
 
         if input_type.lower() == "pandas":
             # Turn into Pandas
@@ -790,7 +802,12 @@ def check_grid_search(model_class, x, y, scoring):
             pytest.skip("Skipping predict_proba for KNN, doesn't work for now")
 
         _ = GridSearchCV(
-            model_class(), param_grid, cv=2, scoring=scoring, error_score="raise", n_jobs=1
+            model_class(),
+            param_grid,
+            cv=2,
+            scoring=scoring,
+            error_score="raise",
+            n_jobs=1,
         ).fit(x, y)
 
 
@@ -1074,6 +1091,208 @@ def check_exposition_structural_methods_decision_trees(model, x, y):
     )
 
 
+# pylint: disable=too-many-locals,too-many-statements
+@pytest.mark.parametrize("model_class, parameters", get_sklearn_tree_models_and_datasets())
+@pytest.mark.parametrize("use_rounding", [False, True])
+def test_load_fitted_sklearn_tree_models(
+    subtests,
+    model_class,
+    parameters,
+    use_rounding,
+    load_data,
+    is_weekly_option,
+    verbose=True,
+):
+    """Test `from_sklearn_model` functionnality of tree-based models."""
+
+    numpy.random.seed(0)
+    os.environ["TREES_USE_ROUNDING"] = str(int(use_rounding))
+
+    x, y = get_dataset(
+        model_class, parameters, min(N_BITS_REGULAR_BUILDS), load_data, is_weekly_option
+    )
+
+    if verbose:
+        print("Run check_load_pre_trained_sklearn_models")
+
+    assert issubclass(model_class, BaseTreeEstimatorMixin)
+    concrete_model = instantiate_model_generic(model_class, n_bits=min(N_BITS_REGULAR_BUILDS))
+    # Fit the model and retrieve both the Concrete ML and the scikit-learn models
+    with warnings.catch_warnings():
+        # Sometimes, we miss convergence, which is not a problem for our test
+        warnings.simplefilter("ignore", category=ConvergenceWarning)
+        concrete_model, sklearn_model = concrete_model.fit_benchmark(x, y)
+
+    # This step is needed in order to handle partial classes
+    model_class = get_model_class(model_class)
+    max_n_bits = 18
+    reasonable_n_bits = 10
+
+    if is_model_class_in_a_list(
+        model_class,
+        _get_sklearn_tree_models(classifier=True, regressor=False),
+    ):
+        for n_bits, cml_tolerance, sklearn_tolerance in [
+            (max_n_bits, 1e-1, 1e-7),
+            (reasonable_n_bits, 6e-2, 6e-2),
+        ]:
+            # Load a Concrete ML model from the fitted scikit-learn one
+            loaded_from_threshold = model_class.from_sklearn_model(
+                sklearn_model,
+                X=None,
+                n_bits=n_bits,
+            )
+
+            loaded_from_data = model_class.from_sklearn_model(
+                sklearn_model,
+                X=x,
+                n_bits=n_bits,
+            )
+
+            # Compile both the initial Concrete ML model and the loaded one
+            concrete_model.compile(x)
+            mode = "disable"
+            if n_bits <= reasonable_n_bits:
+                mode = "simulate"
+                loaded_from_threshold.compile(x)
+                loaded_from_data.compile(x)
+
+            # Compute and compare the predictions from both models
+            # Classifiers
+
+            # Predict with all models
+            sklearn_pred = sklearn_model.predict_proba(x)
+            cml_y_pred = concrete_model.predict_proba(
+                x,
+                fhe=mode,
+            )
+            cml_threshold_y_pred = loaded_from_threshold.predict_proba(
+                x,
+                fhe=mode,
+            )
+            cml_data_y_pred = loaded_from_data.predict_proba(
+                x,
+                fhe=mode,
+            )
+
+            # Compute accuracy
+            sklearn_accuracy = accuracy_score(sklearn_pred.argmax(axis=1), y)
+            cml_accuracy = accuracy_score(cml_y_pred.argmax(axis=1), y)
+            loaded_accuracy_from_threshold_accuracy = accuracy_score(
+                cml_threshold_y_pred.argmax(axis=1), y
+            )
+            loaded_accuracy_from_data_accuracy = accuracy_score(cml_data_y_pred.argmax(axis=1), y)
+
+            # Compare with sklearn
+            with subtests.test(
+                msg="Classifier Sklearn vs Threshold", n_bits=n_bits, tolerance=sklearn_tolerance
+            ):
+                value = numpy.abs(loaded_accuracy_from_threshold_accuracy - sklearn_accuracy)
+                assert (
+                    value < sklearn_tolerance
+                ), f"{loaded_accuracy_from_threshold_accuracy=} != {sklearn_accuracy} ({value})"
+            with subtests.test(
+                msg="Classifier Sklearn vs Data", n_bits=n_bits, tolerance=sklearn_tolerance
+            ):
+                value = numpy.abs(loaded_accuracy_from_data_accuracy - sklearn_accuracy)
+                assert (
+                    value < sklearn_tolerance
+                ), f"{loaded_accuracy_from_data_accuracy=} != {sklearn_accuracy} ({value})"
+
+            # Compare with CML final metric
+            with subtests.test(
+                msg="Classifier CML vs Threshold", n_bits=n_bits, tolerance=cml_tolerance
+            ):
+                value = numpy.abs(loaded_accuracy_from_threshold_accuracy - cml_accuracy)
+                assert (
+                    value < cml_tolerance
+                ), f"{loaded_accuracy_from_threshold_accuracy=} != {cml_accuracy} ({value})"
+            with subtests.test(
+                msg="Classifier CML vs Data", n_bits=n_bits, tolerance=cml_tolerance
+            ):
+                value = numpy.abs(loaded_accuracy_from_data_accuracy - cml_accuracy)
+                assert (
+                    value < cml_tolerance
+                ), f"{loaded_accuracy_from_data_accuracy=} != {cml_accuracy} ({value})"
+
+    # Regressor
+    elif is_model_class_in_a_list(
+        model_class,
+        _get_sklearn_tree_models(regressor=True, classifier=False),
+    ):
+        for n_bits, cml_tolerance, sklearn_tolerance in [
+            (max_n_bits, 0.8, 1e-5),
+            (reasonable_n_bits, 1.8, 1.8),
+        ]:
+            # Load a Concrete ML model from the fitted scikit-learn one
+            loaded_from_threshold = model_class.from_sklearn_model(
+                sklearn_model,
+                n_bits=n_bits,
+            )
+
+            loaded_from_data = model_class.from_sklearn_model(
+                sklearn_model,
+                X=x,
+                n_bits=n_bits,
+            )
+
+            # Compile both the initial Concrete ML model and the loaded one
+            concrete_model.compile(x)
+            mode = "disable"
+            if n_bits <= reasonable_n_bits:
+                mode = "simulate"
+                loaded_from_threshold.compile(x)
+                loaded_from_data.compile(x)
+
+            # Compute and compare the predictions from both models
+            # Regressors
+
+            # Predict
+            sklearn_pred = sklearn_model.predict(x)
+            cml_y_pred = concrete_model.predict(x, fhe=mode)
+            cml_threshold_y_pred = loaded_from_threshold.predict(x, fhe=mode)
+            cml_data_y_pred = loaded_from_data.predict(x, fhe=mode)
+
+            # Compute metric
+            sklearn_mse = mean_squared_error(sklearn_pred, y)
+            cml_mse = mean_squared_error(cml_y_pred, y)
+            loaded_mse_from_threshold_mse = mean_squared_error(cml_threshold_y_pred, y)
+            loaded_mse_from_data_mse = mean_squared_error(cml_data_y_pred, y)
+
+            # Compare with scikit-learn
+            with subtests.test(
+                msg="Regression Sklearn vs Threshold", n_bits=n_bits, tolerance=sklearn_tolerance
+            ):
+                value = numpy.abs(loaded_mse_from_threshold_mse - sklearn_mse) / numpy.abs(y).max()
+                assert value < sklearn_tolerance, (
+                    f"{loaded_mse_from_threshold_mse=} != {sklearn_mse} "
+                    f"({value=}>={sklearn_tolerance=})"
+                )
+            with subtests.test(
+                msg="Regression Sklearn vs Data", n_bits=n_bits, tolerance=sklearn_tolerance
+            ):
+                value = numpy.abs(loaded_mse_from_data_mse - sklearn_mse) / numpy.abs(y).max()
+                assert (
+                    value < sklearn_tolerance
+                ), f"{loaded_mse_from_data_mse=} != {sklearn_mse} ({value=}>={sklearn_tolerance=})"
+
+            # Compare with Concrete ML
+            with subtests.test(
+                msg="Regression CML vs Threshold", n_bits=n_bits, tolerance=cml_tolerance
+            ):
+                value = numpy.abs(loaded_mse_from_threshold_mse - cml_mse) / numpy.abs(y).max()
+                assert (
+                    value < cml_tolerance
+                ), f"{loaded_mse_from_threshold_mse=} != {cml_mse} ({value=}>={cml_tolerance=})"
+            with subtests.test(
+                msg="Regression CML vs Data", n_bits=n_bits, tolerance=cml_tolerance
+            ):
+                value = numpy.abs(loaded_mse_from_data_mse - cml_mse) / numpy.abs(y).max()
+                assert value < cml_tolerance, (
+                    f"{loaded_mse_from_data_mse=} !=" f" {cml_mse} ({value=}>={cml_tolerance=})"
+                )
+
+
 def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_float_array_equal):
     """Check that linear models and QNNs support loading from pre-trained scikit-learn models."""
 
@@ -1086,7 +1305,11 @@ def check_load_fitted_sklearn_linear_models(model_class, n_bits, x, y, check_flo
     model_class = get_model_class(model_class)
 
     # Load a Concrete ML model from the fitted scikit-learn one
-    loaded_concrete_model = model_class.from_sklearn_model(sklearn_model, X=x, n_bits=n_bits)
+    loaded_concrete_model = model_class.from_sklearn_model(
+        sklearn_model,
+        X=x,
+        n_bits=n_bits,
+    )
 
     # Compile both the initial Concrete ML model and the loaded one
     concrete_model.compile(x)
@@ -1304,7 +1527,9 @@ def test_hyper_parameters(
         pytest.param("recall", True),
         pytest.param("roc_auc", True),
         pytest.param(
-            make_scorer(matthews_corrcoef, greater_is_better=True), True, id="matthews_corrcoef"
+            make_scorer(matthews_corrcoef, greater_is_better=True),
+            True,
+            id="matthews_corrcoef",
         ),
         pytest.param("explained_variance", False),
         pytest.param("max_error", False),
@@ -1484,7 +1709,8 @@ def test_inference_methods(
 # and needs further investigations
 # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2779
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_all_models_and_datasets(ignore="RandomForest")
+    "model_class, parameters",
+    get_sklearn_all_models_and_datasets(ignore="RandomForest"),
 )
 @pytest.mark.parametrize(
     "n_bits",
@@ -1525,7 +1751,10 @@ def test_pipeline(
         n_bits
         for n_bits in N_BITS_WEEKLY_ONLY_BUILDS + N_BITS_REGULAR_BUILDS
         if n_bits
-        < min(N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS, N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE)
+        < min(
+            N_BITS_LINEAR_MODEL_CRYPTO_PARAMETERS,
+            N_BITS_THRESHOLD_TO_FORCE_EXECUTION_NOT_IN_FHE,
+        )
     ],
 )
 # pylint: disable=too-many-branches
@@ -1708,7 +1937,8 @@ def test_p_error_simulation(
 
 # This test is only relevant for classifier models
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_all_models_and_datasets(regressor=False, classifier=True)
+    "model_class, parameters",
+    get_sklearn_all_models_and_datasets(regressor=False, classifier=True),
 )
 def test_class_mapping(
     model_class,
@@ -1752,7 +1982,8 @@ def test_exposition_of_sklearn_attributes(
 
 
 @pytest.mark.parametrize(
-    "model_class, parameters", get_sklearn_tree_models_and_datasets(select="DecisionTree")
+    "model_class, parameters",
+    get_sklearn_tree_models_and_datasets(select="DecisionTree"),
 )
 def test_exposition_structural_methods_decision_trees(
     model_class,

@@ -20,7 +20,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
-from concrete.ml.sklearn import DecisionTreeClassifier
+from concrete.ml.sklearn.base import BaseTreeEstimatorMixin
+from concrete.fhe import Configuration
+
 
 ALWAYS_USE_SIM = False
 
@@ -118,7 +120,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
 
             # Compile the Concrete ML model
             time_begin = time.time()
-            circuit = concrete_model.compile(X_train)
+            circuit = concrete_model.compile(X_train,)
 
             if verbose:
                 print(f"Compilation time: {(time.time() - time_begin):.4f} seconds\n")
@@ -155,9 +157,7 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
             sklearn_score = accuracy_score(sklearn_y_pred, y_test)
             concrete_score = accuracy_score(concrete_y_pred, y_test)
 
-            is_a_tree_based_model = concrete_model.__class__ in [
-                DecisionTreeClassifier,
-            ]
+            is_a_tree_based_model = isinstance(concrete_model, BaseTreeEstimatorMixin)
 
             # Compile the Concrete ML model with FHE simulation mode to evaluate the domain grid
             circuit = concrete_model.compile(
@@ -242,8 +242,255 @@ def make_classifier_comparison(title, classifiers, decision_level, verbose=False
                         horizontalalignment="right",
                     )
 
+    plt.tight_layout()
     if save_plot:
         plt.savefig(f"./{title}.png")
 
+    plt.show()
+
+
+def make_classifier_comparison_from_sklearn(title, classifiers, decision_level, verbose=False, save_plot=False, simulate=False, h=0.04):
+    n_samples = 200
+    num_models = 3
+
+    X, y = make_classification(
+        n_samples=n_samples,
+        n_features=2,
+        n_redundant=0,
+        n_informative=2,
+        random_state=1,
+        n_clusters_per_class=1,
+    )
+    assert isinstance(X, np.ndarray)
+    assert isinstance(y, np.ndarray)
+    # pylint: disable-next=no-member
+    rng = np.random.RandomState(2)
+    X += 2 * rng.uniform(size=X.shape)
+    linearly_separable = (X, y)
+
+    datasets = [
+        make_moons(n_samples=n_samples, noise=0.2, random_state=0),
+        make_circles(n_samples=n_samples, noise=0.2, factor=0.5, random_state=1),
+        linearly_separable,
+    ]
+
+    font_size_text = 20
+
+    num_y_plots = len(datasets)
+    num_x_plots = num_models * len(classifiers) + 1
+    fig, axs = plt.subplots(num_y_plots, num_x_plots, figsize=(num_x_plots*4, num_y_plots*4))
+    fig.suptitle(title, fontsize=20)
+    fig.patch.set_facecolor("white")
+    plt.subplots_adjust(top=0.9)
+
+    # Iterate over data-sets
+    for i, dataset in enumerate(datasets):
+        # Preprocess data-set
+        X, y = dataset
+        X = X.astype(np.float32)
+        X = StandardScaler().fit_transform(X)
+
+        # Split the data into training and test sets
+        # Use 15 percent (30 points for a data-set of 200 points) for prediction
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.15, random_state=42)
+
+        x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
+        y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
+        xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+
+        # pylint: disable-next=no-member
+        cm = plt.cm.RdBu
+        cm_bright = ListedColormap(["#FF0000", "#0000FF"])
+        ax = axs[i, 0]
+        if i == 0:
+            ax.set_title("Input data", fontsize=font_size_text)
+
+        # Plot the training points
+        ax.scatter(
+            X_train[:, 0],
+            X_train[:, 1],
+            c=y_train,
+            cmap=cm_bright,
+            edgecolors="k",
+            label="Train data",
+        )
+
+        # Plot the testing points
+        ax.scatter(
+            X_test[:, 0],
+            X_test[:, 1],
+            marker="D",
+            c=y_test,
+            cmap=cm_bright,
+            alpha=0.6,
+            edgecolors="k",
+            label="Test data",
+        )
+        ax.legend()
+
+        ax.set_xlim(xx.min(), xx.max())
+        ax.set_ylim(yy.min(), yy.max())
+        ax.set_xticks(())
+        ax.set_yticks(())
+
+        # Iterate over the given classifiers
+        for j, (classifier, model_name) in enumerate(classifiers):
+            # Instantiate the model
+            model = classifier()
+
+            # Train the model and retrieve both the Concrete ML model and its equivalent one from
+            # scikit-learn
+            concrete_model, sklearn_model = model.fit_benchmark(X_train, y_train)
+
+            # TODO: from data or not?
+            sklearn_fhe_model = concrete_model.__class__.from_sklearn_model(sklearn_model, X=X_train)
+
+            # Compute the predictions in clear using the scikit-learn model
+            sklearn_y_pred = sklearn_model.predict(X_test)
+
+            # Compile the Concrete ML model
+            time_begin = time.time()
+            cfg = Configuration(detect_overflow_in_simulation=False)
+            circuit_cml = concrete_model.compile(X_train,)
+            circuit_sklearn = sklearn_fhe_model.compile(X_train,)
+
+            fhe = "simulate"
+            for circuit in [circuit_cml, circuit_sklearn]:
+                if verbose:
+                    print(f"Compilation time: {(time.time() - time_begin):.4f} seconds\n")
+
+                # If the prediction are done in FHE, generate the key
+                if not ALWAYS_USE_SIM:
+
+                    if verbose:
+                        print(
+                            "Generating a key for a "
+                            f"{circuit.graph.maximum_integer_bit_width()}-bit circuit"
+                        )
+
+                    time_begin = time.time()
+                    circuit.client.keygen(force=False)
+
+                    if verbose:
+                        print(f"Key generation time: {time.time() - time_begin:.4f} seconds")
+
+                fhe = "simulate" if simulate else "execute"
+            
+            # Compute the predictions in FHE (with simulation or not) using the Concrete ML model
+            time_begin = time.time()
+            concrete_y_pred = concrete_model.predict(X_test, fhe=fhe)
+
+            if verbose:
+                print(
+                    "FHE " + "(simulation) " * simulate
+                    + f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    "seconds per sample\n"
+                )
+
+            time_begin = time.time()
+            sklearn_fhe_y_pred = sklearn_fhe_model.predict(X_test, fhe=fhe)
+
+            if verbose:
+                print(
+                    "FHE " + "(simulation) " * simulate
+                    + f"Execution time: {(time.time() - time_begin) / len(X_test):.4f} "
+                    "seconds per sample\n"
+                )
+
+            # Measure the accuracy scores
+            sklearn_score = accuracy_score(sklearn_y_pred, y_test)
+            sklearn_fhe_score = accuracy_score(sklearn_fhe_y_pred, y_test)
+            concrete_score = accuracy_score(concrete_y_pred, y_test)
+
+            is_a_tree_based_model = isinstance(concrete_model, BaseTreeEstimatorMixin)
+
+            # Compile the Concrete ML model with FHE simulation mode to evaluate the domain grid
+            circuit = concrete_model.compile(
+                X_train,
+            )
+
+            # If the model is not a tree-based model, retrieve the maximum integer bit-width
+            # reached within its circuit.
+            bitwidth = None
+            if not is_a_tree_based_model:
+                bitwidth = circuit.graph.maximum_integer_bit_width()
+
+            raveled_input = np.c_[xx.ravel(), yy.ravel()]
+            
+            # Plot the decision boundaries.
+            # For that, a color is assigned to each point in the mesh, which is obtained as a
+            # cartesian product of [x_min, x_max] with [y_min, y_max].
+            if hasattr(sklearn_model, "decision_function"):
+                sklearn_Z = sklearn_model.decision_function(raveled_input)
+                concrete_Z = concrete_model.decision_function(raveled_input, fhe="simulate")
+                sklearn_fhe_Z = sklearn_fhe_model.decision_function(raveled_input, fhe="simulate")
+            else:
+                sklearn_Z = sklearn_model.predict_proba(raveled_input.astype(np.float32))[:, 1]
+                concrete_Z = concrete_model.predict_proba(raveled_input, fhe="simulate")[:, 1]
+                sklearn_fhe_Z = sklearn_fhe_model.predict_proba(raveled_input, fhe="simulate")[:, 1]
+
+            for k, (framework, score, Z) in enumerate(
+                zip(
+                    ["scikit-learn", "Concrete ML", "from_sklearn"],
+                    [sklearn_score, concrete_score, sklearn_fhe_score],
+                    [sklearn_Z, concrete_Z, sklearn_fhe_Z],
+                )
+            ):
+                ax = axs[i, num_models * j + k + 1]
+
+                # Put the result into a color plot
+                Z = Z.reshape(xx.shape)
+                ax.contourf(xx, yy, Z, cmap=cm, alpha=0.8)
+
+                # Plot the training points
+                ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k")
+
+                # Plot the testing points
+                ax.scatter(
+                    X_test[:, 0],
+                    X_test[:, 1],
+                    c=y_test,
+                    marker="D",
+                    cmap=cm_bright,
+                    edgecolors="k",
+                    alpha=0.6,
+                )
+
+                ax.contour(
+                    xx,
+                    yy,
+                    Z,
+                    levels=[decision_level],
+                    linewidths=2,
+                )
+
+                ax.set_xlim(xx.min(), xx.max())
+                ax.set_ylim(yy.min(), yy.max())
+                ax.set_xticks(())
+                ax.set_yticks(())
+
+                if i == 0:
+                    ax.set_title(model_name + f" ({framework})", fontsize=font_size_text)
+
+                ax.text(
+                    xx.max() - 0.3,
+                    yy.min() + 0.3,
+                    f"{score*100:0.1f}%",
+                    size=font_size_text,
+                    horizontalalignment="right",
+                )
+
+                if bitwidth and framework == "Concrete ML":
+                    ax.text(
+                        xx.max() - 0.3,
+                        yy.min() + 1.0,
+                        f"bit-width={bitwidth}",
+                        size=font_size_text,
+                        horizontalalignment="right",
+                    )
+
     plt.tight_layout()
+    if save_plot:
+        plt.savefig(f"./{title}.png")
+
     plt.show()
