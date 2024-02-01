@@ -26,6 +26,11 @@ on:
         default: "3"
         type: string
         required: true
+      p_error:
+        description: P-error to use
+        default: "0.01"
+        type: string
+        required: true
 
   # FIXME: Add recurrent launching
   # https://github.com/zama-ai/concrete-ml-internal/issues/1851
@@ -128,7 +133,7 @@ jobs:
         if: github.event.inputs.benchmark == 'cifar-10-16b'
         run: |
           source .venv/bin/activate
-          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} P_ERROR=${{ github.event.inputs.p_error }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
           python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
       - name: Archive raw predictions
