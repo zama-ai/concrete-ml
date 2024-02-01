@@ -14,16 +14,14 @@ on:
         options:
           - "cifar-10-8b"
           - "cifar-10-16b"
-      instance_type:
-        description: Instance type on which to launch benchmarks
-        default: "m6i.metal"
-        type: choice
-        options:
-          - "m6i.metal"
-          - "u-6tb1.112xlarge"
       num_samples:
         description: Number of samples to use
         default: "3"
+        type: string
+        required: true
+      p_error:
+        description: P-error to use
+        default: "0.01"
         type: string
         required: true
 
@@ -36,53 +34,32 @@ env:
   ACTION_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   AGENT_TOOLSDIRECTORY: /opt/hostedtoolcache
   RUNNER_TOOL_CACHE: /opt/hostedtoolcache
+  SLAB_PROFILE: big-cpu
+
 
 # Jobs
 jobs:
-  start-cifar-runner:
-    name: Launch AWS instances
-    runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash
-    container:
-      image: ubuntu:20.04
+  setup-ec2:
+    name: Setup EC2 instance
+    runs-on: ubuntu-latest
     outputs:
-      label: ${{ steps.start-cifar10-8bit-runner.outputs.label }}
-      ec2-instance-id: ${{ steps.start-cifar10-8bit-runner.outputs.ec2-instance-id || '' }}
+      runner-name: ${{ steps.start-instance.outputs.label }}
+      instance-id: ${{ steps.start-instance.outputs.ec2-instance-id }}
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-      - name: Start CIFAR-10 8-bit runner
-        id: start-cifar10-8bit-runner
-        uses: machulav/ec2-github-runner@2c4d1dcf2c54673ed3bfd194c4b6919ed396a209
+      - name: Start instance
+        id: start-instance
+        uses: zama-ai/slab-github-runner@ab65ad70bb9f9e9251e4915ea5612bcad23cd9b1
         with:
           mode: start
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          ec2-image-id: ${{ secrets.AWS_EC2_AMI }}
-          ec2-instance-type: ${{ github.event.inputs.instance_type }}
-          subnet-id: ${{ secrets.AWS_EC2_SUBNET_ID }}
-          security-group-id: ${{ secrets.AWS_EC2_SECURITY_GROUP_ID }}
-          aws-resource-tags: >
-            [
-              {"Key": "Name", "Value": "cml-benchmark-cifar10"},
-              {"Key": "GitHubRepository", "Value": "${{ github.repository }}"},
-              {"Key": "Actor", "Value": "${{ github.actor }}"},
-              {"Key": "Action", "Value": "${{ github.action }}"},
-              {"Key": "GitHash", "Value": "${{ github.sha }}"},
-              {"Key": "RefName", "Value": "${{ github.ref_name }}"},
-              {"Key": "RunId", "Value": "${{ github.run_id }}"},
-              {"Key": "Team", "Value": "CML"}
-            ]
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          profile: ${{ env.SLAB_PROFILE }}
 
   run-cifar-10:
-    needs: [start-cifar-runner]
+    needs: [setup-ec2]
     name: Run benchmark
-    runs-on: ${{ needs.start-cifar-runner.outputs.label }}
+    runs-on: ${{ needs.setup-ec2.outputs.runner-name }}
     env:
       PIP_INDEX_URL: ${{ secrets.PIP_INDEX_URL }}
       PIP_EXTRA_INDEX_URL: ${{ secrets.PIP_EXTRA_INDEX_URL }}
@@ -128,7 +105,7 @@ jobs:
         if: github.event.inputs.benchmark == 'cifar-10-16b'
         run: |
           source .venv/bin/activate
-          NUM_SAMPLES=${{ github.event.inputs.num_samples }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
+          NUM_SAMPLES=${{ github.event.inputs.num_samples }} P_ERROR=${{ github.event.inputs.p_error }} python3 ./use_case_examples/cifar/cifar_brevitas_training/evaluate_one_example_fhe.py
           python3 ./benchmarks/convert_cifar.py --model-name "16-bits-trained-v0"
 
       - name: Archive raw predictions
@@ -185,29 +162,22 @@ jobs:
           -d @to_upload.json \
           -X POST "${{ secrets.NEW_ML_PROGRESS_TRACKER_URL }}experiment"
 
-
-  stop-runner:
-    name: Stop EC2 runner
-    needs: [run-cifar-10, start-cifar-runner]
-    runs-on: ubuntu-20.04
-    timeout-minutes: 2
+  teardown-ec2:
+    name: Teardown EC2 instance (fast-tests)
     if: ${{ always() }}
+    needs: [ setup-ec2, run-cifar-10 ]
+    runs-on: ubuntu-latest
     steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@010d0da01d0b5a38af31e9c3470dbfdabdecca3a
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Stop EC2 runner
-        uses: machulav/ec2-github-runner@2c4d1dcf2c54673ed3bfd194c4b6919ed396a209
-        if: ${{ always() }}
+      - name: Stop instance
+        id: stop-instance
+        uses: zama-ai/slab-github-runner@ab65ad70bb9f9e9251e4915ea5612bcad23cd9b1
         with:
           mode: stop
-          github-token: ${{ secrets.EC2_RUNNER_BOT_TOKEN }}
-          label: ${{ needs.start-cifar-runner.outputs.label }}
-          ec2-instance-id: ${{ needs.start-cifar-runner.outputs.ec2-instance-id }}
+          github-token: ${{ secrets.SLAB_ACTION_TOKEN }}
+          slab-url: ${{ secrets.SLAB_BASE_URL }}
+          job-secret: ${{ secrets.JOB_SECRET }}
+          profile: ${{ env.SLAB_PROFILE }}
+          label: ${{ needs.setup-ec2.outputs.runner-name }}
 
   slack-notification:
     runs-on: ubuntu-20.04

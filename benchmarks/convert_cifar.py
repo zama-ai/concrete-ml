@@ -6,7 +6,6 @@ import json
 import platform
 import socket
 import subprocess
-from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
@@ -104,6 +103,8 @@ def value_else_none(value):
 def main(model_name):
     # Get metrics
     results = pd.read_csv("./inference_results.csv")
+    with open("./metadata.json", "r", encoding="utf-8") as file:
+        metadata = json.load(file)
     assert isinstance(results, pd.DataFrame)
     timing_columns = [col for col in results.columns if col.endswith("_time")]
     timings = results[timing_columns]
@@ -158,40 +159,44 @@ def main(model_name):
     # Create experiments
     experiments = []
     dataset_name = "CIFAR-10"
-    experiment_representation: Dict[str, Any] = {}
-    experiment_representation["experiment_name"] = f"cifar-10-{model_name}"
-    experiment_representation["experiment_metadata"] = {
-        "model_name": model_name,
-        "dataset_name": dataset_name,
-        "cml_version": version("concrete-ml"),
-        "cnp_version": version("concrete-python"),
-    }
-    experiment_representation["git_hash"] = current_git_hash
-    experiment_representation["git_timestamp"] = current_git_hash_timestamp
-    experiment_representation["experiment_timestamp"] = current_timestamp
+    experiment_data: Dict[str, Any] = {}
+    experiment_data["experiment_name"] = f"cifar-10-{model_name}"
+    experiment_data["experiment_metadata"] = metadata
+    experiment_data["experiment_metadata"].update(
+        {
+            "model_name": model_name,
+            "dataset_name": dataset_name,
+        }
+    )
+    experiment_data["git_hash"] = current_git_hash
+    experiment_data["git_timestamp"] = current_git_hash_timestamp
+    experiment_data["experiment_timestamp"] = current_timestamp
 
-    experiment_representation["metrics"] = []
+    experiment_data["metrics"] = []
     for key, value in timing_means.items():
-        experiment_representation["metrics"].append(
+        experiment_data["metrics"].append(
             {"metric_name": f"{key}_mean", "value": value_else_none(value)}
         )
     for key, value in timing_stds.items():
-        experiment_representation["metrics"].append(
+        experiment_data["metrics"].append(
             {"metric_name": f"{key}_std", "value": value_else_none(value)}
         )
-    experiment_representation["metrics"].append(
+    experiment_data["metrics"].append(
         {"metric_name": "num_samples", "value": value_else_none(num_samples)}
     )
-    experiment_representation["metrics"].append(
+    experiment_data["metrics"].append(
         {"metric_name": "top_1_acc", "value": value_else_none(top_1_acc)}
     )
-    experiment_representation["metrics"].append(
+    experiment_data["metrics"].append(
         {"metric_name": "top_1_acc_diff", "value": value_else_none(top_1_acc_diff)}
     )
-    experiment_representation["metrics"].append(
-        {"metric_name": "chaos_distance_mean", "value": value_else_none(chaos_distance_mean)}
+    experiment_data["metrics"].append(
+        {
+            "metric_name": "chaos_distance_mean",
+            "value": value_else_none(chaos_distance_mean),
+        }
     )
-    experiments.append(experiment_representation)
+    experiments.append(experiment_data)
     session_data["experiments"] = experiments
 
     # Dump modified file
