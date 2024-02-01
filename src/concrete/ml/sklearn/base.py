@@ -16,6 +16,9 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, TextIO, Type, Union
 
 import brevitas.nn as qnn
+
+# pylint: disable-next=ungrouped-imports
+import concrete.fhe as cp
 import numpy
 import onnx
 import sklearn
@@ -30,9 +33,7 @@ from concrete.fhe.dtypes.integer import Integer
 from sklearn.base import clone
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import check_is_fitted
-
-# pylint: disable-next=ungrouped-imports
-from concrete import fhe as cp
+from xgboost.sklearn import XGBModel
 
 from ..common.check_inputs import check_array_and_assert, check_X_y_and_assert_multi_output
 from ..common.debugging.custom_assert import assert_true
@@ -65,7 +66,13 @@ from ..quantization.quantizers import (
 )
 from ..torch import NumpyModule
 from .qnn_module import SparseQuantNeuralNetwork
-from .tree_to_numpy import tree_to_numpy
+from .tree_to_numpy import (
+    get_equivalent_numpy_forward_from_onnx_tree,
+    get_onnx_model,
+    is_regressor_or_partial_regressor,
+    onnx_fp32_model_to_quantized_model,
+    tree_to_numpy,
+)
 
 # Disable pylint to import Hummingbird while ignoring the warnings
 # pylint: disable=wrong-import-position,wrong-import-order
@@ -1328,6 +1335,80 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         BaseEstimator.__init__(self)
 
+    @classmethod
+    def from_sklearn_model(
+        cls,
+        sklearn_model: sklearn.base.BaseEstimator,
+        X: Optional[numpy.ndarray] = None,
+        n_bits: int = 10,
+    ):
+        """Build a FHE-compliant model using a fitted scikit-learn model.
+
+        Args:
+            sklearn_model (sklearn.base.BaseEstimator): The fitted scikit-learn model to convert.
+            X (Optional[Data]): A representative set of input values used for computing quantization
+                parameters, as a Numpy array, Torch tensor, Pandas DataFrame or List. This is
+                usually the training data-set or a sub-set of it.
+            n_bits (int): Number of bits to quantize the model. If an int is passed
+                for n_bits, the value will be used for quantizing inputs and weights. If a dict is
+                passed, then it should contain "op_inputs" and "op_weights" as keys with
+                corresponding number of quantization bits so that:
+                - op_inputs : number of bits to quantize the input values
+                - op_weights: number of bits to quantize the learned parameters
+                Default to 8.
+
+        Returns:
+            The FHE-compliant fitted model.
+        """
+        # Check that sklearn_model is a proper fitted scikit-learn model
+        check_is_fitted(sklearn_model)
+
+        # Extract scikit-learn's initialization parameters
+        init_params = sklearn_model.get_params()
+        model = cls(n_bits=n_bits, **init_params)
+        model._is_fitted = True
+
+        # Update the underlying scikit-learn model with the given fitted one
+        model.sklearn_model = copy.deepcopy(sklearn_model)
+
+        # Get the onnx model, all operations needed to load it properly will be done on it.
+        n_features = model.n_features_in_
+        dummy_input = numpy.zeros((1, n_features))
+        framework = "xgboost" if isinstance(sklearn_model, XGBModel) else "sklearn"
+        onnx_model = get_onnx_model(
+            model=sklearn_model,
+            x=dummy_input,
+            framework=framework,
+        )
+
+        # Tree values pre-processing
+        # i.e., mainly predictions quantization
+        # but also rounding the threshold such that they are now integers
+        model._set_post_processing_params()
+
+        # Get the expected number of ONNX outputs in the sklearn model.
+        expected_number_of_outputs = 1 if is_regressor_or_partial_regressor(model) else 2
+
+        onnx_model, lsbs_to_remove_for_trees, input_quantizers, output_quantizers = (
+            onnx_fp32_model_to_quantized_model(
+                onnx_model,
+                n_bits,
+                framework,
+                expected_number_of_outputs,
+                n_features,
+                X,
+            )
+        )
+
+        model.input_quantizers = input_quantizers
+        model.output_quantizers = output_quantizers
+
+        model._tree_inference, model.onnx_model_ = get_equivalent_numpy_forward_from_onnx_tree(
+            onnx_model, lsbs_to_remove_for_trees=lsbs_to_remove_for_trees
+        )
+
+        return model
+
     def fit(self, X: Data, y: Target, **fit_parameters):
         # Reset for double fit
         self._is_fitted = False
@@ -1401,6 +1482,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         self.check_model_is_fitted()
 
         y_preds = self.output_quantizers[0].dequant(q_y_preds)
+        assert isinstance(y_preds, numpy.ndarray)
 
         # If the preds have shape (n, 1), squeeze it to shape (n,) like in scikit-learn
         if y_preds.ndim == 2 and y_preds.shape[1] == 1:
@@ -1560,7 +1642,6 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         Returns:
             The FHE-compliant fitted model.
         """
-
         # Check that sklearn_model is a proper fitted scikit-learn model
         check_is_fitted(sklearn_model)
 
@@ -1660,7 +1741,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         weights = self.sklearn_model.coef_.T
         q_weights = QuantizedArray(
             n_bits=n_bits["op_weights"],
-            values=numpy.expand_dims(weights, axis=1) if len(weights.shape) == 1 else weights,
+            values=(numpy.expand_dims(weights, axis=1) if len(weights.shape) == 1 else weights),
             options=weight_options,
         )
         self._q_weights = q_weights.qvalues
@@ -1716,6 +1797,7 @@ class SklearnLinearModelMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         # De-quantize the output values
         y_preds = self.output_quantizers[0].dequant(q_y_preds)
+        assert isinstance(y_preds, numpy.ndarray)
 
         # If the preds have shape (n, 1), squeeze it to shape (n,) like in scikit-learn
         if y_preds.ndim == 2 and y_preds.shape[1] == 1:
@@ -1988,7 +2070,7 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # We assume that the inputs have the same distribution as the _fit_X
         q_fit_X = QuantizedArray(
             n_bits=self.n_bits,
-            values=numpy.expand_dims(_fit_X, axis=1) if len(_fit_X.shape) == 1 else _fit_X,
+            values=(numpy.expand_dims(_fit_X, axis=1) if len(_fit_X.shape) == 1 else _fit_X),
             options=input_options,
         )
         self._q_fit_X = q_fit_X.qvalues

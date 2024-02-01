@@ -22,6 +22,7 @@ on:
         - FullyConnectedNeuralNetworkOnMNIST \n
         - GLMComparison \n
         - HealthCarePrediction \n
+        - ImportingFromScikitLearn \n
         - KaggleTitanic \n
         - KNearestNeighbors \n
         - LinearRegression \n
@@ -66,6 +67,7 @@ env:
   FullyConnectedNeuralNetworkOnMNIST: "docs/advanced_examples/FullyConnectedNeuralNetworkOnMNIST.ipynb" 
   GLMComparison: "docs/advanced_examples/GLMComparison.ipynb" 
   HealthCarePrediction: "use_case_examples/disease_prediction/HealthCarePrediction.ipynb" 
+  ImportingFromScikitLearn: "docs/advanced_examples/ImportingFromScikitLearn.ipynb" 
   KaggleTitanic: "use_case_examples/titanic/KaggleTitanic.ipynb" 
   KNearestNeighbors: "docs/advanced_examples/KNearestNeighbors.ipynb" 
   LinearRegression: "docs/advanced_examples/LinearRegression.ipynb" 

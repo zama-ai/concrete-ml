@@ -31,7 +31,10 @@ def main():
                 continue
 
             with open(notebook, "r", encoding="utf-8") as f:
-                content = json.load(f)
+                try:
+                    content = json.load(f)
+                except Exception as exception:
+                    raise Exception(f"Error while processing {notebook=}") from exception
 
             if args.check:
                 try:

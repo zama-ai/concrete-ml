@@ -5,7 +5,7 @@ from typing import Callable, Tuple, Union
 import numpy
 from concrete.fhe import conv as fhe_conv
 from concrete.fhe import ones as fhe_ones
-from concrete.fhe import round_bit_pattern
+from concrete.fhe import truncate_bit_pattern
 from concrete.fhe.tracing import Tracer
 
 from ..common.debugging import assert_true
@@ -230,13 +230,6 @@ def onnx_avgpool_compute_norm_const(
     return norm_const
 
 
-# This function needs to be updated when the truncate feature is released.
-# The following changes should be made:
-# - Remove the `half` term
-# - Replace `rounding_bit_pattern` with `truncate_bit_pattern`
-# - Potentially replace `lsbs_to_remove` with `auto_truncate`
-# - Adjust the typing
-# FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4143
 def rounded_comparison(
     x: numpy.ndarray, y: numpy.ndarray, lsbs_to_remove: int, operation: ComparisonOperationType
 ) -> Tuple[bool]:
@@ -261,13 +254,5 @@ def rounded_comparison(
     """
 
     assert isinstance(lsbs_to_remove, int)
-
-    # Workaround: in this context, `round_bit_pattern` is used as a truncate operation.
-    # Consequently, we subtract a term, called `half` that will subsequently be re-added during the
-    # `round_bit_pattern` process.
-    half = 1 << (lsbs_to_remove - 1)
-
-    # To determine if 'x' 'operation' 'y' (operation being <, >, >=, <=), we evaluate 'x - y'
-    rounded_subtraction = round_bit_pattern((x - y) - half, lsbs_to_remove=lsbs_to_remove)
-
+    rounded_subtraction = truncate_bit_pattern(x - y, lsbs_to_remove=lsbs_to_remove)
     return (operation(rounded_subtraction),)
