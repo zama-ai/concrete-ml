@@ -193,7 +193,6 @@ To cite Concrete ML, notably in academic papers, please use the following entry,
   <img src="https://github.com/zama-ai/concrete-ml/assets/157474013/8ef18a7e-671b-495c-8346-fa75227d0af3">
 </a>
 
-
 ## License.
 
 This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.
