@@ -2072,3 +2072,74 @@ def numpy_expand(x: numpy.ndarray, shape: Optional[Tuple[int]] = None) -> Tuple[
     assert_true(shape_difference >= 0, "Target shape cannot have fewer dimensions than input shape")
 
     return (numpy.broadcast_to(x, target_shape),)
+
+
+def numpy_unfold(
+    x: numpy.ndarray,
+    *,
+    kernel_shape: Tuple[int, ...],
+    pads: Tuple[int, ...] = None,
+    strides: Tuple[int, ...] = None,
+) -> Tuple[numpy.ndarray]:
+    """Compute Unfold using Torch.
+
+    Currently supports 2d Unfold with torch semantics. This function is ONNX compatible.
+
+    See: https://github.com/onnx/onnx/blob/main/docs/Operators.md
+
+    Args:
+        x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
+        kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
+        pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
+        strides (Tuple[int, ...]): stride of the convolution on each axis
+
+    Returns:
+        res (numpy.ndarray): a tensor of size (N x InChannels x OutHeight * OutWidth).
+           See https://pytorch.org/docs/stable/generated/torch.nn.Unfold.html
+
+    Raises:
+        AssertionError: if the unfold arguments are wrong
+    """
+
+    assert_true(len(kernel_shape) == 2, "The unfold operator currently supports only 2-d")
+
+    # For mypy
+    assert pads is None or len(pads) == 4
+
+    # For mypy
+    assert len(kernel_shape) == 2
+
+    assert strides is None or len(strides) == 2
+
+    # Use default values if the ONNX did not set these parameters
+    pads = (0, 0, 0, 0) if pads is None else pads
+    strides = (1, 1) if strides is None else strides
+
+    # Compute the unfold using a grouped convolution (groups = input channels)
+    # This means that each slice of the kernel is applied on each input channel respectively
+    # We create kernels with only one one at each position, which will redirect the kernel
+    # outputs to the output channels
+    n_in_channels = x.shape[1]
+    kernels_list = []
+    for _ in range(n_in_channels):
+        for row in range(kernel_shape[0]):
+            for col in range(kernel_shape[1]):
+                kernel = numpy.zeros(
+                    (1, 1, kernel_shape[0], kernel_shape[1]),
+                    dtype=numpy.int64,
+                )
+                kernel[:, :, row, col] = 1
+                kernels_list.append(kernel)
+    kernels = numpy.concatenate(numpy.array(kernels_list), axis=0)
+
+    # Pad the input tensor
+    pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode=0)
+    q_input_pad = numpy_onnx_pad(x, pool_pads)
+
+    # Compute the kernels of input values for each kernel position
+    res = fhe_conv(q_input_pad, kernels, None, [0, 0, 0, 0], strides, None, None, n_in_channels)
+
+    # reshape to fit the torch.F.unfold function output shapes
+    res = res.reshape((res.shape[0], res.shape[1], -1))
+
+    return (res,)

@@ -179,6 +179,7 @@ The following operators are supported for evaluation and conversion to an equiva
 - Tanh
 - ThresholdedRelu
 - Transpose
+- Unfold
 - Unsqueeze
 - Where
 - onnx.brevitas.Quant
