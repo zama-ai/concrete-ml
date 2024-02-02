@@ -2507,7 +2507,6 @@ class QuantizedUnfold(QuantizedMixingOp):
         )
 
         # Get the ONNX parameters
-        self.ceil_mode = attrs.get("ceil_mode", None)
         self.kernel_shape = attrs.get("kernel_shape", None)
         self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
         self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
@@ -2565,7 +2564,7 @@ class QuantizedUnfold(QuantizedMixingOp):
 
         # Compute padding with floor and apply it to the input, pad with the input zero-point
         pool_pads = compute_onnx_pool_padding(
-            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 0
+            q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, ceil_mode=0
         )
 
         # Can only pad with scalar zero-points, but zero-points can be float in special cases
@@ -2573,23 +2572,6 @@ class QuantizedUnfold(QuantizedMixingOp):
         _check_op_input_zero_point(q_input.quantizer.zero_point, self.op_instance_name)
         pad_value = int(q_input.quantizer.zero_point)
         q_input_pad = numpy_onnx_pad(q_input.qvalues, pool_pads, pad_value, int_only=True)
-
-        if self.ceil_mode == 1:
-            # Padding for TensorFlow style
-
-            # Compute padding with ceil and apply it to the input, pad with zeros, the zeros
-            # will be ignored in the computation
-            pool_pads_ceil = compute_onnx_pool_padding(
-                q_input.qvalues.shape, self.kernel_shape, self.pads, self.strides, 1
-            )
-
-            # Can only pad with scalar zero-points, but zero-points can be float in special cases
-            # for output layers
-            q_input_pad_ceil = numpy_onnx_pad(q_input.qvalues, pool_pads_ceil, 0, True)
-
-            # Copy the PyTorch style padded input to the larger 0 padded tensor
-            q_input_pad_ceil[:, :, 0 : q_input_pad.shape[2], 0 : q_input_pad.shape[3]] = q_input_pad
-            q_input_pad = q_input_pad_ceil
 
         # Remark that here, we are _not_ using Concrete pad, since it would pad with
         # 0's while we want to pad with zero-point's. So, instead, he have done the padding

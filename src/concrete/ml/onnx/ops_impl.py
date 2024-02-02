@@ -2077,7 +2077,6 @@ def numpy_expand(x: numpy.ndarray, shape: Optional[Tuple[int]] = None) -> Tuple[
 def numpy_unfold(
     x: numpy.ndarray,
     *,
-    ceil_mode: int,
     kernel_shape: Tuple[int, ...],
     pads: Tuple[int, ...] = None,
     strides: Tuple[int, ...] = None,
@@ -2090,7 +2089,6 @@ def numpy_unfold(
 
     Args:
         x (numpy.ndarray): input data (many dtypes are supported). Shape is N x C x H x W for 2d
-        ceil_mode (int): ONNX rounding parameter, expected 0 (torch style dimension computation)
         kernel_shape (Tuple[int, ...]): shape of the kernel. Should have 2 elements for 2d conv
         pads (Tuple[int, ...]): padding in ONNX format (begin, end) on each axis
         strides (Tuple[int, ...]): stride of the convolution on each axis
@@ -2135,7 +2133,7 @@ def numpy_unfold(
     kernels = numpy.concatenate(numpy.array(kernels_list), axis=0)
 
     # Pad the input tensor
-    pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode)
+    pool_pads = compute_onnx_pool_padding(x.shape, kernel_shape, pads, strides, ceil_mode=0)
     q_input_pad = numpy_onnx_pad(x, pool_pads)
 
     # Compute the kernels of input values for each kernel position

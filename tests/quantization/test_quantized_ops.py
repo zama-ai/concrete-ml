@@ -1993,56 +1993,48 @@ def test_quantized_shape(shape):
             (3, 3),
             (2, 2),
             (0, 0, 0, 0),
-            0,
         ),
         (
             numpy.random.uniform(low=-1.2, high=0.2, size=(10, 1, 16, 16)),
             (2, 2),
             (1, 1),
             (0, 0, 0, 0),
-            0,
         ),
         (
             numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
             (2, 2),
             (1, 1),
             (0, 0, 0, 0),
-            0,
         ),
         (
             numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
             (2, 4),
             (1, 1),
             (1, 2, 1, 2),
-            1,
         ),
         (
             numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 4, 4)),
             (2, 4),
             (1, 1),
             (0, 2, 0, 2),
-            1,
         ),
         (
             numpy.random.uniform(low=-2.0, high=2.0, size=(2, 32, 5, 5)),
             (3, 3),
             (1, 1),
             (1, 1, 1, 1),
-            1,
         ),
         (
             numpy.random.uniform(low=-2.0, high=2.0, size=(2, 1, 7, 5)),
             (5, 1),
             (1, 1),
             (1, 2, 0, 4),
-            1,
         ),
-        (  # this test fails because of padding
+        (
             numpy.random.uniform(low=-2.0, high=2.0, size=(1, 1, 16, 16)),
             (2, 2),
             (4, 4),
             (1, 2, 0, 4),
-            1,
         ),
     ],
 )
@@ -2051,7 +2043,7 @@ def test_quantized_unfold(params, n_bits, is_signed, check_r2_score, check_float
     """Test the quantized average pool operator."""
 
     # Retrieve arguments
-    net_input, kernel_shape, strides, pads, ceil_mode = params
+    net_input, kernel_shape, strides, pads = params
 
     # Create quantized data
     q_input = QuantizedArray(n_bits, net_input, is_signed=is_signed)
@@ -2062,7 +2054,7 @@ def test_quantized_unfold(params, n_bits, is_signed, check_r2_score, check_float
         strides=strides,
         pads=pads,
         kernel_shape=kernel_shape,
-        ceil_mode=ceil_mode,
+        # ceil_mode=ceil_mode,
         input_quant_opts=q_input.quantizer.quant_options,
     )
 
