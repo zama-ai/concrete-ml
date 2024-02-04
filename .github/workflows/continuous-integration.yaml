@@ -742,7 +742,7 @@ jobs:
       # If regular tests passed but at least one known flaky test have been re-run, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
       - name: Warn PR with flaky tests
-        uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
         if: steps.pytest_regular.outcome == 'success' && fromJSON(env.FAILED_TESTS_ARE_FLAKY) && !cancelled()
         with:
           header: flaky-test
@@ -819,7 +819,7 @@ jobs:
           ./script/actions_utils/coverage.sh global-coverage-infos.json
 
       - name: Comment with coverage
-        uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd
+        uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
         if: ${{ steps.coverage.outcome != 'skipped' && !cancelled() }}
         continue-on-error: true
         with:
