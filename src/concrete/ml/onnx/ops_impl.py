@@ -1279,7 +1279,10 @@ def numpy_conv(
     """
 
     # Convert the inputs to tensors to compute conv using torch
-    assert_true(len(kernel_shape) == 2, "The convolution operator currently supports only 2-d")
+    assert_true(
+        len(kernel_shape) in (1, 2),
+        f"The convolution operator currently only supports 1d or 2d. Got {len(kernel_shape)}-d",
+    )
     assert_true(
         bool(numpy.all(numpy.asarray(dilations) == 1)),
         "The convolution operator in Concrete does not support dilation",
@@ -1300,8 +1303,33 @@ def numpy_conv(
     # Pad the input if needed
     x_pad = numpy_onnx_pad(x, pads)
 
+    is_conv1d = len(kernel_shape) == 1
+
+    # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/41
+    if is_conv1d:
+        x_pad = numpy.expand_dims(x_pad, axis=-2)
+        w = numpy.expand_dims(w, axis=-2)
+        kernel_shape = (1, kernel_shape[0])
+        strides = (1, strides[0])
+        dilations = (1, dilations[0])
+
     # Compute the torch convolution
-    res = fhe_conv(x_pad, w, b, None, strides, dilations, None, group)
+    res = fhe_conv(
+        x=x_pad,
+        weight=w,
+        bias=b,
+        pads=None,
+        strides=strides,
+        dilations=dilations,
+        kernel_shape=kernel_shape,
+        group=group,
+    )
+
+    # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/41
+    if is_conv1d:
+        res = numpy.squeeze(res, axis=-2)
 
     return (res,)
 

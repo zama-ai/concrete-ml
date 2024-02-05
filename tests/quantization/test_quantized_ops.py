@@ -698,9 +698,13 @@ def test_identity_op(x, n_bits):
         ),
     ],
 )
-@pytest.mark.parametrize("produces_output", [True, False])
+@pytest.mark.parametrize("produces_output", [True, False], ids=["produces_output", ""])
+@pytest.mark.parametrize("is_conv1d", [True, False], ids=["is_conv1d", "is_conv2d"])
+# @pytest.mark.parametrize("is_conv1d", [True], ids=["is_conv1d"])
 # pylint: disable-next=too-many-locals
-def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_float_array_equal):
+def test_quantized_conv(
+    params, n_bits, produces_output, is_conv1d, check_r2_score, check_float_array_equal
+):
     """Test the quantized convolution operator."""
 
     # Retrieve arguments
@@ -716,6 +720,19 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
         pads,
         group,
     ) = params
+
+    # If testing the conv1d operator, make the parameters represent 1D inputs
+    if is_conv1d:
+        size_input = size_input[:3]
+        size_weights = size_weights[:3]
+        strides = strides[:1]
+        pads = pads[:2]
+        dilations = (1,)
+        conv_torch_op = torch.conv1d
+
+    else:
+        dilations = (1, 1)  # type: ignore[assignment]
+        conv_torch_op = torch.conv2d
 
     net_input = numpy.random.uniform(size=size_input) * scale_input
     weights = numpy.random.randn(*size_weights) * scale_weights
@@ -734,8 +751,8 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
         constant_inputs={1: q_weights, 2: q_bias},
         strides=strides,
         pads=pads,
-        kernel_shape=(weights.shape[2], weights.shape[3]),
-        dilations=(1, 1),
+        kernel_shape=weights.shape[2:],
+        dilations=dilations,
         group=group,
     )
     q_op.produces_graph_output = produces_output
@@ -743,24 +760,26 @@ def test_quantized_conv(params, n_bits, produces_output, check_r2_score, check_f
     # Compute the result in floating point
     expected_result = q_op.calibrate(net_input)
 
-    # Compute the reference result
+    # For Conv1d, torch and ONNX both follow the same padding convention
+    if is_conv1d:
+        input_padded = torch.nn.functional.pad(torch.Tensor(net_input.copy()), pads)
 
-    # Pad the input if needed
-
-    # Torch uses padding  (padding_left,padding_right, padding_top,padding_bottom)
+    # For Conv2d, torch uses padding  (padding_left, padding_right, padding_top, padding_bottom)
     # While ONNX and Concrete ML use (padding_top, padding_left, padding_bottom, padding_right)
-    tx_pad = torch.nn.functional.pad(
-        torch.Tensor(net_input.copy()), (pads[1], pads[3], pads[0], pads[2])
-    )
+    else:
+        input_padded = torch.nn.functional.pad(
+            torch.Tensor(net_input.copy()), (pads[1], pads[3], pads[0], pads[2])
+        )
 
-    # Compute the torch convolution
-    torch_res = torch.conv2d(
-        tx_pad,
-        torch.Tensor(weights.copy()),
-        torch.Tensor(biases.squeeze().copy()) if biases is not None else None,
-        strides,
+    # Compute the reference result using the torch convolution operator
+    torch_res = conv_torch_op(
+        input=input_padded,
+        weight=torch.Tensor(weights.copy()),
+        bias=torch.Tensor(biases.squeeze().copy()) if biases is not None else None,
+        stride=strides,
         groups=group,
     ).numpy()
+
     check_float_array_equal(torch_res, expected_result)
 
     # Compute the quantized result
