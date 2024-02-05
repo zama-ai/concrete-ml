@@ -67,9 +67,10 @@ Using Concrete ML allows data scientists to implement machine learning algorithm
 
 - **Healthcare data analysis**: Improve patient care while maintaining privacy by allowing secure, confidential data sharing between healthcare providers.
 - **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
-- **Personalized advertising**: Create targeted advertising and campaign insights in a post-cookie era, ensuring user privacy through encrypted data analysis.
-  
+
 *Learn more use cases in our live [demos](#-demos).*
+  
+
 
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
@@ -103,11 +104,11 @@ To install Concrete ML from PyPi, run the following:
 pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
-You can find more detailed installation instructions in [this part of the documentation](docs/getting-started/pip_installing.md)
+*Find more detailed installation instructions in [this part of the documentation](docs/getting-started/pip_installing.md)*
 <br></br>
 
 ### 🟨 A simple example
-A simple example which is very close to scikit-learn is as follows, for a logistic regression :
+Here is a simple example which is very close to scikit-learn for a logistic regression :
 
 ```python
 from sklearn.datasets import make_classification
@@ -173,9 +174,10 @@ print("Probability with `predict_proba`: ", y_proba_fhe)
 print("Probability with encrypt/run/decrypt calls: ", y0)
 ```
 
-This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md). Concrete ML built-in models
-have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in
-models.
+*This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md).*
+
+*Concrete ML built-in models
+have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in models.*
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
 </p>
@@ -186,7 +188,7 @@ models.
 
 #### Live demos on Hugging Face
 
-- [Credit Scoring](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction)  predicting the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. This demo shows how Concrete ML models easily replace their scikit-learn equivalents.
+- [Credit Scoring](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction):  predicting the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. This demo shows how Concrete ML models easily replace their scikit-learn equivalents.
   - [code](use_case_examples/credit_scoring/)
 - [Sentiment analysis with transformers](https://huggingface.co/blog/sentiment-analysis-fhe) : predicting if an encrypted tweet / short message is positive, negative or neutral, using FHE.
   - [code](use_case_examples/sentiment_analysis_with_transformer) and the [blog post](https://huggingface.co/blog/sentiment-analysis-fhe)
@@ -210,8 +212,8 @@ If you have built awesome projects using Concrete ML, feel free to let us know a
 
 ### 🟨 Tutorials
 Various tutorials are given for:
-- [built-in models](docs/built-in-models/ml_examples.md)
-- [deep learning](docs/deep-learning/examples.md) 
+- [Built-in models](docs/built-in-models/ml_examples.md)
+- [Deep learning](docs/deep-learning/examples.md) 
 <br></br>
 
 
@@ -244,7 +246,7 @@ To cite Concrete ML, notably in academic papers, please use the following entry,
 ```
 
 ### 🟨 License
-This software is distributed under the BSD-3-Clause-Clear license. If you have any questions, please contact us at hello@zama.ai.
+This software is distributed under the **BSD-3-Clause-Clear** license. If you have any questions, please contact us at hello@zama.ai.
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
 </p>
@@ -258,5 +260,14 @@ This software is distributed under the BSD-3-Clause-Clear license. If you have a
 </a>
 <br></br>
 
-#### 🌟  If you like our work, don't forget to give us a star! 🌟  
+
+🌟 If you find this project helpful or interesting, please consider giving it a on GitHub! Your support helps to grow the community and motivates further development. 🚀
+
+[![GitHub stars](https://img.shields.io/github/stars/zama-ai/concrete-ml.svg?style=social&label=Star)](https://github.com/zama-ai/concrete-ml)
+
+Thank you! 
+<p align="right">
+  <a href="#table-of-contents" > ↑ Back to top </a> 
+</p>
+
 
