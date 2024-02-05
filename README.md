@@ -261,7 +261,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. If you ha
 <br></br>
 
 
-🌟 If you find this project helpful or interesting, please consider giving it a on GitHub! Your support helps to grow the community and motivates further development. 🚀
+🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development. 🚀
 
 [![GitHub stars](https://img.shields.io/github/stars/zama-ai/concrete-ml.svg?style=social&label=Star)](https://github.com/zama-ai/concrete-ml)
 
