@@ -12,7 +12,7 @@
   <a href="https://github.com/zama-ai/concrete-ml/releases">
     <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
   </a>
-<!-- Link to tutorials badge using shields.io -->
+<!-- License badge -->
   <a href="#license">
     <img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-orange?style=flat-square">
   </a>
@@ -47,30 +47,29 @@
 ## About
 
 ### 🟨 What is Concrete ML
-Concrete ML is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). It simplifies the use of fully homomorphic encryption (FHE) for data scientists to help them automatically turn machine learning models into their homomorphic equivalent.
+**Concrete ML** is a Privacy-Preserving Machine Learning (PPML) open-source set of tools built on top of [Concrete](https://github.com/zama-ai/concrete) by [Zama](https://github.com/zama-ai). 
 
-Concrete ML was designed with ease-of-use in mind, so that data scientists can use it without knowledge of cryptography. Notably, the Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
+It simplifies the use of fully homomorphic encryption (FHE) for data scientists so that they can automatically turn machine learning models into their homomorphic equivalent, and use it without knowledge of cryptography. 
+
+Concrete ML is designed with ease of use in mind. Data scientists can use models with APIs that are close to the frameworks they use, while additional options to those models allow them to run inference or training on encrypted data with FHE. Notably, the Concrete ML model classes are similar to those in scikit-learn and it is also possible to convert PyTorch models to FHE.
 <br></br>
 
 ### 🟨 Main features
-Data scientists can use models with APIs which are close to the frameworks they use, while additional options to those models allow them to run inference or training on encrypted data with FHE.
-Concrete ML features include:
+
 - **Built-in models**: Ready-to-use FHE-friendly models with a user interface that is equivalent to their the scikit-learn and XGBoost counterparts
-- **Customs models**: Concrete ML supports models that can use quantization aware training. These are developed by the user using PyTorch or keras/tensorflow and are imported into Concrete ML through ONNX
+- **Customs models**: Concrete ML supports models that can use quantization-aware training. These are developed by the user using PyTorch or keras/tensorflow and are imported into Concrete ML through ONNX
   
 *Learn more features in Concrete ML's [documentation](https://docs.zama.ai/concrete-ml/readme).*
 <br></br>
 
 ### 🟨 Use cases
 
-Using Concrete ML allows data scientists to implement machine learning algorithms on encrypted data with FHE, which can unlock a myriado f new use cases such as:
+By leveraging FHE, ConcreteML can unlock a myriad of new use cases for machine learning, such as enabling secure and private data collaboration, protecting sensitive data while still allowing for analysis, and facilitating machine learning on data sets that are subject to strict data privacy regulations, for instance:
 
 - **Healthcare data analysis**: Improve patient care while maintaining privacy by allowing secure, confidential data sharing between healthcare providers.
 - **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
 
 *Learn more use cases in our live [demos](#-demos).*
-  
-
 
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
@@ -92,7 +91,7 @@ Depending on your OS, Concrete ML may be installed with Docker or with pip:
 | macOS 11+ (Apple Silicon: M1, M2, etc.) |         Yes         |       Yes        |
 
 Note: Concrete ML only supports Python `3.8`, `3.9` and `3.10`.
-Concrete ML can be installed on Kaggle ([see question on community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
+Concrete ML can be installed on Kaggle ([see this question on the community for more details](https://community.zama.ai/t/how-do-we-use-concrete-ml-on-kaggle/332)) and on Google Colab.
 
 #### Docker
 To install with Docker, pull the `concrete-ml` image as follows:
@@ -176,8 +175,8 @@ print("Probability with encrypt/run/decrypt calls: ", y0)
 
 *This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md).*
 
-*Concrete ML built-in models
-have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in models.*
+Concrete ML built-in models have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in models.
+
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
 </p>
