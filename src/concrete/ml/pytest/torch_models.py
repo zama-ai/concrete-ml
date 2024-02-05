@@ -1546,3 +1546,28 @@ class ExpandModel(nn.Module):
             x = self.input_quant(x)
         x = x.reshape(x.shape + (1,))
         return x.expand(x.shape[:-1] + (4,))
+
+
+class Conv1dModel(nn.Module):
+    """Small model that uses a 1D convolution operator."""
+
+    def __init__(self, input_output, activation_function) -> None:
+        super().__init__()
+
+        self.conv1 = nn.Conv1d(input_output, 2, 2, stride=1, padding=0)
+        self.act = activation_function()
+        self.fc1 = nn.Linear(input_output, 3)
+
+    def forward(self, x):
+        """Forward pass.
+
+        Args:
+            x (torch.Tensor): The model's input.
+
+        Returns:
+            torch.Tensor: The model's output.
+
+        """
+        x = self.act(self.conv1(x))
+        x = self.fc1(x)
+        return x

@@ -30,6 +30,7 @@ from concrete.ml.pytest.torch_models import (
     CNNGrouped,
     CNNOther,
     ConcatFancyIndexing,
+    Conv1dModel,
     DoubleQuantQATMixNet,
     EncryptedMatrixMultiplicationModel,
     ExpandModel,
@@ -507,16 +508,18 @@ def test_compile_torch_or_onnx_networks(
     ],
 )
 @pytest.mark.parametrize(
-    "model",
+    "model, is_1d",
     [
-        pytest.param(CNNOther),
-        pytest.param(partial(CNNGrouped, groups=3)),
+        pytest.param(CNNOther, False, id="CNN"),
+        pytest.param(partial(CNNGrouped, groups=3), False, id="CNN_grouped"),
+        pytest.param(Conv1dModel, True, id="CNN_conv1d"),
     ],
 )
 @pytest.mark.parametrize("simulate", [True, False])
 @pytest.mark.parametrize("is_onnx", [True, False])
 def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     model,
+    is_1d,
     activation_function,
     default_configuration,
     simulate,
@@ -530,7 +533,7 @@ def test_compile_torch_or_onnx_conv_networks(  # pylint: disable=unused-argument
     # The QAT bits is set to 0 in order to signal that the network is not using QAT
     qat_bits = 0
 
-    input_shape = (6, 7, 7)
+    input_shape = (6, 7) if is_1d else (6, 7, 7)
     input_output = input_shape[0]
 
     q_module = compile_and_test_torch_or_onnx(
