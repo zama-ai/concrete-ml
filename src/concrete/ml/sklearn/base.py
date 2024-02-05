@@ -49,7 +49,13 @@ from ..onnx.onnx_model_manipulations import clean_graph_after_node_op_type, remo
 # The sigmoid and softmax functions are already defined in the ONNX module and thus are imported
 # here in order to avoid duplicating them.
 from ..onnx.ops_impl import numpy_sigmoid, numpy_softmax
-from ..quantization import PostTrainingQATImporter, QuantizedArray, get_n_bits_dict
+from ..quantization import (
+    PostTrainingQATImporter,
+    QuantizedArray,
+    _get_n_bits_dict_trees,
+    _inspect_tree_n_bits,
+    get_n_bits_dict,
+)
 from ..quantization.quantized_module import QuantizedModule, _get_inputset_generator
 from ..quantization.quantizers import (
     QuantizationOptions,
@@ -96,7 +102,7 @@ QNN_AUTO_KWARGS = ["module__n_outputs", "module__input_dim"]
 # Enable rounding feature for all tree-based models by default
 # Note: This setting is fixed and cannot be altered by users
 # However, for internal testing purposes, we retain the capability to disable this feature
-os.environ["TREES_USE_ROUNDING"] = "1"
+os.environ["TREES_USE_ROUNDING"] = os.environ.get("TREES_USE_ROUNDING", "1")
 
 # pylint: disable=too-many-public-methods
 
@@ -1281,16 +1287,31 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 _TREE_MODELS.add(cls)
                 _ALL_SKLEARN_MODELS.add(cls)
 
-    def __init__(self, n_bits: int):
+    def __init__(self, n_bits: Union[int, Dict[str, int]]):
         """Initialize the TreeBasedEstimatorMixin.
 
         Args:
-            n_bits (int): The number of bits used for quantization.
+            n_bits (int, Dict[str, int]): Number of bits to quantize the model. If an int is passed
+                for n_bits, the value will be used for quantizing inputs and leaves. If a dict is
+                passed, then it should contain "op_inputs" and "op_leaves" as keys with
+                corresponding number of quantization bits so that:
+                    - op_inputs (mandatory): number of bits to quantize the input values
+                    - op_leaves (optional): number of bits to quantize the leaves
+                Default to 6.
         """
-        self.n_bits: int = n_bits
+
+        # Check if 'n_bits' is a valid value.
+        _inspect_tree_n_bits(n_bits)
+
+        self.n_bits: Union[int, Dict[str, int]] = n_bits
 
         #: The model's inference function. Is None if the model is not fitted.
         self._tree_inference: Optional[Callable] = None
+
+        #: Wether to perform the sum of the output's tree ensembles in FHE or not.
+        # By default, the decision of the tree ensembles is made in clear (not in FHE).
+        # This attribute should not be modified by users.
+        self._fhe_ensembling = False
 
         BaseEstimator.__init__(self)
 
@@ -1304,9 +1325,14 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
 
         q_X = numpy.zeros_like(X)
 
+        # Convert the n_bits attribute into a proper dictionary
+        self.n_bits = _get_n_bits_dict_trees(self.n_bits)
+
         # Quantization of each feature in X
         for i in range(X.shape[1]):
-            input_quantizer = QuantizedArray(n_bits=self.n_bits, values=X[:, i]).quantizer
+            input_quantizer = QuantizedArray(
+                n_bits=self.n_bits["op_inputs"], values=X[:, i]
+            ).quantizer
             self.input_quantizers.append(input_quantizer)
             q_X[:, i] = input_quantizer.quant(X[:, i])
 
@@ -1319,7 +1345,7 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Check that the underlying sklearn model has been set and fit
         assert self.sklearn_model is not None, self._sklearn_model_is_not_fitted_error_message()
 
-        # Convert the tree inference with Numpy operators
+        # Enable rounding feature
         enable_rounding = os.environ.get("TREES_USE_ROUNDING", "1") == "1"
 
         if not enable_rounding:
@@ -1332,12 +1358,14 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 stacklevel=2,
             )
 
+        # Convert the tree inference with Numpy operators
         self._tree_inference, self.output_quantizers, self.onnx_model_ = tree_to_numpy(
             self.sklearn_model,
             q_X,
             use_rounding=enable_rounding,
+            fhe_ensembling=self._fhe_ensembling,
             framework=self.framework,
-            output_n_bits=self.n_bits,
+            output_n_bits=self.n_bits["op_leaves"],
         )
 
         self._is_fitted = True
@@ -1412,10 +1440,13 @@ class BaseTreeEstimatorMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
         # Sum all tree outputs
         # Remove the sum once we handle multi-precision circuits
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-        y_preds = numpy.sum(y_preds, axis=-1)
+        if not self._fhe_ensembling:
+            y_preds = numpy.sum(y_preds, axis=-1)
 
-        assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
-        return y_preds
+            assert_true(y_preds.ndim == 2, "y_preds should be a 2D array")
+            return y_preds
+
+        return super().post_processing(y_preds)
 
 
 class BaseTreeRegressorMixin(BaseTreeEstimatorMixin, sklearn.base.RegressorMixin, ABC):
@@ -1841,12 +1872,15 @@ class SklearnKNeighborsMixin(BaseEstimator, sklearn.base.BaseEstimator, ABC):
                 quantizing inputs and X_fit. Default to 3.
         """
         self.n_bits: int = n_bits
+
         # _q_fit_X: In distance metric algorithms, `_q_fit_X` stores the training set to compute
         # the similarity or distance measures. There is no `weights` attribute because there isn't
         # a training phase
         self._q_fit_X: numpy.ndarray
+
         # _y: Labels of `_q_fit_X`
         self._y: numpy.ndarray
+
         # _q_fit_X_quantizer: The quantizer to use for quantizing the model's training set
         self._q_fit_X_quantizer: Optional[UniformQuantizer] = None
 

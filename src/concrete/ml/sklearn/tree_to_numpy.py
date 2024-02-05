@@ -17,7 +17,11 @@ from ..onnx.convert import (
     OPSET_VERSION_FOR_ONNX_EXPORT,
     get_equivalent_numpy_forward_from_onnx_tree,
 )
-from ..onnx.onnx_model_manipulations import clean_graph_at_node_op_type, remove_node_types
+from ..onnx.onnx_model_manipulations import (
+    clean_graph_after_node_op_type,
+    clean_graph_at_node_op_type,
+    remove_node_types,
+)
 from ..onnx.onnx_utils import get_op_type
 from ..quantization import QuantizedArray
 from ..quantization.quantizers import UniformQuantizer
@@ -132,21 +136,31 @@ def assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model: onnx.Mod
     )
 
 
-def add_transpose_after_last_node(onnx_model: onnx.ModelProto):
+def add_transpose_after_last_node(onnx_model: onnx.ModelProto, fhe_ensembling: bool = False):
     """Add transpose after last node.
 
     Args:
         onnx_model (onnx.ModelProto): The ONNX model.
+        fhe_ensembling (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+            Default to False.
     """
     # Get the output node
     output_node = onnx_model.graph.output[0]
 
-    # Create the node with perm attribute equal to (2, 1, 0)
+    # The state of the 'fhe_ensembling' variable affects the structure of the model's ONNX graph.
+    # When the option is enabled, the graph is cut after the ReduceSum node.
+    # When it is disabled, the graph is cut at the ReduceSum node, which alters the output shape.
+    # Therefore, it is necessary to adjust this shape with the correct permutation.
+
+    # When using FHE sum for tree ensembles, create the node with perm attribute equal to (1, 0)
+    # Otherwise, create the node with perm attribute equal to (2, 1, 0)
+    perm = [1, 0] if fhe_ensembling else [2, 1, 0]
+
     transpose_node = onnx.helper.make_node(
         "Transpose",
         inputs=[output_node.name],
         outputs=["transposed_output"],
-        perm=[2, 1, 0],
+        perm=perm,
     )
 
     onnx_model.graph.node.append(transpose_node)
@@ -204,7 +218,10 @@ def preprocess_tree_predictions(
 
 
 def tree_onnx_graph_preprocessing(
-    onnx_model: onnx.ModelProto, framework: str, expected_number_of_outputs: int
+    onnx_model: onnx.ModelProto,
+    framework: str,
+    expected_number_of_outputs: int,
+    fhe_ensembling: bool = False,
 ):
     """Apply pre-processing onto the ONNX graph.
 
@@ -213,6 +230,8 @@ def tree_onnx_graph_preprocessing(
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         expected_number_of_outputs (int): The expected number of outputs in the ONNX model.
+        fhe_ensembling (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+            Default to False.
     """
     # Make sure the ONNX version returned by Hummingbird is OPSET_VERSION_FOR_ONNX_EXPORT
     onnx_version = get_onnx_opset_version(onnx_model)
@@ -237,9 +256,12 @@ def tree_onnx_graph_preprocessing(
         if len(onnx_model.graph.output) == 1:
             assert_add_node_and_constant_in_xgboost_regressor_graph(onnx_model)
 
-    # Cut the graph at the ReduceSum node as large sum are not yet supported.
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/451
-    clean_graph_at_node_op_type(onnx_model, "ReduceSum")
+    # Cut the graph after the ReduceSum node to remove
+    # argmax, sigmoid, softmax from the graph.
+    if fhe_ensembling:
+        clean_graph_after_node_op_type(onnx_model, "ReduceSum")
+    else:
+        clean_graph_at_node_op_type(onnx_model, "ReduceSum")
 
     if framework == "xgboost":
         # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/2778
@@ -252,7 +274,7 @@ def tree_onnx_graph_preprocessing(
         # sklearn models apply the reduce sum before the transpose.
         # To have equivalent output between xgboost in sklearn,
         # apply the transpose before returning the output.
-        add_transpose_after_last_node(onnx_model)
+        add_transpose_after_last_node(onnx_model, fhe_ensembling)
 
     # Cast nodes are not necessary so remove them.
     remove_node_types(onnx_model, op_types_to_remove=["Cast"])
@@ -277,6 +299,7 @@ def tree_values_preprocessing(
 
     # Modify ONNX graph to fit in FHE
     for i, initializer in enumerate(onnx_model.graph.initializer):
+
         # All constants in our tree should be integers.
         # Tree thresholds can be rounded up or down (depending on the tree implementation)
         # while the final probabilities/regression values must be quantized.
@@ -289,6 +312,7 @@ def tree_values_preprocessing(
             # Get the preprocessed tree predictions to replace the current (non-quantized)
             # values in the onnx_model.
             init_tensor = q_y.qvalues
+
         elif "bias_1" in initializer.name:
             if framework == "xgboost":
                 # xgboost uses "<" (Less) operator thus we must round up.
@@ -307,6 +331,7 @@ def tree_to_numpy(
     x: numpy.ndarray,
     framework: str,
     use_rounding: bool = True,
+    fhe_ensembling: bool = False,
     output_n_bits: int = MAX_BITWIDTH_BACKWARD_COMPATIBLE,
 ) -> Tuple[Callable, List[UniformQuantizer], onnx.ModelProto]:
     """Convert the tree inference to a numpy functions using Hummingbird.
@@ -314,8 +339,10 @@ def tree_to_numpy(
     Args:
         model (Callable): The tree model to convert.
         x (numpy.ndarray): The input data.
-        use_rounding (bool): This parameter is exclusively used to tree-based models.
-            It determines whether the rounding feature is enabled or disabled.
+        use_rounding (bool): Determines whether the rounding feature is enabled or disabled.
+            Default to True.
+        fhe_ensembling (bool): Determines whether the sum of the trees' outputs is computed in FHE.
+            Default to False.
         framework (str): The framework from which the ONNX model is generated.
             (options: 'xgboost', 'sklearn')
         output_n_bits (int): The number of bits of the output. Default to 8.
@@ -352,7 +379,7 @@ def tree_to_numpy(
 
     # ONNX graph pre-processing to make the model FHE friendly
     # i.e., delete irrelevant nodes and cut the graph before the final ensemble sum)
-    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs)
+    tree_onnx_graph_preprocessing(onnx_model, framework, expected_number_of_outputs, fhe_ensembling)
 
     # Tree values pre-processing
     # i.e., mainly predictions quantization

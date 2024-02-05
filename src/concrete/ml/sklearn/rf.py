@@ -1,5 +1,5 @@
 """Implement RandomForest models."""
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import numpy
 import sklearn.ensemble
@@ -19,7 +19,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
         n_estimators=20,
         criterion="gini",
         max_depth=4,
@@ -84,6 +84,7 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
+        metadata["_fhe_ensembling"] = self._fhe_ensembling
 
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
@@ -120,11 +121,13 @@ class RandomForestClassifier(BaseTreeClassifierMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
+        obj._fhe_ensembling = metadata["_fhe_ensembling"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits,
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
+            fhe_ensembling=obj._fhe_ensembling,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
@@ -162,7 +165,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
     # pylint: disable-next=too-many-arguments
     def __init__(
         self,
-        n_bits: int = 6,
+        n_bits: Union[int, Dict[str, int]] = 6,
         n_estimators=20,
         criterion="squared_error",
         max_depth=4,
@@ -219,6 +222,7 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         metadata["onnx_model_"] = self.onnx_model_
         metadata["framework"] = self.framework
         metadata["post_processing_params"] = self.post_processing_params
+        metadata["_fhe_ensembling"] = self._fhe_ensembling
 
         # Scikit-Learn
         metadata["n_estimators"] = self.n_estimators
@@ -255,11 +259,13 @@ class RandomForestRegressor(BaseTreeRegressorMixin):
         obj.framework = metadata["framework"]
         obj.onnx_model_ = metadata["onnx_model_"]
         obj.output_quantizers = metadata["output_quantizers"]
+        obj._fhe_ensembling = metadata["_fhe_ensembling"]
         obj._tree_inference = tree_to_numpy(
             obj.sklearn_model,
             numpy.zeros((len(obj.input_quantizers),))[None, ...],
             framework=obj.framework,
-            output_n_bits=obj.n_bits,
+            output_n_bits=obj.n_bits["op_leaves"] if isinstance(obj.n_bits, Dict) else obj.n_bits,
+            fhe_ensembling=obj._fhe_ensembling,
         )[0]
         obj.post_processing_params = metadata["post_processing_params"]
 
