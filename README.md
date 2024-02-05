@@ -210,9 +210,13 @@ If you have built awesome projects using Concrete ML, feel free to let us know a
 <br></br>
 
 ### 🟨 Tutorials
-Various tutorials are given for:
-- [Built-in models](docs/built-in-models/ml_examples.md)
-- [Deep learning](docs/deep-learning/examples.md) 
+- [Built-in models tutorials](docs/built-in-models/ml_examples.md)
+- [Deep learning tutorials](docs/deep-learning/examples.md)
+- [[Video tutorial] How To Convert a Scikit-learn Model Into Its Homomorphic Equivalent](https://www.zama.ai/post/how-to-convert-a-scikit-learn-model-into-its-homomorphic-equivalent)
+- [Linear Regression Over Encrypted Data With Homomorphic Encryption](https://www.zama.ai/post/linear-regression-using-linear-svr-and-concrete-ml-homomorphic-encryption)
+- [How to Deploy a Machine Learning Model With Concrete ML](https://www.zama.ai/post/how-to-deploy-machine-learning-models-with-concrete-ml)
+
+*Explore more useful resources in [Awesome Zama repo](https://github.com/zama-ai/awesome-zama)*
 <br></br>
 
 
@@ -227,13 +231,8 @@ Full, comprehensive documentation is available here: [https://docs.zama.ai/concr
 
 ## Working with Concrete ML
 
-### 🟨 Contributing
-To contribute to Concrete ML, please refer to this [section of the documentation](docs/developer-guide/contributing.md).
-<br></br>
-
-
 ### 🟨 Citations
-To cite Concrete ML, notably in academic papers, please use the following entry, which list authors by order of first commit:
+To cite Concrete ML in academic papers, please use the following entry:
 
 ```text
 @Misc{ConcreteML,
@@ -243,6 +242,10 @@ To cite Concrete ML, notably in academic papers, please use the following entry,
   note={\url{https://github.com/zama-ai/concrete-ml}},
 }
 ```
+
+### 🟨 Contributing
+To contribute to Concrete ML, please refer to this [section of the documentation](docs/developer-guide/contributing.md).
+<br></br>
 
 ### 🟨 License
 This software is distributed under the **BSD-3-Clause-Clear** license. If you have any questions, please contact us at hello@zama.ai.
