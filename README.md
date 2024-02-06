@@ -13,7 +13,7 @@
     <img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square">
   </a>
 <!-- License badge -->
-  <a href="#license">
+  <a href="#-license">
     <img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-orange?style=flat-square">
   </a>
 <!-- Zama Bounty Program -->
@@ -36,7 +36,7 @@
    - [Demos](#-demos)
    - [Tutorials](#-tutorials)
    - [Documentation](#-documentation)
-- **[Working with Concrete ML](working-with-concrete-ml)**
+- **[Working with Concrete ML](#working-with-concrete-ml)**
    - [Citations](#-citations)
    - [Contributing](#-contributing)
    - [License](#-license)
@@ -69,7 +69,7 @@ By leveraging FHE, ConcreteML can unlock a myriad of new use cases for machine l
 - **Healthcare data analysis**: Improve patient care while maintaining privacy by allowing secure, confidential data sharing between healthcare providers.
 - **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
 
-*Learn more use cases in our live [demos](#-demos).*
+*See more use cases in the list of [demos](#-demos).*
 
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
@@ -103,7 +103,7 @@ To install Concrete ML from PyPi, run the following:
 pip install -U pip wheel setuptools
 pip install concrete-ml
 ```
-*Find more detailed installation instructions in [this part of the documentation](docs/getting-started/pip_installing.md)*
+*Find more detailed installation instructions in [this part of the documentation](https://docs.zama.ai/concrete-ml/getting-started/pip_installing)*
 <br></br>
 
 ### 🟨 A simple example
@@ -173,7 +173,7 @@ print("Probability with `predict_proba`: ", y_proba_fhe)
 print("Probability with encrypt/run/decrypt calls: ", y0)
 ```
 
-*This example is explained in more detail in the [linear model documentation](docs/built-in-models/linear.md).*
+*This example is explained in more detail in the [linear model documentation](https://docs.zama.ai/concrete-ml/built-in-models/linear).*
 
 Concrete ML built-in models have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in models.
 
@@ -199,7 +199,6 @@ Concrete ML built-in models have APIs that are almost identical to their scikit-
 #### Other demos
 
 - [Encrypted Large Language Model](use_case_examples/llm/): converting a user-defined part of a Large Language Model for encrypted text generation. This demo shows the trade-off between quantization and accuracy for text generation and shows how to run the model in FHE.
-- [Credit Scoring](use_case_examples/credit_scoring/): predicting the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. This demo shows how Concrete ML models easily replace their scikit-learn equivalents.
 - [Private inference for federated learned models](use_case_examples/federated_learning/): private training of a Logistic Regression model and then importing the model into Concrete ML and performing encrypted prediction.
 - [Titanic](use_case_examples/titanic/KaggleTitanic.ipynb): solving the [Kaggle Titanic competition](https://www.kaggle.com/c/titanic/). Implemented with XGBoost from Concrete ML, this example comes as a companion of the [Kaggle notebook](https://www.kaggle.com/code/concretemlteam/titanic-with-privacy-preserving-machine-learning), and was the subject of a blogpost in [KDnuggets](https://www.kdnuggets.com/2022/08/machine-learning-encrypted-data.html).
 - [CIFAR10 FHE-friendly model with Brevitas](use_case_examples/cifar/cifar_brevitas_training): training a VGG9 FHE-compatible neural network using Brevitas, and a script to run the neural network in FHE. Execution in FHE takes ~4 minutes per image and shows an accuracy of 88.7%.
@@ -244,7 +243,7 @@ To cite Concrete ML in academic papers, please use the following entry:
 ```
 
 ### 🟨 Contributing
-To contribute to Concrete ML, please refer to this [section of the documentation](docs/developer-guide/contributing.md).
+To contribute to Concrete ML, please refer to [this section of the documentation](docs/developer-guide/contributing.md).
 <br></br>
 
 ### 🟨 License
