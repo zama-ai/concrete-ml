@@ -905,6 +905,65 @@ def test_quantized_avg_pool(params, n_bits, is_signed, check_r2_score, check_flo
     )
 
 
+def test_quantized_avg_pool_args():
+    """Check that unsupported parameters for AvgPool properly raise errors."""
+    n_bits = 2
+
+    with pytest.raises(AssertionError, match=r"Setting parameter 'kernel_shape' is required."):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+        )
+
+    with pytest.raises(AssertionError, match=r"The 'auto_pad' parameter is not supported.*"):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            auto_pad="SAME_UPPER",
+        )
+
+    with pytest.raises(
+        AssertionError, match=r"The Average Pool operator currently supports only 2d kernels."
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1,),
+        )
+
+    with pytest.raises(
+        AssertionError, match=r"Pad pixels must be included when calculating values on the edges.*"
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            count_include_pad=0,
+        )
+
+    with pytest.raises(
+        AssertionError,
+        match=r"The Average Pool operator requires the number of strides to be the same.*",
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            strides=(1,),
+        )
+
+    with pytest.raises(
+        AssertionError, match=r"The Average Pool operator in Concrete ML requires padding.*"
+    ):
+        QuantizedAvgPool(
+            n_bits,
+            OP_DEBUG_NAME + "QuantizedAvgPool",
+            kernel_shape=(1, 1),
+            pads=(0, 0),
+        )
+
+
 @pytest.mark.parametrize("n_bits", [16])
 @pytest.mark.parametrize(
     "params",
@@ -1038,7 +1097,7 @@ def test_quantized_max_pool(params, n_bits, is_signed, check_r2_score, check_flo
 
 
 def test_quantized_conv_args():
-    """Check that conv arguments are validated"""
+    """Check that conv arguments are validated."""
     n_bits = 2
 
     weights = numpy.random.uniform(size=(10, 1, 16, 16)) * 0.2
