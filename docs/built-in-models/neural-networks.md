@@ -48,7 +48,7 @@ The figure above right shows the Concrete ML neural network, trained with Quanti
 ### Architecture parameters
 
 - `module__n_layers`: number of layers in the FCNN, must be at least 1. Note that this is the total number of layers. For a single, hidden layer NN model, set `module__n_layers=2`
-- `module__activation_function`: can be one of the Torch activations (e.g., nn.ReLU, see the full list [here](../deep-learning/torch_support.md#activations)). Neural networks with `nn.ReLU` activation benefit from specific optimizations that make them around 10x faster than networks with other activation functions.
+- `module__activation_function`: can be one of the Torch activations (e.g., nn.ReLU, see the full list [here](../deep-learning/torch_support.md#activation-functions)). Neural networks with `nn.ReLU` activation benefit from specific optimizations that make them around 10x faster than networks with other activation functions.
 
 ### Quantization parameters
 
