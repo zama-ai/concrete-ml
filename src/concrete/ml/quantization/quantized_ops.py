@@ -1013,27 +1013,46 @@ class QuantizedAvgPool(QuantizedMixingOp):
         )
 
         # Get the ONNX parameters
-        self.ceil_mode = attrs.get("ceil_mode", None)
+        self.ceil_mode = attrs.get("ceil_mode", 0)
+        self.auto_pad = attrs.get("auto_pad", "NOTSET")
         self.kernel_shape = attrs.get("kernel_shape", None)
+
+        assert_true(self.kernel_shape is not None, "Setting parameter 'kernel_shape' is required.")
+
+        self.count_include_pad = attrs.get("count_include_pad", 1)
         self.pads = attrs.get("pads", tuple([0] * 2 * (len(self.kernel_shape) - 2)))
         self.dilations = attrs.get("dilations", tuple([1] * len(self.kernel_shape)))
         self.strides = attrs.get("strides", tuple([1] * len(self.kernel_shape)))
 
         # Validate the parameters
         assert_true(
-            len(self.kernel_shape) == 2,
-            "The Average Pool operator currently supports only 2d",
+            self.auto_pad == "NOTSET",
+            "The 'auto_pad' parameter is not supported. Please keep the the default 'NOTSET' value "
+            "and provide explicit padding.",
         )
+
+        assert_true(
+            len(self.kernel_shape) == 2,
+            "The Average Pool operator currently supports only 2d kernels.",
+        )
+
+        assert_true(
+            self.count_include_pad == 1,
+            "Pad pixels must be included when calculating values on the edges. Please set "
+            "'count_include_pad' to 1.",
+        )
+
         assert_true(
             len(self.kernel_shape) == len(self.strides),
-            "The Average Pool operator requires the number of strides to "
-            "be the same as the number of kernel dimensions",
+            "The Average Pool operator requires the number of strides to be the same as the number "
+            "of kernel dimensions.",
         )
+
         assert_true(
             len(self.pads) == 2 * len(self.kernel_shape),
             "The Average Pool operator in Concrete ML requires padding to be specified as "
             " (pad_left_dim1, pad_right_dim1, pad_left_dim2, pad_right_dim2, ...), following ONNX"
-            " standard",
+            " standard.",
         )
 
         self.kernel: Union[numpy.ndarray, None] = None
