@@ -12,7 +12,7 @@ CONCRETE_PACKAGE_PATH=$(SRC_DIR)/concrete
 COUNT?=1
 RANDOMLY_SEED?=$$RANDOM
 PYTEST_OPTIONS:=
-POETRY_VERSION:=1.2.2
+POETRY_VERSION:=1.7.1
 APIDOCS_OUTPUT?="./docs/developer-guide/api"
 OPEN_PR="true"
 
@@ -27,6 +27,10 @@ CONCRETE_PYTHON_VERSION="concrete-python==2.5.0"
 # --pyproject-toml-file pyproject.toml \
 # --get-pip-install-spec-for-dependency concrete-python)"
 
+# At the end of the command, we currently need to force an 'import skorch' in Python in order to 
+# avoid an obscure bug that led to all pytest commands to fail when installing dependencies with 
+# Poetry >= 1.3. It is however not very clear how this import fixes the issue, as the bug was 
+# difficult to understand and reproduce, so the line might become obsolete in the future.
 .PHONY: setup_env # Set up the environment
 setup_env:
 	@# The keyring install is to allow pip to fetch credentials for our internal repo if needed
@@ -52,6 +56,8 @@ setup_env:
 	echo "Installing $(CONCRETE_PYTHON_VERSION)" && \
 	poetry run python -m pip install -U --pre "$(CONCRETE_PYTHON_VERSION)"
 	"$(MAKE)" fix_omp_issues_for_intel_mac
+
+	poetry run python -c "import skorch" # Details above
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: 

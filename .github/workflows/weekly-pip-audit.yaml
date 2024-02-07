@@ -62,7 +62,7 @@ jobs:
           which pip3
 
           python -m pip install --upgrade pip
-          python -m pip install poetry
+          python -m pip install poetry==1.7.1
           make setup_env
 
       - name: Run pip-audit
