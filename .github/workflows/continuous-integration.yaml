@@ -99,7 +99,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   # The 'FAILED_TESTS_ARE_FLAKY' variable is used to print a warning messages if flaky tests are
-  # re-run. By default, we do not want to print this warning
+  # rerun. By default, we do not want to print this warning
   FAILED_TESTS_ARE_FLAKY: "false"
 
 jobs:
@@ -690,7 +690,7 @@ jobs:
       # If only some test files were changed, this step is skipped and each associated tests will be
       # run individually in a following step (pytest_modified_tests_only)
       # If regular tests failed, a following script checks for flaky tests. If all failed tests 
-      # are known flaky tests, they are re-run. Otherwise, the step exits with status 1.
+      # are known flaky tests, they are rerun. Otherwise, the step exits with status 1.
       # The 'bash +e {0}' is added here in order to make sure that the step does not exit directly 
       # if 'make pytest' fails
       - name: PyTest Source Code (regular)
@@ -729,7 +729,7 @@ jobs:
 
             echo "FAILED_TESTS_ARE_FLAKY=${FAILED_TESTS_ARE_FLAKY}" >> "$GITHUB_ENV"
 
-            # If all failed tests are known flaky tests, try to re-run them
+            # If all failed tests are known flaky tests, try to rerun them
             if [[ "${FAILED_TESTS_ARE_FLAKY}" == "true" ]]; then
               make pytest_run_last_failed
             
@@ -739,7 +739,7 @@ jobs:
             fi
           fi
 
-      # If regular tests passed but at least one known flaky test have been re-run, a warning
+      # If regular tests passed but at least one known flaky test have been rerun, a warning
       # comment is published in the PR and all flaky tests that initially failed are listed
       - name: Warn PR with flaky tests
         uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31
