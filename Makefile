@@ -235,8 +235,7 @@ pytest_internal_parallel:
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
 # --cov-fail-under=100 is to make the command fail if coverage does not reach a 100%
-# --cov-report=term-missing:skip-covered is used to print the missing lines for coverage withtout 
-# taking into account skiped tests
+# --cov-report=term-missing:skip-covered is used to avoid printing covered lines for all files
 .PHONY: pytest # Run pytest on all tests
 pytest:
 	"$(MAKE)" pytest_internal_parallel \
@@ -273,6 +272,8 @@ pytest_no_flaky: check_current_flaky_tests
 # --cov PATH is the directory PATH to consider for coverage. Default to SRC_DIR=src
 # --cov-append is to make the coverage of the previous pytest run to also consider the tests that are
 # going to be re-executed by 'pytest_run_last_failed'
+# --cov-fail-under=100 is to make the command fail if coverage does not reach a 100%
+# --cov-report=term-missing:skip-covered is used to avoid printing covered lines for all files
 # --global-coverage-infos-json=global-coverage-infos.json is to dump the coverage report in the file 
 # --last-failed runs all last failed tests
 # --last-failed-no-failures none' indicates pytest not to run anything (instead of running 
@@ -282,6 +283,8 @@ pytest_run_last_failed:
 	poetry run pytest $(TEST) \
 	--cov=$(SRC_DIR) \
 	--cov-append \
+	--cov-fail-under=100 \
+	--cov-report=term-missing:skip-covered \
 	--global-coverage-infos-json=global-coverage-infos.json \
 	--last-failed \
 	--last-failed-no-failures none
