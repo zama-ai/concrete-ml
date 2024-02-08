@@ -57,7 +57,7 @@ setup_env:
 	poetry run python -m pip install -U --pre "$(CONCRETE_PYTHON_VERSION)"
 	"$(MAKE)" fix_omp_issues_for_intel_mac
 
-	poetry run python -c "import skorch" # Details above
+	poetry run python -c "import skorch; import keras" # Details above
 
 .PHONY: sync_env # Synchronise the environment
 sync_env: 
