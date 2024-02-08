@@ -141,7 +141,8 @@ class NeuralNetRegressor(QuantizedTorchEstimatorMixin, skorch.regressor.NeuralNe
         virtual_params = kwargs.pop("virtual_params_", {})
 
         self._kwargs = kwargs
-        vars(self).update(kwargs)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
         self.history_ = history
         self.initialized_ = initialized
@@ -448,7 +449,8 @@ class NeuralNetClassifier(
         virtual_params = kwargs.pop("virtual_params_", {})
 
         self._kwargs = kwargs
-        vars(self).update(kwargs)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
         self.history_ = history
         self.initialized_ = initialized
