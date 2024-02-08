@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Set, Tuple, Type, Union, cast
 
 import numpy
 import onnx
+from concrete.fhe.tracing import Tracer
 from onnx import numpy_helper
 
 from ..common.debugging import assert_true
@@ -400,7 +401,9 @@ class ONNXConverter:
         )
 
     @abstractmethod
-    def _process_initializer(self, n_bits: int, values: numpy.ndarray) -> QuantizedArray:
+    def _process_initializer(
+        self, n_bits: int, values: Union[numpy.ndarray, float, int, bool]
+    ) -> Union[QuantizedArray, RawOpOutput]:
         """Transform a constant tensor according to the model conversion mode.
 
         The values supplied are floating point values that will be quantized.
@@ -410,7 +413,8 @@ class ONNXConverter:
             values (numpy.ndarray): Float values that initialize this tensor
 
         Returns:
-            QuantizedArray: a quantized tensor with integer values on n_bits bits
+            Union[QuantizedArray, RawOpOutput]: a quantized tensor with integer
+                values on n_bits bits
         """
 
     @abstractmethod
@@ -535,14 +539,13 @@ class ONNXConverter:
                         curr_cst_inputs[input_idx] = value
                     else:
                         # Initializers are ndarray or scalar
-                        assert value is not None
-                        assert isinstance(value, numpy.ndarray) or numpy.isscalar(value)
+                        assert isinstance(value, (numpy.ndarray, float, int, bool))
                         curr_cst_inputs[input_idx] = self._process_initializer(
                             self.n_bits_op_weights, value
                         )
                 else:
                     # Initializers are ndarray or scalar
-                    assert isinstance(value, numpy.ndarray) or numpy.isscalar(value)
+                    assert isinstance(value, (numpy.ndarray, float, int, bool))
                     curr_cst_inputs[input_idx] = value
 
             has_variable_inputs = (len(curr_inputs) - len(curr_cst_inputs)) > 0
@@ -865,7 +868,9 @@ class PostTrainingAffineQuantization(ONNXConverter):
             True, quantized_op, *calibration_data, quantizers=quantizers
         )
 
-    def _process_initializer(self, n_bits: int, values: numpy.ndarray):
+    def _process_initializer(
+        self, n_bits: int, values: Union[numpy.ndarray, float, int, bool]
+    ) -> Union[QuantizedArray, RawOpOutput]:
         """Quantize a network constant tensor (a weights tensor).
 
         The values supplied are floating point values that will be quantized.
@@ -875,13 +880,14 @@ class PostTrainingAffineQuantization(ONNXConverter):
             values (numpy.ndarray): Float values that initialize this tensor
 
         Returns:
-            QuantizedArray: a quantized tensor with integer values on n_bits bits
+            Union[QuantizedArray, RawOpOutput]: a quantized tensor with integer
+                values on n_bits bits
         """
 
         if isinstance(values, numpy.ndarray) and numpy.issubdtype(values.dtype, numpy.integer):
             return values.view(RawOpOutput)
-
-        assert isinstance(values, (numpy.ndarray, float))
+        if not isinstance(values, (numpy.ndarray, Tracer)):
+            values = numpy.array(values)
         is_signed = is_symmetric = self._check_distribution_is_symmetric_around_zero(values)
 
         return QuantizedArray(
@@ -990,7 +996,9 @@ class PostTrainingQATImporter(ONNXConverter):
             False, quantized_op, *calibration_data, quantizers=quantizers
         )
 
-    def _process_initializer(self, n_bits: int, values: numpy.ndarray):
+    def _process_initializer(
+        self, n_bits: int, values: Union[numpy.ndarray, float, int, bool]
+    ) -> Union[QuantizedArray, RawOpOutput]:
         """Process an already quantized weight tensor.
 
         The values supplied are in floating point, but are discrete, in the sense
@@ -1003,8 +1011,8 @@ class PostTrainingQATImporter(ONNXConverter):
             values (numpy.ndarray): Discrete float values that initialize this tensor
 
         Returns:
-            QuantizedArray: a quantized tensor with integer values on n_bits bits and with alpha as
-                the scaling factor.
+            Union[QuantizedArray, RawOpOutput]: a quantized tensor with integer values on
+                n_bits bits and with alpha as the scaling factor.
         """
 
         # Assume that integer initializer op inputs are raw values that should not be quantized

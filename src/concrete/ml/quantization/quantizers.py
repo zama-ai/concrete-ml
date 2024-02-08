@@ -826,13 +826,13 @@ class QuantizedArray:
     """
 
     quantizer: UniformQuantizer
-    values: numpy.ndarray
-    qvalues: numpy.ndarray
+    values: Union[numpy.ndarray, Tracer]
+    qvalues: Union[numpy.ndarray, Tracer]
 
     def __init__(
         self,
         n_bits,
-        values: Optional[numpy.ndarray],
+        values: Union[None, float, int, numpy.ndarray],
         value_is_float: bool = True,
         options: Optional[QuantizationOptions] = None,
         stats: Optional[MinMaxQuantizationStats] = None,
@@ -873,9 +873,9 @@ class QuantizedArray:
 
     def _values_setup(
         self,
-        values: numpy.ndarray,
+        values: Union[numpy.ndarray, float, int],
         value_is_float: bool,
-        options: QuantizationOptions = None,
+        options: Optional[QuantizationOptions] = None,
         stats: Optional[MinMaxQuantizationStats] = None,
         params: Optional[UniformQuantizationParameters] = None,
     ):
@@ -898,12 +898,17 @@ class QuantizedArray:
                     f"got {values.dtype}: {values}",
                 )
 
-            self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
+            if isinstance(values, numpy.ndarray):
+                self.values = deepcopy(values)
+            elif isinstance(values, Tracer):
+                self.values = values
+            else:
+                self.values = numpy.array(values)
 
             # If no stats are provided, compute them.
             # Note that this cannot be done during tracing
             if stats is None:
-                self.quantizer.compute_quantization_stats(values)
+                self.quantizer.compute_quantization_stats(self.values)
 
             # If the quantization params are not provided, compute them
             # Note that during tracing, this does not use the tracer in any way and just
@@ -929,12 +934,17 @@ class QuantizedArray:
                     "when int/uint was required",
                 )
 
-            self.qvalues = deepcopy(values) if isinstance(values, numpy.ndarray) else values
+            if isinstance(values, numpy.ndarray):
+                self.qvalues = deepcopy(values)
+            elif isinstance(values, Tracer):
+                self.qvalues = values
+            else:
+                self.qvalues = numpy.array(values)  # pragma: no cover
 
             # Populate self.values
             self.dequant()
 
-    def __call__(self) -> Optional[numpy.ndarray]:
+    def __call__(self) -> Union[numpy.ndarray, Tracer]:
         return self.qvalues
 
     def dump_dict(self) -> Dict:
@@ -985,51 +995,61 @@ class QuantizedArray:
         """
         dump(self, file)
 
-    def update_values(self, values: numpy.ndarray) -> numpy.ndarray:
+    def update_values(self, values: Union[numpy.ndarray, Tracer]) -> Union[numpy.ndarray, Tracer]:
         """Update values to get their corresponding qvalues using the related quantized parameters.
 
         Args:
-            values (numpy.ndarray): Values to replace self.values
+            values (Union[numpy.ndarray, Tracer]): Values to replace self.values
 
         Returns:
-            qvalues (numpy.ndarray): Corresponding qvalues
+            qvalues (Union[numpy.ndarray, Tracer]): Corresponding qvalues
         """
-        self.values = deepcopy(values) if isinstance(values, numpy.ndarray) else values
-        self.quant()
-        return self.qvalues
+        if isinstance(values, numpy.ndarray):
+            self.values = deepcopy(values)
+        elif isinstance(values, Tracer):  # pragma: no cover
+            self.values = values
+        else:  # pragma: no cover
+            self.values = numpy.array(values)
+        return self.quant()
 
-    def update_quantized_values(self, qvalues: numpy.ndarray) -> numpy.ndarray:
+    def update_quantized_values(
+        self, qvalues: Union[numpy.ndarray, Tracer]
+    ) -> Union[numpy.ndarray, Tracer]:
         """Update qvalues to get their corresponding values using the related quantized parameters.
 
         Args:
-            qvalues (numpy.ndarray): Values to replace self.qvalues
+            qvalues (Union[numpy.ndarray, Tracer]): Values to replace self.qvalues
 
         Returns:
-            values (numpy.ndarray): Corresponding values
+            values (Union[numpy.ndarray, Tracer]): Corresponding values
         """
-        self.qvalues = deepcopy(qvalues) if isinstance(qvalues, numpy.ndarray) else qvalues
-        self.dequant()
-        return self.values
+        if isinstance(qvalues, numpy.ndarray):
+            self.qvalues = deepcopy(qvalues)
+        elif isinstance(qvalues, Tracer):  # pragma: no cover
+            self.qvalues = qvalues
+        else:  # pragma: no cover
+            self.qvalues = numpy.array(qvalues)
+        return self.dequant()
 
-    def quant(self) -> Optional[numpy.ndarray]:
+    def quant(self) -> Union[numpy.ndarray, Tracer]:
         """Quantize self.values.
 
         Returns:
-            numpy.ndarray: Quantized values.
+            Union[numpy.ndarray, Tracer]: Quantized values.
         """
 
         self.qvalues = self.quantizer.quant(self.values)
         return self.qvalues
 
-    def dequant(self) -> numpy.ndarray:
+    def dequant(self) -> Union[numpy.ndarray, Tracer]:
         """De-quantize self.qvalues.
 
         Returns:
-            numpy.ndarray: De-quantized values.
+            Union[numpy.ndarray, Tracer]: De-quantized values.
         """
         self.values = self.quantizer.dequant(self.qvalues)
         assert_true(
             not isinstance(self.values, numpy.ndarray) or self.values.dtype == numpy.float64,
-            "De-quantized values must be float64",
+            "De-quantized values must be float64 but got: " f"{type(self.values)=}",
         )
         return self.values
