@@ -98,8 +98,14 @@ def write_failed_tests_report(
                 else:
                     failed_tests_report["non_flaky"].append(test_name)  # type: ignore[attr-defined]
 
-        # If no non-flaky tests failed, report that all failed tests were known flaky tests
-        if not failed_tests_report["non_flaky"]:
+        # If there are some flaky tests but no non-flaky tests failed, report that all failed tests
+        # were known flaky tests
+        # We need to make sure that at least one flaky test has been detected for one specific
+        # reason: if, for example, a test file has a syntax error, pytest will "crash" and therefore
+        # won't collect any tests in the file. The problem is that this will return an 'exitcode'
+        # of 1, making this script unexpectedly return 'all_failed_tests_are_flaky=True' in the
+        # case where 'failed_tests_report["non_flaky"]' is empty
+        if failed_tests_report["flaky"] and not failed_tests_report["non_flaky"]:
             failed_tests_report["all_failed_tests_are_flaky"] = True
 
     else:
