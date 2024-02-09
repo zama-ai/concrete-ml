@@ -88,7 +88,7 @@ pip install concrete-ml
 ```
 *Find more detailed installation instructions in [this part of the documentation](https://docs.zama.ai/concrete-ml/getting-started/pip_installing)*
 <p align="right">
-  <a href="#table-of-contents" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a> 
 </p>
 
 ### A simple example
@@ -163,7 +163,7 @@ print("Probability with encrypt/run/decrypt calls: ", y0)
 Concrete ML built-in models have APIs that are almost identical to their scikit-learn counterparts. It is also possible to convert PyTorch networks to FHE with the Concrete ML conversion APIs. Please refer to the [linear models](docs/built-in-models/linear.md), [tree-based models](docs/built-in-models/tree.md) and [neural networks](docs/built-in-models/neural-networks.md) documentation for more examples, showing the scikit-learn-like API of the built-in models.
 
 <p align="right">
-  <a href="#table-of-contents" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a> 
 </p>
 
 ## Resources 
@@ -210,7 +210,7 @@ Concrete ML built-in models have APIs that are almost identical to their scikit-
 
 Full, comprehensive documentation is available here: [https://docs.zama.ai/concrete-ml](https://docs.zama.ai/concrete-ml).
 <p align="right">
-  <a href="#table-of-contents" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a> 
 </p>
 
 
@@ -236,7 +236,7 @@ To contribute to Concrete ML, please refer to [this section of the documentation
 ### License
 This software is distributed under the **BSD-3-Clause-Clear** license. If you have any questions, please contact us at hello@zama.ai.
 <p align="right">
-  <a href="#table-of-contents" > ↑ Back to top </a> 
+  <a href="#about" > ↑ Back to top </a> 
 </p>
 
 
@@ -250,7 +250,7 @@ This software is distributed under the **BSD-3-Clause-Clear** license. If you ha
 🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development. 
 
 <p align="right">
-  <a href="#table-of-contents" > ↑ Back to top </a> 
+  <a href="#tabout" > ↑ Back to top </a> 
 </p>
 
 
