@@ -6,36 +6,14 @@
 <hr>
 
 <p align="center">
-  <a href="https://docs.zama.ai/concrete-ml"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources</a>
+  <a href="https://docs.zama.ai/concrete-ml"> 📒 Documentation</a> | <a href="https://zama.ai/community"> 💛 Community support</a> | <a href="https://github.com/zama-ai/awesome-zama"> 📚 FHE resources by Zama</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/zama-ai/concrete-ml/releases"><img src="https://img.shields.io/github/v/release/zama-ai/concrete-ml?style=flat-square"></a>
-  <a href="#license"><img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-%23ffb243"></a>
-  <a href="https://github.com/zama-ai/bounty-program"><img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-%23ffd208"></a>
+  <a href="license"><img src="https://img.shields.io/badge/License-BSD--3--Clause--Clear-%23ffb243?style=flat-square"></a>
+  <a href="https://github.com/zama-ai/bounty-program"><img src="https://img.shields.io/badge/Contribute-Zama%20Bounty%20Program-%23ffd208?style=flat-square"></a>
 </p>
-
-
-
-## Table of Contents
-- **[About](#about)**
-  - [What is Concrete ML](#what-is-concrete-ml)
-  - [Main features](#main-features)
-  - [Use cases](#use-cases)
-- **[Getting Started](#getting-started)**
-   - [Installation](#installation)
-   - [A simple example](#a-simple-example)
-- **[Resources](#resources)**
-   - [Demos](#demos)
-   - [Tutorials](#tutorials)
-   - [Documentation](#documentation)
-- **[Working with Concrete ML](#working-with-concrete-ml)**
-   - [Citations](#citations)
-   - [Contributing](#contributing)
-   - [License](#license)
-- **[Support](#support)**
-<br></br>
-
 
 ## About
 
@@ -63,10 +41,22 @@ By leveraging FHE, Concrete ML can unlock a myriad of new use cases for machine 
 - **Financial services**: Facilitate secure financial data analysis for risk management and fraud detection, keeping client information encrypted and safe.
 
 *See more use cases in the list of [demos](#demos).*
+<br></br>
 
-<p align="right">
-  <a href="#table-of-contents" > ↑ Back to top </a> 
-</p>
+## Table of Contents
+- **[Getting Started](#getting-started)**
+   - [Installation](#installation)
+   - [A simple example](#a-simple-example)
+- **[Resources](#resources)**
+   - [Demos](#demos)
+   - [Tutorials](#tutorials)
+   - [Documentation](#documentation)
+- **[Working with Concrete ML](#working-with-concrete-ml)**
+   - [Citations](#citations)
+   - [Contributing](#contributing)
+   - [License](#license)
+- **[Support](#support)**
+<br></br>
 
 
 
@@ -139,7 +129,7 @@ print(f"Similarity: {int((y_pred_fhe == y_pred_clear).mean()*100)}%")
     # In FHE    : [0 0 0 0 1 0 1 0 1 1 0 0 1 0 0 1 1 1 0 0]
     # Similarity: 100%
 ```
-
+<br></br>
 It is also possible to call encryption, model prediction, and decryption functions separately as follows.
 Executing these steps separately is equivalent to calling `predict_proba` on the model instance.
 
@@ -182,7 +172,7 @@ Concrete ML built-in models have APIs that are almost identical to their scikit-
 
 #### Live demos on Hugging Face
 
-- [Credit card approval](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction):  predicting the chance of a given loan applicant defaulting on loan repayment while keeping the user's data private. This demo shows how Concrete ML models easily replace their scikit-learn equivalents.
+- [Credit card approval](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction):  Predicting credit scoring card approval application in which sensitive data can be shared and analyzed without exposing the actual information to neither the three parties involved, nor the server processing it.
   - Check the code [here](https://huggingface.co/spaces/zama-fhe/credit_card_approval_prediction/tree/main)
 - [Sentiment analysis with transformers](https://huggingface.co/blog/sentiment-analysis-fhe): predicting if an encrypted tweet / short message is positive, negative or neutral, using FHE.
   - Check the code [here](https://huggingface.co/spaces/zama-fhe/encrypted_sentiment_analysis/tree/main) and the [blog post](https://huggingface.co/blog/sentiment-analysis-fhe)
@@ -201,7 +191,7 @@ Concrete ML built-in models have APIs that are almost identical to their scikit-
 - [CIFAR10 / CIFAR100 FHE-friendly models with Transfer Learning approach](use_case_examples/cifar/cifar_brevitas_finetuning): series of three notebooks, that convert a pre-trained FP32 VGG11 neural network into a quantized model using Brevitas. The model is fine-tuned on the CIFAR data-sets, converted for FHE execution with Concrete ML and evaluated using FHE simulation. For CIFAR10 and CIFAR100, respectively, our simulations show an accuracy of 90.2% and 68.2%.
 - [FHE neural network splitting for client/server deployment](use_case_examples/cifar/cifar_brevitas_with_model_splitting): explaining how to split a computationally-intensive neural network model in two parts. First, we execute the first part on the client side in the clear, and the output of this step is encrypted. Next, to complete the computation, the second part of the model is evaluated with FHE. This tutorial also shows the impact of FHE speed/accuracy trade-off on CIFAR10, limiting PBS to 8-bit, and thus achieving 62% accuracy.
   
-If you have built awesome projects using Concrete ML, please let us know and we will be happy to showcase them here!
+*If you have built awesome projects using Concrete ML, please let us know and we will be happy to showcase them here!*
 <br></br>
 
 ### Tutorials
@@ -254,14 +244,10 @@ This software is distributed under the **BSD-3-Clause-Clear** license. If you ha
 ## Support
 
 <a target="_blank" href="https://community.zama.ai">
-  <img src="https://github.com/zama-ai/concrete-ml/assets/157474013/9d518f66-30da-4738-a154-a4d9fce93704">
+  <img src="https://github.com/zama-ai/concrete-ml/assets/157474013/0cb69022-fd02-4dbc-801b-51401f3bc07c">
 </a>
-<br></br>
-
 
 🌟 If you find this project helpful or interesting, please consider giving it a star on GitHub! Your support helps to grow the community and motivates further development. 
-
-[![GitHub stars](https://img.shields.io/github/stars/zama-ai/concrete-ml.svg?style=social&label=Star)](https://github.com/zama-ai/concrete-ml)
 
 <p align="right">
   <a href="#table-of-contents" > ↑ Back to top </a> 
