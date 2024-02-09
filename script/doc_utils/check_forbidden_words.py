@@ -153,14 +153,18 @@ def process_file(file_str: str, do_open_problematic_files=False):
         ("FHE friendly", [], []),  # use FHE-friendly
         ("slow-down", [], []),  # use slow down
         ("counter-part", [], []),  # use counterpart
-        ("Scikit-learn", [], []),  # use scikit-learn
+        ("Scikit-learn", [], ["README.md"]),  # use scikit-learn
         ("Scikit-Learn", [], []),  # use scikit-learn
         ("scikit-Learn", [], []),  # use scikit-learn
         ("it's", [], []),  # use `it is`
         ("It's", [], []),  # use `It is`
         ("let's", [], []),  # keep a consistent impersonal style
         ("Let's", [], []),  # keep a consistent impersonal style
-        ("let us", ["feel free to let us know"], []),  # keep a consistent impersonal style
+        (
+            "let us",
+            ["feel free to let us know"],
+            ["README.md"],
+        ),  # keep a consistent impersonal style
         ("Let us", [], []),  # keep a consistent impersonal style
         ("github", [], []),  # use GitHub
         ("elementwise", [], []),  # use element-wise
