@@ -401,7 +401,7 @@ jobs:
       - name: Download Documentation
         if: ${{ success() && !cancelled() }}
         id: download-docs
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe
         with:
           name: html-docs
           path: ${{ env.ARTIFACTS_RAW_DIR }}/html_docs/
@@ -416,7 +416,7 @@ jobs:
       - name: Download changelog
         if: ${{ success() && !cancelled() }}
         id: download-changelog
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe
         with:
           name: changelog
           path: ${{ env.ARTIFACTS_RAW_DIR }}/changelog/
@@ -424,7 +424,7 @@ jobs:
       - name: Download python3 wheel
         if: ${{ success() && !cancelled() }}
         id: download-wheel
-        uses: actions/download-artifact@6b208ae046db98c579e8a3aa621ab581ff575935
+        uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe
         with:
           name: py3-wheel
           path: ${{ env.ARTIFACTS_PACKAGED_DIR }}/
