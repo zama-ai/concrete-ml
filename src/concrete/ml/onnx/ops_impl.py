@@ -1306,7 +1306,7 @@ def numpy_conv(
     is_conv1d = len(kernel_shape) == 1
 
     # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/41
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4117
     if is_conv1d:
         x_pad = numpy.expand_dims(x_pad, axis=-2)
         w = numpy.expand_dims(w, axis=-2)
@@ -1327,7 +1327,7 @@ def numpy_conv(
     )
 
     # Workaround for handling torch's Conv1d operator until it is supported by Concrete Python
-    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/41
+    # FIXME: https://github.com/zama-ai/concrete-ml-internal/issues/4117
     if is_conv1d:
         res = numpy.squeeze(res, axis=-2)
 
